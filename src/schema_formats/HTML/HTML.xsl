@@ -485,18 +485,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <xsl:otherwise>
               <xsl:variable name="global-element"
                             select="/protocol/element[name=$element-name]"/>
-              <xsl:choose>
-                <xsl:when test="$global-element/type">
-                  &lt;<b><xsl:value-of select="text()"/></b>&gt;
-                  <xsl:value-of select="$element-suffix"/>
-                  <div style="margin-left: 15px; display: inline;">(<xsl:apply-templates select="$global-element/type" mode="element"/>)</div>
-                </xsl:when>
-                <xsl:otherwise>
-                  &lt;<a href="#element_{$global-element/name}"><b><xsl:value-of select="text()"/></b></a>&gt;
-                  <xsl:value-of select="$element-suffix"/>
-                  <div style="margin-left: 15px; display: inline;"><xsl:value-of select="normalize-space($global-element/summary)"/>.</div>
-                </xsl:otherwise>
-              </xsl:choose>
+              &lt;<a href="#element_{$global-element/name}"><b><xsl:value-of select="text()"/></b></a>&gt;
+              <xsl:value-of select="$element-suffix"/>
+              <div style="margin-left: 15px; display: inline;"><xsl:value-of select="normalize-space($global-element/summary)"/>.</div>
             </xsl:otherwise>
           </xsl:choose>
         </li>

@@ -1,5 +1,12 @@
 2010-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/HTML/HTML.xsl (structure-line): Remove type check
+	from global element case, because the type is the global element type.
+
+	* doc/omp.html: Update from source.
+
+2010-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/HTML/HTML.xsl (structure-line): In the global element
 	case link the tag text to the element details.
 
