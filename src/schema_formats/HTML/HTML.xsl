@@ -372,6 +372,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pre><xsl:call-template name="response-body"/></pre>
   </xsl:template>
 
+  <xsl:template match="type" mode="element">
+    <xsl:choose>
+      <xsl:when test="count (alts) &gt; 0">
+        <xsl:for-each select="alts/alt">
+          <xsl:choose>
+            <xsl:when test="following-sibling::alt and preceding-sibling::alt">
+              <xsl:text>, </xsl:text>
+            </xsl:when>
+            <xsl:when test="count (following-sibling::alt) = 0">
+              <xsl:text> or </xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+            </xsl:otherwise>
+          </xsl:choose>
+          <xsl:text>"</xsl:text>
+          <xsl:value-of select="."/>
+          <xsl:text>"</xsl:text>
+        </xsl:for-each>
+      </xsl:when>
+      <xsl:when test="normalize-space(text()) = 'text'">
+        <xsl:text>text</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+        <a href="#element_{text()}"><xsl:value-of select="text()"/></a>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
   <xsl:template match="type">
     <xsl:choose>
       <xsl:when test="count (alts) &gt; 0">
@@ -438,6 +466,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                         select="$line-element/ele[name=$element-name]"/>
           &lt;<b><xsl:value-of select="text()"/></b>&gt;
           <xsl:value-of select="$element-suffix"/>
+          <xsl:if test="$new-line-element/type">
+            <div style="margin-left: 15px; display: inline;">(<xsl:apply-templates select="$new-line-element/type" mode="element"/>)</div>
+          </xsl:if>
           <xsl:if test="$new-line-element/summary">
             <div style="margin-left: 15px; display: inline;"><xsl:value-of select="normalize-space($new-line-element/summary)"/>.</div>
           </xsl:if>
