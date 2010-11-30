@@ -1,9 +1,16 @@
 2010-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/HTML/HTML.xsl (structure-line): In the global element
+	case link the tag text to the element details.
+
+	* doc/omp.html: Update from source.
+
+2010-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/HTML/HTML.xsl (structure-line): Handle the global
 	element case separately, so that summaries show up.
 
-	* doc/omp.rnc, doc/omp.html: Update from source.
+	* doc/omp.html: Update from source.
 
 2010-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
