@@ -4815,7 +4815,8 @@ http_get (const char *url)
 #define SIMPLE_NOTICE_FORMAT                                                  \
  "%s.\n"                                                                      \
  "\n"                                                                         \
- "The following condition was met: %s\n"                                      \
+ "After the event %s,\n"                                                      \
+ "the following condition was met: %s\n"                                      \
  "\n"                                                                         \
  "This email escalation is not configured to provide more details.\n"         \
  "Full details are stored on the scan engine.\n"                              \
@@ -4970,10 +4971,11 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
                 }
               else
                 {
-                  gchar *event_desc, *condition_desc;
+                  gchar *event_desc, *generic_desc, *condition_desc;
 
                   /* Simple notice message. */
                   event_desc = event_description (event, event_data, name);
+                  generic_desc = event_description (event, event_data, NULL);
                   condition_desc = escalator_condition_description (condition,
                                                                     escalator);
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s':"
@@ -4981,8 +4983,10 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
                                              name);
                   body = g_strdup_printf (SIMPLE_NOTICE_FORMAT,
                                           event_desc,
+                                          generic_desc,
                                           condition_desc);
                   g_free (event_desc);
+                  g_free (generic_desc);
                   g_free (condition_desc);
                 }
               free (name);

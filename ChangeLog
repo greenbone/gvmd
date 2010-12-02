@@ -1,5 +1,10 @@
 2010-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (SIMPLE_NOTICE_FORMAT, escalate_1): Add generic event
+	description to sentence about condition.
+
+2010-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (REPORT_NOTICE_FORMAT, escalate_1): Add task name and
 	event to first two sentences.
 
