@@ -1,3 +1,16 @@
+2010-12-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Increase database version to 33 to ensure change the "NTLMSSP" preference
+	on the "Login Configurations" checkbox.  Add database migration from
+	version 33 to 34.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 34.
+
+	* src/manage_sql.c (migrate_33_to_34, migrate_33_to_34_set_pref): New
+	functions.
+	(database_migrators): Add migrate_33_to_34.
+	(setup_full_config_prefs): Set NTLMSSP to yes.
+
 2010-12-01  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.

@@ -3766,6 +3766,66 @@ migrate_32_to_33 ()
 }
 
 /**
+ * @brief Set the pref for migrate_33_to_34.
+ *
+ * @param[in]  config  Config to set pref on.
+ */
+static void
+migrate_33_to_34_set_pref (config_t config)
+{
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM config_preferences"
+               " WHERE config = %llu"
+               " AND name ="
+               " 'Login configurations[checkbox]:NTLMSSP';",
+               config)
+      == 0)
+    sql ("INSERT into config_preferences (config, type, name, value)"
+         " VALUES (%llu, 'PLUGINS_PREFS',"
+         " 'Login configurations[checkbox]:NTLMSSP',"
+         " 'yes');",
+         config);
+}
+
+/**
+ * @brief Migrate the database from version 33 to version 34.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_33_to_34 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 33. */
+
+  if (manage_db_version () != 33)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The preference "NTLMSSP" was set to yes in the predefined configs. */
+
+  /** @todo ROLLBACK on failure. */
+
+  migrate_33_to_34_set_pref (CONFIG_ID_FULL_AND_FAST);
+  migrate_33_to_34_set_pref (CONFIG_ID_FULL_AND_FAST_ULTIMATE);
+  migrate_33_to_34_set_pref (CONFIG_ID_FULL_AND_VERY_DEEP);
+  migrate_33_to_34_set_pref (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE);
+
+  /* Set the database version to 34. */
+
+  set_db_version (34);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -3803,6 +3863,7 @@ static migrator_t database_migrators[]
     {31, migrate_30_to_31},
     {32, migrate_31_to_32},
     {33, migrate_32_to_33},
+    {34, migrate_33_to_34},
     /* End marker. */
     {-1, NULL}};
 
@@ -5680,6 +5741,11 @@ setup_full_config_prefs (config_t config, int safe_checks,
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'PLUGINS_PREFS',"
        " 'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
+       " 'yes');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'PLUGINS_PREFS',"
+       " 'Login configurations[checkbox]:NTLMSSP',"
        " 'yes');",
        config);
 }
