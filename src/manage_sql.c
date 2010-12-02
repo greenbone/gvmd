@@ -4786,9 +4786,10 @@ http_get (const char *url)
  * @brief Format string for simple notice escalator email.
  */
 #define REPORT_NOTICE_FORMAT                                                  \
- "%s.\n"                                                                      \
+ "Task '%s': %s\n"                                                            \
  "\n"                                                                         \
- "The following condition was met: %s\n"                                      \
+ "After the event %s,\n"                                                      \
+ "the following condition was met: %s\n"                                      \
  "\n"                                                                         \
  "This email escalation is configured to apply report format '%s'.\n"         \
  "Full details and other report formats are available on the scan engine.\n"  \
@@ -4946,6 +4947,8 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
                                                   NULL,    /* Extension. */
                                                   NULL);   /* Content type. */
                   body = g_strdup_printf (REPORT_NOTICE_FORMAT,
+                                          name,
+                                          event_desc,
                                           event_desc,
                                           condition_desc,
                                           format_name,

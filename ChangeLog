@@ -1,4 +1,9 @@
-2010-12-01  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (REPORT_NOTICE_FORMAT, escalate_1): Add task name and
+	event to first two sentences.
+
+2010-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Increase database version to 33 to ensure change the "NTLMSSP" preference
 	on the "Login Configurations" checkbox.  Add database migration from
