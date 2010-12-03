@@ -1,3 +1,8 @@
+2010-12-03  Tim Brown <timb@openvas.org>
+
+	* report_formats/IVIL/IVIL.xml, report_formats/IVIL/generate: New.
+	Preliminary support for IVIL (http://ivil.sourceforge.net/).
+
 2010-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (SIMPLE_NOTICE_FORMAT, escalate_1): Add generic event
@@ -27,6 +32,7 @@
 
 	* CMakeLists.txt: Updated version number.
 
+>>>>>>> .r9611
 2010-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/HTML/HTML.xsl (structure-line): Remove type check
