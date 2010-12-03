@@ -1,3 +1,8 @@
+2010-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (REPORT_NOTICE_FORMAT, escalate_1): Add note above
+	report if report was truncated.
+
 2010-12-03  Tim Brown <timb@openvas.org>
 
 	* report_formats/IVIL/IVIL.xml, report_formats/IVIL/generate: New.
@@ -32,7 +37,6 @@
 
 	* CMakeLists.txt: Updated version number.
 
->>>>>>> .r9611
 2010-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/HTML/HTML.xsl (structure-line): Remove type check

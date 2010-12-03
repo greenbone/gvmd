@@ -4794,6 +4794,7 @@ http_get (const char *url)
  "This email escalation is configured to apply report format '%s'.\n"         \
  "Full details and other report formats are available on the scan engine.\n"  \
  "\n"                                                                         \
+ "%s%s%s"                                                                     \
  "\n"                                                                         \
  "%.*s"                                                                       \
  "%s"                                                                         \
@@ -4953,6 +4954,17 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
                                           event_desc,
                                           condition_desc,
                                           format_name,
+                                          ((content_length > MAX_CONTENT_LENGTH)
+                                            ? "Note: This report exceeds the"
+                                              " maximum length of "
+                                            : ""),
+                                          ((content_length > MAX_CONTENT_LENGTH)
+                                            ? G_STRINGIFY (MAX_CONTENT_LENGTH)
+                                            : ""),
+                                          ((content_length > MAX_CONTENT_LENGTH)
+                                            ? " characters and thus\n"
+                                              "was truncated.\n"
+                                            : ""),
                                           /* Cast for 64 bit.  Safe because
                                            * MAX_CONTENT_LENGTH is small. */
                                           (int) MIN (content_length,
