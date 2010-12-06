@@ -449,13 +449,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </xsl:if>
         </li>
       </xsl:when>
-      <xsl:when test="name() = 'r'">
+      <xsl:when test="name() = 'c'">
         <li>
           <xsl:variable name="element-name" select="text()"/>
           &lt;<b><xsl:value-of select="text()"/>&gt;</b>
           <xsl:value-of select="$element-suffix"/>
           <div style="margin-left: 15px; display: inline;">
-            A response to a <a href="#command_{$element-name}"><xsl:value-of select="$element-name"/></a> command.
+            <a href="#command_{$element-name}"><xsl:value-of select="$element-name"/></a> command.
+          </div>
+        </li>
+      </xsl:when>
+      <xsl:when test="name() = 'r'">
+        <li>
+          <xsl:variable name="element-name" select="text()"/>
+          &lt;<b><xsl:value-of select="text()"/>_response&gt;</b>
+          <xsl:value-of select="$element-suffix"/>
+          <div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_{$element-name}"><xsl:value-of select="$element-name"/></a> command.
           </div>
         </li>
       </xsl:when>
@@ -514,7 +524,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:when>
       <xsl:when test="name() = 'or'">
         <li>
-          <i>One of</i>
+          <i>One of</i><b><xsl:value-of select="$element-suffix"/></b>
           <ul style="list-style: none">
             <xsl:for-each select="*">
               <xsl:call-template name="structure-line">
