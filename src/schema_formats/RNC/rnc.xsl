@@ -384,8 +384,23 @@ response
       <xsl:when test="type">
         <xsl:variable name="command-name" select="concat ($parent-name, name)"/>
         <xsl:value-of select="$command-name"/>
-        <xsl:text> = </xsl:text>
+        <xsl:call-template name="newline"/>
+        <xsl:text> = element </xsl:text>
+        <xsl:value-of select="name"/>
+        <xsl:text>    # type </xsl:text>
         <xsl:value-of select="type"/>
+        <xsl:call-template name="newline"/>
+        <xsl:text>     {</xsl:text>
+        <xsl:call-template name="newline"/>
+        <xsl:variable name="type" select="type"/>
+        <xsl:variable name="parent" select="/protocol/element[name=$type]"/>
+        <xsl:for-each select="/protocol/element[name=$type]/pattern">
+          <xsl:call-template name="pattern">
+            <xsl:with-param name="parent-name" select="concat ($type, '_')"/>
+            <xsl:with-param name="parent" select="$parent"/>
+          </xsl:call-template>
+        </xsl:for-each>
+        <xsl:text>     }</xsl:text>
         <xsl:call-template name="newline"/>
       </xsl:when>
       <xsl:otherwise>

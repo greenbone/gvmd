@@ -1018,9 +1018,33 @@ command_definition_description_p
        text
      }
 
-command_definition_pattern = pattern
+command_definition_pattern
+ = element pattern    # type pattern
+     {
+       text
+       &amp; pattern_attrib*
+       &amp; c*
+       &amp; e*
+       &amp; r*
+       &amp; o*
+       &amp; g*
+       &amp; any*
+       &amp; pattern_t?
+     }
 
-command_definition_response = pattern
+command_definition_response
+ = element response    # type pattern
+     {
+       text
+       &amp; pattern_attrib*
+       &amp; c*
+       &amp; e*
+       &amp; r*
+       &amp; o*
+       &amp; g*
+       &amp; any*
+       &amp; pattern_t?
+     }
 
 command_definition_example
  = element example
@@ -1061,7 +1085,18 @@ command_definition_type
        text
      }
 
-command_definition_ele = command_definition
+command_definition_ele
+ = element ele    # type command_definition
+     {
+       command_definition_name
+       &amp; command_definition_summary?
+       &amp; command_definition_description?
+       &amp; ( ( command_definition_pattern
+           &amp; command_definition_response )
+           | ( command_definition_type
+           &amp; command_definition_ele* ) )
+       &amp; command_definition_example*
+     }
 </pre></div></div>
 </div>
 <h2 id="command_details">7 Command Details</h2>
@@ -9640,7 +9675,18 @@ help_response_schema_protocol_type_pattern
        text
      }
 
-help_response_schema_protocol_command = command_definition
+help_response_schema_protocol_command
+ = element command    # type command_definition
+     {
+       command_definition_name
+       &amp; command_definition_summary?
+       &amp; command_definition_description?
+       &amp; ( ( command_definition_pattern
+           &amp; command_definition_response )
+           | ( command_definition_type
+           &amp; command_definition_ele* ) )
+       &amp; command_definition_example*
+     }
 </pre></div>
 </div>
 <h4>7.41.1 Example: Get the help text</h4>

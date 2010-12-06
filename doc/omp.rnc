@@ -325,9 +325,33 @@ command_definition_description_p
        text
      }
 
-command_definition_pattern = pattern
+command_definition_pattern
+ = element pattern    # type pattern
+     {
+       text
+       & pattern_attrib*
+       & c*
+       & e*
+       & r*
+       & o*
+       & g*
+       & any*
+       & pattern_t?
+     }
 
-command_definition_response = pattern
+command_definition_response
+ = element response    # type pattern
+     {
+       text
+       & pattern_attrib*
+       & c*
+       & e*
+       & r*
+       & o*
+       & g*
+       & any*
+       & pattern_t?
+     }
 
 command_definition_example
  = element example
@@ -372,7 +396,18 @@ command_definition_type
      }
 
 # An element.
-command_definition_ele = command_definition
+command_definition_ele
+ = element ele    # type command_definition
+     {
+       command_definition_name
+       & command_definition_summary?
+       & command_definition_description?
+       & ( ( command_definition_pattern
+           & command_definition_response )
+           | ( command_definition_type
+           & command_definition_ele* ) )
+       & command_definition_example*
+     }
 
 ### Commands
 
@@ -4571,7 +4606,18 @@ help_response_schema_protocol_type_pattern
      }
 
 # A command.
-help_response_schema_protocol_command = command_definition
+help_response_schema_protocol_command
+ = element command    # type command_definition
+     {
+       command_definition_name
+       & command_definition_summary?
+       & command_definition_description?
+       & ( ( command_definition_pattern
+           & command_definition_response )
+           | ( command_definition_type
+           & command_definition_ele* ) )
+       & command_definition_example*
+     }
 
 ## Response to modify_config
 
