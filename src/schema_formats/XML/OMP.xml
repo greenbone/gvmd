@@ -423,7 +423,65 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       contains the result of each command, in the same order as the given
       commands.
     </description>
-    <pattern><any><c>command</c></any></pattern>
+    <pattern>
+      <any>
+        <or>
+          <c>authenticate</c>
+          <c>commands</c>
+          <c>create_agent</c>
+          <c>create_config</c>
+          <c>create_escalator</c>
+          <c>create_lsc_credential</c>
+          <c>create_note</c>
+          <c>create_override</c>
+          <c>create_schedule</c>
+          <c>create_target</c>
+          <c>create_task</c>
+          <c>delete_agent</c>
+          <c>delete_config</c>
+          <c>delete_escalator</c>
+          <c>delete_lsc_credential</c>
+          <c>delete_note</c>
+          <c>delete_override</c>
+          <c>delete_report</c>
+          <c>delete_schedule</c>
+          <c>delete_target</c>
+          <c>delete_task</c>
+          <c>get_agents</c>
+          <c>get_configs</c>
+          <c>get_dependencies</c>
+          <c>get_escalators</c>
+          <c>get_lsc_credentials</c>
+          <c>get_notes</c>
+          <c>get_nvts</c>
+          <c>get_nvt_families</c>
+          <c>get_nvt_feed_checksum</c>
+          <c>get_overrides</c>
+          <c>get_preferences</c>
+          <c>get_reports</c>
+          <c>get_results</c>
+          <c>get_schedules</c>
+          <c>get_system_reports</c>
+          <c>get_target_locators</c>
+          <c>get_targets</c>
+          <c>get_tasks</c>
+          <c>get_version</c>
+          <c>help</c>
+          <c>modify_config</c>
+          <c>modify_note</c>
+          <c>modify_override</c>
+          <c>modify_report</c>
+          <c>modify_task</c>
+          <c>pause_task</c>
+          <c>resume_or_start_task</c>
+          <c>resume_paused_task</c>
+          <c>resume_stopped_task</c>
+          <c>start_task</c>
+          <c>stop_task</c>
+          <c>test_escalator</c>
+        </or>
+      </any>
+    </pattern>
     <response>
       <pattern>
         <attrib>
@@ -436,7 +494,63 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>text</type>
           <required>1</required>
         </attrib>
-        <any><c>response</c></any>
+        <any>
+          <or>
+            <r>authenticate</r>
+            <r>commands</r>
+            <r>create_agent</r>
+            <r>create_config</r>
+            <r>create_escalator</r>
+            <r>create_lsc_credential</r>
+            <r>create_note</r>
+            <r>create_override</r>
+            <r>create_schedule</r>
+            <r>create_target</r>
+            <r>create_task</r>
+            <r>delete_agent</r>
+            <r>delete_config</r>
+            <r>delete_escalator</r>
+            <r>delete_lsc_credential</r>
+            <r>delete_note</r>
+            <r>delete_override</r>
+            <r>delete_report</r>
+            <r>delete_schedule</r>
+            <r>delete_target</r>
+            <r>delete_task</r>
+            <r>get_agents</r>
+            <r>get_configs</r>
+            <r>get_dependencies</r>
+            <r>get_escalators</r>
+            <r>get_lsc_credentials</r>
+            <r>get_notes</r>
+            <r>get_nvts</r>
+            <r>get_nvt_families</r>
+            <r>get_nvt_feed_checksum</r>
+            <r>get_overrides</r>
+            <r>get_preferences</r>
+            <r>get_reports</r>
+            <r>get_results</r>
+            <r>get_schedules</r>
+            <r>get_system_reports</r>
+            <r>get_target_locators</r>
+            <r>get_targets</r>
+            <r>get_tasks</r>
+            <r>get_version</r>
+            <r>help</r>
+            <r>modify_config</r>
+            <r>modify_note</r>
+            <r>modify_override</r>
+            <r>modify_report</r>
+            <r>modify_task</r>
+            <r>pause_task</r>
+            <r>resume_or_start_task</r>
+            <r>resume_paused_task</r>
+            <r>resume_stopped_task</r>
+            <r>start_task</r>
+            <r>stop_task</r>
+            <r>test_escalator</r>
+          </or>
+        </any>
       </pattern>
     </response>
   </command>

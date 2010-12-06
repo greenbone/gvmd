@@ -1,5 +1,11 @@
 2010-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Add commands to COMMANDS pattern.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2010-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/RNC/rnc.xsl,
 	src/schema_formats/HTML/rnc.xsl (ele): Inline the body of the type
 	element, otherwise the ele will have the same name as the type element.

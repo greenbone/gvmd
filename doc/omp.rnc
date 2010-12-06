@@ -449,7 +449,59 @@ authenticate_credentials_password
 commands
  = element commands
      {
-       command*
+       ( authenticate
+           | commands
+           | create_agent
+           | create_config
+           | create_escalator
+           | create_lsc_credential
+           | create_note
+           | create_override
+           | create_schedule
+           | create_target
+           | create_task
+           | delete_agent
+           | delete_config
+           | delete_escalator
+           | delete_lsc_credential
+           | delete_note
+           | delete_override
+           | delete_report
+           | delete_schedule
+           | delete_target
+           | delete_task
+           | get_agents
+           | get_configs
+           | get_dependencies
+           | get_escalators
+           | get_lsc_credentials
+           | get_notes
+           | get_nvts
+           | get_nvt_families
+           | get_nvt_feed_checksum
+           | get_overrides
+           | get_preferences
+           | get_reports
+           | get_results
+           | get_schedules
+           | get_system_reports
+           | get_target_locators
+           | get_targets
+           | get_tasks
+           | get_version
+           | help
+           | modify_config
+           | modify_note
+           | modify_override
+           | modify_report
+           | modify_task
+           | pause_task
+           | resume_or_start_task
+           | resume_paused_task
+           | resume_stopped_task
+           | start_task
+           | stop_task
+           | test_escalator )*
      }
 
 ## Command create_agent
@@ -1881,7 +1933,59 @@ commands_response
      {
        attribute status { status }
        & attribute status_text { text }
-       & response*
+       & ( authenticate_response
+           | commands_response
+           | create_agent_response
+           | create_config_response
+           | create_escalator_response
+           | create_lsc_credential_response
+           | create_note_response
+           | create_override_response
+           | create_schedule_response
+           | create_target_response
+           | create_task_response
+           | delete_agent_response
+           | delete_config_response
+           | delete_escalator_response
+           | delete_lsc_credential_response
+           | delete_note_response
+           | delete_override_response
+           | delete_report_response
+           | delete_schedule_response
+           | delete_target_response
+           | delete_task_response
+           | get_agents_response
+           | get_configs_response
+           | get_dependencies_response
+           | get_escalators_response
+           | get_lsc_credentials_response
+           | get_notes_response
+           | get_nvts_response
+           | get_nvt_families_response
+           | get_nvt_feed_checksum_response
+           | get_overrides_response
+           | get_preferences_response
+           | get_reports_response
+           | get_results_response
+           | get_schedules_response
+           | get_system_reports_response
+           | get_target_locators_response
+           | get_targets_response
+           | get_tasks_response
+           | get_version_response
+           | help_response
+           | modify_config_response
+           | modify_note_response
+           | modify_override_response
+           | modify_report_response
+           | modify_task_response
+           | pause_task_response
+           | resume_or_start_task_response
+           | resume_paused_task_response
+           | resume_stopped_task_response
+           | start_task_response
+           | stop_task_response
+           | test_escalator_response )*
      }
 
 ## Response to create_agent

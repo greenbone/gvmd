@@ -1222,7 +1222,9 @@ authenticate_credentials_password
 <h4>7.2.1 Structure</h4>
 <ul style="list-style: none">
 <li>
-<i>Command</i><ul style="list-style: none"></ul>
+<i>Command</i><ul style="list-style: none"><li>
+<i>One of</i><ul style="list-style: none"></ul>
+</li></ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -1234,6 +1236,275 @@ authenticate_credentials_password
           @<b>status_text</b>
           (text)
           </li>
+<li>
+<i>One of</i><ul style="list-style: none">
+<li>
+          &lt;<b>authenticate&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_authenticate">authenticate</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>commands&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_commands">commands</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>create_agent&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_create_agent">create_agent</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>create_config&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_create_config">create_config</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>create_escalator&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_create_escalator">create_escalator</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>create_lsc_credential&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_create_lsc_credential">create_lsc_credential</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>create_note&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_create_note">create_note</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>create_override&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_create_override">create_override</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>create_schedule&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_create_schedule">create_schedule</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>create_target&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_create_target">create_target</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>create_task&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_create_task">create_task</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>delete_agent&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_delete_agent">delete_agent</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>delete_config&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_delete_config">delete_config</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>delete_escalator&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_delete_escalator">delete_escalator</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>delete_lsc_credential&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_delete_lsc_credential">delete_lsc_credential</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>delete_note&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_delete_note">delete_note</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>delete_override&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_delete_override">delete_override</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>delete_report&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_delete_report">delete_report</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>delete_schedule&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_delete_schedule">delete_schedule</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>delete_target&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_delete_target">delete_target</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>delete_task&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_delete_task">delete_task</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_agents&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_agents">get_agents</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_configs&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_configs">get_configs</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_dependencies&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_dependencies">get_dependencies</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_escalators&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_escalators">get_escalators</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_lsc_credentials&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_lsc_credentials">get_lsc_credentials</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_notes&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_notes">get_notes</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_nvts&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_nvts">get_nvts</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_nvt_families&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_nvt_families">get_nvt_families</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_nvt_feed_checksum&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_nvt_feed_checksum">get_nvt_feed_checksum</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_overrides&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_overrides">get_overrides</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_preferences&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_preferences">get_preferences</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_reports&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_reports">get_reports</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_results&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_results">get_results</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_schedules&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_schedules">get_schedules</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_system_reports&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_system_reports">get_system_reports</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_target_locators&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_target_locators">get_target_locators</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_targets&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_targets">get_targets</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_tasks&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_tasks">get_tasks</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>get_version&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_get_version">get_version</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>help&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_help">help</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>modify_config&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_modify_config">modify_config</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>modify_note&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_modify_note">modify_note</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>modify_override&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_modify_override">modify_override</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>modify_report&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_modify_report">modify_report</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>modify_task&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_modify_task">modify_task</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>pause_task&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_pause_task">pause_task</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>resume_or_start_task&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_resume_or_start_task">resume_or_start_task</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>resume_paused_task&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_resume_paused_task">resume_paused_task</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>resume_stopped_task&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_resume_stopped_task">resume_stopped_task</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>start_task&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_start_task">start_task</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>stop_task&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_stop_task">stop_task</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>test_escalator&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#command_test_escalator">test_escalator</a> command.
+          </div>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -1242,7 +1513,59 @@ authenticate_credentials_password
 <i>Command</i><div style="margin-left: 5%"><pre>commands
  = element commands
      {
-       command*
+       ( authenticate
+           | commands
+           | create_agent
+           | create_config
+           | create_escalator
+           | create_lsc_credential
+           | create_note
+           | create_override
+           | create_schedule
+           | create_target
+           | create_task
+           | delete_agent
+           | delete_config
+           | delete_escalator
+           | delete_lsc_credential
+           | delete_note
+           | delete_override
+           | delete_report
+           | delete_schedule
+           | delete_target
+           | delete_task
+           | get_agents
+           | get_configs
+           | get_dependencies
+           | get_escalators
+           | get_lsc_credentials
+           | get_notes
+           | get_nvts
+           | get_nvt_families
+           | get_nvt_feed_checksum
+           | get_overrides
+           | get_preferences
+           | get_reports
+           | get_results
+           | get_schedules
+           | get_system_reports
+           | get_target_locators
+           | get_targets
+           | get_tasks
+           | get_version
+           | help
+           | modify_config
+           | modify_note
+           | modify_override
+           | modify_report
+           | modify_task
+           | pause_task
+           | resume_or_start_task
+           | resume_paused_task
+           | resume_stopped_task
+           | start_task
+           | stop_task
+           | test_escalator )*
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>commands_response
@@ -1250,7 +1573,59 @@ authenticate_credentials_password
      {
        attribute status { status }
        &amp; attribute status_text { text }
-       &amp; response*
+       &amp; ( authenticate_response
+           | commands_response
+           | create_agent_response
+           | create_config_response
+           | create_escalator_response
+           | create_lsc_credential_response
+           | create_note_response
+           | create_override_response
+           | create_schedule_response
+           | create_target_response
+           | create_task_response
+           | delete_agent_response
+           | delete_config_response
+           | delete_escalator_response
+           | delete_lsc_credential_response
+           | delete_note_response
+           | delete_override_response
+           | delete_report_response
+           | delete_schedule_response
+           | delete_target_response
+           | delete_task_response
+           | get_agents_response
+           | get_configs_response
+           | get_dependencies_response
+           | get_escalators_response
+           | get_lsc_credentials_response
+           | get_notes_response
+           | get_nvts_response
+           | get_nvt_families_response
+           | get_nvt_feed_checksum_response
+           | get_overrides_response
+           | get_preferences_response
+           | get_reports_response
+           | get_results_response
+           | get_schedules_response
+           | get_system_reports_response
+           | get_target_locators_response
+           | get_targets_response
+           | get_tasks_response
+           | get_version_response
+           | help_response
+           | modify_config_response
+           | modify_note_response
+           | modify_override_response
+           | modify_report_response
+           | modify_task_response
+           | pause_task_response
+           | resume_or_start_task_response
+           | resume_paused_task_response
+           | resume_stopped_task_response
+           | start_task_response
+           | stop_task_response
+           | test_escalator_response )*
      }
 </pre></div>
 </div>
