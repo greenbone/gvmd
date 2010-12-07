@@ -599,7 +599,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:choose>
         <xsl:when test="count(example) &gt; 0">
           <xsl:for-each select="example">
-            <h4><xsl:value-of select="$index"/>.1 Example: <xsl:value-of select="summary"/></h4>
+            <h4><xsl:value-of select="$index"/>.3 Example: <xsl:value-of select="summary"/></h4>
             <xsl:apply-templates select="description"/>
             <div style="margin-left: 5%; margin-right: 5%;">
               <i>Client</i>

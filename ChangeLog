@@ -1,3 +1,9 @@
+2010-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/HTML/HTML.xsl (command): Correct contents number.
+
+	* doc/omp.html: Update from source.
+
 2010-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/HTML/HTML.xsl (structure-line): Add C case.  In R
