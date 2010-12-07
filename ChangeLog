@@ -1,5 +1,10 @@
 2010-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_max_hosts): Limit range size in octet ranges
+	to 256.
+
+2010-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/HTML/HTML.xsl (command): Correct contents number.
 
 	* doc/omp.html: Update from source.

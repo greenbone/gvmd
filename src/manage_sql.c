@@ -12359,6 +12359,9 @@ manage_max_hosts (const char *hosts)
                       start = tem;
                     }
 
+                  if (end - start > 255)
+                    return -1;
+
                   if (start == end)
                     count++;
                   else
