@@ -740,7 +740,7 @@ advice given in each description, in order to rectify the issue.
     <xsl:param name="port_service"/>
     <xsl:param name="threat"/>
     <xsl:if test="/report/results/result[host=$host][threat/text()=$threat][port=$port_service]">
-      <xsl:call-template name="latex-subsubsection"><xsl:with-param name="subsubsection_string" select="$port_service"/></xsl:call-template>
+      <xsl:call-template name="latex-subsubsection"><xsl:with-param name="subsubsection_string" select="concat ($threat, ' ', $port_service)"/></xsl:call-template>
       <xsl:call-template name="latex-label"><xsl:with-param name="label_string" select="concat('port:', $host, ' ', $port_service, ' ', $threat)"/></xsl:call-template>
       <xsl:call-template name="newline"/>
       <xsl:for-each select="/report/results/result[host=$host][threat/text()=$threat][port=$port_service]">

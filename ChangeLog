@@ -1,7 +1,13 @@
 2010-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/LaTeX/latex.xs
+	(result-details-host-port-threat): Add threat to subsubsection
+	name.
+
+2010-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/LaTeX/latex.xsl (latex-subsection)
-	(latex-subsubsection): Escape name.
+	(latex-subsubsection, latex-hyperref): Escape name.
 
 2010-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
