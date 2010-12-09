@@ -74,14 +74,22 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <!-- A Latex Subsection. -->
   <xsl:template name="latex-subsection">
     <xsl:param name="subsection_string"/>
-    <xsl:text>\subsection{</xsl:text><xsl:value-of select="$subsection_string"/><xsl:text>}</xsl:text>
+    <xsl:text>\subsection{</xsl:text>
+    <xsl:call-template name="escape_text">
+      <xsl:with-param name="string" select="$subsection_string"/>
+    </xsl:call-template>
+    <xsl:text>}</xsl:text>
     <xsl:call-template name="newline"/>
   </xsl:template>
 
   <!-- A Latex Subsubsection. -->
   <xsl:template name="latex-subsubsection">
     <xsl:param name="subsubsection_string"/>
-    <xsl:text>\subsubsection{</xsl:text><xsl:value-of select="$subsubsection_string"/><xsl:text>}</xsl:text>
+    <xsl:text>\subsubsection{</xsl:text>
+    <xsl:call-template name="escape_text">
+      <xsl:with-param name="string" select="$subsubsection_string"/>
+    </xsl:call-template>
+    <xsl:text>}</xsl:text>
     <xsl:call-template name="newline"/>
   </xsl:template>
 
@@ -102,7 +110,9 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     <xsl:text>\hyperref[</xsl:text>
     <xsl:value-of select="$target"/>
     <xsl:text>]{</xsl:text>
-    <xsl:value-of select="$text"/>
+    <xsl:call-template name="escape_text">
+      <xsl:with-param name="string" select="$text"/>
+    </xsl:call-template>
     <xsl:text>}</xsl:text>
   </xsl:template>
 
