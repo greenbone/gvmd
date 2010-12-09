@@ -1,5 +1,9 @@
 2010-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/CMakeLists.txt (C_FILES): Add lsc_user.c.
+
+2010-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (lsc_credential_iterator_rpm)
 	(lsc_credential_iterator_deb, lsc_credential_iterator_exe): Get
 	login name from right column.
