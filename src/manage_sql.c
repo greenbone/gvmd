@@ -17197,7 +17197,7 @@ lsc_credential_iterator_rpm (iterator_t *iterator)
   if (iterator->done) return NULL;
 
   public_key = (const char*) sqlite3_column_text (iterator->stmt, 6);
-  name = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  name = (const char*) sqlite3_column_text (iterator->stmt, 3);
   if (lsc_user_rpm_recreate (name, public_key, &rpm, &rpm_size))
     return NULL;
   rpm64 = (rpm && rpm_size)
@@ -17226,7 +17226,7 @@ lsc_credential_iterator_deb (iterator_t *iterator)
   if (iterator->done) return NULL;
 
   public_key = (const char*) sqlite3_column_text (iterator->stmt, 6);
-  name = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  name = (const char*) sqlite3_column_text (iterator->stmt, 3);
   if (lsc_user_rpm_recreate (name, public_key, &rpm, &rpm_size))
     return NULL;
 
@@ -17261,7 +17261,7 @@ lsc_credential_iterator_exe (iterator_t *iterator)
 
   if (iterator->done) return NULL;
 
-  name = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  name = (const char*) sqlite3_column_text (iterator->stmt, 3);
   password = (const char*) sqlite3_column_text (iterator->stmt, 4);
   if (lsc_user_exe_recreate (name, password, &exe, &exe_size))
     return NULL;

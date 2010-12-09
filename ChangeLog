@@ -1,6 +1,12 @@
 2010-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/report_formats/LaTeX/latex.xs
+	* src/manage_sql.c (lsc_credential_iterator_rpm)
+	(lsc_credential_iterator_deb, lsc_credential_iterator_exe): Get
+	login name from right column.
+
+2010-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/LaTeX/latex.xsl
 	(result-details-host-port-threat): Add threat to subsubsection
 	name.
 
