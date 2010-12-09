@@ -1,0 +1,4832 @@
+#### OpenVAS Management Protocol (OMP)
+####
+#### Version: 1.0
+####
+#### The "management" protocol of the Open Vulnerability Assessment System.
+
+### Preamble
+
+start = command | response
+
+command
+  = authenticate
+    | commands
+    | create_agent
+    | create_config
+    | create_escalator
+    | create_lsc_credential
+    | create_note
+    | create_override
+    | create_schedule
+    | create_target
+    | create_task
+    | delete_agent
+    | delete_config
+    | delete_escalator
+    | delete_lsc_credential
+    | delete_note
+    | delete_override
+    | delete_report
+    | delete_schedule
+    | delete_target
+    | delete_task
+    | get_agents
+    | get_configs
+    | get_dependencies
+    | get_escalators
+    | get_lsc_credentials
+    | get_notes
+    | get_nvts
+    | get_nvt_families
+    | get_nvt_feed_checksum
+    | get_overrides
+    | get_preferences
+    | get_reports
+    | get_results
+    | get_schedules
+    | get_system_reports
+    | get_target_locators
+    | get_targets
+    | get_tasks
+    | get_version
+    | help
+    | modify_config
+    | modify_note
+    | modify_override
+    | modify_report
+    | modify_task
+    | pause_task
+    | resume_or_start_task
+    | resume_paused_task
+    | resume_stopped_task
+    | start_task
+    | stop_task
+    | test_escalator
+
+response
+  = authenticate_response
+    | commands_response
+    | create_agent_response
+    | create_config_response
+    | create_escalator_response
+    | create_lsc_credential_response
+    | create_note_response
+    | create_override_response
+    | create_schedule_response
+    | create_target_response
+    | create_task_response
+    | delete_agent_response
+    | delete_config_response
+    | delete_escalator_response
+    | delete_lsc_credential_response
+    | delete_note_response
+    | delete_override_response
+    | delete_report_response
+    | delete_schedule_response
+    | delete_target_response
+    | delete_task_response
+    | get_agents_response
+    | get_configs_response
+    | get_dependencies_response
+    | get_escalators_response
+    | get_lsc_credentials_response
+    | get_notes_response
+    | get_nvts_response
+    | get_nvt_families_response
+    | get_nvt_feed_checksum_response
+    | get_overrides_response
+    | get_preferences_response
+    | get_reports_response
+    | get_results_response
+    | get_schedules_response
+    | get_system_reports_response
+    | get_target_locators_response
+    | get_targets_response
+    | get_tasks_response
+    | get_version_response
+    | help_response
+    | modify_config_response
+    | modify_note_response
+    | modify_override_response
+    | modify_report_response
+    | modify_task_response
+    | pause_task_response
+    | resume_or_start_task_response
+    | resume_paused_task_response
+    | resume_stopped_task_response
+    | start_task_response
+    | stop_task_response
+    | test_escalator_response
+
+### Data Types
+
+# Base64 encoded data.
+base64 = xsd:base64Binary
+# A true or false value.
+boolean = text
+# A true or false value, after conversion to an integer.
+boolean_atoi = text
+# A date and time, in the C `ctime' format.
+ctime = text
+# A name of a data type.
+type_name = xsd:string - xsd:whitespace
+# An integer.
+integer = xsd:integer
+# A string that may include the characters h, m, l, g and d.
+levels = xsd:token { pattern = "h?m?l?g?d?" }
+# A name.
+name = xsd:string
+# An Object Identifier (OID).
+oid = xsd:token { pattern = "[0-9\.]{1,80}" }
+# A string describing an order for sorting.
+sort_order = text
+# The success or failure status of a command.
+status = xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
+# A task run status.
+task_status = xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|Paused|Requested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
+# The trend of results for a task.
+task_trend = xsd:token { pattern = "up|down|more|less|same" }
+# A threat level.
+threat = xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+# A unit of time.
+time_unit = xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }
+# A Universally Unique Identifier (UUID).
+uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
+# A Universally Unique Identifier (UUID), or the empty string.
+uuid_or_empty = xsd:token { pattern = "[0-9abcdefABCDEF\-]{0,40}" }
+
+### Element Types
+
+## Element Type c
+##
+## A reference to a command.
+
+c
+ = element c
+     {
+       text
+     }
+
+## Element Type e
+##
+## A reference to an element.
+
+e
+ = element e
+     {
+       text
+     }
+
+## Element Type r
+##
+## A reference to a response.
+
+r
+ = element r
+     {
+       text
+     }
+
+## Element Type o
+##
+## An optional pattern item.
+
+o
+ = element o
+     {
+       ( c
+           | e
+           | r
+           | g )
+     }
+
+## Element Type g
+##
+## A group of pattern items.
+
+g
+ = element g
+     {
+       c*
+       & e*
+       & r*
+       & o*
+       & any*
+     }
+
+## Element Type any
+##
+## Pattern item indicating "any number of".
+
+any
+ = element any
+     {
+       ( c
+           | e
+           | r
+           | g )
+     }
+
+## Element Type pattern
+##
+## The pattern element of a command or command descendant.
+
+pattern
+ = element pattern
+     {
+       text
+       & pattern_attrib*
+       & c*
+       & e*
+       & r*
+       & o*
+       & g*
+       & any*
+       & pattern_t?
+     }
+
+# An attribute.
+pattern_attrib
+ = element attrib
+     {
+       pattern_attrib_name
+       & pattern_attrib_type
+       & pattern_attrib_required
+     }
+
+pattern_attrib_name
+ = element name
+     {
+       type_name
+     }
+
+pattern_attrib_type
+ = element type
+     {
+       type_name
+     }
+
+pattern_attrib_required
+ = element required
+     {
+       boolean
+     }
+
+# The type of the text of the element.
+pattern_t
+ = element t
+     {
+       type_name
+     }
+
+## Element Type command_definition
+##
+## Definition of a command in OMP describing HELP command.
+
+command_definition
+ = element command_definition
+     {
+       command_definition_name
+       & command_definition_summary?
+       & command_definition_description?
+       & ( ( command_definition_pattern
+           & command_definition_response )
+           | ( command_definition_type
+           & command_definition_ele* ) )
+       & command_definition_example*
+     }
+
+# The name of the command.
+command_definition_name
+ = element name
+     {
+       type_name
+     }
+
+# A summary of the command.
+command_definition_summary
+ = element summary
+     {
+       text
+     }
+
+# A description of the command.
+command_definition_description
+ = element description
+     {
+       text
+       & command_definition_description_p*
+     }
+
+# A paragraph.
+command_definition_description_p
+ = element p
+     {
+       text
+     }
+
+command_definition_pattern
+ = element pattern    # type pattern
+     {
+       text
+       & pattern_attrib*
+       & c*
+       & e*
+       & r*
+       & o*
+       & g*
+       & any*
+       & pattern_t?
+     }
+
+command_definition_response
+ = element response    # type pattern
+     {
+       text
+       & pattern_attrib*
+       & c*
+       & e*
+       & r*
+       & o*
+       & g*
+       & any*
+       & pattern_t?
+     }
+
+command_definition_example
+ = element example
+     {
+       command_definition_example_summary?
+       & command_definition_example_description?
+       & command_definition_example_request
+       & command_definition_example_response
+     }
+
+command_definition_example_summary
+ = element summary
+     {
+       text
+     }
+
+command_definition_example_description
+ = element description
+     {
+       text
+     }
+
+# Example request.
+command_definition_example_request
+ = element request
+     {
+       text
+     }
+
+# Response to example request.
+command_definition_example_response
+ = element response
+     {
+       text
+     }
+
+# The type of the element.
+command_definition_type
+ = element type
+     {
+       text
+     }
+
+# An element.
+command_definition_ele
+ = element ele    # type command_definition
+     {
+       command_definition_name
+       & command_definition_summary?
+       & command_definition_description?
+       & ( ( command_definition_pattern
+           & command_definition_response )
+           | ( command_definition_type
+           & command_definition_ele* ) )
+       & command_definition_example*
+     }
+
+### Commands
+
+## Command authenticate
+##
+## Authenticate with the manager.
+
+authenticate
+ = element authenticate
+     {
+       authenticate_credentials
+     }
+
+authenticate_credentials
+ = element credentials
+     {
+       authenticate_credentials_username
+       & authenticate_credentials_password
+     }
+
+# The login name of the user.
+authenticate_credentials_username
+ = element username
+     {
+       text
+     }
+
+# The user's password.
+authenticate_credentials_password
+ = element password
+     {
+       text
+     }
+
+## Command commands
+##
+## Run a list of commands.
+
+commands
+ = element commands
+     {
+       ( authenticate
+           | commands
+           | create_agent
+           | create_config
+           | create_escalator
+           | create_lsc_credential
+           | create_note
+           | create_override
+           | create_schedule
+           | create_target
+           | create_task
+           | delete_agent
+           | delete_config
+           | delete_escalator
+           | delete_lsc_credential
+           | delete_note
+           | delete_override
+           | delete_report
+           | delete_schedule
+           | delete_target
+           | delete_task
+           | get_agents
+           | get_configs
+           | get_dependencies
+           | get_escalators
+           | get_lsc_credentials
+           | get_notes
+           | get_nvts
+           | get_nvt_families
+           | get_nvt_feed_checksum
+           | get_overrides
+           | get_preferences
+           | get_reports
+           | get_results
+           | get_schedules
+           | get_system_reports
+           | get_target_locators
+           | get_targets
+           | get_tasks
+           | get_version
+           | help
+           | modify_config
+           | modify_note
+           | modify_override
+           | modify_report
+           | modify_task
+           | pause_task
+           | resume_or_start_task
+           | resume_paused_task
+           | resume_stopped_task
+           | start_task
+           | stop_task
+           | test_escalator )*
+     }
+
+## Command create_agent
+##
+## Create an agent.
+
+create_agent
+ = element create_agent
+     {
+       create_agent_installer
+       & create_agent_name
+       & create_agent_comment?
+       & create_agent_howto_install?
+       & create_agent_howto_use?
+     }
+
+# A file that installs the agent on a target machine.
+create_agent_installer
+ = element installer
+     {
+       text # RNC limitation: base64
+       & create_agent_installer_signature
+     }
+
+# A detached OpenPGP signature of the installer.
+create_agent_installer_signature
+ = element signature
+     {
+       base64
+     }
+
+# A name for the installer.
+create_agent_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the agent.
+create_agent_comment
+ = element comment
+     {
+       text
+     }
+
+# A file that describes how to install the agent.
+create_agent_howto_install
+ = element howto_install
+     {
+       base64
+     }
+
+# A file that describes how to use the agent.
+create_agent_howto_use
+ = element howto_use
+     {
+       base64
+     }
+
+## Command create_config
+##
+## Create a config.
+
+create_config
+ = element create_config
+     {
+       create_config_comment?
+       & ( create_config_copy
+           | get_configs_response
+           | create_config_rcfile )
+       & create_config_name
+     }
+
+# A comment on the config.
+create_config_comment
+ = element comment
+     {
+       text
+     }
+
+# The UUID of an existing config.
+create_config_copy
+ = element copy
+     {
+       uuid
+     }
+
+# An openvasrc style file that defines the config.
+create_config_rcfile
+ = element rcfile
+     {
+       base64
+     }
+
+# A name for the config.
+create_config_name
+ = element name
+     {
+       name
+     }
+
+## Command create_escalator
+##
+## Create an escalator.
+
+create_escalator
+ = element create_escalator
+     {
+       create_escalator_name
+       & create_escalator_comment?
+       & create_escalator_condition
+       & create_escalator_event
+       & create_escalator_method
+     }
+
+# A name for the escalator.
+create_escalator_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the escalator.
+create_escalator_comment
+ = element comment
+     {
+       text
+     }
+
+# The condition that must be satisfied for escalation.
+create_escalator_condition
+ = element condition
+     {
+       text
+       & create_escalator_condition_data*
+     }
+
+# Some data that defines the condition.
+create_escalator_condition_data
+ = element data
+     {
+       text
+       & create_escalator_condition_data_name
+     }
+
+# The name of the condition data.
+create_escalator_condition_data_name
+ = element name
+     {
+       text
+     }
+
+# The event that must happen for escalation.
+create_escalator_event
+ = element event
+     {
+       text
+       & create_escalator_event_data*
+     }
+
+# Some data that defines the event.
+create_escalator_event_data
+ = element data
+     {
+       text
+       & create_escalator_event_data_name
+     }
+
+# The name of the event data.
+create_escalator_event_data_name
+ = element name
+     {
+       text
+     }
+
+# The method by which escalation must occur.
+create_escalator_method
+ = element method
+     {
+       text
+       & create_escalator_method_data*
+     }
+
+# Some data that defines the method.
+create_escalator_method_data
+ = element data
+     {
+       text
+       & create_escalator_method_data_name
+     }
+
+# The name of the method data.
+create_escalator_method_data_name
+ = element name
+     {
+       text
+     }
+
+## Command create_lsc_credential
+##
+## Create an LSC credential.
+
+create_lsc_credential
+ = element create_lsc_credential
+     {
+       create_lsc_credential_name
+       & create_lsc_credential_comment?
+       & create_lsc_credential_login
+       & create_lsc_credential_password?
+     }
+
+# A name for the LSC credential.
+create_lsc_credential_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the LSC credential.
+create_lsc_credential_comment
+ = element comment
+     {
+       text
+     }
+
+# The user name of the credential.
+create_lsc_credential_login
+ = element login
+     {
+       text
+     }
+
+# The password for the credential login.
+create_lsc_credential_password
+ = element password
+     {
+       text
+     }
+
+## Command create_note
+##
+## Create a note.
+
+create_note
+ = element create_note
+     {
+       create_note_text
+       & create_note_nvt
+       & create_note_comment?
+       & create_note_hosts?
+       & create_note_port?
+       & create_note_result?
+       & create_note_task?
+       & create_note_threat?
+     }
+
+# The text of the note.
+create_note_text
+ = element text
+     {
+       text
+     }
+
+# NVT to which note applies.
+create_note_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+     }
+
+# A comment on the note.
+create_note_comment
+ = element comment
+     {
+       text
+     }
+
+# A textual list of hosts.
+create_note_hosts
+ = element hosts
+     {
+       text
+     }
+
+# Port to which note applies.
+create_note_port
+ = element port
+     {
+       text
+     }
+
+# Result to which note applies.
+create_note_result
+ = element result
+     {
+       attribute id { uuid }
+     }
+
+# Task to which note applies.
+create_note_task
+ = element task
+     {
+       attribute id { uuid }
+     }
+
+# Threat level to which note applies.
+create_note_threat
+ = element threat
+     {
+       threat
+     }
+
+## Command create_override
+##
+## Create an override.
+
+create_override
+ = element create_override
+     {
+       create_override_text
+       & create_override_nvt
+       & create_override_comment?
+       & create_override_hosts?
+       & create_override_new_threat?
+       & create_override_port?
+       & create_override_result?
+       & create_override_task?
+       & create_override_threat?
+     }
+
+# The text of the override.
+create_override_text
+ = element text
+     {
+       text
+     }
+
+# NVT to which override applies.
+create_override_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+     }
+
+# A comment on the override.
+create_override_comment
+ = element comment
+     {
+       text
+     }
+
+# A textual list of hosts.
+create_override_hosts
+ = element hosts
+     {
+       text
+     }
+
+# New threat level for result.
+create_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+# Port to which override applies.
+create_override_port
+ = element port
+     {
+       text
+     }
+
+# Result to which override applies.
+create_override_result
+ = element result
+     {
+       attribute id { uuid }
+     }
+
+# Task to which override applies.
+create_override_task
+ = element task
+     {
+       attribute id { uuid }
+     }
+
+# Threat level to which override applies.
+create_override_threat
+ = element threat
+     {
+       threat
+     }
+
+## Command create_schedule
+##
+## Create a schedule.
+
+create_schedule
+ = element create_schedule
+     {
+       create_schedule_name
+       & create_schedule_comment?
+       & create_schedule_first_time
+       & create_schedule_duration
+       & create_schedule_period
+     }
+
+# A name for the schedule.
+create_schedule_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the schedule.
+create_schedule_comment
+ = element comment
+     {
+       text
+     }
+
+# The first time the schedule will run.
+create_schedule_first_time
+ = element first_time
+     {
+       create_schedule_first_time_minute
+       & create_schedule_first_time_hour
+       & create_schedule_first_time_day_of_month
+       & create_schedule_first_time_month
+       & create_schedule_first_time_year
+     }
+
+create_schedule_first_time_minute
+ = element minute
+     {
+       integer
+     }
+
+create_schedule_first_time_hour
+ = element hour
+     {
+       integer
+     }
+
+create_schedule_first_time_day_of_month
+ = element day_of_month
+     {
+       integer
+     }
+
+create_schedule_first_time_month
+ = element month
+     {
+       integer
+     }
+
+create_schedule_first_time_year
+ = element year
+     {
+       integer
+     }
+
+# How long the Manager will run the scheduled task for.
+create_schedule_duration
+ = element duration
+     {
+       create_schedule_duration_unit
+     }
+
+# Duration time unit.
+create_schedule_duration_unit
+ = element unit
+     {
+       time_unit
+     }
+
+# How often the Manager will repeat the scheduled task.
+create_schedule_period
+ = element period
+     {
+       create_schedule_period_unit
+     }
+
+# Period time unit.
+create_schedule_period_unit
+ = element unit
+     {
+       time_unit
+     }
+
+## Command create_target
+##
+## Create a target.
+
+create_target
+ = element create_target
+     {
+       create_target_name
+       & create_target_comment?
+       & create_target_hosts
+       & create_target_lsc_credential
+       & create_target_target_locator
+     }
+
+# A name for the target.
+create_target_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the target.
+create_target_comment
+ = element comment
+     {
+       text
+     }
+
+# A textual list of hosts, which may be empty.
+create_target_hosts
+ = element hosts
+     {
+       text
+     }
+
+# Login credentials for target.
+create_target_lsc_credential
+ = element lsc_credential
+     {
+       attribute id { uuid }
+     }
+
+# Target locator (for example, for LDAP).
+create_target_target_locator
+ = element target_locator
+     {
+       create_target_target_locator_username?
+       & create_target_target_locator_password?
+     }
+
+# The login for the target locator.
+create_target_target_locator_username
+ = element username
+     {
+       text
+     }
+
+# The password for the target locator.
+create_target_target_locator_password
+ = element password
+     {
+       text
+     }
+
+## Command create_task
+##
+## Create a task.
+
+create_task
+ = element create_task
+     {
+       create_task_name
+       & create_task_comment?
+       & create_task_config
+       & create_task_target
+       & create_task_escalator?
+       & create_task_schedule?
+       & create_task_rcfile?
+     }
+
+# A name for the task.
+create_task_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the task.
+create_task_comment
+ = element comment
+     {
+       text
+     }
+
+# The scan configuration used by the task.
+create_task_config
+ = element config
+     {
+       attribute id { uuid }
+     }
+
+# The hosts scanned by the task.
+create_task_target
+ = element target
+     {
+       attribute id { uuid }
+     }
+
+# An escalator that applies to the task.
+create_task_escalator
+ = element escalator
+     {
+       attribute id { uuid }
+     }
+
+# When the task will run.
+create_task_schedule
+ = element schedule
+     {
+       attribute id { uuid }
+     }
+
+# An openvasrc style file defining the task.
+create_task_rcfile
+ = element rcfile
+     {
+       base64
+     }
+
+## Command delete_agent
+##
+## Delete an agent.
+
+delete_agent
+ = element delete_agent
+     {
+       attribute agent_id { uuid }
+     }
+
+## Command delete_config
+##
+## Delete a config.
+
+delete_config
+ = element delete_config
+     {
+       attribute config_id { uuid }
+     }
+
+## Command delete_escalator
+##
+## Delete an escalator.
+
+delete_escalator
+ = element delete_escalator
+     {
+       attribute escalator_id { uuid }
+     }
+
+## Command delete_lsc_credential
+##
+## Delete an LSC credential.
+
+delete_lsc_credential
+ = element delete_lsc_credential
+     {
+       attribute lsc_credential_id { uuid }
+     }
+
+## Command delete_note
+##
+## Delete a note.
+
+delete_note
+ = element delete_note
+     {
+       attribute note_id { uuid }
+     }
+
+## Command delete_override
+##
+## Delete an override.
+
+delete_override
+ = element delete_override
+     {
+       attribute override_id { uuid }
+     }
+
+## Command delete_report
+##
+## Delete a report.
+
+delete_report
+ = element delete_report
+     {
+       attribute report_id { uuid }
+     }
+
+## Command delete_schedule
+##
+## Delete a schedule.
+
+delete_schedule
+ = element delete_schedule
+     {
+       attribute schedule_id { uuid }
+     }
+
+## Command delete_target
+##
+## Delete a target.
+
+delete_target
+ = element delete_target
+     {
+       attribute target_id { uuid }
+     }
+
+## Command delete_task
+##
+## Delete a task.
+
+delete_task
+ = element delete_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command get_agents
+##
+## Get all agents.
+
+get_agents
+ = element get_agents
+     {
+       # ID of single agent to get.
+       attribute agent_id { uuid }?
+       & attribute format { xsd:token { pattern = "installer|howto_install|howto_use" } }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_configs
+##
+## Get all configs.
+
+get_configs
+ = element get_configs
+     {
+       # ID of single config to get.
+       attribute config_id { uuid }?
+       & attribute families { boolean }?
+       & attribute preferences { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_dependencies
+##
+## Get dependencies for all available NVTs.
+
+get_dependencies
+ = element get_dependencies
+     {
+       # ID of single NVT for which to get dependencies.
+       attribute nvt_oid { oid }?
+     }
+
+## Command get_escalators
+##
+## Get all escalators.
+
+get_escalators
+ = element get_escalators
+     {
+       # ID of single escalator to get.
+       attribute escalator_id { uuid }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_lsc_credentials
+##
+## Get all LSC credentials.
+
+get_lsc_credentials
+ = element get_lsc_credentials
+     {
+       # ID of single LSC credential to get.
+       attribute lsc_credential_id { uuid }?
+       & attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_notes
+##
+## Get all notes.
+
+get_notes
+ = element get_notes
+     {
+       # ID of single note to get.
+       attribute note_id { uuid }?
+       & attribute nvt_oid { oid }?
+       & attribute task_id { uuid }?
+       & attribute details { boolean }?
+       & attribute result { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_nvts
+##
+## Get all NVTs.
+
+get_nvts
+ = element get_nvts
+     {
+       # Single NVT to get.
+       attribute nvt_oid { oid }
+       & # Whether to include full details.
+       attribute details { boolean }?
+       & # Whether to include preference.
+       attribute preferences { boolean }?
+       & # Whether to include preference count.
+       attribute preference_count { boolean }?
+       & # Whether to include the special timeout preference.
+       attribute timeout { boolean }?
+       & # ID of config to which to limit the NVT listing.
+       attribute config_id { uuid }?
+       & # Family to which to limit NVT listing.
+       attribute family { text }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_nvt_families
+##
+## Get a list of all NVT families.
+
+get_nvt_families
+ = element get_nvt_families
+     {
+       attribute sort_order { sort_order }?
+     }
+
+## Command get_nvt_feed_checksum
+##
+## Get checksum for entire NVT collection.
+
+get_nvt_feed_checksum
+ = element get_nvt_feed_checksum
+     {
+       attribute algorithm { text }?
+     }
+
+## Command get_overrides
+##
+## Get all overrides.
+
+get_overrides
+ = element get_overrides
+     {
+       # ID of single override to get.
+       attribute override_id { uuid }?
+       & attribute nvt_oid { oid }?
+       & attribute task_id { uuid }?
+       & attribute details { boolean }?
+       & attribute result { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_preferences
+##
+## Get all preferences.
+
+get_preferences
+ = element get_preferences
+     {
+       attribute nvt_oid { oid }?
+       & # ID of config of which to show preference values.
+       attribute config_id { uuid }?
+       & # The name of a particular preference to get.
+       attribute preference { text }?
+     }
+
+## Command get_reports
+##
+## Get all reports.
+
+get_reports
+ = element get_reports
+     {
+       # ID of single report to get.
+       attribute report_id { uuid }?
+       & # Required report format.
+       attribute format { text }?
+       & # First result to get.
+       attribute first_result { integer }?
+       & # Maximum number of results to get.
+       attribute max_results { integer }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+       & # Which threat levels to include in the report.
+       attribute levels { levels }?
+       & # A string that all results in the report must contain.
+       attribute search_phrase { text }?
+       & # Minimum CVSS base of results in report.
+       attribute min_cvss_base { integer }?
+       & # Whether to include notes in the report.
+       attribute notes { boolean }?
+       & # If notes are included, whether to include note details.
+       attribute note_details { boolean }?
+       & # Whether to include overrides in the report.
+       attribute overrides { boolean }?
+       & # If overrides are included, whether to include override details.
+       attribute override_details { boolean }?
+       & # Whether to include only those hosts that have results.
+       attribute result_hosts_only { boolean }?
+     }
+
+## Command get_results
+##
+## Get results.
+
+get_results
+ = element get_results
+     {
+       # ID of single result to get.
+       attribute result_id { uuid }?
+       & # ID of task for note and override handling.
+       attribute task_id { uuid }?
+       & # Whether to include notes in the result.
+       attribute notes { boolean }?
+       & # If notes are included, whether to include note details.
+       attribute note_details { boolean }?
+       & # Whether to include overrides in the result.
+       attribute overrides { boolean }?
+       & # If overrides are included, whether to include override details.
+       attribute override_details { boolean }?
+       & # Whether to override result threat levels.
+       attribute apply_overrides { boolean }?
+     }
+
+## Command get_schedules
+##
+## Get all schedules.
+
+get_schedules
+ = element get_schedules
+     {
+       # ID of single schedule to get.
+       attribute schedule_id { uuid }?
+       & # Whether to include full schedule details.
+       attribute details { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_system_reports
+##
+## Get all system reports.
+
+get_system_reports
+ = element get_system_reports
+     {
+       # A string describing the required report.
+       attribute name { text }?
+       & # The number of seconds into the past that the report should include.
+       attribute duration { integer }?
+       & # Whether to include the actual reports.
+       attribute brief { boolean }?
+     }
+
+## Command get_target_locators
+##
+## Get configured target locators.
+
+get_target_locators
+ = element get_target_locators
+     {
+       ""
+     }
+
+## Command get_targets
+##
+## Get all targets.
+
+get_targets
+ = element get_targets
+     {
+       # ID of single target to get.
+       attribute target_id { uuid }?
+       & # Whether to include list of tasks that use the target.
+       attribute tasks { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_tasks
+##
+## Get all tasks.
+
+get_tasks
+ = element get_tasks
+     {
+       # ID of single task to get.
+       attribute task_id { uuid }?
+       & # Whether to include full task details.
+       attribute details { boolean }?
+       & # Whether to include task RC file (for openvas-client).
+       attribute rcfile { boolean }?
+       & # Whether to override result threat levels.
+       attribute apply_overrides { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_version
+##
+## Get the OpenVAS Manager Protocol version.
+
+get_version
+ = element get_version
+     {
+       ""
+     }
+
+## Command help
+##
+## Get the help text.
+
+help
+ = element help
+     {
+       # Required help format.
+       attribute format { xsd:token { pattern = "html|HTML|rnc|RNC|text|TEXT|xml|XML" } }?
+     }
+
+## Command modify_config
+##
+## Update an existing config.
+
+modify_config
+ = element modify_config
+     {
+       # ID of config to modify.
+       attribute config_id { uuid }
+       & ( modify_config_preference
+           | modify_config_family_selection
+           | modify_config_nvt_selection )
+     }
+
+modify_config_preference
+ = element preference
+     {
+       modify_config_preference_name
+       & modify_config_preference_nvt?
+       & modify_config_preference_value?
+     }
+
+# The name of the preference to modify.
+modify_config_preference_name
+ = element name
+     {
+       name
+     }
+
+# NVT associated with preference to modify.
+modify_config_preference_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+     }
+
+# New value for preference.
+modify_config_preference_value
+ = element value
+     {
+       base64
+     }
+
+modify_config_family_selection
+ = element family_selection
+     {
+       modify_config_family_selection_growing?
+       & modify_config_family_selection_family*
+     }
+
+# Whether new families should be added to the config.
+modify_config_family_selection_growing
+ = element growing
+     {
+       boolean_atoi
+     }
+
+modify_config_family_selection_family
+ = element family
+     {
+       modify_config_family_selection_family_all?
+       & modify_config_family_selection_family_growing?
+       & modify_config_family_selection_family_name
+     }
+
+# Whether to select all NVTs initially.
+modify_config_family_selection_family_all
+ = element all
+     {
+       boolean_atoi
+     }
+
+# Whether to add newly arrived nvts to the selection.
+modify_config_family_selection_family_growing
+ = element growing
+     {
+       boolean_atoi
+     }
+
+modify_config_family_selection_family_name
+ = element name
+     {
+       name
+     }
+
+modify_config_nvt_selection
+ = element nvt_selection
+     {
+       modify_config_nvt_selection_family
+       & modify_config_nvt_selection_nvt*
+     }
+
+# Name of family to modify.
+modify_config_nvt_selection_family
+ = element family
+     {
+       name
+     }
+
+modify_config_nvt_selection_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+     }
+
+## Command modify_note
+##
+## Modify an existing note.
+
+modify_note
+ = element modify_note
+     {
+       # ID of note to modify.
+       attribute note_id { uuid }
+       & modify_note_hosts?
+       & modify_note_port?
+       & modify_note_result?
+       & modify_note_task?
+       & modify_note_text
+       & modify_note_threat?
+     }
+
+# A textual list of hosts.
+modify_note_hosts
+ = element hosts
+     {
+       text
+     }
+
+# Port to which note applies.
+modify_note_port
+ = element port
+     {
+       text
+     }
+
+# The text of the note.
+modify_note_text
+ = element text
+     {
+       text
+     }
+
+# Threat level to which note applies.
+modify_note_threat
+ = element threat
+     {
+       threat
+     }
+
+# Task to which note applies.
+modify_note_task
+ = element task
+     {
+       attribute id { uuid }
+     }
+
+# Result to which note applies.
+modify_note_result
+ = element result
+     {
+       attribute id { uuid }
+     }
+
+## Command modify_override
+##
+## Modify an existing override.
+
+modify_override
+ = element modify_override
+     {
+       # ID of override to modify.
+       attribute override_id { uuid }
+       & modify_override_hosts?
+       & modify_override_new_threat?
+       & modify_override_port?
+       & modify_override_result?
+       & modify_override_task?
+       & modify_override_text
+       & modify_override_threat?
+     }
+
+# A textual list of hosts.
+modify_override_hosts
+ = element hosts
+     {
+       text
+     }
+
+# New threat level for result.
+modify_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+# Port to which override applies.
+modify_override_port
+ = element port
+     {
+       text
+     }
+
+# Text describing the override.
+modify_override_text
+ = element text
+     {
+       text
+     }
+
+# Threat level to which override applies.
+modify_override_threat
+ = element threat
+     {
+       threat
+     }
+
+# Task to which override applies.
+modify_override_task
+ = element task
+     {
+       attribute id { uuid }
+     }
+
+# Result to which override applies.
+modify_override_result
+ = element result
+     {
+       attribute id { uuid }
+     }
+
+## Command modify_report
+##
+## Modify an existing report.
+
+modify_report
+ = element modify_report
+     {
+       # ID of report to modify.
+       attribute report_id { uuid }
+       & modify_report_comment
+     }
+
+# The comment on the report.
+modify_report_comment
+ = element comment
+     {
+       text
+     }
+
+## Command modify_task
+##
+## Modify an existing task.
+
+modify_task
+ = element modify_task
+     {
+       # ID of task to modify.
+       attribute task_id { uuid }
+       & ( modify_task_comment
+           | modify_task_escalator
+           | modify_task_name
+           | modify_task_rcfile
+           | modify_task_schedule
+           | modify_task_file )
+     }
+
+# The comment on the task.
+modify_task_comment
+ = element comment
+     {
+       text
+     }
+
+# Task escalator.
+modify_task_escalator
+ = element escalator
+     {
+       attribute id { uuid }
+     }
+
+# The name of the task.
+modify_task_name
+ = element name
+     {
+       name
+     }
+
+# An openvasrc style file describing the task.
+modify_task_rcfile
+ = element rcfile
+     {
+       base64
+     }
+
+# Task schedule.
+modify_task_schedule
+ = element schedule
+     {
+       attribute id { uuid }
+     }
+
+# File to attach to task.
+modify_task_file
+ = element file
+     {
+       text # RNC limitation: base64
+       & attribute name { text }
+       & attribute action { xsd:token { pattern = "update|remove" } }
+     }
+
+## Command pause_task
+##
+## Pause a running task.
+
+pause_task
+ = element pause_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command resume_or_start_task
+##
+## Resume task if stopped, else start task.
+
+resume_or_start_task
+ = element resume_or_start_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command resume_paused_task
+##
+## Resume a paused task.
+
+resume_paused_task
+ = element resume_paused_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command resume_stopped_task
+##
+## Resume a stopped task.
+
+resume_stopped_task
+ = element resume_stopped_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command start_task
+##
+## Manually start an existing task.
+
+start_task
+ = element start_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command stop_task
+##
+## Stop a running task.
+
+stop_task
+ = element stop_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command test_escalator
+##
+## Run an escalator.
+
+test_escalator
+ = element test_escalator
+     {
+       attribute task_id { uuid }
+     }
+
+### Responses
+
+## Response to authenticate
+
+authenticate_response
+ = element authenticate_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to commands
+
+commands_response
+ = element commands_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & ( authenticate_response
+           | commands_response
+           | create_agent_response
+           | create_config_response
+           | create_escalator_response
+           | create_lsc_credential_response
+           | create_note_response
+           | create_override_response
+           | create_schedule_response
+           | create_target_response
+           | create_task_response
+           | delete_agent_response
+           | delete_config_response
+           | delete_escalator_response
+           | delete_lsc_credential_response
+           | delete_note_response
+           | delete_override_response
+           | delete_report_response
+           | delete_schedule_response
+           | delete_target_response
+           | delete_task_response
+           | get_agents_response
+           | get_configs_response
+           | get_dependencies_response
+           | get_escalators_response
+           | get_lsc_credentials_response
+           | get_notes_response
+           | get_nvts_response
+           | get_nvt_families_response
+           | get_nvt_feed_checksum_response
+           | get_overrides_response
+           | get_preferences_response
+           | get_reports_response
+           | get_results_response
+           | get_schedules_response
+           | get_system_reports_response
+           | get_target_locators_response
+           | get_targets_response
+           | get_tasks_response
+           | get_version_response
+           | help_response
+           | modify_config_response
+           | modify_note_response
+           | modify_override_response
+           | modify_report_response
+           | modify_task_response
+           | pause_task_response
+           | resume_or_start_task_response
+           | resume_paused_task_response
+           | resume_stopped_task_response
+           | start_task_response
+           | stop_task_response
+           | test_escalator_response )*
+     }
+
+## Response to create_agent
+
+create_agent_response
+ = element create_agent_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_config
+
+create_config_response
+ = element create_config_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_escalator
+
+create_escalator_response
+ = element create_escalator_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_lsc_credential
+
+create_lsc_credential_response
+ = element create_lsc_credential_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_note
+
+create_note_response
+ = element create_note_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_override
+
+create_override_response
+ = element create_override_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_schedule
+
+create_schedule_response
+ = element create_schedule_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_target
+
+create_target_response
+ = element create_target_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_task
+
+create_task_response
+ = element create_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to delete_agent
+
+delete_agent_response
+ = element delete_agent_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_config
+
+delete_config_response
+ = element delete_config_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_escalator
+
+delete_escalator_response
+ = element delete_escalator_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_lsc_credential
+
+delete_lsc_credential_response
+ = element delete_lsc_credential_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_note
+
+delete_note_response
+ = element delete_note_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_override
+
+delete_override_response
+ = element delete_override_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_report
+
+delete_report_response
+ = element delete_report_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_schedule
+
+delete_schedule_response
+ = element delete_schedule_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_target
+
+delete_target_response
+ = element delete_target_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_task
+
+delete_task_response
+ = element delete_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to get_agents
+
+get_agents_response
+ = element get_agents_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_agents_response_agent*
+     }
+
+get_agents_response_agent
+ = element agent
+     {
+       attribute id { uuid }
+       & get_agents_response_agent_name
+       & get_agents_response_agent_comment
+       & get_agents_response_agent_in_use
+       & ( get_agents_response_agent_installer
+           | get_agents_response_agent_package )
+     }
+
+# The name of the agent.
+get_agents_response_agent_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the agent.
+get_agents_response_agent_comment
+ = element comment
+     {
+       text
+     }
+
+# Whether the agent is in use.
+get_agents_response_agent_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+get_agents_response_agent_installer
+ = element installer
+     {
+       get_agents_response_agent_installer_trust
+     }
+
+# Whether signature verification succeeded.
+get_agents_response_agent_installer_trust
+ = element trust
+     {
+       xsd:token { pattern = "yes|no|unknown" }
+     }
+
+# Either the installer or one of the HOWTOs.
+get_agents_response_agent_package
+ = element package
+     {
+       text # RNC limitation: base64
+       & get_agents_response_agent_package_filename
+     }
+
+# The filename of the package.
+get_agents_response_agent_package_filename
+ = element filename
+     {
+       text
+     }
+
+## Response to get_configs
+
+get_configs_response
+ = element get_configs_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_configs_response_config*
+     }
+
+get_configs_response_config
+ = element config
+     {
+       get_configs_response_config_name
+       & get_configs_response_config_comment
+       & get_configs_response_config_family_count
+       & get_configs_response_config_nvt_count
+       & get_configs_response_config_in_use
+       & get_configs_response_config_tasks
+       & get_configs_response_config_families?
+       & get_configs_response_config_preferences?
+     }
+
+# The name of the config.
+get_configs_response_config_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the config.
+get_configs_response_config_comment
+ = element comment
+     {
+       text
+     }
+
+# The number of families selected by the config.
+get_configs_response_config_family_count
+ = element family_count
+     {
+       text # RNC limitation: integer
+       & get_configs_response_config_family_count_growing
+     }
+
+# Whether new families are automatically added to the config.
+get_configs_response_config_family_count_growing
+ = element growing
+     {
+       boolean
+     }
+
+# The number of NVTs selected by the config.
+get_configs_response_config_nvt_count
+ = element nvt_count
+     {
+       text # RNC limitation: integer
+       & get_configs_response_config_nvt_count_growing
+     }
+
+# Whether new NVTs are automatically added to the config.
+get_configs_response_config_nvt_count_growing
+ = element growing
+     {
+       boolean
+     }
+
+# Whether any tasks are using the config.
+get_configs_response_config_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# All tasks using the config.
+get_configs_response_config_tasks
+ = element tasks
+     {
+       get_configs_response_config_tasks_task*
+     }
+
+get_configs_response_config_tasks_task
+ = element task
+     {
+       attribute id { uuid }
+       & get_configs_response_config_tasks_task_name
+     }
+
+# The name of the task.
+get_configs_response_config_tasks_task_name
+ = element name
+     {
+       name
+     }
+
+# All families selected by the config.
+get_configs_response_config_families
+ = element families
+     {
+       get_configs_response_config_families_family*
+     }
+
+get_configs_response_config_families_family
+ = element family
+     {
+       get_configs_response_config_families_family_name
+       & get_configs_response_config_families_family_nvt_count
+       & get_configs_response_config_families_family_max_nvt_count
+       & get_configs_response_config_families_family_growing
+     }
+
+# The name of the family.
+get_configs_response_config_families_family_name
+ = element name
+     {
+       name
+     }
+
+# The number of NVTs selected in the family.
+get_configs_response_config_families_family_nvt_count
+ = element nvt_count
+     {
+       integer
+     }
+
+# The total number of NVTs in the family.
+get_configs_response_config_families_family_max_nvt_count
+ = element max_nvt_count
+     {
+       integer
+     }
+
+# Whether new NVTs in the family are automatically added to the selection.
+get_configs_response_config_families_family_growing
+ = element growing
+     {
+       boolean
+     }
+
+# Preferences for all NVTs selected by the config.
+get_configs_response_config_preferences
+ = element preferences
+     {
+       get_configs_response_config_preferences_preference*
+     }
+
+get_configs_response_config_preferences_preference
+ = element preference
+     {
+       get_configs_response_config_preferences_preference_nvt
+       & get_configs_response_config_preferences_preference_name
+       & get_configs_response_config_preferences_preference_type
+       & get_configs_response_config_preferences_preference_value
+     }
+
+# NVT to which preference applies.
+get_configs_response_config_preferences_preference_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & get_configs_response_config_preferences_preference_nvt_name
+     }
+
+# The name of the NVT.
+get_configs_response_config_preferences_preference_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The name of the preference.
+get_configs_response_config_preferences_preference_name
+ = element name
+     {
+       name
+     }
+
+# The type of preference.
+get_configs_response_config_preferences_preference_type
+ = element type
+     {
+       text
+     }
+
+# The value of the preference.
+get_configs_response_config_preferences_preference_value
+ = element value
+     {
+       text
+     }
+
+## Response to get_dependencies
+
+get_dependencies_response
+ = element get_dependencies_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_dependencies_response_nvt*
+     }
+
+get_dependencies_response_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & get_dependencies_response_nvt_name
+       & get_dependencies_response_nvt_requires
+     }
+
+# The name of the NVT.
+get_dependencies_response_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_dependencies_response_nvt_requires
+ = element requires
+     {
+       get_dependencies_response_nvt_requires_nvt*
+     }
+
+get_dependencies_response_nvt_requires_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & get_dependencies_response_nvt_requires_nvt_name
+     }
+
+# The name of the NVT.
+get_dependencies_response_nvt_requires_nvt_name
+ = element name
+     {
+       name
+     }
+
+## Response to get_escalators
+
+get_escalators_response
+ = element get_escalators_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_escalators_response_escalator*
+     }
+
+get_escalators_response_escalator
+ = element escalator
+     {
+       get_escalators_response_escalator_name
+       & get_escalators_response_escalator_comment
+       & get_escalators_response_escalator_in_use
+       & get_escalators_response_escalator_condition
+       & get_escalators_response_escalator_event
+       & get_escalators_response_escalator_method
+     }
+
+# The name of the escalator.
+get_escalators_response_escalator_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the escalator.
+get_escalators_response_escalator_comment
+ = element comment
+     {
+       text
+     }
+
+# Whether any tasks are using the escalator.
+get_escalators_response_escalator_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# The condition that must be satisfied for escalation.
+get_escalators_response_escalator_condition
+ = element condition
+     {
+       text
+       & get_escalators_response_escalator_condition_data*
+     }
+
+# Some data that defines the condition.
+get_escalators_response_escalator_condition_data
+ = element data
+     {
+       text
+       & get_escalators_response_escalator_condition_data_name
+     }
+
+# The name of the condition data.
+get_escalators_response_escalator_condition_data_name
+ = element name
+     {
+       text
+     }
+
+# The event that must happen for escalation.
+get_escalators_response_escalator_event
+ = element event
+     {
+       text
+       & get_escalators_response_escalator_event_data*
+     }
+
+# Some data that defines the event.
+get_escalators_response_escalator_event_data
+ = element data
+     {
+       text
+       & get_escalators_response_escalator_event_data_name
+     }
+
+# The name of the event data.
+get_escalators_response_escalator_event_data_name
+ = element name
+     {
+       text
+     }
+
+# The method by which escalation must occur.
+get_escalators_response_escalator_method
+ = element method
+     {
+       text
+       & get_escalators_response_escalator_method_data*
+     }
+
+# Some data that defines the method.
+get_escalators_response_escalator_method_data
+ = element data
+     {
+       text
+       & get_escalators_response_escalator_method_data_name
+     }
+
+# The name of the method data.
+get_escalators_response_escalator_method_data_name
+ = element name
+     {
+       text
+     }
+
+## Response to get_lsc_credentials
+
+get_lsc_credentials_response
+ = element get_lsc_credentials_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_lsc_credentials_response_lsc_credential*
+     }
+
+get_lsc_credentials_response_lsc_credential
+ = element lsc_credential
+     {
+       attribute id { uuid }
+       & get_lsc_credentials_response_lsc_credential_name
+       & get_lsc_credentials_response_lsc_credential_login
+       & get_lsc_credentials_response_lsc_credential_comment
+       & get_lsc_credentials_response_lsc_credential_in_use
+       & get_lsc_credentials_response_lsc_credential_type
+       & get_lsc_credentials_response_lsc_credential_targets
+       & get_lsc_credentials_response_lsc_credential_public_key?
+       & get_lsc_credentials_response_lsc_credential_package?
+     }
+
+# The name of the LSC credential.
+get_lsc_credentials_response_lsc_credential_name
+ = element name
+     {
+       name
+     }
+
+# The username of the LSC credential.
+get_lsc_credentials_response_lsc_credential_login
+ = element login
+     {
+       name
+     }
+
+# The comment on the LSC credential.
+get_lsc_credentials_response_lsc_credential_comment
+ = element comment
+     {
+       text
+     }
+
+# Whether any targets are using the LSC credential.
+get_lsc_credentials_response_lsc_credential_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# The type of the LSC credential.
+get_lsc_credentials_response_lsc_credential_type
+ = element type
+     {
+       xsd:token { pattern = "gen|pass" }
+     }
+
+# All targets using this LSC credential.
+get_lsc_credentials_response_lsc_credential_targets
+ = element targets
+     {
+       get_lsc_credentials_response_lsc_credential_targets_target*
+     }
+
+get_lsc_credentials_response_lsc_credential_targets_target
+ = element target
+     {
+       attribute id { uuid }
+       & get_lsc_credentials_response_lsc_credential_targets_target_name
+     }
+
+# The name of the target.
+get_lsc_credentials_response_lsc_credential_targets_target_name
+ = element name
+     {
+       name
+     }
+
+get_lsc_credentials_response_lsc_credential_public_key
+ = element public_key
+     {
+       text
+     }
+
+get_lsc_credentials_response_lsc_credential_package
+ = element package
+     {
+       base64
+       & attribute format { xsd:token { pattern = "rpm|deb|exe" } }
+     }
+
+## Response to get_notes
+
+get_notes_response
+ = element get_notes_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_notes_response_note*
+     }
+
+get_notes_response_note
+ = element note
+     {
+       get_notes_response_note_nvt
+       & get_notes_response_note_text
+       & get_notes_response_note_orphan
+       & ( get_notes_response_note_creation_time
+           & get_notes_response_note_modification_time
+           & get_notes_response_note_hosts
+           & get_notes_response_note_port
+           & get_notes_response_note_threat
+           & get_notes_response_note_task
+           & get_notes_response_note_result? )?
+     }
+
+get_notes_response_note_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & get_notes_response_note_nvt_name
+     }
+
+get_notes_response_note_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The text of the note.
+get_notes_response_note_text
+ = element text
+     {
+       text
+       & attribute excerpt { boolean }
+     }
+
+# Whether the note is an orphan.
+get_notes_response_note_orphan
+ = element orphan
+     {
+       boolean
+     }
+
+get_notes_response_note_creation_time
+ = element creation_time
+     {
+       ctime
+     }
+
+get_notes_response_note_modification_time
+ = element modification_time
+     {
+       ctime
+     }
+
+# A textual list of hosts.
+get_notes_response_note_hosts
+ = element hosts
+     {
+       text
+     }
+
+# Port to which note applies.
+get_notes_response_note_port
+ = element port
+     {
+       text
+     }
+
+# Threat level to which note applies.
+get_notes_response_note_threat
+ = element threat
+     {
+       threat
+     }
+
+# Task to which note applies.
+get_notes_response_note_task
+ = element task
+     {
+       attribute id { uuid }
+     }
+
+# Result to which note applies.
+get_notes_response_note_result
+ = element result
+     {
+       attribute id { uuid }
+       & get_notes_response_note_result_subnet
+       & get_notes_response_note_result_host
+       & get_notes_response_note_result_port
+       & get_notes_response_note_result_nvt
+       & get_notes_response_note_result_threat
+       & get_notes_response_note_result_description
+     }
+
+get_notes_response_note_result_subnet
+ = element subnet
+     {
+       text
+     }
+
+get_notes_response_note_result_host
+ = element host
+     {
+       text
+     }
+
+get_notes_response_note_result_port
+ = element port
+     {
+       text
+     }
+
+get_notes_response_note_result_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & get_notes_response_note_result_nvt_name
+       & get_notes_response_note_result_nvt_cvss_base
+       & get_notes_response_note_result_nvt_risk_factor
+     }
+
+get_notes_response_note_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_notes_response_note_result_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+get_notes_response_note_result_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+get_notes_response_note_result_threat
+ = element threat
+     {
+       threat
+     }
+
+get_notes_response_note_result_description
+ = element description
+     {
+       text
+     }
+
+## Response to get_nvts
+
+get_nvts_response
+ = element get_nvts_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_nvts_response_nvt
+     }
+
+get_nvts_response_nvt
+ = element nvt
+     {
+       attribute id { uuid }
+       & get_nvts_response_nvt_name
+       & get_nvts_response_nvt_checksum
+       & ( get_nvts_response_nvt_category
+           & get_nvts_response_nvt_copyright
+           & get_nvts_response_nvt_description
+           & get_nvts_response_nvt_summary
+           & get_nvts_response_nvt_family
+           & get_nvts_response_nvt_version
+           & get_nvts_response_nvt_cvss_base
+           & get_nvts_response_nvt_risk_factor
+           & get_nvts_response_nvt_cve_id
+           & get_nvts_response_nvt_bugtraq_id
+           & get_nvts_response_nvt_xrefs
+           & get_nvts_response_nvt_fingerprints
+           & get_nvts_response_nvt_tags
+           & get_nvts_response_nvt_preference_count?
+           & get_nvts_response_nvt_timeout?
+           & get_nvts_response_nvt_preferences? )?
+     }
+
+# The name of the NVT.
+get_nvts_response_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_nvts_response_nvt_category
+ = element category
+     {
+       text
+     }
+
+get_nvts_response_nvt_copyright
+ = element copyright
+     {
+       text
+     }
+
+get_nvts_response_nvt_description
+ = element description
+     {
+       text
+     }
+
+get_nvts_response_nvt_summary
+ = element summary
+     {
+       text
+     }
+
+get_nvts_response_nvt_family
+ = element family
+     {
+       text
+     }
+
+get_nvts_response_nvt_version
+ = element version
+     {
+       text
+     }
+
+get_nvts_response_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+get_nvts_response_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+get_nvts_response_nvt_cve_id
+ = element cve_id
+     {
+       text
+     }
+
+get_nvts_response_nvt_bugtraq_id
+ = element bugtraq_id
+     {
+       text
+     }
+
+get_nvts_response_nvt_xrefs
+ = element xrefs
+     {
+       text
+     }
+
+get_nvts_response_nvt_fingerprints
+ = element fingerprints
+     {
+       text
+     }
+
+get_nvts_response_nvt_tags
+ = element tags
+     {
+       text
+     }
+
+get_nvts_response_nvt_preference_count
+ = element preference_count
+     {
+       text
+     }
+
+get_nvts_response_nvt_timeout
+ = element timeout
+     {
+       text
+     }
+
+get_nvts_response_nvt_checksum
+ = element checksum
+     {
+       text
+       & get_nvts_response_nvt_checksum_algorithm
+     }
+
+get_nvts_response_nvt_checksum_algorithm
+ = element algorithm
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences
+ = element preferences
+     {
+       text
+       & get_nvts_response_nvt_preferences_timeout
+       & get_nvts_response_nvt_preferences_preference*
+     }
+
+get_nvts_response_nvt_preferences_timeout
+ = element timeout
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences_preference
+ = element preference
+     {
+       get_nvts_response_nvt_preferences_preference_nvt
+       & get_nvts_response_nvt_preferences_preference_name
+       & get_nvts_response_nvt_preferences_preference_type
+       & get_nvts_response_nvt_preferences_preference_value
+     }
+
+get_nvts_response_nvt_preferences_preference_nvt
+ = element nvt
+     {
+       oid
+     }
+
+get_nvts_response_nvt_preferences_preference_name
+ = element name
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences_preference_type
+ = element type
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences_preference_value
+ = element value
+     {
+       text
+     }
+
+## Response to get_nvt_families
+
+get_nvt_families_response
+ = element get_nvt_families_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_nvt_families_response_families
+     }
+
+get_nvt_families_response_families
+ = element families
+     {
+       get_nvt_families_response_families_family*
+     }
+
+get_nvt_families_response_families_family
+ = element family
+     {
+       get_nvt_families_response_families_family_name
+       & get_nvt_families_response_families_family_max_nvt_count
+     }
+
+# The name of the family.
+get_nvt_families_response_families_family_name
+ = element name
+     {
+       name
+     }
+
+# The number of NVTs in the family.
+get_nvt_families_response_families_family_max_nvt_count
+ = element max_nvt_count
+     {
+       integer
+     }
+
+## Response to get_nvt_feed_checksum
+
+get_nvt_feed_checksum_response
+ = element get_nvt_feed_checksum_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_nvt_feed_checksum_response_checksum
+     }
+
+get_nvt_feed_checksum_response_checksum
+ = element checksum
+     {
+       text # RNC limitation: base64
+       & attribute algorithm { text }
+     }
+
+## Response to get_overrides
+
+get_overrides_response
+ = element get_overrides_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_overrides_response_override*
+     }
+
+get_overrides_response_override
+ = element override
+     {
+       get_overrides_response_override_nvt
+       & get_overrides_response_override_text
+       & get_overrides_response_override_threat
+       & get_overrides_response_override_new_threat
+       & get_overrides_response_override_orphan
+       & ( get_overrides_response_override_creation_time
+           & get_overrides_response_override_modification_time
+           & get_overrides_response_override_hosts
+           & get_overrides_response_override_port
+           & get_overrides_response_override_task
+           & get_overrides_response_override_result? )?
+     }
+
+get_overrides_response_override_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & get_overrides_response_override_nvt_name
+     }
+
+get_overrides_response_override_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The text of the override.
+get_overrides_response_override_text
+ = element text
+     {
+       text
+       & attribute excerpt { boolean }
+     }
+
+# Threat level to which override applies.
+get_overrides_response_override_threat
+ = element threat
+     {
+       threat
+     }
+
+# New threat for result.
+get_overrides_response_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+# Whether the override is an orphan.
+get_overrides_response_override_orphan
+ = element orphan
+     {
+       boolean
+     }
+
+get_overrides_response_override_creation_time
+ = element creation_time
+     {
+       ctime
+     }
+
+get_overrides_response_override_modification_time
+ = element modification_time
+     {
+       ctime
+     }
+
+# A textual list of hosts.
+get_overrides_response_override_hosts
+ = element hosts
+     {
+       text
+     }
+
+# Port to which override applies.
+get_overrides_response_override_port
+ = element port
+     {
+       text
+     }
+
+# Task to which override applies.
+get_overrides_response_override_task
+ = element task
+     {
+       attribute id { uuid }
+     }
+
+# Result to which override applies.
+get_overrides_response_override_result
+ = element result
+     {
+       attribute id { uuid }
+       & get_overrides_response_override_result_subnet
+       & get_overrides_response_override_result_host
+       & get_overrides_response_override_result_port
+       & get_overrides_response_override_result_nvt
+       & get_overrides_response_override_result_threat
+       & get_overrides_response_override_result_description
+     }
+
+get_overrides_response_override_result_subnet
+ = element subnet
+     {
+       text
+     }
+
+get_overrides_response_override_result_host
+ = element host
+     {
+       text
+     }
+
+get_overrides_response_override_result_port
+ = element port
+     {
+       text
+     }
+
+get_overrides_response_override_result_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & get_overrides_response_override_result_nvt_name
+       & get_overrides_response_override_result_nvt_cvss_base
+       & get_overrides_response_override_result_nvt_risk_factor
+     }
+
+get_overrides_response_override_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_overrides_response_override_result_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+get_overrides_response_override_result_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+get_overrides_response_override_result_threat
+ = element threat
+     {
+       threat
+     }
+
+get_overrides_response_override_result_description
+ = element description
+     {
+       text
+     }
+
+## Response to get_preferences
+
+get_preferences_response
+ = element get_preferences_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_preferences_response_preference*
+     }
+
+get_preferences_response_preference
+ = element preference
+     {
+       get_preferences_response_preference_nvt?
+       & get_preferences_response_preference_name
+       & get_preferences_response_preference_type?
+       & get_preferences_response_preference_value
+     }
+
+# NVT to which preference applies.
+get_preferences_response_preference_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & get_preferences_response_preference_nvt_name
+     }
+
+# The name of the NVT.
+get_preferences_response_preference_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The name of the preference.
+get_preferences_response_preference_name
+ = element name
+     {
+       name
+     }
+
+# The type of preference.
+get_preferences_response_preference_type
+ = element type
+     {
+       text
+     }
+
+# The value of the preference.
+get_preferences_response_preference_value
+ = element value
+     {
+       text
+     }
+
+## Response to get_reports
+
+get_reports_response
+ = element get_reports_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_reports_response_report*
+     }
+
+get_reports_response_report
+ = element report
+     {
+       text # RNC limitation: base64
+       & attribute id { uuid }
+       & ( get_reports_response_report_sort
+           & get_reports_response_report_filters
+           & get_reports_response_report_scan_run_status
+           & get_reports_response_report_result_count
+           & get_reports_response_report_task
+           & get_reports_response_report_ports
+           & get_reports_response_report_results
+           & get_reports_response_report_scan_start
+           & get_reports_response_report_host_start*
+           & get_reports_response_report_host_end*
+           & get_reports_response_report_scan_end )?
+     }
+
+# Result sorting information.
+get_reports_response_report_sort
+ = element sort
+     {
+       get_reports_response_report_sort_field
+     }
+
+# Sort field.
+get_reports_response_report_sort_field
+ = element field
+     {
+       text
+       & get_reports_response_report_sort_field_order
+     }
+
+# Sort order of field.
+get_reports_response_report_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+# Result filtering information.
+get_reports_response_report_filters
+ = element filters
+     {
+       text # RNC limitation: levels
+       & get_reports_response_report_filters_phrase
+       & get_reports_response_report_filters_notes
+       & get_reports_response_report_filters_overrides
+       & get_reports_response_report_filters_apply_overrides
+       & get_reports_response_report_filters_result_hosts_only
+       & get_reports_response_report_filters_min_cvss_base
+       & get_reports_response_report_filters_filter*
+     }
+
+# Search phrase.
+get_reports_response_report_filters_phrase
+ = element phrase
+     {
+       text
+     }
+
+# Whether notes are included.
+get_reports_response_report_filters_notes
+ = element notes
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+# Whether overrides are included.
+get_reports_response_report_filters_overrides
+ = element overrides
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+# Whether overrides are applied.
+get_reports_response_report_filters_apply_overrides
+ = element apply_overrides
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+# Whether only those hosts that have results are included.
+get_reports_response_report_filters_result_hosts_only
+ = element result_hosts_only
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+# Minimum CVSS base if in effect, else empty string.
+get_reports_response_report_filters_min_cvss_base
+ = element min_cvss_base
+     {
+       text
+     }
+
+# Level filter.
+get_reports_response_report_filters_filter
+ = element filter
+     {
+       xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+     }
+
+# Run status of task scan at time of report.
+get_reports_response_report_scan_run_status
+ = element scan_run_status
+     {
+       task_status
+     }
+
+# Number of results produced by scan.
+get_reports_response_report_result_count
+ = element result_count
+     {
+       text # RNC limitation: integer
+       & get_reports_response_report_result_count_filtered
+       & get_reports_response_report_result_count_debug
+       & get_reports_response_report_result_count_hole
+       & get_reports_response_report_result_count_info
+       & get_reports_response_report_result_count_log
+       & get_reports_response_report_result_count_warning
+     }
+
+# Number of results after filtering.
+get_reports_response_report_result_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of results of scanner message type "debug" (threat level Debug).
+get_reports_response_report_result_count_debug
+ = element debug
+     {
+       integer
+     }
+
+# Number of results of scanner message type "hole" (threat level High).
+get_reports_response_report_result_count_hole
+ = element hole
+     {
+       integer
+     }
+
+# Number of results of scanner message type "info" (threat level Low).
+get_reports_response_report_result_count_info
+ = element info
+     {
+       integer
+     }
+
+# Number of results of scanner message type "log" (threat level Log).
+get_reports_response_report_result_count_log
+ = element log
+     {
+       integer
+     }
+
+# Number of results of scanner message type "warning" (threat level Medium).
+get_reports_response_report_result_count_warning
+ = element warning
+     {
+       integer
+     }
+
+get_reports_response_report_task
+ = element task
+     {
+       attribute id { uuid }
+       & get_reports_response_report_task_name
+     }
+
+# The name of the task.
+get_reports_response_report_task_name
+ = element name
+     {
+       name
+     }
+
+get_reports_response_report_ports
+ = element ports
+     {
+       attribute start { integer }
+       & attribute max { integer }
+       & get_reports_response_report_ports_port*
+     }
+
+get_reports_response_report_ports_port
+ = element port
+     {
+       text
+       & get_reports_response_report_ports_port_host
+       & get_reports_response_report_ports_port_threat
+     }
+
+get_reports_response_report_ports_port_host
+ = element host
+     {
+       text
+     }
+
+get_reports_response_report_ports_port_threat
+ = element threat
+     {
+       threat
+     }
+
+get_reports_response_report_results
+ = element results
+     {
+       attribute start { integer }
+       & attribute max { integer }
+       & get_reports_response_report_results_result*
+     }
+
+get_reports_response_report_results_result
+ = element result
+     {
+       attribute id { uuid }
+       & get_reports_response_report_results_result_subnet
+       & get_reports_response_report_results_result_host
+       & get_reports_response_report_results_result_port
+       & get_reports_response_report_results_result_nvt
+       & get_reports_response_report_results_result_threat
+       & get_reports_response_report_results_result_description
+     }
+
+get_reports_response_report_results_result_subnet
+ = element subnet
+     {
+       text
+     }
+
+get_reports_response_report_results_result_host
+ = element host
+     {
+       text
+     }
+
+get_reports_response_report_results_result_port
+ = element port
+     {
+       text
+     }
+
+# NVT to which result applies.
+get_reports_response_report_results_result_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & get_reports_response_report_results_result_nvt_name
+       & get_reports_response_report_results_result_nvt_cvss_base
+       & get_reports_response_report_results_result_nvt_risk_factor
+     }
+
+# The name of the NVT.
+get_reports_response_report_results_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+# CVSS base value associated with the NVT.
+get_reports_response_report_results_result_nvt_cvss_base
+ = element cvss_base
+     {
+       integer
+     }
+
+# Risk factor associated with the NVT.
+get_reports_response_report_results_result_nvt_risk_factor
+ = element risk_factor
+     {
+       integer
+     }
+
+get_reports_response_report_results_result_threat
+ = element threat
+     {
+       threat
+     }
+
+# Description of the result.
+get_reports_response_report_results_result_description
+ = element description
+     {
+       text
+     }
+
+# Start time of scan.
+get_reports_response_report_scan_start
+ = element scan_start
+     {
+       ctime
+     }
+
+# Start time of a particular host.
+get_reports_response_report_host_start
+ = element host_start
+     {
+       text # RNC limitation: ctime
+       & get_reports_response_report_host_start_host
+     }
+
+get_reports_response_report_host_start_host
+ = element host
+     {
+       text
+     }
+
+# End time of a particular host.
+get_reports_response_report_host_end
+ = element host_end
+     {
+       text # RNC limitation: ctime
+       & get_reports_response_report_host_end_host
+     }
+
+get_reports_response_report_host_end_host
+ = element host
+     {
+       text
+     }
+
+# End time of scan.
+get_reports_response_report_scan_end
+ = element scan_end
+     {
+       ctime
+     }
+
+## Response to get_results
+
+get_results_response
+ = element get_results_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_results_response_results
+     }
+
+get_results_response_results
+ = element results
+     {
+       get_results_response_results_result*
+     }
+
+get_results_response_results_result
+ = element result
+     {
+       attribute id { uuid }
+       & get_results_response_results_result_subnet
+       & get_results_response_results_result_host
+       & get_results_response_results_result_port
+       & get_results_response_results_result_nvt
+       & get_results_response_results_result_threat
+       & get_results_response_results_result_description
+       & get_results_response_results_result_notes?
+       & get_results_response_results_result_overrides?
+     }
+
+get_results_response_results_result_subnet
+ = element subnet
+     {
+       text
+     }
+
+get_results_response_results_result_host
+ = element host
+     {
+       text
+     }
+
+get_results_response_results_result_port
+ = element port
+     {
+       text
+     }
+
+# NVT to which result applies.
+get_results_response_results_result_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & get_results_response_results_result_nvt_name
+       & get_results_response_results_result_nvt_cvss_base
+       & get_results_response_results_result_nvt_risk_factor
+     }
+
+# The name of the NVT.
+get_results_response_results_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+# CVSS base value associated with the NVT.
+get_results_response_results_result_nvt_cvss_base
+ = element cvss_base
+     {
+       integer
+     }
+
+# Risk factor associated with the NVT.
+get_results_response_results_result_nvt_risk_factor
+ = element risk_factor
+     {
+       integer
+     }
+
+get_results_response_results_result_threat
+ = element threat
+     {
+       threat
+     }
+
+# Description of the result.
+get_results_response_results_result_description
+ = element description
+     {
+       text
+     }
+
+# Notes on the result.
+get_results_response_results_result_notes
+ = element notes
+     {
+       get_results_response_results_result_notes_note*
+     }
+
+get_results_response_results_result_notes_note
+ = element note
+     {
+       get_results_response_results_result_notes_note_nvt
+       & get_results_response_results_result_notes_note_text
+       & get_results_response_results_result_notes_note_orphan
+     }
+
+get_results_response_results_result_notes_note_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & get_results_response_results_result_notes_note_nvt_name
+     }
+
+get_results_response_results_result_notes_note_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The text of the note.
+get_results_response_results_result_notes_note_text
+ = element text
+     {
+       text
+       & attribute excerpt { boolean }
+     }
+
+# Whether the note is an orphan.
+get_results_response_results_result_notes_note_orphan
+ = element orphan
+     {
+       boolean
+     }
+
+# Overrides on the result.
+get_results_response_results_result_overrides
+ = element overrides
+     {
+       get_results_response_results_result_overrides_override*
+     }
+
+get_results_response_results_result_overrides_override
+ = element override
+     {
+       get_results_response_results_result_overrides_override_nvt
+       & get_results_response_results_result_overrides_override_text
+       & get_results_response_results_result_overrides_override_threat
+       & get_results_response_results_result_overrides_override_new_threat
+       & get_results_response_results_result_overrides_override_orphan
+     }
+
+get_results_response_results_result_overrides_override_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & get_results_response_results_result_overrides_override_nvt_name
+     }
+
+get_results_response_results_result_overrides_override_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The text of the override.
+get_results_response_results_result_overrides_override_text
+ = element text
+     {
+       text
+       & attribute excerpt { boolean }
+     }
+
+# Threat level to which override applies.
+get_results_response_results_result_overrides_override_threat
+ = element threat
+     {
+       threat
+     }
+
+# New threat for result.
+get_results_response_results_result_overrides_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+# Whether the override is an orphan.
+get_results_response_results_result_overrides_override_orphan
+ = element orphan
+     {
+       boolean
+     }
+
+## Response to get_schedules
+
+get_schedules_response
+ = element get_schedules_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_schedules_response_schedule
+     }
+
+get_schedules_response_schedule
+ = element schedule
+     {
+       attribute id { uuid }
+       & get_schedules_response_schedule_name
+       & ( get_schedules_response_schedule_comment
+           & get_schedules_response_schedule_first_time
+           & get_schedules_response_schedule_next_time
+           & get_schedules_response_schedule_period
+           & get_schedules_response_schedule_period_months
+           & get_schedules_response_schedule_duration
+           & get_schedules_response_schedule_in_use
+           & get_schedules_response_schedule_tasks )?
+     }
+
+# The name of the schedule.
+get_schedules_response_schedule_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the schedule.
+get_schedules_response_schedule_comment
+ = element comment
+     {
+       text
+     }
+
+# First time the task ran or will run.
+get_schedules_response_schedule_first_time
+ = element first_time
+     {
+       ctime
+     }
+
+# The next time the task will run.
+get_schedules_response_schedule_next_time
+ = element next_time
+     {
+       ctime
+     }
+
+# How often the task will run, in seconds.
+get_schedules_response_schedule_period
+ = element period
+     {
+       integer
+     }
+
+# How often the task will run, months portion.
+get_schedules_response_schedule_period_months
+ = element period_months
+     {
+       integer
+     }
+
+# How long the task will run for (0 for entire task).
+get_schedules_response_schedule_duration
+ = element duration
+     {
+       integer
+     }
+
+# Whether any tasks are using the schedule.
+get_schedules_response_schedule_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+get_schedules_response_schedule_tasks
+ = element tasks
+     {
+       get_schedules_response_schedule_tasks_task*
+     }
+
+get_schedules_response_schedule_tasks_task
+ = element task
+     {
+       attribute id { uuid }
+       & get_schedules_response_schedule_tasks_task_name
+     }
+
+# The name of the task.
+get_schedules_response_schedule_tasks_task_name
+ = element name
+     {
+       name
+     }
+
+## Response to get_system_reports
+
+get_system_reports_response
+ = element get_system_reports_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_system_reports_response_system_report*
+     }
+
+get_system_reports_response_system_report
+ = element system_report
+     {
+       get_system_reports_response_system_report_name
+       & get_system_reports_response_system_report_title
+       & get_system_reports_response_system_report_report?
+     }
+
+# The name of the system report.
+get_system_reports_response_system_report_name
+ = element name
+     {
+       name
+     }
+
+# The title of the system report.
+get_system_reports_response_system_report_title
+ = element title
+     {
+       text
+     }
+
+get_system_reports_response_system_report_report
+ = element report
+     {
+       text # RNC limitation: base64
+       & attribute format { "png" }
+       & attribute duration { integer }
+     }
+
+## Response to get_target_locators
+
+get_target_locators_response
+ = element get_target_locators_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_target_locators_response_target_locator*
+     }
+
+get_target_locators_response_target_locator
+ = element target_locator
+     {
+       get_target_locators_response_target_locator_name
+     }
+
+# The name of the target locator.
+get_target_locators_response_target_locator_name
+ = element name
+     {
+       name
+     }
+
+## Response to get_targets
+
+get_targets_response
+ = element get_targets_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_targets_response_target*
+     }
+
+get_targets_response_target
+ = element target
+     {
+       get_targets_response_target_name
+       & get_targets_response_target_comment
+       & get_targets_response_target_hosts
+       & get_targets_response_target_max_hosts
+       & get_targets_response_target_in_use
+       & get_targets_response_target_lsc_credential
+       & get_targets_response_target_tasks?
+     }
+
+# The name of the target.
+get_targets_response_target_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the target.
+get_targets_response_target_comment
+ = element comment
+     {
+       text
+     }
+
+# A list of hosts.
+get_targets_response_target_hosts
+ = element hosts
+     {
+       text
+     }
+
+# The maximum number of hosts defined by the target.
+get_targets_response_target_max_hosts
+ = element max_hosts
+     {
+       integer
+     }
+
+# Whether any tasks are using the target.
+get_targets_response_target_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+get_targets_response_target_lsc_credential
+ = element lsc_credential
+     {
+       attribute id { uuid_or_empty }
+       & get_targets_response_target_lsc_credential_name
+     }
+
+# The name of the LSC credential.
+get_targets_response_target_lsc_credential_name
+ = element name
+     {
+       name
+     }
+
+# All tasks using the target.
+get_targets_response_target_tasks
+ = element tasks
+     {
+       get_targets_response_target_tasks_task*
+     }
+
+get_targets_response_target_tasks_task
+ = element task
+     {
+       attribute id { uuid }
+       & get_targets_response_target_tasks_task_name
+     }
+
+# The name of the task.
+get_targets_response_target_tasks_task_name
+ = element name
+     {
+       name
+     }
+
+## Response to get_tasks
+
+get_tasks_response
+ = element get_tasks_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_tasks_response_task_count
+       & get_tasks_response_sort
+       & get_tasks_response_apply_overrides
+       & get_tasks_response_task*
+     }
+
+get_tasks_response_task_count
+ = element task_count
+     {
+       integer
+     }
+
+get_tasks_response_sort
+ = element sort
+     {
+       get_tasks_response_sort_field*
+     }
+
+get_tasks_response_sort_field
+ = element field
+     {
+       text
+       & get_tasks_response_sort_field_order
+     }
+
+get_tasks_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_tasks_response_apply_overrides
+ = element apply_overrides
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+get_tasks_response_task
+ = element task
+     {
+       get_tasks_response_task_name
+       & get_tasks_response_task_comment
+       & get_tasks_response_task_status
+       & get_tasks_response_task_progress
+       & get_tasks_response_task_config
+       & get_tasks_response_task_target
+       & get_tasks_response_task_escalator
+       & get_tasks_response_task_schedule
+       & get_tasks_response_task_result_count
+       & get_tasks_response_task_report_count
+       & get_tasks_response_task_trend
+       & get_tasks_response_task_first_report?
+       & get_tasks_response_task_last_report?
+       & get_tasks_response_task_second_last_report?
+       & get_tasks_response_task_rcfile?
+       & get_tasks_response_task_reports*
+     }
+
+# The name of the task.
+get_tasks_response_task_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the task.
+get_tasks_response_task_comment
+ = element comment
+     {
+       text
+     }
+
+# The run status of the task.
+get_tasks_response_task_status
+ = element status
+     {
+       task_status
+     }
+
+# The percentage of the task that is complete.
+get_tasks_response_task_progress
+ = element progress
+     {
+       text # RNC limitation: integer
+       & get_tasks_response_task_progress_host_progress*
+     }
+
+# Percentage complete for a particular host.
+get_tasks_response_task_progress_host_progress
+ = element host_progress
+     {
+       text # RNC limitation: integer
+       & get_tasks_response_task_progress_host_progress_host
+     }
+
+get_tasks_response_task_progress_host_progress_host
+ = element host
+     {
+       text
+     }
+
+# The scan configuration used by the task.
+get_tasks_response_task_config
+ = element config
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_config_name
+     }
+
+# The name of the config.
+get_tasks_response_task_config_name
+ = element name
+     {
+       name
+     }
+
+# The hosts scanned by the task.
+get_tasks_response_task_target
+ = element target
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_target_name
+     }
+
+# The name of the target.
+get_tasks_response_task_target_name
+ = element name
+     {
+       name
+     }
+
+# An escalator that applies to the task.
+get_tasks_response_task_escalator
+ = element escalator
+     {
+       attribute id { uuid_or_empty }
+       & get_tasks_response_task_escalator_name
+     }
+
+# The name of the escalator.
+get_tasks_response_task_escalator_name
+ = element name
+     {
+       name
+     }
+
+# When the task will run.
+get_tasks_response_task_schedule
+ = element schedule
+     {
+       attribute id { uuid_or_empty }
+       & get_tasks_response_task_schedule_name
+     }
+
+# The name of the schedule.
+get_tasks_response_task_schedule_name
+ = element name
+     {
+       name
+     }
+
+# Result count across all scans.
+get_tasks_response_task_result_count
+ = element result_count
+     {
+       get_tasks_response_task_result_count_debug
+       & get_tasks_response_task_result_count_log
+       & get_tasks_response_task_result_count_info
+       & get_tasks_response_task_result_count_warning
+       & get_tasks_response_task_result_count_hole
+     }
+
+get_tasks_response_task_result_count_debug
+ = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_result_count_log
+ = element log
+     {
+       integer
+     }
+
+get_tasks_response_task_result_count_info
+ = element info
+     {
+       integer
+     }
+
+get_tasks_response_task_result_count_warning
+ = element warning
+     {
+       integer
+     }
+
+get_tasks_response_task_result_count_hole
+ = element hole
+     {
+       integer
+     }
+
+# Number of reports.
+get_tasks_response_task_report_count
+ = element report_count
+     {
+       text # RNC limitation: integer
+       & get_tasks_response_task_report_count_finished
+     }
+
+# Number of reports where the scan completed.
+get_tasks_response_task_report_count_finished
+ = element finished
+     {
+       integer
+     }
+
+get_tasks_response_task_trend
+ = element trend
+     {
+       task_trend
+     }
+
+get_tasks_response_task_first_report
+ = element first_report
+     {
+       get_tasks_response_task_first_report_report
+     }
+
+get_tasks_response_task_first_report_report
+ = element report
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_first_report_report_timestamp
+       & get_tasks_response_task_first_report_report_result_count
+     }
+
+get_tasks_response_task_first_report_report_timestamp
+ = element timestamp
+     {
+       ctime
+     }
+
+# Result counts for this report.
+get_tasks_response_task_first_report_report_result_count
+ = element result_count
+     {
+       get_tasks_response_task_first_report_report_result_count_debug
+       & get_tasks_response_task_first_report_report_result_count_log
+       & get_tasks_response_task_first_report_report_result_count_info
+       & get_tasks_response_task_first_report_report_result_count_warning
+       & get_tasks_response_task_first_report_report_result_count_hole
+     }
+
+get_tasks_response_task_first_report_report_result_count_debug
+ = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_first_report_report_result_count_log
+ = element log
+     {
+       integer
+     }
+
+get_tasks_response_task_first_report_report_result_count_info
+ = element info
+     {
+       integer
+     }
+
+get_tasks_response_task_first_report_report_result_count_warning
+ = element warning
+     {
+       integer
+     }
+
+get_tasks_response_task_first_report_report_result_count_hole
+ = element hole
+     {
+       integer
+     }
+
+get_tasks_response_task_last_report
+ = element last_report
+     {
+       get_tasks_response_task_last_report_report
+     }
+
+get_tasks_response_task_last_report_report
+ = element report
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_last_report_report_timestamp
+       & get_tasks_response_task_last_report_report_result_count
+     }
+
+get_tasks_response_task_last_report_report_timestamp
+ = element timestamp
+     {
+       ctime
+     }
+
+# Result counts for this report.
+get_tasks_response_task_last_report_report_result_count
+ = element result_count
+     {
+       get_tasks_response_task_last_report_report_result_count_debug
+       & get_tasks_response_task_last_report_report_result_count_log
+       & get_tasks_response_task_last_report_report_result_count_info
+       & get_tasks_response_task_last_report_report_result_count_warning
+       & get_tasks_response_task_last_report_report_result_count_hole
+     }
+
+get_tasks_response_task_last_report_report_result_count_debug
+ = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_last_report_report_result_count_log
+ = element log
+     {
+       integer
+     }
+
+get_tasks_response_task_last_report_report_result_count_info
+ = element info
+     {
+       integer
+     }
+
+get_tasks_response_task_last_report_report_result_count_warning
+ = element warning
+     {
+       integer
+     }
+
+get_tasks_response_task_last_report_report_result_count_hole
+ = element hole
+     {
+       integer
+     }
+
+get_tasks_response_task_second_last_report
+ = element second_last_report
+     {
+       get_tasks_response_task_second_last_report_report
+     }
+
+get_tasks_response_task_second_last_report_report
+ = element report
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_second_last_report_report_timestamp
+       & get_tasks_response_task_second_last_report_report_result_count
+     }
+
+get_tasks_response_task_second_last_report_report_timestamp
+ = element timestamp
+     {
+       ctime
+     }
+
+# Result counts for this report.
+get_tasks_response_task_second_last_report_report_result_count
+ = element result_count
+     {
+       get_tasks_response_task_second_last_report_report_result_count_debug
+       & get_tasks_response_task_second_last_report_report_result_count_log
+       & get_tasks_response_task_second_last_report_report_result_count_info
+       & get_tasks_response_task_second_last_report_report_result_count_warning
+       & get_tasks_response_task_second_last_report_report_result_count_hole
+     }
+
+get_tasks_response_task_second_last_report_report_result_count_debug
+ = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_second_last_report_report_result_count_log
+ = element log
+     {
+       integer
+     }
+
+get_tasks_response_task_second_last_report_report_result_count_info
+ = element info
+     {
+       integer
+     }
+
+get_tasks_response_task_second_last_report_report_result_count_warning
+ = element warning
+     {
+       integer
+     }
+
+get_tasks_response_task_second_last_report_report_result_count_hole
+ = element hole
+     {
+       integer
+     }
+
+get_tasks_response_task_rcfile
+ = element rcfile
+     {
+       base64
+     }
+
+get_tasks_response_task_reports
+ = element reports
+     {
+       get_tasks_response_task_reports_report*
+     }
+
+get_tasks_response_task_reports_report
+ = element report
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_reports_report_timestamp
+       & get_tasks_response_task_reports_report_scan_run_status
+       & get_tasks_response_task_reports_report_result_count
+     }
+
+get_tasks_response_task_reports_report_timestamp
+ = element timestamp
+     {
+       ctime
+     }
+
+# Run status of task scan.
+get_tasks_response_task_reports_report_scan_run_status
+ = element scan_run_status
+     {
+       task_status
+     }
+
+# Result counts for this report.
+get_tasks_response_task_reports_report_result_count
+ = element result_count
+     {
+       get_tasks_response_task_reports_report_result_count_debug
+       & get_tasks_response_task_reports_report_result_count_log
+       & get_tasks_response_task_reports_report_result_count_info
+       & get_tasks_response_task_reports_report_result_count_warning
+       & get_tasks_response_task_reports_report_result_count_hole
+     }
+
+get_tasks_response_task_reports_report_result_count_debug
+ = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_reports_report_result_count_log
+ = element log
+     {
+       integer
+     }
+
+get_tasks_response_task_reports_report_result_count_info
+ = element info
+     {
+       integer
+     }
+
+get_tasks_response_task_reports_report_result_count_warning
+ = element warning
+     {
+       integer
+     }
+
+get_tasks_response_task_reports_report_result_count_hole
+ = element hole
+     {
+       integer
+     }
+
+## Response to get_version
+
+get_version_response
+ = element get_version_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_version_response_version
+     }
+
+get_version_response_version
+ = element version
+     {
+       text
+     }
+
+## Response to help
+
+help_response
+ = element help_response
+     {
+       text
+       & attribute status { status }
+       & attribute status_text { text }
+       & help_response_schema?
+     }
+
+help_response_schema
+ = element schema
+     {
+       help_response_schema_protocol
+     }
+
+help_response_schema_protocol
+ = element protocol
+     {
+       help_response_schema_protocol_name
+       & help_response_schema_protocol_abbreviation?
+       & help_response_schema_protocol_summary?
+       & help_response_schema_protocol_version?
+       & help_response_schema_protocol_type*
+       & help_response_schema_protocol_command*
+     }
+
+# The full name of the protocol.
+help_response_schema_protocol_name
+ = element name
+     {
+       text
+     }
+
+# The abbreviated name of the protocol.
+help_response_schema_protocol_abbreviation
+ = element abbreviation
+     {
+       text
+     }
+
+# A summary of the protocol.
+help_response_schema_protocol_summary
+ = element summary
+     {
+       text
+     }
+
+# The version number of the protocol.
+help_response_schema_protocol_version
+ = element version
+     {
+       text
+     }
+
+# A data type.
+help_response_schema_protocol_type
+ = element type
+     {
+       help_response_schema_protocol_type_name
+       & help_response_schema_protocol_type_summary?
+       & help_response_schema_protocol_type_description?
+       & help_response_schema_protocol_type_pattern
+     }
+
+# The name of the data type.
+help_response_schema_protocol_type_name
+ = element name
+     {
+       type_name
+     }
+
+# A summary of the data type.
+help_response_schema_protocol_type_summary
+ = element summary
+     {
+       text
+     }
+
+# A description of the data type.
+help_response_schema_protocol_type_description
+ = element description
+     {
+       text
+       & help_response_schema_protocol_type_description_p*
+     }
+
+# A paragraph.
+help_response_schema_protocol_type_description_p
+ = element p
+     {
+       text
+     }
+
+# The RNC pattern for the data type.
+help_response_schema_protocol_type_pattern
+ = element pattern
+     {
+       text
+     }
+
+# A command.
+help_response_schema_protocol_command
+ = element command    # type command_definition
+     {
+       command_definition_name
+       & command_definition_summary?
+       & command_definition_description?
+       & ( ( command_definition_pattern
+           & command_definition_response )
+           | ( command_definition_type
+           & command_definition_ele* ) )
+       & command_definition_example*
+     }
+
+## Response to modify_config
+
+modify_config_response
+ = element modify_config_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_note
+
+modify_note_response
+ = element modify_note_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_override
+
+modify_override_response
+ = element modify_override_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_report
+
+modify_report_response
+ = element modify_report_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_task
+
+modify_task_response
+ = element modify_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to pause_task
+
+pause_task_response
+ = element pause_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to resume_or_start_task
+
+resume_or_start_task_response
+ = element resume_or_start_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to resume_paused_task
+
+resume_paused_task_response
+ = element resume_paused_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to resume_stopped_task
+
+resume_stopped_task_response
+ = element resume_stopped_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to start_task
+
+start_task_response
+ = element start_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to stop_task
+
+stop_task_response
+ = element stop_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to test_escalator
+
+test_escalator_response
+ = element test_escalator_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }

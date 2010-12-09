@@ -1,3 +1,8 @@
+2010-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* doc/omp.html, doc/omp.rnc: New files.  Implementation of Change Request
+	48 for OMP 1.0 (http://www.openvas.org/openvas-cr-48.html).
+
 2010-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In the CLIENT_GET_REPORTS LaTeX
