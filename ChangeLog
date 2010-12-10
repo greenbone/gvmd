@@ -1,3 +1,9 @@
+2010-12-10  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 2.0+beta3 release.
+
+	* CHANGES: Updated.
+
 2010-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/CMakeLists.txt (C_FILES): Add lsc_user.c.

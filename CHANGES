@@ -1,3 +1,32 @@
+openvas-manager 2.0+beta3 (2010-12-10)
+
+This is the third beta version of the upcoming 2.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.  Release 2.0 is part of OpenVAS 4, the next
+generation of the Open Vulnerability Assessment System.
+
+This release includes further improvements to the protocol self-documentation
+and fixes two issues regarding internal links in PDF reports and downloads of
+LSC credential packages. It also enables NTLMSSP support for NVTs by default to
+improve LSC behaviour for Microsoft Windows, makes escalator messages more
+informational and LaTeX and PDF reports more consistent with other report
+formats.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell and Michael Wiegand.
+
+Main changes since 2.0+beta2:
+* The protocol self-documentation has been improved.
+* NTLMSSP is now enabled by default.
+* Escalator message now include more information.
+* The LaTeX and PDF reports have been made more consistent with the other
+  report formats.
+* An issue which caused internal links in the PDF report to link to wrong
+  results under certain circumstances has been fixed.
+* An issue which caused some existing LSC credential packages to be empty on
+  subsequent downloads under certain circumstances has been fixed.
+
+
 openvas-manager 2.0+beta2 (2010-12-01)
 
 This is the second beta version of the upcoming 2.0 release of the OpenVAS
