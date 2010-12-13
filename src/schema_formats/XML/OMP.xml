@@ -24,6 +24,29 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
+<!--
+	report_formats
+x		new  CREATE_REPORT_FORMAT, DELETE_REPORT_FORMAT, GET_REPORTS_FORMATS
+x			 VERIFY_REPORT_FORMAT, MODIFY_REPORT_FORMAT
+		GET_REPORTS  req  attrib format_id instead of attrib format
+	Add CVE and BID to RESULT.
+		in GET_RESULTS resp
+		in GET_NOTES,OVERRIDES resp  when attrib result is true
+	slaves
+		CREATE_TASK  req  + SLAVE
+		new  CREATE_SLAVE, DELETE_SLAVE, GET_SLAVES
+		GET_TASKS  resp  + SLAVE
+		MODIFY_TASK  req  + slave_id attrib
+		GET_SYSTEM_REPORTS  req  + slave_id attrib
+	agent trust
+		GET_AGENTS  resp  + TRUST and TRUST/TIME
+x		new  VERIFY_AGENT
+	lsc credentials
+		new  MODIFY_LSC_CREDENTIAL
+ 	HELP  req  + format attrib
+ 		  resp  + SCHEMA
+-->
+
 <protocol>
   <name>OpenVAS Management Protocol</name>
   <abbreviation>OMP</abbreviation>
@@ -1268,6 +1291,69 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>create_report_format</name>
+    <summary>Create a report format</summary>
+    <description>
+      <p>
+        The client uses the create_report_format command to create a new report
+        format.
+      </p>
+    </description>
+    <pattern>
+      <r>get_report_formats</r>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a report format</summary>
+      <request>
+        <create_report_format>
+          <get_report_formats_response>
+            <report_format id="a0704abb-2120-489f-959f-251c9f4ffebd">
+              <name>CPE</name>
+              <extension>csv</extension>
+              <content_type>text/csv</content_type>
+              <summary>Common Product Enumeration CSV table.</summary>
+              <description>
+                CPE stands for Common Product Enumeration.  It is a
+                <truncated>...</truncated>
+              </description>
+              <global>1</global>
+              <trust>
+                yes
+                <time>Thu Dec  2 13:22:26 2010</time>
+              </trust>
+              <active>1</active>
+            </report_format>
+          </get_report_formats_response>
+        </create_report_format>
+      </request>
+      <response>
+        <create_report_format_response status="201"
+                                      status_text="OK, resource created"
+                                      id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_report_format_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>create_schedule</name>
     <summary>Create a schedule</summary>
     <description>
@@ -1944,6 +2030,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <delete_report_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_report_format</name>
+    <summary>Delete a report format</summary>
+    <description>
+      <p>
+        The client uses the delete_report_format command to delete an existing
+        report format.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_format_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a report format</summary>
+      <request>
+        <delete_report_format report_format_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_report_format>
+      </request>
+      <response>
+        <delete_report_format_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -4762,6 +4894,267 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>get_report_formats</name>
+    <summary>Get all report formats</summary>
+    <description>
+      <p>
+        The client uses the get_report_formats command to get report format
+        information.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_format_id</name>
+        <summary>ID of single report format to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>export</name>
+        <summary>Whether to get report format in importable form</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>params</name>
+        <summary>Whether to include report format parameters</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>report_format</e></any>
+      </pattern>
+      <ele>
+        <name>report_format</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+          <e>summary</e>
+          <e>description</e>
+          <e>extension</e>
+          <e>content_type</e>
+          <e>global</e>
+          <any><e>param</e></any>
+          <or>
+            <any><e>file</e></any>
+            <g>
+              <e>trust</e>
+              <e>active</e>
+            </g>
+          </or>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the report format</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>summary</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>description</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>extension</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>global</name>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>content_type</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>param</name>
+          <pattern>
+            <e>name</e>
+            <e>type</e>
+            <e>value</e>
+            <e>default</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the param</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>type</name>
+            <summary>The type of the param</summary>
+            <pattern>
+              <o><e>min</e></o>
+              <o><e>max</e></o>
+              <o><e>options</e></o>
+              <t>
+                <alts>
+                  <alt>boolean</alt>
+                  <alt>integer</alt>
+                  <alt>selection</alt>
+                  <alt>string</alt>
+                  <alt>text</alt>
+                </alts>
+              </t>
+            </pattern>
+            <ele>
+              <name>min</name>
+              <summary>Minimum</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>max</name>
+              <summary>Maximum</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>options</name>
+              <summary>Selection options</summary>
+              <pattern><any><e>option</e></any></pattern>
+              <ele>
+                <name>option</name>
+                <summary>Option value</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>value</name>
+            <summary>The value of the param</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>default</name>
+            <summary>The fallback value of the param</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>file</name>
+          <summary>One of the files used to generate the report</summary>
+          <pattern>
+            <attrib>
+              <name>name</name>
+              <type>text</type>
+              <required>1</required>
+            </attrib>
+            <t>base64</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>trust</name>
+          <summary>Whether signature verification succeeded</summary>
+          <pattern>
+            <attrib>
+              <name>name</name>
+              <type>text</type>
+              <required>1</required>
+            </attrib>
+            <e>time</e>
+            <t>
+              <alts>
+                <alt>yes</alt>
+                <alt>no</alt>
+                <alt>unknown</alt>
+              </alts>
+            </t>
+          </pattern>
+          <ele>
+            <name>time</name>
+            <summary>The time the trust was checked</summary>
+            <pattern><t>ctime</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>active</name>
+          <summary>Whether the report format is active</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get information about a report format</summary>
+      <request>
+        <get_report_formats report_format_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
+        </get_report_formats>
+      </request>
+      <response>
+        <get_report_formats_response status="200" status_text="OK">
+          <report_format id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
+            <name>HTML</name>
+            <extension>html</extension>
+            <content_type>text/html</content_type>
+            <summary>Single page HTML report.</summary>
+            <description>
+              A single HTML page listing results of a scan.  Style information
+              <truncated>...</truncated>
+            </description>
+            <global>1</global>
+            <trust>
+              no
+              <time>Thu Dec  2 13:22:26 2010</time>
+            </trust>
+            <active>1</active>
+          </report_format>
+        </get_report_formats_response>
+      </response>
+    </example>
+    <example>
+      <summary>Export a report format</summary>
+      <request>
+        <get_report_formats report_format_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"
+                            export="1">
+        </get_report_formats>
+      </request>
+      <response>
+        <get_report_formats_response status="200" status_text="OK">
+          <report_format id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
+            <name>HTML</name>
+            <extension>html</extension>
+            <content_type>text/html</content_type>
+            <summary>Single page HTML report.</summary>
+            <description>
+              A single HTML page listing results of a scan.  Style information
+              <truncated>...</truncated>
+            </description>
+            <global>1</global>
+            <file name="HTML.xsl">
+              PD9ldD4K
+              <truncated>...</truncated>
+            </file>
+            <file name="generate">
+              IyEvAk
+              <truncated>...</truncated>
+            </file>
+            <signature></signature>
+          </report_format>
+        </get_report_formats_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_results</name>
     <summary>Get results</summary>
     <description>
@@ -7101,6 +7494,107 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>modify_report_format</name>
+    <summary>Update an existing report format</summary>
+    <description>
+      <p>
+        The client uses the modify_report_format command to change an existing
+        report format.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_format_id</name>
+        <summary>ID of report format to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <or>
+        <e>active</e>
+        <e>name</e>
+        <e>summary</e>
+        <e>param</e>
+      </or>
+    </pattern>
+    <ele>
+      <name>active</name>
+      <summary>Whether the report format is active</summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>name</name>
+      <summary>The name of the report format</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>summary</name>
+      <summary>A summary of the report format</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>param</name>
+      <description>
+        If the value element is missing, then the value becomes the empty
+        string.
+      </description>
+      <pattern>
+        <e>name</e>
+        <o><e>value</e></o>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>The name of the param</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
+      <ele>
+        <name>value</name>
+        <summary>New value for the param</summary>
+        <pattern><t>base64</t></pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify a report format param</summary>
+      <request>
+        <modify_report_format report_format_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <param>
+            <name>Background Colour</name>
+            <value>cmVk</value>
+          </param>
+        </modify_report_format>
+      </request>
+      <response>
+        <modify_report_format_response status="200" status_text="OK">
+        </modify_report_format_response>
+      </response>
+    </example>
+    <example>
+      <summary>Modify the name of a report format</summary>
+      <request>
+        <modify_report_format report_format_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <name>New name</name>
+        </modify_report_format>
+      </request>
+      <response>
+        <modify_report_format_response status="200" status_text="OK">
+        </modify_report_format_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>modify_task</name>
     <summary>Modify an existing task</summary>
     <description>
@@ -7499,6 +7993,100 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <test_escalator_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>verify_agent</name>
+    <summary>Verify an agent</summary>
+    <description>
+      <p>
+        The client uses the verify_agent command to verify the trust
+        level of an existing agent.
+      </p>
+      <p>
+        The Manager checks whether the signature of the agent currently
+        matches the agent.  This includes the agent installer file.
+        The Manager searches for the signature first in the feed, then
+        in the agent itself.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Verify an agent</summary>
+      <request>
+        <verify_agent agent_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </verify_agent>
+      </request>
+      <response>
+        <verify_agent_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>verify_report_format</name>
+    <summary>Verify a report format</summary>
+    <description>
+      <p>
+        The client uses the verify_report_format command to verify the trust
+        level of an existing report format.
+      </p>
+      <p>
+        The Manager checks whether the signature of the report format currently
+        matches the report format.  This includes the script and files used
+        to generate reports of this format.  The Manager searches for the
+        signature first in the feed, then in the report format itself.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_format_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Verify a report format</summary>
+      <request>
+        <verify_report_format report_format_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </verify_report_format>
+      </request>
+      <response>
+        <verify_report_format_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>

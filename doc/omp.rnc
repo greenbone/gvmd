@@ -17,6 +17,7 @@ command
     | create_lsc_credential
     | create_note
     | create_override
+    | create_report_format
     | create_schedule
     | create_target
     | create_task
@@ -27,6 +28,7 @@ command
     | delete_note
     | delete_override
     | delete_report
+    | delete_report_format
     | delete_schedule
     | delete_target
     | delete_task
@@ -42,6 +44,7 @@ command
     | get_overrides
     | get_preferences
     | get_reports
+    | get_report_formats
     | get_results
     | get_schedules
     | get_system_reports
@@ -54,6 +57,7 @@ command
     | modify_note
     | modify_override
     | modify_report
+    | modify_report_format
     | modify_task
     | pause_task
     | resume_or_start_task
@@ -62,6 +66,8 @@ command
     | start_task
     | stop_task
     | test_escalator
+    | verify_agent
+    | verify_report_format
 
 response
   = authenticate_response
@@ -72,6 +78,7 @@ response
     | create_lsc_credential_response
     | create_note_response
     | create_override_response
+    | create_report_format_response
     | create_schedule_response
     | create_target_response
     | create_task_response
@@ -82,6 +89,7 @@ response
     | delete_note_response
     | delete_override_response
     | delete_report_response
+    | delete_report_format_response
     | delete_schedule_response
     | delete_target_response
     | delete_task_response
@@ -97,6 +105,7 @@ response
     | get_overrides_response
     | get_preferences_response
     | get_reports_response
+    | get_report_formats_response
     | get_results_response
     | get_schedules_response
     | get_system_reports_response
@@ -109,6 +118,7 @@ response
     | modify_note_response
     | modify_override_response
     | modify_report_response
+    | modify_report_format_response
     | modify_task_response
     | pause_task_response
     | resume_or_start_task_response
@@ -117,6 +127,8 @@ response
     | start_task_response
     | stop_task_response
     | test_escalator_response
+    | verify_agent_response
+    | verify_report_format_response
 
 ### Data Types
 
@@ -895,6 +907,16 @@ create_override_threat
        threat
      }
 
+## Command create_report_format
+##
+## Create a report format.
+
+create_report_format
+ = element create_report_format
+     {
+       get_report_formats_response
+     }
+
 ## Command create_schedule
 ##
 ## Create a schedule.
@@ -1191,6 +1213,16 @@ delete_report
        attribute report_id { uuid }
      }
 
+## Command delete_report_format
+##
+## Delete a report format.
+
+delete_report_format
+ = element delete_report_format
+     {
+       attribute report_format_id { uuid }
+     }
+
 ## Command delete_schedule
 ##
 ## Delete a schedule.
@@ -1414,6 +1446,23 @@ get_reports
        attribute override_details { boolean }?
        & # Whether to include only those hosts that have results.
        attribute result_hosts_only { boolean }?
+     }
+
+## Command get_report_formats
+##
+## Get all report formats.
+
+get_report_formats
+ = element get_report_formats
+     {
+       # ID of single report format to get.
+       attribute report_format_id { uuid }?
+       & # Whether to get report format in importable form.
+       attribute export { boolean }?
+       & # Whether to include report format parameters.
+       attribute params { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
      }
 
 ## Command get_results
@@ -1784,6 +1833,63 @@ modify_report_comment
        text
      }
 
+## Command modify_report_format
+##
+## Update an existing report format.
+
+modify_report_format
+ = element modify_report_format
+     {
+       # ID of report format to modify.
+       attribute report_format_id { uuid }
+       & ( modify_report_format_active
+           | modify_report_format_name
+           | modify_report_format_summary
+           | modify_report_format_param )
+     }
+
+# Whether the report format is active.
+modify_report_format_active
+ = element active
+     {
+       boolean
+     }
+
+# The name of the report format.
+modify_report_format_name
+ = element name
+     {
+       name
+     }
+
+# A summary of the report format.
+modify_report_format_summary
+ = element summary
+     {
+       text
+     }
+
+modify_report_format_param
+ = element param
+     {
+       modify_report_format_param_name
+       & modify_report_format_param_value?
+     }
+
+# The name of the param.
+modify_report_format_param_name
+ = element name
+     {
+       name
+     }
+
+# New value for the param.
+modify_report_format_param_value
+ = element value
+     {
+       base64
+     }
+
 ## Command modify_task
 ##
 ## Modify an existing task.
@@ -1913,6 +2019,26 @@ test_escalator
  = element test_escalator
      {
        attribute task_id { uuid }
+     }
+
+## Command verify_agent
+##
+## Verify an agent.
+
+verify_agent
+ = element verify_agent
+     {
+       attribute agent_id { uuid }
+     }
+
+## Command verify_report_format
+##
+## Verify a report format.
+
+verify_report_format
+ = element verify_report_format
+     {
+       attribute report_format_id { uuid }
      }
 
 ### Responses
@@ -2048,6 +2174,16 @@ create_override_response
        & attribute id { uuid }
      }
 
+## Response to create_report_format
+
+create_report_format_response
+ = element create_report_format_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
 ## Response to create_schedule
 
 create_schedule_response
@@ -2136,6 +2272,15 @@ delete_override_response
 
 delete_report_response
  = element delete_report_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_report_format
+
+delete_report_format_response
+ = element delete_report_format_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -3653,6 +3798,168 @@ get_reports_response_report_scan_end
        ctime
      }
 
+## Response to get_report_formats
+
+get_report_formats_response
+ = element get_report_formats_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_report_formats_response_report_format*
+     }
+
+get_report_formats_response_report_format
+ = element report_format
+     {
+       attribute id { uuid }
+       & get_report_formats_response_report_format_name
+       & get_report_formats_response_report_format_summary
+       & get_report_formats_response_report_format_description
+       & get_report_formats_response_report_format_extension
+       & get_report_formats_response_report_format_content_type
+       & get_report_formats_response_report_format_global
+       & get_report_formats_response_report_format_param*
+       & ( get_report_formats_response_report_format_file*
+           | ( get_report_formats_response_report_format_trust
+           & get_report_formats_response_report_format_active ) )
+     }
+
+# The name of the report format.
+get_report_formats_response_report_format_name
+ = element name
+     {
+       name
+     }
+
+get_report_formats_response_report_format_summary
+ = element summary
+     {
+       text
+     }
+
+get_report_formats_response_report_format_description
+ = element description
+     {
+       text
+     }
+
+get_report_formats_response_report_format_extension
+ = element extension
+     {
+       text
+     }
+
+get_report_formats_response_report_format_global
+ = element global
+     {
+       boolean
+     }
+
+get_report_formats_response_report_format_content_type
+ = element content_type
+     {
+       text
+     }
+
+get_report_formats_response_report_format_param
+ = element param
+     {
+       get_report_formats_response_report_format_param_name
+       & get_report_formats_response_report_format_param_type
+       & get_report_formats_response_report_format_param_value
+       & get_report_formats_response_report_format_param_default
+     }
+
+# The name of the param.
+get_report_formats_response_report_format_param_name
+ = element name
+     {
+       name
+     }
+
+# The type of the param.
+get_report_formats_response_report_format_param_type
+ = element type
+     {
+       text # RNC limitation: xsd:token { pattern = "boolean|integer|selection|string|text" }
+       & get_report_formats_response_report_format_param_type_min?
+       & get_report_formats_response_report_format_param_type_max?
+       & get_report_formats_response_report_format_param_type_options?
+     }
+
+# Minimum.
+get_report_formats_response_report_format_param_type_min
+ = element min
+     {
+       text
+     }
+
+# Maximum.
+get_report_formats_response_report_format_param_type_max
+ = element max
+     {
+       text
+     }
+
+# Selection options.
+get_report_formats_response_report_format_param_type_options
+ = element options
+     {
+       get_report_formats_response_report_format_param_type_options_option*
+     }
+
+# Option value.
+get_report_formats_response_report_format_param_type_options_option
+ = element option
+     {
+       text
+     }
+
+# The value of the param.
+get_report_formats_response_report_format_param_value
+ = element value
+     {
+       text
+     }
+
+# The fallback value of the param.
+get_report_formats_response_report_format_param_default
+ = element default
+     {
+       text
+     }
+
+# One of the files used to generate the report.
+get_report_formats_response_report_format_file
+ = element file
+     {
+       text # RNC limitation: base64
+       & attribute name { text }
+     }
+
+# Whether signature verification succeeded.
+get_report_formats_response_report_format_trust
+ = element trust
+     {
+       text # RNC limitation: xsd:token { pattern = "yes|no|unknown" }
+       & attribute name { text }
+       & get_report_formats_response_report_format_trust_time
+     }
+
+# The time the trust was checked.
+get_report_formats_response_report_format_trust_time
+ = element time
+     {
+       ctime
+     }
+
+# Whether the report format is active.
+get_report_formats_response_report_format_active
+ = element active
+     {
+       boolean
+     }
+
 ## Response to get_results
 
 get_results_response
@@ -4759,6 +5066,15 @@ modify_report_response
        & attribute status_text { text }
      }
 
+## Response to modify_report_format
+
+modify_report_format_response
+ = element modify_report_format_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
 ## Response to modify_task
 
 modify_task_response
@@ -4826,6 +5142,24 @@ stop_task_response
 
 test_escalator_response
  = element test_escalator_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to verify_agent
+
+verify_agent_response
+ = element verify_agent_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to verify_report_format
+
+verify_report_format_response
+ = element verify_report_format_response
      {
        attribute status { status }
        & attribute status_text { text }
