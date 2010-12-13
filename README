@@ -4,11 +4,11 @@ About OpenVAS Manager
 The OpenVAS Manager is a layer between the OpenVAS Scanner and various
 client applications such as the web client GSA (Greenbone Security
 Assistant), the command line client omp (of openvas-cli) and the classic
-application gsa-desktop.  Among other features, it adds server-side storage
-of scan results and it removes the need for a scan client to keep the
-connection open until the scan finishes.  All communication between OpenVAS
-Manager and its clients is done via the XML-based OpenVAS Management
-Protocol (OMP).
+application GSD (Greenbone Security Desktop).  Among other features, it
+adds server-side storage of scan results and it removes the need for a scan
+client to keep the connection open until the scan finishes.  All
+communication between OpenVAS Manager and its clients is done via the
+XML-based OpenVAS Management Protocol (OMP).
 
 OpenVAS Manager is licensed under GNU General Public License Version 2 or
 any later version.  Please see file COPYING for details.

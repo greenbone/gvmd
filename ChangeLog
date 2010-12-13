@@ -1,5 +1,9 @@
 2010-12-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* README: Update gsa-desktop to GSD.
+
+2010-12-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql (targets): Add smb_lsc_credential.
 
 	* doc/db.png: Update from SQL.
