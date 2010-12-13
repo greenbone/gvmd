@@ -1,5 +1,36 @@
 2010-12-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Split target credential into SSH credential and SMB credential.  Hence
+	increase database version to 35.  Add database migration from version
+	34 to 35.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 35.
+
+	* src/manage_sql.c (create_tables): Add smb_lsc_credential to table
+	targets.
+	(migrate_34_to_35): New function.
+	(database_migrators): Add migrate_34_to_35.
+	(create_target): Convert single credential arg into two.
+	(init_target_iterator): Add extra credential field.
+	(target_iterator_lsc_credential, target_lsc_credential): Remove.  Replace
+	with SSH versions.
+	(target_iterator_smb_credential, target_iterator_ssh_credential)
+	(target_ssh_lsc_credential, target_smb_lsc_credential): New functions.
+	(init_lsc_credential_target_iterator): Select targets used by both
+	credentials.
+
+	* src/manage.c (run_task): Send SSH and SMB preferences separately.
+
+	* src/manage.h, src/manage_sql.h: Update headers accordingly.
+
+	* src/omp.c (create_target_data_t, create_target_data_reset)
+	(client_state_t): Convert single credential field into two.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Convert
+	CREATE_TARGET LSC_CREDENTIAL into SSH and SMB entities.  Same for TARGET
+	in GET_TARGETS.
+
+2010-12-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Add some of the commands new in OMP 2.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.

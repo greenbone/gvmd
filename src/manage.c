@@ -1706,7 +1706,7 @@ run_task (task_t task, char **report_id, int from)
   GPtrArray *preference_files;
   task_status_t run_status;
   config_t config;
-  lsc_credential_t credential;
+  lsc_credential_t ssh_credential, smb_credential;
   report_t last_stopped_report;
 
   tracef ("   start task %u\n", task_id (task));
@@ -1738,7 +1738,8 @@ run_task (task_t task, char **report_id, int from)
       return -4;
     }
 
-  credential = target_lsc_credential (target);
+  ssh_credential = target_ssh_lsc_credential (target);
+  smb_credential = target_smb_lsc_credential (target);
 
   if ((from == 1)
       || ((from == 2)
@@ -1834,7 +1835,7 @@ run_task (task_t task, char **report_id, int from)
 
   if (task_slave (task))
     {
-      if (run_slave_task (task, report_id, from, target, credential,
+      if (run_slave_task (task, report_id, from, target, ssh_credential,
                           last_stopped_report))
         {
           free (hosts);
@@ -1941,26 +1942,21 @@ run_task (task_t task, char **report_id, int from)
       return -10;
     }
 
-  /* Send credential preferences if there's a credential linked to target. */
+  /* Send credential preferences if there are credentials linked to target. */
 
-  if (credential)
+  if (ssh_credential)
     {
       iterator_t credentials;
 
-      init_lsc_credential_iterator (&credentials, credential, 1, NULL);
+      init_lsc_credential_iterator (&credentials, ssh_credential, 1, NULL);
       if (next (&credentials))
         {
           const char *user = lsc_credential_iterator_login (&credentials);
           const char *password = lsc_credential_iterator_password (&credentials);
 
-          if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
+          if (sendf_to_server ("SSH Authorization[entry]:SSH login name:"
+                               " <|> %s\n",
                                user)
-              || sendf_to_server ("SMB Authorization[password]:SMB password:"
-                                  " <|> %s\n",
-                                  password)
-              || sendf_to_server ("SSH Authorization[entry]:SSH login name:"
-                                  " <|> %s\n",
-                                  user)
               || (lsc_credential_iterator_public_key (&credentials)
                    ? sendf_to_server ("SSH Authorization[password]:"
                                       "SSH key passphrase:"
@@ -2026,6 +2022,35 @@ run_task (task_t task, char **report_id, int from)
                                    " <|> %s\n",
                                    uuid))
                 goto fail;
+            }
+        }
+      cleanup_iterator (&credentials);
+    }
+
+  if (smb_credential)
+    {
+      iterator_t credentials;
+
+      init_lsc_credential_iterator (&credentials, smb_credential, 1, NULL);
+      if (next (&credentials))
+        {
+          const char *user = lsc_credential_iterator_login (&credentials);
+          const char *password = lsc_credential_iterator_password (&credentials);
+
+          if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
+                               user)
+              || sendf_to_server ("SMB Authorization[password]:SMB password:"
+                                  " <|> %s\n",
+                                  password))
+            {
+              free (hosts);
+              cleanup_iterator (&credentials);
+              g_ptr_array_add (preference_files, NULL);
+              array_free (preference_files);
+              slist_free (files);
+              set_task_run_status (task, run_status);
+              current_report = (report_t) 0;
+              return -10;
             }
         }
       cleanup_iterator (&credentials);

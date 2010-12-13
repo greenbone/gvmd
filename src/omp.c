@@ -1054,7 +1054,8 @@ typedef struct
 {
   char *comment;                 ///< Comment.
   char *hosts;                   ///< Hosts for new target.
-  char *lsc_credential_id;       ///< LSC credential for new target.
+  char *ssh_lsc_credential_id;   ///< SSH LSC credential for new target.
+  char *smb_lsc_credential_id;   ///< SMB LSC credential for new target.
   char *name;                    ///< Name of new target.
   char *target_locator;          ///< Target locator (source name).
   char *target_locator_password; ///< Target locator credentials: password.
@@ -1071,7 +1072,8 @@ create_target_data_reset (create_target_data_t *data)
 {
   free (data->comment);
   free (data->hosts);
-  free (data->lsc_credential_id);
+  free (data->ssh_lsc_credential_id);
+  free (data->smb_lsc_credential_id);
   free (data->name);
   free (data->target_locator);
   free (data->target_locator_password);
@@ -2925,7 +2927,8 @@ typedef enum
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_HOSTS,
-  CLIENT_CREATE_TARGET_LSC_CREDENTIAL,
+  CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL,
+  CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_NAME,
   CLIENT_CREATE_TARGET_TARGET_LOCATOR,
   CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD,
@@ -6311,11 +6314,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_COMMENT);
         else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_HOSTS);
-        else if (strcasecmp ("LSC_CREDENTIAL", element_name) == 0)
+        else if (strcasecmp ("SSH_LSC_CREDENTIAL", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
-                              &create_target_data->lsc_credential_id);
-            set_client_state (CLIENT_CREATE_TARGET_LSC_CREDENTIAL);
+                              &create_target_data->ssh_lsc_credential_id);
+            set_client_state (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL);
+          }
+        else if (strcasecmp ("SMB_LSC_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_target_data->smb_lsc_credential_id);
+            set_client_state (CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_NAME);
@@ -11775,7 +11784,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_TARGET:
         {
-          lsc_credential_t lsc_credential = 0;
+          lsc_credential_t ssh_lsc_credential = 0, smb_lsc_credential = 0;
           target_t new_target;
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
@@ -11802,17 +11811,37 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_target",
                                 " CREATE_TARGET requires either a"
                                 " TARGET_LOCATOR or a host"));
-          else if (create_target_data->lsc_credential_id
+          else if (create_target_data->ssh_lsc_credential_id
                    && find_lsc_credential
-                       (create_target_data->lsc_credential_id,
-                        &lsc_credential))
+                       (create_target_data->ssh_lsc_credential_id,
+                        &ssh_lsc_credential))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
-          else if (create_target_data->lsc_credential_id && lsc_credential == 0)
+          else if (create_target_data->ssh_lsc_credential_id
+                   && ssh_lsc_credential == 0)
             {
               if (send_find_error_to_client
                    ("create_target",
                     "LSC credential",
-                    create_target_data->lsc_credential_id,
+                    create_target_data->ssh_lsc_credential_id,
+                    write_to_client,
+                    write_to_client_data))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (create_target_data->smb_lsc_credential_id
+                   && find_lsc_credential
+                       (create_target_data->smb_lsc_credential_id,
+                        &smb_lsc_credential))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
+          else if (create_target_data->smb_lsc_credential_id
+                   && smb_lsc_credential == 0)
+            {
+              if (send_find_error_to_client
+                   ("create_target",
+                    "LSC credential",
+                    create_target_data->smb_lsc_credential_id,
                     write_to_client,
                     write_to_client_data))
                 {
@@ -11825,7 +11854,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         (create_target_data->name,
                          create_target_data->hosts,
                          create_target_data->comment,
-                         lsc_credential,
+                         ssh_lsc_credential,
+                         smb_lsc_credential,
                          create_target_data->target_locator,
                          create_target_data->target_locator_username,
                          create_target_data->target_locator_password,
@@ -11889,8 +11919,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
-      case CLIENT_CREATE_TARGET_LSC_CREDENTIAL:
-        assert (strcasecmp ("LSC_CREDENTIAL", element_name) == 0);
+      case CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL:
+        assert (strcasecmp ("SSH_LSC_CREDENTIAL", element_name) == 0);
+        set_client_state (CLIENT_CREATE_TARGET);
+        break;
+      case CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL:
+        assert (strcasecmp ("SMB_LSC_CREDENTIAL", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
       case CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD:
@@ -12100,7 +12134,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
-              if (create_target (target_name, hosts, NULL, 0, NULL, NULL,
+              if (create_target (target_name, hosts, NULL, 0, 0, NULL, NULL,
                                  NULL, &target))
                 {
                   request_delete_task (&create_task_data->task);
@@ -14012,21 +14046,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     get_targets_data->sort_field);
               while (next (&targets))
                 {
-                  char *lsc_name, *lsc_uuid;
-                  lsc_credential_t lsc_credential;
+                  char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
+                  lsc_credential_t ssh_credential, smb_credential;
 
-                  lsc_credential = target_iterator_lsc_credential (&targets);
-                  lsc_name = lsc_credential_name (lsc_credential);
-                  lsc_uuid = lsc_credential_uuid (lsc_credential);
+                  ssh_credential = target_iterator_ssh_credential (&targets);
+                  smb_credential = target_iterator_smb_credential (&targets);
+                  ssh_lsc_name = lsc_credential_name (ssh_credential);
+                  ssh_lsc_uuid = lsc_credential_uuid (ssh_credential);
+                  smb_lsc_name = lsc_credential_name (smb_credential);
+                  smb_lsc_uuid = lsc_credential_uuid (smb_credential);
                   SENDF_TO_CLIENT_OR_FAIL ("<target id=\"%s\">"
                                            "<name>%s</name>"
                                            "<hosts>%s</hosts>"
                                            "<max_hosts>%i</max_hosts>"
                                            "<comment>%s</comment>"
                                            "<in_use>%i</in_use>"
-                                           "<lsc_credential id=\"%s\">"
+                                           "<ssh_lsc_credential id=\"%s\">"
                                            "<name>%s</name>"
-                                           "</lsc_credential>",
+                                           "</ssh_lsc_credential>"
+                                           "<smb_lsc_credential id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "</smb_lsc_credential>",
                                            target_iterator_uuid (&targets),
                                            target_iterator_name (&targets),
                                            target_iterator_hosts (&targets),
@@ -14035,8 +14075,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            target_iterator_comment (&targets),
                                            target_in_use
                                             (target_iterator_target (&targets)),
-                                           lsc_uuid ? lsc_uuid : "",
-                                           lsc_name ? lsc_name : "");
+                                           ssh_lsc_uuid ? ssh_lsc_uuid : "",
+                                           ssh_lsc_name ? ssh_lsc_name : "",
+                                           smb_lsc_uuid ? smb_lsc_uuid : "",
+                                           smb_lsc_name ? smb_lsc_name : "");
 
                   if (get_targets_data->tasks)
                     {
@@ -14058,7 +14100,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
 
                   SEND_TO_CLIENT_OR_FAIL ("</target>");
-                  free (lsc_name);
+                  free (ssh_lsc_name);
+                  free (ssh_lsc_uuid);
+                  free (smb_lsc_name);
+                  free (smb_lsc_uuid);
                 }
               cleanup_iterator (&targets);
               SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");

@@ -813,7 +813,7 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS results_by_type ON results (type);");
   sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
   sql ("CREATE TABLE IF NOT EXISTS slaves (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
-  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, smb_lsc_credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER);");
@@ -3826,6 +3826,43 @@ migrate_33_to_34 ()
 }
 
 /**
+ * @brief Migrate the database from version 34 to version 35.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_34_to_35 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 34. */
+
+  if (manage_db_version () != 34)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The LSC credential element of the target resource was split into two
+   * elements, for SSH and SMB. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("ALTER TABLE targets ADD column smb_lsc_credential;");
+  sql ("UPDATE targets SET smb_lsc_credential = lsc_credential;");
+
+  /* Set the database version to 35. */
+
+  set_db_version (35);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -3864,6 +3901,7 @@ static migrator_t database_migrators[]
     {32, migrate_31_to_32},
     {33, migrate_32_to_33},
     {34, migrate_33_to_34},
+    {35, migrate_34_to_35},
     /* End marker. */
     {-1, NULL}};
 
@@ -12393,7 +12431,8 @@ manage_max_hosts (const char *hosts)
  * @param[in]   name            Name of target.
  * @param[in]   hosts           Host list of target.
  * @param[in]   comment         Comment on target.
- * @param[in]   lsc_credential  LSC credential.
+ * @param[in]   ssh_lsc_credential  SSH LSC credential.
+ * @param[in]   smb_lsc_credential  SMB LSC credential.
  * @param[in]   target_locator  Name of target_locator to import target(s)
  *                              from.
  * @param[in]   username        Username to authenticate with against source.
@@ -12406,7 +12445,8 @@ manage_max_hosts (const char *hosts)
  */
 int
 create_target (const char* name, const char* hosts, const char* comment,
-               lsc_credential_t lsc_credential, const char* target_locator,
+               lsc_credential_t ssh_lsc_credential,
+               lsc_credential_t smb_lsc_credential, const char* target_locator,
                const char* username, const char* password, target_t* target)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
@@ -12495,21 +12535,24 @@ create_target (const char* name, const char* hosts, const char* comment,
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO targets"
-           " (uuid, name, owner, hosts, comment, lsc_credential)"
+           " (uuid, name, owner, hosts, comment, lsc_credential,"
+           "  smb_lsc_credential)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', %llu);",
+           " '%s', '%s', %llu, %llu);",
            quoted_name, current_credentials.uuid, quoted_hosts, quoted_comment,
-           lsc_credential);
+           ssh_lsc_credential, smb_lsc_credential);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO targets"
-         " (uuid, name, owner, hosts, comment, lsc_credential)"
+         " (uuid, name, owner, hosts, comment, lsc_credential,"
+         "  smb_lsc_credential)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', %llu);",
-         quoted_name, current_credentials.uuid, quoted_hosts, lsc_credential);
+         " '%s', '', %llu, %llu);",
+         quoted_name, current_credentials.uuid, quoted_hosts,
+         ssh_lsc_credential, smb_lsc_credential);
 
   if (target)
     *target = sqlite3_last_insert_rowid (task_db);
@@ -12561,7 +12604,8 @@ init_target_iterator (iterator_t* iterator, target_t target,
 
   if (target)
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential"
+                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
+                   " smb_lsc_credential"
                    " FROM targets"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -12573,7 +12617,8 @@ init_target_iterator (iterator_t* iterator, target_t target,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential"
+                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
+                   " smb_lsc_credential"
                    " FROM targets"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -12641,18 +12686,34 @@ target_iterator_comment (iterator_t* iterator)
 }
 
 /**
- * @brief Get the LSC credential from a target iterator.
+ * @brief Get the SSH LSC credential from a target iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return LSC credential.
+ * @return SSH LSC credential.
  */
 int
-target_iterator_lsc_credential (iterator_t* iterator)
+target_iterator_ssh_credential (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
   ret = (int) sqlite3_column_int (iterator->stmt, 5);
+  return ret;
+}
+
+/**
+ * @brief Get the SMB LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return SMB LSC credential.
+ */
+int
+target_iterator_smb_credential (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 6);
   return ret;
 }
 
@@ -12703,19 +12764,51 @@ target_hosts (target_t target)
 }
 
 /**
- * @brief Return the credential associated with a target, if any.
+ * @brief Return the SSH credential associated with a target, if any.
  *
  * @param[in]  target  Target (corresponds to rowid).
  *
- * @return Credential if any, else 0.
+ * @return SSH credential if any, else 0.
  */
 lsc_credential_t
-target_lsc_credential (target_t target)
+target_ssh_lsc_credential (target_t target)
 {
   lsc_credential_t lsc_credential;
 
   switch (sql_int64 (&lsc_credential, 0, 0,
                      "SELECT lsc_credential FROM targets"
+                     " WHERE ROWID = %llu;",
+                     target))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        return 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        /** @todo Move return to arg; return -1. */
+        return 0;
+        break;
+    }
+  return lsc_credential;
+}
+
+/**
+ * @brief Return the SMB credential associated with a target, if any.
+ *
+ * @param[in]  target  Target (corresponds to rowid).
+ *
+ * @return SMB credential if any, else 0.
+ */
+lsc_credential_t
+target_smb_lsc_credential (target_t target)
+{
+  lsc_credential_t lsc_credential;
+
+  switch (sql_int64 (&lsc_credential, 0, 0,
+                     "SELECT smb_lsc_credential FROM targets"
                      " WHERE ROWID = %llu;",
                      target))
     {
@@ -17333,8 +17426,10 @@ init_lsc_credential_target_iterator (iterator_t* iterator,
                                      int ascending)
 {
   init_iterator (iterator,
-                 "SELECT uuid, name FROM targets WHERE lsc_credential = %llu"
+                 "SELECT uuid, name FROM targets"
+                 " WHERE lsc_credential = %llu OR smb_lsc_credential = %llu"
                  " ORDER BY name %s;",
+                 lsc_credential,
                  lsc_credential,
                  ascending ? "ASC" : "DESC");
 }
