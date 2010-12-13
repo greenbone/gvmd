@@ -1,5 +1,11 @@
 2010-12-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db_postgres.sql (targets): Add smb_lsc_credential.
+
+	* doc/db.png: Update from SQL.
+
+2010-12-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Split target credential into SSH credential and SMB credential.  Hence
 	increase database version to 35.  Add database migration from version
 	34 to 35.

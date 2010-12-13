@@ -67,7 +67,8 @@ CREATE TABLE targets (
 	name text NOT NULL,
 	hosts text,
 	comment text,
-	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT);
+	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
+	smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT);
 
 CREATE TABLE configs (
 	id integer PRIMARY KEY,
