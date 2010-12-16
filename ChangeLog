@@ -1,3 +1,7 @@
+2010-12-16  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* doc/CMakeLists.txt: Handle absence of doxygen more gracefully.
+
 2010-12-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* README: Update gsa-desktop to GSD.

@@ -63,24 +63,24 @@ set_directory_properties (PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ".built-html;.b
 include (FindDoxygen)
 
 if (NOT DOXYGEN_EXECUTABLE)
-  message (FATAL_ERROR "Doxygen is required to build the HTML docs.")
+  message (STATUS "WARNING: Doxygen is required to build the HTML docs.")
+else (NOT DOXYGEN_EXECUTABLE)
+  set (DOC_FILES
+    ../src/openvasmd.c ../src/ovas-mngr-comm.c
+    ../src/oxpd.c ../src/ompd.c ../src/otpd.c
+    ../src/manage.c ../src/omp.c ../src/otp.c
+    ../src/manage_sql.c ../src/tracef.h
+    ../src/logf.h ../src/tests/common.c
+    ../README ../INSTALL)
+
+  add_custom_target (doc COMMENT "Building documentation..."
+    DEPENDS openvasmd.8 Doxyfile .built-html .built-html_db
+    db.png omp.rnc omp.html)
+
+  add_custom_target (doc-full COMMENT "Building documentation..."
+    DEPENDS openvasmd.8 Doxyfile_full .built-html_full
+    .built-html_db db.png omp.rnc omp.html)
 endif (NOT DOXYGEN_EXECUTABLE)
-
-set (DOC_FILES
-     ../src/openvasmd.c ../src/ovas-mngr-comm.c
-	 ../src/oxpd.c ../src/ompd.c ../src/otpd.c
-	 ../src/manage.c ../src/omp.c ../src/otp.c
-	 ../src/manage_sql.c ../src/tracef.h
-	 ../src/logf.h ../src/tests/common.c
-	 ../README ../INSTALL)
-
-add_custom_target (doc COMMENT "Building documentation..."
-                   DEPENDS openvasmd.8 Doxyfile .built-html .built-html_db
-                           db.png omp.rnc omp.html)
-
-add_custom_target (doc-full COMMENT "Building documentation..."
-                   DEPENDS openvasmd.8 Doxyfile_full .built-html_full
-                           .built-html_db db.png omp.rnc omp.html)
 
 add_custom_target (man COMMENT "Building manual page..."
                    DEPENDS openvasmd.8)
