@@ -782,9 +782,9 @@ gboolean
 find_target (const char*, target_t*);
 
 int
-create_target (const char*, const char*, const char*, lsc_credential_t,
-               lsc_credential_t, const char*, const char*, const char*,
-               target_t*);
+create_target (const char*, const char*, const char*, const char*,
+               lsc_credential_t, lsc_credential_t, const char*, const char*,
+               const char*, target_t*);
 
 int
 delete_target (target_t);
@@ -812,6 +812,9 @@ target_iterator_ssh_credential (iterator_t*);
 
 int
 target_iterator_smb_credential (iterator_t*);
+
+const char*
+target_iterator_port_range (iterator_t*);
 
 char*
 target_uuid (target_t);

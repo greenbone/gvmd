@@ -1,3 +1,32 @@
+2010-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move port range from config into target.  Hence increase database version
+	to 36.  Add database migration from version 35 to 36.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 36.
+
+	* src/manage_sql.c (duplicate_target, sql_uniquify): New functions.
+	(create_tables): Add port_range to table targets.
+	(migrate_35_to_36): New function.
+	(database_migrators): Add migrate_35_to_36.
+	(init_manage_process): Create SQL function uniquify.
+	(create_target): Add port_range arg.
+	(init_target_iterator): Add port_range field.
+	(target_iterator_port_range): New function.
+	(manage_nvt_preference_add): Prevent addition of port range.
+
+	* src/manage.c (send_config_preferences): Skip over port range, just in
+	case.
+	(run_task): Send port range from target.
+
+	* src/manage.h, src/manage_sql.h: Update headers accordingly.
+
+	* src/omp.c (create_target_data_t, create_target_data_reset)
+	(client_state_t): Add CREATE_TARGET port range.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add PORT_RANGE to TARGET.  Send port range in
+	GET_TARGETS.
+
 2010-12-16  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* CMakeLists.txt: Add a collection of code hardening flags to

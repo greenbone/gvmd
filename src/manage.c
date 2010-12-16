@@ -625,6 +625,9 @@ send_config_preferences (config_t config, const char* section_name,
       const char *pref_name = otp_pref_iterator_name (&prefs);
       char *value;
 
+      if (strcmp (pref_name, "port_range") == 0)
+        continue;
+
       if (send_to_server (pref_name))
         {
           cleanup_iterator (&prefs);
@@ -1699,7 +1702,7 @@ static int
 run_task (task_t task, char **report_id, int from)
 {
   target_t target;
-  char *hosts;
+  char *hosts, *port_range;
   gchar *plugins;
   int fail, pid;
   GSList *files = NULL;
@@ -1924,6 +1927,20 @@ run_task (task_t task, char **report_id, int from)
       current_report = (report_t) 0;
       return -10;
     }
+
+  /* Send the port range. */
+
+  port_range = target_port_range (target);
+  if (sendf_to_server ("port_range <|> %s\n",
+                       port_range ? port_range : "default"))
+    {
+      free (port_range);
+      free (hosts);
+      set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
+      return -10;
+    }
+  free (port_range);
 
   /* Collect task files to send. */
 

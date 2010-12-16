@@ -52,6 +52,7 @@ void init_otp_pref_iterator (iterator_t *, config_t, const char *);
 const char *otp_pref_iterator_name (iterator_t *);
 const char *otp_pref_iterator_value (iterator_t *);
 
+char* target_port_range (target_t);
 lsc_credential_t target_ssh_lsc_credential (target_t);
 lsc_credential_t target_smb_lsc_credential (target_t);
 const char *lsc_credential_iterator_password (iterator_t *);

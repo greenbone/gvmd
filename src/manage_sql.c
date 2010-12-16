@@ -218,6 +218,9 @@ static int
 validate_param_value (report_format_t, report_format_param_t param, const char *,
                       const char *);
 
+static target_t
+duplicate_target (target_t, const char *);
+
 
 /* Variables. */
 
@@ -650,6 +653,68 @@ sql_hosts_contains (sqlite3_context *context, int argc, sqlite3_value** argv)
   sqlite3_result_int (context, 0);
 }
 
+/**
+ * @brief Make a name unique.
+ *
+ * This is a callback for a scalar SQL function of three argument.
+ *
+ * It's up to the caller to ensure there is a read-only transaction.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+static void
+sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  const unsigned char *proposed_name, *type;
+  gchar *candidate_name, *quoted_candidate_name;
+  unsigned int number;
+  sqlite3_int64 owner;
+
+  assert (argc == 3);
+
+  type = sqlite3_value_text (argv[0]);
+  if (type == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get type argument", -1);
+      return;
+    }
+
+  proposed_name = sqlite3_value_text (argv[1]);
+  if (proposed_name == NULL)
+    {
+      sqlite3_result_error (context,
+                            "Failed to get proposed name argument",
+                            -1);
+      return;
+    }
+
+  owner = sqlite3_value_int64 (argv[2]);
+
+  number = 0;
+  candidate_name = g_strdup_printf ("%s %i", proposed_name, ++number);
+  quoted_candidate_name = sql_quote (candidate_name);
+
+  while (sql_int (0, 0,
+                  "SELECT COUNT (*) FROM %ss WHERE name = '%s'"
+                   " AND ((owner IS NULL) OR (owner = %llu));",
+                  type,
+                  quoted_candidate_name,
+                  owner))
+    {
+      g_free (candidate_name);
+      g_free (quoted_candidate_name);
+      candidate_name = g_strdup_printf ("%s %u", proposed_name, ++number);
+      quoted_candidate_name = sql_quote (candidate_name);
+    }
+
+  g_free (quoted_candidate_name);
+
+  sqlite3_result_text (context, candidate_name, -1, SQLITE_TRANSIENT);
+  g_free (candidate_name);
+}
+
 
 /* General helpers. */
 
@@ -813,7 +878,7 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS results_by_type ON results (type);");
   sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
   sql ("CREATE TABLE IF NOT EXISTS slaves (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
-  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, smb_lsc_credential INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, smb_lsc_credential INTEGER, port_range);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER);");
@@ -3863,6 +3928,116 @@ migrate_34_to_35 ()
 }
 
 /**
+ * @brief Migrate the database from version 35 to version 36.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_35_to_36 ()
+{
+  iterator_t tasks;
+  char *scanner_range, *quoted_scanner_range;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 35. */
+
+  if (manage_db_version () != 35)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Scanner preference "port_range" moved from config into target. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("ALTER TABLE targets ADD column port_range;");
+  sql ("UPDATE targets SET port_range = NULL;");
+
+  scanner_range = sql_string (0, 0,
+                              "SELECT value FROM nvt_preferences"
+                              " WHERE name = 'port_range'");
+  if (scanner_range)
+    {
+      quoted_scanner_range = sql_quote (scanner_range);
+      free (scanner_range);
+    }
+  else
+    quoted_scanner_range = NULL;
+
+  init_iterator (&tasks, "SELECT ROWID, target, config FROM tasks;");
+  while (next (&tasks))
+    {
+      char *config_range, *quoted_config_range;
+      target_t target;
+
+      target = iterator_int64 (&tasks, 1);
+
+      if (sql_int (0, 0,
+                   "SELECT port_range IS NULL FROM targets WHERE ROWID = %llu;",
+                   target)
+          == 0)
+        {
+          gchar *name;
+
+          /* Already used this target, use a copy of it. */
+
+          name = sql_string (0, 0,
+                             "SELECT name || ' Migration' FROM targets"
+                             " WHERE ROWID = %llu;",
+                             target);
+          assert (name);
+          target = duplicate_target (target, name);
+          free (name);
+
+          sql ("UPDATE tasks SET target = %llu WHERE ROWID = %llu",
+               target,
+               iterator_int64 (&tasks, 0));
+        }
+
+      config_range = sql_string (0, 0,
+                                 "SELECT value FROM config_preferences"
+                                 " WHERE config = %llu"
+                                 " AND name = 'port_range';",
+                                 iterator_int64 (&tasks, 2));
+
+      if (config_range)
+        {
+          quoted_config_range = sql_quote (config_range);
+          free (config_range);
+        }
+      else
+        quoted_config_range = NULL;
+
+      sql ("UPDATE targets SET port_range = '%s'"
+           " WHERE ROWID = %llu;",
+           quoted_config_range
+            ? quoted_config_range
+            : (quoted_scanner_range ? quoted_scanner_range : "default"),
+           target);
+
+      free (quoted_config_range);
+    }
+  cleanup_iterator (&tasks);
+
+  sql ("DELETE FROM config_preferences WHERE name = 'port_range';");
+  sql ("DELETE FROM nvt_preferences WHERE name = 'port_range';");
+
+  free (quoted_scanner_range);
+
+  /* Set the database version to 36. */
+
+  set_db_version (36);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -3902,6 +4077,7 @@ static migrator_t database_migrators[]
     {33, migrate_32_to_33},
     {34, migrate_33_to_34},
     {35, migrate_34_to_35},
+    {36, migrate_35_to_36},
     /* End marker. */
     {-1, NULL}};
 
@@ -5650,6 +5826,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           != SQLITE_OK)
         {
           g_warning ("%s: failed to create make_uuid", __FUNCTION__);
+          abort ();
+        }
+
+      if (sqlite3_create_function (task_db,
+                                   "uniquify",
+                                   3,               /* Number of args. */
+                                   SQLITE_UTF8,
+                                   NULL,            /* Callback data. */
+                                   sql_uniquify,
+                                   NULL,            /* xStep. */
+                                   NULL)            /* xFinal. */
+          != SQLITE_OK)
+        {
+          g_warning ("%s: failed to create uniquify", __FUNCTION__);
           abort ();
         }
     }
@@ -12174,6 +12364,30 @@ find_target (const char* uuid, target_t* target)
 }
 
 /**
+ * @brief Make a copy of a target.
+ *
+ * @param[in]  target  Target to copy.
+ * @param[in]  name    Name for new target.
+ *
+ * @return Address of matching character, else NULL.
+ */
+static target_t
+duplicate_target (target_t target, const char *name)
+{
+  char *quoted_name = sql_quote (name);
+  sql ("INSERT INTO targets"
+       " (uuid, owner, name, hosts, comment, lsc_credential,"
+       "  smb_lsc_credential)"
+       " SELECT make_uuid (), owner, uniquify ('target', '%s', owner), hosts,"
+       "        comment, lsc_credential, smb_lsc_credential"
+       " FROM targets WHERE ROWID = %llu;",
+       quoted_name,
+       target);
+  g_free (quoted_name);
+  return sqlite3_last_insert_rowid (task_db);
+}
+
+/**
  * @brief Search backwards in a string for a character.
  *
  * Start at the character before \p point.
@@ -12431,6 +12645,7 @@ manage_max_hosts (const char *hosts)
  * @param[in]   name            Name of target.
  * @param[in]   hosts           Host list of target.
  * @param[in]   comment         Comment on target.
+ * @param[in]   port_range      Port range of target.
  * @param[in]   ssh_lsc_credential  SSH LSC credential.
  * @param[in]   smb_lsc_credential  SMB LSC credential.
  * @param[in]   target_locator  Name of target_locator to import target(s)
@@ -12445,16 +12660,19 @@ manage_max_hosts (const char *hosts)
  */
 int
 create_target (const char* name, const char* hosts, const char* comment,
-               lsc_credential_t ssh_lsc_credential,
+               const char* port_range, lsc_credential_t ssh_lsc_credential,
                lsc_credential_t smb_lsc_credential, const char* target_locator,
                const char* username, const char* password, target_t* target)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
-  gchar *quoted_hosts, *quoted_comment;
+  gchar *quoted_hosts, *quoted_comment, *quoted_port_range;
 
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
+
+  /** @todo Validate properly ("-100,200-1024,3000-4000,60000-"). */
+  assert (port_range);
 
   /* Check whether a target with the same name exists already. */
   if (sql_int (0, 0,
@@ -12531,34 +12749,39 @@ create_target (const char* name, const char* hosts, const char* comment,
       quoted_hosts = sql_nquote (hosts, strlen (hosts));
     }
 
+  quoted_port_range = port_range
+                       ? sql_quote (port_range)
+                       : g_strdup ("default");
+
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO targets"
            " (uuid, name, owner, hosts, comment, lsc_credential,"
-           "  smb_lsc_credential)"
+           "  smb_lsc_credential, port_range)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', %llu, %llu);",
+           " '%s', '%s', %llu, %llu, '%s');",
            quoted_name, current_credentials.uuid, quoted_hosts, quoted_comment,
-           ssh_lsc_credential, smb_lsc_credential);
+           ssh_lsc_credential, smb_lsc_credential, quoted_port_range);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO targets"
          " (uuid, name, owner, hosts, comment, lsc_credential,"
-         "  smb_lsc_credential)"
+         "  smb_lsc_credential, port_range)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', %llu, %llu);",
+         " '%s', '', %llu, %llu, '%s');",
          quoted_name, current_credentials.uuid, quoted_hosts,
-         ssh_lsc_credential, smb_lsc_credential);
+         ssh_lsc_credential, smb_lsc_credential, quoted_port_range);
 
   if (target)
     *target = sqlite3_last_insert_rowid (task_db);
 
   g_free (quoted_name);
   g_free (quoted_hosts);
+  g_free (quoted_port_range);
 
   sql ("COMMIT;");
 
@@ -12605,7 +12828,7 @@ init_target_iterator (iterator_t* iterator, target_t target,
   if (target)
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " smb_lsc_credential"
+                   " smb_lsc_credential, port_range"
                    " FROM targets"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -12618,7 +12841,7 @@ init_target_iterator (iterator_t* iterator, target_t target,
   else
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " smb_lsc_credential"
+                   " smb_lsc_credential, port_range"
                    " FROM targets"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -12718,6 +12941,15 @@ target_iterator_smb_credential (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the port range of the target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Port range of the target or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_port_range, 7);
+
+/**
  * @brief Return the UUID of a target.
  *
  * @param[in]  target  Target.
@@ -12760,6 +12992,21 @@ target_hosts (target_t target)
 {
   return sql_string (0, 0,
                      "SELECT hosts FROM targets WHERE ROWID = %llu;",
+                     target);
+}
+
+/**
+ * @brief Return the port range of a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated port range if available, else NULL.
+ */
+char*
+target_port_range (target_t target)
+{
+  return sql_string (0, 0,
+                     "SELECT port_range FROM targets WHERE ROWID = %llu;",
                      target);
 }
 
@@ -16619,9 +16866,10 @@ manage_nvt_preference_add (const char* name, const char* value, int remove)
       sql ("DELETE FROM nvt_preferences WHERE name = '%s';", quoted_name);
     }
 
-  sql ("INSERT into nvt_preferences (name, value)"
-       " VALUES ('%s', '%s');",
-       quoted_name, quoted_value);
+  if (strcmp (name, "port_range"))
+    sql ("INSERT into nvt_preferences (name, value)"
+         " VALUES ('%s', '%s');",
+         quoted_name, quoted_value);
 
   if (remove)
     sql ("COMMIT;");
