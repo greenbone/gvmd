@@ -1,5 +1,9 @@
 2010-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage_process): Correct error message.
+
+2010-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move port range from config into target.  Hence increase database version
 	to 36.  Add database migration from version 35 to 36.
 

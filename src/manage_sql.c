@@ -5825,7 +5825,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
                                    NULL)            /* xFinal. */
           != SQLITE_OK)
         {
-          g_warning ("%s: failed to create make_uuid", __FUNCTION__);
+          g_warning ("%s: failed to create host_contains", __FUNCTION__);
           abort ();
         }
 
