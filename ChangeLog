@@ -1,5 +1,11 @@
 2010-12-16  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* CMakeLists.txt: Add a collection of code hardening flags to
+	CMAKE_C_FLAGS, inspired by hardening-wrapper on Debian. Add -Werror to
+	CMAKE_C_FLAGS to make all warnings fatal.
+
+2010-12-16  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* doc/CMakeLists.txt: Handle absence of doxygen more gracefully.
 
 2010-12-13  Matthew Mundell <matthew.mundell@greenbone.net>
