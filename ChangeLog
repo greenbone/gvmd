@@ -1,3 +1,12 @@
+2010-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_count_filtered, report_counts_match): New
+	functions.
+	(report_counts_id_filt): New function.  Body from report_counts_id.  Add
+	filtered result counting.
+	(report_counts_id): Call through to report_counts_id_filt.
+	(print_report_xml): Add filtered counts.
+
 2010-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (migrate_35_to_36): Ensure example task references are
