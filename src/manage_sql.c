@@ -3950,6 +3950,15 @@ migrate_35_to_36 ()
 
   /* Update the database. */
 
+  /* For a time between 1.0.0 beta3 and 1.0.0 beta5 the Manager would create
+   * the example task with name references to the target and config, instead
+   * of ID references.  Correct this now. */
+
+  sql ("UPDATE tasks SET"
+       " target = (SELECT ROWID FROM configs WHERE name = 'Full and fast'),"
+       " config = (SELECT ROWID FROM targets WHERE name = 'Localhost')"
+       " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';");
+
   /* Scanner preference "port_range" moved from config into target. */
 
   /** @todo ROLLBACK on failure. */
@@ -4022,6 +4031,8 @@ migrate_35_to_36 ()
       free (quoted_config_range);
     }
   cleanup_iterator (&tasks);
+
+  sql ("UPDATE targets SET port_range = 'default' WHERE port_range IS NULL;");
 
   sql ("DELETE FROM config_preferences WHERE name = 'port_range';");
   sql ("DELETE FROM nvt_preferences WHERE name = 'port_range';");

@@ -1,5 +1,10 @@
 2010-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (migrate_35_to_36): Ensure example task references are
+	IDs.  Set port range on any leftover targets to "default".
+
+2010-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage_process): Correct error message.
 
 2010-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
