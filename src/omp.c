@@ -6318,7 +6318,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_HOSTS);
         else if (strcasecmp ("PORT_RANGE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TARGET_PORT_RANGE);
+          {
+            openvas_append_string (&create_target_data->port_range, "");
+            set_client_state (CLIENT_CREATE_TARGET_PORT_RANGE);
+          }
         else if (strcasecmp ("SSH_LSC_CREDENTIAL", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -11887,6 +11890,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "Host specification exceeds"
                                     " " G_STRINGIFY (MANAGE_MAX_HOSTS)
                                     " hosts"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be created");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "Error in port range"));
                 g_log ("event target", G_LOG_LEVEL_MESSAGE,
                        "Target could not be created");
                 break;

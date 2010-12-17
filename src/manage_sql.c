@@ -13220,6 +13220,114 @@ manage_max_hosts (const char *hosts)
 }
 
 /**
+ * @brief Validate a port range.
+ *
+ * Scanner accepts "-100,103,200-1024,3000-4000,60000-".
+ *
+ * Manager accepts "103,200-1024,3000-4000".
+ *
+ * @param[in]   port_range      A port range.
+ *
+ * @return 0 success, 1 failed.
+ */
+static int
+validate_port_range (const char* port_range)
+{
+  gchar **split, **point;
+
+  if (strcmp (port_range, "default") == 0)
+    return 0;
+
+  while (*port_range && isblank (*port_range)) port_range++;
+  if (strcmp (port_range, "") == 0)
+    return 1;
+
+  split = g_strsplit (port_range, ",", 0);
+  point = split;
+
+  while (*point)
+    {
+      gchar *hyphen;
+
+      hyphen = strchr (*point, '-');
+      if (hyphen)
+        {
+          long int number1, number2;
+          const char *first;
+          char *end;
+
+          hyphen++;
+
+          /* Check the first number. */
+
+          first = *point;
+          while (*first && isblank (*first)) first++;
+          if (*first == '-')
+            goto fail;
+
+          errno = 0;
+          number1 = strtol (first, &end, 10);
+          while (*end && isblank (*end)) end++;
+          if (errno || (*end != '-'))
+            goto fail;
+          if (number1 == 0)
+            goto fail;
+          if (number1 > 65535)
+            goto fail;
+
+          /* Check the second number. */
+
+          while (*hyphen && isblank (*hyphen)) hyphen++;
+          if (*hyphen == '\0')
+            goto fail;
+
+          errno = 0;
+          number2 = strtol (hyphen, &end, 10);
+          while (*end && isblank (*end)) end++;
+          if (errno || *end)
+            goto fail;
+          if (number2 == 0)
+            goto fail;
+          if (number2 > 65535)
+            goto fail;
+
+          if (number1 > number2)
+            goto fail;
+        }
+      else
+        {
+          long int number;
+          const char *only;
+          char *end;
+
+          /* Check the single number. */
+
+          only = *point;
+          while (*only && isblank (*only)) only++;
+          if (*only == '\0')
+            goto fail;
+          errno = 0;
+          number = strtol (only, &end, 10);
+          while (*end && isblank (*end)) end++;
+          if (errno || *end)
+            goto fail;
+          if (number == 0)
+            goto fail;
+          if (number > 65535)
+            goto fail;
+        }
+      point += 1;
+    }
+
+  g_strfreev (split);
+  return 0;
+
+ fail:
+  g_strfreev (split);
+  return 1;
+}
+
+/**
  * @brief Create a target.
  *
  * The \param hosts and \param target_locator parameters are mutually
@@ -13238,8 +13346,8 @@ manage_max_hosts (const char *hosts)
  * @param[out]  target          Created target.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
- *         3 too many hosts, -1 if import from target locator failed or response
- *         was empty.
+ *         3 too many hosts, 4 error in port range, -1 if import from target
+ *         locator failed or response was empty.
  */
 int
 create_target (const char* name, const char* hosts, const char* comment,
@@ -13250,12 +13358,15 @@ create_target (const char* name, const char* hosts, const char* comment,
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_hosts, *quoted_comment, *quoted_port_range;
 
+  if (port_range == NULL)
+    port_range = "default";
+
+  if (validate_port_range (port_range))
+    return 4;
+
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
-
-  /** @todo Validate properly ("-100,200-1024,3000-4000,60000-"). */
-  assert (port_range);
 
   /* Check whether a target with the same name exists already. */
   if (sql_int (0, 0,

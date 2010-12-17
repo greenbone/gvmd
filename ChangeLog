@@ -1,5 +1,16 @@
 2010-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (validate_port_range): New function.
+	(create_target): Validate port range.
+
+	* src/omp.c (omp_xml_handle_start_element): Init port range in
+	CREATE_TARGET PORT_RANGE, so that the port range is empty instead of NULL
+	when the port range element is empty.
+	(omp_xml_handle_end_element): In CLIENT_CREATE_TARGET handle port range
+	error.
+
+2010-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Only send filtered results for
 	requested threat levels.
 
