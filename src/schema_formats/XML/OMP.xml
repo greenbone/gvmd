@@ -45,6 +45,8 @@ x		new  VERIFY_AGENT
 		new  MODIFY_LSC_CREDENTIAL
  	HELP  req  + format attrib
  		  resp  + SCHEMA
+    report filtered result counts
+       GET_REPORTS/REPORT/RESULT_COUNT  + FILTERED and FULL
 -->
 
 <protocol>
