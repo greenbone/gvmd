@@ -1,5 +1,11 @@
 2010-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_counts_match): Move up in file.
+	(report_counts_filtered, report_counts_id_filt): Make constraints NULL if
+	"".  Check constraints properly.
+
+2010-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_count_filtered, report_counts_match): New
 	functions.
 	(report_counts_id_filt): New function.  Body from report_counts_id.  Add

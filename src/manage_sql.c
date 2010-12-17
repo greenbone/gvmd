@@ -9621,6 +9621,59 @@ report_count (report_t report, const char *type, int override, const char *host)
 }
 
 /**
+ * @brief Check if a result matches the filter criteria.
+ *
+ * @param[in]  results        Result iterator.
+ * @param[in]  search_phrase  Search phrase.
+ * @param[in]  min_cvss_base  Minimum CVSS base.
+ *
+ * @return 1 if match, 0 otherwise.
+ */
+static int
+report_counts_match (iterator_t *results, const char *search_phrase,
+                     const char *min_cvss_base)
+{
+  if (search_phrase)
+    {
+      if (strstr ((const char*) sqlite3_column_text (results->stmt, 5),
+                  search_phrase))
+        {
+          if (min_cvss_base && sqlite3_column_int (results->stmt, 1))
+            {
+              if (sql_int (0, 0,
+                           "SELECT"
+                           " (CAST (cvss_base AS REAL))"
+                           " >= CAST (%s AS REAL)"
+                           " FROM nvts"
+                           " WHERE nvts.oid = '%s';",
+                           /* Assume valid SQL string. */
+                           min_cvss_base,
+                           sqlite3_column_text (results->stmt, 1)))
+                return 1;
+            }
+          else
+            return 1;
+        }
+    }
+  else if (min_cvss_base && sqlite3_column_int (results->stmt, 1))
+    {
+      if (sql_int (0, 0,
+                   "SELECT"
+                   " (CAST (cvss_base AS REAL))"
+                   " >= CAST (%s AS REAL)"
+                   " FROM nvts"
+                   " WHERE nvts.oid = '%s';",
+                   /* Assume valid SQL string. */
+                   min_cvss_base,
+                   sqlite3_column_text (results->stmt, 1)))
+        return 1;
+    }
+  else
+    return 1;
+  return 0;
+}
+
+/**
  * @brief Get the message count for a report for a specific message type.
  *
  * @param[in]  report     Report.
@@ -9639,6 +9692,12 @@ report_count_filtered (report_t report, const char *type, int override,
                        const char *host, const char *min_cvss_base,
                        const char *search_phrase)
 {
+  if (search_phrase && strcmp (search_phrase, "") == 0)
+    search_phrase = NULL;
+
+  if (min_cvss_base && strcmp (min_cvss_base, "") == 0)
+    min_cvss_base = NULL;
+
   if (override
       && sql_int (0, 0,
                   "SELECT count(*)"
@@ -9795,7 +9854,11 @@ report_count_filtered (report_t report, const char *type, int override,
           if (ret == SQLITE_DONE)
             {
               new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-              if (new_type && (strcmp (new_type, type) == 0))
+              if (new_type
+                  && (strcmp (new_type, type) == 0)
+                  && report_counts_match (&results,
+                                          search_phrase,
+                                          min_cvss_base))
                 count++;
             }
           else
@@ -9895,19 +9958,12 @@ report_count_filtered (report_t report, const char *type, int override,
               else
                 new_type = (const char*) sqlite3_column_text (full_stmt, 0);
 
-              if (new_type && (strcmp (new_type, type) == 0))
-                {
-                  if (search_phrase)
-                    {
-                      if (strstr ((const char*)
-                                   sqlite3_column_text
-                                    (results.stmt, 5),
-                                  search_phrase))
-                        count++;
-                    }
-                  else
-                    count++;
-                }
+              if (new_type
+                  && (strcmp (new_type, type) == 0)
+                  && report_counts_match (&results,
+                                          search_phrase,
+                                          min_cvss_base))
+                count++;
 
               /* Reset the full inner statement. */
 
@@ -10017,59 +10073,6 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
 }
 
 /**
- * @brief Check if a result matches the filter criteria.
- *
- * @param[in]  results        Result iterator.
- * @param[in]  search_phrase  Search phrase.
- * @param[in]  min_cvss_base  Minimum CVSS base.
- *
- * @return 1 if match, 0 otherwise.
- */
-static int
-report_counts_match (iterator_t *results, const char *search_phrase,
-                     const char *min_cvss_base)
-{
-  if (search_phrase)
-    {
-      if (strstr ((const char*) sqlite3_column_text (results->stmt, 5),
-                  search_phrase))
-        {
-          if (min_cvss_base)
-            {
-              if (sql_int (0, 0,
-                           "SELECT"
-                           " (CAST (cvss_base AS REAL))"
-                           " >= CAST (%i AS REAL)"
-                           " FROM nvts"
-                           " WHERE nvts.oid = '%s';",
-                           /* Assume valid SQL string. */
-                           min_cvss_base,
-                           sqlite3_column_text (results->stmt, 2)))
-                return 1;
-            }
-          else
-            return 1;
-        }
-    }
-  else if (min_cvss_base)
-    {
-      if (sql_int (0, 0,
-                   "SELECT"
-                   " (CAST (cvss_base AS REAL))"
-                   " >= CAST (%i AS REAL)"
-                   " FROM nvts"
-                   " WHERE nvts.oid = '%s';",
-                   /* Assume valid SQL string. */
-                   min_cvss_base,
-                   sqlite3_column_text (results->stmt, 2)))
-        return 1;
-    }
-  else
-    return 1;
-  return 1;
-}
-
-/**
  * @brief Get the message counts for a report.
  *
  * @param[in]   report    Report.
@@ -10103,6 +10106,9 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 
   if (search_phrase && strcmp (search_phrase, "") == 0)
     search_phrase = NULL;
+
+  if (min_cvss_base && strcmp (min_cvss_base, "") == 0)
+    min_cvss_base = NULL;
 
   if (holes && infos && logs && warnings && false_positives)
     {
@@ -10417,87 +10423,47 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                       if (strcmp (new_type, "Security Hole") == 0)
                         {
                           (*holes)++;
-                          if (filtered_holes)
-                            {
-                              if (search_phrase)
-                                {
-                                  if (strstr ((const char*)
-                                               sqlite3_column_text
-                                                (results.stmt, 5),
-                                              search_phrase))
-                                    (*filtered_holes)++;
-                                }
-                              else
-                                (*filtered_holes)++;
-                            }
+                          if (filtered_holes
+                              && report_counts_match (&results,
+                                                      search_phrase,
+                                                      min_cvss_base))
+                            (*filtered_holes)++;
                         }
                       else if (strcmp (new_type, "Security Warning") == 0)
                         {
                           (*warnings)++;
-                          if (filtered_warnings)
-                            {
-                              if (search_phrase)
-                                {
-                                  if (strstr ((const char*)
-                                               sqlite3_column_text
-                                                (results.stmt, 5),
-                                              search_phrase))
-                                    (*filtered_warnings)++;
-                                }
-                              else
-                                (*filtered_warnings)++;
-                            }
+                          if (filtered_warnings
+                              && report_counts_match (&results,
+                                                      search_phrase,
+                                                      min_cvss_base))
+                            (*filtered_warnings)++;
                         }
                       else if (strcmp (new_type, "Security Note") == 0)
                         {
                           (*infos)++;
-                          if (filtered_infos)
-                            {
-                              if (search_phrase)
-                                {
-                                  if (strstr ((const char*)
-                                               sqlite3_column_text
-                                                (results.stmt, 5),
-                                              search_phrase))
-                                    (*filtered_infos)++;
-                                }
-                              else
-                                (*filtered_infos)++;
-                            }
+                          if (filtered_infos
+                              && report_counts_match (&results,
+                                                      search_phrase,
+                                                      min_cvss_base))
+                            (*filtered_infos)++;
                         }
                       else if (strcmp (new_type, "Log Message") == 0)
                         {
                           (*logs)++;
-                          if (filtered_logs)
-                            {
-                              if (search_phrase)
-                                {
-                                  if (strstr ((const char*)
-                                               sqlite3_column_text
-                                                (results.stmt, 5),
-                                              search_phrase))
-                                    (*filtered_logs)++;
-                                }
-                              else
-                                (*filtered_logs)++;
-                            }
+                          if (filtered_logs
+                              && report_counts_match (&results,
+                                                      search_phrase,
+                                                      min_cvss_base))
+                            (*filtered_logs)++;
                         }
                       else if (strcmp (new_type, "False Positive") == 0)
                         {
                           (*false_positives)++;
-                          if (filtered_false_positives)
-                            {
-                              if (search_phrase)
-                                {
-                                  if (strstr ((const char*)
-                                               sqlite3_column_text
-                                                (results.stmt, 5),
-                                              search_phrase))
-                                    (*filtered_false_positives)++;
-                                }
-                              else
-                                (*filtered_false_positives)++;
-                            }
+                          if (filtered_false_positives
+                              && report_counts_match (&results,
+                                                      search_phrase,
+                                                      min_cvss_base))
+                            (*filtered_false_positives)++;
                         }
                     }
 
