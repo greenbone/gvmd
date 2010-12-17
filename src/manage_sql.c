@@ -11320,17 +11320,17 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
              result_count,
              filtered_result_count,
              debugs,
-             f_debugs,
+             (strchr (levels, 'd') ? f_debugs : 0),
              holes,
-             f_holes,
+             (strchr (levels, 'h') ? f_holes : 0),
              infos,
-             f_infos,
+             (strchr (levels, 'l') ? f_infos : 0),
              logs,
-             f_logs,
+             (strchr (levels, 'g') ? f_logs : 0),
              warnings,
-             f_warnings,
+             (strchr (levels, 'm') ? f_warnings : 0),
              false_positives,
-             f_false_positives);
+             (strchr (levels, 'f') ? f_false_positives : 0));
   }
 
   /* Results. */
