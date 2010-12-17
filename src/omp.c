@@ -14431,6 +14431,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         tracef ("   total_progress: %i\n", total_progress);
 #endif
 
+                        if (total_progress == 0) total_progress = 1;
+                        else if (total_progress == 100) total_progress = 99;
+
                         g_string_append_printf (string,
                                                 "%i",
                                                 total_progress);
@@ -14836,6 +14839,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         tracef ("   maximum_hosts: %i\n", maximum_hosts);
                         tracef ("   total_progress: %i\n", total_progress);
 #endif
+
+                        if (total_progress == 0) total_progress = 1;
+                        else if (total_progress == 100) total_progress = 99;
 
                         g_string_append_printf (string,
                                                 "%i",
