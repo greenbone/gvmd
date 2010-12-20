@@ -3535,6 +3535,8 @@ x         resp  + SCHEMA
               <e>name</e>
               <e>cvss_base</e>
               <e>risk_factor</e>
+              <o><e>cve</e></o>
+              <o><e>bid</e></o>
             </pattern>
             <ele>
               <name>name</name>
@@ -3547,6 +3549,16 @@ x         resp  + SCHEMA
             <ele>
               <name>risk_factor</name>
               <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>cve</name>
+              <summary>CVE value associated with the NVT</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>bid</name>
+              <summary>BID associated with the NVT</summary>
+              <pattern><t>integer</t></pattern>
             </ele>
           </ele>
           <ele>
@@ -3610,6 +3622,8 @@ x         resp  + SCHEMA
                 <name>Test NVT: control chars in report result</name>
                 <cvss_base></cvss_base>
                 <risk_factor></risk_factor>
+                <cve></cve>
+                <bid></bid>
               </nvt>
               <threat>Medium</threat>
               <description>Warning with control char between fullstops: . .</description>
@@ -4265,6 +4279,8 @@ x         resp  + SCHEMA
               <e>name</e>
               <e>cvss_base</e>
               <e>risk_factor</e>
+              <o><e>cve</e></o>
+              <o><e>bid</e></o>
             </pattern>
             <ele>
               <name>name</name>
@@ -4277,6 +4293,16 @@ x         resp  + SCHEMA
             <ele>
               <name>risk_factor</name>
               <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>cve</name>
+              <summary>CVE value associated with the NVT</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>bid</name>
+              <summary>BID associated with the NVT</summary>
+              <pattern><t>integer</t></pattern>
             </ele>
           </ele>
           <ele>
@@ -5448,6 +5474,8 @@ x         resp  + SCHEMA
               <e>name</e>
               <e>cvss_base</e>
               <e>risk_factor</e>
+              <e>cve</e>
+              <e>bid</e>
             </pattern>
             <ele>
               <name>name</name>
@@ -5462,6 +5490,16 @@ x         resp  + SCHEMA
             <ele>
               <name>risk_factor</name>
               <summary>Risk factor associated with the NVT</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>cve</name>
+              <summary>CVE value associated with the NVT</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>bid</name>
+              <summary>BID associated with the NVT</summary>
               <pattern><t>integer</t></pattern>
             </ele>
           </ele>
@@ -5605,6 +5643,8 @@ x         resp  + SCHEMA
                 <name>Test NVT: fields with ISO-8859-1 chars</name>
                 <cvss_base>5.0</cvss_base>
                 <risk_factor>Medium</risk_factor>
+                <cve>CVE-2009-3095</cve>
+                <bid>36254</bid>
               </nvt>
               <threat>Medium</threat>
               <description>Test with umlaut.</description>
@@ -5634,6 +5674,8 @@ x         resp  + SCHEMA
                 <name>Test NVT: long lines</name>
                 <cvss_base>9</cvss_base>
                 <risk_factor>High</risk_factor>
+                <cve>CVE-2009-3095</cve>
+                <bid>36254</bid>
               </nvt>
               <threat>High</threat>
               <description>Test with very long warning.</description>
