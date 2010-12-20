@@ -1,5 +1,11 @@
 2010-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Update help text in help example.
+
+	* doc/omp.html: Update from source.
+
+2010-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Add remaining commands new in OMP 2.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.
