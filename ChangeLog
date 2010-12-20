@@ -1,5 +1,9 @@
 2010-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Remove tabs.
+
+2010-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Update GET_REPORTS for OMP 2.0.
 
 2010-12-20  Matthew Mundell <matthew.mundell@greenbone.net>

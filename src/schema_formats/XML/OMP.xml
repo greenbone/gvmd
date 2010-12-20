@@ -25,28 +25,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
 <!--
-	report_formats
-x		new  CREATE_REPORT_FORMAT, DELETE_REPORT_FORMAT, GET_REPORTS_FORMATS
-x			 VERIFY_REPORT_FORMAT, MODIFY_REPORT_FORMAT
-x		GET_REPORTS  req  attrib format_id instead of attrib format
+x   report_formats
+x       new  CREATE_REPORT_FORMAT, DELETE_REPORT_FORMAT, GET_REPORTS_FORMATS
+x            VERIFY_REPORT_FORMAT, MODIFY_REPORT_FORMAT
+x       GET_REPORTS  req  attrib format_id instead of attrib format
 x                    resp  + attribs id, format_id, extension, content_type
 x                          entire xml report inside report entity, like others
-	Add CVE and BID to RESULT.
-		in GET_RESULTS resp
-		in GET_NOTES,OVERRIDES resp  when attrib result is true
-	slaves
-		CREATE_TASK  req  + SLAVE
-x		new  CREATE_SLAVE, DELETE_SLAVE, GET_SLAVES
-		GET_TASKS  resp  + SLAVE
-		MODIFY_TASK  req  + slave_id attrib
-		GET_SYSTEM_REPORTS  req  + slave_id attrib
-	agent trust
-		GET_AGENTS  resp  + TRUST and TRUST/TIME
-x		new  VERIFY_AGENT
-	lsc credentials
-x		new  MODIFY_LSC_CREDENTIAL
-x 	HELP  req  + format attrib
-x 		  resp  + SCHEMA
+    Add CVE and BID to RESULT.
+        in GET_RESULTS resp
+        in GET_NOTES,OVERRIDES resp  when attrib result is true
+    slaves
+        CREATE_TASK  req  + SLAVE
+x       new  CREATE_SLAVE, DELETE_SLAVE, GET_SLAVES
+        GET_TASKS  resp  + SLAVE
+        MODIFY_TASK  req  + slave_id attrib
+        GET_SYSTEM_REPORTS  req  + slave_id attrib
+    agent trust
+        GET_AGENTS  resp  + TRUST and TRUST/TIME
+x       new  VERIFY_AGENT
+x   lsc credentials
+x       new  MODIFY_LSC_CREDENTIAL
+x   HELP  req  + format attrib
+x         resp  + SCHEMA
     report filtered result counts
        GET_REPORTS/REPORT/RESULT_COUNT  + FILTERED and FULL
 -->
