@@ -1,5 +1,9 @@
 2010-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Neaten comment.
+
+2010-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Ajust GET_REPORTS result counts for
 	recent filtering additions.
 

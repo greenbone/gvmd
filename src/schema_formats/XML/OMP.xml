@@ -24,31 +24,32 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
-<!--
-x   report_formats
-x       new  CREATE_REPORT_FORMAT, DELETE_REPORT_FORMAT, GET_REPORTS_FORMATS
-x            VERIFY_REPORT_FORMAT, MODIFY_REPORT_FORMAT
-x       GET_REPORTS  req  attrib format_id instead of attrib format
-x                    resp  + attribs id, format_id, extension, content_type
-x                          entire xml report inside report entity, like others
-x   Add CVE and BID to RESULT.
-x       in GET_RESULTS resp
-x       in GET_NOTES,OVERRIDES resp  when attrib result is true
-x   slaves
-x       CREATE_TASK  req  + SLAVE
-x       new  CREATE_SLAVE, DELETE_SLAVE, GET_SLAVES
-x       GET_TASKS  resp  + SLAVE
-x       MODIFY_TASK  req  + SLAVE
-x       GET_SYSTEM_REPORTS  req  + slave_id attrib
-x   agent trust
-x       GET_AGENTS  resp  + TRUST and TRUST/TIME
-x       new  VERIFY_AGENT
-x   lsc credentials
-x       new  MODIFY_LSC_CREDENTIAL
-x   HELP  req  + format attrib
-x         resp  + SCHEMA
-x   report filtered result counts
-x      GET_REPORTS/REPORT/RESULT_COUNT  + FILTERED and FULL
+<!-- Changes between 1.0 and 2.0.
+
+   report_formats
+       new  CREATE_REPORT_FORMAT, DELETE_REPORT_FORMAT, GET_REPORTS_FORMATS
+            VERIFY_REPORT_FORMAT, MODIFY_REPORT_FORMAT
+       GET_REPORTS  req  attrib format_id instead of attrib format
+                    resp  + attribs id, format_id, extension, content_type
+                          entire xml report inside report entity, like others
+   Add CVE and BID to RESULT.
+       in GET_RESULTS resp
+       in GET_NOTES,OVERRIDES resp  when attrib result is true
+   slaves
+       CREATE_TASK  req  + SLAVE
+       new  CREATE_SLAVE, DELETE_SLAVE, GET_SLAVES
+       GET_TASKS  resp  + SLAVE
+       MODIFY_TASK  req  + SLAVE
+       GET_SYSTEM_REPORTS  req  + slave_id attrib
+   agent trust
+       GET_AGENTS  resp  + TRUST and TRUST/TIME
+       new  VERIFY_AGENT
+   lsc credentials
+       new  MODIFY_LSC_CREDENTIAL
+   HELP  req  + format attrib
+         resp  + SCHEMA
+   report filtered result counts
+      GET_REPORTS/REPORT/RESULT_COUNT  + FILTERED and FULL
 -->
 
 <protocol>
