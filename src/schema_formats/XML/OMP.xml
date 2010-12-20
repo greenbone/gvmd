@@ -47,8 +47,8 @@ x   lsc credentials
 x       new  MODIFY_LSC_CREDENTIAL
 x   HELP  req  + format attrib
 x         resp  + SCHEMA
-    report filtered result counts
-       GET_REPORTS/REPORT/RESULT_COUNT  + FILTERED and FULL
+x   report filtered result counts
+x      GET_REPORTS/REPORT/RESULT_COUNT  + FILTERED and FULL
 -->
 
 <protocol>
@@ -4811,9 +4811,8 @@ x         resp  + SCHEMA
           </ele>
           <ele>
             <name>result_count</name>
-            <summary>Number of results produced by scan</summary>
             <pattern>
-              <t>integer</t>
+              <e>full</e>
               <e>filtered</e>
               <e>debug</e>
               <e>hole</e>
@@ -4822,6 +4821,11 @@ x         resp  + SCHEMA
               <e>warning</e>
             </pattern>
             <ele>
+              <name>full</name>
+              <summary>Total number of results produced by scan</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
               <name>filtered</name>
               <summary>Number of results after filtering</summary>
               <pattern><t>integer</t></pattern>
@@ -4829,42 +4833,102 @@ x         resp  + SCHEMA
             <ele>
               <name>debug</name>
               <summary>
-                Number of results of scanner message type "debug" (threat level
-                Debug)
+                Number of "debug" results (threat level Debug)
               </summary>
-              <pattern><t>integer</t></pattern>
+              <pattern>
+                <e>full</e>
+                <e>filtered</e>
+              </pattern>
+              <ele>
+                <name>full</name>
+                <summary>Total number of results</summary>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>filtered</name>
+                <summary>Number of results after filtering</summary>
+                <pattern><t>integer</t></pattern>
+              </ele>
             </ele>
             <ele>
               <name>hole</name>
               <summary>
-                Number of results of scanner message type "hole" (threat level
-                High)
+                Number of "hole" results (threat level High)
               </summary>
-              <pattern><t>integer</t></pattern>
+              <pattern>
+                <e>full</e>
+                <e>filtered</e>
+              </pattern>
+              <ele>
+                <name>full</name>
+                <summary>Total number of results</summary>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>filtered</name>
+                <summary>Number of results after filtering</summary>
+                <pattern><t>integer</t></pattern>
+              </ele>
             </ele>
             <ele>
               <name>info</name>
               <summary>
-                Number of results of scanner message type "info" (threat level
-                Low)
+                Number of "info" results (threat level Low)
               </summary>
-              <pattern><t>integer</t></pattern>
+              <pattern>
+                <e>full</e>
+                <e>filtered</e>
+              </pattern>
+              <ele>
+                <name>full</name>
+                <summary>Total number of results</summary>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>filtered</name>
+                <summary>Number of results after filtering</summary>
+                <pattern><t>integer</t></pattern>
+              </ele>
             </ele>
             <ele>
               <name>log</name>
               <summary>
-                Number of results of scanner message type "log" (threat level
-                Log)
+                Number of "log" results (threat level Log)
               </summary>
-              <pattern><t>integer</t></pattern>
+              <pattern>
+                <e>full</e>
+                <e>filtered</e>
+              </pattern>
+              <ele>
+                <name>full</name>
+                <summary>Total number of results</summary>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>filtered</name>
+                <summary>Number of results after filtering</summary>
+                <pattern><t>integer</t></pattern>
+              </ele>
             </ele>
             <ele>
               <name>warning</name>
               <summary>
-                Number of results of scanner message type "warning" (threat level
-                Medium)
+                Number of "warning" results (threat level Medium)
               </summary>
-              <pattern><t>integer</t></pattern>
+              <pattern>
+                <e>full</e>
+                <e>filtered</e>
+              </pattern>
+              <ele>
+                <name>full</name>
+                <summary>Total number of results</summary>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>filtered</name>
+                <summary>Number of results after filtering</summary>
+                <pattern><t>integer</t></pattern>
+              </ele>
             </ele>
           </ele>
           <ele>
@@ -5087,13 +5151,28 @@ x         resp  + SCHEMA
               </filters>
               <scan_run_status>Done</scan_run_status>
               <result_count>
-                10
+                <full>10</full>
                 <filtered>10</filtered>
-                <debug>0</debug>
-                <hole>0</hole>
-                <info>7</info>
-                <log>0</log>
-                <warning>3</warning>
+                <debug>
+                  <full>0</full>
+                  <filtered>0</filtered>
+                </debug>
+                <hole>
+                  <full>0</full>
+                  <filtered>0</filtered>
+                </hole>
+                <info>
+                  <full>7</full>
+                  <filtered>7</filtered>
+                </info>
+                <log>
+                  <full>0</full>
+                  <filtered>0</filtered>
+                </log>
+                <warning>
+                  <full>3</full>
+                  <filtered>3</filtered>
+                </warning>
               </result_count>
               <task id="13bb418a-4220-4575-b35b-ec398bff7417">
                 <name>dik mm</name>
