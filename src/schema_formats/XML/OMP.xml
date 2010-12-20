@@ -40,8 +40,8 @@ x       new  CREATE_SLAVE, DELETE_SLAVE, GET_SLAVES
 x       GET_TASKS  resp  + SLAVE
 x       MODIFY_TASK  req  + SLAVE
 x       GET_SYSTEM_REPORTS  req  + slave_id attrib
-    agent trust
-        GET_AGENTS  resp  + TRUST and TRUST/TIME
+x   agent trust
+x       GET_AGENTS  resp  + TRUST and TRUST/TIME
 x       new  VERIFY_AGENT
 x   lsc credentials
 x       new  MODIFY_LSC_CREDENTIAL
@@ -2477,7 +2477,13 @@ x         resp  + SCHEMA
                   <alt>unknown</alt>
                 </alts>
               </t>
+              <e>time</e>
             </pattern>
+            <ele>
+              <name>time</name>
+              <summary>When the signature was verified</summary>
+              <pattern><t>ctime</t></pattern>
+            </ele>
           </ele>
         </ele>
         <ele>
@@ -2506,7 +2512,12 @@ x         resp  + SCHEMA
             <name>Custom Scan Agent</name>
             <comment>Custom agent for use on the Web servers.</comment>
             <in_use>1</in_use>
-            <installer><trust>yes</trust></installer>
+            <installer>
+              <trust>
+                <time>Wed Jun 30 21:49:08 1993</time>
+                yes
+              </trust>
+            </installer>
           </agent>
           <truncated>...</truncated>
         </get_agents_response>
@@ -2524,7 +2535,12 @@ x         resp  + SCHEMA
             <name>Custom Scan Agent</name>
             <comment>Custom agent for use on the Web servers.</comment>
             <in_use>1</in_use>
-            <installer><trust>yes</trust></installer>
+            <installer>
+              <trust>
+                <time>Wed Jun 30 21:49:08 1993</time>
+                yes
+              </trust>
+            </installer>
           </agent>
         </get_agents_response>
       </response>
