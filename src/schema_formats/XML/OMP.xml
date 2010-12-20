@@ -28,7 +28,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 	report_formats
 x		new  CREATE_REPORT_FORMAT, DELETE_REPORT_FORMAT, GET_REPORTS_FORMATS
 x			 VERIFY_REPORT_FORMAT, MODIFY_REPORT_FORMAT
-		GET_REPORTS  req  attrib format_id instead of attrib format
+x		GET_REPORTS  req  attrib format_id instead of attrib format
+x                    resp  + attribs id, format_id, extension, content_type
+x                          entire xml report inside report entity, like others
 	Add CVE and BID to RESULT.
 		in GET_RESULTS resp
 		in GET_NOTES,OVERRIDES resp  when attrib result is true
@@ -4520,9 +4522,9 @@ x 		  resp  + SCHEMA
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>format</name>
-        <summary>Required report format</summary>
-        <type>text</type>
+        <name>format_id</name>
+        <summary>ID of required report format</summary>
+        <type>uuid</type>
       </attrib>
       <attrib>
         <name>first_result</name>
@@ -4599,355 +4601,382 @@ x 		  resp  + SCHEMA
       </pattern>
       <ele>
         <name>report</name>
+        <summary>Actually attributes and either base64 or a report</summary>
         <pattern>
           <attrib>
             <name>id</name>
             <type>uuid</type>
             <required>1</required>
           </attrib>
+          <attrib>
+            <name>format_id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>extension</name>
+            <type>text</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>content_type</name>
+            <type>text</type>
+            <required>1</required>
+          </attrib>
           <t>base64</t>
-          <o>
-            <g>
-              <e>sort</e>
-              <e>filters</e>
-              <e>scan_run_status</e>
-              <e>result_count</e>
-              <e>task</e>
-              <e>ports</e>
-              <e>results</e>
-              <e>scan_start</e>
-              <any><e>host_start</e></any>
-              <any><e>host_end</e></any>
-              <e>scan_end</e>
-            </g>
-          </o>
+          <e>report</e>
         </pattern>
         <ele>
-          <name>sort</name>
-          <summary>Result sorting information</summary>
-          <pattern>
-            <e>field</e>
-          </pattern>
-          <ele>
-            <name>field</name>
-            <summary>Sort field</summary>
-            <pattern>
-              text
-              <e>order</e>
-            </pattern>
-            <ele>
-              <name>order</name>
-              <summary>Sort order of field</summary>
-              <pattern>
-                <t>
-                  <alts>
-                    <alt>ascending</alt>
-                    <alt>descending</alt>
-                  </alts>
-                </t>
-              </pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>filters</name>
-          <summary>Result filtering information</summary>
-          <pattern>
-            <t>levels</t>
-            <e>phrase</e>
-            <e>notes</e>
-            <e>overrides</e>
-            <e>apply_overrides</e>
-            <e>result_hosts_only</e>
-            <e>min_cvss_base</e>
-            <any><e>filter</e></any>
-          </pattern>
-          <ele>
-            <name>phrase</name>
-            <summary>Search phrase</summary>
-            <pattern>
-              <t>text</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>notes</name>
-            <summary>Whether notes are included</summary>
-            <pattern>
-              <t><alts><alt>0</alt><alt>1</alt></alts></t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>overrides</name>
-            <summary>Whether overrides are included</summary>
-            <pattern>
-              <t><alts><alt>0</alt><alt>1</alt></alts></t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>apply_overrides</name>
-            <summary>Whether overrides are applied</summary>
-            <pattern>
-              <t><alts><alt>0</alt><alt>1</alt></alts></t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>result_hosts_only</name>
-            <summary>
-              Whether only those hosts that have results are included
-            </summary>
-            <pattern>
-              <t><alts><alt>0</alt><alt>1</alt></alts></t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>min_cvss_base</name>
-            <summary>Minimum CVSS base if in effect, else empty string</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>filter</name>
-            <summary>Level filter</summary>
-            <pattern>
-              <t>
-                <alts>
-                  <alt>High</alt>
-                  <alt>Medium</alt>
-                  <alt>Low</alt>
-                  <alt>Log</alt>
-                  <alt>Debug</alt>
-                </alts>
-              </t>
-            </pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>scan_run_status</name>
-          <summary>Run status of task scan at time of report</summary>
-          <pattern><t>task_status</t></pattern>
-        </ele>
-        <ele>
-          <name>result_count</name>
-          <summary>Number of results produced by scan</summary>
-          <pattern>
-            <t>integer</t>
-            <e>filtered</e>
-            <e>debug</e>
-            <e>hole</e>
-            <e>info</e>
-            <e>log</e>
-            <e>warning</e>
-          </pattern>
-          <ele>
-            <name>filtered</name>
-            <summary>Number of results after filtering</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>debug</name>
-            <summary>
-              Number of results of scanner message type "debug" (threat level
-              Debug)
-            </summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>hole</name>
-            <summary>
-              Number of results of scanner message type "hole" (threat level
-              High)
-            </summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>info</name>
-            <summary>
-              Number of results of scanner message type "info" (threat level
-              Low)
-            </summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>log</name>
-            <summary>
-              Number of results of scanner message type "log" (threat level
-              Log)
-            </summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>warning</name>
-            <summary>
-              Number of results of scanner message type "warning" (threat level
-              Medium)
-            </summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>task</name>
+          <name>report</name>
           <pattern>
             <attrib>
               <name>id</name>
               <type>uuid</type>
               <required>1</required>
             </attrib>
-            <e>name</e>
+            <o>
+              <g>
+                <e>sort</e>
+                <e>filters</e>
+                <e>scan_run_status</e>
+                <e>result_count</e>
+                <e>task</e>
+                <e>ports</e>
+                <e>results</e>
+                <e>scan_start</e>
+                <any><e>host_start</e></any>
+                <any><e>host_end</e></any>
+                <e>scan_end</e>
+              </g>
+            </o>
           </pattern>
           <ele>
-            <name>name</name>
-            <summary>The name of the task</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>ports</name>
-          <pattern>
-            <attrib>
-              <name>start</name>
-              <type>integer</type>
-              <required>1</required>
-            </attrib>
-            <attrib>
-              <name>max</name>
-              <type>integer</type>
-              <required>1</required>
-            </attrib>
-            <any><e>port</e></any>
-          </pattern>
-          <ele>
-            <name>port</name>
+            <name>sort</name>
+            <summary>Result sorting information</summary>
             <pattern>
-              text
-              <e>host</e>
-              <e>threat</e>
+              <e>field</e>
             </pattern>
             <ele>
-              <name>host</name>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>threat</name>
-              <pattern><t>threat</t></pattern>
+              <name>field</name>
+              <summary>Sort field</summary>
+              <pattern>
+                text
+                <e>order</e>
+              </pattern>
+              <ele>
+                <name>order</name>
+                <summary>Sort order of field</summary>
+                <pattern>
+                  <t>
+                    <alts>
+                      <alt>ascending</alt>
+                      <alt>descending</alt>
+                    </alts>
+                  </t>
+                </pattern>
+              </ele>
             </ele>
           </ele>
-        </ele>
-        <ele>
-          <name>results</name>
-          <pattern>
-            <attrib>
-              <name>start</name>
-              <type>integer</type>
-              <required>1</required>
-            </attrib>
-            <attrib>
-              <name>max</name>
-              <type>integer</type>
-              <required>1</required>
-            </attrib>
-            <any><e>result</e></any>
-          </pattern>
           <ele>
-            <name>result</name>
+            <name>filters</name>
+            <summary>Result filtering information</summary>
+            <pattern>
+              <t>levels</t>
+              <e>phrase</e>
+              <e>notes</e>
+              <e>overrides</e>
+              <e>apply_overrides</e>
+              <e>result_hosts_only</e>
+              <e>min_cvss_base</e>
+              <any><e>filter</e></any>
+            </pattern>
+            <ele>
+              <name>phrase</name>
+              <summary>Search phrase</summary>
+              <pattern>
+                <t>text</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>notes</name>
+              <summary>Whether notes are included</summary>
+              <pattern>
+                <t><alts><alt>0</alt><alt>1</alt></alts></t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>overrides</name>
+              <summary>Whether overrides are included</summary>
+              <pattern>
+                <t><alts><alt>0</alt><alt>1</alt></alts></t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>apply_overrides</name>
+              <summary>Whether overrides are applied</summary>
+              <pattern>
+                <t><alts><alt>0</alt><alt>1</alt></alts></t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>result_hosts_only</name>
+              <summary>
+                Whether only those hosts that have results are included
+              </summary>
+              <pattern>
+                <t><alts><alt>0</alt><alt>1</alt></alts></t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>min_cvss_base</name>
+              <summary>Minimum CVSS base if in effect, else empty string</summary>
+              <pattern>
+                text
+              </pattern>
+            </ele>
+            <ele>
+              <name>filter</name>
+              <summary>Level filter</summary>
+              <pattern>
+                <t>
+                  <alts>
+                    <alt>High</alt>
+                    <alt>Medium</alt>
+                    <alt>Low</alt>
+                    <alt>Log</alt>
+                    <alt>Debug</alt>
+                  </alts>
+                </t>
+              </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>scan_run_status</name>
+            <summary>Run status of task scan at time of report</summary>
+            <pattern><t>task_status</t></pattern>
+          </ele>
+          <ele>
+            <name>result_count</name>
+            <summary>Number of results produced by scan</summary>
+            <pattern>
+              <t>integer</t>
+              <e>filtered</e>
+              <e>debug</e>
+              <e>hole</e>
+              <e>info</e>
+              <e>log</e>
+              <e>warning</e>
+            </pattern>
+            <ele>
+              <name>filtered</name>
+              <summary>Number of results after filtering</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>debug</name>
+              <summary>
+                Number of results of scanner message type "debug" (threat level
+                Debug)
+              </summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>hole</name>
+              <summary>
+                Number of results of scanner message type "hole" (threat level
+                High)
+              </summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>info</name>
+              <summary>
+                Number of results of scanner message type "info" (threat level
+                Low)
+              </summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>log</name>
+              <summary>
+                Number of results of scanner message type "log" (threat level
+                Log)
+              </summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>warning</name>
+              <summary>
+                Number of results of scanner message type "warning" (threat level
+                Medium)
+              </summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>task</name>
             <pattern>
               <attrib>
                 <name>id</name>
                 <type>uuid</type>
                 <required>1</required>
               </attrib>
-              <e>subnet</e>
-              <e>host</e>
-              <e>port</e>
-              <e>nvt</e>
-              <e>threat</e>
-              <e>description</e>
+              <e>name</e>
             </pattern>
             <ele>
-              <name>subnet</name>
-              <pattern>text</pattern>
+              <name>name</name>
+              <summary>The name of the task</summary>
+              <pattern><t>name</t></pattern>
             </ele>
+          </ele>
+          <ele>
+            <name>ports</name>
+            <pattern>
+              <attrib>
+                <name>start</name>
+                <type>integer</type>
+                <required>1</required>
+              </attrib>
+              <attrib>
+                <name>max</name>
+                <type>integer</type>
+                <required>1</required>
+              </attrib>
+              <any><e>port</e></any>
+            </pattern>
+            <ele>
+              <name>port</name>
+              <pattern>
+                text
+                <e>host</e>
+                <e>threat</e>
+              </pattern>
+              <ele>
+                <name>host</name>
+                <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>threat</name>
+                <pattern><t>threat</t></pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>results</name>
+            <pattern>
+              <attrib>
+                <name>start</name>
+                <type>integer</type>
+                <required>1</required>
+              </attrib>
+              <attrib>
+                <name>max</name>
+                <type>integer</type>
+                <required>1</required>
+              </attrib>
+              <any><e>result</e></any>
+            </pattern>
+            <ele>
+              <name>result</name>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+                <e>subnet</e>
+                <e>host</e>
+                <e>port</e>
+                <e>nvt</e>
+                <e>threat</e>
+                <e>description</e>
+              </pattern>
+              <ele>
+                <name>subnet</name>
+                <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>host</name>
+                <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>port</name>
+                <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>nvt</name>
+                <summary>NVT to which result applies</summary>
+                <pattern>
+                  <attrib>
+                    <name>oid</name>
+                    <type>oid</type>
+                    <required>1</required>
+                  </attrib>
+                  <e>name</e>
+                  <e>cvss_base</e>
+                  <e>risk_factor</e>
+                </pattern>
+                <ele>
+                  <name>name</name>
+                  <summary>The name of the NVT</summary>
+                  <pattern><t>name</t></pattern>
+                </ele>
+                <ele>
+                  <name>cvss_base</name>
+                  <summary>CVSS base value associated with the NVT</summary>
+                  <pattern><t>integer</t></pattern>
+                </ele>
+                <ele>
+                  <name>risk_factor</name>
+                  <summary>Risk factor associated with the NVT</summary>
+                  <pattern><t>integer</t></pattern>
+                </ele>
+              </ele>
+              <ele>
+                <name>threat</name>
+                <pattern><t>threat</t></pattern>
+              </ele>
+              <ele>
+                <name>description</name>
+                <summary>Description of the result</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>scan_start</name>
+            <summary>Start time of scan</summary>
+            <pattern><t>ctime</t></pattern>
+          </ele>
+          <ele>
+            <name>host_start</name>
+            <summary>Start time of a particular host</summary>
+            <pattern>
+              <t>ctime</t>
+              <e>host</e>
+            </pattern>
             <ele>
               <name>host</name>
               <pattern>text</pattern>
             </ele>
+          </ele>
+          <ele>
+            <name>host_end</name>
+            <summary>End time of a particular host</summary>
+            <pattern>
+              <t>ctime</t>
+              <e>host</e>
+            </pattern>
             <ele>
-              <name>port</name>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>nvt</name>
-              <summary>NVT to which result applies</summary>
-              <pattern>
-                <attrib>
-                  <name>oid</name>
-                  <type>oid</type>
-                  <required>1</required>
-                </attrib>
-                <e>name</e>
-                <e>cvss_base</e>
-                <e>risk_factor</e>
-              </pattern>
-              <ele>
-                <name>name</name>
-                <summary>The name of the NVT</summary>
-                <pattern><t>name</t></pattern>
-              </ele>
-              <ele>
-                <name>cvss_base</name>
-                <summary>CVSS base value associated with the NVT</summary>
-                <pattern><t>integer</t></pattern>
-              </ele>
-              <ele>
-                <name>risk_factor</name>
-                <summary>Risk factor associated with the NVT</summary>
-                <pattern><t>integer</t></pattern>
-              </ele>
-            </ele>
-            <ele>
-              <name>threat</name>
-              <pattern><t>threat</t></pattern>
-            </ele>
-            <ele>
-              <name>description</name>
-              <summary>Description of the result</summary>
+              <name>host</name>
               <pattern>text</pattern>
             </ele>
           </ele>
-        </ele>
-        <ele>
-          <name>scan_start</name>
-          <summary>Start time of scan</summary>
-          <pattern><t>ctime</t></pattern>
-        </ele>
-        <ele>
-          <name>host_start</name>
-          <summary>Start time of a particular host</summary>
-          <pattern>
-            <t>ctime</t>
-            <e>host</e>
-          </pattern>
           <ele>
-            <name>host</name>
-            <pattern>text</pattern>
+            <name>scan_end</name>
+            <summary>End time of scan</summary>
+            <pattern><t>ctime</t></pattern>
           </ele>
-        </ele>
-        <ele>
-          <name>host_end</name>
-          <summary>End time of a particular host</summary>
-          <pattern>
-            <t>ctime</t>
-            <e>host</e>
-          </pattern>
-          <ele>
-            <name>host</name>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>scan_end</name>
-          <summary>End time of scan</summary>
-          <pattern><t>ctime</t></pattern>
         </ele>
       </ele>
     </response>
@@ -4955,12 +4984,15 @@ x 		  resp  + SCHEMA
       <summary>Get a report in PDF</summary>
       <request>
         <get_reports report_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"
-                     format="PDF">
+                     format_id="1a60a67e-97d0-4cbf-bc77-f71b08e7043d">
         </get_reports>
       </request>
       <response>
         <get_reports_response status="200" status_text="OK">
-          <report id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+          <report id="267a3405-e84a-47da-97b2-5fa0d2e8995e"
+                  format_id="1a60a67e-97d0-4cbf-bc77-f71b08e7043d"
+                  extension="pdf"
+                  content_type="application/pdf">
             hsisn3qaVFhkjFRG4...
           </report>
         </get_reports_response>
@@ -4974,67 +5006,72 @@ x 		  resp  + SCHEMA
       </request>
       <response>
         <get_reports_response status="200" status_text="OK">
-          <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
-            <sort>
-              <field>
-                type
-                <order>descending</order>
-              </field>
-            </sort>
-            <filters>
-              hmlgd
-              <phrase></phrase>
-              <notes>0</notes>
-              <overrides>0</overrides>
-              <apply_overrides>0</apply_overrides>
-              <result_hosts_only>1</result_hosts_only>
-              <min_cvss_base></min_cvss_base>
-              <filter>High</filter>
-              <filter>Medium</filter>
-              <filter>Low</filter>
-              <filter>Log</filter>
-              <filter>Debug</filter>
-            </filters>
-            <scan_run_status>Done</scan_run_status>
-            <result_count>
-              10
-              <filtered>10</filtered>
-              <debug>0</debug>
-              <hole>0</hole>
-              <info>7</info>
-              <log>0</log>
-              <warning>3</warning>
-            </result_count>
-            <task id="13bb418a-4220-4575-b35b-ec398bff7417">
-              <name>dik mm</name>
-            </task>
-            <ports start="1" max="-1">
-              <port>
-                general/tcp
-                <host>127.0.1.1</host>
-                <threat>Medium</threat>
-              </port>
-              <truncated>...</truncated>
-            </ports>
-            <results start="1" max="-1">
-              <result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508">
-                <subnet>127.0.1.1</subnet>
-                <host>127.0.1.1</host>
-                <port>general/tcp</port>
-                <nvt oid="1.3.6.1.4.1.25623.1.0.74">
-                  <name>Test NVT: fields with ISO-8859-1 chars ()</name>
-                  <cvss_base>5.0</cvss_base>
-                  <risk_factor>Medium</risk_factor>
-                </nvt>
-                <threat>Medium</threat>
-                <description>Test with  umlaut Warning Port 0.</description>
-              </result>
-              <truncated>...</truncated>
-            </results>
-            <scan_start>Mon Feb  1 19:11:21 2010</scan_start>
-            <host_start>Mon Feb  1 19:11:21 2010<host>127.0.1.1</host></host_start>
-            <host_end>Mon Feb  1 19:11:52 2010<host>127.0.1.1</host></host_end>
-            <scan_end>Mon Feb  1 19:11:52 2010</scan_end>
+          <report id="f0fdf522-276d-4893-9274-fb8699dc2270"
+                  format_id="d5da9f67-8551-4e51-807b-b6a873d70e34"
+                  extension="xml"
+                  content_type="text/xml">
+            <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
+              <sort>
+                <field>
+                  type
+                  <order>descending</order>
+                </field>
+              </sort>
+              <filters>
+                hmlgd
+                <phrase></phrase>
+                <notes>0</notes>
+                <overrides>0</overrides>
+                <apply_overrides>0</apply_overrides>
+                <result_hosts_only>1</result_hosts_only>
+                <min_cvss_base></min_cvss_base>
+                <filter>High</filter>
+                <filter>Medium</filter>
+                <filter>Low</filter>
+                <filter>Log</filter>
+                <filter>Debug</filter>
+              </filters>
+              <scan_run_status>Done</scan_run_status>
+              <result_count>
+                10
+                <filtered>10</filtered>
+                <debug>0</debug>
+                <hole>0</hole>
+                <info>7</info>
+                <log>0</log>
+                <warning>3</warning>
+              </result_count>
+              <task id="13bb418a-4220-4575-b35b-ec398bff7417">
+                <name>dik mm</name>
+              </task>
+              <ports start="1" max="-1">
+                <port>
+                  general/tcp
+                  <host>127.0.1.1</host>
+                  <threat>Medium</threat>
+                </port>
+                <truncated>...</truncated>
+              </ports>
+              <results start="1" max="-1">
+                <result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508">
+                  <subnet>127.0.1.1</subnet>
+                  <host>127.0.1.1</host>
+                  <port>general/tcp</port>
+                  <nvt oid="1.3.6.1.4.1.25623.1.0.74">
+                    <name>Test NVT: fields with ISO-8859-1 chars ()</name>
+                    <cvss_base>5.0</cvss_base>
+                    <risk_factor>Medium</risk_factor>
+                  </nvt>
+                  <threat>Medium</threat>
+                  <description>Test with  umlaut Warning Port 0.</description>
+                </result>
+                <truncated>...</truncated>
+              </results>
+              <scan_start>Mon Feb  1 19:11:21 2010</scan_start>
+              <host_start>Mon Feb  1 19:11:21 2010<host>127.0.1.1</host></host_start>
+              <host_end>Mon Feb  1 19:11:52 2010<host>127.0.1.1</host></host_end>
+              <scan_end>Mon Feb  1 19:11:52 2010</scan_end>
+            </report>
           </report>
         </get_reports_response>
       </response>
