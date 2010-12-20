@@ -31,15 +31,15 @@ x            VERIFY_REPORT_FORMAT, MODIFY_REPORT_FORMAT
 x       GET_REPORTS  req  attrib format_id instead of attrib format
 x                    resp  + attribs id, format_id, extension, content_type
 x                          entire xml report inside report entity, like others
-    Add CVE and BID to RESULT.
-        in GET_RESULTS resp
-        in GET_NOTES,OVERRIDES resp  when attrib result is true
-    slaves
-        CREATE_TASK  req  + SLAVE
+x   Add CVE and BID to RESULT.
+x       in GET_RESULTS resp
+x       in GET_NOTES,OVERRIDES resp  when attrib result is true
+x   slaves
+x       CREATE_TASK  req  + SLAVE
 x       new  CREATE_SLAVE, DELETE_SLAVE, GET_SLAVES
-        GET_TASKS  resp  + SLAVE
-        MODIFY_TASK  req  + slave_id attrib
-        GET_SYSTEM_REPORTS  req  + slave_id attrib
+x       GET_TASKS  resp  + SLAVE
+x       MODIFY_TASK  req  + SLAVE
+x       GET_SYSTEM_REPORTS  req  + slave_id attrib
     agent trust
         GET_AGENTS  resp  + TRUST and TRUST/TIME
 x       new  VERIFY_AGENT
@@ -1718,6 +1718,7 @@ x         resp  + SCHEMA
       <e>target</e>
       <o><e>escalator</e></o>
       <o><e>schedule</e></o>
+      <o><e>slave</e></o>
       <o><e>rcfile</e></o>
     </pattern>
     <ele>
@@ -1768,6 +1769,17 @@ x         resp  + SCHEMA
     <ele>
       <name>schedule</name>
       <summary>When the task will run</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>slave</name>
+      <summary>Slave that the task will run on</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -6048,6 +6060,11 @@ x         resp  + SCHEMA
         <summary>Whether to include the actual reports</summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>slave_id</name>
+        <summary>Slave from which to get report</summary>
+        <type>uuid</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -6471,6 +6488,7 @@ x         resp  + SCHEMA
           <e>target</e>
           <e>escalator</e>
           <e>schedule</e>
+          <e>slave</e>
           <e>result_count</e>
           <e>report_count</e>
           <e>trend</e>
@@ -6580,6 +6598,23 @@ x         resp  + SCHEMA
           <ele>
             <name>name</name>
             <summary>The name of the schedule</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>slave</name>
+          <summary>The slave that the task will run on</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the slave</summary>
             <pattern><t>name</t></pattern>
           </ele>
         </ele>
@@ -6888,6 +6923,9 @@ x         resp  + SCHEMA
               <name></name>
               <next_time>over</next_time>
             </schedule>
+            <slave id="">
+              <name></name>
+            </slave>
             <result_count>
               <debug>0</debug>
               <log>0</log>
@@ -6978,6 +7016,9 @@ x         resp  + SCHEMA
               <name></name>
               <next_time>over</next_time>
             </schedule>
+            <slave id="">
+              <name></name>
+            </slave>
             <result_count>
               <debug>0</debug>
               <log>0</log>
@@ -8083,6 +8124,7 @@ x         resp  + SCHEMA
         <e>name</e>
         <e>rcfile</e>
         <e>schedule</e>
+        <e>slave</e>
         <e>file</e>
       </or>
     </pattern>
@@ -8119,6 +8161,17 @@ x         resp  + SCHEMA
     <ele>
       <name>schedule</name>
       <summary>Task schedule</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>slave</name>
+      <summary>Task slave</summary>
       <pattern>
         <attrib>
           <name>id</name>

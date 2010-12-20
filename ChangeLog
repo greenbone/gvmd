@@ -1,5 +1,10 @@
 2010-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Modify CREATE_TASK, GET_SYSTEM_REPORTS,
+	GET_TASKS and MODIFY_TASK for OMP 2.0 master slave feature.
+
+2010-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Add CVE and BID to RESULT/NVT in
 	GET_RESULTS, GET_NOTES and GET_OVERRIDES.
 
