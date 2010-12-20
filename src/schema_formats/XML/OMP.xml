@@ -50,6 +50,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
          resp  + SCHEMA
    report filtered result counts
       GET_REPORTS/REPORT/RESULT_COUNT  + FILTERED and FULL
+   target port ranges
+      CREATE_TARGET,GET_TARGETS  + PORT_RANGE
 -->
 
 <protocol>
@@ -1611,6 +1613,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>hosts</e>
       <e>lsc_credential</e>
       <e>target_locator</e>
+      <o><e>port_range</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -1663,6 +1666,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           text
         </pattern>
       </ele>
+    </ele>
+    <ele>
+      <name>port_range</name>
+      <summary>Port range for the target</summary>
+      <pattern>text</pattern>
     </ele>
     <response>
       <pattern>
@@ -6355,6 +6363,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>max_hosts</e>
           <e>in_use</e>
           <e>lsc_credential</e>
+          <e>port_range</e>
           <o><e>tasks</e></o>
         </pattern>
         <ele>
@@ -6404,6 +6413,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the LSC credential</summary>
             <pattern><t>name</t></pattern>
           </ele>
+        </ele>
+        <ele>
+          <name>port_range</name>
+          <summary>Port range of the target</summary>
+          <pattern><t>name</t></pattern>
         </ele>
         <ele>
           <name>tasks</name>
