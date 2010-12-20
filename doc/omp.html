@@ -3432,8 +3432,16 @@ create_slave_password
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>lsc_credential</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Login credentials for target.</div>
+              &lt;<b>ssh_lsc_credential</b>&gt;
+              <div style="margin-left: 15px; display: inline;">SSH login credentials for target.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
+              &lt;<b>smb_lsc_credential</b>&gt;
+              <div style="margin-left: 15px; display: inline;">SMB login credentials for target.</div>
 <ul style="list-style: none"><li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -3454,6 +3462,11 @@ create_slave_password
 <ul style="list-style: none"></ul>
 </li>
 </ul>
+</li>
+<li>
+              &lt;<b>port_range</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Port range for the target.</div>
+<ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
@@ -3482,8 +3495,10 @@ create_slave_password
        create_target_name
        &amp; create_target_comment?
        &amp; create_target_hosts
-       &amp; create_target_lsc_credential
+       &amp; create_target_ssh_lsc_credential
+       &amp; create_target_smb_lsc_credential
        &amp; create_target_target_locator
+       &amp; create_target_port_range?
      }
 
 create_target_name
@@ -3504,8 +3519,14 @@ create_target_hosts
        text
      }
 
-create_target_lsc_credential
- = element lsc_credential
+create_target_ssh_lsc_credential
+ = element ssh_lsc_credential
+     {
+       attribute id { uuid }
+     }
+
+create_target_smb_lsc_credential
+ = element smb_lsc_credential
      {
        attribute id { uuid }
      }
@@ -3525,6 +3546,12 @@ create_target_target_locator_username
 
 create_target_target_locator_password
  = element password
+     {
+       text
+     }
+
+create_target_port_range
+ = element port_range
      {
        text
      }
@@ -3611,6 +3638,14 @@ create_target_target_locator_password
           </li></ul>
 </li>
 <li>
+              &lt;<b>slave</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Slave that the task will run on.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
               &lt;<b>rcfile</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">An openvasrc style file defining the task.</div>
 <ul style="list-style: none"></ul>
@@ -3645,6 +3680,7 @@ create_target_target_locator_password
        &amp; create_task_target
        &amp; create_task_escalator?
        &amp; create_task_schedule?
+       &amp; create_task_slave?
        &amp; create_task_rcfile?
      }
 
@@ -3680,6 +3716,12 @@ create_task_escalator
 
 create_task_schedule
  = element schedule
+     {
+       attribute id { uuid }
+     }
+
+create_task_slave
+ = element slave
      {
        attribute id { uuid }
      }
@@ -4503,7 +4545,11 @@ create_task_rcfile
               <ul style="list-style: none"><li>
               &lt;<b>trust</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether signature verification succeeded.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">When the signature was verified.</div>
 <ul style="list-style: none"></ul>
+</li></ul>
 </li></ul>
 </li>
 <li>
@@ -4579,7 +4625,14 @@ get_agents_response_agent_installer
 get_agents_response_agent_installer_trust
  = element trust
      {
-       xsd:token { pattern = "yes|no|unknown" }
+       text # RNC limitation: xsd:token { pattern = "yes|no|unknown" }
+       &amp; get_agents_response_agent_installer_trust_time
+     }
+
+get_agents_response_agent_installer_trust_time
+ = element time
+     {
+       ctime
      }
 
 get_agents_response_agent_package
@@ -4607,7 +4660,10 @@ get_agents_response_agent_package_filename
      &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
      &lt;installer&gt;
-       &lt;trust&gt;yes&lt;/trust&gt;
+       &lt;trust&gt;
+         yes
+         &lt;time&gt;Wed Jun 30 21:49:08 1993&lt;/time&gt;
+       &lt;/trust&gt;
      &lt;/installer&gt;
    &lt;/agent&gt;
    ...
@@ -4625,7 +4681,10 @@ get_agents_response_agent_package_filename
      &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
      &lt;installer&gt;
-       &lt;trust&gt;yes&lt;/trust&gt;
+       &lt;trust&gt;
+         yes
+         &lt;time&gt;Wed Jun 30 21:49:08 1993&lt;/time&gt;
+       &lt;/trust&gt;
      &lt;/installer&gt;
    &lt;/agent&gt;
  &lt;/get_agents_response&gt;
@@ -5934,6 +5993,16 @@ get_lsc_credentials_response_lsc_credential_package
               &lt;<b>risk_factor</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>cve</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">CVE value associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>bid</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">BID associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -6089,6 +6158,8 @@ get_notes_response_note_result_nvt
        &amp; get_notes_response_note_result_nvt_name
        &amp; get_notes_response_note_result_nvt_cvss_base
        &amp; get_notes_response_note_result_nvt_risk_factor
+       &amp; get_notes_response_note_result_nvt_cve?
+       &amp; get_notes_response_note_result_nvt_bid?
      }
 
 get_notes_response_note_result_nvt_name
@@ -6107,6 +6178,18 @@ get_notes_response_note_result_nvt_risk_factor
  = element risk_factor
      {
        text
+     }
+
+get_notes_response_note_result_nvt_cve
+ = element cve
+     {
+       text
+     }
+
+get_notes_response_note_result_nvt_bid
+ = element bid
+     {
+       integer
      }
 
 get_notes_response_note_result_threat
@@ -6169,6 +6252,8 @@ get_notes_response_note_result_description
          &lt;name&gt;Test NVT: control chars in report result&lt;/name&gt;
          &lt;cvss_base/&gt;
          &lt;risk_factor/&gt;
+         &lt;cve/&gt;
+         &lt;bid/&gt;
        &lt;/nvt&gt;
        &lt;threat&gt;Medium&lt;/threat&gt;
        &lt;description&gt;Warning with control char between fullstops: . .&lt;/description&gt;
@@ -7029,6 +7114,16 @@ get_nvt_feed_checksum_response_checksum
               &lt;<b>risk_factor</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>cve</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">CVE value associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>bid</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">BID associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -7191,6 +7286,8 @@ get_overrides_response_override_result_nvt
        &amp; get_overrides_response_override_result_nvt_name
        &amp; get_overrides_response_override_result_nvt_cvss_base
        &amp; get_overrides_response_override_result_nvt_risk_factor
+       &amp; get_overrides_response_override_result_nvt_cve?
+       &amp; get_overrides_response_override_result_nvt_bid?
      }
 
 get_overrides_response_override_result_nvt_name
@@ -7209,6 +7306,18 @@ get_overrides_response_override_result_nvt_risk_factor
  = element risk_factor
      {
        text
+     }
+
+get_overrides_response_override_result_nvt_cve
+ = element cve
+     {
+       text
+     }
+
+get_overrides_response_override_result_nvt_bid
+ = element bid
+     {
+       integer
      }
 
 get_overrides_response_override_result_threat
@@ -7502,9 +7611,9 @@ get_preferences_response_preference_value
           ID of single report to get.
           </li>
 <li>
-          @<b>format</b>
-          (text)
-          Required report format.
+          @<b>format_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of required report format.
           </li>
 <li>
           @<b>first_result</b>
@@ -7578,7 +7687,27 @@ get_preferences_response_preference_value
           </li>
 <li>
               &lt;<b>report</b>&gt;
-              *<ul style="list-style: none">
+              *<div style="margin-left: 15px; display: inline;">Actually attributes and either base64 or a report.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+          @<b>format_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+          @<b>extension</b>
+          (text)
+          </li>
+<li>
+          @<b>content_type</b>
+          (text)
+          </li>
+<li>
+              &lt;<b>report</b>&gt;
+              <ul style="list-style: none">
 <li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -7646,8 +7775,12 @@ get_preferences_response_preference_value
 </li>
 <li>
               &lt;<b>result_count</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Number of results produced by scan.</div>
-<ul style="list-style: none">
+              <ul style="list-style: none">
+<li>
+              &lt;<b>full</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Total number of results produced by scan.</div>
+<ul style="list-style: none"></ul>
+</li>
 <li>
               &lt;<b>filtered</b>&gt;
               <div style="margin-left: 15px; display: inline;">Number of results after filtering.</div>
@@ -7655,28 +7788,83 @@ get_preferences_response_preference_value
 </li>
 <li>
               &lt;<b>debug</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Number of results of scanner message type "debug" (threat level Debug).</div>
+              <div style="margin-left: 15px; display: inline;">Number of "debug" results (threat level Debug).</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>full</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Total number of results.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of results after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>hole</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Number of results of scanner message type "hole" (threat level High).</div>
+              <div style="margin-left: 15px; display: inline;">Number of "hole" results (threat level High).</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>full</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Total number of results.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of results after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>info</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Number of results of scanner message type "info" (threat level Low).</div>
+              <div style="margin-left: 15px; display: inline;">Number of "info" results (threat level Low).</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>full</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Total number of results.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of results after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>log</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Number of results of scanner message type "log" (threat level Log).</div>
+              <div style="margin-left: 15px; display: inline;">Number of "log" results (threat level Log).</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>full</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Total number of results.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>warning</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Number of results of scanner message type "warning" (threat level Medium).</div>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of results after filtering.</div>
 <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>warning</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of "warning" results (threat level Medium).</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>full</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Total number of results.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of results after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 </ul>
 </li>
@@ -7821,13 +8009,15 @@ get_preferences_response_preference_value
 </ul>
 </li>
 </ul>
+</li>
+</ul>
 <h4>7.37.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_reports
  = element get_reports
      {
        attribute report_id { uuid }?
-       &amp; attribute format { text }?
+       &amp; attribute format_id { uuid }?
        &amp; attribute first_result { integer }?
        &amp; attribute max_results { integer }?
        &amp; attribute sort_order { sort_order }?
@@ -7855,298 +8045,379 @@ get_reports_response_report
      {
        text # RNC limitation: base64
        &amp; attribute id { uuid }
-       &amp; ( get_reports_response_report_sort
-           &amp; get_reports_response_report_filters
-           &amp; get_reports_response_report_scan_run_status
-           &amp; get_reports_response_report_result_count
-           &amp; get_reports_response_report_task
-           &amp; get_reports_response_report_ports
-           &amp; get_reports_response_report_results
-           &amp; get_reports_response_report_scan_start
-           &amp; get_reports_response_report_host_start*
-           &amp; get_reports_response_report_host_end*
-           &amp; get_reports_response_report_scan_end )?
+       &amp; attribute format_id { uuid }
+       &amp; attribute extension { text }
+       &amp; attribute content_type { text }
+       &amp; get_reports_response_report_report
      }
 
-get_reports_response_report_sort
+get_reports_response_report_report
+ = element report
+     {
+       attribute id { uuid }
+       &amp; ( get_reports_response_report_report_sort
+           &amp; get_reports_response_report_report_filters
+           &amp; get_reports_response_report_report_scan_run_status
+           &amp; get_reports_response_report_report_result_count
+           &amp; get_reports_response_report_report_task
+           &amp; get_reports_response_report_report_ports
+           &amp; get_reports_response_report_report_results
+           &amp; get_reports_response_report_report_scan_start
+           &amp; get_reports_response_report_report_host_start*
+           &amp; get_reports_response_report_report_host_end*
+           &amp; get_reports_response_report_report_scan_end )?
+     }
+
+get_reports_response_report_report_sort
  = element sort
      {
-       get_reports_response_report_sort_field
+       get_reports_response_report_report_sort_field
      }
 
-get_reports_response_report_sort_field
+get_reports_response_report_report_sort_field
  = element field
      {
        text
-       &amp; get_reports_response_report_sort_field_order
+       &amp; get_reports_response_report_report_sort_field_order
      }
 
-get_reports_response_report_sort_field_order
+get_reports_response_report_report_sort_field_order
  = element order
      {
        xsd:token { pattern = "ascending|descending" }
      }
 
-get_reports_response_report_filters
+get_reports_response_report_report_filters
  = element filters
      {
        text # RNC limitation: levels
-       &amp; get_reports_response_report_filters_phrase
-       &amp; get_reports_response_report_filters_notes
-       &amp; get_reports_response_report_filters_overrides
-       &amp; get_reports_response_report_filters_apply_overrides
-       &amp; get_reports_response_report_filters_result_hosts_only
-       &amp; get_reports_response_report_filters_min_cvss_base
-       &amp; get_reports_response_report_filters_filter*
+       &amp; get_reports_response_report_report_filters_phrase
+       &amp; get_reports_response_report_report_filters_notes
+       &amp; get_reports_response_report_report_filters_overrides
+       &amp; get_reports_response_report_report_filters_apply_overrides
+       &amp; get_reports_response_report_report_filters_result_hosts_only
+       &amp; get_reports_response_report_report_filters_min_cvss_base
+       &amp; get_reports_response_report_report_filters_filter*
      }
 
-get_reports_response_report_filters_phrase
+get_reports_response_report_report_filters_phrase
  = element phrase
      {
        text
      }
 
-get_reports_response_report_filters_notes
+get_reports_response_report_report_filters_notes
  = element notes
      {
        xsd:token { pattern = "0|1" }
      }
 
-get_reports_response_report_filters_overrides
+get_reports_response_report_report_filters_overrides
  = element overrides
      {
        xsd:token { pattern = "0|1" }
      }
 
-get_reports_response_report_filters_apply_overrides
+get_reports_response_report_report_filters_apply_overrides
  = element apply_overrides
      {
        xsd:token { pattern = "0|1" }
      }
 
-get_reports_response_report_filters_result_hosts_only
+get_reports_response_report_report_filters_result_hosts_only
  = element result_hosts_only
      {
        xsd:token { pattern = "0|1" }
      }
 
-get_reports_response_report_filters_min_cvss_base
+get_reports_response_report_report_filters_min_cvss_base
  = element min_cvss_base
      {
        text
      }
 
-get_reports_response_report_filters_filter
+get_reports_response_report_report_filters_filter
  = element filter
      {
        xsd:token { pattern = "High|Medium|Low|Log|Debug" }
      }
 
-get_reports_response_report_scan_run_status
+get_reports_response_report_report_scan_run_status
  = element scan_run_status
      {
        task_status
      }
 
-get_reports_response_report_result_count
+get_reports_response_report_report_result_count
  = element result_count
      {
-       text # RNC limitation: integer
-       &amp; get_reports_response_report_result_count_filtered
-       &amp; get_reports_response_report_result_count_debug
-       &amp; get_reports_response_report_result_count_hole
-       &amp; get_reports_response_report_result_count_info
-       &amp; get_reports_response_report_result_count_log
-       &amp; get_reports_response_report_result_count_warning
+       get_reports_response_report_report_result_count_full
+       &amp; get_reports_response_report_report_result_count_filtered
+       &amp; get_reports_response_report_report_result_count_debug
+       &amp; get_reports_response_report_report_result_count_hole
+       &amp; get_reports_response_report_report_result_count_info
+       &amp; get_reports_response_report_report_result_count_log
+       &amp; get_reports_response_report_report_result_count_warning
      }
 
-get_reports_response_report_result_count_filtered
+get_reports_response_report_report_result_count_full
+ = element full
+     {
+       integer
+     }
+
+get_reports_response_report_report_result_count_filtered
  = element filtered
      {
        integer
      }
 
-get_reports_response_report_result_count_debug
+get_reports_response_report_report_result_count_debug
  = element debug
      {
+       get_reports_response_report_report_result_count_debug_full
+       &amp; get_reports_response_report_report_result_count_debug_filtered
+     }
+
+get_reports_response_report_report_result_count_debug_full
+ = element full
+     {
        integer
      }
 
-get_reports_response_report_result_count_hole
+get_reports_response_report_report_result_count_debug_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_reports_response_report_report_result_count_hole
  = element hole
      {
+       get_reports_response_report_report_result_count_hole_full
+       &amp; get_reports_response_report_report_result_count_hole_filtered
+     }
+
+get_reports_response_report_report_result_count_hole_full
+ = element full
+     {
        integer
      }
 
-get_reports_response_report_result_count_info
+get_reports_response_report_report_result_count_hole_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_reports_response_report_report_result_count_info
  = element info
      {
+       get_reports_response_report_report_result_count_info_full
+       &amp; get_reports_response_report_report_result_count_info_filtered
+     }
+
+get_reports_response_report_report_result_count_info_full
+ = element full
+     {
        integer
      }
 
-get_reports_response_report_result_count_log
+get_reports_response_report_report_result_count_info_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_reports_response_report_report_result_count_log
  = element log
      {
-       integer
+       get_reports_response_report_report_result_count_log_full
+       &amp; get_reports_response_report_report_result_count_log_filtered
      }
 
-get_reports_response_report_result_count_warning
- = element warning
+get_reports_response_report_report_result_count_log_full
+ = element full
      {
        integer
      }
 
-get_reports_response_report_task
+get_reports_response_report_report_result_count_log_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_reports_response_report_report_result_count_warning
+ = element warning
+     {
+       get_reports_response_report_report_result_count_warning_full
+       &amp; get_reports_response_report_report_result_count_warning_filtered
+     }
+
+get_reports_response_report_report_result_count_warning_full
+ = element full
+     {
+       integer
+     }
+
+get_reports_response_report_report_result_count_warning_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_reports_response_report_report_task
  = element task
      {
        attribute id { uuid }
-       &amp; get_reports_response_report_task_name
+       &amp; get_reports_response_report_report_task_name
      }
 
-get_reports_response_report_task_name
+get_reports_response_report_report_task_name
  = element name
      {
        name
      }
 
-get_reports_response_report_ports
+get_reports_response_report_report_ports
  = element ports
      {
        attribute start { integer }
        &amp; attribute max { integer }
-       &amp; get_reports_response_report_ports_port*
+       &amp; get_reports_response_report_report_ports_port*
      }
 
-get_reports_response_report_ports_port
+get_reports_response_report_report_ports_port
  = element port
      {
        text
-       &amp; get_reports_response_report_ports_port_host
-       &amp; get_reports_response_report_ports_port_threat
+       &amp; get_reports_response_report_report_ports_port_host
+       &amp; get_reports_response_report_report_ports_port_threat
      }
 
-get_reports_response_report_ports_port_host
+get_reports_response_report_report_ports_port_host
  = element host
      {
        text
      }
 
-get_reports_response_report_ports_port_threat
+get_reports_response_report_report_ports_port_threat
  = element threat
      {
        threat
      }
 
-get_reports_response_report_results
+get_reports_response_report_report_results
  = element results
      {
        attribute start { integer }
        &amp; attribute max { integer }
-       &amp; get_reports_response_report_results_result*
+       &amp; get_reports_response_report_report_results_result*
      }
 
-get_reports_response_report_results_result
+get_reports_response_report_report_results_result
  = element result
      {
        attribute id { uuid }
-       &amp; get_reports_response_report_results_result_subnet
-       &amp; get_reports_response_report_results_result_host
-       &amp; get_reports_response_report_results_result_port
-       &amp; get_reports_response_report_results_result_nvt
-       &amp; get_reports_response_report_results_result_threat
-       &amp; get_reports_response_report_results_result_description
+       &amp; get_reports_response_report_report_results_result_subnet
+       &amp; get_reports_response_report_report_results_result_host
+       &amp; get_reports_response_report_report_results_result_port
+       &amp; get_reports_response_report_report_results_result_nvt
+       &amp; get_reports_response_report_report_results_result_threat
+       &amp; get_reports_response_report_report_results_result_description
      }
 
-get_reports_response_report_results_result_subnet
+get_reports_response_report_report_results_result_subnet
  = element subnet
      {
        text
      }
 
-get_reports_response_report_results_result_host
+get_reports_response_report_report_results_result_host
  = element host
      {
        text
      }
 
-get_reports_response_report_results_result_port
+get_reports_response_report_report_results_result_port
  = element port
      {
        text
      }
 
-get_reports_response_report_results_result_nvt
+get_reports_response_report_report_results_result_nvt
  = element nvt
      {
        attribute oid { oid }
-       &amp; get_reports_response_report_results_result_nvt_name
-       &amp; get_reports_response_report_results_result_nvt_cvss_base
-       &amp; get_reports_response_report_results_result_nvt_risk_factor
+       &amp; get_reports_response_report_report_results_result_nvt_name
+       &amp; get_reports_response_report_report_results_result_nvt_cvss_base
+       &amp; get_reports_response_report_report_results_result_nvt_risk_factor
      }
 
-get_reports_response_report_results_result_nvt_name
+get_reports_response_report_report_results_result_nvt_name
  = element name
      {
        name
      }
 
-get_reports_response_report_results_result_nvt_cvss_base
+get_reports_response_report_report_results_result_nvt_cvss_base
  = element cvss_base
      {
        integer
      }
 
-get_reports_response_report_results_result_nvt_risk_factor
+get_reports_response_report_report_results_result_nvt_risk_factor
  = element risk_factor
      {
        integer
      }
 
-get_reports_response_report_results_result_threat
+get_reports_response_report_report_results_result_threat
  = element threat
      {
        threat
      }
 
-get_reports_response_report_results_result_description
+get_reports_response_report_report_results_result_description
  = element description
      {
        text
      }
 
-get_reports_response_report_scan_start
+get_reports_response_report_report_scan_start
  = element scan_start
      {
        ctime
      }
 
-get_reports_response_report_host_start
+get_reports_response_report_report_host_start
  = element host_start
      {
        text # RNC limitation: ctime
-       &amp; get_reports_response_report_host_start_host
+       &amp; get_reports_response_report_report_host_start_host
      }
 
-get_reports_response_report_host_start_host
+get_reports_response_report_report_host_start_host
  = element host
      {
        text
      }
 
-get_reports_response_report_host_end
+get_reports_response_report_report_host_end
  = element host_end
      {
        text # RNC limitation: ctime
-       &amp; get_reports_response_report_host_end_host
+       &amp; get_reports_response_report_report_host_end_host
      }
 
-get_reports_response_report_host_end_host
+get_reports_response_report_report_host_end_host
  = element host
      {
        text
      }
 
-get_reports_response_report_scan_end
+get_reports_response_report_report_scan_end
  = element scan_end
      {
        ctime
@@ -8156,11 +8427,14 @@ get_reports_response_report_scan_end
 <h4>7.37.3 Example: Get a report in PDF</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_reports report_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"
-              format="PDF"/&gt;
+              format_id="1a60a67e-97d0-4cbf-bc77-f71b08e7043d"/&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_reports_response status="200"
                        status_text="OK"&gt;
-   &lt;report id="267a3405-e84a-47da-97b2-5fa0d2e8995e"&gt;hsisn3qaVFhkjFRG4...&lt;/report&gt;
+   &lt;report id="267a3405-e84a-47da-97b2-5fa0d2e8995e"
+           format_id="1a60a67e-97d0-4cbf-bc77-f71b08e7043d"
+           extension="pdf"
+           content_type="application/pdf"&gt;hsisn3qaVFhkjFRG4...&lt;/report&gt;
  &lt;/get_reports_response&gt;
 </pre></div>
 </div>
@@ -8170,75 +8444,95 @@ get_reports_response_report_scan_end
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_reports_response status="200"
                        status_text="OK"&gt;
-   &lt;report id="f0fdf522-276d-4893-9274-fb8699dc2270"&gt;
-     &lt;sort&gt;
-       &lt;field&gt;
-         type
-         &lt;order&gt;descending&lt;/order&gt;
-       &lt;/field&gt;
-     &lt;/sort&gt;
-     &lt;filters&gt;
-       hmlgd
-       &lt;phrase/&gt;
-       &lt;notes&gt;0&lt;/notes&gt;
-       &lt;overrides&gt;0&lt;/overrides&gt;
-       &lt;apply_overrides&gt;0&lt;/apply_overrides&gt;
-       &lt;result_hosts_only&gt;1&lt;/result_hosts_only&gt;
-       &lt;min_cvss_base/&gt;
-       &lt;filter&gt;High&lt;/filter&gt;
-       &lt;filter&gt;Medium&lt;/filter&gt;
-       &lt;filter&gt;Low&lt;/filter&gt;
-       &lt;filter&gt;Log&lt;/filter&gt;
-       &lt;filter&gt;Debug&lt;/filter&gt;
-     &lt;/filters&gt;
-     &lt;scan_run_status&gt;Done&lt;/scan_run_status&gt;
-     &lt;result_count&gt;
-       10
-       &lt;filtered&gt;10&lt;/filtered&gt;
-       &lt;debug&gt;0&lt;/debug&gt;
-       &lt;hole&gt;0&lt;/hole&gt;
-       &lt;info&gt;7&lt;/info&gt;
-       &lt;log&gt;0&lt;/log&gt;
-       &lt;warning&gt;3&lt;/warning&gt;
-     &lt;/result_count&gt;
-     &lt;task id="13bb418a-4220-4575-b35b-ec398bff7417"&gt;
-       &lt;name&gt;dik mm&lt;/name&gt;
-     &lt;/task&gt;
-     &lt;ports start="1"
-            max="-1"&gt;
-       &lt;port&gt;
-         general/tcp
-         &lt;host&gt;127.0.1.1&lt;/host&gt;
-         &lt;threat&gt;Medium&lt;/threat&gt;
-       &lt;/port&gt;
-       ...
-     &lt;/ports&gt;
-     &lt;results start="1"
+   &lt;report id="f0fdf522-276d-4893-9274-fb8699dc2270"
+           format_id="d5da9f67-8551-4e51-807b-b6a873d70e34"
+           extension="xml"
+           content_type="text/xml"&gt;
+     &lt;report id="f0fdf522-276d-4893-9274-fb8699dc2270"&gt;
+       &lt;sort&gt;
+         &lt;field&gt;
+           type
+           &lt;order&gt;descending&lt;/order&gt;
+         &lt;/field&gt;
+       &lt;/sort&gt;
+       &lt;filters&gt;
+         hmlgd
+         &lt;phrase/&gt;
+         &lt;notes&gt;0&lt;/notes&gt;
+         &lt;overrides&gt;0&lt;/overrides&gt;
+         &lt;apply_overrides&gt;0&lt;/apply_overrides&gt;
+         &lt;result_hosts_only&gt;1&lt;/result_hosts_only&gt;
+         &lt;min_cvss_base/&gt;
+         &lt;filter&gt;High&lt;/filter&gt;
+         &lt;filter&gt;Medium&lt;/filter&gt;
+         &lt;filter&gt;Low&lt;/filter&gt;
+         &lt;filter&gt;Log&lt;/filter&gt;
+         &lt;filter&gt;Debug&lt;/filter&gt;
+       &lt;/filters&gt;
+       &lt;scan_run_status&gt;Done&lt;/scan_run_status&gt;
+       &lt;result_count&gt;
+         &lt;full&gt;10&lt;/full&gt;
+         &lt;filtered&gt;10&lt;/filtered&gt;
+         &lt;debug&gt;
+           &lt;full&gt;0&lt;/full&gt;
+           &lt;filtered&gt;0&lt;/filtered&gt;
+         &lt;/debug&gt;
+         &lt;hole&gt;
+           &lt;full&gt;0&lt;/full&gt;
+           &lt;filtered&gt;0&lt;/filtered&gt;
+         &lt;/hole&gt;
+         &lt;info&gt;
+           &lt;full&gt;7&lt;/full&gt;
+           &lt;filtered&gt;7&lt;/filtered&gt;
+         &lt;/info&gt;
+         &lt;log&gt;
+           &lt;full&gt;0&lt;/full&gt;
+           &lt;filtered&gt;0&lt;/filtered&gt;
+         &lt;/log&gt;
+         &lt;warning&gt;
+           &lt;full&gt;3&lt;/full&gt;
+           &lt;filtered&gt;3&lt;/filtered&gt;
+         &lt;/warning&gt;
+       &lt;/result_count&gt;
+       &lt;task id="13bb418a-4220-4575-b35b-ec398bff7417"&gt;
+         &lt;name&gt;dik mm&lt;/name&gt;
+       &lt;/task&gt;
+       &lt;ports start="1"
               max="-1"&gt;
-       &lt;result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508"&gt;
-         &lt;subnet&gt;127.0.1.1&lt;/subnet&gt;
+         &lt;port&gt;
+           general/tcp
+           &lt;host&gt;127.0.1.1&lt;/host&gt;
+           &lt;threat&gt;Medium&lt;/threat&gt;
+         &lt;/port&gt;
+         ...
+       &lt;/ports&gt;
+       &lt;results start="1"
+                max="-1"&gt;
+         &lt;result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508"&gt;
+           &lt;subnet&gt;127.0.1.1&lt;/subnet&gt;
+           &lt;host&gt;127.0.1.1&lt;/host&gt;
+           &lt;port&gt;general/tcp&lt;/port&gt;
+           &lt;nvt oid="1.3.6.1.4.1.25623.1.0.74"&gt;
+             &lt;name&gt;Test NVT: fields with ISO-8859-1 chars ()&lt;/name&gt;
+             &lt;cvss_base&gt;5.0&lt;/cvss_base&gt;
+             &lt;risk_factor&gt;Medium&lt;/risk_factor&gt;
+           &lt;/nvt&gt;
+           &lt;threat&gt;Medium&lt;/threat&gt;
+           &lt;description&gt;Test with umlaut Warning Port 0.&lt;/description&gt;
+         &lt;/result&gt;
+         ...
+       &lt;/results&gt;
+       &lt;scan_start&gt;Mon Feb 1 19:11:21 2010&lt;/scan_start&gt;
+       &lt;host_start&gt;
+         Mon Feb 1 19:11:21 2010
          &lt;host&gt;127.0.1.1&lt;/host&gt;
-         &lt;port&gt;general/tcp&lt;/port&gt;
-         &lt;nvt oid="1.3.6.1.4.1.25623.1.0.74"&gt;
-           &lt;name&gt;Test NVT: fields with ISO-8859-1 chars ()&lt;/name&gt;
-           &lt;cvss_base&gt;5.0&lt;/cvss_base&gt;
-           &lt;risk_factor&gt;Medium&lt;/risk_factor&gt;
-         &lt;/nvt&gt;
-         &lt;threat&gt;Medium&lt;/threat&gt;
-         &lt;description&gt;Test with umlaut Warning Port 0.&lt;/description&gt;
-       &lt;/result&gt;
-       ...
-     &lt;/results&gt;
-     &lt;scan_start&gt;Mon Feb 1 19:11:21 2010&lt;/scan_start&gt;
-     &lt;host_start&gt;
-       Mon Feb 1 19:11:21 2010
-       &lt;host&gt;127.0.1.1&lt;/host&gt;
-     &lt;/host_start&gt;
-     &lt;host_end&gt;
-       Mon Feb 1 19:11:52 2010
-       &lt;host&gt;127.0.1.1&lt;/host&gt;
-     &lt;/host_end&gt;
-     &lt;scan_end&gt;Mon Feb 1 19:11:52 2010&lt;/scan_end&gt;
+       &lt;/host_start&gt;
+       &lt;host_end&gt;
+         Mon Feb 1 19:11:52 2010
+         &lt;host&gt;127.0.1.1&lt;/host&gt;
+       &lt;/host_end&gt;
+       &lt;scan_end&gt;Mon Feb 1 19:11:52 2010&lt;/scan_end&gt;
+     &lt;/report&gt;
    &lt;/report&gt;
  &lt;/get_reports_response&gt;
 </pre></div>
@@ -8734,6 +9028,16 @@ get_report_formats_response_report_format_active
               <div style="margin-left: 15px; display: inline;">Risk factor associated with the NVT.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>cve</b>&gt;
+              <div style="margin-left: 15px; display: inline;">CVE value associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>bid</b>&gt;
+              <div style="margin-left: 15px; display: inline;">BID associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -8898,6 +9202,8 @@ get_results_response_results_result_nvt
        &amp; get_results_response_results_result_nvt_name
        &amp; get_results_response_results_result_nvt_cvss_base
        &amp; get_results_response_results_result_nvt_risk_factor
+       &amp; get_results_response_results_result_nvt_cve
+       &amp; get_results_response_results_result_nvt_bid
      }
 
 get_results_response_results_result_nvt_name
@@ -8914,6 +9220,18 @@ get_results_response_results_result_nvt_cvss_base
 
 get_results_response_results_result_nvt_risk_factor
  = element risk_factor
+     {
+       integer
+     }
+
+get_results_response_results_result_nvt_cve
+ = element cve
+     {
+       text
+     }
+
+get_results_response_results_result_nvt_bid
+ = element bid
      {
        integer
      }
@@ -9040,6 +9358,8 @@ get_results_response_results_result_overrides_override_orphan
          &lt;name&gt;Test NVT: fields with ISO-8859-1 chars&lt;/name&gt;
          &lt;cvss_base&gt;5.0&lt;/cvss_base&gt;
          &lt;risk_factor&gt;Medium&lt;/risk_factor&gt;
+         &lt;cve&gt;CVE-2009-3095&lt;/cve&gt;
+         &lt;bid&gt;36254&lt;/bid&gt;
        &lt;/nvt&gt;
        &lt;threat&gt;Medium&lt;/threat&gt;
        &lt;description&gt;Test with umlaut.&lt;/description&gt;
@@ -9067,6 +9387,8 @@ get_results_response_results_result_overrides_override_orphan
          &lt;name&gt;Test NVT: long lines&lt;/name&gt;
          &lt;cvss_base&gt;9&lt;/cvss_base&gt;
          &lt;risk_factor&gt;High&lt;/risk_factor&gt;
+         &lt;cve&gt;CVE-2009-3095&lt;/cve&gt;
+         &lt;bid&gt;36254&lt;/bid&gt;
        &lt;/nvt&gt;
        &lt;threat&gt;High&lt;/threat&gt;
        &lt;description&gt;Test with very long warning.&lt;/description&gt;
@@ -9596,6 +9918,11 @@ get_slaves_response_slave_tasks_task_name
           (<a href="#type_boolean">boolean</a>)
           Whether to include the actual reports.
           </li>
+<li>
+          @<b>slave_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          Slave from which to get report.
+          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -9647,6 +9974,7 @@ get_slaves_response_slave_tasks_task_name
        attribute name { text }?
        &amp; attribute duration { integer }?
        &amp; attribute brief { boolean }?
+       &amp; attribute slave_id { uuid }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_system_reports_response
@@ -9874,7 +10202,7 @@ get_target_locators_response_target_locator_name
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>lsc_credential</b>&gt;
+              &lt;<b>ssh_lsc_credential</b>&gt;
               <ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -9882,10 +10210,29 @@ get_target_locators_response_target_locator_name
           </li>
 <li>
               &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the LSC credential.</div>
+              <div style="margin-left: 15px; display: inline;">The name of the SSH LSC credential.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
+</li>
+<li>
+              &lt;<b>smb_lsc_credential</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid_or_empty">uuid_or_empty</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the SMB LSC credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>port_range</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Port range of the target.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>tasks</b>&gt;
@@ -9937,7 +10284,9 @@ get_targets_response_target
        &amp; get_targets_response_target_hosts
        &amp; get_targets_response_target_max_hosts
        &amp; get_targets_response_target_in_use
-       &amp; get_targets_response_target_lsc_credential
+       &amp; get_targets_response_target_ssh_lsc_credential
+       &amp; get_targets_response_target_smb_lsc_credential
+       &amp; get_targets_response_target_port_range
        &amp; get_targets_response_target_tasks?
      }
 
@@ -9971,15 +10320,34 @@ get_targets_response_target_in_use
        boolean
      }
 
-get_targets_response_target_lsc_credential
- = element lsc_credential
+get_targets_response_target_ssh_lsc_credential
+ = element ssh_lsc_credential
      {
        attribute id { uuid_or_empty }
-       &amp; get_targets_response_target_lsc_credential_name
+       &amp; get_targets_response_target_ssh_lsc_credential_name
      }
 
-get_targets_response_target_lsc_credential_name
+get_targets_response_target_ssh_lsc_credential_name
  = element name
+     {
+       name
+     }
+
+get_targets_response_target_smb_lsc_credential
+ = element smb_lsc_credential
+     {
+       attribute id { uuid_or_empty }
+       &amp; get_targets_response_target_smb_lsc_credential_name
+     }
+
+get_targets_response_target_smb_lsc_credential_name
+ = element name
+     {
+       name
+     }
+
+get_targets_response_target_port_range
+ = element port_range
      {
        name
      }
@@ -10016,9 +10384,12 @@ get_targets_response_target_tasks_task_name
      &lt;max_hosts&gt;1&lt;/max_hosts&gt;
      &lt;comment/&gt;
      &lt;in_use&gt;7&lt;/in_use&gt;
-     &lt;lsc_credential id=""&gt;
+     &lt;ssh_lsc_credential id=""&gt;
        &lt;name/&gt;
-     &lt;/lsc_credential&gt;
+     &lt;/ssh_lsc_credential&gt;
+     &lt;smb_lsc_credential id=""&gt;
+       &lt;name/&gt;
+     &lt;/smb_lsc_credential&gt;
    &lt;/target&gt;
    ...
  &lt;/get_targets_response&gt;
@@ -10037,9 +10408,12 @@ get_targets_response_target_tasks_task_name
      &lt;max_hosts&gt;1&lt;/max_hosts&gt;
      &lt;comment&gt;dik mm&lt;/comment&gt;
      &lt;in_use&gt;4&lt;/in_use&gt;
-     &lt;lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4"&gt;
+     &lt;ssh_lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4"&gt;
        &lt;name&gt;mm&lt;/name&gt;
-     &lt;/lsc_credential&gt;
+     &lt;/ssh_lsc_credential&gt;
+     &lt;smb_lsc_credential id=""&gt;
+       &lt;name/&gt;
+     &lt;/smb_lsc_credential&gt;
      &lt;tasks&gt;
        &lt;task id="13bb418a-4220-4575-b35b-ec398bff7417"&gt;
          &lt;name&gt;dik mm&lt;/name&gt;
@@ -10217,28 +10591,17 @@ get_targets_response_target_tasks_task_name
 </ul>
 </li>
 <li>
-              &lt;<b>result_count</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Result count across all scans.</div>
+              &lt;<b>slave</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The slave that the task will run on.</div>
 <ul style="list-style: none">
 <li>
-              &lt;<b>debug</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
 <li>
-              &lt;<b>log</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>info</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>warning</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>hole</b>&gt;
-              <ul style="list-style: none"></ul>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the slave.</div>
+<ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
@@ -10503,7 +10866,7 @@ get_tasks_response_task
        &amp; get_tasks_response_task_target
        &amp; get_tasks_response_task_escalator
        &amp; get_tasks_response_task_schedule
-       &amp; get_tasks_response_task_result_count
+       &amp; get_tasks_response_task_slave
        &amp; get_tasks_response_task_report_count
        &amp; get_tasks_response_task_trend
        &amp; get_tasks_response_task_first_report?
@@ -10603,44 +10966,17 @@ get_tasks_response_task_schedule_name
        name
      }
 
-get_tasks_response_task_result_count
- = element result_count
+get_tasks_response_task_slave
+ = element slave
      {
-       get_tasks_response_task_result_count_debug
-       &amp; get_tasks_response_task_result_count_log
-       &amp; get_tasks_response_task_result_count_info
-       &amp; get_tasks_response_task_result_count_warning
-       &amp; get_tasks_response_task_result_count_hole
+       attribute id { uuid }
+       &amp; get_tasks_response_task_slave_name
      }
 
-get_tasks_response_task_result_count_debug
- = element debug
+get_tasks_response_task_slave_name
+ = element name
      {
-       integer
-     }
-
-get_tasks_response_task_result_count_log
- = element log
-     {
-       integer
-     }
-
-get_tasks_response_task_result_count_info
- = element info
-     {
-       integer
-     }
-
-get_tasks_response_task_result_count_warning
- = element warning
-     {
-       integer
-     }
-
-get_tasks_response_task_result_count_hole
- = element hole
-     {
-       integer
+       name
      }
 
 get_tasks_response_task_report_count
@@ -10948,13 +11284,9 @@ get_tasks_response_task_reports_report_result_count_hole
        &lt;name/&gt;
        &lt;next_time&gt;over&lt;/next_time&gt;
      &lt;/schedule&gt;
-     &lt;result_count&gt;
-       &lt;debug&gt;0&lt;/debug&gt;
-       &lt;log&gt;0&lt;/log&gt;
-       &lt;info&gt;14&lt;/info&gt;
-       &lt;warning&gt;0&lt;/warning&gt;
-       &lt;hole&gt;6&lt;/hole&gt;
-     &lt;/result_count&gt;
+     &lt;slave id=""&gt;
+       &lt;name/&gt;
+     &lt;/slave&gt;
      &lt;report_count&gt;
        2
        &lt;finished&gt;2&lt;/finished&gt;
@@ -11037,13 +11369,9 @@ get_tasks_response_task_reports_report_result_count_hole
        &lt;name/&gt;
        &lt;next_time&gt;over&lt;/next_time&gt;
      &lt;/schedule&gt;
-     &lt;result_count&gt;
-       &lt;debug&gt;0&lt;/debug&gt;
-       &lt;log&gt;0&lt;/log&gt;
-       &lt;info&gt;14&lt;/info&gt;
-       &lt;warning&gt;0&lt;/warning&gt;
-       &lt;hole&gt;6&lt;/hole&gt;
-     &lt;/result_count&gt;
+     &lt;slave id=""&gt;
+       &lt;name/&gt;
+     &lt;/slave&gt;
      &lt;report_count&gt;
        2
        &lt;finished&gt;2&lt;/finished&gt;
@@ -12535,6 +12863,14 @@ modify_report_format_param_value
           </li></ul>
 </li>
 <li>
+              &lt;<b>slave</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Task slave.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
               &lt;<b>file</b>&gt;
               <div style="margin-left: 15px; display: inline;">File to attach to task.</div>
 <ul style="list-style: none">
@@ -12576,6 +12912,7 @@ modify_report_format_param_value
            | modify_task_name
            | modify_task_rcfile
            | modify_task_schedule
+           | modify_task_slave
            | modify_task_file )
      }
 
@@ -12605,6 +12942,12 @@ modify_task_rcfile
 
 modify_task_schedule
  = element schedule
+     {
+       attribute id { uuid }
+     }
+
+modify_task_slave
+ = element slave
      {
        attribute id { uuid }
      }
