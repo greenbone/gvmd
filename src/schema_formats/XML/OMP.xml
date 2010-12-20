@@ -54,6 +54,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       CREATE_TARGET,GET_TARGETS  + PORT_RANGE
    per-protocol target credentials
       CREATE_TARGET,GET_TARGETS  + SSH,SMB_LSC_CREDENTIAL, - LSC_CREDENTIAL
+   GET_TASKS  - RESULT_COUNT
 -->
 
 <protocol>
@@ -6639,7 +6640,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>escalator</e>
           <e>schedule</e>
           <e>slave</e>
-          <e>result_count</e>
           <e>report_count</e>
           <e>trend</e>
           <o><e>first_report</e></o>
@@ -6766,37 +6766,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>name</name>
             <summary>The name of the slave</summary>
             <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>result_count</name>
-          <summary>Result count across all scans</summary>
-          <pattern>
-            <e>debug</e>
-            <e>log</e>
-            <e>info</e>
-            <e>warning</e>
-            <e>hole</e>
-          </pattern>
-          <ele>
-            <name>debug</name>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>log</name>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>info</name>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>warning</name>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>hole</name>
-            <pattern><t>integer</t></pattern>
           </ele>
         </ele>
         <ele>
@@ -7076,13 +7045,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <slave id="">
               <name></name>
             </slave>
-            <result_count>
-              <debug>0</debug>
-              <log>0</log>
-              <info>14</info>
-              <warning>0</warning>
-              <hole>6</hole>
-            </result_count>
             <report_count>
               2
               <finished>2</finished>
@@ -7169,13 +7131,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <slave id="">
               <name></name>
             </slave>
-            <result_count>
-              <debug>0</debug>
-              <log>0</log>
-              <info>14</info>
-              <warning>0</warning>
-              <hole>6</hole>
-            </result_count>
             <report_count>
               2
               <finished>2</finished>
