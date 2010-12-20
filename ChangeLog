@@ -1,5 +1,10 @@
 2010-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Split CREATE_TARGETS and GET_TARGETS
+	LSC credentials into SSH and SMB credentials.
+
+2010-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Add port range to CREATE_TARGET and
 	GET_TARGETS.
 

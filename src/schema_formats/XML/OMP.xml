@@ -52,6 +52,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       GET_REPORTS/REPORT/RESULT_COUNT  + FILTERED and FULL
    target port ranges
       CREATE_TARGET,GET_TARGETS  + PORT_RANGE
+   per-protocol target credentials
+      CREATE_TARGET,GET_TARGETS  + SSH,SMB_LSC_CREDENTIAL, - LSC_CREDENTIAL
 -->
 
 <protocol>
@@ -1611,7 +1613,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>name</e>
       <o><e>comment</e></o>
       <e>hosts</e>
-      <e>lsc_credential</e>
+      <e>ssh_lsc_credential</e>
+      <e>smb_lsc_credential</e>
       <e>target_locator</e>
       <o><e>port_range</e></o>
     </pattern>
@@ -1635,8 +1638,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
-      <name>lsc_credential</name>
-      <summary>Login credentials for target</summary>
+      <name>ssh_lsc_credential</name>
+      <summary>SSH login credentials for target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>smb_lsc_credential</name>
+      <summary>SMB login credentials for target</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -6362,7 +6376,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>hosts</e>
           <e>max_hosts</e>
           <e>in_use</e>
-          <e>lsc_credential</e>
+          <e>ssh_lsc_credential</e>
+          <e>smb_lsc_credential</e>
           <e>port_range</e>
           <o><e>tasks</e></o>
         </pattern>
@@ -6396,7 +6411,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
-          <name>lsc_credential</name>
+          <name>ssh_lsc_credential</name>
           <pattern>
             <attrib>
               <name>id</name>
@@ -6410,7 +6425,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
           <ele>
             <name>name</name>
-            <summary>The name of the LSC credential</summary>
+            <summary>The name of the SSH LSC credential</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>smb_lsc_credential</name>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <comment>
+                A UUID if there is a credential, otherwise the empty string
+              </comment>
+              <type>uuid_or_empty</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the SMB LSC credential</summary>
             <pattern><t>name</t></pattern>
           </ele>
         </ele>
@@ -6457,9 +6491,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <max_hosts>1</max_hosts>
             <comment></comment>
             <in_use>7</in_use>
-            <lsc_credential id="">
+            <ssh_lsc_credential id="">
               <name></name>
-            </lsc_credential>
+            </ssh_lsc_credential>
+            <smb_lsc_credential id="">
+              <name></name>
+            </smb_lsc_credential>
           </target>
           <truncated>...</truncated>
         </get_targets_response>
@@ -6479,9 +6516,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <max_hosts>1</max_hosts>
             <comment>dik mm</comment>
             <in_use>4</in_use>
-            <lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
+            <ssh_lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
               <name>mm</name>
-            </lsc_credential>
+            </ssh_lsc_credential>
+            <smb_lsc_credential id="">
+              <name></name>
+            </smb_lsc_credential>
             <tasks>
               <task id="13bb418a-4220-4575-b35b-ec398bff7417">
                 <name>dik mm</name>
