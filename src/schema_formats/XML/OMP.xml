@@ -34,7 +34,7 @@ x			 VERIFY_REPORT_FORMAT, MODIFY_REPORT_FORMAT
 		in GET_NOTES,OVERRIDES resp  when attrib result is true
 	slaves
 		CREATE_TASK  req  + SLAVE
-		new  CREATE_SLAVE, DELETE_SLAVE, GET_SLAVES
+x		new  CREATE_SLAVE, DELETE_SLAVE, GET_SLAVES
 		GET_TASKS  resp  + SLAVE
 		MODIFY_TASK  req  + slave_id attrib
 		GET_SYSTEM_REPORTS  req  + slave_id attrib
@@ -42,7 +42,7 @@ x			 VERIFY_REPORT_FORMAT, MODIFY_REPORT_FORMAT
 		GET_AGENTS  resp  + TRUST and TRUST/TIME
 x		new  VERIFY_AGENT
 	lsc credentials
-		new  MODIFY_LSC_CREDENTIAL
+x		new  MODIFY_LSC_CREDENTIAL
  	HELP  req  + format attrib
  		  resp  + SCHEMA
     report filtered result counts
@@ -460,6 +460,7 @@ x		new  VERIFY_AGENT
           <c>create_note</c>
           <c>create_override</c>
           <c>create_schedule</c>
+          <c>create_slave</c>
           <c>create_target</c>
           <c>create_task</c>
           <c>delete_agent</c>
@@ -470,6 +471,7 @@ x		new  VERIFY_AGENT
           <c>delete_override</c>
           <c>delete_report</c>
           <c>delete_schedule</c>
+          <c>delete_slave</c>
           <c>delete_target</c>
           <c>delete_task</c>
           <c>get_agents</c>
@@ -486,6 +488,7 @@ x		new  VERIFY_AGENT
           <c>get_reports</c>
           <c>get_results</c>
           <c>get_schedules</c>
+          <c>get_slaves</c>
           <c>get_system_reports</c>
           <c>get_target_locators</c>
           <c>get_targets</c>
@@ -493,6 +496,7 @@ x		new  VERIFY_AGENT
           <c>get_version</c>
           <c>help</c>
           <c>modify_config</c>
+          <c>modify_lsc_credential</c>
           <c>modify_note</c>
           <c>modify_override</c>
           <c>modify_report</c>
@@ -530,6 +534,7 @@ x		new  VERIFY_AGENT
             <r>create_note</r>
             <r>create_override</r>
             <r>create_schedule</r>
+            <r>create_slave</r>
             <r>create_target</r>
             <r>create_task</r>
             <r>delete_agent</r>
@@ -540,6 +545,7 @@ x		new  VERIFY_AGENT
             <r>delete_override</r>
             <r>delete_report</r>
             <r>delete_schedule</r>
+            <r>delete_slave</r>
             <r>delete_target</r>
             <r>delete_task</r>
             <r>get_agents</r>
@@ -555,6 +561,7 @@ x		new  VERIFY_AGENT
             <r>get_preferences</r>
             <r>get_reports</r>
             <r>get_results</r>
+            <r>get_slaves</r>
             <r>get_schedules</r>
             <r>get_system_reports</r>
             <r>get_target_locators</r>
@@ -563,6 +570,7 @@ x		new  VERIFY_AGENT
             <r>get_version</r>
             <r>help</r>
             <r>modify_config</r>
+            <r>modify_lsc_credential</r>
             <r>modify_note</r>
             <r>modify_override</r>
             <r>modify_report</r>
@@ -1489,6 +1497,100 @@ x		new  VERIFY_AGENT
     </example>
   </command>
   <command>
+    <name>create_slave</name>
+    <summary>Create a slave</summary>
+    <description>
+      <p>
+        The client uses the create_slave command to create a new slave.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <e>host</e>
+      <e>port</e>
+      <e>login</e>
+      <e>password</e>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the slave</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the slave</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>host</name>
+      <summary>The host that the slave Manager is running on</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>The port that the slave Manager is serving on the host</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>login</name>
+      <summary>Login name on the slave Manager</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>password</name>
+      <summary>Password for login on the slave Manager</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a slave</summary>
+      <request>
+        <create_slave>
+          <name>Bangkok</name>
+          <comment>Manager in Bangkok department.</comment>
+          <host>192.0.32.10</host>
+          <login>sally</login>
+          <password>secret</password>
+        </create_slave>
+      </request>
+      <response>
+        <create_slave_response status="201"
+                               status_text="OK, resource created"
+                               id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_slave_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>create_target</name>
     <summary>Create a target</summary>
     <description>
@@ -1582,10 +1684,8 @@ x		new  VERIFY_AGENT
       <summary>Create a target, giving a host list</summary>
       <request>
         <create_target>
-          <create_target>
-            <name>All GNU/Linux machines</name>
-            <hosts>192.168.1.0/24</hosts>
-          </create_target>
+          <name>All GNU/Linux machines</name>
+          <hosts>192.168.1.0/24</hosts>
         </create_target>
       </request>
       <response>
@@ -2123,6 +2223,51 @@ x		new  VERIFY_AGENT
       </request>
       <response>
         <delete_schedule_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_slave</name>
+    <summary>Delete a slave</summary>
+    <description>
+      <p>
+        The client uses the delete_slave command to delete an existing slave.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>slave_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a slave</summary>
+      <request>
+        <delete_slave slave_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_slave>
+      </request>
+      <response>
+        <delete_slave_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -5513,7 +5658,7 @@ x		new  VERIFY_AGENT
           <type>text</type>
           <required>1</required>
         </attrib>
-        <e>schedule</e>
+        <any><e>schedule</e></any>
       </pattern>
       <ele>
         <name>schedule</name>
@@ -5642,6 +5787,159 @@ x		new  VERIFY_AGENT
             </tasks>
           </schedule>
         </get_schedules_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_slaves</name>
+    <summary>Get all slaves</summary>
+    <description>
+      <p>
+        The client uses the get_slaves command to get slave information.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>slave_id</name>
+        <summary>ID of single slave to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>tasks</name>
+        <summary>Whether to include a list of tasks using the slave</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>slave</e></any>
+      </pattern>
+      <ele>
+        <name>slave</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+          <e>comment</e>
+          <e>host</e>
+          <e>port</e>
+          <e>login</e>
+          <e>password</e>
+          <e>in_use</e>
+          <o><e>tasks</e></o>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the slave</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the slave</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>host</name>
+          <summary>The host that the slave Manager is running on</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>port</name>
+          <summary>The port that the slave Manager is serving on the host</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>login</name>
+          <summary>Login name on the slave Manager</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>password</name>
+          <summary>Password for login on the slave Manager</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any tasks are using the slave</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>tasks</name>
+          <pattern>
+            <any><e>task</e></any>
+          </pattern>
+          <ele>
+            <name>task</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the task</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all slaves, including task lists</summary>
+      <request>
+        <get_slaves tasks="1"></get_slaves>
+      </request>
+      <response>
+        <get_slaves_response status="200" status_text="OK">
+          <slave id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
+            <name>Bangkok</name>
+            <comment>Manager in Bangkok department.</comment>
+            <host>192.0.32.10</host>
+            <login>sally</login>
+            <password>secret</password>
+            <tasks>
+              <task id="c33864a9-d3fd-44b3-8717-972bfb01dfc0">
+                <name>Debian desktops</name>
+              </task>
+              <truncated>...</truncated>
+            </tasks>
+          </slave>
+          <truncated>...</truncated>
+        </get_slaves_response>
       </response>
     </example>
   </command>
@@ -7223,6 +7521,84 @@ x		new  VERIFY_AGENT
       <response>
         <modify_config_response status="200" status_text="OK">
         </modify_config_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_lsc_credential</name>
+    <summary>Modify an existing LSC credential</summary>
+    <description>
+      <p>
+        The client uses the modify_lsc_credential command to change an
+        existing LSC credential.
+      </p>
+      <p>
+        The login and password can only be changed for password LSC credentials.
+        Modification of login or password on package credentials is forbidden.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>lsc_credential_id</name>
+        <summary>ID of LSC credential to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>comment</e></o>
+      <o><e>name</e></o>
+      <o><e>password</e></o>
+      <o><e>login</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the LSC credential</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the LSC credential</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>login</name>
+      <summary>The user name of the credential</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>password</name>
+      <summary>The password for the credential login</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the comment of an LSC credential</summary>
+      <request>
+        <modify_lsc_credential lsc_credential_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <comment>Credential for all machines in lab 4.</comment>
+        </modify_lsc_credential>
+      </request>
+      <response>
+        <modify_lsc_credential_response status="200" status_text="OK">
+        </modify_lsc_credential_response>
       </response>
     </example>
   </command>

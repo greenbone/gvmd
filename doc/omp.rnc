@@ -19,6 +19,7 @@ command
     | create_override
     | create_report_format
     | create_schedule
+    | create_slave
     | create_target
     | create_task
     | delete_agent
@@ -30,6 +31,7 @@ command
     | delete_report
     | delete_report_format
     | delete_schedule
+    | delete_slave
     | delete_target
     | delete_task
     | get_agents
@@ -47,6 +49,7 @@ command
     | get_report_formats
     | get_results
     | get_schedules
+    | get_slaves
     | get_system_reports
     | get_target_locators
     | get_targets
@@ -54,6 +57,7 @@ command
     | get_version
     | help
     | modify_config
+    | modify_lsc_credential
     | modify_note
     | modify_override
     | modify_report
@@ -80,6 +84,7 @@ response
     | create_override_response
     | create_report_format_response
     | create_schedule_response
+    | create_slave_response
     | create_target_response
     | create_task_response
     | delete_agent_response
@@ -91,6 +96,7 @@ response
     | delete_report_response
     | delete_report_format_response
     | delete_schedule_response
+    | delete_slave_response
     | delete_target_response
     | delete_task_response
     | get_agents_response
@@ -108,6 +114,7 @@ response
     | get_report_formats_response
     | get_results_response
     | get_schedules_response
+    | get_slaves_response
     | get_system_reports_response
     | get_target_locators_response
     | get_targets_response
@@ -115,6 +122,7 @@ response
     | get_version_response
     | help_response
     | modify_config_response
+    | modify_lsc_credential_response
     | modify_note_response
     | modify_override_response
     | modify_report_response
@@ -470,6 +478,7 @@ commands
            | create_note
            | create_override
            | create_schedule
+           | create_slave
            | create_target
            | create_task
            | delete_agent
@@ -480,6 +489,7 @@ commands
            | delete_override
            | delete_report
            | delete_schedule
+           | delete_slave
            | delete_target
            | delete_task
            | get_agents
@@ -496,6 +506,7 @@ commands
            | get_reports
            | get_results
            | get_schedules
+           | get_slaves
            | get_system_reports
            | get_target_locators
            | get_targets
@@ -503,6 +514,7 @@ commands
            | get_version
            | help
            | modify_config
+           | modify_lsc_credential
            | modify_note
            | modify_override
            | modify_report
@@ -1014,6 +1026,63 @@ create_schedule_period_unit
        time_unit
      }
 
+## Command create_slave
+##
+## Create a slave.
+
+create_slave
+ = element create_slave
+     {
+       create_slave_name
+       & create_slave_comment?
+       & create_slave_host
+       & create_slave_port
+       & create_slave_login
+       & create_slave_password
+     }
+
+# A name for the slave.
+create_slave_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the slave.
+create_slave_comment
+ = element comment
+     {
+       text
+     }
+
+# The host that the slave Manager is running on.
+create_slave_host
+ = element host
+     {
+       text
+     }
+
+# The port that the slave Manager is serving on the host.
+create_slave_port
+ = element port
+     {
+       text
+     }
+
+# Login name on the slave Manager.
+create_slave_login
+ = element login
+     {
+       text
+     }
+
+# Password for login on the slave Manager.
+create_slave_password
+ = element password
+     {
+       text
+     }
+
 ## Command create_target
 ##
 ## Create a target.
@@ -1231,6 +1300,16 @@ delete_schedule
  = element delete_schedule
      {
        attribute schedule_id { uuid }
+     }
+
+## Command delete_slave
+##
+## Delete a slave.
+
+delete_slave
+ = element delete_slave
+     {
+       attribute slave_id { uuid }
      }
 
 ## Command delete_target
@@ -1503,6 +1582,21 @@ get_schedules
        & attribute sort_field { text }?
      }
 
+## Command get_slaves
+##
+## Get all slaves.
+
+get_slaves
+ = element get_slaves
+     {
+       # ID of single slave to get.
+       attribute slave_id { uuid }?
+       & # Whether to include a list of tasks using the slave.
+       attribute tasks { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
 ## Command get_system_reports
 ##
 ## Get all system reports.
@@ -1686,6 +1780,49 @@ modify_config_nvt_selection_nvt
  = element nvt
      {
        attribute oid { oid }
+     }
+
+## Command modify_lsc_credential
+##
+## Modify an existing LSC credential.
+
+modify_lsc_credential
+ = element modify_lsc_credential
+     {
+       # ID of LSC credential to modify.
+       attribute lsc_credential_id { uuid }
+       & modify_lsc_credential_comment?
+       & modify_lsc_credential_name?
+       & modify_lsc_credential_password?
+       & modify_lsc_credential_login?
+     }
+
+# A name for the LSC credential.
+modify_lsc_credential_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the LSC credential.
+modify_lsc_credential_comment
+ = element comment
+     {
+       text
+     }
+
+# The user name of the credential.
+modify_lsc_credential_login
+ = element login
+     {
+       text
+     }
+
+# The password for the credential login.
+modify_lsc_credential_password
+ = element password
+     {
+       text
      }
 
 ## Command modify_note
@@ -2068,6 +2205,7 @@ commands_response
            | create_note_response
            | create_override_response
            | create_schedule_response
+           | create_slave_response
            | create_target_response
            | create_task_response
            | delete_agent_response
@@ -2078,6 +2216,7 @@ commands_response
            | delete_override_response
            | delete_report_response
            | delete_schedule_response
+           | delete_slave_response
            | delete_target_response
            | delete_task_response
            | get_agents_response
@@ -2093,6 +2232,7 @@ commands_response
            | get_preferences_response
            | get_reports_response
            | get_results_response
+           | get_slaves_response
            | get_schedules_response
            | get_system_reports_response
            | get_target_locators_response
@@ -2101,6 +2241,7 @@ commands_response
            | get_version_response
            | help_response
            | modify_config_response
+           | modify_lsc_credential_response
            | modify_note_response
            | modify_override_response
            | modify_report_response
@@ -2188,6 +2329,16 @@ create_report_format_response
 
 create_schedule_response
  = element create_schedule_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_slave
+
+create_slave_response
+ = element create_slave_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -2290,6 +2441,15 @@ delete_report_format_response
 
 delete_schedule_response
  = element delete_schedule_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_slave
+
+delete_slave_response
+ = element delete_slave_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -4161,7 +4321,7 @@ get_schedules_response
      {
        attribute status { status }
        & attribute status_text { text }
-       & get_schedules_response_schedule
+       & get_schedules_response_schedule*
      }
 
 get_schedules_response_schedule
@@ -4250,6 +4410,99 @@ get_schedules_response_schedule_tasks_task
 
 # The name of the task.
 get_schedules_response_schedule_tasks_task_name
+ = element name
+     {
+       name
+     }
+
+## Response to get_slaves
+
+get_slaves_response
+ = element get_slaves_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_slaves_response_slave*
+     }
+
+get_slaves_response_slave
+ = element slave
+     {
+       attribute id { uuid }
+       & get_slaves_response_slave_name
+       & get_slaves_response_slave_comment
+       & get_slaves_response_slave_host
+       & get_slaves_response_slave_port
+       & get_slaves_response_slave_login
+       & get_slaves_response_slave_password
+       & get_slaves_response_slave_in_use
+       & get_slaves_response_slave_tasks?
+     }
+
+# The name of the slave.
+get_slaves_response_slave_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the slave.
+get_slaves_response_slave_comment
+ = element comment
+     {
+       text
+     }
+
+# The host that the slave Manager is running on.
+get_slaves_response_slave_host
+ = element host
+     {
+       text
+     }
+
+# The port that the slave Manager is serving on the host.
+get_slaves_response_slave_port
+ = element port
+     {
+       text
+     }
+
+# Login name on the slave Manager.
+get_slaves_response_slave_login
+ = element login
+     {
+       text
+     }
+
+# Password for login on the slave Manager.
+get_slaves_response_slave_password
+ = element password
+     {
+       text
+     }
+
+# Whether any tasks are using the slave.
+get_slaves_response_slave_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+get_slaves_response_slave_tasks
+ = element tasks
+     {
+       get_slaves_response_slave_tasks_task*
+     }
+
+get_slaves_response_slave_tasks_task
+ = element task
+     {
+       attribute id { uuid }
+       & get_slaves_response_slave_tasks_task_name
+     }
+
+# The name of the task.
+get_slaves_response_slave_tasks_task_name
  = element name
      {
        name
@@ -5034,6 +5287,15 @@ help_response_schema_protocol_command
 
 modify_config_response
  = element modify_config_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_lsc_credential
+
+modify_lsc_credential_response
+ = element modify_lsc_credential_response
      {
        attribute status { status }
        & attribute status_text { text }
