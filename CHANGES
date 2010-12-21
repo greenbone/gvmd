@@ -1,3 +1,26 @@
+openvas-manager 2.0+rc1 (2010-12-21)
+
+This is the first release candidate for the upcoming 2.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients. Release 2.0 is part of OpenVAS 4, the next
+generation of the Open Vulnerability Assessment System.
+
+This release adds support for separate SMB and SSH credentials, for setting
+per-target port ranges and for retrieving the total number of results matching
+an applied filter.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell and Michael Wiegand.
+
+Main changes since 2.0+beta3:
+* The protocol documentation has been improved.
+* Target credentials for SMB and SSH are now separated.
+* Support for setting the port range for a target has been added.
+* Hardening flags are now enabled during compile time to increase code quality.
+* Support for retrieving the total number of results matching an applied filter
+  has been added.
+
+
 openvas-manager 2.0+beta3 (2010-12-10)
 
 This is the third beta version of the upcoming 2.0 release of the OpenVAS

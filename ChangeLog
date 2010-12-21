@@ -1,3 +1,11 @@
+2010-12-21  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 2.0+rc1 release.
+
+	* CHANGES: Updated.
+
+	* CMakeLists.txt: Updated version number.
+
 2010-12-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl (results-overview)
