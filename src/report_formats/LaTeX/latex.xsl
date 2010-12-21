@@ -492,7 +492,9 @@ advice given in each description, in order to rectify the issue.
     <xsl:value-of select="count(../results/result[host=$host][threat/text()='Medium'])"/>
     <xsl:text>&amp;</xsl:text>
     <xsl:value-of select="count(../results/result[host=$host][threat/text()='Low'])"/>
-    <xsl:text>&amp;</xsl:text><!--&amp;<xsl:value-of select="count(../results/result[host=$host][threat/text()='Log'])"/>&amp;-->
+    <xsl:text>&amp;</xsl:text>
+    <xsl:value-of select="count(../results/result[host=$host][threat/text()='Log'])"/>
+    <xsl:text>&amp;</xsl:text>
     <xsl:value-of select="count(../results/result[host=$host][threat/text()='False Positive'])"/>
     <xsl:call-template name="latex-newline"/>
     <xsl:call-template name="latex-hline"/>
@@ -505,17 +507,17 @@ advice given in each description, in order to rectify the issue.
     </xsl:call-template>
     <xsl:call-template name="newline"/>
 
-    <xsl:text>\begin{longtable}{|l|l|l|l|l|l|}</xsl:text><xsl:call-template name="newline"/>
+    <xsl:text>\begin{longtable}{|l|l|l|l|l|l|l|}</xsl:text><xsl:call-template name="newline"/>
     <xsl:call-template name="latex-hline"/>
     <xsl:call-template name="longtable-continue-block">
       <xsl:with-param name="number-of-columns">6</xsl:with-param>
       <xsl:with-param name="header-color">openvas_report</xsl:with-param>
-      <xsl:with-param name="header-text">Host&amp;Most Severe Result(s)&amp;High&amp;Medium&amp;Low&amp;False Positives</xsl:with-param>
+      <xsl:with-param name="header-text">Host&amp;Most Severe Result(s)&amp;High&amp;Medium&amp;Low&amp;Log&amp;False Positives</xsl:with-param>
     </xsl:call-template>
     <xsl:for-each select="host_start"><xsl:call-template name="results-overview-table-single-host-row"/></xsl:for-each>
     <xsl:call-template name="latex-hline"/>
     <xsl:text>Total: </xsl:text>
-    <xsl:value-of select="count(/report/host_start)"/>&amp;&amp;<xsl:value-of select="count(/report/results/result[threat = 'High'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'Medium'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'Low'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'False Positive'])"/><xsl:call-template name="latex-newline"/>
+    <xsl:value-of select="count(/report/host_start)"/>&amp;&amp;<xsl:value-of select="count(/report/results/result[threat = 'High'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'Medium'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'Low'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'Log'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'False Positive'])"/><xsl:call-template name="latex-newline"/>
     <xsl:call-template name="latex-hline"/>
     <xsl:text>\end{longtable}</xsl:text><xsl:call-template name="newline"/>
 

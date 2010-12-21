@@ -1,3 +1,8 @@
+2010-12-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/LaTeX/latex.xsl (results-overview)
+	(results-overview-table-single-host-row): Add Log.
+
 2010-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/omp.rnc, doc/omp.html: Update from source.
