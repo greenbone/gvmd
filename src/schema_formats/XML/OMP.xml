@@ -61,7 +61,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <name>OpenVAS Management Protocol</name>
   <abbreviation>OMP</abbreviation>
   <summary>The "management" protocol of the Open Vulnerability Assessment System</summary>
-  <version>1.0</version>
+  <version>2.0</version>
   <type>
     <name>base64</name>
     <summary>Base64 encoded data</summary>
