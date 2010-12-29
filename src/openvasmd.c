@@ -1061,7 +1061,7 @@ main (int argc, char** argv)
         { NULL }
       };
 
-  option_context = g_option_context_new ("- OpenVAS security scanner manager");
+  option_context = g_option_context_new ("- Manager of the Open Vulnerability Assessment System");
   g_option_context_add_main_entries (option_context, option_entries, NULL);
   if (!g_option_context_parse (option_context, &argc, &argv, &error))
     {
