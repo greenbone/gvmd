@@ -1076,6 +1076,7 @@ main (int argc, char** argv)
       printf ("OpenVAS Manager %s\n", OPENVASMD_VERSION);
       printf ("Manager DB revision %i\n", manage_db_supported_version ());
       printf ("Copyright (C) 2010 Greenbone Networks GmbH\n");
+      printf ("License GPLv2+: GNU GPL version 2 or later\n");
       printf
         ("This is free software: you are free to change and redistribute it.\n"
          "There is NO WARRANTY, to the extent permitted by law.\n\n");
