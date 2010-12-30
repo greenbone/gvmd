@@ -1073,12 +1073,12 @@ main (int argc, char** argv)
 
   if (print_version)
     {
-      printf ("openvasmd (%s) %s with db %i for %s\n",
-              PROGNAME,
-              OPENVASMD_VERSION,
-              manage_db_supported_version (),
-              OPENVAS_OS_NAME);
-      printf ("Copyright (C) 2009 Greenbone Networks GmbH\n\n");
+      printf ("OpenVAS Manager %s\n", OPENVASMD_VERSION);
+      printf ("Manager DB revision %i\n", manage_db_supported_version ());
+      printf ("Copyright (C) 2010 Greenbone Networks GmbH\n");
+      printf
+        ("This is free software: you are free to change and redistribute it.\n"
+         "There is NO WARRANTY, to the extent permitted by law.\n\n");
       exit (EXIT_SUCCESS);
     }
 
