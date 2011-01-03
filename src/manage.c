@@ -825,7 +825,8 @@ send_user_rules (report_t stopped_report)
     }
 
   /** @todo Code to access the rules also occurs in openvas-administrator and
-   *        should be consolidated into openvas-libraries. */
+   *        should be consolidated into openvas-libraries. Related code also
+   *        existent in openvas-libraries/misc/openvas_auth.c . */
   while (*rule)
     {
       *rule = g_strstrip (*rule);

@@ -1,3 +1,8 @@
+2011-01-03  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* src/manage.c (send_user_rules): Extended todo comment about another
+	location that deals with the rules file format.
+
 2010-12-30  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/openvasmd.c (main): Added forgotten license note.
