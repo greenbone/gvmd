@@ -1,3 +1,12 @@
+2011-01-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/lsc_user.c (ssh_privkey_create, ssh_pubkey_create): Remove command
+	logging.
+
+	* src/manage_sql.c (sql_quiet): New function.
+	(create_lsc_credential): Use sql_quiet instead of sql, to prevent password
+	logging.
+
 2011-01-03  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/manage.c (send_user_rules): Extended todo comment about another

@@ -386,6 +386,69 @@ sql (char* sql, ...)
 }
 
 /**
+ * @brief Perform an SQL statement, without logging.
+ *
+ * @param[in]  sql    Format string for SQL statement.
+ * @param[in]  ...    Arguments for format string.
+ */
+static void
+sql_quiet (char* sql, ...)
+{
+  const char* tail;
+  int ret;
+  sqlite3_stmt* stmt;
+  va_list args;
+  gchar* formatted;
+
+  va_start (args, sql);
+  formatted = g_strdup_vprintf (sql, args);
+  va_end (args);
+
+  /* Prepare statement. */
+
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+
+  /* Run statement. */
+
+  while (1)
+    {
+      ret = sqlite3_step (stmt);
+      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_DONE) break;
+      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+        {
+          if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
+          g_warning ("%s: sqlite3_step failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
+          abort ();
+        }
+    }
+
+  sqlite3_finalize (stmt);
+}
+
+/**
  * @brief Get a particular cell from a SQL query.
  *
  * @param[in]   col          Column.
@@ -17940,20 +18003,20 @@ create_lsc_credential (const char* name, const char* comment,
 
     /* Password-only credential. */
 
-    sql ("INSERT INTO lsc_credentials"
-         " (uuid, name, owner, login, password, comment, public_key,"
-         "  private_key, rpm, deb, exe)"
-         " VALUES"
-         " (make_uuid (), '%s',"
-         "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         "  '%s', '%s', '%s', '%s', '%s', NULL, NULL, NULL);",
-         quoted_name,
-         current_credentials.uuid,
-         quoted_login,
-         quoted_password,
-         quoted_comment,
-         quoted_public_key,
-         quoted_private_key);
+    sql_quiet ("INSERT INTO lsc_credentials"
+               " (uuid, name, owner, login, password, comment, public_key,"
+               "  private_key, rpm, deb, exe)"
+               " VALUES"
+               " (make_uuid (), '%s',"
+               "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+               "  '%s', '%s', '%s', '%s', '%s', NULL, NULL, NULL);",
+               quoted_name,
+               current_credentials.uuid,
+               quoted_login,
+               quoted_password,
+               quoted_comment,
+               quoted_public_key,
+               quoted_private_key);
 
     g_free (quoted_name);
     g_free (quoted_login);

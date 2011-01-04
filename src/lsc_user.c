@@ -347,8 +347,6 @@ ssh_privkey_create (const char *pubkey_file, const char *privkey_file,
                  NULL);
   g_free (pubkey_stripped);
 
-  g_debug ("command: %s", command);
-
   if ((g_spawn_command_line_sync (command, &astdout, &astderr, &exit_status,
                                   &err)
        == FALSE)
@@ -440,8 +438,6 @@ ssh_pubkey_create (const char *comment,
                          " -P \"", passphrase, "\"",
                          NULL);
   g_free (file_pubstripped);
-
-  g_debug ("command: %s", command);
 
   if ((g_spawn_command_line_sync (command, &astdout, &astderr, &exit_status,
                                   &err)
