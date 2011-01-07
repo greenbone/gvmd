@@ -345,6 +345,11 @@ ssh_privkey_create (const char *pubkey_file, const char *privkey_file,
                  " -out ", privkey_file,
                  " -passout pass:\"", passphrase_priv, "\"",
                  NULL);
+  g_debug ("command: openssl pkcs8 -topk8 -v2 des3"
+           " -in %s -passin pass:\"********\" -out %s"
+           " -passout pass:\"********\"",
+           pubkey_stripped,
+           privkey_file);
   g_free (pubkey_stripped);
 
   if ((g_spawn_command_line_sync (command, &astdout, &astderr, &exit_status,
@@ -437,6 +442,9 @@ ssh_pubkey_create (const char *comment,
                          " -C \"", comment, "\""
                          " -P \"", passphrase, "\"",
                          NULL);
+  g_debug ("command: ssh-keygen -t rsa -f %s -C \"%s\" -P \"********\"",
+           file_pubstripped,
+           comment);
   g_free (file_pubstripped);
 
   if ((g_spawn_command_line_sync (command, &astdout, &astderr, &exit_status,

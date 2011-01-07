@@ -1,3 +1,8 @@
+2011-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/lsc_user.c (ssh_privkey_create, ssh_pubkey_create): Restore command
+	logging, masking out passwords.
+
 2011-01-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/lsc_user.c (ssh_privkey_create, ssh_pubkey_create): Remove command
