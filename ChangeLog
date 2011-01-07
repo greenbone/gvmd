@@ -1,5 +1,9 @@
 2011-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_schema): Correct comments.
+
+2011-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/lsc_user.c (ssh_privkey_create, ssh_pubkey_create): Restore command
 	logging, masking out passwords.
 

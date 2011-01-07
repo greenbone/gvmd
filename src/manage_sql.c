@@ -23052,8 +23052,8 @@ DEF_ACCESS (slave_task_iterator_uuid, 1);
  * @param[in]  format         Name of schema format, "XML" or NULL for XML.
  * @param[out] output_return  NULL or location for output.
  * @param[out] output_length  NULL or location for length of output.
- * @param[out] extension      NULL or location for report format extension.
- * @param[out] content_type   NULL or location for report format content type.
+ * @param[out] extension      NULL or location for schema extension.
+ * @param[out] content_type   NULL or location for schema content type.
  *
  * @return 0 success, 1 failed to find schema format, -1 error.
  */
@@ -23061,7 +23061,7 @@ int
 manage_schema (gchar *format, gchar **output_return, gsize *output_length,
                gchar **extension, gchar **content_type)
 {
-  /* Pass the XML file to the report format generate script, sending the output
+  /* Pass the XML file to the schema generate script, sending the output
    * to a file. */
 
   {
