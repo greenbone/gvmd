@@ -35,6 +35,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <openvas/base/openvas_file.h>
+
 #ifdef S_SPLINT_S
 #include "splint.h"
 #endif
@@ -48,7 +50,7 @@
 
 /* Helpers. */
 
-/** @todo Copied check_is_file and check_is_dir from administrator. */
+/** @todo Copied check_is_file from administrator. */
 
 /**
  * @brief Checks whether a file is a directory or not.
@@ -80,36 +82,6 @@ check_is_file (const char *name)
     }
 }
 
-/**
- * @brief Checks whether a file is a directory or not.
- *
- * This is a replacement for the g_file_test functionality which is reported
- * to be unreliable under certain circumstances, for example if this
- * application and glib are compiled with a different libc.
- *
- * @todo Handle symbolic links.
- * @todo Move to libs?
- *
- * @param[in]  name  File name.
- *
- * @return 1 if parameter is directory, 0 if it is not, -1 if it does not
- *         exist or could not be accessed.
- */
-static int
-check_is_dir (const char *name)
-{
-  struct stat sb;
-
-  if (stat (name, &sb))
-    {
-      return -1;
-    }
-  else
-    {
-      return (S_ISDIR (sb.st_mode));
-    }
-}
-
 
 /* Modified copy of openvas-client/src/util/file_utils.c. */
 
@@ -126,7 +98,7 @@ check_is_dir (const char *name)
 static int
 file_utils_rmdir_rf (const gchar * pathname)
 {
-  if (check_is_dir (pathname) == 1)
+  if (openvas_file_check_is_dir (pathname) == 1)
     {
       GError *error = NULL;
       GDir *directory = g_dir_open (pathname, 0, &error);

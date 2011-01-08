@@ -1,3 +1,8 @@
+2011-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/lsc_user.c (check_is_dir): Remove.
+	(file_utils_rmdir_rf): Use libraries version of check_is_dir.
+
 2011-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_schema): Correct comments.
