@@ -1,5 +1,11 @@
 2011-01-10  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Post release version bump.
+
+	* CMakeLists.txt: Updated version number.
+
+2011-01-10  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Preparing the openvas-manager 2.0+rc2 crelease.
 
 	* CHANGES: Updated.
