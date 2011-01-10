@@ -1,3 +1,23 @@
+openvas-manager 2.0+rc2 (2011-01-10)
+
+This is the second release candidate for the upcoming 2.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients. Release 2.0 is part of OpenVAS 4, the next
+generation of the Open Vulnerability Assessment System.
+
+This release features updated protocol documentation, masks passwords when LSC
+package creation commands are logged and makes the output of --version compliant
+with the GNU Coding Standards.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Jan-Oliver Wagner, Michael Wiegand and Felix Wolfsteller.
+
+Main changes since 2.0+rc1:
+* The protocol documentation has been brought up to date.
+* The output of --version now complies with the GNU Coding Standards.
+* Passwords are now masked when loggings LSC package creation commands.
+
+
 openvas-manager 2.0+rc1 (2010-12-21)
 
 This is the first release candidate for the upcoming 2.0 release of the OpenVAS
