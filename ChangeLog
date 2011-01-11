@@ -1,3 +1,12 @@
+2011-01-11  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* packaging/debian/control, packaging/debian/compat,
+	packaging/debian/openvas-manager.dirs, packaging/debian/changelog,
+	packaging/debian/copyright, packaging/debian/openvas-manager.install,
+	packaging/debian/rules, packaging/debian/, packaging/: Removed.
+	These packaging files are hopeless out of date and better packages
+	are available by third parties already.
+
 2011-01-10  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
