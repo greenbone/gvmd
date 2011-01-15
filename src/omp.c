@@ -10801,6 +10801,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
                            "Escalator could not be created");
                     break;
+                  case 2:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_escalator",
+                                        "Validation of email address failed"));
+                    g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
+                           "Escalator could not be created");
+                    break;
                   default:
                     assert (0);
                   case -1:
