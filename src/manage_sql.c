@@ -4962,26 +4962,66 @@ static int
 email (const char *to_address, const char *from_address, const char *subject,
        const char *body)
 {
-  int ret;
-  gchar *command;
+  int ret, content_fd, from_fd;
+  gchar *command, *content;
+  GError *error = NULL;
+  char content_file[] = "/tmp/openvasmd-content-XXXXXX";
+  char from_file[] = "/tmp/openvasmd-from-XXXXXX";
+
+  content_fd = mkstemp (content_file);
+  if (content_fd == -1)
+    {
+      g_warning ("%s: mkstemp: %s\n", __FUNCTION__, strerror (errno));
+      return -1;
+    }
 
   tracef ("   EMAIL to %s from %s subject: %s, body: %s",
           to_address, from_address, subject, body);
 
-  command = g_strdup_printf ("echo \""
-                             "To: %s\n"
+  content = g_strdup_printf ("To: %s\n"
                              "From: %s\n"
                              "Subject: %s\n"
                              "\n"
-                             "%s\""
-                             " | /usr/sbin/sendmail %s"
-                             " > /dev/null 2>&1",
+                             "%s",
                              to_address,
                              from_address ? from_address
                                           : "automated@openvas.org",
                              subject,
-                             body,
-                             to_address);
+                             body);
+
+  g_file_set_contents (content_file, content, strlen (content), &error);
+  g_free (content);
+  if (error)
+    {
+      g_warning ("%s", error->message);
+      g_error_free (error);
+      close (content_fd);
+      return -1;
+    }
+
+  from_fd = mkstemp (from_file);
+  if (from_fd == -1)
+    {
+      g_warning ("%s: mkstemp: %s\n", __FUNCTION__, strerror (errno));
+      close (content_fd);
+      return -1;
+    }
+
+  g_file_set_contents (from_file, from_address, strlen (from_address), &error);
+  if (error)
+    {
+      g_warning ("%s", error->message);
+      g_error_free (error);
+      close (content_fd);
+      close (from_fd);
+      return -1;
+    }
+
+  command = g_strdup_printf ("xargs -a %s -I XXX"
+                             " /usr/sbin/sendmail XXX < %s"
+                             " > /dev/null 2>&1",
+                             from_file,
+                             content_file);
 
   tracef ("   command: %s\n", command);
 
@@ -4996,9 +5036,17 @@ email (const char *to_address, const char *from_address, const char *subject,
                  WEXITSTATUS (ret),
                  command);
       g_free (command);
+      close (content_fd);
+      close (from_fd);
+      unlink (content_file);
+      unlink (from_file);
       return -1;
     }
   g_free (command);
+  close (content_fd);
+  close (from_fd);
+  unlink (content_file);
+  unlink (from_file);
   return 0;
 }
 
