@@ -1,3 +1,14 @@
+2011-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Validate CREATE_ESCALATOR addresses.  Backport from trunk; initially
+	committed in r9974.
+
+	* src/manage_sql.c (validate_email): New function.
+	(create_escalator): Validate email method addresses.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_ESCALATOR
+	add validation error.
+
 2011-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (email): Pass user supplied data via files instead

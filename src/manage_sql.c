@@ -3355,6 +3355,66 @@ find_escalator (const char* uuid, escalator_t* escalator)
 }
 
 /**
+ * @brief Validate an email address.
+ *
+ * @param[in]  address  Email address.
+ *
+ * @return 0 success, 1 failure.
+ */
+int
+validate_email (const char* address)
+{
+  gchar **split, *point;
+
+  assert (address);
+
+  split = g_strsplit (address, "@", 0);
+
+  if (split[0] == NULL || split[1] == NULL || split[2])
+    {
+      g_strfreev (split);
+      return 1;
+    }
+
+  /* Local part. */
+  point = split[0];
+  while (*point)
+    if (isalnum (*point)
+        || strchr ("!#$%&'*+-/=?^_`{|}~", *point)
+        || ((*point == '.')
+            && (point > split[0])
+            && point[1]
+            && (point[1] != '.')
+            && (point[-1] != '.')))
+      point++;
+    else
+      {
+        g_strfreev (split);
+        return 1;
+      }
+
+  /* Domain. */
+  point = split[1];
+  while (*point)
+    if (isalnum (*point)
+        || strchr ("-_", *point)  /* RFC actually forbids _. */
+        || ((*point == '.')
+            && (point > split[1])
+            && point[1]
+            && (point[1] != '.')
+            && (point[-1] != '.')))
+      point++;
+    else
+      {
+        g_strfreev (split);
+        return 1;
+      }
+
+  g_strfreev (split);
+  return 0;
+}
+
+/**
  * @brief Create an escalator.
  *
  * @param[in]  name            Name of escalator.
@@ -3410,6 +3470,9 @@ create_escalator (const char* name, const char* comment,
        condition,
        method);
 
+  g_free (quoted_comment);
+  g_free (quoted_name);
+
   *escalator = sqlite3_last_insert_rowid (task_db);
 
   index = 0;
@@ -3445,6 +3508,17 @@ create_escalator (const char* name, const char* comment,
     {
       gchar *name = sql_quote (item);
       gchar *data = sql_quote (item + strlen (item) + 1);
+      if (method == ESCALATOR_METHOD_EMAIL
+          && (strcmp (name, "to_address") == 0
+              || strcmp (name, "from_address") == 0)
+          && validate_email (data))
+        {
+          g_free (name);
+          g_free (data);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+
       sql ("INSERT INTO escalator_method_data (escalator, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *escalator,
@@ -3453,9 +3527,6 @@ create_escalator (const char* name, const char* comment,
       g_free (name);
       g_free (data);
     }
-
-  g_free (quoted_comment);
-  g_free (quoted_name);
 
   sql ("COMMIT;");
 
