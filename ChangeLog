@@ -1,3 +1,9 @@
+2011-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (email): Pass user supplied data via files instead
+	of directly in the command.  (Backport from trunk; initially committed in
+	r9973.)
+
 2010-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/omp.html, doc/omp.rnc: New files.  Implementation of Change Request
