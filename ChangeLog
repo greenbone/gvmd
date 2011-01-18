@@ -1,7 +1,17 @@
+2011-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (run_slave_task): Check if the target has a credential,
+	before creating one.
+
 2011-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Validate CREATE_ESCALATOR addresses.
 
 	* src/manage_sql.c (validate_email): New function.
 	(create_escalator): Validate email method addresses.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_ESCALATOR
+	add validation error.
 
 2011-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
 

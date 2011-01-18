@@ -1300,37 +1300,42 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
     {
       /* Create the target credential on the slave. */
 
-      init_lsc_credential_iterator (&credentials, target_credential, 1, NULL);
-      if (next (&credentials))
+      if (target_credential)
         {
-          const char *user, *password;
-          gchar *user_copy, *password_copy;
+          init_lsc_credential_iterator (&credentials, target_credential, 1,
+                                        NULL);
+          if (next (&credentials))
+            {
+              const char *user, *password;
+              gchar *user_copy, *password_copy;
 
-          user = lsc_credential_iterator_login (&credentials);
-          password = lsc_credential_iterator_password (&credentials);
+              user = lsc_credential_iterator_login (&credentials);
+              password = lsc_credential_iterator_password (&credentials);
 #if 0
-          /** @todo Need more OMP support for this. */
-          public_key = lsc_credential_iterator_public_key (&credentials);
-          private_key = lsc_credential_iterator_private_key (&credentials);
+              /** @todo Need more OMP support for this. */
+              public_key = lsc_credential_iterator_public_key (&credentials);
+              private_key = lsc_credential_iterator_private_key (&credentials);
 #endif
 
-          if (user == NULL || password == NULL)
-            {
+              if (user == NULL || password == NULL)
+                {
+                  cleanup_iterator (&credentials);
+                  goto fail;
+                }
+
+              user_copy = g_strdup (user);
+              password_copy = g_strdup (password);
               cleanup_iterator (&credentials);
-              goto fail;
+
+              ret = omp_create_lsc_credential
+                     (&session, name, user_copy, password_copy,
+                      "Slave credential created by Master",
+                      &slave_credential_uuid);
+              g_free (user_copy);
+              g_free (password_copy);
+              if (ret)
+                goto fail;
             }
-
-          user_copy = g_strdup (user);
-          password_copy = g_strdup (password);
-          cleanup_iterator (&credentials);
-
-          ret = omp_create_lsc_credential (&session, name, user_copy, password_copy,
-                                           "Slave credential created by Master",
-                                           &slave_credential_uuid);
-          g_free (user_copy);
-          g_free (password_copy);
-          if (ret)
-            goto fail;
         }
 
       tracef ("   %s: slave credential uuid: %s\n", __FUNCTION__,
