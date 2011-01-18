@@ -1196,14 +1196,16 @@ void buffer_config_preference_xml (GString *, iterator_t *, config_t);
  * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
  *                          continue if stopped else start from beginning.
  * @param[out]  target      Task target.
- * @param[out]  target_credential    Target credential.
+ * @param[out]  target_ssh_credential    Target SSH credential.
+ * @param[out]  target_smb_credential    Target SMB credential.
  * @param[out]  last_stopped_report  Last stopped report if any, else 0.
  *
  * @return 0 success, -1 error.
  */
 static int
 run_slave_task (task_t task, char **report_id, int from, target_t target,
-                lsc_credential_t target_credential,
+                lsc_credential_t target_ssh_credential,
+                lsc_credential_t target_smb_credential,
                 report_t last_stopped_report)
 {
   slave_t slave;
@@ -1211,7 +1213,8 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
   int port, socket, ret, next_result;
   gnutls_session_t session;
   iterator_t credentials, targets;
-  gchar *slave_credential_uuid = NULL, *slave_target_uuid, *slave_config_uuid;
+  gchar *slave_ssh_credential_uuid = NULL, *slave_smb_credential_uuid = NULL;
+  gchar *slave_target_uuid, *slave_config_uuid;
   gchar *slave_task_uuid, *slave_report_uuid;
 
   /* Some of the cases in here must write to the session outside an open
@@ -1298,11 +1301,11 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
 
   if (last_stopped_report == 0)
     {
-      /* Create the target credential on the slave. */
+      /* Create the target credentials on the slave. */
 
-      if (target_credential)
+      if (target_ssh_credential)
         {
-          init_lsc_credential_iterator (&credentials, target_credential, 1,
+          init_lsc_credential_iterator (&credentials, target_ssh_credential, 1,
                                         NULL);
           if (next (&credentials))
             {
@@ -1329,8 +1332,8 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
 
               ret = omp_create_lsc_credential
                      (&session, name, user_copy, password_copy,
-                      "Slave credential created by Master",
-                      &slave_credential_uuid);
+                      "Slave SSH credential created by Master",
+                      &slave_ssh_credential_uuid);
               g_free (user_copy);
               g_free (password_copy);
               if (ret)
@@ -1338,8 +1341,46 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
             }
         }
 
-      tracef ("   %s: slave credential uuid: %s\n", __FUNCTION__,
-              slave_credential_uuid);
+      if (target_smb_credential)
+        {
+          init_lsc_credential_iterator (&credentials, target_smb_credential, 1,
+                                        NULL);
+          if (next (&credentials))
+            {
+              const char *user, *password;
+              gchar *user_copy, *password_copy, *smb_name;
+
+              user = lsc_credential_iterator_login (&credentials);
+              password = lsc_credential_iterator_password (&credentials);
+
+              if (user == NULL || password == NULL)
+                {
+                  cleanup_iterator (&credentials);
+                  goto fail_ssh_credential;
+                }
+
+              user_copy = g_strdup (user);
+              password_copy = g_strdup (password);
+              cleanup_iterator (&credentials);
+
+              smb_name = g_strdup_printf ("%ssmb", name);
+              ret = omp_create_lsc_credential
+                     (&session, smb_name, user_copy, password_copy,
+                      "Slave SMB credential created by Master",
+                      &slave_smb_credential_uuid);
+              g_free (smb_name);
+              g_free (user_copy);
+              g_free (password_copy);
+              if (ret)
+                goto fail_ssh_credential;
+            }
+        }
+
+      tracef ("   %s: slave SSH credential uuid: %s\n", __FUNCTION__,
+              slave_ssh_credential_uuid);
+
+      tracef ("   %s: slave SMB credential uuid: %s\n", __FUNCTION__,
+              slave_smb_credential_uuid);
 
       /* Create the target on the slave. */
 
@@ -1361,7 +1402,9 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
 
           ret = omp_create_target (&session, name, hosts_copy,
                                    "Slave target created by Master",
-                                   slave_credential_uuid, &slave_target_uuid);
+                                   slave_ssh_credential_uuid,
+                                   slave_smb_credential_uuid,
+                                   &slave_target_uuid);
           g_free (hosts_copy);
           if (ret)
             goto fail_credential;
@@ -1650,13 +1693,15 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
   set_report_slave_task_uuid (current_report, "");
   omp_delete_config (&session, slave_config_uuid);
   omp_delete_target (&session, slave_target_uuid);
-  omp_delete_lsc_credential (&session, slave_credential_uuid);
+  omp_delete_lsc_credential (&session, slave_ssh_credential_uuid);
+  omp_delete_lsc_credential (&session, slave_smb_credential_uuid);
  succeed_stopped:
   free (slave_task_uuid);
   free (slave_report_uuid);
   free (slave_config_uuid);
   free (slave_target_uuid);
-  free (slave_credential_uuid);
+  free (slave_smb_credential_uuid);
+  free (slave_ssh_credential_uuid);
   free (name);
   openvas_server_close (socket, session);
   return 0;
@@ -1675,8 +1720,11 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
   omp_delete_target (&session, slave_target_uuid);
   free (slave_target_uuid);
  fail_credential:
-  omp_delete_lsc_credential (&session, slave_credential_uuid);
-  free (slave_credential_uuid);
+  omp_delete_lsc_credential (&session, slave_smb_credential_uuid);
+  free (slave_smb_credential_uuid);
+ fail_ssh_credential:
+  omp_delete_lsc_credential (&session, slave_ssh_credential_uuid);
+  free (slave_ssh_credential_uuid);
  fail:
   current_scanner_task = (task_t) 0;
   free (name);
@@ -1845,7 +1893,7 @@ run_task (task_t task, char **report_id, int from)
   if (task_slave (task))
     {
       if (run_slave_task (task, report_id, from, target, ssh_credential,
-                          last_stopped_report))
+                          smb_credential, last_stopped_report))
         {
           free (hosts);
           set_task_run_status (task, run_status);
@@ -3582,8 +3630,9 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
   gnutls_session_t session;
   char *host;
   int port;
-  entity_t get_tasks, get_targets, entity, task;
-  const char *slave_config_uuid, *slave_target_uuid, *slave_credential_uuid;
+  entity_t get_tasks, get_targets, entity, task, credential;
+  const char *slave_config_uuid, *slave_target_uuid;
+  const char *slave_ssh_credential_uuid, *slave_smb_credential_uuid;
 
   assert (slave);
 
@@ -3640,10 +3689,15 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
   if (entity == NULL)
     goto fail_free;
 
-  entity = entity_child (entity, "lsc_credential");
-  if (entity == NULL)
+  credential = entity_child (entity, "ssh_lsc_credential");
+  if (credential == NULL)
     goto fail_free;
-  slave_credential_uuid = entity_attribute (entity, "id");
+  slave_ssh_credential_uuid = entity_attribute (credential, "id");
+
+  credential = entity_child (entity, "smb_lsc_credential");
+  if (credential == NULL)
+    goto fail_free;
+  slave_smb_credential_uuid = entity_attribute (credential, "id");
 
   /* Remove the slave resources. */
 
@@ -3654,7 +3708,9 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
     goto fail_target;
   if (omp_delete_target (&session, slave_target_uuid))
     goto fail_credential;
-  if (omp_delete_lsc_credential (&session, slave_credential_uuid))
+  if (omp_delete_lsc_credential (&session, slave_smb_credential_uuid))
+    goto fail;
+  if (omp_delete_lsc_credential (&session, slave_ssh_credential_uuid))
     goto fail;
 
   /* Cleanup. */
@@ -3669,7 +3725,8 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
  fail_target:
   omp_delete_target (&session, slave_target_uuid);
  fail_credential:
-  omp_delete_lsc_credential (&session, slave_credential_uuid);
+  omp_delete_lsc_credential (&session, slave_smb_credential_uuid);
+  omp_delete_lsc_credential (&session, slave_ssh_credential_uuid);
  fail_free:
   free_entity (get_targets);
  fail_free_task:

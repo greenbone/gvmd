@@ -1,5 +1,11 @@
 2011-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_slave_task): Add SMB credential arg.
+	(run_task): Pass SMB credential to run_slave_task.
+	(delete_slave_task): Remove SMB credential too.
+
+2011-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_slave_task): Check if the target has a credential,
 	before creating one.
 
