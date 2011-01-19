@@ -4,7 +4,7 @@
  * Test starting two tasks at the same time on the same connection.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH

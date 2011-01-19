@@ -3,7 +3,7 @@
 # Description: CMakefile for the OpenVAS Manager program
 #
 # Authors:
-# Matthew Mundell <matthew.mundell@greenbone.net>
+# Matthew Mundell <matt@mundell.ukfsn.org>
 #
 # Copyright:
 # Copyright (C) 2009 Greenbone Networks GmbH
@@ -24,7 +24,7 @@
 
 ## Config
 
-add_definitions (-Werror -D_BSD_SOURCE -D_ISOC99_SOURCE -D_SVID_SOURCE)
+add_definitions (-Werror)
 
 message (STATUS "Looking for sqlite3...")
 find_library (SQLITE3 sqlite3)
@@ -35,10 +35,10 @@ endif (NOT SQLITE3)
 
 exec_program (pkg-config
               ARGS --cflags glib-2.0
-              OUTPUT_VARIABLE GLIB_CFLAGS)
+			  OUTPUT_VARIABLE GLIB_CFLAGS)
 exec_program (pkg-config
               ARGS --libs glib-2.0
-              OUTPUT_VARIABLE GLIB_LDFLAGS)
+			  OUTPUT_VARIABLE GLIB_LDFLAGS)
 
 if (OPENVAS_HEADER_INSTALL_DIR)
   set (HEADER_TEMP "-I${OPENVAS_HEADER_INSTALL_DIR}")
@@ -57,10 +57,10 @@ endif (OPENVAS_LIB_INSTALL_DIR)
 
 exec_program (libopenvas-config
               ARGS --cflags
-              OUTPUT_VARIABLE OPENVAS_CFLAGS)
+			  OUTPUT_VARIABLE OPENVAS_CFLAGS)
 exec_program (libopenvas-config
               ARGS --libs
-              OUTPUT_VARIABLE OPENVAS_LDFLAGS)
+			  OUTPUT_VARIABLE OPENVAS_LDFLAGS)
 
 ## Libraries
 
@@ -161,67 +161,16 @@ install (TARGETS openvasmd
 
 install (FILES openvasmd_log.conf
          DESTINATION ${OPENVAS_SYSCONF_DIR})
-
-install (FILES report_formats/CPE/generate
-               report_formats/CPE/CPE.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/a0704abb-2120-489f-959f-251c9f4ffebd/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/HTML/generate
-               report_formats/HTML/HTML.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/b993b6f5-f9fb-4e6e-9c94-dd46c00e058d/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/ITG/generate
-               report_formats/ITG/ITG.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/929884c6-c2c4-41e7-befb-2f6aa163b458/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/LaTeX/generate
-               report_formats/LaTeX/latex.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/9f1ab17b-aaaa-411a-8c57-12df446f5588/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/NBE/generate
-               report_formats/NBE/NBE.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/f5c2a364-47d2-4700-b21d-0a7693daddab/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/PDF/generate
-               report_formats/LaTeX/latex.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/1a60a67e-97d0-4cbf-bc77-f71b08e7043d/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/TXT/generate report_formats/TXT/TXT.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/19f6f1b3-7128-4433-888c-ccc764fe6ed5/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/XML/generate
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/d5da9f67-8551-4e51-807b-b6a873d70e34/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES schema_formats/HTML/generate
-               schema_formats/RNC/rnc.xsl
-               schema_formats/HTML/HTML.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_schema_formats/02052818-dab6-11df-9be4-002264764cea/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES schema_formats/RNC/generate
-               schema_formats/RNC/rnc.xsl
-               schema_formats/RNC/RNC.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_schema_formats/787a4a18-dabc-11df-9486-002264764cea/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES schema_formats/XML/generate
-         schema_formats/XML/OMP.xml
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_schema_formats/18e826fc-dab6-11df-b913-002264764cea/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+install (FILES ITG.xsl CPE.xsl
+         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/xsl/)
+install (FILES openvasmd_report_html.xsl
+         DESTINATION ${OPENVAS_DATA_DIR})
 
 ## Tests
 
-# enable_testing ()
+enable_testing ()
 
-# add_subdirectory (tests)
+add_subdirectory (tests)
 
 ## Static analysis
 
@@ -242,7 +191,7 @@ add_dependencies (check splint rats flawfinder)
 ## Tag files
 
 set (C_FILES "openvasmd.c" "oxpd.c" "otpd.c" "ompd.c" "omp.c" "otp.c"
-             "manage.c" "manage_sql.c" "ovas-mngr-comm.c" "lsc_user.c")
+             "manage.c" "manage_sql.c" "ovas-mngr-comm.c")
 add_custom_target (etags COMMENT "Building TAGS..."
                    COMMAND etags ${C_FILES})
 add_custom_target (ctags COMMENT "Building tags..."

@@ -3,7 +3,7 @@
  * Description: Test deleting a config that is referenced by a task.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matthew.mundell@intevation.de>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH

@@ -3,7 +3,7 @@
  * Description: Headers for OpenVAS Manager: the Manage library.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
  * Copyright (C) 2009, 2010 Greenbone Networks GmbH
@@ -30,7 +30,7 @@
 #include <glib.h>
 #include <gnutls/gnutls.h>
 
-#include <openvas/misc/openvas_auth.h>
+#include <openvas/openvas_auth.h>
 #include <openvas/base/array.h> /* for array_t */
 #include <openvas/base/certificate.h> /* for certificate_t */
 #include <openvas/base/credentials.h>
@@ -158,13 +158,10 @@ typedef enum
 typedef long long int agent_t;
 typedef long long int config_t;
 typedef long long int escalator_t;
-typedef long long int slave_t;
 typedef long long int target_t;
 typedef long long int task_t;
 typedef long long int result_t;
 typedef long long int report_t;
-typedef long long int report_format_t;
-typedef long long int report_format_param_t;
 typedef long long int note_t;
 typedef long long int nvt_t;
 typedef long long int override_t;
@@ -201,7 +198,6 @@ typedef enum
 {
   ESCALATOR_METHOD_ERROR,
   ESCALATOR_METHOD_EMAIL,
-  ESCALATOR_METHOD_HTTP_GET,
   ESCALATOR_METHOD_SYSLOG
 } escalator_method_t;
 
@@ -271,7 +267,7 @@ const char*
 event_name (event_t);
 
 gchar*
-event_description (event_t, const void *, const char *);
+event_description (event_t, const void *);
 
 const char*
 escalator_method_name (escalator_method_t);
@@ -364,13 +360,7 @@ target_t
 task_target (task_t);
 
 void
-set_task_target (task_t, target_t);
-
-target_t
-task_slave (task_t);
-
-void
-set_task_slave (task_t, target_t);
+set_task_target (task_t, config_t);
 
 char*
 task_description (task_t);
@@ -576,9 +566,6 @@ find_result (const char*, result_t*);
 int
 result_uuid (result_t, /*@out@*/ char **);
 
-const char*
-manage_result_type_threat (const char*);
-
 
 /* Reports. */
 
@@ -623,12 +610,6 @@ int
 report_scan_run_status (report_t, int*);
 
 int
-report_slave_progress (report_t);
-
-char *
-report_slave_task_uuid (report_t);
-
-int
 report_scan_result_count (report_t, const char*, const char*, const char*,
                           int, int*);
 
@@ -661,7 +642,7 @@ int
 report_timestamp (const char*, gchar**);
 
 int
-manage_delete_report (report_t);
+delete_report (report_t);
 
 int
 set_report_parameter (report_t, const char*, const char*);
@@ -705,12 +686,6 @@ const char*
 result_iterator_nvt_risk_factor (iterator_t *);
 
 const char*
-result_iterator_nvt_cve (iterator_t *);
-
-const char*
-result_iterator_nvt_bid (iterator_t *);
-
-const char*
 result_iterator_type (iterator_t*);
 
 const char*
@@ -720,7 +695,7 @@ const char*
 result_iterator_descr (iterator_t*);
 
 void
-init_host_iterator (iterator_t*, report_t, const char *);
+init_host_iterator (iterator_t*, report_t, char *);
 
 const char*
 host_iterator_host (iterator_t*);
@@ -749,18 +724,6 @@ collate_message_type (void* data, int, const void*, int, const void*);
 void
 trim_partial_report (report_t);
 
-gchar *
-manage_report (report_t, report_format_t, int, const char*, int, const char *,
-               const char *, int, const char *, int, int, int, int, int, int,
-               gsize *, gchar **, gchar **);
-
-int
-manage_send_report (report_t, report_format_t, int, const char*, int,
-                    const char *, const char *, int, const char *, int, int,
-                    int, int, int, int, int,
-                    gboolean (*) (const char *, int (*) (void*), void*),
-                    int (*) (void*), void *);
-
 
 /* RC's. */
 
@@ -770,21 +733,12 @@ rc_preference (const char*, const char*);
 
 /* Targets. */
 
-/**
- * @brief Maximum number of hosts a target may specify.
- */
-#define MANAGE_MAX_HOSTS 4095
-
-int
-manage_max_hosts (const char *);
-
 gboolean
 find_target (const char*, target_t*);
 
 int
-create_target (const char*, const char*, const char*, const char*,
-               lsc_credential_t, lsc_credential_t, const char*, const char*,
-               const char*, target_t*);
+create_target (const char*, const char*, const char*, lsc_credential_t,
+               const char*, const char*, const char*, target_t*);
 
 int
 delete_target (target_t);
@@ -808,13 +762,7 @@ const char*
 target_iterator_comment (iterator_t*);
 
 int
-target_iterator_ssh_credential (iterator_t*);
-
-int
-target_iterator_smb_credential (iterator_t*);
-
-const char*
-target_iterator_port_range (iterator_t*);
+target_iterator_lsc_credential (iterator_t*);
 
 char*
 target_uuid (target_t);
@@ -1117,21 +1065,6 @@ create_lsc_credential (const char*, const char*, const char*, const char*,
 int
 delete_lsc_credential (lsc_credential_t);
 
-int
-lsc_credential_packaged (lsc_credential_t);
-
-void
-set_lsc_credential_name (lsc_credential_t, const char *);
-
-void
-set_lsc_credential_comment (lsc_credential_t, const char *);
-
-void
-set_lsc_credential_login (lsc_credential_t, const char *);
-
-void
-set_lsc_credential_password (lsc_credential_t, const char *);
-
 void
 init_lsc_credential_iterator (iterator_t*, lsc_credential_t, int, const char*);
 
@@ -1197,9 +1130,6 @@ int
 delete_agent (agent_t);
 
 int
-verify_agent (agent_t);
-
-int
 agent_uuid (agent_t, char **);
 
 void
@@ -1215,25 +1145,13 @@ const char*
 agent_iterator_comment (iterator_t*);
 
 const char*
-agent_iterator_installer (iterator_t*);
-
-gsize
-agent_iterator_installer_size (iterator_t*);
-
-const char*
 agent_iterator_installer_64 (iterator_t*);
 
 const char*
 agent_iterator_installer_filename (iterator_t*);
 
 const char*
-agent_iterator_installer_signature_64 (iterator_t*);
-
-const char*
 agent_iterator_trust (iterator_t*);
-
-time_t
-agent_iterator_trust_time (iterator_t*);
 
 const char*
 agent_iterator_howto_install (iterator_t*);
@@ -1395,8 +1313,7 @@ typedef struct
 } report_type_iterator_t;
 
 int
-init_system_report_type_iterator (report_type_iterator_t*, const char*,
-                                  const char*);
+init_system_report_type_iterator (report_type_iterator_t*, const char*);
 
 void
 cleanup_report_type_iterator (report_type_iterator_t*);
@@ -1411,7 +1328,7 @@ const char*
 report_type_iterator_title (report_type_iterator_t*);
 
 int
-manage_system_report (const char *, const char *, const char *, char **);
+manage_system_report (const char *, const char *, char **);
 
 
 /* Scheduling. */
@@ -1491,269 +1408,6 @@ schedule_task_iterator_uuid (iterator_t *);
 
 const char*
 schedule_task_iterator_name (iterator_t *);
-
-
-/* Report Formats. */
-
-gboolean
-find_report_format (const char*, report_format_t*);
-
-gboolean
-lookup_report_format (const char*, report_format_t*);
-
-/**
- * @brief Struct for defining a report format param.
- */
-typedef struct
-{
-  gchar *fallback;  ///< Fallback value.
-  gchar *name;      ///< Name.
-  gchar *type;      ///< Type (boolean, string, integer, ...).
-  gchar *type_max;  ///< Maximum value for integer type.
-  gchar *type_min;  ///< Minimum value for integer type.
-  gchar *value;     ///< Value of param.
-} create_report_format_param_t;
-
-int
-create_report_format (const char *, const char *, const char *, const char *,
-                      const char *, const char *, int, array_t *, array_t *,
-                      array_t *, const char *, report_format_t *);
-
-int
-delete_report_format (report_format_t);
-
-int
-verify_report_format (report_format_t);
-
-char *
-report_format_uuid (report_format_t);
-
-void
-set_report_format_active (report_format_t, int);
-
-char *
-report_format_name (report_format_t);
-
-char *
-report_format_content_type (report_format_t);
-
-char *
-report_format_extension (report_format_t);
-
-void
-set_report_format_name (report_format_t, const char *);
-
-void
-set_report_format_summary (report_format_t, const char *);
-
-int
-set_report_format_param (report_format_t, const char *, const char *);
-
-int
-report_format_global (report_format_t);
-
-int
-report_format_active (report_format_t);
-
-void
-init_report_format_iterator (iterator_t*, report_format_t, int, const char*);
-
-report_format_t
-report_format_iterator_report_format (iterator_t*);
-
-const char*
-report_format_iterator_uuid (iterator_t *);
-
-const char*
-report_format_iterator_name (iterator_t *);
-
-const char*
-report_format_iterator_extension (iterator_t *);
-
-const char*
-report_format_iterator_content_type (iterator_t *);
-
-const char*
-report_format_iterator_description (iterator_t *);
-
-int
-report_format_iterator_global (iterator_t *);
-
-int
-report_format_iterator_active (iterator_t *);
-
-const char*
-report_format_iterator_signature (iterator_t *);
-
-const char*
-report_format_iterator_trust (iterator_t *);
-
-const char*
-report_format_iterator_summary (iterator_t *);
-
-time_t
-report_format_iterator_trust_time (iterator_t *);
-
-/**
- * @brief A report format file iterator.
- */
-typedef struct
-{
-  GPtrArray *start;    ///< Array of files.
-  gpointer *current;   ///< Current file.
-  gchar *dir_name;     ///< Dir holding files.
-} file_iterator_t;
-
-int
-init_report_format_file_iterator (file_iterator_t*, report_format_t);
-
-void
-cleanup_file_iterator (file_iterator_t*);
-
-gboolean
-next_file (file_iterator_t*);
-
-const char*
-file_iterator_name (file_iterator_t*);
-
-gchar*
-file_iterator_content_64 (file_iterator_t*);
-
-/**
- * @brief Report format param types.
- *
- * These numbers are used in the database, so if the number associated with
- * any symbol changes then a migrator must be added to update existing data.
- */
-typedef enum
-{
-  REPORT_FORMAT_PARAM_TYPE_BOOLEAN = 0,
-  REPORT_FORMAT_PARAM_TYPE_INTEGER = 1,
-  REPORT_FORMAT_PARAM_TYPE_SELECTION = 2,
-  REPORT_FORMAT_PARAM_TYPE_STRING = 3,
-  REPORT_FORMAT_PARAM_TYPE_TEXT = 4,
-  REPORT_FORMAT_PARAM_TYPE_ERROR = 100
-} report_format_param_type_t;
-
-const char *
-report_format_param_type_name (report_format_param_type_t);
-
-report_format_param_type_t
-report_format_param_type_from_name (const char *);
-
-void
-init_report_format_param_iterator (iterator_t*, report_format_t, int,
-                                   const char*);
-
-report_format_param_t
-report_format_param_iterator_param (iterator_t*);
-
-const char*
-report_format_param_iterator_name (iterator_t *);
-
-const char*
-report_format_param_iterator_value (iterator_t *);
-
-const char*
-report_format_param_iterator_type_name (iterator_t *);
-
-report_format_param_type_t
-report_format_param_iterator_type (iterator_t *);
-
-long long int
-report_format_param_iterator_type_min (iterator_t *);
-
-long long int
-report_format_param_iterator_type_max (iterator_t *);
-
-const char*
-report_format_param_iterator_fallback (iterator_t *);
-
-const char*
-report_format_param_iterator_type_regex (iterator_t *);
-
-void
-init_param_option_iterator (iterator_t*, report_format_param_t, int,
-                            const char *);
-
-const char*
-param_option_iterator_value (iterator_t *);
-
-
-/* Slaves. */
-
-gboolean
-find_slave (const char*, slave_t*);
-
-int
-create_slave (const char*, const char*, const char*, const char*,
-              const char*, const char*, slave_t*);
-
-int
-delete_slave (slave_t);
-
-void
-init_slave_iterator (iterator_t*, slave_t, int, const char*);
-
-slave_t
-slave_iterator_slave (iterator_t*);
-
-const char*
-slave_iterator_uuid (iterator_t*);
-
-const char*
-slave_iterator_name (iterator_t*);
-
-const char*
-slave_iterator_comment (iterator_t*);
-
-const char*
-slave_iterator_host (iterator_t*);
-
-const char*
-slave_iterator_port (iterator_t*);
-
-const char*
-slave_iterator_login (iterator_t*);
-
-const char*
-slave_iterator_password (iterator_t*);
-
-char*
-slave_uuid (slave_t);
-
-char*
-slave_name (slave_t);
-
-char*
-slave_host (slave_t);
-
-char*
-slave_login (slave_t);
-
-char*
-slave_password (slave_t);
-
-int
-slave_port (slave_t);
-
-int
-slave_in_use (slave_t);
-
-void
-init_slave_task_iterator (iterator_t*, slave_t, int);
-
-const char*
-slave_task_iterator_name (iterator_t*);
-
-const char*
-slave_task_iterator_uuid (iterator_t*);
-
-
-/* Schema. */
-
-int
-manage_schema (gchar *, gchar **, gsize *, gchar **, gchar **);
 
 
 /* Tags. */

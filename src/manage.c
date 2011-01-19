@@ -3,7 +3,7 @@
  * Description: Module for OpenVAS Manager: the Manage library.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
  * Copyright (C) 2009,2010 Greenbone Networks GmbH
@@ -51,12 +51,11 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/wait.h>
-#include <unistd.h>
 
 #include <openvas/base/openvas_string.h>
 #include <openvas/omp/omp.h>
-#include <openvas/misc/openvas_server.h>
-#include <openvas/misc/openvas_uuid.h>
+#include <openvas/openvas_server.h>
+#include <openvas/openvas_uuid.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -71,7 +70,7 @@
 /**
  * @brief Information about the scanner.
  */
-scanner_t scanner = { NULL, NULL, NULL, NULL, 0 };
+scanner_t scanner;
 
 
 /* Threats. */
@@ -140,9 +139,6 @@ credentials_t current_credentials;
 /**
  * @brief Delete all the reports for a task.
  *
- * It's up to the caller to ensure that this runs in a contention safe
- * context (for example within an SQL transaction).
- *
  * @param[in]  task  A task descriptor.
  *
  * @return 0 on success, -1 on error.
@@ -152,36 +148,11 @@ delete_reports (task_t task)
 {
   report_t report;
   iterator_t iterator;
+  /** @todo Wrap this in a transaction? */
   init_report_iterator (&iterator, task, 0);
-  while (next_report (&iterator, &report))
-    if (delete_report (report))
-      {
-        cleanup_iterator (&iterator);
-        return -1;
-      }
+  while (next_report (&iterator, &report)) delete_report (report);
   cleanup_iterator (&iterator);
   return 0;
-}
-
-/**
- * @brief Return the threat associated with a result type.
- *
- * @param[in]  type  Result type.
- *
- * @return Threat name.
- */
-const char*
-manage_result_type_threat (const char* type)
-{
-  if (strcasecmp (type, "Security Hole") == 0)
-    return "High";
-  if (strcasecmp (type, "Security Warning") == 0)
-    return "Medium";
-  if (strcasecmp (type, "Security Note") == 0)
-    return "Low";
-  if (strcasecmp (type, "False Positive") == 0)
-    return "False Positive";
-  return "Log";
 }
 
 
@@ -294,22 +265,16 @@ escalator_condition_description (escalator_condition_t condition,
  *
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
- * @param[in]  task_name   Name of task if required in description, else NULL.
  *
  * @return Freshly allocated description of event.
  */
 gchar*
-event_description (event_t event, const void *event_data, const char *task_name)
+event_description (event_t event, const void *event_data)
 {
   switch (event)
     {
       case EVENT_TASK_RUN_STATUS_CHANGED:
-        if (task_name)
-          return g_strdup_printf
-                  ("The security scan task '%s' changed status to '%s'",
-                   task_name,
-                   run_status_name ((task_status_t) event_data));
-        return g_strdup_printf ("Task status changed to '%s'",
+        return g_strdup_printf ("Task run status changed to '%s'",
                                 run_status_name ((task_status_t) event_data));
         break;
       default:
@@ -329,10 +294,9 @@ escalator_method_name (escalator_method_t method)
 {
   switch (method)
     {
-      case ESCALATOR_METHOD_EMAIL:    return "Email";
-      case ESCALATOR_METHOD_HTTP_GET: return "HTTP Get";
-      case ESCALATOR_METHOD_SYSLOG:   return "Syslog";
-      default:                        return "Internal Error";
+      case ESCALATOR_METHOD_EMAIL:  return "Email";
+      case ESCALATOR_METHOD_SYSLOG: return "Syslog";
+      default:                      return "Internal Error";
     }
 }
 
@@ -382,8 +346,6 @@ escalator_method_from_name (const char* name)
 {
   if (strcasecmp (name, "Email") == 0)
     return ESCALATOR_METHOD_EMAIL;
-  if (strcasecmp (name, "HTTP Get") == 0)
-    return ESCALATOR_METHOD_HTTP_GET;
   if (strcasecmp (name, "Syslog") == 0)
     return ESCALATOR_METHOD_SYSLOG;
   return ESCALATOR_METHOD_ERROR;
@@ -625,9 +587,6 @@ send_config_preferences (config_t config, const char* section_name,
       const char *pref_name = otp_pref_iterator_name (&prefs);
       char *value;
 
-      if (strcmp (pref_name, "port_range") == 0)
-        continue;
-
       if (send_to_server (pref_name))
         {
           cleanup_iterator (&prefs);
@@ -825,8 +784,7 @@ send_user_rules (report_t stopped_report)
     }
 
   /** @todo Code to access the rules also occurs in openvas-administrator and
-   *        should be consolidated into openvas-libraries. Related code also
-   *        existent in openvas-libraries/misc/openvas_auth.c . */
+   *        should be consolidated into openvas-libraries. */
   while (*rule)
     {
       *rule = g_strstrip (*rule);
@@ -1004,735 +962,6 @@ slist_free (GSList* list)
 }
 
 /**
- * @brief Update the locally cached task progress from the slave.
- *
- * @param[in]  get_tasks  Slave GET_TASKS response.
- *
- * @return 0 success, -1 error.
- */
-int
-update_slave_progress (entity_t get_tasks)
-{
-  entity_t entity;
-
-  entity = entity_child (get_tasks, "task");
-  if (entity == NULL)
-    return -1;
-  entity = entity_child (entity, "progress");
-  if (entity == NULL)
-    return -1;
-
-  if (current_report == 0)
-    return -1;
-
-  set_report_slave_progress (current_report,
-                             atoi (entity_text (entity)));
-
-  return 0;
-}
-
-/**
- * @brief Update the local task from the slave task.
- *
- * @param[in]   task         The local task.
- * @param[in]   get_report   Slave GET_REPORT response.
- * @param[out]  report       Report from get_report.
- * @param[out]  next_result  Next result counter.
- *
- * @return 0 success, -1 error.
- */
-int
-update_from_slave (task_t task, entity_t get_report, entity_t *report,
-                   int *next_result)
-{
-  entity_t entity, host_start, start;
-  entities_t results, hosts, entities;
-
-  entity = entity_child (get_report, "report");
-  if (entity == NULL)
-    return -1;
-
-  *report = entity_child (entity, "report");
-  if (*report == NULL)
-    return -1;
-
-  /* Set the scan start time. */
-
-  entities = (*report)->entities;
-  while ((start = first_entity (entities)))
-    {
-      if (strcmp (entity_name (start), "scan_start") == 0)
-        {
-          set_task_start_time (current_scanner_task,
-                               g_strdup (entity_text (start)));
-          set_scan_start_time (current_report, entity_text (start));
-          break;
-        }
-      entities = next_entities (entities);
-    }
-
-  /* Get any new results and hosts from the slave. */
-
-  hosts = (*report)->entities;
-  while ((host_start = first_entity (hosts)))
-    {
-      if (strcmp (entity_name (host_start), "host_start") == 0)
-        {
-          entity_t host;
-
-          host = entity_child (host_start, "host");
-          if (host == NULL)
-            return -1;
-
-          set_scan_host_start_time (current_report,
-                                    entity_text (host),
-                                    entity_text (host_start));
-        }
-      hosts = next_entities (hosts);
-    }
-
-  entity = entity_child (*report, "results");
-  if (entity == NULL)
-    return -1;
-
-  assert (current_report);
-
-  results = entity->entities;
-  while ((entity = first_entity (results)))
-    {
-      if (strcmp (entity_name (entity), "result") == 0)
-        {
-          entity_t subnet, host, port, nvt, threat, description;
-          const char *oid;
-
-          subnet = entity_child (entity, "subnet");
-          if (subnet == NULL)
-            return -1;
-
-          host = entity_child (entity, "host");
-          if (host == NULL)
-            return -1;
-
-          port = entity_child (entity, "port");
-          if (port == NULL)
-            return -1;
-
-          nvt = entity_child (entity, "nvt");
-          if (nvt == NULL)
-            return -1;
-          oid = entity_attribute (nvt, "oid");
-          if ((oid == NULL) || (strlen (oid) == 0))
-            return -1;
-
-          threat = entity_child (entity, "threat");
-          if (threat == NULL)
-            return -1;
-
-          description = entity_child (entity, "description");
-          if (description == NULL)
-            return -1;
-
-          {
-            result_t result;
-
-            result = make_result (task,
-                                  entity_text (subnet),
-                                  entity_text (host),
-                                  entity_text (port),
-                                  oid,
-                                  threat_message_type (entity_text (threat)),
-                                  entity_text (description));
-            if (current_report) report_add_result (current_report, result);
-          }
-
-          (*next_result)++;
-        }
-      results = next_entities (results);
-    }
-  return 0;
-}
-
-/**
- * @brief Authenticate with a slave.
- *
- * @param[in]  session  GNUTLS session.
- * @param[in]  slave    Slave.
- *
- * @return 0 success, -1 error.
- */
-int
-slave_authenticate (gnutls_session_t *session, slave_t slave)
-{
-  int ret;
-  gchar *login, *password;
-
-  login = slave_login (slave);
-  if (login == NULL)
-    return -1;
-
-  password = slave_password (slave);
-  if (password == NULL)
-    {
-      g_free (login);
-      return -1;
-    }
-
-  ret = omp_authenticate (session, login, password);
-  g_free (login);
-  g_free (password);
-  if (ret)
-    return -1;
-  return 0;
-}
-
-/* Defined in omp.c. */
-void buffer_config_preference_xml (GString *, iterator_t *, config_t);
-
-/**
- * @brief Start a task on a slave.
- *
- * @param[in]   task        The task.
- * @param[out]  report_id   The report ID.
- * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
- *                          continue if stopped else start from beginning.
- * @param[out]  target      Task target.
- * @param[out]  target_ssh_credential    Target SSH credential.
- * @param[out]  target_smb_credential    Target SMB credential.
- * @param[out]  last_stopped_report  Last stopped report if any, else 0.
- *
- * @return 0 success, -1 error.
- */
-static int
-run_slave_task (task_t task, char **report_id, int from, target_t target,
-                lsc_credential_t target_ssh_credential,
-                lsc_credential_t target_smb_credential,
-                report_t last_stopped_report)
-{
-  slave_t slave;
-  char *host, *name;
-  int port, socket, ret, next_result;
-  gnutls_session_t session;
-  iterator_t credentials, targets;
-  gchar *slave_ssh_credential_uuid = NULL, *slave_smb_credential_uuid = NULL;
-  gchar *slave_target_uuid, *slave_config_uuid;
-  gchar *slave_task_uuid, *slave_report_uuid;
-
-  /* Some of the cases in here must write to the session outside an open
-   * statement.  For example, the omp_create_lsc_credential must come after
-   * cleaning up the credential iterator.  This is because the slave may be
-   * the master, and the open statement would prevent the slave from getting
-   * a lock on the database and fulfilling the request. */
-
-  tracef ("   Running slave task %llu\n", task);
-
-  slave = task_slave (task);
-  tracef ("   %s: slave: %llu\n", __FUNCTION__, slave);
-  assert (slave);
-  if (slave == 0) return -1;
-
-  host = slave_host (slave);
-  if (host == NULL) return -1;
-
-  tracef ("   %s: host: %s\n", __FUNCTION__, host);
-
-  port = slave_port (slave);
-  if (port == -1)
-    {
-      free (host);
-      return -1;
-    }
-
-  socket = openvas_server_open (&session, host, port);
-  free (host);
-  if (socket == -1) return -1;
-
-  tracef ("   %s: connected\n", __FUNCTION__);
-
-  name = openvas_uuid_make ();
-  if (name == NULL)
-    {
-      openvas_server_close (socket, session);
-      return -1;
-    }
-
-  /* Authenticate using the slave login. */
-
-  if (slave_authenticate (&session, slave))
-    goto fail;
-
-  tracef ("   %s: authenticated\n", __FUNCTION__);
-
-  if (last_stopped_report)
-    {
-      /* Resume the task on the slave. */
-
-      slave_task_uuid = report_slave_task_uuid (last_stopped_report);
-      if (slave_task_uuid == NULL)
-        {
-          /* This may happen if someone sets a slave on a local task.  Clear
-           * all the report results and start the task from the beginning.  */
-          trim_report (last_stopped_report);
-          last_stopped_report = 0;
-        }
-      else switch (omp_resume_stopped_task_report (&session, slave_task_uuid,
-                                                   &slave_report_uuid))
-        {
-          case 0:
-            if (slave_report_uuid == NULL)
-              goto fail;
-            set_task_run_status (task, TASK_STATUS_REQUESTED);
-            break;
-          case 1:
-            /* The resume may have failed because the task slave changed or
-             * because someone removed the task on the slave.  Clear all the
-             * report results and start the task from the beginning.
-             *
-             * This and the if above both "leak" the resources on the slave,
-             * because on the report these resources are replaced with the new
-             * resources. */
-            trim_report (last_stopped_report);
-            last_stopped_report = 0;
-            break;
-          default:
-            free (slave_task_uuid);
-            goto fail;
-        }
-    }
-
-  if (last_stopped_report == 0)
-    {
-      /* Create the target credentials on the slave. */
-
-      if (target_ssh_credential)
-        {
-          init_lsc_credential_iterator (&credentials, target_ssh_credential, 1,
-                                        NULL);
-          if (next (&credentials))
-            {
-              const char *user, *password;
-              gchar *user_copy, *password_copy;
-
-              user = lsc_credential_iterator_login (&credentials);
-              password = lsc_credential_iterator_password (&credentials);
-#if 0
-              /** @todo Need more OMP support for this. */
-              public_key = lsc_credential_iterator_public_key (&credentials);
-              private_key = lsc_credential_iterator_private_key (&credentials);
-#endif
-
-              if (user == NULL || password == NULL)
-                {
-                  cleanup_iterator (&credentials);
-                  goto fail;
-                }
-
-              user_copy = g_strdup (user);
-              password_copy = g_strdup (password);
-              cleanup_iterator (&credentials);
-
-              ret = omp_create_lsc_credential
-                     (&session, name, user_copy, password_copy,
-                      "Slave SSH credential created by Master",
-                      &slave_ssh_credential_uuid);
-              g_free (user_copy);
-              g_free (password_copy);
-              if (ret)
-                goto fail;
-            }
-        }
-
-      if (target_smb_credential)
-        {
-          init_lsc_credential_iterator (&credentials, target_smb_credential, 1,
-                                        NULL);
-          if (next (&credentials))
-            {
-              const char *user, *password;
-              gchar *user_copy, *password_copy, *smb_name;
-
-              user = lsc_credential_iterator_login (&credentials);
-              password = lsc_credential_iterator_password (&credentials);
-
-              if (user == NULL || password == NULL)
-                {
-                  cleanup_iterator (&credentials);
-                  goto fail_ssh_credential;
-                }
-
-              user_copy = g_strdup (user);
-              password_copy = g_strdup (password);
-              cleanup_iterator (&credentials);
-
-              smb_name = g_strdup_printf ("%ssmb", name);
-              ret = omp_create_lsc_credential
-                     (&session, smb_name, user_copy, password_copy,
-                      "Slave SMB credential created by Master",
-                      &slave_smb_credential_uuid);
-              g_free (smb_name);
-              g_free (user_copy);
-              g_free (password_copy);
-              if (ret)
-                goto fail_ssh_credential;
-            }
-        }
-
-      tracef ("   %s: slave SSH credential uuid: %s\n", __FUNCTION__,
-              slave_ssh_credential_uuid);
-
-      tracef ("   %s: slave SMB credential uuid: %s\n", __FUNCTION__,
-              slave_smb_credential_uuid);
-
-      /* Create the target on the slave. */
-
-      init_target_iterator (&targets, target, 1, NULL);
-      if (next (&targets))
-        {
-          const char *hosts;
-          gchar *hosts_copy;
-
-          hosts = target_iterator_hosts (&targets);
-          if (hosts == NULL)
-            {
-              cleanup_iterator (&targets);
-              goto fail_credential;
-            }
-
-          hosts_copy = g_strdup (hosts);
-          cleanup_iterator (&targets);
-
-          ret = omp_create_target (&session, name, hosts_copy,
-                                   "Slave target created by Master",
-                                   slave_ssh_credential_uuid,
-                                   slave_smb_credential_uuid,
-                                   &slave_target_uuid);
-          g_free (hosts_copy);
-          if (ret)
-            goto fail_credential;
-        }
-      else
-        {
-          cleanup_iterator (&targets);
-          goto fail_credential;
-        }
-
-      tracef ("   %s: slave target uuid: %s\n", __FUNCTION__, slave_target_uuid);
-
-      /* Create the config on the slave. */
-
-      {
-        config_t config;
-        iterator_t prefs, selectors;
-
-        /* This must follow the GET_CONFIGS_RESPONSE export case. */
-
-        config = task_config (task);
-        if (config == 0)
-          goto fail_target;
-
-        if (openvas_server_sendf (&session,
-                                  "<create_config>"
-                                  "<get_configs_response"
-                                  " status=\"200\""
-                                  " status_text=\"OK\">"
-                                  "<config id=\"XXX\">"
-                                  "<name>%s</name>"
-                                  "<comment>"
-                                  "Slave config created by Master"
-                                  "</comment>"
-                                  "<preferences>",
-                                  name))
-          goto fail_target;
-
-        init_nvt_preference_iterator (&prefs, NULL);
-        while (next (&prefs))
-          {
-            GString *buffer = g_string_new ("");
-            buffer_config_preference_xml (buffer, &prefs, config);
-            if (openvas_server_send (&session, buffer->str))
-              {
-                cleanup_iterator (&prefs);
-                goto fail_target;
-              }
-            g_string_free (buffer, TRUE);
-          }
-        cleanup_iterator (&prefs);
-
-        if (openvas_server_send (&session,
-                                 "</preferences>"
-                                 "<nvt_selectors>"))
-          {
-            cleanup_iterator (&prefs);
-            goto fail_target;
-          }
-
-        init_nvt_selector_iterator (&selectors,
-                                    NULL,
-                                    config,
-                                    NVT_SELECTOR_TYPE_ANY);
-        while (next (&selectors))
-          {
-            int type = nvt_selector_iterator_type (&selectors);
-            if (openvas_server_sendf
-                 (&session,
-                  "<nvt_selector>"
-                  "<name>%s</name>"
-                  "<include>%i</include>"
-                  "<type>%i</type>"
-                  "<family_or_nvt>%s</family_or_nvt>"
-                  "</nvt_selector>",
-                  nvt_selector_iterator_name (&selectors),
-                  nvt_selector_iterator_include (&selectors),
-                  type,
-                  (type == NVT_SELECTOR_TYPE_ALL
-                    ? ""
-                    : nvt_selector_iterator_nvt (&selectors))))
-              goto fail_target;
-          }
-        cleanup_iterator (&selectors);
-
-        if (openvas_server_send (&session,
-                                 "</nvt_selectors>"
-                                 "</config>"
-                                 "</get_configs_response>"
-                                 "</create_config>")
-            || (omp_read_create_response (&session, &slave_config_uuid) != 201))
-          goto fail_target;
-      }
-
-      tracef ("   %s: slave config uuid: %s\n", __FUNCTION__, slave_config_uuid);
-
-      /* Create the task on the slave. */
-
-      if (omp_create_task (&session, name, slave_config_uuid, slave_target_uuid,
-                           "Slave task created by Master", &slave_task_uuid))
-        goto fail_config;
-
-      /* Start the task on the slave. */
-
-      if (omp_start_task_report (&session, slave_task_uuid, &slave_report_uuid))
-        goto fail_task;
-      if (slave_report_uuid == NULL)
-        goto fail_stop_task;
-
-      set_report_slave_task_uuid (current_report, slave_task_uuid);
-    }
-
-  /* Setup the current task for functions like set_task_run_status. */
-
-  current_scanner_task = task;
-
-  /* Poll the slave until the task is finished. */
-
-  next_result = 1;
-  while (1)
-    {
-      entity_t get_tasks, report, get_report;
-      const char *status;
-      task_status_t run_status;
-
-      /* Check if some other process changed the task status. */
-
-      run_status = task_run_status (task);
-      switch (run_status)
-        {
-          case TASK_STATUS_PAUSE_REQUESTED:
-            if (omp_pause_task (&session, slave_task_uuid))
-              goto fail_stop_task;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_PAUSE_WAITING);
-            break;
-          case TASK_STATUS_RESUME_REQUESTED:
-            if (omp_resume_paused_task (&session, slave_task_uuid))
-              goto fail_stop_task;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_RESUME_WAITING);
-            break;
-          case TASK_STATUS_STOP_REQUESTED:
-            if (omp_stop_task (&session, slave_task_uuid))
-              goto fail_stop_task;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_STOP_WAITING);
-            break;
-          case TASK_STATUS_PAUSED:
-            /* Keep doing the status checks even though the task is paused, in
-             * case someone resumes the task on the slave. */
-            break;
-          case TASK_STATUS_STOPPED:
-            assert (0);
-            goto fail_stop_task;
-            break;
-          case TASK_STATUS_PAUSE_WAITING:
-          case TASK_STATUS_RESUME_WAITING:
-          case TASK_STATUS_DELETE_REQUESTED:
-          case TASK_STATUS_DONE:
-          case TASK_STATUS_NEW:
-          case TASK_STATUS_REQUESTED:
-          case TASK_STATUS_RUNNING:
-          case TASK_STATUS_STOP_WAITING:
-          case TASK_STATUS_INTERNAL_ERROR:
-            break;
-        }
-
-      if (omp_get_tasks (&session, slave_task_uuid, 0, 0, &get_tasks))
-        goto fail_task;
-
-      status = omp_task_status (get_tasks);
-      if ((strcmp (status, "Running") == 0)
-          || (strcmp (status, "Done") == 0))
-        {
-          if ((run_status == TASK_STATUS_REQUESTED)
-              || (run_status == TASK_STATUS_RESUME_WAITING)
-              /* In case someone resumes the task on the slave. */
-              || (run_status == TASK_STATUS_PAUSED))
-            set_task_run_status (task, TASK_STATUS_RUNNING);
-
-          if (update_slave_progress (get_tasks))
-            {
-              free_entity (get_tasks);
-              goto fail_stop_task;
-            }
-
-          if (omp_get_report (&session, slave_report_uuid,
-                              "d5da9f67-8551-4e51-807b-b6a873d70e34",
-                              next_result,
-                              &get_report))
-            {
-              free_entity (get_tasks);
-              goto fail_stop_task;
-            }
-
-          if (update_from_slave (task, get_report, &report, &next_result))
-            {
-              free_entity (get_tasks);
-              free_entity (get_report);
-              goto fail_stop_task;
-            }
-
-          if (strcmp (status, "Running") == 0)
-            free_entity (get_report);
-        }
-      else if (strcmp (status, "Paused") == 0)
-        set_task_run_status (task, TASK_STATUS_PAUSED);
-      else if (strcmp (status, "Pause Requested") == 0)
-        set_task_run_status (task, TASK_STATUS_PAUSE_WAITING);
-      else if (strcmp (status, "Stopped") == 0)
-        {
-          set_task_run_status (task, TASK_STATUS_STOPPED);
-          goto succeed_stopped;
-        }
-      else if (strcmp (status, "Stop Requested") == 0)
-        set_task_run_status (task, TASK_STATUS_STOP_WAITING);
-      else if (strcmp (status, "Resume Requested") == 0)
-        set_task_run_status (task, TASK_STATUS_RESUME_WAITING);
-      else if ((strcmp (status, "Internal Error") == 0)
-               || (strcmp (status, "Delete Requested") == 0))
-        {
-          free_entity (get_tasks);
-          goto fail_stop_task;
-        }
-
-      if (strcmp (status, "Done") == 0)
-        {
-          entity_t end;
-          entities_t entities;
-
-          /* Set the host end times. */
-
-          entities = report->entities;
-          while ((end = first_entity (entities)))
-            {
-              if (strcmp (entity_name (end), "host_end") == 0)
-                {
-                  entity_t host;
-
-                  host = entity_child (end, "host");
-                  if (host == NULL)
-                    {
-                      free_entity (get_tasks);
-                      free_entity (get_report);
-                      goto fail_stop_task;
-                    }
-
-                  set_scan_host_end_time (current_report,
-                                          entity_text (host),
-                                          entity_text (end));
-                }
-              entities = next_entities (entities);
-            }
-
-          /* Set the scan end time. */
-
-          entities = report->entities;
-          while ((end = first_entity (entities)))
-            {
-              if (strcmp (entity_name (end), "scan_end") == 0)
-                {
-                  set_task_end_time (current_scanner_task,
-                                     g_strdup (entity_text (end)));
-                  set_scan_end_time (current_report, entity_text (end));
-                  break;
-                }
-              entities = next_entities (entities);
-            }
-
-          free_entity (get_report);
-          set_task_run_status (task, TASK_STATUS_DONE);
-          break;
-        }
-
-      free_entity (get_tasks);
-
-      sleep (25);
-    }
-
-  /* Cleanup. */
-
-  current_scanner_task = (task_t) 0;
-
-  omp_delete_task (&session, slave_task_uuid);
-  set_report_slave_task_uuid (current_report, "");
-  omp_delete_config (&session, slave_config_uuid);
-  omp_delete_target (&session, slave_target_uuid);
-  omp_delete_lsc_credential (&session, slave_ssh_credential_uuid);
-  omp_delete_lsc_credential (&session, slave_smb_credential_uuid);
- succeed_stopped:
-  free (slave_task_uuid);
-  free (slave_report_uuid);
-  free (slave_config_uuid);
-  free (slave_target_uuid);
-  free (slave_smb_credential_uuid);
-  free (slave_ssh_credential_uuid);
-  free (name);
-  openvas_server_close (socket, session);
-  return 0;
-
- fail_stop_task:
-  omp_stop_task (&session, slave_task_uuid);
-  free (slave_report_uuid);
- fail_task:
-  omp_delete_task (&session, slave_task_uuid);
-  set_report_slave_task_uuid (current_report, "");
-  free (slave_task_uuid);
- fail_config:
-  omp_delete_config (&session, slave_config_uuid);
-  free (slave_config_uuid);
- fail_target:
-  omp_delete_target (&session, slave_target_uuid);
-  free (slave_target_uuid);
- fail_credential:
-  omp_delete_lsc_credential (&session, slave_smb_credential_uuid);
-  free (slave_smb_credential_uuid);
- fail_ssh_credential:
-  omp_delete_lsc_credential (&session, slave_ssh_credential_uuid);
-  free (slave_ssh_credential_uuid);
- fail:
-  current_scanner_task = (task_t) 0;
-  free (name);
-  openvas_server_close (socket, session);
-  return -1;
-}
-
-/**
  * @brief Start a task.
  *
  * Use \ref send_to_server to queue the task start sequence in the scanner
@@ -1756,14 +985,14 @@ static int
 run_task (task_t task, char **report_id, int from)
 {
   target_t target;
-  char *hosts, *port_range;
+  char *hosts;
   gchar *plugins;
   int fail, pid;
   GSList *files = NULL;
   GPtrArray *preference_files;
   task_status_t run_status;
   config_t config;
-  lsc_credential_t ssh_credential, smb_credential;
+  lsc_credential_t credential;
   report_t last_stopped_report;
 
   tracef ("   start task %u\n", task_id (task));
@@ -1795,8 +1024,7 @@ run_task (task_t task, char **report_id, int from)
       return -4;
     }
 
-  ssh_credential = target_ssh_lsc_credential (target);
-  smb_credential = target_smb_lsc_credential (target);
+  credential = target_lsc_credential (target);
 
   if ((from == 1)
       || ((from == 2)
@@ -1809,19 +1037,12 @@ run_task (task_t task, char **report_id, int from)
           return -1;
         }
 
-      /* Clear slave record, in case slave changed. */
-      set_report_slave_task_uuid (last_stopped_report, "");
-
       current_report = last_stopped_report;
       if (report_id) *report_id = report_uuid (last_stopped_report);
 
       /* Remove partial host information from the report. */
 
       trim_partial_report (last_stopped_report);
-
-      /* Ensure the report is marked as requested. */
-
-      set_report_scan_run_status (current_report, TASK_STATUS_REQUESTED);
 
       /* Clear the end times of the task and partial report. */
 
@@ -1878,7 +1099,7 @@ run_task (task_t task, char **report_id, int from)
   /* Every fail exit from here must reset to this run status, and must
    * clear current_report. */
 
-  /** @todo On fail exits only, may need to honour request states that one of
+  /** @todo On fail exits only, may need to hour request states that one of
    *        the other processes has set on the task (stop_task,
    *        request_delete_task). */
 
@@ -1889,18 +1110,6 @@ run_task (task_t task, char **report_id, int from)
   /* Reset any running information. */
 
   reset_task (task);
-
-  if (task_slave (task))
-    {
-      if (run_slave_task (task, report_id, from, target, ssh_credential,
-                          smb_credential, last_stopped_report))
-        {
-          free (hosts);
-          set_task_run_status (task, run_status);
-          exit (EXIT_FAILURE);
-        }
-      exit (EXIT_SUCCESS);
-    }
 
   /* Send the preferences header. */
 
@@ -1982,20 +1191,6 @@ run_task (task_t task, char **report_id, int from)
       return -10;
     }
 
-  /* Send the port range. */
-
-  port_range = target_port_range (target);
-  if (sendf_to_server ("port_range <|> %s\n",
-                       port_range ? port_range : "default"))
-    {
-      free (port_range);
-      free (hosts);
-      set_task_run_status (task, run_status);
-      current_report = (report_t) 0;
-      return -10;
-    }
-  free (port_range);
-
   /* Collect task files to send. */
 
   files = get_files_to_send (task);
@@ -2013,21 +1208,26 @@ run_task (task_t task, char **report_id, int from)
       return -10;
     }
 
-  /* Send credential preferences if there are credentials linked to target. */
+  /* Send credential preferences if there's a credential linked to target. */
 
-  if (ssh_credential)
+  if (credential)
     {
       iterator_t credentials;
 
-      init_lsc_credential_iterator (&credentials, ssh_credential, 1, NULL);
+      init_lsc_credential_iterator (&credentials, credential, 1, NULL);
       if (next (&credentials))
         {
           const char *user = lsc_credential_iterator_login (&credentials);
           const char *password = lsc_credential_iterator_password (&credentials);
 
-          if (sendf_to_server ("SSH Authorization[entry]:SSH login name:"
-                               " <|> %s\n",
+          if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
                                user)
+              || sendf_to_server ("SMB Authorization[password]:SMB password:"
+                                  " <|> %s\n",
+                                  password)
+              || sendf_to_server ("SSH Authorization[entry]:SSH login name:"
+                                  " <|> %s\n",
+                                  user)
               || (lsc_credential_iterator_public_key (&credentials)
                    ? sendf_to_server ("SSH Authorization[password]:"
                                       "SSH key passphrase:"
@@ -2042,7 +1242,6 @@ run_task (task_t task, char **report_id, int from)
  fail:
               free (hosts);
               cleanup_iterator (&credentials);
-              g_ptr_array_add (preference_files, NULL);
               array_free (preference_files);
               slist_free (files);
               set_task_run_status (task, run_status);
@@ -2093,35 +1292,6 @@ run_task (task_t task, char **report_id, int from)
                                    " <|> %s\n",
                                    uuid))
                 goto fail;
-            }
-        }
-      cleanup_iterator (&credentials);
-    }
-
-  if (smb_credential)
-    {
-      iterator_t credentials;
-
-      init_lsc_credential_iterator (&credentials, smb_credential, 1, NULL);
-      if (next (&credentials))
-        {
-          const char *user = lsc_credential_iterator_login (&credentials);
-          const char *password = lsc_credential_iterator_password (&credentials);
-
-          if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
-                               user)
-              || sendf_to_server ("SMB Authorization[password]:SMB password:"
-                                  " <|> %s\n",
-                                  password))
-            {
-              free (hosts);
-              cleanup_iterator (&credentials);
-              g_ptr_array_add (preference_files, NULL);
-              array_free (preference_files);
-              slist_free (files);
-              set_task_run_status (task, run_status);
-              current_report = (report_t) 0;
-              return -10;
             }
         }
       cleanup_iterator (&credentials);
@@ -2223,9 +1393,6 @@ run_task (task_t task, char **report_id, int from)
 
   /* Send the attack command. */
 
-  /* Send all the hosts to the Scanner.  When resuming a stopped task,
-   * the hosts that have been completely scanned are excluded by being
-   * included in the RULES above. */
   fail = sendf_to_server ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
                           strlen (hosts),
                           hosts);
@@ -2530,102 +1697,6 @@ manage_check_current_task ()
 /* System reports. */
 
 /**
- * @brief Get system report types from a slave.
- *
- * @param[in]   required_type  Single type to limit types to.
- * @param[out]  types          Types on success.
- * @param[out]  start          Actual start of types, which caller must free.
- * @param[out]  slave_id       ID of slave.
- *
- * @return 0 if successful, 2 failed to find slave, -1 otherwise.
- */
-static int
-get_slave_system_report_types (const char *required_type, gchar ***start,
-                               gchar ***types, const char *slave_id)
-{
-  slave_t slave = 0;
-  char *host, **end;
-  int port, socket;
-  gnutls_session_t session;
-  entity_t get, report;
-  entities_t reports;
-
-  if (find_slave (slave_id, &slave))
-    return -1;
-  if (slave == 0)
-    return 2;
-
-  host = slave_host (slave);
-  if (host == NULL) return -1;
-
-  tracef ("   %s: host: %s\n", __FUNCTION__, host);
-
-  port = slave_port (slave);
-  if (port == -1)
-    {
-      free (host);
-      return -1;
-    }
-
-  socket = openvas_server_open (&session, host, port);
-  free (host);
-  if (socket == -1) return -1;
-
-  tracef ("   %s: connected\n", __FUNCTION__);
-
-  /* Authenticate using the slave login. */
-
-  if (slave_authenticate (&session, slave))
-    goto fail;
-
-  tracef ("   %s: authenticated\n", __FUNCTION__);
-
-  if (omp_get_system_reports (&session, required_type, 1, &get))
-    goto fail;
-
-  openvas_server_close (socket, session);
-
-  reports = get->entities;
-  end = *types = *start = g_malloc ((xml_count_entities (reports) + 1)
-                                    * sizeof (gchar*));
-  while ((report = first_entity (reports)))
-    {
-      if (strcmp (entity_name (report), "system_report") == 0)
-        {
-          entity_t name, title;
-          gchar *pair;
-          char *name_text, *title_text;
-          name = entity_child (report, "name");
-          title = entity_child (report, "title");
-          if (name == NULL || title == NULL)
-            {
-              *end = NULL;
-              g_strfreev (*start);
-              free_entity (get);
-              return -1;
-            }
-          name_text = entity_text (name);
-          title_text = entity_text (title);
-          *end = pair = g_malloc (strlen (name_text) + strlen (title_text) + 2);
-          strcpy (pair, name_text);
-          pair += strlen (name_text) + 1;
-          strcpy (pair, title_text);
-          end++;
-        }
-      reports = next_entities (reports);
-    }
-  *end = NULL;
-
-  free_entity (get);
-
-  return 0;
-
- fail:
-  openvas_server_close (socket, session);
-  return -1;
-}
-
-/**
  * @brief Command called by get_system_report_types.
  */
 #define COMMAND "openvasmr 0 titles"
@@ -2636,23 +1707,17 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
  * @param[in]   required_type  Single type to limit types to.
  * @param[out]  types          Types on success.
  * @param[out]  start          Actual start of types, which caller must free.
- * @param[out]  slave_id       ID of slave.
  *
- * @return 0 if successful, 1 failed to find report type, 2 failed to find
- *         slave, -1 otherwise.
+ * @return 0 if successful, -1 otherwise.
  */
 static int
 get_system_report_types (const char *required_type, gchar ***start,
-                         gchar ***types, const char *slave_id)
+                         gchar ***types)
 {
   gchar *astdout = NULL;
   gchar *astderr = NULL;
   GError *err = NULL;
   gint exit_status;
-
-  if (slave_id && strcmp (slave_id, "0"))
-    return get_slave_system_report_types (required_type, start, types,
-                                          slave_id);
 
   tracef ("   command: " COMMAND);
 
@@ -2711,14 +1776,12 @@ get_system_report_types (const char *required_type, gchar ***start,
       if (required_type)
         {
           /* Failed to find the single given type. */
-          g_free (astdout);
-          g_free (astderr);
           g_strfreev (*types);
-          return 1;
+          *start = *types = NULL;
         }
     }
   else
-    *start = *types = g_malloc0 (sizeof (gchar*));
+    *start = *types = NULL;
 
   g_free (astdout);
   g_free (astderr);
@@ -2732,21 +1795,15 @@ get_system_report_types (const char *required_type, gchar ***start,
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  type        Single report type to iterate over, NULL for all.
- * @param[in]  slave_id    ID of slave to get reports from.  0 for local.
  *
- * @return 0 on success, 1 failed to find report type, 2 failed to find slave,
- *         -1 on error.
+ * @return 0 on success, -1 on error.
  */
 int
 init_system_report_type_iterator (report_type_iterator_t* iterator,
-                                  const char* type,
-                                  const char* slave_id)
+                                  const char* type)
 {
-  int ret;
-  ret = get_system_report_types (type, &iterator->start, &iterator->current,
-                                 slave_id);
-  if (ret)
-    return ret;
+  if (get_system_report_types (type, &iterator->start, &iterator->current))
+    return -1;
   iterator->current--;
   return 0;
 }
@@ -2803,96 +1860,17 @@ report_type_iterator_title (report_type_iterator_t* iterator)
 }
 
 /**
- * @brief Get a system report from a slave.
- *
- * @param[in]   name      Name of report.
- * @param[in]   duration  Time range of report, in seconds.
- * @param[in]   slave_id  ID of slave to get report from.  0 for local.
- * @param[out]  report    On success, report in base64 if such a report exists
- *                        else NULL.  Arbitrary on error.
- *
- * @return 0 if successful, 2 failed to find slave, -1 otherwise.
- */
-static int
-slave_system_report (const char *name, const char *duration,
-                     const char *slave_id, char **report)
-{
-  slave_t slave = 0;
-  char *host;
-  int port, socket;
-  gnutls_session_t session;
-  entity_t get, entity;
-  entities_t reports;
-
-  if (find_slave (slave_id, &slave))
-    return -1;
-  if (slave == 0)
-    return 2;
-
-  host = slave_host (slave);
-  if (host == NULL) return -1;
-
-  tracef ("   %s: host: %s\n", __FUNCTION__, host);
-
-  port = slave_port (slave);
-  if (port == -1)
-    {
-      free (host);
-      return -1;
-    }
-
-  socket = openvas_server_open (&session, host, port);
-  free (host);
-  if (socket == -1) return -1;
-
-  tracef ("   %s: connected\n", __FUNCTION__);
-
-  /* Authenticate using the slave login. */
-
-  if (slave_authenticate (&session, slave))
-    goto fail;
-
-  tracef ("   %s: authenticated\n", __FUNCTION__);
-
-  if (omp_get_system_reports (&session, name, 0, &get))
-    goto fail;
-
-  openvas_server_close (socket, session);
-
-  reports = get->entities;
-  if ((entity = first_entity (reports))
-      && (strcmp (entity_name (entity), "system_report") == 0))
-    {
-      entity = entity_child (entity, "report");
-      if (entity)
-        {
-          *report = g_strdup (entity_text (entity));
-          return 0;
-        }
-    }
-
-  free_entity (get);
-  return -1;
-
- fail:
-  openvas_server_close (socket, session);
-  return -1;
-}
-
-/**
  * @brief Get a system report.
  *
  * @param[in]   name      Name of report.
  * @param[in]   duration  Time range of report, in seconds.
- * @param[in]   slave_id  ID of slave to get report from.  0 for local.
  * @param[out]  report    On success, report in base64 if such a report exists
  *                        else NULL.  Arbitrary on error.
  *
  * @return 0 if successful (including failure to find report), -1 on error.
  */
 int
-manage_system_report (const char *name, const char *duration,
-                      const char *slave_id, char **report)
+manage_system_report (const char *name, const char *duration, char **report)
 {
   gchar *astdout = NULL;
   gchar *astderr = NULL;
@@ -2904,9 +1882,6 @@ manage_system_report (const char *name, const char *duration,
 
   if (duration == NULL)
     duration = "86400";
-
-  if (slave_id && strcmp (slave_id, "0"))
-    return slave_system_report (name, duration, slave_id, report);
 
   /* For simplicity, it's up to the command to do the base64 encoding. */
   command = g_strdup_printf ("openvasmr %s %s", duration, name);
@@ -2937,7 +1912,7 @@ manage_system_report (const char *name, const char *duration,
       g_free (astdout);
       if (strcmp (name, "blank") == 0)
         return -1;
-      return manage_system_report ("blank", duration, NULL, report);
+      return manage_system_report ("blank", duration, report);
     }
   else
     *report = astdout;
@@ -3008,8 +1983,6 @@ manage_schedule (int (*fork_connection) (int *,
 {
   iterator_t schedules;
   GSList *starts = NULL, *stops = NULL;
-
-  manage_update_nvti_cache ();
 
   /* Assemble "starts" and "stops" list containing task uuid and owner name
    * for each (scheduled) task to start or stop. */
@@ -3285,275 +2258,6 @@ manage_schedule (int (*fork_connection) (int *,
 }
 
 
-/* Report formats. */
-
-/**
- * @brief Get the name of a report format param type.
- *
- * @param[in]  type  Param type.
- *
- * @return The name of the param type.
- */
-const char *
-report_format_param_type_name (report_format_param_type_t type)
-{
-  switch (type)
-    {
-      case REPORT_FORMAT_PARAM_TYPE_BOOLEAN:
-        return "boolean";
-      case REPORT_FORMAT_PARAM_TYPE_INTEGER:
-        return "integer";
-      case REPORT_FORMAT_PARAM_TYPE_SELECTION:
-        return "selection";
-      case REPORT_FORMAT_PARAM_TYPE_STRING:
-        return "string";
-      case REPORT_FORMAT_PARAM_TYPE_TEXT:
-        return "text";
-      default:
-        assert (0);
-      case REPORT_FORMAT_PARAM_TYPE_ERROR:
-        return "ERROR";
-    }
-}
-
-/**
- * @brief Get a report format param type from a name.
- *
- * @param[in]  name  Param type name.
- *
- * @return The param type.
- */
-report_format_param_type_t
-report_format_param_type_from_name (const char *name)
-{
-  if (strcmp (name, "boolean") == 0)
-    return REPORT_FORMAT_PARAM_TYPE_BOOLEAN;
-  if (strcmp (name, "integer") == 0)
-    return REPORT_FORMAT_PARAM_TYPE_INTEGER;
-  if (strcmp (name, "selection") == 0)
-    return REPORT_FORMAT_PARAM_TYPE_SELECTION;
-  if (strcmp (name, "string") == 0)
-    return REPORT_FORMAT_PARAM_TYPE_STRING;
-  if (strcmp (name, "text") == 0)
-    return REPORT_FORMAT_PARAM_TYPE_TEXT;
-  return REPORT_FORMAT_PARAM_TYPE_ERROR;
-}
-
-/**
- * @brief Return whether a name is a backup file name.
- *
- * @return 0 if normal file name, 1 if backup file name.
- */
-static int
-backup_file_name (const char *name)
-{
-  int length = strlen (name);
-
-  if (length && (name[length - 1] == '~'))
-    return 1;
-
-  if ((length > 3)
-      && (name[length - 4] == '.'))
-    return ((name[length - 3] == 'b')
-            && (name[length - 2] == 'a')
-            && (name[length - 1] == 'k'))
-           || ((name[length - 3] == 'B')
-               && (name[length - 2] == 'A')
-               && (name[length - 1] == 'K'))
-           || ((name[length - 3] == 'C')
-               && (name[length - 2] == 'K')
-               && (name[length - 1] == 'P'));
-
-  return 0;
-}
-
-/**
- * @brief Get files associated with a report format.
- *
- * @param[in]   dir_name  Location of files.
- * @param[out]  start     Files on success.
- *
- * @return 0 if successful, -1 otherwise.
- */
-static int
-get_report_format_files (const char *dir_name, GPtrArray **start)
-{
-  GPtrArray *files;
-  struct dirent **names;
-  int n, index;
-
-  files = g_ptr_array_new ();
-
-  n = scandir (dir_name, &names, NULL, alphasort);
-  if (n < 0)
-    {
-      g_warning ("%s: failed to open dir %s: %s\n",
-                 __FUNCTION__,
-                 dir_name,
-                 strerror (errno));
-      return -1;
-    }
-
-  for (index = 0; index < n; index++)
-    {
-      if (strcmp (names[index]->d_name, ".")
-          && strcmp (names[index]->d_name, "..")
-          && (backup_file_name (names[index]->d_name) == 0))
-        g_ptr_array_add (files, g_strdup (names[index]->d_name));
-      free (names[index]);
-    }
-  free (names);
-
-  g_ptr_array_add (files, NULL);
-
-  *start = files;
-  return 0;
-}
-
-/**
- * @brief Initialise a report format file iterator.
- *
- * @param[in]  iterator       Iterator.
- * @param[in]  report_format  Single report format to iterate over, NULL for
- *                            all.
- *
- * @return 0 on success, -1 on error.
- */
-int
-init_report_format_file_iterator (file_iterator_t* iterator,
-                                  report_format_t report_format)
-{
-  gchar *dir_name, *uuid;
-
-  uuid = report_format_uuid (report_format);
-  if (uuid == NULL)
-    return -1;
-
-  if (report_format_global (report_format))
-    dir_name = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                 "openvasmd",
-                                 "global_report_formats",
-                                 uuid,
-                                 NULL);
-  else
-    {
-      assert (current_credentials.uuid);
-      dir_name = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                   "openvasmd",
-                                   "report_formats",
-                                   current_credentials.uuid,
-                                   uuid,
-                                   NULL);
-    }
-
-  g_free (uuid);
-
-  if (get_report_format_files (dir_name, &iterator->start))
-    {
-      g_free (dir_name);
-      return -1;
-    }
-
-  iterator->current = iterator->start->pdata;
-  iterator->current--;
-  iterator->dir_name = dir_name;
-  return 0;
-}
-
-/**
- * @brief Cleanup a report type iterator.
- *
- * @param[in]  iterator  Iterator.
- */
-void
-cleanup_file_iterator (file_iterator_t* iterator)
-{
-  array_free (iterator->start);
-  g_free (iterator->dir_name);
-}
-
-/**
- * @brief Increment a report type iterator.
- *
- * The caller must stop using this after it returns FALSE.
- *
- * @param[in]  iterator  Task iterator.
- *
- * @return TRUE if there was a next item, else FALSE.
- */
-gboolean
-next_file (file_iterator_t* iterator)
-{
-  iterator->current++;
-  if (*iterator->current == NULL) return FALSE;
-  return TRUE;
-}
-
-/**
- * @brief Return the name from a file iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return File name.
- */
-const char*
-file_iterator_name (file_iterator_t* iterator)
-{
-  return (const char*) *iterator->current;
-}
-
-/**
- * @brief Return the file contents from a file iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Freshly allocated file contents, in base64.
- */
-gchar*
-file_iterator_content_64 (file_iterator_t* iterator)
-{
-  gchar *path_name, *content;
-  GError *error;
-  gsize content_size;
-
-  path_name = g_build_filename (iterator->dir_name,
-                                (gchar*) *iterator->current,
-                                NULL);
-
-  /* Read in the contents. */
-
-  error = NULL;
-  if (g_file_get_contents (path_name,
-                           &content,
-                           &content_size,
-                           &error)
-      == FALSE)
-    {
-      if (error)
-        {
-          g_debug ("%s: failed to read %s: %s",
-                   __FUNCTION__, path_name, error->message);
-          g_error_free (error);
-        }
-      g_free (path_name);
-      return NULL;
-    }
-
-  g_free (path_name);
-
-  /* Base64 encode the contents. */
-
-  if (content && (content_size > 0))
-    {
-      gchar *base64 = g_base64_encode ((guchar*) content, content_size);
-      g_free (content);
-      return base64;
-    }
-
-  return content;
-}
-
-
 /* Tags. */
 
 /**
@@ -3610,128 +2314,4 @@ parse_tags (const char *scanner_tags, gchar **tags, gchar **cvss_base,
   else
     *tags = g_string_free (tags_buffer, FALSE);
   g_strfreev (split);
-}
-
-
-/* Slaves. */
-
-/**
- * @brief Delete a task on a slave.
- *
- * @param[in]   slave            The slave.
- * @param[in]   slave_task_uuid  UUID of task on slave.
- *
- * @return 0 success, -1 error.
- */
-int
-delete_slave_task (slave_t slave, const char *slave_task_uuid)
-{
-  int socket;
-  gnutls_session_t session;
-  char *host;
-  int port;
-  entity_t get_tasks, get_targets, entity, task, credential;
-  const char *slave_config_uuid, *slave_target_uuid;
-  const char *slave_ssh_credential_uuid, *slave_smb_credential_uuid;
-
-  assert (slave);
-
-  /* Connect to the slave. */
-
-  host = slave_host (slave);
-  if (host == NULL) return -1;
-
-  tracef ("   %s: host: %s\n", __FUNCTION__, host);
-
-  port = slave_port (slave);
-  if (port == -1)
-    {
-      free (host);
-      return -1;
-    }
-
-  socket = openvas_server_open (&session, host, port);
-  free (host);
-  if (socket == -1) return -1;
-
-  tracef ("   %s: connected\n", __FUNCTION__);
-
-  /* Authenticate using the slave login. */
-
-  if (slave_authenticate (&session, slave))
-    goto fail;
-
-  tracef ("   %s: authenticated\n", __FUNCTION__);
-
-  /* Get the UUIDs of the slave resources. */
-
-  if (omp_get_tasks (&session, slave_task_uuid, 0, 0, &get_tasks))
-    goto fail;
-
-  task = entity_child (get_tasks, "task");
-  if (task == NULL)
-    goto fail_free_task;
-
-  entity = entity_child (task, "config");
-  if (entity == NULL)
-    goto fail_free_task;
-  slave_config_uuid = entity_attribute (entity, "id");
-
-  entity = entity_child (task, "target");
-  if (entity == NULL)
-    goto fail_free_task;
-  slave_target_uuid = entity_attribute (entity, "id");
-
-  if (omp_get_targets (&session, slave_target_uuid, 0, 0, &get_targets))
-    goto fail_free_task;
-
-  entity = entity_child (get_targets, "target");
-  if (entity == NULL)
-    goto fail_free;
-
-  credential = entity_child (entity, "ssh_lsc_credential");
-  if (credential == NULL)
-    goto fail_free;
-  slave_ssh_credential_uuid = entity_attribute (credential, "id");
-
-  credential = entity_child (entity, "smb_lsc_credential");
-  if (credential == NULL)
-    goto fail_free;
-  slave_smb_credential_uuid = entity_attribute (credential, "id");
-
-  /* Remove the slave resources. */
-
-  omp_stop_task (&session, slave_task_uuid);
-  if (omp_delete_task (&session, slave_task_uuid))
-    goto fail_config;
-  if (omp_delete_config (&session, slave_config_uuid))
-    goto fail_target;
-  if (omp_delete_target (&session, slave_target_uuid))
-    goto fail_credential;
-  if (omp_delete_lsc_credential (&session, slave_smb_credential_uuid))
-    goto fail;
-  if (omp_delete_lsc_credential (&session, slave_ssh_credential_uuid))
-    goto fail;
-
-  /* Cleanup. */
-
-  free_entity (get_targets);
-  free_entity (get_tasks);
-  openvas_server_close (socket, session);
-  return 0;
-
- fail_config:
-  omp_delete_config (&session, slave_config_uuid);
- fail_target:
-  omp_delete_target (&session, slave_target_uuid);
- fail_credential:
-  omp_delete_lsc_credential (&session, slave_smb_credential_uuid);
-  omp_delete_lsc_credential (&session, slave_ssh_credential_uuid);
- fail_free:
-  free_entity (get_targets);
- fail_free_task:
-  free_entity (get_tasks);
- fail:
-  openvas_server_close (socket, session);
-  return -1;
 }

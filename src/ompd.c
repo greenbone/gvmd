@@ -3,7 +3,7 @@
  * Description: Module for OpenVAS Manager: the OMP daemon.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH
@@ -56,7 +56,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <openvas/misc/openvas_server.h>
+#include <openvas_server.h>
 
 #ifdef S_SPLINT_S
 /** @todo Weird that these are missing. */
@@ -1407,10 +1407,9 @@ serve_omp (gnutls_session_t* client_session,
                                    *client_credentials);
               return -1;
             }
-          if ((CLIENT_TIMEOUT - (current_time - last_client_activity_time))
-              <= 0)
+          if (last_client_activity_time - current_time >= CLIENT_TIMEOUT)
             {
-              tracef ("client timeout (2)\n");
+              tracef ("client timeout (1)\n");
               openvas_server_free (client_socket,
                                    *client_session,
                                    *client_credentials);

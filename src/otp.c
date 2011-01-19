@@ -3,7 +3,7 @@
  * Description: Module for OpenVAS Manager: the OTP library.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH
@@ -56,7 +56,7 @@
 #include <unistd.h>
 
 #include <openvas/base/openvas_string.h>
-#include <openvas/misc/nvt_categories.h>
+#include <openvas/nvt_categories.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"

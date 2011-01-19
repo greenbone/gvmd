@@ -3,7 +3,7 @@
  * Description: Module for OpenVAS Manager: the Comm Library.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matt@mundell.ukfsn.org>
  * Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
  *
  * Copyright:

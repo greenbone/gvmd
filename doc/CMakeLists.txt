@@ -3,7 +3,7 @@
 # Description: CMakefile for the OpenVAS Manager documentation
 #
 # Authors:
-# Matthew Mundell <matthew.mundell@greenbone.net>
+# Matthew Mundell <matt@mundell.ukfsn.org>
 #
 # Copyright:
 # Copyright (C) 2009 Greenbone Networks GmbH
@@ -63,24 +63,24 @@ set_directory_properties (PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ".built-html;.b
 include (FindDoxygen)
 
 if (NOT DOXYGEN_EXECUTABLE)
-  message (STATUS "WARNING: Doxygen is required to build the HTML docs.")
-else (NOT DOXYGEN_EXECUTABLE)
-  set (DOC_FILES
-    ../src/openvasmd.c ../src/ovas-mngr-comm.c
-    ../src/oxpd.c ../src/ompd.c ../src/otpd.c
-    ../src/manage.c ../src/omp.c ../src/otp.c
-    ../src/manage_sql.c ../src/tracef.h
-    ../src/logf.h ../src/tests/common.c
-    ../README ../INSTALL)
-
-  add_custom_target (doc COMMENT "Building documentation..."
-    DEPENDS openvasmd.8 Doxyfile .built-html .built-html_db
-    db.png omp.rnc omp.html)
-
-  add_custom_target (doc-full COMMENT "Building documentation..."
-    DEPENDS openvasmd.8 Doxyfile_full .built-html_full
-    .built-html_db db.png omp.rnc omp.html)
+  message (FATAL_ERROR "Doxygen is required to build the HTML docs.")
 endif (NOT DOXYGEN_EXECUTABLE)
+
+set (DOC_FILES
+     ../src/openvasmd.c ../src/ovas-mngr-comm.c
+	 ../src/oxpd.c ../src/ompd.c ../src/otpd.c
+	 ../src/manage.c ../src/omp.c ../src/otp.c
+	 ../src/manage_sql.c ../src/tracef.h
+	 ../src/logf.h ../src/tests/common.c
+	 ../README ../INSTALL)
+
+add_custom_target (doc COMMENT "Building documentation..."
+                   DEPENDS openvasmd.8 Doxyfile .built-html .built-html_db
+                           db.png)
+
+add_custom_target (doc-full COMMENT "Building documentation..."
+                   DEPENDS openvasmd.8 Doxyfile_full .built-html_full
+                           .built-html_db db.png)
 
 add_custom_target (man COMMENT "Building manual page..."
                    DEPENDS openvasmd.8)
@@ -143,24 +143,6 @@ add_custom_command (OUTPUT .built-html_full
                     COMMAND sh
 					ARGS -c \"cd .. && ${DOXYGEN_EXECUTABLE} doc/Doxyfile_full && touch doc/.built-html_full\;\"
 					DEPENDS openvasmd.html Doxyfile_full ${DOC_FILES})
-
-add_custom_command (OUTPUT omp.rnc
-                    COMMAND sh
-					ARGS -c \"cd ../src/schema_formats/RNC && . ./generate ../XML/OMP.xml > ../../../doc/omp.rnc\;\"
-					DEPENDS
-					../src/schema_formats/XML/OMP.xml
-					../src/schema_formats/RNC/generate
-					../src/schema_formats/RNC/RNC.xsl
-					../src/schema_formats/RNC/rnc.xsl)
-
-add_custom_command (OUTPUT omp.html
-                    COMMAND sh
-					ARGS -c \"cd ../src/schema_formats/HTML && . ./generate ../XML/OMP.xml > ../../../doc/omp.html\;\"
-					DEPENDS
-					../src/schema_formats/XML/OMP.xml
-					../src/schema_formats/HTML/generate
-					../src/schema_formats/HTML/HTML.xsl
-					../src/schema_formats/HTML/rnc.xsl)
 
 ## Install
 

@@ -3,7 +3,7 @@
  * Description: Test OMP DELETE_TASK with a task that has reports.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH

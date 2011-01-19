@@ -3,7 +3,7 @@
  * Description: Test OMP CREATE_TARGET, passing an existing target.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matthew.mundell@intevation.de>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH

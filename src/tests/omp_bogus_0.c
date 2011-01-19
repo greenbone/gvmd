@@ -3,7 +3,7 @@
  * Description: Test the manager with a bogus command before authenticating.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH

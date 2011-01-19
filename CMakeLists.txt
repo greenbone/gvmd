@@ -3,7 +3,7 @@
 # Description: Top-level cmake control for the Manager.
 #
 # Authors:
-# Matthew Mundell <matthew.mundell@greenbone.net>
+# Matthew Mundell <matt@mundell.ukfsn.org>
 #
 # Copyright:
 # Copyright (C) 2009 Greenbone Networks GmbH
@@ -49,14 +49,12 @@ macro (Subversion_GET_REVISION dir variable)
 endmacro (Subversion_GET_REVISION)
 
 if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
-  if (EXISTS ".svn/")
-    if (SVN_EXECUTABLE)
-      Subversion_GET_REVISION(. ProjectRevision)
-      set (SVN_REVISION ".SVN.r${ProjectRevision}")
-    else (SVN_EXECUTABLE)
-      set (SVN_REVISION ".SVN")
-    endif (SVN_EXECUTABLE)
-  endif (EXISTS ".svn/")
+  if (SVN_EXECUTABLE)
+    Subversion_GET_REVISION(. ProjectRevision)
+    set (SVN_REVISION ".SVN.r${ProjectRevision}")
+  else (SVN_EXECUTABLE)
+    set (SVN_REVISION ".SVN")
+  endif (SVN_EXECUTABLE)
 endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
 
 # TODO: Check sqlite3, pkg-config (maybe with code like in gsa/CMakeLists.txt).
@@ -74,10 +72,10 @@ set (CPACK_SOURCE_GENERATOR "TGZ")
 set (CPACK_SOURCE_TOPLEVEL_TAG "")
 set (CPACK_SYSTEM_NAME "")
 set (CPACK_TOPLEVEL_TAG "")
-set (CPACK_PACKAGE_VERSION_MAJOR "2")
+set (CPACK_PACKAGE_VERSION_MAJOR "1")
 set (CPACK_PACKAGE_VERSION_MINOR "0")
-set (CPACK_PACKAGE_VERSION_PATCH "+rc3${SVN_REVISION}")
-set (CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}${CPACK_PACKAGE_VERSION_PATCH}")
+set (CPACK_PACKAGE_VERSION_PATCH "4${SVN_REVISION}")
+set (CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set (CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
 set (CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
 set (CPACK_PACKAGE_VENDOR "The OpenVAS Project")
@@ -102,7 +100,7 @@ include (CPack)
 
 ## Variables
 
-set (OPENVASMD_DATABASE_VERSION 36)
+set (OPENVASMD_DATABASE_VERSION 21)
 
 if (SYSCONF_INSTALL_DIR)
   set (SYSCONFDIR "${SYSCONF_INSTALL_DIR}")
@@ -197,8 +195,8 @@ if (PATH_TO_LIBOPENVASCONFIG)
   # TODO Would like something like set (MIN_LO_VER "3" "0" "1")
   #      which would then make it easier to modify these. However, had serious
   #      issues with the conditionals, thus this clumsy implementation.
-  set (LO_MAJOR_MIN_VER 4)
-  set (LO_MINOR_MIN_VER 0)
+  set (LO_MAJOR_MIN_VER 3)
+  set (LO_MINOR_MIN_VER 1)
   set (LO_PATCH_MIN_VER 0)
   set (LO_MAJOR_VER_FAIL FALSE)
   set (LO_MINOR_VER_FAIL FALSE)
@@ -273,10 +271,8 @@ configure_file (VERSION.in VERSION)
 
 ## Program
 
-set (HARDENING_FLAGS            "-Wformat -Wformat-security -O2 -D_FORTIFY_SOURCE=2 -fstack-protector -Wl,-z,relro -Wl,-z,now")
-
 set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG}")
-set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} ${HARDENING_FLAGS} -Wall -Werror")
+set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} -Wall")
 
 add_subdirectory (src)
 

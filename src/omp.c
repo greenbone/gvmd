@@ -3,7 +3,7 @@
  * Description: Module for OpenVAS Manager: the OMP library.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH
@@ -97,7 +97,7 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
-#include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <glib/gstdio.h>
@@ -112,9 +112,9 @@
 #include <openvas/base/certificate.h>
 #include <openvas/base/nvti.h>
 #include <openvas/base/openvas_string.h>
-#include <openvas/misc/nvt_categories.h>
-#include <openvas/misc/openvas_logging.h>
-#include <openvas/misc/resource_request.h>
+#include <openvas/nvt_categories.h>
+#include <openvas/openvas_logging.h>
+#include <openvas/resource_request.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -129,26 +129,11 @@
 
 /* Static headers. */
 
-/** @todo Exported for manage_sql.c. */
-void
+static void
 buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int);
 
 
 /* Helper functions. */
-
-/**
- * @brief Check whether a string is a UUID.
- *
- * @param[in]  uuid  Potential UUID.
- *
- * @return 1 yes, 0 no.
- */
-static int
-is_uuid (const char *uuid)
-{
-  while (*uuid) if (isxdigit (*uuid) || (*uuid == '-')) uuid++; else return 0;
-  return 1;
-}
 
 /**
  * @brief Return the name of a category.
@@ -166,6 +151,66 @@ category_name (int category)
       return categories[category];
     }
   return categories[ACT_UNKNOWN];
+}
+
+/**
+ * @brief Return the threat associated with a result type.
+ *
+ * @param[in]  type  Result type.
+ *
+ * @return Threat name.
+ */
+static const char*
+result_type_threat (const char* type)
+{
+  if (strcasecmp (type, "Security Hole") == 0)
+    return "High";
+  if (strcasecmp (type, "Security Warning") == 0)
+    return "Medium";
+  if (strcasecmp (type, "Security Note") == 0)
+    return "Low";
+  if (strcasecmp (type, "False Positive") == 0)
+    return "False Positive";
+  return "Log";
+}
+
+/**
+ * @brief Compares two textual threat level representations, sorting
+ * @brief descending.
+ *
+ * @param[in]  arg_one  First threat level.
+ * @param[in]  arg_two  Second threat level.
+ *
+ * @return 1, 0 or -1 if first given threat is less than, equal to or greater
+ *         than second.
+ */
+static gint
+compare_ports_desc (gconstpointer arg_one, gconstpointer arg_two)
+{
+  gchar *one = *((gchar**) arg_one);
+  gchar *two = *((gchar**) arg_two);
+  return collate_message_type (NULL,
+                               strlen (two), two,
+                               strlen (one), one);
+}
+
+/**
+ * @brief Compares two textual threat level representations, sorting ascending.
+ *
+ * @param[in]  arg_one  First threat level.
+ * @param[in]  arg_two  Second threat level.
+ *
+ * @return -1, 0 or 1 if first given threat is less than, equal to or greater
+ *         than second.
+ */
+static gint
+compare_ports_asc (gconstpointer arg_one, gconstpointer arg_two)
+{
+  gchar *one = *((gchar**) arg_one);
+  gchar *two = *((gchar**) arg_two);
+  return collate_message_type (NULL,
+                               strlen (one), one,
+                               strlen (two), two);
 }
 
 /** @todo Duplicated from lsc_user.c. */
@@ -206,13 +251,11 @@ check_is_dir (const char *name)
  * This function will recursively call itself to delete a path and any
  * contents of this path.
  *
- * @todo Exported for manage_sql.c.
- *
  * @param[in]  pathname  Name of file to be deleted from filesystem.
  *
  * @return 0 if the name was successfully deleted, -1 if an error occurred.
  */
-int
+static int
 file_utils_rmdir_rf (const gchar * pathname)
 {
   if (check_is_dir (pathname) == 1)
@@ -361,6 +404,22 @@ interval_from_strings (const char *value, const char *unit, time_t *months)
   return -1;
 }
 
+/**
+ * @brief Ensure a string is in an array.
+ *
+ * @param[in]  array   Array.
+ * @param[in]  string  String.  Copied into array.
+ */
+static void
+array_add_new_string (array_t *array, const gchar *string)
+{
+  guint index;
+  for (index = 0; index < array->len; index++)
+    if (strcmp (g_ptr_array_index (array, index), string) == 0)
+      return;
+  array_add (array, g_strdup (string));
+}
+
 
 /* Help message. */
 
@@ -376,9 +435,7 @@ static char* help_text = "\n"
 "    CREATE_LSC_CREDENTIAL  Create a local security check credential.\n"
 "    CREATE_NOTE            Create a note.\n"
 "    CREATE_OVERRIDE        Create an override.\n"
-"    CREATE_REPORT_FORMAT   Create a report format.\n"
 "    CREATE_SCHEDULE        Create a schedule.\n"
-"    CREATE_SLAVE           Create a slave.\n"
 "    CREATE_TARGET          Create a target.\n"
 "    CREATE_TASK            Create a task.\n"
 "    DELETE_AGENT           Delete an agent.\n"
@@ -388,9 +445,7 @@ static char* help_text = "\n"
 "    DELETE_NOTE            Delete a note.\n"
 "    DELETE_OVERRIDE        Delete an override.\n"
 "    DELETE_REPORT          Delete a report.\n"
-"    DELETE_REPORT_FORMAT   Delete a report format.\n"
 "    DELETE_SCHEDULE        Delete a schedule.\n"
-"    DELETE_SLAVE           Delete a slave.\n"
 "    DELETE_TARGET          Delete a target.\n"
 "    DELETE_TASK            Delete a task.\n"
 "    GET_AGENTS             Get all agents.\n"
@@ -408,10 +463,8 @@ static char* help_text = "\n"
 "    GET_OVERRIDES          Get all overrides.\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
 "    GET_REPORTS            Get all reports.\n"
-"    GET_REPORT_FORMATS     Get all report formats.\n"
 "    GET_RESULTS            Get results.\n"
 "    GET_SCHEDULES          Get all schedules.\n"
-"    GET_SLAVES             Get all slaves.\n"
 "    GET_SYSTEM_REPORTS     Get all system reports.\n"
 "    GET_TARGET_LOCATORS    Get configured target locators.\n"
 "    GET_TARGETS            Get all targets.\n"
@@ -419,11 +472,9 @@ static char* help_text = "\n"
 "    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    HELP                   Get this help text.\n"
 "    MODIFY_CONFIG          Update an existing config.\n"
-"    MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.\n"
 "    MODIFY_NOTE            Modify an existing note.\n"
 "    MODIFY_OVERRIDE        Modify an existing override.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
-"    MODIFY_REPORT_FORMAT   Modify an existing report format.\n"
 "    MODIFY_TASK            Update an existing task.\n"
 "    PAUSE_TASK             Pause a running task.\n"
 "    RESUME_OR_START_TASK   Resume task if stopped, else start task.\n"
@@ -431,9 +482,7 @@ static char* help_text = "\n"
 "    RESUME_STOPPED_TASK    Resume a stopped task.\n"
 "    START_TASK             Manually start an existing task.\n"
 "    STOP_TASK              Stop a running task.\n"
-"    TEST_ESCALATOR         Run an escalator.\n"
-"    VERIFY_AGENT           Verify an agent.\n"
-"    VERIFY_REPORT_FORMAT   Verify a report format.\n";
+"    TEST_ESCALATOR         Run an escalator.\n";
 
 
 /* Status codes. */
@@ -745,8 +794,7 @@ create_config_data_reset (create_config_data_t *data)
           const preference_t *preference;
           preference = (preference_t*) g_ptr_array_index (import->preferences,
                                                           index);
-          if (preference)
-            array_free (preference->alts);
+          array_free (preference->alts);
         }
       array_free (import->preferences);
     }
@@ -904,78 +952,6 @@ create_override_data_reset (create_override_data_t *data)
 }
 
 /**
- * @brief Command data for the create_report_format command.
- */
-typedef struct
-{
-  char *content_type;     ///< Content type.
-  char *description;      ///< Description.
-  char *extension;        ///< File extension.
-  char *file;             ///< Current file during ...GRFR_REPORT_FORMAT_FILE.
-  char *file_name;        ///< Name of current file.
-  array_t *files;         ///< All files.
-  char *global;           ///< Global flag.
-  char *id;               ///< ID.
-  int import;             ///< Boolean.  Whether to import a format.
-  char *name;             ///< Name.
-  char *param_value;      ///< Param value during ...GRFR_REPORT_FORMAT_PARAM.
-  char *param_default;    ///< Default value for above param.
-  char *param_name;       ///< Name of above param.
-  char *param_option;     ///< Current option of above param.
-  array_t *param_options; ///< Options for above param.
-  array_t *params_options; ///< Options for all params.
-  char *param_type;       ///< Type of above param.
-  char *param_type_min;   ///< Min qualifier of above type.
-  char *param_type_max;   ///< Max qualifier of above type.
-  array_t *params;        ///< All params.
-  char *signature;        ///< Signature.
-  char *summary;          ///< Summary.
-} create_report_format_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-create_report_format_data_reset (create_report_format_data_t *data)
-{
-  free (data->content_type);
-  free (data->description);
-  free (data->extension);
-  free (data->file);
-  free (data->file_name);
-  array_free (data->files);
-  free (data->global);
-  free (data->id);
-  free (data->name);
-  free (data->param_default);
-  free (data->param_name);
-
-  if (data->params_options)
-    {
-      guint index = data->params_options->len;
-      while (index--)
-        {
-          array_t *options;
-          options = (array_t*) g_ptr_array_index (data->params_options, index);
-          if (options)
-            array_free (options);
-        }
-      g_ptr_array_free (data->params_options, TRUE);
-    }
-
-  free (data->param_type);
-  free (data->param_type_min);
-  free (data->param_type_max);
-  free (data->param_value);
-  array_free (data->params);
-  free (data->summary);
-
-  memset (data, 0, sizeof (create_report_format_data_t));
-}
-
-/**
  * @brief Command data for the create_schedule command.
  */
 typedef struct
@@ -1017,46 +993,13 @@ create_schedule_data_reset (create_schedule_data_t *data)
 }
 
 /**
- * @brief Command data for the create_slave command.
- */
-typedef struct
-{
-  char *comment;                 ///< Comment.
-  char *host;                    ///< Host for new slave.
-  char *login;                   ///< Login on slave.
-  char *name;                    ///< Name of new slave.
-  char *password;                ///< Password for login.
-  char *port;                    ///< Port on host.
-} create_slave_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-create_slave_data_reset (create_slave_data_t *data)
-{
-  free (data->comment);
-  free (data->host);
-  free (data->login);
-  free (data->name);
-  free (data->password);
-  free (data->port);
-
-  memset (data, 0, sizeof (create_slave_data_t));
-}
-
-/**
  * @brief Command data for the create_target command.
  */
 typedef struct
 {
   char *comment;                 ///< Comment.
   char *hosts;                   ///< Hosts for new target.
-  char *port_range;              ///< Port range for new target.
-  char *ssh_lsc_credential_id;   ///< SSH LSC credential for new target.
-  char *smb_lsc_credential_id;   ///< SMB LSC credential for new target.
+  char *lsc_credential_id;       ///< LSC credential for new target.
   char *name;                    ///< Name of new target.
   char *target_locator;          ///< Target locator (source name).
   char *target_locator_password; ///< Target locator credentials: password.
@@ -1073,9 +1016,7 @@ create_target_data_reset (create_target_data_t *data)
 {
   free (data->comment);
   free (data->hosts);
-  free (data->port_range);
-  free (data->ssh_lsc_credential_id);
-  free (data->smb_lsc_credential_id);
+  free (data->lsc_credential_id);
   free (data->name);
   free (data->target_locator);
   free (data->target_locator_password);
@@ -1092,7 +1033,6 @@ typedef struct
   char *config_id;      ///< ID of task config.
   char *escalator_id;   ///< ID of task escalator.
   char *schedule_id;    ///< ID of task schedule.
-  char *slave_id;       ///< ID of task slave.
   char *target_id;      ///< ID of task target.
   task_t task;          ///< ID of new task.
 } create_task_data_t;
@@ -1108,7 +1048,6 @@ create_task_data_reset (create_task_data_t *data)
   free (data->config_id);
   free (data->escalator_id);
   free (data->schedule_id);
-  free (data->slave_id);
   free (data->target_id);
 
   memset (data, 0, sizeof (create_task_data_t));
@@ -1262,27 +1201,6 @@ delete_report_data_reset (delete_report_data_t *data)
 }
 
 /**
- * @brief Command data for the delete_report_format command.
- */
-typedef struct
-{
-  char *report_format_id;   ///< ID of report format to delete.
-} delete_report_format_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-delete_report_format_data_reset (delete_report_format_data_t *data)
-{
-  free (data->report_format_id);
-
-  memset (data, 0, sizeof (delete_report_format_data_t));
-}
-
-/**
  * @brief Command data for the delete_schedule command.
  */
 typedef struct
@@ -1301,27 +1219,6 @@ delete_schedule_data_reset (delete_schedule_data_t *data)
   free (data->schedule_id);
 
   memset (data, 0, sizeof (delete_schedule_data_t));
-}
-
-/**
- * @brief Command data for the delete_slave command.
- */
-typedef struct
-{
-  char *slave_id;   ///< ID of slave to delete.
-} delete_slave_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-delete_slave_data_reset (delete_slave_data_t *data)
-{
-  free (data->slave_id);
-
-  memset (data, 0, sizeof (delete_slave_data_t));
 }
 
 /**
@@ -1651,7 +1548,7 @@ get_preferences_data_reset (get_preferences_data_t *data)
 typedef struct
 {
   int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
-  char *format_id;       ///< ID of report format.
+  char *format;          ///< Report format: "xml", "html", ....
   char *report_id;       ///< ID of single report to get.
   int first_result;      ///< Skip over results before this result number.
   int max_results;       ///< Maximum number of results return.
@@ -1675,7 +1572,7 @@ typedef struct
 static void
 get_reports_data_reset (get_reports_data_t *data)
 {
-  free (data->format_id);
+  free (data->format);
   free (data->report_id);
   free (data->sort_field);
   free (data->levels);
@@ -1683,32 +1580,6 @@ get_reports_data_reset (get_reports_data_t *data)
   free (data->min_cvss_base);
 
   memset (data, 0, sizeof (get_reports_data_t));
-}
-
-/**
- * @brief Command data for the get_report_formats command.
- */
-typedef struct
-{
-  int export;            ///< Boolean.  Whether to format for importing.
-  int params;            ///< Boolean.  Whether to include params.
-  char *sort_field;       ///< Field to sort results on.
-  int sort_order;         ///< Result sort order: 0 descending, else ascending.
-  char *report_format_id; ///< ID of single report format to get.
-} get_report_formats_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-get_report_formats_data_reset (get_report_formats_data_t *data)
-{
-  free (data->report_format_id);
-  free (data->sort_field);
-
-  memset (data, 0, sizeof (get_report_formats_data_t));
 }
 
 /**
@@ -1764,31 +1635,6 @@ get_schedules_data_reset (get_schedules_data_t *data)
 }
 
 /**
- * @brief Command data for the get_slaves command.
- */
-typedef struct
-{
-  char *sort_field;    ///< Field to sort results on.
-  int sort_order;      ///< Result sort order: 0 descending, else ascending.
-  char *slave_id;      ///< ID of single slave to get.
-  int tasks;           ///< Boolean.  Whether to include tasks that use slave.
-} get_slaves_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-get_slaves_data_reset (get_slaves_data_t *data)
-{
-  free (data->slave_id);
-  free (data->sort_field);
-
-  memset (data, 0, sizeof (get_slaves_data_t));
-}
-
-/**
  * @brief Command data for the get_system_reports command.
  */
 typedef struct
@@ -1796,7 +1642,6 @@ typedef struct
   int brief;        ///< Boolean.  Whether respond in brief.
   char *name;       ///< Name of single report to get.
   char *duration;   ///< Duration into the past to report on.
-  char *slave_id;   ///< Slave that reports apply to, 0 for local Manager.
 } get_system_reports_data_t;
 
 /**
@@ -1809,7 +1654,6 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 {
   free (data->name);
   free (data->duration);
-  free (data->slave_id);
 
   memset (data, 0, sizeof (get_system_reports_data_t));
 }
@@ -1891,27 +1735,6 @@ get_tasks_data_reset (get_tasks_data_t *data)
 }
 
 /**
- * @brief Command data for the help command.
- */
-typedef struct
-{
-  char *format;       ///< Format.
-} help_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-help_data_reset (help_data_t *data)
-{
-  free (data->format);
-
-  memset (data, 0, sizeof (help_data_t));
-}
-
-/**
  * @brief Reset command data.
  *
  * @param[in]  data  Command data.
@@ -1938,41 +1761,12 @@ modify_config_data_reset (modify_config_data_t *data)
 }
 
 /**
- * @brief Command data for the modify_lsc_credential command.
- */
-typedef struct
-{
-  char *lsc_credential_id;    ///< ID of credential to modify.
-  char *name;                 ///< Name.
-  char *comment;              ///< Comment.
-  char *login;                ///< Login.
-  char *password;             ///< Password.
-} modify_lsc_credential_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-modify_lsc_credential_data_reset (modify_lsc_credential_data_t *data)
-{
-  free (data->lsc_credential_id);
-  free (data->name);
-  free (data->comment);
-  free (data->login);
-  free (data->password);
-
-  memset (data, 0, sizeof (modify_lsc_credential_data_t));
-}
-
-/**
  * @brief Command data for the modify_report command.
  */
 typedef struct
 {
-  char *comment;       ///< Comment.
   char *report_id;     ///< ID of report to modify.
+  char *comment;       ///< Comment.
 } modify_report_data_t;
 
 /**
@@ -1983,41 +1777,10 @@ typedef struct
 static void
 modify_report_data_reset (modify_report_data_t *data)
 {
-  free (data->comment);
   free (data->report_id);
+  free (data->comment);
 
   memset (data, 0, sizeof (modify_report_data_t));
-}
-
-/**
- * @brief Command data for the modify_report_format command.
- */
-typedef struct
-{
-  char *active;               ///< Boolean.  Whether report format is active.
-  char *name;                 ///< Name.
-  char *param_name;           ///< Param name.
-  char *param_value;          ///< Param value.
-  char *report_format_id;     ///< ID of report format to modify.
-  char *summary;              ///< Summary.
-} modify_report_format_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-modify_report_format_data_reset (modify_report_format_data_t *data)
-{
-  free (data->active);
-  free (data->name);
-  free (data->param_name);
-  free (data->param_value);
-  free (data->report_format_id);
-  free (data->summary);
-
-  memset (data, 0, sizeof (modify_report_format_data_t));
 }
 
 /**
@@ -2033,7 +1796,6 @@ typedef struct
   char *name;          ///< New name for task.
   char *rcfile;        ///< New definition for task, as an RC file.
   char *schedule_id;   ///< ID of new schedule for task.
-  char *slave_id;      ///< ID of new slave for task.
   char *task_id;       ///< ID of task to modify.
 } modify_task_data_t;
 
@@ -2053,7 +1815,6 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->name);
   free (data->rcfile);
   free (data->schedule_id);
-  free (data->slave_id);
   free (data->task_id);
 
   memset (data, 0, sizeof (modify_task_data_t));
@@ -2282,48 +2043,6 @@ test_escalator_data_reset (test_escalator_data_t *data)
 }
 
 /**
- * @brief Command data for the verify_agent command.
- */
-typedef struct
-{
-  char *agent_id;   ///< ID of agent to verify.
-} verify_agent_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-verify_agent_data_reset (verify_agent_data_t *data)
-{
-  free (data->agent_id);
-
-  memset (data, 0, sizeof (verify_agent_data_t));
-}
-
-/**
- * @brief Command data for the verify_report_format command.
- */
-typedef struct
-{
-  char *report_format_id;   ///< ID of report format to verify.
-} verify_report_format_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-verify_report_format_data_reset (verify_report_format_data_t *data)
-{
-  free (data->report_format_id);
-
-  memset (data, 0, sizeof (verify_report_format_data_t));
-}
-
-/**
  * @brief Command data, as passed between OMP parser callbacks.
  */
 typedef union
@@ -2334,9 +2053,7 @@ typedef union
   create_lsc_credential_data_t create_lsc_credential; ///< create_lsc_credential
   create_note_data_t create_note;                     ///< create_note
   create_override_data_t create_override;             ///< create_override
-  create_report_format_data_t create_report_format;   ///< create_report_format
   create_schedule_data_t create_schedule;             ///< create_schedule
-  create_slave_data_t create_slave;                   ///< create_slave
   create_target_data_t create_target;                 ///< create_target
   create_task_data_t create_task;                     ///< create_task
   delete_agent_data_t delete_agent;                   ///< delete_agent
@@ -2346,9 +2063,7 @@ typedef union
   delete_note_data_t delete_note;                     ///< delete_note
   delete_override_data_t delete_override;             ///< delete_override
   delete_report_data_t delete_report;                 ///< delete_report
-  delete_report_format_data_t delete_report_format;   ///< delete_report_format
   delete_schedule_data_t delete_schedule;             ///< delete_schedule
-  delete_slave_data_t delete_slave;                   ///< delete_slave
   delete_target_data_t delete_target;                 ///< delete_target
   delete_task_data_t delete_task;                     ///< delete_task
   get_agents_data_t get_agents;                       ///< get_agents
@@ -2363,18 +2078,13 @@ typedef union
   get_overrides_data_t get_overrides;                 ///< get_overrides
   get_preferences_data_t get_preferences;             ///< get_preferences
   get_reports_data_t get_reports;                     ///< get_reports
-  get_report_formats_data_t get_report_formats;       ///< get_report_formats
   get_results_data_t get_results;                     ///< get_results
   get_schedules_data_t get_schedules;                 ///< get_schedules
-  get_slaves_data_t get_slaves;                       ///< get_slaves
   get_system_reports_data_t get_system_reports;       ///< get_system_reports
   get_targets_data_t get_targets;                     ///< get_targets
   get_tasks_data_t get_tasks;                         ///< get_tasks
-  help_data_t help;                                   ///< help
   modify_config_data_t modify_config;                 ///< modify_config
-  modify_lsc_credential_data_t modify_lsc_credential; ///< modify_lsc_credential
   modify_report_data_t modify_report;                 ///< modify_report
-  modify_report_format_data_t modify_report_format;   ///< modify_report_format
   modify_task_data_t modify_task;                     ///< modify_task
   pause_task_data_t pause_task;                       ///< pause_task
   resume_or_start_task_data_t resume_or_start_task;   ///< resume_or_start_task
@@ -2383,8 +2093,6 @@ typedef union
   start_task_data_t start_task;                       ///< start_task
   stop_task_data_t stop_task;                         ///< stop_task
   test_escalator_data_t test_escalator;               ///< test_escalator
-  verify_agent_data_t verify_agent;                   ///< verify_agent
-  verify_report_format_data_t verify_report_format;   ///< verify_report_format
 } command_data_t;
 
 /**
@@ -2441,22 +2149,10 @@ create_override_data_t *create_override_data
  = (create_override_data_t*) &(command_data.create_override);
 
 /**
- * @brief Parser callback data for CREATE_REPORT_FORMAT.
- */
-create_report_format_data_t *create_report_format_data
- = (create_report_format_data_t*) &(command_data.create_report_format);
-
-/**
  * @brief Parser callback data for CREATE_SCHEDULE.
  */
 create_schedule_data_t *create_schedule_data
  = (create_schedule_data_t*) &(command_data.create_schedule);
-
-/**
- * @brief Parser callback data for CREATE_SLAVE.
- */
-create_slave_data_t *create_slave_data
- = (create_slave_data_t*) &(command_data.create_slave);
 
 /**
  * @brief Parser callback data for CREATE_TARGET.
@@ -2513,22 +2209,10 @@ delete_report_data_t *delete_report_data
  = (delete_report_data_t*) &(command_data.delete_report);
 
 /**
- * @brief Parser callback data for DELETE_REPORT_FORMAT.
- */
-delete_report_format_data_t *delete_report_format_data
- = (delete_report_format_data_t*) &(command_data.delete_report_format);
-
-/**
  * @brief Parser callback data for DELETE_SCHEDULE.
  */
 delete_schedule_data_t *delete_schedule_data
  = (delete_schedule_data_t*) &(command_data.delete_schedule);
-
-/**
- * @brief Parser callback data for DELETE_SLAVE.
- */
-delete_slave_data_t *delete_slave_data
- = (delete_slave_data_t*) &(command_data.delete_slave);
 
 /**
  * @brief Parser callback data for DELETE_TARGET.
@@ -2615,12 +2299,6 @@ get_reports_data_t *get_reports_data
  = &(command_data.get_reports);
 
 /**
- * @brief Parser callback data for GET_REPORT_FORMATS.
- */
-get_report_formats_data_t *get_report_formats_data
- = &(command_data.get_report_formats);
-
-/**
  * @brief Parser callback data for GET_RESULTS.
  */
 get_results_data_t *get_results_data
@@ -2631,12 +2309,6 @@ get_results_data_t *get_results_data
  */
 get_schedules_data_t *get_schedules_data
  = &(command_data.get_schedules);
-
-/**
- * @brief Parser callback data for GET_SLAVES.
- */
-get_slaves_data_t *get_slaves_data
- = &(command_data.get_slaves);
 
 /**
  * @brief Parser callback data for GET_SYSTEM_REPORTS.
@@ -2657,12 +2329,6 @@ get_tasks_data_t *get_tasks_data
  = &(command_data.get_tasks);
 
 /**
- * @brief Parser callback data for HELP.
- */
-help_data_t *help_data
- = &(command_data.help);
-
-/**
  * @brief Parser callback data for CREATE_CONFIG (import).
  */
 import_config_data_t *import_config_data
@@ -2673,12 +2339,6 @@ import_config_data_t *import_config_data
  */
 modify_config_data_t *modify_config_data
  = &(command_data.modify_config);
-
-/**
- * @brief Parser callback data for MODIFY_LSC_CREDENTIAL.
- */
-modify_lsc_credential_data_t *modify_lsc_credential_data
- = &(command_data.modify_lsc_credential);
 
 /**
  * @brief Parser callback data for MODIFY_NOTE.
@@ -2697,12 +2357,6 @@ modify_override_data_t *modify_override_data
  */
 modify_report_data_t *modify_report_data
  = &(command_data.modify_report);
-
-/**
- * @brief Parser callback data for MODIFY_REPORT_FORMAT.
- */
-modify_report_format_data_t *modify_report_format_data
- = &(command_data.modify_report_format);
 
 /**
  * @brief Parser callback data for MODIFY_TASK.
@@ -2751,18 +2405,6 @@ stop_task_data_t *stop_task_data
  */
 test_escalator_data_t *test_escalator_data
  = (test_escalator_data_t*) &(command_data.test_escalator);
-
-/**
- * @brief Parser callback data for VERIFY_AGENT.
- */
-verify_agent_data_t *verify_agent_data
- = (verify_agent_data_t*) &(command_data.verify_agent);
-
-/**
- * @brief Parser callback data for VERIFY_REPORT_FORMAT.
- */
-verify_report_format_data_t *verify_report_format_data
- = (verify_report_format_data_t*) &(command_data.verify_report_format);
 
 /**
  * @brief Hack for returning forked process status from the callbacks.
@@ -2883,29 +2525,6 @@ typedef enum
   CLIENT_CREATE_OVERRIDE_TASK,
   CLIENT_CREATE_OVERRIDE_TEXT,
   CLIENT_CREATE_OVERRIDE_THREAT,
-  CLIENT_CREATE_REPORT_FORMAT,
-  /* get_report_formats (GRF) is used for report format export.  CLIENT_CRF is
-   * for CLIENT_CREATE_REPORT_FORMAT. */
-  CLIENT_CRF_GRFR,
-  CLIENT_CRF_GRFR_REPORT_FORMAT,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_DESCRIPTION,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_EXTENSION,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_FILE,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_GLOBAL,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_NAME,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY,
-  CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST,
   CLIENT_CREATE_SCHEDULE,
   CLIENT_CREATE_SCHEDULE_NAME,
   CLIENT_CREATE_SCHEDULE_COMMENT,
@@ -2919,20 +2538,11 @@ typedef enum
   CLIENT_CREATE_SCHEDULE_DURATION_UNIT,
   CLIENT_CREATE_SCHEDULE_PERIOD,
   CLIENT_CREATE_SCHEDULE_PERIOD_UNIT,
-  CLIENT_CREATE_SLAVE,
-  CLIENT_CREATE_SLAVE_COMMENT,
-  CLIENT_CREATE_SLAVE_HOST,
-  CLIENT_CREATE_SLAVE_LOGIN,
-  CLIENT_CREATE_SLAVE_NAME,
-  CLIENT_CREATE_SLAVE_PASSWORD,
-  CLIENT_CREATE_SLAVE_PORT,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_HOSTS,
-  CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL,
-  CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL,
+  CLIENT_CREATE_TARGET_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_NAME,
-  CLIENT_CREATE_TARGET_PORT_RANGE,
   CLIENT_CREATE_TARGET_TARGET_LOCATOR,
   CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD,
   CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME,
@@ -2943,7 +2553,6 @@ typedef enum
   CLIENT_CREATE_TASK_NAME,
   CLIENT_CREATE_TASK_RCFILE,
   CLIENT_CREATE_TASK_SCHEDULE,
-  CLIENT_CREATE_TASK_SLAVE,
   CLIENT_CREATE_TASK_TARGET,
   CLIENT_DELETE_AGENT,
   CLIENT_DELETE_CONFIG,
@@ -2952,9 +2561,7 @@ typedef enum
   CLIENT_DELETE_NOTE,
   CLIENT_DELETE_OVERRIDE,
   CLIENT_DELETE_REPORT,
-  CLIENT_DELETE_REPORT_FORMAT,
   CLIENT_DELETE_SCHEDULE,
-  CLIENT_DELETE_SLAVE,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TARGET,
   CLIENT_GET_AGENTS,
@@ -2972,10 +2579,8 @@ typedef enum
   CLIENT_GET_OVERRIDES,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
-  CLIENT_GET_REPORT_FORMATS,
   CLIENT_GET_RESULTS,
   CLIENT_GET_SCHEDULES,
-  CLIENT_GET_SLAVES,
   CLIENT_GET_SYSTEM_REPORTS,
   CLIENT_GET_TARGET_LOCATORS,
   CLIENT_GET_TARGETS,
@@ -2983,20 +2588,8 @@ typedef enum
   CLIENT_GET_VERSION,
   CLIENT_GET_VERSION_AUTHENTIC,
   CLIENT_HELP,
-  CLIENT_MODIFY_LSC_CREDENTIAL,
-  CLIENT_MODIFY_LSC_CREDENTIAL_NAME,
-  CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT,
-  CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN,
-  CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD,
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_COMMENT,
-  CLIENT_MODIFY_REPORT_FORMAT,
-  CLIENT_MODIFY_REPORT_FORMAT_ACTIVE,
-  CLIENT_MODIFY_REPORT_FORMAT_NAME,
-  CLIENT_MODIFY_REPORT_FORMAT_SUMMARY,
-  CLIENT_MODIFY_REPORT_FORMAT_PARAM,
-  CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME,
-  CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE,
   CLIENT_MODIFY_CONFIG,
   CLIENT_MODIFY_CONFIG_PREFERENCE,
   CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
@@ -3033,7 +2626,6 @@ typedef enum
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_RCFILE,
   CLIENT_MODIFY_TASK_SCHEDULE,
-  CLIENT_MODIFY_TASK_SLAVE,
   CLIENT_PAUSE_TASK,
   CLIENT_RESUME_OR_START_TASK,
   CLIENT_RESUME_PAUSED_TASK,
@@ -3041,8 +2633,6 @@ typedef enum
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
   CLIENT_TEST_ESCALATOR,
-  CLIENT_VERIFY_AGENT,
-  CLIENT_VERIFY_REPORT_FORMAT
 } client_state_t;
 
 /**
@@ -3315,6 +2905,76 @@ internal_error_send_to_client (GError** error)
  " status_text=\"" STATUS_SERVICE_DOWN_TEXT "\"/>"
 
 /**
+ * @brief Return number of hosts described by a hosts string.
+ *
+ * @param[in]  hosts  String describing hosts.
+ *
+ * @return Number of hosts, or -1 on error.
+ */
+int
+max_hosts (const char *hosts)
+{
+  long count = 0;
+  gchar** split = g_strsplit (hosts, ",", 0);
+  gchar** point = split;
+
+  /** @todo Check for errors in "hosts". */
+
+  while (*point)
+    {
+      gchar* slash = strchr (*point, '/');
+      if (slash)
+        {
+          slash++;
+          if (*slash)
+            {
+              long int mask;
+              struct in_addr addr;
+
+              /* Convert text after slash to a bit netmask. */
+
+              if (atoi (slash) > 32 && inet_aton (slash, &addr))
+                {
+                  in_addr_t haddr;
+
+                  /* 192.168.200.0/255.255.255.252 */
+
+                  haddr = ntohl (addr.s_addr);
+                  mask = 32;
+                  while ((haddr & 1) == 0)
+                    {
+                      mask--;
+                      haddr = haddr >> 1;
+                    }
+                  if (mask < 8 || mask > 32) return -1;
+                }
+              else
+                {
+                  /* 192.168.200.0/30 */
+
+                  errno = 0;
+                  mask = strtol (slash, NULL, 10);
+                  if (errno == ERANGE || mask < 8 || mask > 32) return -1;
+                }
+
+              /* Calculate number of hosts. */
+
+              count += 1L << (32 - mask);
+              /* Leave out the network and broadcast addresses. */
+              if (mask < 31) count--;
+            }
+          else
+            /* Just a trailing /. */
+            count++;
+        }
+      else
+        count++;
+      point += 1;
+    }
+  return count;
+}
+
+/**
  * @brief Find an attribute in a parser callback list of attributes.
  *
  * @param[in]   attribute_names   List of names.
@@ -3550,14 +3210,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_NOTE);
         else if (strcasecmp ("CREATE_OVERRIDE", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE);
-        else if (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_REPORT_FORMAT);
-        else if (strcasecmp ("CREATE_SLAVE", element_name) == 0)
-          {
-            openvas_append_string (&create_slave_data->comment, "");
-            openvas_append_string (&create_slave_data->password, "");
-            set_client_state (CLIENT_CREATE_SLAVE);
-          }
         else if (strcasecmp ("CREATE_SCHEDULE", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE);
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
@@ -3616,23 +3268,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &delete_report_data->report_id);
             set_client_state (CLIENT_DELETE_REPORT);
           }
-        else if (strcasecmp ("DELETE_REPORT_FORMAT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "report_format_id",
-                              &delete_report_format_data->report_format_id);
-            set_client_state (CLIENT_DELETE_REPORT_FORMAT);
-          }
         else if (strcasecmp ("DELETE_SCHEDULE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "schedule_id",
                               &delete_schedule_data->schedule_id);
             set_client_state (CLIENT_DELETE_SCHEDULE);
-          }
-        else if (strcasecmp ("DELETE_SLAVE", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "slave_id",
-                              &delete_slave_data->slave_id);
-            set_client_state (CLIENT_DELETE_SLAVE);
           }
         else if (strcasecmp ("DELETE_TARGET", element_name) == 0)
           {
@@ -3879,8 +3519,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "report_id",
                               &get_reports_data->report_id);
 
-            append_attribute (attribute_names, attribute_values, "format_id",
-                              &get_reports_data->format_id);
+            append_attribute (attribute_names, attribute_values, "format",
+                              &get_reports_data->format);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "first_result", &attribute))
@@ -3960,38 +3600,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_REPORTS);
           }
-        else if (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0)
-          {
-            const gchar* attribute;
-
-            append_attribute (attribute_names,
-                              attribute_values,
-                              "report_format_id",
-                              &get_report_formats_data->report_format_id);
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "export", &attribute))
-              get_report_formats_data->export = strcmp (attribute, "0");
-            else
-              get_report_formats_data->export = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "params", &attribute))
-              get_report_formats_data->params = strcmp (attribute, "0");
-            else
-              get_report_formats_data->params = 0;
-
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_report_formats_data->sort_field);
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_report_formats_data->sort_order = strcmp (attribute, "descending");
-            else
-              get_report_formats_data->sort_order = 1;
-
-            set_client_state (CLIENT_GET_REPORT_FORMATS);
-          }
         else if (strcasecmp ("GET_RESULTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -4059,25 +3667,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_SCHEDULES);
           }
-        else if (strcasecmp ("GET_SLAVES", element_name) == 0)
-          {
-            const gchar* attribute;
-            append_attribute (attribute_names, attribute_values, "slave_id",
-                              &get_slaves_data->slave_id);
-            if (find_attribute (attribute_names, attribute_values,
-                                "tasks", &attribute))
-              get_slaves_data->tasks = strcmp (attribute, "0");
-            else
-              get_slaves_data->tasks = 0;
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_slaves_data->sort_field);
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_slaves_data->sort_order = strcmp (attribute, "descending");
-            else
-              get_slaves_data->sort_order = 1;
-            set_client_state (CLIENT_GET_SLAVES);
-          }
         else if (strcasecmp ("GET_TARGET_LOCATORS", element_name) == 0)
           {
             set_client_state (CLIENT_GET_TARGET_LOCATORS);
@@ -4089,8 +3678,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_system_reports_data->name);
             append_attribute (attribute_names, attribute_values, "duration",
                               &get_system_reports_data->duration);
-            append_attribute (attribute_names, attribute_values, "slave_id",
-                              &get_system_reports_data->slave_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "brief", &attribute))
               get_system_reports_data->brief = strcmp (attribute, "0");
@@ -4156,23 +3743,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_VERSION", element_name) == 0)
           set_client_state (CLIENT_GET_VERSION_AUTHENTIC);
         else if (strcasecmp ("HELP", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "format",
-                              &help_data->format);
-            set_client_state (CLIENT_HELP);
-          }
+          set_client_state (CLIENT_HELP);
         else if (strcasecmp ("MODIFY_CONFIG", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "config_id",
                               &modify_config_data->config_id);
             set_client_state (CLIENT_MODIFY_CONFIG);
-          }
-        else if (strcasecmp ("MODIFY_LSC_CREDENTIAL", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values,
-                              "lsc_credential_id",
-                              &modify_lsc_credential_data->lsc_credential_id);
-            set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("MODIFY_NOTE", element_name) == 0)
           {
@@ -4191,13 +3767,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "report_id",
                               &modify_report_data->report_id);
             set_client_state (CLIENT_MODIFY_REPORT);
-          }
-        else if (strcasecmp ("MODIFY_REPORT_FORMAT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values,
-                              "report_format_id",
-                              &modify_report_format_data->report_format_id);
-            set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
           }
         else if (strcasecmp ("MODIFY_TASK", element_name) == 0)
           {
@@ -4247,18 +3816,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               "escalator_id",
                               &test_escalator_data->escalator_id);
             set_client_state (CLIENT_TEST_ESCALATOR);
-          }
-        else if (strcasecmp ("VERIFY_AGENT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "agent_id",
-                              &verify_agent_data->agent_id);
-            set_client_state (CLIENT_VERIFY_AGENT);
-          }
-        else if (strcasecmp ("VERIFY_REPORT_FORMAT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "report_format_id",
-                              &verify_report_format_data->report_format_id);
-            set_client_state (CLIENT_VERIFY_REPORT_FORMAT);
           }
         else
           {
@@ -4551,38 +4108,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      "Error");
         break;
 
-      case CLIENT_DELETE_REPORT_FORMAT:
-        if (send_element_error_to_client ("delete_report_format", element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
       case CLIENT_DELETE_SCHEDULE:
         if (send_element_error_to_client ("delete_schedule", element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
-      case CLIENT_DELETE_SLAVE:
-        if (send_element_error_to_client ("delete_slave", element_name,
                                           write_to_client,
                                           write_to_client_data))
           {
@@ -4846,24 +4373,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      "Error");
         break;
 
-      case CLIENT_GET_REPORT_FORMATS:
-          {
-            if (send_element_error_to_client ("get_report_formats",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
-
       case CLIENT_GET_RESULTS:
         if (send_element_error_to_client ("get_results", element_name,
                                           write_to_client,
@@ -4882,23 +4391,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_SCHEDULES:
           {
             if (send_element_error_to_client ("get_schedules", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
-
-      case CLIENT_GET_SLAVES:
-          {
-            if (send_element_error_to_client ("get_slaves", element_name,
                                               write_to_client,
                                               write_to_client_data))
               {
@@ -5137,60 +4629,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
-      case CLIENT_MODIFY_LSC_CREDENTIAL:
-        if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL_NAME);
-        else if (strcasecmp ("COMMENT", element_name) == 0)
-          {
-            openvas_free_string_var (&modify_lsc_credential_data->comment);
-            openvas_append_string (&modify_lsc_credential_data->comment, "");
-            set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT);
-          }
-        else if (strcasecmp ("LOGIN", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN);
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          {
-            openvas_free_string_var (&modify_lsc_credential_data->password);
-            openvas_append_string (&modify_lsc_credential_data->password, "");
-            set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD);
-          }
-        else
-          {
-            if (send_element_error_to_client ("modify_lsc_credential",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
-
-      case CLIENT_MODIFY_LSC_CREDENTIAL_NAME:
-      case CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT:
-      case CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN:
-      case CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD:
-        if (send_element_error_to_client ("modify_lsc_credential",
-                                          element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
       case CLIENT_MODIFY_REPORT:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_COMMENT);
@@ -5209,74 +4647,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Error");
           }
-        break;
-
-      case CLIENT_MODIFY_REPORT_FORMAT:
-        if (strcasecmp ("ACTIVE", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_REPORT_FORMAT_ACTIVE);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_REPORT_FORMAT_NAME);
-        else if (strcasecmp ("SUMMARY", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_REPORT_FORMAT_SUMMARY);
-        else if (strcasecmp ("PARAM", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM);
-        else
-          {
-            if (send_element_error_to_client ("modify_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
-
-      case CLIENT_MODIFY_REPORT_FORMAT_PARAM:
-        if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME);
-        else if (strcasecmp ("VALUE", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE);
-        else
-          {
-            if (send_element_error_to_client ("modify_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
-
-      case CLIENT_MODIFY_REPORT_FORMAT_ACTIVE:
-      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME:
-      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE:
-        if (send_element_error_to_client ("modify_report_format",
-                                          element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
         break;
 
       case CLIENT_MODIFY_TASK:
@@ -5300,12 +4670,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "id",
                               &modify_task_data->schedule_id);
             set_client_state (CLIENT_MODIFY_TASK_SCHEDULE);
-          }
-        else if (strcasecmp ("SLAVE", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &modify_task_data->slave_id);
-            set_client_state (CLIENT_MODIFY_TASK_SLAVE);
           }
         else if (strcasecmp ("FILE", element_name) == 0)
           {
@@ -5863,367 +5227,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
-      case CLIENT_CREATE_REPORT_FORMAT:
-        if (strcasecmp ("GET_REPORT_FORMATS_RESPONSE", element_name) == 0)
-          {
-            create_report_format_data->import = 1;
-            set_client_state (CLIENT_CRF_GRFR);
-          }
-        else
-          {
-            if (send_element_error_to_client ("create_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
-
-      case CLIENT_CRF_GRFR:
-        if (strcasecmp ("REPORT_FORMAT", element_name) == 0)
-          {
-            create_report_format_data->files = make_array ();
-            create_report_format_data->params = make_array ();
-            create_report_format_data->params_options = make_array ();
-            append_attribute (attribute_names, attribute_values, "id",
-                              &create_report_format_data->id);
-            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-          }
-        else
-          {
-            if (send_element_error_to_client ("create_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT:
-        if (strcasecmp ("CONTENT_TYPE", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE);
-        else if (strcasecmp ("DESCRIPTION", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_DESCRIPTION);
-        else if (strcasecmp ("EXTENSION", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_EXTENSION);
-        else if (strcasecmp ("GLOBAL", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_GLOBAL);
-        else if (strcasecmp ("FILE", element_name) == 0)
-          {
-            assert (create_report_format_data->file == NULL);
-            assert (create_report_format_data->file_name == NULL);
-            openvas_append_string (&create_report_format_data->file, "");
-            append_attribute (attribute_names, attribute_values, "name",
-                              &create_report_format_data->file_name);
-            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_FILE);
-          }
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_NAME);
-        else if (strcasecmp ("PARAM", element_name) == 0)
-          {
-            assert (create_report_format_data->param_name == NULL);
-            assert (create_report_format_data->param_type == NULL);
-            assert (create_report_format_data->param_value == NULL);
-            openvas_append_string (&create_report_format_data->param_name, "");
-            openvas_append_string (&create_report_format_data->param_value, "");
-            create_report_format_data->param_options = make_array ();
-            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
-          }
-        else if (strcasecmp ("SIGNATURE", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE);
-        else if (strcasecmp ("SUMMARY", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY);
-        else if (strcasecmp ("TRUST", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST);
-        else
-          {
-            if (send_element_error_to_client ("create_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE:
-        if (send_element_error_to_client ("create_report_format",
-                                          element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_DESCRIPTION:
-        if (send_element_error_to_client ("create_report_format",
-                                          element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_EXTENSION:
-        if (send_element_error_to_client ("create_report_format",
-                                          element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_FILE:
-        if (send_element_error_to_client ("create_report_format",
-                                          element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_GLOBAL:
-        if (send_element_error_to_client ("create_report_format",
-                                          element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_NAME:
-        if (send_element_error_to_client ("create_report_format",
-                                          element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM:
-        if (strcasecmp ("DEFAULT", element_name) == 0)
-          {
-            openvas_append_string (&create_report_format_data->param_default,
-                                   "");
-            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT);
-          }
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME);
-        else if (strcasecmp ("OPTIONS", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS);
-        else if (strcasecmp ("TYPE", element_name) == 0)
-          {
-            openvas_append_string (&create_report_format_data->param_type, "");
-            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE);
-          }
-        else if (strcasecmp ("VALUE", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE);
-        else
-          {
-            if (send_element_error_to_client ("create_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS:
-        if (strcasecmp ("OPTION", element_name) == 0)
-          {
-            openvas_append_string (&create_report_format_data->param_option,
-                                   "");
-            set_client_state
-             (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION);
-          }
-        else
-          {
-            if (send_element_error_to_client ("create_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE:
-        if (strcasecmp ("MAX", element_name) == 0)
-          {
-            set_client_state
-             (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX);
-          }
-        else if (strcasecmp ("MIN", element_name) == 0)
-          {
-            set_client_state
-             (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN);
-          }
-        else
-          {
-            if (send_element_error_to_client ("create_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT:
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME:
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX:
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN:
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE:
-        if (send_element_error_to_client ("create_report_format",
-                                          element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE:
-        if (send_element_error_to_client ("create_report_format",
-                                          element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY:
-        if (send_element_error_to_client ("create_report_format",
-                                          element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST:
-        if (send_element_error_to_client ("create_report_format",
-                                          element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
       case CLIENT_CREATE_OVERRIDE:
         if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE_HOSTS);
@@ -6282,57 +5285,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
-      case CLIENT_CREATE_SLAVE:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SLAVE_COMMENT);
-        else if (strcasecmp ("HOST", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SLAVE_HOST);
-        else if (strcasecmp ("LOGIN", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SLAVE_LOGIN);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SLAVE_NAME);
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SLAVE_PASSWORD);
-        else if (strcasecmp ("PORT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SLAVE_PORT);
-        else
-          {
-            if (send_element_error_to_client ("create_slave", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
-
       case CLIENT_CREATE_TARGET:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_COMMENT);
         else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_HOSTS);
-        else if (strcasecmp ("PORT_RANGE", element_name) == 0)
-          {
-            openvas_append_string (&create_target_data->port_range, "");
-            set_client_state (CLIENT_CREATE_TARGET_PORT_RANGE);
-          }
-        else if (strcasecmp ("SSH_LSC_CREDENTIAL", element_name) == 0)
+        else if (strcasecmp ("LSC_CREDENTIAL", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
-                              &create_target_data->ssh_lsc_credential_id);
-            set_client_state (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL);
-          }
-        else if (strcasecmp ("SMB_LSC_CREDENTIAL", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &create_target_data->smb_lsc_credential_id);
-            set_client_state (CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL);
+                              &create_target_data->lsc_credential_id);
+            set_client_state (CLIENT_CREATE_TARGET_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_NAME);
@@ -6406,12 +5368,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "id",
                               &create_task_data->schedule_id);
             set_client_state (CLIENT_CREATE_TASK_SCHEDULE);
-          }
-        else if (strcasecmp ("SLAVE", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &create_task_data->slave_id);
-            set_client_state (CLIENT_CREATE_TASK_SLAVE);
           }
         else if (strcasecmp ("TARGET", element_name) == 0)
           {
@@ -6633,36 +5589,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_STOP_TASK:
         if (send_element_error_to_client ("stop_task", element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
-      case CLIENT_VERIFY_AGENT:
-        if (send_element_error_to_client ("verify_agent", element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
-      case CLIENT_VERIFY_REPORT_FORMAT:
-        if (send_element_error_to_client ("verify_report_format", element_name,
                                           write_to_client,
                                           write_to_client_data))
           {
@@ -7019,6 +5945,443 @@ send_reports (task_t task, int apply_overrides, int (*write_to_client) (void*),
 }
 
 /**
+ * @brief Print the XML for a report to a file.
+ *
+ * @param[in]  report      The report.
+ * @param[in]  task        Task associated with report.
+ * @param[in]  xml_file    File name.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "type".
+ * @param[in]  result_hosts_only  Whether to show only hosts with results.
+ * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
+ *                                results if NULL.
+ *
+ * @return 0 on success, else -1 with errno set.
+ */
+static int
+print_report_xml (report_t report, task_t task, gchar* xml_file,
+                  int ascending, const char* sort_field, int result_hosts_only,
+                  const char *min_cvss_base)
+{
+  FILE *out;
+  iterator_t results, hosts;
+  char *end_time, *start_time, *uuid;
+  array_t *result_hosts;
+
+  /** @todo This is now out of sync with the XML report.  It is only used to
+   *        generate the "html" report and the "html-pdf", which need extensive
+   *        work anyway. */
+
+  out = fopen (xml_file, "w");
+
+  if (out == NULL)
+    {
+      g_warning ("%s: fopen failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  uuid = report_uuid (report);
+  fprintf (out,
+           "<get_reports_response"
+           " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">"
+           "<report id=\"%s\">",
+           uuid);
+  free (uuid);
+
+  start_time = scan_start_time (report);
+  fprintf (out,
+           "<scan_start>%s</scan_start>",
+           start_time);
+  free (start_time);
+
+  init_result_iterator (&results, report, 0, NULL,
+                        get_reports_data->first_result,
+                        get_reports_data->max_results,
+                        ascending,
+                        sort_field,
+                        get_reports_data->levels,
+                        get_reports_data->search_phrase,
+                        min_cvss_base,
+                        get_reports_data->apply_overrides);
+
+  if (result_hosts_only)
+    result_hosts = make_array ();
+  else
+    /* Quiet erroneous compiler warning. */
+    result_hosts = NULL;
+  while (next (&results))
+    {
+      GString *buffer = g_string_new ("");
+      buffer_results_xml (buffer,
+                          &results,
+                          task,
+                          get_reports_data->notes,
+                          get_reports_data->notes_details,
+                          get_reports_data->overrides,
+                          get_reports_data->overrides_details);
+      fputs (buffer->str, out);
+      g_string_free (buffer, TRUE);
+      if (result_hosts_only)
+        array_add_new_string (result_hosts,
+                              result_iterator_host (&results));
+    }
+  cleanup_iterator (&results);
+
+  if (result_hosts_only)
+    {
+      gchar *host;
+      int index = 0;
+      array_terminate (result_hosts);
+      while ((host = g_ptr_array_index (result_hosts, index++)))
+        {
+          init_host_iterator (&hosts, report, host);
+          if (next (&hosts))
+            {
+              fprintf (out,
+                       "<host_start>"
+                       "<host>%s</host>%s"
+                       "</host_start>",
+                       host,
+                       host_iterator_start_time (&hosts));
+              fprintf (out,
+                       "<host_end>"
+                       "<host>%s</host>%s"
+                       "</host_end>",
+                       host,
+                       host_iterator_end_time (&hosts)
+                        ? host_iterator_end_time (&hosts)
+                        : "");
+            }
+          cleanup_iterator (&hosts);
+        }
+      array_free (result_hosts);
+    }
+  else
+    {
+      init_host_iterator (&hosts, report, NULL);
+      while (next (&hosts))
+        fprintf (out,
+                 "<host_start><host>%s</host>%s</host_start>",
+                 host_iterator_host (&hosts),
+                 host_iterator_start_time (&hosts));
+      cleanup_iterator (&hosts);
+
+      init_host_iterator (&hosts, report, NULL);
+      while (next (&hosts))
+        fprintf (out,
+                 "<host_end><host>%s</host>%s</host_end>",
+                 host_iterator_host (&hosts),
+                 host_iterator_end_time (&hosts)
+                  ? host_iterator_end_time (&hosts)
+                  : "");
+      cleanup_iterator (&hosts);
+    }
+
+  end_time = scan_end_time (report);
+  fprintf (out, "<scan_end>%s</scan_end>", end_time);
+  free (end_time);
+
+  fprintf (out, "</report></get_reports_response>");
+
+  if (fclose (out))
+    {
+      g_warning ("%s: fclose failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Return the position at which to wrap text.
+ *
+ * Only space is considered a word boundary, for wrapping.
+ *
+ * Presume that the caller treats "\n" as a newline and skips over "\r".
+ *
+ * @param[in]  text        Text to inspect.
+ * @param[in]  line_width  Line width before or at which to wrap.
+ *
+ * @return The maximum number of chars of \param text which the caller must
+ *         write out in order to write out at most line_width characters of the
+ *         next line in \param text .  As a special case if a newline occurs
+ *         before line width then just return one more than number of chars
+ *         needed to write up to the newline.
+ */
+static int
+next_break (const char* text, int line_width)
+{
+  const char* pos = text;
+  /* The number of characters the caller would have written out before
+   * reaching the last space. */
+  int last_space = -1;
+  /* The number of characters the caller would have written out. */
+  int nchars = 0;
+
+  /**
+   * @todo Test special cases.
+   */
+
+  /* Loop over the text one character at a time, recording how the caller
+   * would write it out to a stream as LaTeX.  Account for caller treating
+   * "\n" in the text like a newline, and skipping over "\r".  Keep track
+   * of the position of the last space character.  On reaching a newline or
+   * end of file return one more than the number of characters written, so
+   * that the caller can find the newline or EOF too.  On reaching
+   * line_width return the position of the last space if there was one,
+   * otherwise just return the current position. */
+
+  while (*pos)
+    {
+      switch (*pos)
+        {
+          case '\\':
+            /* Reached a backslash, go on to the next character to look for
+             * special sequences. */
+            pos++;
+            if (*pos && *pos == 'n')
+              {
+                /* Reached "\n". */
+                return nchars + 2;
+              }
+            if (*pos && *pos == 'r')
+              {
+                /* Reached "\r", skip over it. */
+                pos++;
+              }
+            else
+              {
+                /* The caller would write out the backslash. */
+                nchars++;
+              }
+            break;
+          case '\n':
+            /* Reached a real newline. */
+            return nchars + 1;
+            break;
+          case ' ':
+            last_space = nchars + 1;
+            /*@fallthrough@*/
+          default:
+            /* A normal character, that the caller would just write out. */
+            pos++;
+            nchars++;
+            break;
+        }
+
+      if (nchars == line_width)
+        {
+          /* @todo It's weird to break at the first character (last_space ==
+           *       0).  This function and the caller should drop any leading
+           *       space when wrapping. */
+          if (last_space >= 0)
+            return last_space;
+          return nchars;
+        }
+    }
+
+  /* Reached the end of file before a newline or line_width. */
+  return nchars;
+}
+
+/**
+ * @brief Write verbatim LaTeX text to a stream, with wrapping.
+ *
+ * Write \p text to \p file , doing line wraps at 80 chars, adding a
+ * symbol to indicate each line wrap, and putting each line in a separate
+ * verbatim environment so that the text breaks across pages.
+ *
+ * Function used to print verbatim text to LaTeX documents within a longtable
+ * environment.  It is up to the caller to ensure that file is positioned
+ * within a tabular environment.
+ *
+ * @param[in]   file        Stream to write to.
+ * @param[out]  text        Text to write to file.  Zero or more lines of
+ *                          newline terminated text, where the final newline
+ *                          is optional.
+ * @param[in]   row_colour  Row colour.
+ */
+static void
+latex_print_verbatim_text (FILE* file, const char* text, const char *row_colour)
+{
+  const char* pos = text;
+  /* The number of chars processed of the current line of the text. */
+  int nchars = 0;
+  int line_width = 80;
+  int break_pos;
+
+  if (row_colour == NULL) row_colour = "white";
+
+  /** @todo Do this better.  Word wrapping has problems with first line. */
+
+  /* Get the position at which to break the first line. */
+
+  break_pos = next_break (pos, line_width);
+
+  /* Loop over the text one character at a time, writing it out to the file
+   * as LaTeX.  Put each line of the text in a verbatim environment.  On
+   * reaching the break position write out LaTeX to wrap the line,
+   * calculate the next break position, and continue.  While writing out
+   * the text, treat "\n" in the text like a newline, and skip over "\r". */
+
+  fprintf (file, "\\rowcolor{%s}{\\verb=", row_colour);
+  while (*pos)
+    {
+      if (nchars == break_pos)
+        {
+          /* Reached the break position, start a new line in the LaTeX. */
+          fputs ("=}\\\\\n", file);
+          fprintf (file,
+                   "\\rowcolor{%s}{$\\hookrightarrow$\\verb=",
+                   row_colour);
+          nchars = 0;
+          /* Subtract 2 because the hookrightarrow has taken up some space. */
+          break_pos = next_break (pos, line_width - 2);
+          continue;
+        }
+      switch (*pos)
+        {
+          case '\\':
+            /* Reached a backslash, go on to the next character to look for
+             * special sequences. */
+            pos++;
+            if (*pos && *pos == 'n')
+              {
+                /* Reached "\n", start a new line in the LaTeX. */
+                fprintf (file, "=}\\\\\n\\rowcolor{%s}{\\verb=", row_colour);
+                nchars = 0;
+                pos++;
+                break_pos = next_break (pos, line_width);
+              }
+            else if (*pos && *pos == 'r')
+              {
+                /* Reached "\r", skip over it. */
+                pos++;
+              }
+            else
+              {
+                /* Write out the backslash. */
+                nchars++;
+                fputc ('\\', file);
+              }
+            break;
+          case '\n':
+            /* Reached a real newline, start a new line in the LaTeX. */
+            fprintf (file, "=}\\\\\n\\rowcolor{%s}{\\verb=", row_colour);
+            nchars = 0;
+            pos++;
+            break_pos = next_break (pos, line_width);
+            break;
+          case '=':
+            /* Print equal in a whole new \verb environment that uses dash
+             * instead of equal to begin and end the text. */
+            fputs ("=\\verb-=-\\verb=", file);
+            nchars++;
+            pos++;
+            break;
+          default:
+            /* A normal character, write it out. */
+            fputc (*pos, file);
+            nchars++;
+            pos++;
+            break;
+        }
+    }
+  /**
+   * @todo Handle special situations (empty string, newline at end etc)
+   *       more clever, break at word boundaries.
+   */
+  fputs ("=}\\\\\n", file);
+}
+
+/**
+ * @brief Make text safe for LaTeX.
+ *
+ * Replace LaTeX special characters with LaTeX equivalents.
+ *
+ * @param[in]  text  The text in which to escape or replace special characters.
+ *
+ * @return A newly allocated version of text.
+ */
+static gchar*
+latex_escape_text (const char *text)
+{
+  /** @todo Do this better. */
+
+  gsize left = strlen (text);
+  gchar *new, *ch;
+
+  /* Allocate buffer of a safe length. */
+  {
+    int bs = 0;
+    const char *c = text;
+    while (*c) { if (*c == '\\') bs++; c++; }
+    new = g_strndup (text,
+                     (left - bs) * 2 + bs * (strlen ("$\\backslash$") - 1) + 1);
+  }
+
+  ch = new;
+  while (*ch)
+    {
+      /** @todo \\~ should become \\verb{~} or \\~{}. */
+      if (*ch == '\\')
+        {
+          ch++;
+          switch (*ch)
+            {
+              case 'r':
+                {
+                  /* \r is flushed */
+                  memmove (ch - 1, ch + 1, left);
+                  left--;
+                  ch -= 2;
+                  break;
+                }
+              case 'n':
+                {
+                  /* \n becomes "\n\n" (two newlines) */
+                  left--;
+                  *(ch - 1) = '\n';
+                  *ch = '\n';
+                  break;
+                }
+              default:
+                {
+                  /* \ becomes $\backslash$ */
+                  memmove (ch - 1 + strlen ("$\\backslash$"), ch, left);
+                  strncpy (ch - 1, "$\\backslash$", strlen ("$\\backslash$"));
+                  /* Get back to the position of the original backslash. */
+                  ch--;
+                  /* Move over the newly inserted characters. */
+                  ch += (strlen ("$\\backslash$") - 1);
+                  break;
+                }
+            }
+        }
+      else if (   *ch == '#' || *ch == '$' || *ch == '%'
+               || *ch == '&' || *ch == '_' || *ch == '^'
+               || *ch == '{' || *ch == '}')
+        {
+          ch++;
+          switch (*ch)
+            {
+              case '\0':
+                break;
+              default:
+                /* & becomes \& */
+                memmove (ch, ch - 1, left);
+                *(ch - 1) = '\\';
+            }
+        }
+      ch++; left--;
+    }
+  return new;
+}
+
+/**
  * @brief Convert \n's to real newline's.
  *
  * @param[in]  text  The text in which to insert newlines.
@@ -7073,6 +6436,711 @@ convert_to_newlines (const char *text)
       ch++; left--;
     }
   return new;
+}
+
+/**
+ * @brief Get the heading associated with a certain result severity.
+ *
+ * @param[in]  severity  The severity type.
+ *
+ * @return The heading associated with the given severity (for example,
+ *         "Low").
+ */
+const char*
+latex_severity_heading (const char *severity)
+{
+  if (strcmp (severity, "Security Hole") == 0)
+    return "High";
+  if (strcmp (severity, "Security Note") == 0)
+    return "Low";
+  if (strcmp (severity, "Security Warning") == 0)
+    return "Medium";
+  if (strcmp (severity, "Log Message") == 0)
+    return "Log";
+  if (strcmp (severity, "False Positive") == 0)
+    return "False Positive";
+  return severity;
+}
+
+/**
+ * @brief Get the colour associated with a certain result severity.
+ *
+ * @param[in]  severity  The severity type.
+ *
+ * @return The colour associated with the given severity (for example,
+ *         "[rgb]{0.1,0.7,0}" or "{red}").
+ */
+const char*
+latex_severity_colour (const char *severity)
+{
+  if (strcmp (severity, "Debug Message") == 0)
+    return "{openvas_debug}";
+  if (strcmp (severity, "False Positive") == 0)
+    return "{openvas_false_positive}";
+  if (strcmp (severity, "Log Message") == 0)
+    return "{openvas_log}";
+  if (strcmp (severity, "Security Hole") == 0)
+    return "{openvas_hole}";
+  if (strcmp (severity, "Security Note") == 0)
+    return "{openvas_note}";
+  if (strcmp (severity, "Security Warning") == 0)
+    return "{openvas_warning}";
+  return "{openvas_report}";
+}
+
+/**
+ * @brief Header for latex report.
+ */
+const char* latex_header
+  = "\\documentclass{article}\n"
+    "\\pagestyle{empty}\n"
+    "\n"
+    "%\\usepackage{color}\n"
+    "\\usepackage{tabularx}\n"
+    "\\usepackage{geometry}\n"
+    "\\usepackage{comment}\n"
+    "\\usepackage{longtable}\n"
+    "\\usepackage{titlesec}\n"
+    "\\usepackage{chngpage}\n"
+    "\\usepackage{calc}\n"
+    "\\usepackage{url}\n"
+    "\\usepackage[utf8x]{inputenc}\n"
+    "\n"
+    "\\DeclareUnicodeCharacter {135}{{\\textascii ?}}\n"
+    "\\DeclareUnicodeCharacter {129}{{\\textascii ?}}\n"
+    "\\DeclareUnicodeCharacter {128}{{\\textascii ?}}\n"
+    "\n"
+    "\\usepackage{colortbl}\n"
+    "\n"
+    "% must come last\n"
+    "\\usepackage{hyperref}\n"
+    "\\definecolor{linkblue}{rgb}{0.11,0.56,1}\n"
+    "\\definecolor{inactive}{rgb}{0.56,0.56,0.56}\n"
+    "\\definecolor{openvas_debug}{rgb}{0.78,0.78,0.78}\n"
+    /* False Positive */
+    "\\definecolor{openvas_false_positive}{rgb}{0.2275,0.2275,0.2275}\n"
+    /* Log */
+    "\\definecolor{openvas_log}{rgb}{0.2275,0.2275,0.2275}\n"
+    /* High: #CB1D17 */
+    "\\definecolor{openvas_hole}{rgb}{0.7960,0.1137,0.0902}\n"
+    /* Low: #539DCB */
+    "\\definecolor{openvas_note}{rgb}{0.3255,0.6157,0.7961}\n"
+    "\\definecolor{openvas_report}{rgb}{0.68,0.74,0.88}\n"
+    /* Note: #FFFF90 */
+    "\\definecolor{openvas_user_note}{rgb}{1.0,1.0,0.5625}\n"
+    /* Override: #FFFF90 */
+    "\\definecolor{openvas_user_override}{rgb}{1.0,1.0,0.5625}\n"
+    /* Medium: #F99F31 */
+    "\\definecolor{openvas_warning}{rgb}{0.9764,0.6235,0.1922}\n"
+    "\\hypersetup{colorlinks=true,linkcolor=linkblue,urlcolor=blue,bookmarks=true,bookmarksopen=true}\n"
+    "\\usepackage[all]{hypcap}\n"
+    "\n"
+    "%\\geometry{verbose,a4paper,tmargin=24mm,bottom=24mm}\n"
+    "\\geometry{verbose,a4paper}\n"
+    "\\setlength{\\parskip}{\\smallskipamount}\n"
+    "\\setlength{\\parindent}{0pt}\n"
+    "\n"
+    "\\title{Scan Report}\n"
+    "\\pagestyle{headings}\n"
+    "\\pagenumbering{arabic}\n"
+    "\n"
+    "\\begin{document}\n"
+    "\n"
+    "\\maketitle\n"
+    "\n"
+    "\\renewcommand{\\abstractname}{Summary}\n";
+
+/**
+ * @brief Header for latex report.
+ */
+const char* latex_footer
+  = "\n"
+    "\\begin{center}\n"
+    "\\medskip\n"
+    "\\rule{\\textwidth}{0.1pt}\n"
+    "\n"
+    "This file was automatically generated.\n"
+    "\\end{center}\n"
+    "\n"
+    "\\end{document}\n";
+
+/**
+ * @brief Print LaTeX for notes on a report to a file.
+ *
+ * @param[in]  out      Destination.
+ * @param[in]  results  Result iterator.
+ * @param[in]  task     Task associated with report containing results.
+ */
+static void
+print_report_notes_latex (FILE *out, iterator_t *results, task_t task)
+{
+  iterator_t notes;
+
+  init_note_iterator (&notes,
+                      0,
+                      0,
+                      result_iterator_result (results),
+                      task,
+                      0, /* Most recent first. */
+                      "creation_time");
+  while (next (&notes))
+    {
+      time_t mod_time = note_iterator_modification_time (&notes);
+      fprintf (out,
+               "\\hline\n"
+               "\\rowcolor{openvas_user_note}{\\textbf{Note}}\\\\\n");
+      latex_print_verbatim_text (out, note_iterator_text (&notes),
+                                 "openvas_user_note");
+      fprintf (out,
+               "\\rowcolor{openvas_user_note}{}\\\\\n"
+               "\\rowcolor{openvas_user_note}{Last modified: %s}\\\\\n",
+               ctime_strip_newline (&mod_time));
+    }
+  cleanup_iterator (&notes);
+}
+
+/**
+ * @brief Print LaTeX for overrides on a report to a file.
+ *
+ * @param[in]  out      Destination.
+ * @param[in]  results  Result iterator.
+ * @param[in]  task     Task associated with report containing results.
+ */
+static void
+print_report_overrides_latex (FILE *out, iterator_t *results, task_t task)
+{
+  iterator_t overrides;
+
+  init_override_iterator (&overrides,
+                          0,
+                          0,
+                          result_iterator_result (results),
+                          task,
+                          0, /* Most recent first. */
+                          "creation_time");
+  while (next (&overrides))
+    {
+      time_t mod_time = override_iterator_modification_time (&overrides);
+      fprintf (out,
+               "\\hline\n"
+               "\\rowcolor{openvas_user_override}{\\textbf{Override to %s}}\\\\\n",
+               override_iterator_new_threat (&overrides));
+      latex_print_verbatim_text (out, override_iterator_text (&overrides),
+                                 "openvas_user_override");
+      fprintf (out,
+               "\\rowcolor{openvas_user_override}{}\\\\\n"
+               "\\rowcolor{openvas_user_override}{Last modified: %s}\\\\\n",
+               ctime_strip_newline (&mod_time));
+    }
+  cleanup_iterator (&overrides);
+}
+
+/**
+ * @brief Test whether a string equal to a given string exists in an array.
+ *
+ * @param[in]  array   Array of gchar* pointers.
+ * @param[in]  string  String.
+ *
+ * @return 1 if a string equal to \arg string exists in \arg array, else 0.
+ */
+static int
+member (GPtrArray *array, const char *string)
+{
+  const gchar *item;
+  int index = 0;
+  while ((item = (gchar*) g_ptr_array_index (array, index++)))
+    if (strcmp (item, string) == 0) return 1;
+  return 0;
+}
+
+/**
+ * @brief Print LaTeX for a report to a file.
+ *
+ * @param[in]  report      The report.
+ * @param[in]  task        Task associated with report.
+ * @param[in]  latex_file  File name.
+ * @param[in]  latex_file_2  File name (second half of report).
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "type".
+ * @param[in]  result_hosts_only  Whether to show only hosts with results.
+ * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
+ *                                results if NULL.
+ *
+ * @return 0 on success, else -1 with errno set.
+ */
+static int
+print_report_latex (report_t report, task_t task, gchar* latex_file,
+                    gchar* latex_file_2,
+                    int ascending, const char* sort_field,
+                    int result_hosts_only, const char* min_cvss_base)
+{
+  FILE *out, *out2;
+  iterator_t results, hosts;
+  int num_hosts = 0, total_holes = 0, total_notes = 0, total_warnings = 0;
+  int total_false_positives = 0, hosts_host_result_count;
+  char *start_time, *end_time;
+  const char *host, *hosts_host;
+  gchar *last_port;
+  array_t *overview_hosts;
+
+  /**
+   * @todo Also, this code produces empty tables (probably because of the
+   *       'if (last_port == )' code).
+   * @todo Escape all text that should appear as text in latex.
+   */
+
+  out = fopen (latex_file, "w");
+
+  if (out == NULL)
+    {
+      g_warning ("%s: fopen failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  /* Print Header. */
+
+  fputs (latex_header, out);
+
+  /* Print Abstract. */
+
+  start_time = scan_start_time (report);
+  end_time = scan_end_time (report);
+  fprintf (out,
+           "\\begin{abstract}\n"
+           "This document reports on the results of an automatic security scan.\n"
+           "The scan started at %s and %s%s.  The\n"
+           "report first summarises the results found.  Then, for each host,\n"
+           "the report describes every issue found.  Please consider the\n"
+           "advice given in each description, in order to rectify the issue.\n"
+           "\\end{abstract}\n",
+           start_time,
+           (strlen (end_time) > 0
+             ? "ended at "
+             : "was still running when the report was created"),
+           end_time);
+  free (start_time);
+  free (end_time);
+
+  /* Print TOC. */
+
+  fputs ("\\tableofcontents\n", out);
+  fputs ("\\newpage\n", out);
+
+  /* Print first section, Overview. */
+
+  fprintf (out, "\\section{Result Overview}\n\n");
+  fprintf (out, "\\begin{longtable}{|l|l|l|l|l|l|}\n");
+  fprintf (out, "\\hline\n"
+                "\\rowcolor{openvas_report}"
+                "Host&Most Severe Result(s)&High&Medium&Low&False Positives\\\\\n"
+                "\\hline\n"
+                "\\endfirsthead\n"
+                "\\multicolumn{6}{l}{\\hfill\\ldots continued from previous page \\ldots}\\\\\n"
+                "\\hline\n"
+                "\\rowcolor{openvas_report}"
+                "Host&Most Severe Result(s)&High&Medium&Low&False Positives\\\\\n"
+                "\\endhead\n"
+                "\\hline\n"
+                "\\multicolumn{6}{l}{\\ldots continues on next page \\ldots}\\\\\n"
+                "\\endfoot\n"
+                "\\hline\n"
+                "\\endlastfoot\n");
+
+  /* Host list is only known after results, so print rest to second file. */
+
+  out2 = fopen (latex_file_2, "w");
+
+  if (out2 == NULL)
+    {
+      fclose (out);
+      g_warning ("%s: fopen 2 failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  if (get_reports_data->apply_overrides)
+    fputs ("Overrides are on.  When a result has an override, this report"
+           " uses the threat of the override.\\\\\n",
+           out2);
+  else
+    fputs ("Overrides are off.  Even when a result has an override, this report"
+           " uses the actual threat of the result.\\\\\n",
+           out2);
+
+  const char *levels = get_reports_data->levels ? get_reports_data->levels
+                                               : "hmlgd";
+  if (get_reports_data->search_phrase || strcmp (levels, "hmlgd"))
+    {
+      fputs ("This report might not show details of all issues that were"
+             " found.\\\\\n",
+             out2);
+      if (result_hosts_only)
+        fputs ("It only lists hosts that produced issues.\\\\\n", out2);
+      if (get_reports_data->search_phrase
+          && strcmp (get_reports_data->search_phrase, ""))
+        fprintf (out2,
+                 "It shows issues that contain the search phrase \"%s\".\\\\\n",
+                 get_reports_data->search_phrase);
+      if (!strchr (levels, 'h'))
+        {
+          fputs ("Issues with the threat level ", out2);
+          fputs ("\"High\"", out2);
+          fputs (" are not shown.\\\\\n", out2);
+        }
+      if (!strchr (levels, 'm'))
+        {
+          fputs ("Issues with the threat level ", out2);
+          fputs ("\"Medium\"", out2);
+          fputs (" are not shown.\\\\\n", out2);
+        }
+      if (!strchr (levels, 'l'))
+        {
+          fputs ("Issues with the threat level ", out2);
+          fputs ("\"Low\"", out2);
+          fputs (" are not shown.\\\\\n", out2);
+        }
+      if (!strchr (levels, 'g'))
+        {
+          fputs ("Issues with the threat level ", out2);
+          fputs ("\"Log\"", out2);
+          fputs (" are not shown.\\\\\n", out2);
+        }
+      if (!strchr (levels, 'd'))
+        {
+          fputs ("Issues with the threat level ", out2);
+          fputs ("\"Debug\"", out2);
+          fputs (" are not shown.\\\\\n", out2);
+        }
+      if (!strchr (levels, 'f'))
+        {
+          fputs ("Issues with the threat level ", out2);
+          fputs ("\"False Positive\"", out2);
+          fputs (" are not shown.\\\\\n", out2);
+        }
+    }
+
+  /* Print second section, "Results per Host". */
+
+  fprintf (out2, "%s\n\n", "\\section{Results per Host}");
+
+  /* Print a subsection for each host. */
+
+  init_host_iterator (&hosts, report, NULL);
+  if (!next (&hosts))
+    {
+      fclose (out);
+      fclose (out2);
+      g_warning ("%s: empty hosts list\n", __FUNCTION__);
+      cleanup_iterator (&hosts);
+      return -1;
+    }
+  hosts_host = host_iterator_host (&hosts);
+  hosts_host_result_count = 0;
+  last_port = NULL;
+  if (result_hosts_only)
+    overview_hosts = make_array ();
+  else
+    /* Quiet erroneous compiler warning. */
+    overview_hosts = NULL;
+  init_result_iterator (&results, report, 0, NULL,
+                        get_reports_data->first_result,
+                        get_reports_data->max_results,
+                        ascending,
+                        sort_field,
+                        get_reports_data->levels,
+                        get_reports_data->search_phrase,
+                        min_cvss_base,
+                        get_reports_data->apply_overrides);
+  while (next (&results))
+    {
+      host = result_iterator_host (&results);
+      gchar *last_hosts_host = NULL;
+
+      while (strcmp (host, hosts_host))
+        {
+          if (last_port && (last_hosts_host == NULL))
+            {
+              g_free (last_port);
+              fprintf (out2,
+                       "\\end{longtable}\n"
+                       "\\begin{footnotesize}"
+                       "\\hyperref[host:%s]{[ return to %s ]}"
+                       "\\end{footnotesize}\n",
+                       hosts_host,
+                       hosts_host);
+            }
+
+          if (result_hosts_only)
+            {
+              if (hosts_host_result_count)
+                array_add (overview_hosts, g_strdup (hosts_host));
+            }
+          else if (last_hosts_host)
+            {
+              fprintf (out2,
+                       "\\subsection{%s}\n"
+                       "\\label{host:%s}\n",
+                       last_hosts_host,
+                       last_hosts_host);
+              g_free (last_hosts_host);
+              last_hosts_host = g_strdup (hosts_host);
+            }
+
+          if (!next (&hosts))
+            {
+              g_free (last_hosts_host);
+              g_warning ("%s: too few hosts\n", __FUNCTION__);
+              if (result_hosts_only)
+                array_free (overview_hosts);
+              cleanup_iterator (&results);
+              cleanup_iterator (&hosts);
+              fclose (out);
+              fclose (out2);
+              array_free (overview_hosts);
+              return -1;
+            }
+          hosts_host = host_iterator_host (&hosts);
+          hosts_host_result_count = 0;
+          last_port = NULL;
+        }
+      g_free (last_hosts_host);
+
+      if (last_port == NULL)
+        {
+          /* Print the times. */
+
+          fprintf (out2,
+                   "\\subsection{%s}\n"
+                   "\\label{host:%s}\n"
+                   "\n"
+                   "\\begin{tabular}{ll}\n"
+                   "Host scan start&%s\\\\\n"
+                   "Host scan end&%s\\\\\n"
+                   "\\end{tabular}\n\n",
+                   host,
+                   host,
+                   host_iterator_start_time (&hosts),
+                   ((host_iterator_end_time (&hosts)
+                     && strlen (host_iterator_end_time (&hosts)))
+                     ? host_iterator_end_time (&hosts)
+                     : ""));
+        }
+
+      hosts_host_result_count++;
+
+#if 0
+      fprintf (out2,
+               "\\end{longtable}\n"
+               "\n"
+               "%%\\subsection*{Security Issues and Fixes -- %s}\n\n",
+               host_iterator_host (&hosts));
+#endif
+
+      /* Print the result details. */
+
+      {
+        const char *severity, *original_severity, *cvss_base;
+
+        if (last_port == NULL
+            || strcmp (last_port, result_iterator_port (&results)))
+          {
+            gchar *result_port;
+            if (last_port)
+              {
+                fprintf (out2,
+                         "\\end{longtable}\n"
+                         "\\begin{footnotesize}"
+                         "\\hyperref[host:%s]{[ return to %s ]}\n"
+                         "\\end{footnotesize}\n",
+                         host,
+                         host);
+                g_free (last_port);
+                last_port = NULL;
+              }
+            result_port = latex_escape_text (result_iterator_port (&results));
+            fprintf (out2,
+                     "\\subsubsection{%s}\n"
+                     "\\label{port:%s %s}\n\n"
+                     "\\begin{longtable}{|p{\\textwidth * 1}|}\n",
+                     result_port,
+                     host_iterator_host (&hosts),
+                     result_iterator_port (&results));
+            g_free (result_port);
+          }
+        if (last_port == NULL)
+          last_port = g_strdup (result_iterator_port (&results));
+        severity = result_iterator_type (&results);
+        original_severity = result_iterator_original_type (&results);
+        cvss_base = result_iterator_nvt_cvss_base (&results);
+        if (original_severity && strcmp (original_severity, severity))
+          fprintf (out2,
+                   "\\hline\n"
+                   "\\rowcolor%s{\\color{white}"
+                   "{%s (Overridden from %s)}}\\\\\n",
+                   latex_severity_colour (severity),
+                   latex_severity_heading (severity),
+                   latex_severity_heading (original_severity));
+        else
+          fprintf (out2,
+                   "\\hline\n"
+                   "\\rowcolor%s{\\color{white}{%s%s%s%s}}\\\\\n",
+                   latex_severity_colour (severity),
+                   latex_severity_heading (severity),
+                   cvss_base ? " (CVSS: " : "",
+                   cvss_base ? cvss_base : "",
+                   cvss_base ? ") " : "");
+
+        if (result_iterator_nvt_name (&results))
+          fprintf (out2,
+                   "\\rowcolor%s{\\color{white}{NVT: %s}}\\\\\n",
+                   latex_severity_colour (severity),
+                   /** @todo Memory leak. */
+                   latex_escape_text (result_iterator_nvt_name (&results)));
+
+        fprintf (out2,
+                 "\\hline\n"
+                 "\\endfirsthead\n"
+                 "\\hfill\\ldots continued from previous page \\ldots \\\\\n"
+                 "\\hline\n"
+                 "\\endhead\n"
+                 "\\hline\n"
+                 "\\ldots continues on next page \\ldots \\\\\n"
+                 "\\endfoot\n"
+                 "\\hline\n"
+                 "\\endlastfoot\n");
+
+        latex_print_verbatim_text (out2,
+                                   result_iterator_descr (&results),
+                                   NULL);
+        fprintf (out2,
+                 "\\\\\n"
+                 "OID of test routine: %s\\\\\n",
+                 result_iterator_nvt_oid (&results));
+
+        if (get_reports_data->notes)
+          print_report_notes_latex (out2, &results, task);
+
+        if (get_reports_data->overrides)
+          print_report_overrides_latex (out2, &results, task);
+
+        fprintf (out2,
+                 "\\end{longtable}\n"
+                 "\n"
+                 "\\begin{longtable}{|p{\\textwidth * 1}|}\n");
+      }
+    }
+
+  if (host && result_hosts_only)
+    {
+      /* Add the final host. */
+      if (hosts_host_result_count)
+        array_add (overview_hosts, g_strdup (host));
+    }
+
+  if (last_port)
+    {
+      fprintf (out2,
+               "\\end{longtable}\n"
+               "\\begin{footnotesize}"
+               "\\hyperref[host:%s]{[ return to %s ]}\n"
+               "\\end{footnotesize}\n",
+               host,
+               host);
+      g_free (last_port);
+    }
+
+  cleanup_iterator (&results);
+  cleanup_iterator (&hosts);
+
+  /* Close off. */
+
+  fputs (latex_footer, out2);
+
+  if (fclose (out2))
+    {
+      fclose (out);
+      g_warning ("%s: fclose 2 failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      array_free (overview_hosts);
+      return -1;
+    }
+
+  /* In Overview, print the list of hosts. */
+
+  if (result_hosts_only)
+    array_terminate (overview_hosts);
+
+  init_host_iterator (&hosts, report, NULL);
+  while (next (&hosts))
+    {
+      int holes, warnings, notes, false_positives;
+
+      const char *host = host_iterator_host (&hosts);
+
+      if (result_hosts_only
+          && (member (overview_hosts, host) == 0))
+        continue;
+
+      report_counts_id (report, NULL, &holes, &notes, NULL, &warnings,
+                        &false_positives, get_reports_data->apply_overrides,
+                        host);
+
+      total_holes += holes;
+      total_warnings += warnings;
+      total_notes += notes;
+      total_false_positives += false_positives;
+
+      num_hosts++;
+      /* RATS: ignore, argument 2 is a constant string. */
+      fprintf (out,
+               "\\hline\n"
+               "\\hyperref[host:%s]{%s}&%s&%i&%i&%i&%i\\\\\n",
+               host,
+               host,
+               ((holes > 1) ? "Severity: High"
+                : ((holes == 1) ? "Severity: High"
+                   : ((warnings > 1) ? "Severity: Medium"
+                      : ((warnings == 1) ? "Severity: Medium"
+                         : ((notes > 1) ? "Severity: Low"
+                            : ((notes == 1) ? "Severity: Low"
+                               : ((false_positives > 1)
+                                  ? "Severity: False Positive"
+                                  : ""))))))),
+               holes,
+               warnings,
+               notes,
+               false_positives);
+    }
+  cleanup_iterator (&hosts);
+
+  if (result_hosts_only)
+    array_free (overview_hosts);
+
+  /* RATS: ignore, argument 2 is a constant string. */
+  fprintf (out,
+           "\\hline\n"
+           "Total: %i&&%i&%i&%i&%i\\\\\n"
+           "\\hline\n"
+           "\\end{longtable}\n"
+           "\n",
+           num_hosts,
+           total_holes,
+           total_warnings,
+           total_notes,
+           total_false_positives);
+
+  if (fclose (out))
+    {
+      g_warning ("%s: fclose failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+  return 0;
 }
 
 /**
@@ -7352,7 +7420,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
     }
 }
 
-/* External for manage.c. */
 /**
  * @brief Buffer XML for the NVT preference of a config.
  *
@@ -7360,7 +7427,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
  * @param[in]  prefs   NVT preference iterator.
  * @param[in]  config  Config.
  */
-void
+static void
 buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
                               config_t config)
 {
@@ -7416,7 +7483,6 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
   free (oid);
 }
 
-/** @todo Exported for manage_sql.c. */
 /**
  * @brief Buffer XML for some results.
  *
@@ -7430,7 +7496,7 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
  * @param[in]  include_overrides          Whether to include overrides.
  * @param[in]  include_overrides_details  Whether to include details of overrides.
  */
-void
+static void
 buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int include_notes, int include_notes_details,
                     int include_overrides, int include_overrides_details)
@@ -7440,8 +7506,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *name = result_iterator_nvt_name (results);
   const char *cvss_base = result_iterator_nvt_cvss_base (results);
   const char *risk_factor = result_iterator_nvt_risk_factor (results);
-  const char *cve = result_iterator_nvt_cve (results);
-  const char *bid = result_iterator_nvt_bid (results);
   char *uuid;
 
   result_uuid (result_iterator_result (results), &uuid);
@@ -7456,8 +7520,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     "<name>%s</name>"
     "<cvss_base>%s</cvss_base>"
     "<risk_factor>%s</risk_factor>"
-    "<cve>%s</cve>"
-    "<bid>%s</bid>"
     "</nvt>"
     "<threat>%s</threat>"
     "<description>%s</description>",
@@ -7469,15 +7531,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     name ? name : "",
     cvss_base ? cvss_base : "",
     risk_factor ? risk_factor : "",
-    cve ? cve : "",
-    bid ? bid : "",
-    manage_result_type_threat (result_iterator_type (results)),
+    result_type_threat (result_iterator_type (results)),
     descr ? nl_descr : "");
 
   if (include_overrides)
     buffer_xml_append_printf (buffer,
                               "<original_threat>%s</original_threat>",
-                              manage_result_type_threat
+                              result_type_threat
                                (result_iterator_original_type (results)));
 
   free (uuid);
@@ -7640,7 +7700,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_AUTHENTICATE:
         switch (authenticate (&current_credentials))
           {
-            case 0:   /* Authentication succeeded. */
+            // Authentication succeeded.
+            case 0:
               if (load_tasks ())
                 {
                   g_warning ("%s: failed to load tasks\n", __FUNCTION__);
@@ -7656,12 +7717,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   set_client_state (CLIENT_AUTHENTIC);
                 }
               break;
-            case 1:   /* Authentication failed. */
+            // Authentication failed.
+            case 1:
               free_credentials (&current_credentials);
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_AUTH_FAILED ("authenticate"));
               set_client_state (CLIENT_TOP);
               break;
-            case -1:  /* Error while authenticating. */
+            // Error while authenticating.
+            case -1:
             default:
               free_credentials (&current_credentials);
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("authenticate"));
@@ -7858,7 +7921,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
                 else if (g_hash_table_find (scanner.plugins_dependencies,
                                             send_dependency,
-                                            data))
+                                            NULL))
                   {
                     error_send_to_client (error);
                     return;
@@ -8405,7 +8468,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
               }
-            else switch (manage_delete_report (report))
+            else switch (delete_report (report))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_report"));
@@ -8431,54 +8494,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
            (XML_ERROR_SYNTAX ("delete_report",
                               "DELETE_REPORT requires a report_id attribute"));
         delete_report_data_reset (delete_report_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_REPORT_FORMAT:
-        assert (strcasecmp ("DELETE_REPORT_FORMAT", element_name) == 0);
-        if (delete_report_format_data->report_format_id)
-          {
-            report_format_t report_format;
-
-            if (find_report_format (delete_report_format_data->report_format_id,
-                                    &report_format))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_report_format"));
-            else if (report_format == 0)
-              {
-                if (send_find_error_to_client
-                     ("delete_report_format",
-                      "report format",
-                      delete_report_format_data->report_format_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (delete_report_format (report_format))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_report_format"));
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("delete_report_format",
-                                      "Attempt to delete a hidden report"
-                                      " format"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("delete_report_format"));
-                  break;
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_report_format",
-                              "DELETE_REPORT_FORMAT requires a report_format_id"
-                              " attribute"));
-        delete_report_format_data_reset (delete_report_format_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -8548,8 +8563,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
 
         report_t request_report = 0, report;
-        report_format_t report_format;
-        iterator_t results;
+        iterator_t results, hosts;
+        GString *nbe;
+        gchar *content;
         float min_cvss_base;
         iterator_t reports;
 
@@ -8558,34 +8574,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             get_reports_data_reset (get_reports_data);
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if (get_reports_data->format_id == NULL)
-          get_reports_data->format_id
-           = g_strdup ("d5da9f67-8551-4e51-807b-b6a873d70e34");
-
-        if (find_report_format (get_reports_data->format_id, &report_format))
-          {
-            get_reports_data_reset (get_reports_data);
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
-        if (report_format == 0)
-          {
-            if (send_find_error_to_client ("get_reports",
-                                           "report format",
-                                           get_reports_data->format_id,
-                                           write_to_client,
-                                           write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            get_reports_data_reset (get_reports_data);
             set_client_state (CLIENT_AUTHENTIC);
             break;
           }
@@ -8622,235 +8610,1183 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        if (report_format_active (report_format) == 0)
-          {
-            get_reports_data_reset (get_reports_data);
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_reports",
-                                "GET_REPORTS report format must be active"));
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
-
         SEND_TO_CLIENT_OR_FAIL
          ("<get_reports_response"
           " status=\"" STATUS_OK "\""
           " status_text=\"" STATUS_OK_TEXT "\">");
         init_report_iterator (&reports, 0, request_report);
         while (next_report (&reports, &report))
-          {
-            gchar *extension, *content_type;
+          if (get_reports_data->format == NULL
+              || strcasecmp (get_reports_data->format, "xml") == 0)
+            {
+              task_t task;
+              char *tsk_uuid = NULL, *start_time, *end_time;
+              int result_count, filtered_result_count, run_status;
+              const char *levels;
+              array_t *result_hosts;
 
-            content_type = report_format_content_type (report_format);
-            extension = report_format_extension (report_format);
+              levels = get_reports_data->levels
+                        ? get_reports_data->levels : "hmlgd";
 
-            SENDF_TO_CLIENT_OR_FAIL
-             ("<report"
-              " id=\"%s\""
-              " format_id=\"%s\""
-              " extension=\"%s\""
-              " content_type=\"%s\">",
-              report_iterator_uuid (&reports),
-              get_reports_data->format_id,
-              extension,
-              content_type);
+              if (report_task (report, &task))
+                {
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
+              else if (task && task_uuid (task, &tsk_uuid))
+                {
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
 
-            g_free (extension);
-            g_free (content_type);
+              report_scan_result_count (report, NULL, NULL, NULL,
+                                        get_reports_data->apply_overrides,
+                                        &result_count);
+              report_scan_result_count (report,
+                                        levels,
+                                        get_reports_data->search_phrase,
+                                        get_reports_data->min_cvss_base,
+                                        get_reports_data->apply_overrides,
+                                        &filtered_result_count);
+              report_scan_run_status (report, &run_status);
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<report id=\"%s\">"
+                "<sort><field>%s<order>%s</order></field></sort>"
+                "<filters>"
+                "%s"
+                "<phrase>%s</phrase>"
+                "<notes>%i</notes>"
+                "<overrides>%i</overrides>"
+                "<apply_overrides>%i</apply_overrides>"
+                "<result_hosts_only>%i</result_hosts_only>"
+                "<min_cvss_base>%s</min_cvss_base>",
+                report_iterator_uuid (&reports),
+                get_reports_data->sort_field ? get_reports_data->sort_field
+                                            : "type",
+                get_reports_data->sort_order ? "ascending" : "descending",
+                levels,
+                get_reports_data->search_phrase
+                  ? get_reports_data->search_phrase
+                  : "",
+                get_reports_data->notes ? 1 : 0,
+                get_reports_data->overrides ? 1 : 0,
+                get_reports_data->apply_overrides ? 1 : 0,
+                get_reports_data->result_hosts_only ? 1 : 0,
+                get_reports_data->min_cvss_base
+                  ? get_reports_data->min_cvss_base
+                  : "");
 
-            if (manage_send_report (report,
-                                    report_format,
-                                    get_reports_data->sort_order,
-                                    get_reports_data->sort_field,
-                                    get_reports_data->result_hosts_only,
-                                    get_reports_data->min_cvss_base,
-                                    get_reports_data->levels,
-                                    get_reports_data->apply_overrides,
-                                    get_reports_data->search_phrase,
-                                    get_reports_data->notes,
-                                    get_reports_data->notes_details,
-                                    get_reports_data->overrides,
-                                    get_reports_data->overrides_details,
+              if (strchr (levels, 'h'))
+                SEND_TO_CLIENT_OR_FAIL ("<filter>High</filter>");
+              if (strchr (levels, 'm'))
+                SEND_TO_CLIENT_OR_FAIL ("<filter>Medium</filter>");
+              if (strchr (levels, 'l'))
+                SEND_TO_CLIENT_OR_FAIL ("<filter>Low</filter>");
+              if (strchr (levels, 'g'))
+                SEND_TO_CLIENT_OR_FAIL ("<filter>Log</filter>");
+              if (strchr (levels, 'd'))
+                SEND_TO_CLIENT_OR_FAIL ("<filter>Debug</filter>");
+              if (strchr (levels, 'f'))
+                SEND_TO_CLIENT_OR_FAIL ("<filter>False Positive</filter>");
+
+              SENDF_TO_CLIENT_OR_FAIL
+               ("</filters>"
+                "<scan_run_status>%s</scan_run_status>",
+                run_status_name (run_status
+                                  ? run_status
+                                  : TASK_STATUS_INTERNAL_ERROR));
+
+              if (task && tsk_uuid)
+                {
+                  char* tsk_name = task_name (task);
+                  SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "</task>",
+                                           tsk_uuid,
+                                           tsk_name ? tsk_name : "");
+                  free (tsk_name);
+                  free (tsk_uuid);
+                }
+
+              start_time = scan_start_time (report);
+              SENDF_TO_CLIENT_OR_FAIL ("<scan_start>%s</scan_start>",
+                                       start_time);
+              free (start_time);
+
+              /* Port summary. */
+
+              {
+                gchar *last_port;
+                GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
+
+                init_result_iterator
+                 (&results, report, 0, NULL,
+                  get_reports_data->first_result,
+                  get_reports_data->max_results,
+                  /* Sort by port in order requested. */
+                  ((get_reports_data->sort_field
+                    && (strcmp (get_reports_data->sort_field, "port")
+                                == 0))
+                    ? get_reports_data->sort_order
+                    : 1),
+                  "port",
+                  levels,
+                  get_reports_data->search_phrase,
+                  get_reports_data->min_cvss_base,
+                  get_reports_data->apply_overrides);
+
+                /* Buffer the results. */
+
+                last_port = NULL;
+                while (next (&results))
+                  {
+                    const char *port = result_iterator_port (&results);
+
+                    if (last_port == NULL || strcmp (port, last_port))
+                      {
+                        const char *host, *type;
+                        gchar *item;
+                        int type_len, host_len;
+
+                        g_free (last_port);
+                        last_port = g_strdup (port);
+
+                        host = result_iterator_host (&results);
+                        type = result_iterator_type (&results);
+                        type_len = strlen (type);
+                        host_len = strlen (host);
+                        item = g_malloc (type_len
+                                          + host_len
+                                          + strlen (port)
+                                          + 3);
+                        g_array_append_val (ports, item);
+                        strcpy (item, type);
+                        strcpy (item + type_len + 1, host);
+                        strcpy (item + type_len + host_len + 2, port);
+                      }
+
+                  }
+                g_free (last_port);
+
+                /* Ensure the buffered results are sorted. */
+
+                if (get_reports_data->sort_field
+                    && strcmp (get_reports_data->sort_field, "port"))
+                  {
+                    /* Sort by threat. */
+                    if (get_reports_data->sort_order)
+                      g_array_sort (ports, compare_ports_asc);
+                    else
+                      g_array_sort (ports, compare_ports_desc);
+                  }
+
+                /* Send from the buffer. */
+
+                SENDF_TO_CLIENT_OR_FAIL ("<ports"
+                                         " start=\"%i\""
+                                         " max=\"%i\">",
+                                         /* Add 1 for 1 indexing. */
+                                         get_reports_data->first_result + 1,
+                                         get_reports_data->max_results);
+                {
+                  gchar *item;
+                  int index = 0;
+
+                  while ((item = g_array_index (ports, gchar*, index++)))
+                    {
+                      int type_len = strlen (item);
+                      int host_len = strlen (item + type_len + 1);
+                      SENDF_TO_CLIENT_OR_FAIL ("<port>"
+                                               "<host>%s</host>"
+                                               "%s"
+                                               "<threat>%s</threat>"
+                                               "</port>",
+                                               item + type_len + 1,
+                                               item + type_len
+                                                   + host_len
+                                                   + 2,
+                                               result_type_threat (item));
+                      g_free (item);
+                    }
+                  g_array_free (ports, TRUE);
+                }
+                SENDF_TO_CLIENT_OR_FAIL ("</ports>");
+                cleanup_iterator (&results);
+              }
+
+              /* Result counts. */
+
+              {
+                int debugs, holes, infos, logs, warnings, false_positives;
+
+                report_counts_id (report, &debugs, &holes, &infos, &logs,
+                                  &warnings, &false_positives,
+                                  get_reports_data->apply_overrides, NULL);
+
+                SENDF_TO_CLIENT_OR_FAIL ("<result_count>"
+                                         "%i"
+                                         "<filtered>%i</filtered>"
+                                         "<debug>%i</debug>"
+                                         "<hole>%i</hole>"
+                                         "<info>%i</info>"
+                                         "<log>%i</log>"
+                                         "<warning>%i</warning>"
+                                         "<false_positive>%i</false_positive>"
+                                         "</result_count>",
+                                         result_count,
+                                         filtered_result_count,
+                                         debugs,
+                                         holes,
+                                         infos,
+                                         logs,
+                                         warnings,
+                                         false_positives);
+              }
+
+              /* Results. */
+
+              init_result_iterator (&results, report, 0, NULL,
                                     get_reports_data->first_result,
                                     get_reports_data->max_results,
-                                    /* Special case the XML report, bah. */
-                                    strcmp
-                                     (get_reports_data->format_id,
-                                      "d5da9f67-8551-4e51-807b-b6a873d70e34"),
-                                    send_to_client,
-                                    write_to_client,
-                                    write_to_client_data))
-              {
-                cleanup_iterator (&reports);
-                internal_error_send_to_client (error);
-                get_reports_data_reset (get_reports_data);
-                set_client_state (CLIENT_AUTHENTIC);
-                return;
-              }
-            SEND_TO_CLIENT_OR_FAIL ("</report>");
-          }
+                                    get_reports_data->sort_order,
+                                    get_reports_data->sort_field,
+                                    levels,
+                                    get_reports_data->search_phrase,
+                                    get_reports_data->min_cvss_base,
+                                    get_reports_data->apply_overrides);
+
+              SENDF_TO_CLIENT_OR_FAIL ("<results"
+                                       " start=\"%i\""
+                                       " max=\"%i\">",
+                                       /* Add 1 for 1 indexing. */
+                                       get_reports_data->first_result + 1,
+                                       get_reports_data->max_results);
+              if (get_reports_data->result_hosts_only)
+                result_hosts = make_array ();
+              else
+                /* Quiet erroneous compiler warning. */
+                result_hosts = NULL;
+              while (next (&results))
+                {
+                  GString *buffer = g_string_new ("");
+                  buffer_results_xml (buffer,
+                                      &results,
+                                      task,
+                                      get_reports_data->notes,
+                                      get_reports_data->notes_details,
+                                      get_reports_data->overrides,
+                                      get_reports_data->overrides_details);
+                  SEND_TO_CLIENT_OR_FAIL (buffer->str);
+                  g_string_free (buffer, TRUE);
+                  if (get_reports_data->result_hosts_only)
+                    array_add_new_string (result_hosts,
+                                          result_iterator_host (&results));
+                }
+              SEND_TO_CLIENT_OR_FAIL ("</results>");
+              cleanup_iterator (&results);
+
+              if (get_reports_data->result_hosts_only)
+                {
+                  gchar *host;
+                  int index = 0;
+                  array_terminate (result_hosts);
+                  while ((host = g_ptr_array_index (result_hosts, index++)))
+                    {
+                      init_host_iterator (&hosts, report, host);
+                      if (next (&hosts))
+                        {
+                          SENDF_TO_CLIENT_OR_FAIL ("<host_start>"
+                                                   "<host>%s</host>%s"
+                                                   "</host_start>",
+                                                   host,
+                                                   host_iterator_start_time (&hosts));
+                          SENDF_TO_CLIENT_OR_FAIL ("<host_end>"
+                                                   "<host>%s</host>%s"
+                                                   "</host_end>",
+                                                   host,
+                                                   host_iterator_end_time (&hosts)
+                                                    ? host_iterator_end_time (&hosts)
+                                                    : "");
+                        }
+                      cleanup_iterator (&hosts);
+                    }
+                  array_free (result_hosts);
+                }
+              else
+                {
+                  init_host_iterator (&hosts, report, NULL);
+                  while (next (&hosts))
+                    SENDF_TO_CLIENT_OR_FAIL ("<host_start><host>%s</host>%s</host_start>",
+                                             host_iterator_host (&hosts),
+                                             host_iterator_start_time (&hosts));
+                  cleanup_iterator (&hosts);
+
+                  init_host_iterator (&hosts, report, NULL);
+                  while (next (&hosts))
+                    SENDF_TO_CLIENT_OR_FAIL ("<host_end><host>%s</host>%s</host_end>",
+                                             host_iterator_host (&hosts),
+                                             host_iterator_end_time (&hosts)
+                                              ? host_iterator_end_time (&hosts)
+                                              : "");
+                  cleanup_iterator (&hosts);
+                }
+              end_time = scan_end_time (report);
+              SENDF_TO_CLIENT_OR_FAIL ("<scan_end>%s</scan_end>",
+                                       end_time);
+              free (end_time);
+
+              SEND_TO_CLIENT_OR_FAIL ("</report>");
+            }
+          else if (strcasecmp (get_reports_data->format, "nbe") == 0)
+            {
+              char *uuid;
+              char *start_time, *end_time;
+              array_t *result_hosts;
+
+              /** @todo Encode and send in chunks, after each printf. */
+
+              /* Build the NBE in memory. */
+
+              nbe = g_string_new ("");
+              start_time = scan_start_time (report);
+              g_string_append_printf (nbe,
+                                      "timestamps|||scan_start|%s|\n",
+                                      start_time);
+              free (start_time);
+
+              init_result_iterator (&results, report, 0, NULL,
+                                    get_reports_data->first_result,
+                                    get_reports_data->max_results,
+                                    get_reports_data->sort_order,
+                                    get_reports_data->sort_field,
+                                    get_reports_data->levels,
+                                    get_reports_data->search_phrase,
+                                    get_reports_data->min_cvss_base,
+                                    get_reports_data->apply_overrides);
+              if (get_reports_data->result_hosts_only)
+                result_hosts = make_array ();
+              else
+                /* Quiet erroneous compiler warning. */
+                result_hosts = NULL;
+              while (next (&results))
+                {
+                  g_string_append_printf (nbe,
+                                          "results|%s|%s|%s|%s|%s|%s\n",
+                                          result_iterator_subnet (&results),
+                                          result_iterator_host (&results),
+                                          result_iterator_port (&results),
+                                          result_iterator_nvt_oid (&results),
+                                          result_iterator_type (&results),
+                                          result_iterator_descr (&results));
+                  if (get_reports_data->result_hosts_only)
+                    array_add_new_string (result_hosts,
+                                          result_iterator_host (&results));
+                }
+              cleanup_iterator (&results);
+
+              if (get_reports_data->result_hosts_only)
+                {
+                  gchar *host;
+                  int index = 0;
+                  array_terminate (result_hosts);
+                  while ((host = g_ptr_array_index (result_hosts, index++)))
+                    {
+                      init_host_iterator (&hosts, report, host);
+                      if (next (&hosts))
+                        {
+                          g_string_append_printf (nbe,
+                                                  "timestamps||%s|host_start|%s|\n",
+                                                  host,
+                                                  host_iterator_start_time (&hosts));
+                          g_string_append_printf (nbe,
+                                                  "timestamps||%s|host_end|%s|\n",
+                                                  host,
+                                                  host_iterator_end_time (&hosts)
+                                                   ? host_iterator_end_time (&hosts)
+                                                   : "");
+                        }
+                      cleanup_iterator (&hosts);
+                    }
+                  array_free (result_hosts);
+                }
+              else
+                {
+                  init_host_iterator (&hosts, report, NULL);
+                  while (next (&hosts))
+                    g_string_append_printf (nbe,
+                                            "timestamps||%s|host_start|%s|\n",
+                                            host_iterator_host (&hosts),
+                                            host_iterator_start_time (&hosts));
+                  cleanup_iterator (&hosts);
+
+                  init_host_iterator (&hosts, report, NULL);
+                  while (next (&hosts))
+                    g_string_append_printf (nbe,
+                                            "timestamps||%s|host_end|%s|\n",
+                                            host_iterator_host (&hosts),
+                                            host_iterator_end_time (&hosts)
+                                             ? host_iterator_end_time (&hosts)
+                                             : "");
+                  cleanup_iterator (&hosts);
+                }
+
+              end_time = scan_end_time (report);
+              g_string_append_printf (nbe,
+                                      "timestamps|||scan_end|%s|\n",
+                                      end_time);
+              free (end_time);
+
+              /* Encode and send the NBE. */
+
+              uuid = report_uuid (report);
+              SENDF_TO_CLIENT_OR_FAIL ("<report id=\"%s\" format=\"nbe\">",
+                                       uuid);
+              free (uuid);
+              content = g_string_free (nbe, FALSE);
+              if (content && strlen (content))
+                {
+                  gchar *base64_content;
+                  base64_content = g_base64_encode ((guchar*) content,
+                                                    strlen (content));
+                  if (send_to_client (base64_content,
+                                      write_to_client,
+                                      write_to_client_data))
+                    {
+                      g_free (content);
+                      g_free (base64_content);
+                      cleanup_iterator (&reports);
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_free (base64_content);
+                }
+              g_free (content);
+              SEND_TO_CLIENT_OR_FAIL ("</report>");
+            }
+          else if (strcasecmp (get_reports_data->format, "html") == 0)
+            {
+              task_t task;
+              gchar *xml_file;
+              char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+
+              if (report_task (report, &task))
+                {
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
+
+              if (mkdtemp (xml_dir) == NULL)
+                {
+                  g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
+              else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
+                       print_report_xml (report,
+                                         task,
+                                         xml_file,
+                                         get_reports_data->sort_order,
+                                         get_reports_data->sort_field,
+                                         get_reports_data->result_hosts_only,
+                                         get_reports_data->min_cvss_base))
+                {
+                  g_free (xml_file);
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
+              else
+                {
+                  gchar *xsl_file;
+
+                  xsl_file = g_build_filename (OPENVAS_DATA_DIR,
+                                               "openvasmd_report_html.xsl",
+                                               NULL);
+                  if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
+                    {
+                      g_warning ("%s: XSL missing: %s\n",
+                                 __FUNCTION__,
+                                 xsl_file);
+                      g_free (xsl_file);
+                      g_free (xml_file);
+#if 0
+                      /* This is a missing resource, however the resource is
+                        * the responsibility of the manager admin. */
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("get_reports"));
+#endif
+                      cleanup_iterator (&reports);
+                      internal_error_send_to_client (error);
+                      get_reports_data_reset (get_reports_data);
+                      set_client_state (CLIENT_AUTHENTIC);
+                      return;
+                    }
+                  else
+                    {
+                      gchar *html_file, *command;
+                      int ret;
+
+                      html_file = g_strdup_printf ("%s/report.html", xml_dir);
+
+                      command = g_strdup_printf ("xsltproc -v %s %s > %s"
+                                                 " 2> /tmp/openvasmd_html",
+                                                 xsl_file,
+                                                 xml_file,
+                                                 html_file);
+                      g_free (xsl_file);
+                      g_free (xml_file);
+
+                      g_message ("   command: %s\n", command);
+
+                      /* RATS: ignore, command is defined above. */
+                      if (ret = system (command),
+                          /** @todo ret is always -1. */
+                          0 && ((ret) == -1
+                                || WEXITSTATUS (ret)))
+                        {
+                          g_warning ("%s: system failed with ret %i, %i, %s\n",
+                                     __FUNCTION__,
+                                     ret,
+                                     WEXITSTATUS (ret),
+                                     command);
+                          g_free (command);
+                          g_free (html_file);
+                          cleanup_iterator (&reports);
+                          internal_error_send_to_client (error);
+                          get_reports_data_reset (get_reports_data);
+                          set_client_state (CLIENT_AUTHENTIC);
+                          return;
+                        }
+                      else
+                        {
+                          GError *get_error;
+                          gchar *html;
+                          gsize html_len;
+
+                          g_free (command);
+
+                          /* Send the HTML to the client. */
+
+                          get_error = NULL;
+                          g_file_get_contents (html_file,
+                                               &html,
+                                               &html_len,
+                                               &get_error);
+                          g_free (html_file);
+                          if (get_error)
+                            {
+                              g_warning ("%s: Failed to get HTML: %s\n",
+                                         __FUNCTION__,
+                                         get_error->message);
+                              g_error_free (get_error);
+                              cleanup_iterator (&reports);
+                              internal_error_send_to_client (error);
+                              get_reports_data_reset (get_reports_data);
+                              set_client_state (CLIENT_AUTHENTIC);
+                              return;
+                            }
+                          else
+                            {
+                              char *uuid;
+
+                              /* Remove the directory. */
+
+                              file_utils_rmdir_rf (xml_dir);
+
+                              /* Encode and send the HTML. */
+
+                              uuid = report_uuid (report);
+                              SENDF_TO_CLIENT_OR_FAIL
+                               ("<report id=\"%s\" format=\"html\">",
+                                uuid);
+                              free (uuid);
+                              if (html && strlen (html))
+                                {
+                                  gchar *base64;
+                                  base64 = g_base64_encode ((guchar*) html,
+                                                            html_len);
+                                  if (send_to_client (base64,
+                                                      write_to_client,
+                                                      write_to_client_data))
+                                    {
+                                      g_free (html);
+                                      g_free (base64);
+                                      cleanup_iterator (&reports);
+                                      error_send_to_client (error);
+                                      return;
+                                    }
+                                  g_free (base64);
+                                }
+                              g_free (html);
+                              SEND_TO_CLIENT_OR_FAIL
+                               ("</report>");
+                            }
+                        }
+                    }
+                }
+            }
+          else if (strcasecmp (get_reports_data->format, "html-pdf") == 0)
+            {
+              task_t task;
+              gchar *xml_file;
+              char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+
+              if (report_task (report, &task))
+                {
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
+
+              /** @todo This block is very similar to the HTML block above. */
+
+              if (mkdtemp (xml_dir) == NULL)
+                {
+                  g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
+              else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
+                       print_report_xml (report,
+                                         task,
+                                         xml_file,
+                                         get_reports_data->sort_order,
+                                         get_reports_data->sort_field,
+                                         get_reports_data->result_hosts_only,
+                                         get_reports_data->min_cvss_base))
+                {
+                  g_free (xml_file);
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
+              else
+                {
+                  gchar *xsl_file;
+
+                  xsl_file = g_build_filename (OPENVAS_DATA_DIR,
+                                               "openvasmd_report_html.xsl",
+                                               NULL);
+                  if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
+                    {
+                      g_warning ("%s: XSL missing: %s\n",
+                                 __FUNCTION__,
+                                 xsl_file);
+                      g_free (xsl_file);
+                      g_free (xml_file);
+#if 0
+                      /* This is a missing resource, however the resource is
+                        * the responsibility of the manager admin. */
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("get_reports"));
+#endif
+                      cleanup_iterator (&reports);
+                      internal_error_send_to_client (error);
+                      get_reports_data_reset (get_reports_data);
+                      set_client_state (CLIENT_AUTHENTIC);
+                      return;
+                    }
+                  else
+                    {
+                      gchar *pdf_file, *command;
+                      int ret;
+
+                      pdf_file = g_strdup_printf ("%s/report.pdf", xml_dir);
+
+                      command = g_strdup_printf ("xsltproc -v %s %s"
+                                                 " 2> /dev/null"
+                                                 " | tee /tmp/openvasmd_html-pdf"
+                                                 " | htmldoc -t pdf --webpage -f %s -"
+                                                 " 2> /dev/null",
+                                                 xsl_file,
+                                                 xml_file,
+                                                 pdf_file);
+                      g_free (xsl_file);
+                      g_free (xml_file);
+
+                      g_message ("   command: %s\n", command);
+
+                      /* RATS: ignore, command is defined above. */
+                      if (ret = system (command),
+                          /** @todo ret is always -1. */
+                          0 && ((ret) == -1
+                                || WEXITSTATUS (ret)))
+                        {
+                          g_warning ("%s: system failed with ret %i, %i, %s\n",
+                                     __FUNCTION__,
+                                     ret,
+                                     WEXITSTATUS (ret),
+                                     command);
+                          g_free (command);
+                          g_free (pdf_file);
+                          cleanup_iterator (&reports);
+                          internal_error_send_to_client (error);
+                          get_reports_data_reset (get_reports_data);
+                          set_client_state (CLIENT_AUTHENTIC);
+                          return;
+                        }
+                      else
+                        {
+                          GError *get_error;
+                          gchar *pdf;
+                          gsize pdf_len;
+
+                          g_free (command);
+
+                          /* Send the PDF to the client. */
+
+                          get_error = NULL;
+                          g_file_get_contents (pdf_file,
+                                               &pdf,
+                                               &pdf_len,
+                                               &get_error);
+                          g_free (pdf_file);
+                          if (get_error)
+                            {
+                              g_warning ("%s: Failed to get PDF: %s\n",
+                                         __FUNCTION__,
+                                         get_error->message);
+                              g_error_free (get_error);
+                              cleanup_iterator (&reports);
+                              internal_error_send_to_client (error);
+                              get_reports_data_reset (get_reports_data);
+                              set_client_state (CLIENT_AUTHENTIC);
+                              return;
+                            }
+                          else
+                            {
+                              char *uuid;
+
+                              /* Remove the directory. */
+
+                              file_utils_rmdir_rf (xml_dir);
+
+                              /* Encode and send the HTML. */
+
+                              uuid = report_uuid (report);
+                              SENDF_TO_CLIENT_OR_FAIL
+                               ("<report id=\"%s\" format=\"pdf\">",
+                                uuid);
+                              free (uuid);
+                              if (pdf && strlen (pdf))
+                                {
+                                  gchar *base64;
+                                  base64 = g_base64_encode ((guchar*) pdf,
+                                                            pdf_len);
+                                  if (send_to_client (base64,
+                                                      write_to_client,
+                                                      write_to_client_data))
+                                    {
+                                      g_free (pdf);
+                                      g_free (base64);
+                                      cleanup_iterator (&reports);
+                                      error_send_to_client (error);
+                                      return;
+                                    }
+                                  g_free (base64);
+                                }
+                              g_free (pdf);
+                              SEND_TO_CLIENT_OR_FAIL ("</report>");
+                            }
+                        }
+                    }
+                }
+            }
+          else if ((strcasecmp (get_reports_data->format, "pdf") == 0)
+                   || (strcasecmp (get_reports_data->format, "dvi") == 0))
+            {
+              task_t task;
+              gchar *latex_file, *latex_file_2;
+              char latex_dir[] = "/tmp/openvasmd_XXXXXX";
+              int dvi;
+
+              dvi = (strcasecmp (get_reports_data->format, "dvi") == 0);
+
+              if (report_task (report, &task))
+                {
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
+
+              if (mkdtemp (latex_dir) == NULL)
+                {
+                  g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
+              else if (latex_file = g_strdup_printf ("%s/report1.tex",
+                                                     latex_dir),
+                       latex_file_2 = g_strdup_printf ("%s/report2.tex",
+                                                       latex_dir),
+                       print_report_latex (report,
+                                           task,
+                                           latex_file,
+                                           latex_file_2,
+                                           get_reports_data->sort_order,
+                                           get_reports_data->sort_field,
+                                           get_reports_data->result_hosts_only,
+                                           get_reports_data->min_cvss_base))
+                {
+                  g_free (latex_file);
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
+              else
+                {
+                  gchar *pdf_file, *command;
+                  gint pdf_fd;
+                  int ret;
+
+                  pdf_file = g_strdup_printf ("%s/report.%s",
+                                              latex_dir,
+                                              dvi ? "dvi" : "pdf");
+
+                  pdf_fd = open (pdf_file,
+                                 O_RDWR | O_CREAT,
+                                 S_IRUSR | S_IWUSR);
+
+                  if (dvi)
+                    command = g_strdup_printf
+                               ("cat %s %s > %s/report.tex"
+                                " && latex -interaction batchmode -output-directory %s %s/report.tex"
+                                " > /tmp/openvasmd_latex_out 2>&1;"
+                                " latex -interaction batchmode -output-directory %s %s/report.tex"
+                                " > /tmp/openvasmd_latex_out 2>&1",
+                                latex_file,
+                                latex_file_2,
+                                latex_dir,
+                                latex_dir,
+                                latex_dir,
+                                latex_dir,
+                                latex_dir);
+                  else
+                    command = g_strdup_printf
+                               ("cat %s %s > %s/report.tex"
+                                " && pdflatex -interaction batchmode -output-directory %s %s/report.tex"
+                                " > /tmp/openvasmd_pdflatex_out 2>&1;"
+                                " pdflatex -interaction batchmode -output-directory %s %s/report.tex"
+                                " > /tmp/openvasmd_pdflatex_out 2>&1",
+                                latex_file,
+                                latex_file_2,
+                                latex_dir,
+                                latex_dir,
+                                latex_dir,
+                                latex_dir,
+                                latex_dir);
+
+                  g_free (latex_file);
+                  g_free (latex_file_2);
+
+                  g_message ("   command: %s\n", command);
+
+                  if (pdf_fd == -1)
+                    {
+                      g_warning ("%s: open of %s failed\n",
+                                 __FUNCTION__,
+                                 pdf_file);
+                      g_free (pdf_file);
+                      cleanup_iterator (&reports);
+                      internal_error_send_to_client (error);
+                      get_reports_data_reset (get_reports_data);
+                      set_client_state (CLIENT_AUTHENTIC);
+                      return;
+                    }
+                  /* RATS: ignore, command is defined above. */
+                  else if (ret = system (command),
+                           /** @todo ret is always -1. */
+                            0 && ((ret) == -1
+                                  || WEXITSTATUS (ret)))
+                    {
+                      g_warning ("%s: system failed with ret %i, %i, %s\n",
+                                 __FUNCTION__,
+                                 ret,
+                                 WEXITSTATUS (ret),
+                                 command);
+                      close (pdf_fd);
+                      g_free (pdf_file);
+                      g_free (command);
+                      cleanup_iterator (&reports);
+                      internal_error_send_to_client (error);
+                      get_reports_data_reset (get_reports_data);
+                      set_client_state (CLIENT_AUTHENTIC);
+                      return;
+                    }
+                  else
+                    {
+                      GError *get_error;
+                      gchar *pdf;
+                      gsize pdf_len;
+
+                      close (pdf_fd);
+                      g_free (command);
+
+                      /* Send the PDF to the client. */
+
+                      get_error = NULL;
+                      g_file_get_contents (pdf_file,
+                                           &pdf,
+                                           &pdf_len,
+                                           &get_error);
+                      g_free (pdf_file);
+                      if (get_error)
+                        {
+                          g_warning ("%s: Failed to get PDF: %s\n",
+                                     __FUNCTION__,
+                                     get_error->message);
+                          g_error_free (get_error);
+                          cleanup_iterator (&reports);
+                          internal_error_send_to_client (error);
+                          get_reports_data_reset (get_reports_data);
+                          set_client_state (CLIENT_AUTHENTIC);
+                          return;
+                        }
+                      else
+                        {
+                          char *uuid;
+
+                          /* Remove the directory. */
+
+                          file_utils_rmdir_rf (latex_dir);
+
+                          /* Encode and send the PDF data. */
+
+                          uuid = report_uuid (report);
+                          SENDF_TO_CLIENT_OR_FAIL
+                           ("<report id=\"%s\" format=\"pdf\">",
+                            uuid);
+                          free (uuid);
+
+                          if (pdf && strlen (pdf))
+                            {
+                              gchar *base64;
+                              base64 = g_base64_encode ((guchar*) pdf,
+                                                        pdf_len);
+                              if (send_to_client (base64,
+                                                  write_to_client,
+                                                  write_to_client_data))
+                                {
+                                  g_free (pdf);
+                                  g_free (base64);
+                                  cleanup_iterator (&reports);
+                                  error_send_to_client (error);
+                                  return;
+                                }
+                              g_free (base64);
+                            }
+                          g_free (pdf);
+                          SEND_TO_CLIENT_OR_FAIL ("</report>");
+                        }
+                    }
+                }
+            }
+          else
+            {
+              task_t task;
+              gchar *xml_file;
+              char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+
+              /* Try apply a stylesheet from the SYSCONF/manager/ dir. */
+
+              if (report_task (report, &task))
+                {
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
+
+              if (mkdtemp (xml_dir) == NULL)
+                {
+                  g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
+              else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
+                       print_report_xml (report,
+                                         task,
+                                         xml_file,
+                                         get_reports_data->sort_order,
+                                         get_reports_data->sort_field,
+                                         get_reports_data->result_hosts_only,
+                                         get_reports_data->min_cvss_base))
+                {
+                  g_free (xml_file);
+                  cleanup_iterator (&reports);
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                }
+              else
+                {
+                  gchar *xsl_name, *xsl_file;
+
+                  xsl_name = g_strdup_printf ("%s.xsl", get_reports_data->format);
+
+                  xsl_file = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                               "openvasmd",
+                                               "xsl",
+                                               xsl_name,
+                                               NULL);
+
+                  g_free (xsl_name);
+
+                  if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
+                    {
+                      g_free (xsl_file);
+                      g_free (xml_file);
+                      cleanup_iterator (&reports);
+                      internal_error_send_to_client (error);
+                      get_reports_data_reset (get_reports_data);
+                      set_client_state (CLIENT_AUTHENTIC);
+                      return;
+                    }
+                  else
+                    {
+                      gchar *output_file, *command;
+                      int ret;
+
+                      output_file = g_strdup_printf ("%s/report.out", xml_dir);
+
+                      command = g_strdup_printf ("xsltproc -v %s %s > %s"
+                                                 " 2> /tmp/openvasmd_generic",
+                                                 xsl_file,
+                                                 xml_file,
+                                                 output_file);
+                      g_free (xsl_file);
+                      g_free (xml_file);
+
+                      g_message ("   command: %s\n", command);
+
+                      /* RATS: ignore, command is defined above. */
+                      if (ret = system (command),
+                          /** @todo ret is always -1. */
+                          0 && ((ret) == -1
+                                || WEXITSTATUS (ret)))
+                        {
+                          g_warning ("%s: system failed with ret %i, %i, %s\n",
+                                     __FUNCTION__,
+                                     ret,
+                                     WEXITSTATUS (ret),
+                                     command);
+                          g_free (command);
+                          g_free (output_file);
+                          cleanup_iterator (&reports);
+                          internal_error_send_to_client (error);
+                          get_reports_data_reset (get_reports_data);
+                          set_client_state (CLIENT_AUTHENTIC);
+                          return;
+                        }
+                      else
+                        {
+                          GError *get_error;
+                          gchar *output;
+                          gsize output_len;
+
+                          g_free (command);
+
+                          /* Send the output to the client. */
+
+                          get_error = NULL;
+                          g_file_get_contents (output_file,
+                                               &output,
+                                               &output_len,
+                                               &get_error);
+                          g_free (output_file);
+                          if (get_error)
+                            {
+                              g_warning ("%s: Failed to get output: %s\n",
+                                         __FUNCTION__,
+                                         get_error->message);
+                              g_error_free (get_error);
+                              cleanup_iterator (&reports);
+                              internal_error_send_to_client (error);
+                              get_reports_data_reset (get_reports_data);
+                              set_client_state (CLIENT_AUTHENTIC);
+                              return;
+                            }
+                          else
+                            {
+                              char *uuid;
+
+                              /* Remove the directory. */
+
+                              file_utils_rmdir_rf (xml_dir);
+
+                              /* Encode and send the output. */
+
+                              uuid = report_uuid (report);
+                              SENDF_TO_CLIENT_OR_FAIL
+                               ("<report id=\"%s\" format=\"%s\">",
+                                uuid,
+                                get_reports_data->format);
+                              free (uuid);
+
+                              if (output && strlen (output))
+                                {
+                                  gchar *base64;
+                                  base64 = g_base64_encode ((guchar*) output,
+                                                            output_len);
+                                  if (send_to_client (base64,
+                                                      write_to_client,
+                                                      write_to_client_data))
+                                    {
+                                      g_free (output);
+                                      g_free (base64);
+                                      cleanup_iterator (&reports);
+                                      error_send_to_client (error);
+                                      return;
+                                    }
+                                  g_free (base64);
+                                }
+                              g_free (output);
+                              SEND_TO_CLIENT_OR_FAIL
+                               ("</report>");
+                            }
+                        }
+                    }
+                }
+            }
         cleanup_iterator (&reports);
         SEND_TO_CLIENT_OR_FAIL ("</get_reports_response>");
 
         get_reports_data_reset (get_reports_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-
-      case CLIENT_GET_REPORT_FORMATS:
-        {
-          report_format_t report_format = 0;
-
-          assert (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0);
-
-          if (get_report_formats_data->report_format_id
-              && find_report_format (get_report_formats_data->report_format_id,
-                                     &report_format))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report_formats"));
-          else if (get_report_formats_data->report_format_id
-                   && report_format == 0)
-            {
-              if (send_find_error_to_client
-                   ("get_report_formats",
-                    "report_format",
-                    get_report_formats_data->report_format_id,
-                    write_to_client,
-                    write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else
-            {
-              iterator_t report_formats;
-
-              SEND_TO_CLIENT_OR_FAIL ("<get_report_formats_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              init_report_format_iterator (&report_formats,
-                                           report_format,
-                                           get_report_formats_data->sort_order,
-                                           get_report_formats_data->sort_field);
-              while (next (&report_formats))
-                {
-                  time_t trust_time;
-
-                  trust_time = report_format_iterator_trust_time
-                                (&report_formats);
-
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<report_format id=\"%s\">"
-                    "<name>%s</name>"
-                    "<extension>%s</extension>"
-                    "<content_type>%s</content_type>"
-                    "<summary>%s</summary>"
-                    "<description>%s</description>"
-                    "<global>%i</global>",
-                    report_format_iterator_uuid (&report_formats),
-                    report_format_iterator_name (&report_formats),
-                    report_format_iterator_extension (&report_formats),
-                    report_format_iterator_content_type (&report_formats),
-                    report_format_iterator_summary (&report_formats),
-                    report_format_iterator_description (&report_formats),
-                    report_format_iterator_global (&report_formats));
-
-                  if (get_report_formats_data->params
-                      || get_report_formats_data->export)
-                    {
-                      iterator_t params;
-                      init_report_format_param_iterator
-                       (&params,
-                        report_format_iterator_report_format (&report_formats),
-                        1,
-                        NULL);
-                      while (next (&params))
-                        {
-                          long long int min, max;
-                          iterator_t options;
-
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("<param>"
-                            "<name>%s</name>"
-                            "<type>%s",
-                            report_format_param_iterator_name (&params),
-                            report_format_param_iterator_type_name (&params));
-
-                          min = report_format_param_iterator_type_min (&params);
-                          if (min > LLONG_MIN)
-                            SENDF_TO_CLIENT_OR_FAIL ("<min>%lli</min>", min);
-
-                          max = report_format_param_iterator_type_max (&params);
-                          if (max < LLONG_MAX)
-                            SENDF_TO_CLIENT_OR_FAIL ("<max>%lli</max>", max);
-
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("</type>"
-                            "<value>%s</value>"
-                            "<default>%s</default>",
-                            report_format_param_iterator_value (&params),
-                            report_format_param_iterator_fallback (&params));
-
-                          if (report_format_param_iterator_type (&params)
-                              == REPORT_FORMAT_PARAM_TYPE_SELECTION)
-                            {
-                              SEND_TO_CLIENT_OR_FAIL ("<options>");
-                              init_param_option_iterator
-                               (&options,
-                                report_format_param_iterator_param
-                                 (&params),
-                                1,
-                                NULL);
-                              while (next (&options))
-                                SENDF_TO_CLIENT_OR_FAIL
-                                 ("<option>%s</option>",
-                                  param_option_iterator_value (&options));
-                              cleanup_iterator (&options);
-                              SEND_TO_CLIENT_OR_FAIL ("</options>");
-                            }
-
-                          SEND_TO_CLIENT_OR_FAIL ("</param>");
-                        }
-                      cleanup_iterator (&params);
-                    }
-
-                  if (get_report_formats_data->export)
-                    {
-                      file_iterator_t files;
-                      init_report_format_file_iterator
-                       (&files,
-                        report_format_iterator_report_format (&report_formats));
-                      while (next_file (&files))
-                        {
-                          gchar *content = file_iterator_content_64 (&files);
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("<file name=\"%s\">%s</file>",
-                            file_iterator_name (&files),
-                            content);
-                          g_free (content);
-                        }
-                      cleanup_file_iterator (&files);
-
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<signature>%s</signature>",
-                        report_format_iterator_signature (&report_formats));
-                    }
-                  else
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<trust>%s<time>%s</time></trust>"
-                      "<active>%i</active>",
-                      report_format_iterator_trust (&report_formats),
-                      ctime_strip_newline (&trust_time),
-                      report_format_iterator_active (&report_formats));
-
-                  SEND_TO_CLIENT_OR_FAIL ("</report_format>");
-                }
-              cleanup_iterator (&report_formats);
-              SEND_TO_CLIENT_OR_FAIL ("</get_report_formats_response>");
-            }
-          get_report_formats_data_reset (get_report_formats_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
 
       case CLIENT_GET_TARGET_LOCATORS:
         {
@@ -8977,7 +9913,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
                                 " status=\"" STATUS_OK "\""
                                 " status_text=\"" STATUS_OK_TEXT "\">"
-                                "<version>2.0</version>"
+                                "<version>1.0</version>"
                                 "</get_version_response>");
         if (client_state)
           set_client_state (CLIENT_AUTHENTIC);
@@ -9234,56 +10170,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_DELETE_SLAVE:
-        assert (strcasecmp ("DELETE_SLAVE", element_name) == 0);
-        if (delete_slave_data->slave_id)
-          {
-            slave_t slave = 0;
-
-            if (find_slave (delete_slave_data->slave_id, &slave))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_slave"));
-            else if (slave == 0)
-              {
-                if (send_find_error_to_client ("delete_slave",
-                                               "slave",
-                                               delete_slave_data->slave_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (delete_slave (slave))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_slave"));
-                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
-                         "Slave %s has been deleted",
-                         delete_slave_data->slave_id);
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_slave",
-                                                            "Slave is in use"));
-                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
-                         "Slave %s could not be deleted",
-                         delete_slave_data->slave_id);
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_slave"));
-                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
-                         "Slave %s could not be deleted",
-                         delete_slave_data->slave_id);
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_slave",
-                              "DELETE_SLAVE requires a slave_id attribute"));
-        delete_slave_data_reset (delete_slave_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
       case CLIENT_DELETE_TARGET:
         assert (strcasecmp ("DELETE_TARGET", element_name) == 0);
         if (delete_target_data->target_id)
@@ -9395,105 +10281,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_HELP:
-        if (help_data->format == NULL
-            || (strcmp (help_data->format, "text") == 0))
-          {
-            SEND_TO_CLIENT_OR_FAIL ("<help_response"
-                                    " status=\"" STATUS_OK "\""
-                                    " status_text=\"" STATUS_OK_TEXT "\">");
-            SEND_TO_CLIENT_OR_FAIL (help_text);
-            SEND_TO_CLIENT_OR_FAIL ("</help_response>");
-          }
-        else
-          {
-            gchar *extension, *content_type, *output;
-            gsize output_len;
-
-            switch (manage_schema (help_data->format,
-                                   &output,
-                                   &output_len,
-                                   &extension,
-                                   &content_type))
-              {
-                case 0:
-                  break;
-                case 1:
-                  assert (help_data->format);
-                  if (send_find_error_to_client ("help",
-                                                 "schema_format",
-                                                 help_data->format,
-                                                 write_to_client,
-                                                 write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  help_data_reset (help_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  return;
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("help"));
-                  help_data_reset (help_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  return;
-                  break;
-              }
-
-            SENDF_TO_CLIENT_OR_FAIL ("<help_response"
-                                     " status=\"" STATUS_OK "\""
-                                     " status_text=\"" STATUS_OK_TEXT "\">"
-                                     "<schema"
-                                     " format=\"%s\""
-                                     " extension=\"%s\""
-                                     " content_type=\"%s\">",
-                                     help_data->format
-                                      ? help_data->format
-                                      : "XML",
-                                     extension,
-                                     content_type);
-            g_free (extension);
-            g_free (content_type);
-
-            if (output && strlen (output))
-              {
-                /* Encode and send the output. */
-
-                if (help_data->format
-                    && strcasecmp (help_data->format, "XML"))
-                  {
-                    gchar *base64;
-
-                    base64 = g_base64_encode ((guchar*) output, output_len);
-                    if (send_to_client (base64,
-                                        write_to_client,
-                                        write_to_client_data))
-                      {
-                        g_free (output);
-                        g_free (base64);
-                        error_send_to_client (error);
-                        return;
-                      }
-                    g_free (base64);
-                  }
-                else
-                  {
-                    /* Special case the XML schema, bah. */
-                    if (send_to_client (output,
-                                        write_to_client,
-                                        write_to_client_data))
-                      {
-                        g_free (output);
-                        error_send_to_client (error);
-                        return;
-                      }
-                  }
-              }
-            g_free (output);
-            SEND_TO_CLIENT_OR_FAIL ("</schema>"
-                                    "</help_response>");
-          }
-        help_data_reset (help_data);
+        SEND_TO_CLIENT_OR_FAIL ("<help_response"
+                                " status=\"" STATUS_OK "\""
+                                " status_text=\"" STATUS_OK_TEXT "\">");
+        SEND_TO_CLIENT_OR_FAIL (help_text);
+        SEND_TO_CLIENT_OR_FAIL ("</help_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -9605,7 +10397,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 #endif
                   default:
                     SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("modify_config"));
+                     (XML_INTERNAL_ERROR ("modify_report"));
                     g_log ("event config", G_LOG_LEVEL_MESSAGE,
                            "Scan config %s could not be modified",
                            modify_config_data->config_id);
@@ -9631,16 +10423,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
                 break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_config", "Empty radio value"));
-                break;
               case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_config",
+                                    "MODIFY_CONFIG PREFERENCE requires at least"
+                                    " one of the VALUE and NVT elements"));
                 break;
               default:
                 SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("modify_config"));
+                 (XML_INTERNAL_ERROR ("modify_report"));
                 break;
             }
         }
@@ -9768,82 +10559,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
         break;
 
-      case CLIENT_MODIFY_LSC_CREDENTIAL:
-        {
-          lsc_credential_t lsc_credential = 0;
-
-          if (modify_lsc_credential_data->lsc_credential_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_lsc_credential",
-                                "MODIFY_LSC_CREDENTIAL requires a"
-                                " lsc_credential_id attribute"));
-          else if (find_lsc_credential
-                    (modify_lsc_credential_data->lsc_credential_id,
-                     &lsc_credential))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("modify_lsc_credential"));
-          else if (lsc_credential == 0)
-            {
-              if (send_find_error_to_client
-                   ("modify_lsc_credential",
-                    "LSC credential",
-                    modify_lsc_credential_data->lsc_credential_id,
-                    write_to_client,
-                    write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if ((modify_lsc_credential_data->login
-                    || modify_lsc_credential_data->password)
-                   && lsc_credential_packaged (lsc_credential))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_lsc_credential",
-                                "Attempt to change login or password of"
-                                " packaged LSC credential"));
-          else
-            {
-              if (modify_lsc_credential_data->name)
-                set_lsc_credential_name (lsc_credential,
-                                         modify_lsc_credential_data->name);
-              if (modify_lsc_credential_data->comment)
-                set_lsc_credential_comment
-                 (lsc_credential,
-                  modify_lsc_credential_data->comment);
-              if (modify_lsc_credential_data->login)
-                set_lsc_credential_login (lsc_credential,
-                                          modify_lsc_credential_data->login);
-              if (modify_lsc_credential_data->password)
-                set_lsc_credential_password
-                 (lsc_credential,
-                  modify_lsc_credential_data->password);
-              SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_lsc_credential"));
-            }
-        }
-        modify_lsc_credential_data_reset (modify_lsc_credential_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
-        break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
-        break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN:
-        assert (strcasecmp ("LOGIN", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
-        break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD:
-        assert (strcasecmp ("PASSWORD", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
-        break;
-
       case CLIENT_MODIFY_REPORT:
         {
-          report_t report = 0;
+          report_t report;
 
           if (modify_report_data->report_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
@@ -9890,7 +10608,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
             }
-          SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
         }
         modify_report_data_reset (modify_report_data);
         set_client_state (CLIENT_AUTHENTIC);
@@ -9898,111 +10615,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_REPORT_COMMENT:
         assert (strcasecmp ("COMMENT", element_name) == 0);
         set_client_state (CLIENT_MODIFY_REPORT);
-        break;
-
-      case CLIENT_MODIFY_REPORT_FORMAT:
-        {
-          report_format_t report_format = 0;
-
-          if (modify_report_format_data->report_format_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_report_format",
-                                "MODIFY_REPORT_FORMAT requires a"
-                                " report_format_id attribute"));
-          else if (find_report_format
-                    (modify_report_format_data->report_format_id,
-                     &report_format))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("modify_report_format"));
-          else if (report_format == 0)
-            {
-              if (send_find_error_to_client
-                   ("modify_report_format",
-                    "report format",
-                    modify_report_format_data->report_format_id,
-                    write_to_client,
-                    write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else
-            {
-              if (modify_report_format_data->active)
-                set_report_format_active
-                 (report_format,
-                  strcmp (modify_report_format_data->active, "0"));
-              if (modify_report_format_data->name)
-                set_report_format_name (report_format,
-                                        modify_report_format_data->name);
-              if (modify_report_format_data->summary)
-                set_report_format_summary (report_format,
-                                           modify_report_format_data->summary);
-              if (modify_report_format_data->param_name)
-                {
-                  switch (set_report_format_param
-                           (report_format,
-                            modify_report_format_data->param_name,
-                            modify_report_format_data->param_value))
-                    {
-                      case 0:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_OK ("modify_report_format"));
-                        break;
-                      case 1:
-                        if (send_find_error_to_client
-                             ("modify_report_format",
-                              "param",
-                              modify_report_format_data->param_name,
-                              write_to_client,
-                              write_to_client_data))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case 2:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_ERROR_SYNTAX ("modify_report_format",
-                                            "Parameter validation failed"));
-                        break;
-                      default:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("modify_report_format"));
-                        break;
-                    }
-                }
-              else
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report_format"));
-            }
-        }
-        modify_report_format_data_reset (modify_report_format_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_ACTIVE:
-        assert (strcasecmp ("ACTIVE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_SUMMARY:
-        assert (strcasecmp ("SUMMARY", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_PARAM:
-        assert (strcasecmp ("PARAM", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE:
-        assert (strcasecmp ("VALUE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM);
         break;
 
       case CLIENT_MODIFY_TASK:
@@ -10213,41 +10825,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
 
-                if (fail == 0 && modify_task_data->slave_id)
-                  {
-                    slave_t slave = 0;
-
-                    if (strcmp (modify_task_data->slave_id, "0") == 0)
-                      {
-                        set_task_slave (task, 0);
-                        first = 0;
-                      }
-                    else if ((fail = find_slave
-                                      (modify_task_data->slave_id,
-                                       &slave)))
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_task"));
-                    else if (slave == 0)
-                      {
-                        if (send_find_error_to_client
-                             ("modify_task",
-                              "slave",
-                              modify_task_data->slave_id,
-                              write_to_client,
-                              write_to_client_data))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        fail = 1;
-                      }
-                    else
-                      {
-                        set_task_slave (task, slave);
-                        first = 0;
-                      }
-                  }
-
                 if (fail == 0)
                   {
                     assert (first == 0);
@@ -10283,10 +10860,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_SCHEDULE:
         assert (strcasecmp ("SCHEDULE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_TASK);
-        break;
-      case CLIENT_MODIFY_TASK_SLAVE:
-        assert (strcasecmp ("SLAVE", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
         break;
       case CLIENT_MODIFY_TASK_FILE:
@@ -10973,8 +11546,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_lsc_credential",
                                     "Login may only contain alphanumeric"
-                                    " characters if autogenerating"
-                                    " credential"));
+                                    " characters, \\, ., @ and _"));
                 break;
               default:
                 assert (0);
@@ -11009,7 +11581,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           task_t task = 0;
           result_t result = 0;
           note_t new_note;
-          int max;
 
           assert (strcasecmp ("CREATE_NOTE", element_name) == 0);
 
@@ -11021,15 +11592,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
                                 "CREATE_NOTE requires a TEXT entity"));
-          else if ((max = manage_max_hosts (create_note_data->hosts)) == -1)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_note",
-                                "Error in host specification"));
-          else if (max > MANAGE_MAX_HOSTS)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_note",
-                                "Host specification exceeds"
-                                " " G_STRINGIFY (MANAGE_MAX_HOSTS) " hosts"));
           else if (create_note_data->task_id
                    && find_task (create_note_data->task_id, &task))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_note"));
@@ -11126,7 +11688,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           task_t task = 0;
           result_t result = 0;
           override_t new_override;
-          int max;
 
           assert (strcasecmp ("CREATE_OVERRIDE", element_name) == 0);
 
@@ -11138,15 +11699,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "CREATE_OVERRIDE requires a TEXT entity"));
-          else if ((max = manage_max_hosts (create_override_data->hosts)) == -1)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_override",
-                                "Error in host specification"));
-          else if (max > MANAGE_MAX_HOSTS)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_override",
-                                "Host specification exceeds"
-                                " " G_STRINGIFY (MANAGE_MAX_HOSTS) " hosts"));
           else if (create_override_data->new_threat == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
@@ -11246,304 +11798,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_OVERRIDE_THREAT:
         assert (strcasecmp ("THREAT", element_name) == 0);
         set_client_state (CLIENT_CREATE_OVERRIDE);
-        break;
-
-      case CLIENT_CREATE_REPORT_FORMAT:
-        {
-          report_format_t new_report_format;
-
-          assert (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0);
-
-          /* For now the import element, GET_REPORT_FORMATS_RESPONSE, overrides
-           * any other elements. */
-          if (create_report_format_data->import)
-            {
-              array_terminate (create_report_format_data->files);
-              array_terminate (create_report_format_data->params);
-              array_terminate (create_report_format_data->params_options);
-
-              if (create_report_format_data->name == NULL)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_report_format",
-                                    "CREATE_REPORT_FORMAT"
-                                    " GET_REPORT_FORMATS_RESPONSE requires a"
-                                    " NAME element"));
-              else if (strlen (create_report_format_data->name) == 0)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_report_format",
-                                    "CREATE_REPORT_FORMAT"
-                                    " GET_REPORT_FORMATS_RESPONSE NAME must be"
-                                    " at least one character long"));
-              else if (create_report_format_data->id == NULL)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_report_format",
-                                    "CREATE_REPORT_FORMAT"
-                                    " GET_REPORT_FORMATS_RESPONSE requires an"
-                                    " ID attribute"));
-              else if (strlen (create_report_format_data->id) == 0)
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_report_format",
-                                    "CREATE_REPORT_FORMAT"
-                                    " GET_REPORT_FORMATS_RESPONSE ID must be"
-                                    " at least one character long"));
-              else if (!is_uuid (create_report_format_data->id))
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_report_format",
-                                    "CREATE_REPORT_FORMAT"
-                                    " GET_REPORT_FORMATS_RESPONSE ID must be"
-                                    " a UUID"));
-              else switch (create_report_format
-                            (create_report_format_data->id,
-                             create_report_format_data->name,
-                             create_report_format_data->content_type,
-                             create_report_format_data->extension,
-                             create_report_format_data->summary,
-                             create_report_format_data->description,
-                             create_report_format_data->global
-                               && strcmp (create_report_format_data->global,
-                                          "0"),
-                             create_report_format_data->files,
-                             create_report_format_data->params,
-                             create_report_format_data->params_options,
-                             create_report_format_data->signature,
-                             &new_report_format))
-                {
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("create_report_format"));
-                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
-                           "Report format could not be created");
-                    break;
-                  case 1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "Report format exists already"));
-                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
-                           "Report format could not be created");
-                    break;
-                  case 2:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "Every FILE must have a name"
-                                        " attribute"));
-                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
-                           "Report format could not be created");
-                    break;
-                  case 3:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "Parameter value validation failed"));
-                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
-                           "Report format could not be created");
-                    break;
-                  case 4:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "Parameter default validation failed"));
-                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
-                           "Report format could not be created");
-                    break;
-                  case 5:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "CREATE_REPORT_FORMAT PARAM requires a"
-                                        " DEFAULT element"));
-                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
-                           "Report format could not be created");
-                    break;
-                  case 6:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "CREATE_REPORT_FORMAT PARAM MIN or MAX"
-                                        " out of range"));
-                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
-                           "Report format could not be created");
-                    break;
-                  case 7:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "CREATE_REPORT_FORMAT PARAM requires a"
-                                        " TYPE element"));
-                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
-                           "Report format could not be created");
-                    break;
-                  case 8:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "Duplicate PARAM name"));
-                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
-                           "Report format could not be created");
-                    break;
-                  case 9:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_report_format",
-                                        "Bogus PARAM type"));
-                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
-                           "Report format could not be created");
-                    break;
-                  default:
-                    {
-                      char *uuid = report_format_uuid (new_report_format);
-                      SENDF_TO_CLIENT_OR_FAIL
-                       (XML_OK_CREATED_ID ("create_report_format"),
-                        uuid);
-                      g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
-                             "Report format %s has been created", uuid);
-                      free (uuid);
-                      break;
-                    }
-                }
-            }
-          else
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_report_format",
-                                "CREATE_REPORT_FORMAT requires a"
-                                " GET_REPORT_FORMATS element"));
-
-          create_report_format_data_reset (create_report_format_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      case CLIENT_CRF_GRFR:
-        assert (strcasecmp ("GET_REPORT_FORMATS_RESPONSE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT:
-        assert (strcasecmp ("REPORT_FORMAT", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE:
-        assert (strcasecmp ("CONTENT_TYPE", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_DESCRIPTION:
-        assert (strcasecmp ("DESCRIPTION", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_EXTENSION:
-        assert (strcasecmp ("EXTENSION", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_FILE:
-        {
-          gchar *string;
-
-          assert (strcasecmp ("FILE", element_name) == 0);
-          assert (create_report_format_data->files);
-          assert (create_report_format_data->file);
-          assert (create_report_format_data->file_name);
-
-          string = g_strconcat (create_report_format_data->file_name,
-                                "0",
-                                create_report_format_data->file,
-                                NULL);
-          string[strlen (create_report_format_data->file_name)] = '\0';
-          array_add (create_report_format_data->files, string);
-          openvas_free_string_var (&create_report_format_data->file);
-          openvas_free_string_var (&create_report_format_data->file_name);
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-          break;
-        }
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_GLOBAL:
-        assert (strcasecmp ("GLOBAL", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM:
-        {
-          create_report_format_param_t *param;
-
-          assert (strcasecmp ("PARAM", element_name) == 0);
-          assert (create_report_format_data->params);
-          assert (create_report_format_data->param_name);
-          assert (create_report_format_data->param_value);
-
-          param = g_malloc (sizeof (*param));
-          param->fallback
-           = create_report_format_data->param_default
-              ? g_strdup (create_report_format_data->param_default)
-              : NULL;
-          param->name = g_strdup (create_report_format_data->param_name);
-          param->type
-           = create_report_format_data->param_type
-              ? g_strdup (create_report_format_data->param_type)
-              : NULL;
-          param->type_max
-           = create_report_format_data->param_type_max
-              ? g_strdup (create_report_format_data->param_type_max)
-              : NULL;
-          param->type_min
-           = create_report_format_data->param_type_min
-              ? g_strdup (create_report_format_data->param_type_min)
-              : NULL;
-          param->value = g_strdup (create_report_format_data->param_value);
-
-          array_add (create_report_format_data->params, param);
-          openvas_free_string_var (&create_report_format_data->param_default);
-          openvas_free_string_var (&create_report_format_data->param_name);
-          openvas_free_string_var (&create_report_format_data->param_type);
-          openvas_free_string_var (&create_report_format_data->param_type_max);
-          openvas_free_string_var (&create_report_format_data->param_type_min);
-          openvas_free_string_var (&create_report_format_data->param_value);
-
-          array_terminate (create_report_format_data->param_options);
-          array_add (create_report_format_data->params_options,
-                     create_report_format_data->param_options);
-
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-          break;
-        }
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT:
-        assert (strcasecmp ("DEFAULT", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE:
-        assert (strcasecmp ("TYPE", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS:
-        assert (strcasecmp ("OPTIONS", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE:
-        assert (strcasecmp ("VALUE", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE:
-        assert (strcasecmp ("SIGNATURE", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY:
-        assert (strcasecmp ("SUMMARY", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST:
-        assert (strcasecmp ("TRUST", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION:
-        assert (strcasecmp ("OPTION", element_name) == 0);
-        array_add (create_report_format_data->param_options,
-                   create_report_format_data->param_option);
-        create_report_format_data->param_option = NULL;
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS);
-        break;
-
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX:
-        assert (strcasecmp ("MAX", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN:
-        assert (strcasecmp ("MIN", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE);
         break;
 
       case CLIENT_CREATE_SCHEDULE:
@@ -11690,122 +11944,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD);
         break;
 
-      case CLIENT_CREATE_SLAVE:
-        {
-          slave_t new_slave;
-
-          assert (strcasecmp ("CREATE_SLAVE", element_name) == 0);
-
-          if (create_slave_data->host == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE requires a HOST"));
-          else if (strlen (create_slave_data->host) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE HOST must be at"
-                                " least one character long"));
-          else if (create_slave_data->login == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE requires a LOGIN"));
-          else if (strlen (create_slave_data->login) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE LOGIN must be at"
-                                " least one character long"));
-          else if (create_slave_data->name == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE requires a NAME"));
-          else if (strlen (create_slave_data->name) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE NAME must be at"
-                                " least one character long"));
-          else if (create_slave_data->port == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE requires a PORT"));
-          else if (strlen (create_slave_data->port) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_slave",
-                                "CREATE_SLAVE PORT must be at"
-                                " least one character long"));
-          /* Create slave from host string. */
-          else switch (create_slave
-                        (create_slave_data->name,
-                         create_slave_data->comment,
-                         create_slave_data->host,
-                         create_slave_data->port,
-                         create_slave_data->login,
-                         create_slave_data->password,
-                         &new_slave))
-            {
-              case 0:
-                {
-                  char *uuid = slave_uuid (new_slave);
-                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_slave"),
-                                           uuid);
-                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
-                         "Slave %s has been created", uuid);
-                  free (uuid);
-                  break;
-                }
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_slave",
-                                    "Slave exists already"));
-                g_log ("event slave", G_LOG_LEVEL_MESSAGE,
-                       "Slave could not be created");
-                break;
-              default:
-                assert (0);
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_slave"));
-                g_log ("event slave", G_LOG_LEVEL_MESSAGE,
-                       "Slave could not be created");
-                break;
-            }
-
-          create_slave_data_reset (create_slave_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      case CLIENT_CREATE_SLAVE_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SLAVE);
-        break;
-      case CLIENT_CREATE_SLAVE_HOST:
-        assert (strcasecmp ("HOST", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SLAVE);
-        break;
-      case CLIENT_CREATE_SLAVE_LOGIN:
-        assert (strcasecmp ("LOGIN", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SLAVE);
-        break;
-      case CLIENT_CREATE_SLAVE_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SLAVE);
-        break;
-      case CLIENT_CREATE_SLAVE_PASSWORD:
-        assert (strcasecmp ("PASSWORD", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SLAVE);
-        break;
-      case CLIENT_CREATE_SLAVE_PORT:
-        assert (strcasecmp ("PORT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SLAVE);
-        break;
-
       case CLIENT_CREATE_TARGET:
         {
-          lsc_credential_t ssh_lsc_credential = 0, smb_lsc_credential = 0;
+          lsc_credential_t lsc_credential = 0;
           target_t new_target;
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
-          assert (create_target_data->name != NULL);
-          assert (create_target_data->target_locator
-                  || create_target_data->hosts != NULL);
+          assert (&create_target_data->name != NULL);
+          assert (&create_target_data->target_locator
+                  || &create_target_data->hosts != NULL);
 
           if (strlen (create_target_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
@@ -11826,37 +11973,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_target",
                                 " CREATE_TARGET requires either a"
                                 " TARGET_LOCATOR or a host"));
-          else if (create_target_data->ssh_lsc_credential_id
+          else if (create_target_data->lsc_credential_id
                    && find_lsc_credential
-                       (create_target_data->ssh_lsc_credential_id,
-                        &ssh_lsc_credential))
+                       (create_target_data->lsc_credential_id,
+                        &lsc_credential))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
-          else if (create_target_data->ssh_lsc_credential_id
-                   && ssh_lsc_credential == 0)
+          else if (create_target_data->lsc_credential_id && lsc_credential == 0)
             {
               if (send_find_error_to_client
                    ("create_target",
                     "LSC credential",
-                    create_target_data->ssh_lsc_credential_id,
-                    write_to_client,
-                    write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if (create_target_data->smb_lsc_credential_id
-                   && find_lsc_credential
-                       (create_target_data->smb_lsc_credential_id,
-                        &smb_lsc_credential))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
-          else if (create_target_data->smb_lsc_credential_id
-                   && smb_lsc_credential == 0)
-            {
-              if (send_find_error_to_client
-                   ("create_target",
-                    "LSC credential",
-                    create_target_data->smb_lsc_credential_id,
+                    create_target_data->lsc_credential_id,
                     write_to_client,
                     write_to_client_data))
                 {
@@ -11869,9 +11996,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         (create_target_data->name,
                          create_target_data->hosts,
                          create_target_data->comment,
-                         create_target_data->port_range,
-                         ssh_lsc_credential,
-                         smb_lsc_credential,
+                         lsc_credential,
                          create_target_data->target_locator,
                          create_target_data->target_locator_username,
                          create_target_data->target_locator_password,
@@ -11881,29 +12006,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
                                     "Target exists already"));
-                g_log ("event target", G_LOG_LEVEL_MESSAGE,
-                       "Target could not be created");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_target",
-                                    "Error in host specification"));
-                g_log ("event target", G_LOG_LEVEL_MESSAGE,
-                       "Target could not be created");
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_target",
-                                    "Host specification exceeds"
-                                    " " G_STRINGIFY (MANAGE_MAX_HOSTS)
-                                    " hosts"));
-                g_log ("event target", G_LOG_LEVEL_MESSAGE,
-                       "Target could not be created");
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_target",
-                                    "Error in port range"));
                 g_log ("event target", G_LOG_LEVEL_MESSAGE,
                        "Target could not be created");
                 break;
@@ -11942,16 +12044,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
-      case CLIENT_CREATE_TARGET_PORT_RANGE:
-        assert (strcasecmp ("PORT_RANGE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET);
-        break;
-      case CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL:
-        assert (strcasecmp ("SSH_LSC_CREDENTIAL", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET);
-        break;
-      case CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL:
-        assert (strcasecmp ("SMB_LSC_CREDENTIAL", element_name) == 0);
+      case CLIENT_CREATE_TARGET_LSC_CREDENTIAL:
+        assert (strcasecmp ("LSC_CREDENTIAL", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
       case CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD:
@@ -11971,7 +12065,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           config_t config = 0;
           target_t target = 0;
-          slave_t slave = 0;
           char *tsk_uuid, *name, *description;
 
           assert (strcasecmp ("CREATE_TASK", element_name) == 0);
@@ -12077,24 +12170,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
-              /** @todo
-               *
-               * This is a contention hole.  Some other process could remove
-               * the schedule at this point.  The variable "schedule" would
-               * still refer to the removed schedule.
-               *
-               * This happens all over the place.  Anywhere that a libmanage
-               * client gets a reference to a resource, in fact.
-               *
-               * Possibly libmanage should lock the db whenever it hands out a
-               * reference, and the client should call something to release
-               * the lock when it's done.
-               *
-               * In many cases, like this one, the client could pass the UUID
-               * directly to libmanage, instead of getting the reference.  In
-               * this case the client would then need something like
-               * set_task_schedule_uuid.
-               */
               set_task_schedule (create_task_data->task, schedule);
             }
 
@@ -12161,8 +12236,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
-              if (create_target (target_name, hosts, NULL, NULL, 0, 0, NULL,
-                                 NULL, NULL, &target))
+              if (create_target (target_name, hosts, NULL, 0, NULL, NULL,
+                                 NULL, &target))
                 {
                   request_delete_task (&create_task_data->task);
                   g_free (target_name);
@@ -12221,35 +12296,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                              write_to_client,
                                              write_to_client_data))
                 {
-                  /* Out of space. */
-                  error_send_to_client (error);
-                  return;
-                }
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-          else if (create_task_data->slave_id
-                   && find_slave (create_task_data->slave_id, &slave))
-            {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-          else if (create_task_data->slave_id && slave == 0)
-            {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
-              if (send_find_error_to_client ("create_task",
-                                             "target",
-                                             create_task_data->slave_id,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  /* Out of space. */
+                  // Out of space
                   error_send_to_client (error);
                   return;
                 }
@@ -12260,7 +12307,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             {
               set_task_config (create_task_data->task, config);
-              set_task_slave (create_task_data->task, slave);
               set_task_target (create_task_data->task, target);
 
               /* Generate the rcfile in the task. */
@@ -12339,10 +12385,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_TASK_SCHEDULE:
         assert (strcasecmp ("SCHEDULE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TASK);
-        break;
-      case CLIENT_CREATE_TASK_SLAVE:
-        assert (strcasecmp ("SLAVE", element_name) == 0);
         set_client_state (CLIENT_CREATE_TASK);
         break;
 
@@ -12739,7 +12781,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     case 22:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("resume_or_start_task",
-                                          "Task must be in Stopped state"));
+                                          "Task must be in \"Stopped\" state"));
                       g_log ("event task", G_LOG_LEVEL_MESSAGE,
                              "Task %s has failed to start",
                              resume_or_start_task_data->task_id);
@@ -12919,7 +12961,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     case 22:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("resume_stopped_task",
-                                          "Task must be in Stopped state"));
+                                          "Task must be in \"Stopped\" state"));
                       g_log ("event task", G_LOG_LEVEL_MESSAGE,
                              "Task %s has failed to resume",
                              resume_stopped_task_data->task_id);
@@ -13260,26 +13302,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           agent_iterator_howto_use (&agents));
                         break;
                       default:
-                        {
-                          time_t trust_time;
-
-                          trust_time = agent_iterator_trust_time (&agents);
-
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("<agent id=\"%s\">"
-                            "<name>%s</name>"
-                            "<comment>%s</comment>"
-                            "<in_use>0</in_use>"
-                            "<installer>"
-                            "<trust>%s<time>%s</time></trust>"
-                            "</installer>"
-                            "</agent>",
-                            agent_iterator_uuid (&agents),
-                            agent_iterator_name (&agents),
-                            agent_iterator_comment (&agents),
-                            agent_iterator_trust (&agents),
-                            ctime_strip_newline (&trust_time));
-                        }
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<agent id=\"%s\">"
+                          "<name>%s</name>"
+                          "<comment>%s</comment>"
+                          "<in_use>0</in_use>"
+                          "<installer><trust>%s</trust></installer>"
+                          "</agent>",
+                          agent_iterator_uuid (&agents),
+                          agent_iterator_name (&agents),
+                          agent_iterator_comment (&agents),
+                          agent_iterator_trust (&agents));
                         break;
                     }
                 }
@@ -13453,7 +13486,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             max_nvt_count,
                             known_nvt_count);
                         }
-                    }
+                      }
 
                   if (get_configs_data->preferences || get_configs_data->export)
                     {
@@ -13863,175 +13896,60 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
-      case CLIENT_GET_SLAVES:
-        {
-          slave_t slave = 0;
-
-          assert (strcasecmp ("GET_SLAVES", element_name) == 0);
-
-          if (get_slaves_data->slave_id
-              && find_slave (get_slaves_data->slave_id, &slave))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_slaves"));
-          else if (get_slaves_data->slave_id && slave == 0)
-            {
-              if (send_find_error_to_client ("get_slaves",
-                                             "slave",
-                                             get_slaves_data->slave_id,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else
-            {
-              iterator_t slaves;
-
-              SEND_TO_CLIENT_OR_FAIL ("<get_slaves_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              init_slave_iterator (&slaves,
-                                   slave,
-                                   get_slaves_data->sort_order,
-                                   get_slaves_data->sort_field);
-              while (next (&slaves))
-                {
-                  SENDF_TO_CLIENT_OR_FAIL ("<slave id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<comment>%s</comment>"
-                                           "<host>%s</host>"
-                                           "<port>%s</port>"
-                                           "<login>%s</login>"
-                                           "<in_use>%i</in_use>",
-                                           slave_iterator_uuid (&slaves),
-                                           slave_iterator_name (&slaves),
-                                           slave_iterator_comment (&slaves),
-                                           slave_iterator_host (&slaves),
-                                           slave_iterator_port (&slaves),
-                                           slave_iterator_login (&slaves),
-                                           slave_in_use
-                                            (slave_iterator_slave (&slaves)));
-
-                  if (get_slaves_data->tasks)
-                    {
-                      iterator_t tasks;
-
-                      SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-                      init_slave_task_iterator (&tasks,
-                                                slave_iterator_slave
-                                                 (&slaves),
-                                                get_slaves_data->sort_order);
-                      while (next (&tasks))
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<task id=\"%s\">"
-                          "<name>%s</name>"
-                          "</task>",
-                          slave_task_iterator_uuid (&tasks),
-                          slave_task_iterator_name (&tasks));
-                      cleanup_iterator (&tasks);
-                      SEND_TO_CLIENT_OR_FAIL ("</tasks>");
-                    }
-
-                  SEND_TO_CLIENT_OR_FAIL ("</slave>");
-                }
-              cleanup_iterator (&slaves);
-              SEND_TO_CLIENT_OR_FAIL ("</get_slaves_response>");
-            }
-          get_slaves_data_reset (get_slaves_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-
       case CLIENT_GET_SYSTEM_REPORTS:
         {
           assert (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0);
 
           report_type_iterator_t types;
 
-          switch (init_system_report_type_iterator
-                   (&types,
-                    get_system_reports_data->name,
-                    get_system_reports_data->slave_id))
+          if (init_system_report_type_iterator (&types,
+                                                get_system_reports_data->name))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_INTERNAL_ERROR ("get_system_reports"));
+          else
             {
-              case 1:
-                if (send_find_error_to_client ("get_system_reports",
-                                               "system report",
-                                               get_system_reports_data->name,
-                                               write_to_client,
-                                               write_to_client_data))
+              char *report;
+              SEND_TO_CLIENT_OR_FAIL ("<get_system_reports_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              while (next_report_type (&types))
+                if (get_system_reports_data->brief)
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<system_report>"
+                    "<name>%s</name>"
+                    "<title>%s</title>"
+                    "</system_report>",
+                    report_type_iterator_name (&types),
+                    report_type_iterator_title (&types));
+                else if (manage_system_report
+                          (report_type_iterator_name (&types),
+                           get_system_reports_data->duration,
+                           &report))
                   {
-                    error_send_to_client (error);
+                    cleanup_report_type_iterator (&types);
+                    internal_error_send_to_client (error);
                     return;
                   }
-                break;
-              case 2:
-                if (send_find_error_to_client
-                     ("get_system_reports",
-                      "slave",
-                      get_system_reports_data->slave_id,
-                      write_to_client,
-                      write_to_client_data))
+                else if (report)
                   {
-                    error_send_to_client (error);
-                    return;
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<system_report>"
+                      "<name>%s</name>"
+                      "<title>%s</title>"
+                      "<report format=\"png\" duration=\"%s\">"
+                      "%s"
+                      "</report>"
+                      "</system_report>",
+                      report_type_iterator_name (&types),
+                      report_type_iterator_title (&types),
+                      get_system_reports_data->duration
+                       ? get_system_reports_data->duration
+                       : "86400",
+                      report);
+                    free (report);
                   }
-                break;
-              default:
-                assert (0);
-                /*@fallthrough@*/
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("get_system_reports"));
-                break;
-              case 0:
-                {
-                  char *report;
-                  SEND_TO_CLIENT_OR_FAIL ("<get_system_reports_response"
-                                          " status=\"" STATUS_OK "\""
-                                          " status_text=\""
-                                          STATUS_OK_TEXT
-                                          "\">");
-                  while (next_report_type (&types))
-                    if (get_system_reports_data->brief)
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<system_report>"
-                        "<name>%s</name>"
-                        "<title>%s</title>"
-                        "</system_report>",
-                        report_type_iterator_name (&types),
-                        report_type_iterator_title (&types));
-                    else if (manage_system_report
-                              (report_type_iterator_name (&types),
-                               get_system_reports_data->duration,
-                               get_system_reports_data->slave_id,
-                               &report))
-                      {
-                        cleanup_report_type_iterator (&types);
-                        internal_error_send_to_client (error);
-                        return;
-                      }
-                    else if (report)
-                      {
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<system_report>"
-                          "<name>%s</name>"
-                          "<title>%s</title>"
-                          "<report format=\"png\" duration=\"%s\">"
-                          "%s"
-                          "</report>"
-                          "</system_report>",
-                          report_type_iterator_name (&types),
-                          report_type_iterator_title (&types),
-                          get_system_reports_data->duration
-                           ? get_system_reports_data->duration
-                           : "86400",
-                          report);
-                        free (report);
-                      }
-                  cleanup_report_type_iterator (&types);
-                  SEND_TO_CLIENT_OR_FAIL ("</get_system_reports_response>");
-                }
+              cleanup_report_type_iterator (&types);
+              SEND_TO_CLIENT_OR_FAIL ("</get_system_reports_response>");
             }
 
           get_system_reports_data_reset (get_system_reports_data);
@@ -14073,44 +13991,31 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     get_targets_data->sort_field);
               while (next (&targets))
                 {
-                  char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
-                  const char *port_range;
-                  lsc_credential_t ssh_credential, smb_credential;
+                  char *lsc_name, *lsc_uuid;
+                  lsc_credential_t lsc_credential;
 
-                  ssh_credential = target_iterator_ssh_credential (&targets);
-                  smb_credential = target_iterator_smb_credential (&targets);
-                  ssh_lsc_name = lsc_credential_name (ssh_credential);
-                  ssh_lsc_uuid = lsc_credential_uuid (ssh_credential);
-                  smb_lsc_name = lsc_credential_name (smb_credential);
-                  smb_lsc_uuid = lsc_credential_uuid (smb_credential);
-                  port_range = target_iterator_port_range (&targets);
-
+                  lsc_credential = target_iterator_lsc_credential (&targets);
+                  lsc_name = lsc_credential_name (lsc_credential);
+                  lsc_uuid = lsc_credential_uuid (lsc_credential);
                   SENDF_TO_CLIENT_OR_FAIL ("<target id=\"%s\">"
                                            "<name>%s</name>"
                                            "<hosts>%s</hosts>"
                                            "<max_hosts>%i</max_hosts>"
                                            "<comment>%s</comment>"
                                            "<in_use>%i</in_use>"
-                                           "<port_range>%s</port_range>"
-                                           "<ssh_lsc_credential id=\"%s\">"
+                                           "<lsc_credential id=\"%s\">"
                                            "<name>%s</name>"
-                                           "</ssh_lsc_credential>"
-                                           "<smb_lsc_credential id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "</smb_lsc_credential>",
+                                           "</lsc_credential>",
                                            target_iterator_uuid (&targets),
                                            target_iterator_name (&targets),
                                            target_iterator_hosts (&targets),
-                                           manage_max_hosts
+                                           max_hosts
                                             (target_iterator_hosts (&targets)),
                                            target_iterator_comment (&targets),
                                            target_in_use
                                             (target_iterator_target (&targets)),
-                                           port_range ? port_range : "",
-                                           ssh_lsc_uuid ? ssh_lsc_uuid : "",
-                                           ssh_lsc_name ? ssh_lsc_name : "",
-                                           smb_lsc_uuid ? smb_lsc_uuid : "",
-                                           smb_lsc_name ? smb_lsc_name : "");
+                                           lsc_uuid ? lsc_uuid : "",
+                                           lsc_name ? lsc_name : "");
 
                   if (get_targets_data->tasks)
                     {
@@ -14132,10 +14037,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
 
                   SEND_TO_CLIENT_OR_FAIL ("</target>");
-                  free (ssh_lsc_name);
-                  free (ssh_lsc_uuid);
-                  free (smb_lsc_name);
-                  free (smb_lsc_uuid);
+                  free (lsc_name);
                 }
               cleanup_iterator (&targets);
               SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");
@@ -14209,11 +14111,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     int ret, maximum_hosts;
                     gchar *response, *progress_xml;
                     target_t target;
-                    slave_t slave;
                     char *name, *config, *config_uuid;
                     char *escalator, *escalator_uuid;
                     char *task_target_uuid, *task_target_name, *hosts;
-                    char *task_slave_uuid, *task_slave_name;
                     char *task_schedule_uuid, *task_schedule_name, *comment;
                     gchar *first_report_id, *first_report;
                     char* description;
@@ -14226,9 +14126,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     target = task_target (task);
                     hosts = target ? target_hosts (target) : NULL;
-                    maximum_hosts = hosts ? manage_max_hosts (hosts) : 0;
-
-                    slave = task_slave (task);
+                    maximum_hosts = hosts ? max_hosts (hosts) : 0;
 
                     first_report_id = task_first_report_id (task);
                     if (first_report_id)
@@ -14379,12 +14277,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       second_last_report = g_strdup ("");
 
                     running_report = task_current_report (task);
-                    if (running_report
-                        && report_slave_task_uuid (running_report))
-                      progress_xml = g_strdup_printf ("%i",
-                                                      report_slave_progress
-                                                       (running_report));
-                    else if (running_report)
+                    if (running_report)
                       {
                         long total = 0;
                         int num_hosts = 0, total_progress;
@@ -14438,9 +14331,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         tracef ("   total_progress: %i\n", total_progress);
 #endif
 
-                        if (total_progress == 0) total_progress = 1;
-                        else if (total_progress == 100) total_progress = 99;
-
                         g_string_append_printf (string,
                                                 "%i",
                                                 total_progress);
@@ -14478,8 +14368,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     config_uuid = task_config_uuid (task);
                     task_target_uuid = target_uuid (target);
                     task_target_name = target_name (target);
-                    task_slave_uuid = slave_uuid (slave);
-                    task_slave_name = slave_name (slave);
                     schedule = task_schedule (task);
                     if (schedule)
                       {
@@ -14505,12 +14393,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<target id=\"%s\">"
                                  "<name>%s</name>"
                                  "</target>"
-                                 "<slave id=\"%s\">"
-                                 "<name>%s</name>"
-                                 "</slave>"
                                  "<status>%s</status>"
                                  "<progress>%s</progress>"
                                  "%s"
+                                 "<result_count>"
+                                 "<debug>%i</debug>"
+                                 "<hole>%i</hole>"
+                                 "<info>%i</info>"
+                                 "<log>%i</log>"
+                                 "<warning>%i</warning>"
+                                 "<false_positive>%i</false_positive>"
+                                 "</result_count>"
                                  "<report_count>"
                                  "%u<finished>%u</finished>"
                                  "</report_count>"
@@ -14529,11 +14422,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  escalator ? escalator : "",
                                  task_target_uuid ? task_target_uuid : "",
                                  task_target_name ? task_target_name : "",
-                                 task_slave_uuid ? task_slave_uuid : "",
-                                 task_slave_name ? task_slave_name : "",
                                  task_run_status_name (task),
                                  progress_xml,
                                  description64,
+                                 task_debugs_size (task),
+                                 task_holes_size (task),
+                                 task_infos_size (task),
+                                 task_logs_size (task),
+                                 task_warnings_size (task),
+                                 task_false_positive_size (task),
                                  task_report_count (task),
                                  task_finished_report_count (task),
                                  task_trend (task,
@@ -14549,7 +14446,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     free (config);
                     free (escalator);
                     free (task_target_name);
-                    free (task_target_uuid);
                     g_free (progress_xml);
                     g_free (last_report);
                     g_free (second_last_report);
@@ -14562,8 +14458,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (description64);
                     free (task_schedule_uuid);
                     free (task_schedule_name);
-                    free (task_slave_uuid);
-                    free (task_slave_name);
                     if (ret)
                       {
                         cleanup_iterator (&tasks);
@@ -14593,11 +14487,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     char *name = task_name (index);
                     char *comment = task_comment (index);
                     target_t target;
-                    slave_t slave;
                     char *tsk_uuid, *config, *config_uuid;
                     char *escalator, *escalator_uuid;
                     char *task_target_uuid, *task_target_name, *hosts;
-                    char *task_slave_uuid, *task_slave_name;
                     char *task_schedule_uuid, *task_schedule_name;
                     gchar *first_report_id, *first_report;
                     char *description;
@@ -14607,7 +14499,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     int maximum_hosts;
                     schedule_t schedule;
                     time_t next_time;
-                    int debugs, holes, infos, logs, warnings;
 
                     /** @todo Buffer entire response so respond with error.
                      *
@@ -14618,13 +14509,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     target = task_target (index);
                     hosts = target ? target_hosts (target) : NULL;
-                    maximum_hosts = hosts ? manage_max_hosts (hosts) : 0;
-
-                    slave = task_slave (index);
+                    maximum_hosts = hosts ? max_hosts (hosts) : 0;
 
                     first_report_id = task_first_report_id (index);
                     if (first_report_id)
                       {
+                        int debugs, holes, infos, logs, warnings;
                         int false_positives;
                         gchar *timestamp;
 
@@ -14673,16 +14563,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     last_report_id = task_last_report_id (index);
                     if (last_report_id)
                       {
+                        int debugs, holes, infos, logs, warnings;
                         int false_positives;
                         gchar *timestamp;
 
-                        if (((first_report_id == NULL)
-                             || (last_report_id != first_report_id))
-                            && (report_counts
-                                 (last_report_id,
-                                  &debugs, &holes, &infos, &logs,
-                                  &warnings, &false_positives,
-                                  get_tasks_data->apply_overrides)))
+                        if (report_counts (last_report_id,
+                                           &debugs, &holes, &infos, &logs,
+                                           &warnings, &false_positives,
+                                           get_tasks_data->apply_overrides))
                           /** @todo Either fail better or abort at SQL level. */
                           abort ();
 
@@ -14746,12 +14634,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         int false_positives;
                         gchar *timestamp;
 
-                        if (((first_report_id == NULL)
-                             || (second_last_report_id != first_report_id))
-                            && report_counts (second_last_report_id,
-                                              &debugs, &holes, &infos, &logs,
-                                              &warnings, &false_positives,
-                                              get_tasks_data->apply_overrides))
+                        if (report_counts (second_last_report_id,
+                                           &debugs, &holes, &infos, &logs,
+                                           &warnings, &false_positives,
+                                           get_tasks_data->apply_overrides))
                           /** @todo Either fail better or abort at SQL level. */
                           abort ();
 
@@ -14789,12 +14675,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       second_last_report = g_strdup ("");
 
                     running_report = task_current_report (index);
-                    if (running_report
-                        && report_slave_task_uuid (running_report))
-                      progress_xml = g_strdup_printf ("%i",
-                                                      report_slave_progress
-                                                       (running_report));
-                    else if (running_report)
+                    if (running_report)
                       {
                         long total = 0;
                         int num_hosts = 0, total_progress;
@@ -14820,7 +14701,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             total += progress;
                             num_hosts++;
 
-#if 0
+#if 1
                             tracef ("   attack_state: %s\n", host_iterator_attack_state (&hosts));
                             tracef ("   current_port: %u\n", current_port);
                             tracef ("   max_port: %u\n", max_port);
@@ -14840,15 +14721,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         total_progress = maximum_hosts ? (total / maximum_hosts) : 0;
 
-#if 0
+#if 1
                         tracef ("   total: %li\n", total);
                         tracef ("   num_hosts: %i\n", num_hosts);
                         tracef ("   maximum_hosts: %i\n", maximum_hosts);
                         tracef ("   total_progress: %i\n", total_progress);
 #endif
-
-                        if (total_progress == 0) total_progress = 1;
-                        else if (total_progress == 100) total_progress = 99;
 
                         g_string_append_printf (string,
                                                 "%i",
@@ -14864,8 +14742,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     escalator_uuid = task_escalator_uuid (index);
                     task_target_uuid = target_uuid (target);
                     task_target_name = target_name (target);
-                    task_slave_uuid = slave_uuid (slave);
-                    task_slave_name = slave_name (slave);
                     schedule = task_schedule (index);
                     if (schedule)
                       {
@@ -14891,12 +14767,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             "<target id=\"%s\">"
                                             "<name>%s</name>"
                                             "</target>"
-                                            "<slave id=\"%s\">"
-                                            "<name>%s</name>"
-                                            "</slave>"
                                             "<status>%s</status>"
                                             "<progress>%s</progress>"
                                             "%s"
+                                            "<result_count>"
+                                            "<debug>%i</debug>"
+                                            "<hole>%i</hole>"
+                                            "<info>%i</info>"
+                                            "<log>%i</log>"
+                                            "<warning>%i</warning>"
+                                            "<false_positive>"
+                                            "%i"
+                                            "</false_positive>"
+                                            "</result_count>"
                                             "<report_count>"
                                             "%u<finished>%u</finished>"
                                             "</report_count>"
@@ -14916,11 +14799,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             escalator ? escalator : "",
                                             task_target_uuid ? task_target_uuid : "",
                                             task_target_name ? task_target_name : "",
-                                            task_slave_uuid ? task_slave_uuid : "",
-                                            task_slave_name ? task_slave_name : "",
                                             task_run_status_name (index),
                                             progress_xml,
                                             description64,
+                                            task_debugs_size (index),
+                                            task_holes_size (index),
+                                            task_infos_size (index),
+                                            task_logs_size (index),
+                                            task_warnings_size (index),
+                                            task_false_positive_size (index),
                                             task_report_count (index),
                                             task_finished_report_count (index),
                                             task_trend
@@ -14938,7 +14825,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     free (escalator);
                     free (escalator_uuid);
                     free (task_target_name);
-                    free (task_target_uuid);
                     g_free (progress_xml);
                     g_free (last_report);
                     g_free (second_last_report);
@@ -14948,8 +14834,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     free (tsk_uuid);
                     free (task_schedule_uuid);
                     free (task_schedule_name);
-                    free (task_slave_uuid);
-                    free (task_slave_name);
                     if (send_to_client (line,
                                         write_to_client,
                                         write_to_client_data))
@@ -14968,102 +14852,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
 
         get_tasks_data_reset (get_tasks_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_VERIFY_AGENT:
-        assert (strcasecmp ("VERIFY_AGENT", element_name) == 0);
-        if (verify_agent_data->agent_id)
-          {
-            agent_t agent;
-
-            if (find_agent (verify_agent_data->agent_id, &agent))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("verify_agent"));
-            else if (agent == 0)
-              {
-                if (send_find_error_to_client
-                     ("verify_agent",
-                      "report format",
-                      verify_agent_data->agent_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (verify_agent (agent))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("verify_agent"));
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("verify_agent",
-                                      "Attempt to verify a hidden report"
-                                      " format"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("verify_agent"));
-                  break;
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("verify_agent",
-                              "VERIFY_AGENT requires a agent_id"
-                              " attribute"));
-        verify_agent_data_reset (verify_agent_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_VERIFY_REPORT_FORMAT:
-        assert (strcasecmp ("VERIFY_REPORT_FORMAT", element_name) == 0);
-        if (verify_report_format_data->report_format_id)
-          {
-            report_format_t report_format;
-
-            if (find_report_format (verify_report_format_data->report_format_id,
-                                    &report_format))
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_INTERNAL_ERROR ("verify_report_format"));
-            else if (report_format == 0)
-              {
-                if (send_find_error_to_client
-                     ("verify_report_format",
-                      "report format",
-                      verify_report_format_data->report_format_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (verify_report_format (report_format))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("verify_report_format"));
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("verify_report_format",
-                                      "Attempt to verify a hidden report"
-                                      " format"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("verify_report_format"));
-                  break;
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("verify_report_format",
-                              "VERIFY_REPORT_FORMAT requires a report_format_id"
-                              " attribute"));
-        verify_report_format_data_reset (verify_report_format_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -15135,27 +14923,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                              text_len);
         break;
 
-      case CLIENT_MODIFY_LSC_CREDENTIAL_NAME:
-        openvas_append_text (&modify_lsc_credential_data->name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT:
-        openvas_append_text (&modify_lsc_credential_data->comment,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN:
-        openvas_append_text (&modify_lsc_credential_data->login,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD:
-        openvas_append_text (&modify_lsc_credential_data->password,
-                             text,
-                             text_len);
-        break;
-
       case CLIENT_MODIFY_CONFIG_PREFERENCE_NAME:
         openvas_append_text (&modify_config_data->preference_name,
                              text,
@@ -15169,32 +14936,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_REPORT_COMMENT:
         openvas_append_text (&modify_report_data->comment,
-                             text,
-                             text_len);
-        break;
-
-      case CLIENT_MODIFY_REPORT_FORMAT_ACTIVE:
-        openvas_append_text (&modify_report_format_data->active,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_NAME:
-        openvas_append_text (&modify_report_format_data->name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_SUMMARY:
-        openvas_append_text (&modify_report_format_data->summary,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME:
-        openvas_append_text (&modify_report_format_data->param_name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE:
-        openvas_append_text (&modify_report_format_data->param_value,
                              text,
                              text_len);
         break;
@@ -15393,80 +15134,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         openvas_append_text (&create_override_data->threat, text, text_len);
         break;
 
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE:
-        openvas_append_text (&create_report_format_data->content_type,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_DESCRIPTION:
-        openvas_append_text (&create_report_format_data->description,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_EXTENSION:
-        openvas_append_text (&create_report_format_data->extension,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_FILE:
-        openvas_append_text (&create_report_format_data->file, text, text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_GLOBAL:
-        openvas_append_text (&create_report_format_data->global,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_NAME:
-        openvas_append_text (&create_report_format_data->name, text, text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT:
-        openvas_append_text (&create_report_format_data->param_default,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME:
-        openvas_append_text (&create_report_format_data->param_name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION:
-        openvas_append_text (&create_report_format_data->param_option,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE:
-        openvas_append_text (&create_report_format_data->param_type,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX:
-        openvas_append_text (&create_report_format_data->param_type_max,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN:
-        openvas_append_text (&create_report_format_data->param_type_min,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE:
-        openvas_append_text (&create_report_format_data->param_value,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE:
-        openvas_append_text (&create_report_format_data->signature,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY:
-        openvas_append_text (&create_report_format_data->summary,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST:
-        break;
-
       case CLIENT_CREATE_SCHEDULE_COMMENT:
         openvas_append_text (&create_schedule_data->comment, text, text_len);
         break;
@@ -15515,25 +15182,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                              text_len);
         break;
 
-      case CLIENT_CREATE_SLAVE_COMMENT:
-        openvas_append_text (&create_slave_data->comment, text, text_len);
-        break;
-      case CLIENT_CREATE_SLAVE_HOST:
-        openvas_append_text (&create_slave_data->host, text, text_len);
-        break;
-      case CLIENT_CREATE_SLAVE_LOGIN:
-        openvas_append_text (&create_slave_data->login, text, text_len);
-        break;
-      case CLIENT_CREATE_SLAVE_NAME:
-        openvas_append_text (&create_slave_data->name, text, text_len);
-        break;
-      case CLIENT_CREATE_SLAVE_PASSWORD:
-        openvas_append_text (&create_slave_data->password, text, text_len);
-        break;
-      case CLIENT_CREATE_SLAVE_PORT:
-        openvas_append_text (&create_slave_data->port, text, text_len);
-        break;
-
       case CLIENT_CREATE_TARGET_COMMENT:
         openvas_append_text (&create_target_data->comment, text, text_len);
         break;
@@ -15542,9 +15190,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_TARGET_NAME:
         openvas_append_text (&create_target_data->name, text, text_len);
-        break;
-      case CLIENT_CREATE_TARGET_PORT_RANGE:
-        openvas_append_text (&create_target_data->port_range, text, text_len);
         break;
       case CLIENT_CREATE_TARGET_TARGET_LOCATOR:
         openvas_append_text (&create_target_data->target_locator, text, text_len);
@@ -15758,9 +15403,7 @@ process_omp_client_input ()
             tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
           else
             err = -1;
-          g_log (G_LOG_DOMAIN,
-                 G_LOG_LEVEL_INFO,
-                 "   Failed to parse client XML: %s\n", error->message);
+          g_message ("   Failed to parse client XML: %s\n", error->message);
           g_error_free (error);
         }
       else

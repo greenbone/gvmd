@@ -3,7 +3,7 @@
  * Description: Manager Manage library: SQL backend headers.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matthew.mundell@intevation.de>
  *
  * Copyright:
  * Copyright (C) 2010 Greenbone Networks GmbH
@@ -28,18 +28,6 @@
 
 #include "manage.h"
 
-typedef long long int rowid_t;
-
-void trim_report (report_t);
-
-int delete_report (report_t);
-
-int set_report_scan_run_status (report_t, task_status_t);
-
-int set_report_slave_progress (report_t, int);
-
-void set_report_slave_task_uuid (report_t, const char *);
-
 int set_task_requested (task_t, task_status_t *);
 
 void init_task_file_iterator (iterator_t *, task_t, const char *);
@@ -52,9 +40,7 @@ void init_otp_pref_iterator (iterator_t *, config_t, const char *);
 const char *otp_pref_iterator_name (iterator_t *);
 const char *otp_pref_iterator_value (iterator_t *);
 
-char* target_port_range (target_t);
-lsc_credential_t target_ssh_lsc_credential (target_t);
-lsc_credential_t target_smb_lsc_credential (target_t);
+lsc_credential_t target_lsc_credential (target_t);
 const char *lsc_credential_iterator_password (iterator_t *);
 
 int create_report (task_t, char **, task_status_t);
@@ -94,7 +80,5 @@ const char *task_schedule_iterator_owner_uuid (iterator_t *);
 const char *task_schedule_iterator_owner_name (iterator_t *);
 
 void reinit_manage_process ();
-
-void manage_update_nvti_cache ();
 
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

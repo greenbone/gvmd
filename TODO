@@ -1,11 +1,11 @@
                                                             -*- ChangeLog -*-
-2009-07-13  Matthew Mundell <mmundell@greenbone.net>
+2009-07-13  Matthew Mundell <mmundell@intevation.de>
 
 	Ensure that if a CREATE_TASK fails half way, the new task is removed
 	from the database.  Probably the task should be added to the database
 	at the end of the CREATE_TASK instead of at the beginning.
 
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
 	Where necessary, buffer the XML output for a command before queuing it,
 	in case there is an error later on in the command.  This way an error
@@ -16,26 +16,26 @@
 	some responses are very big, and need to be sent to the client
 	incrementally.
 
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
 	Look into the memory fault that occurs when running openvasmd under
 	gdb.  The gdb process reports the fault and exits.  The openvasmd process
 	carries on running OK.  Sometimes running the tests under load hangs my
 	laptop, which is perhaps related.
 
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
 	Add function names to log and error messages.
 
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
 	Convert data going out to the server to 8859-1.
 
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
 	Handle errors from the SQL properly.
 
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
 	Check carefully that removing a running task works OK.  An OTP SCAN_END
 	can arrive at any time, and if the task has been marked for removal the
@@ -43,34 +43,34 @@
 	This could cause problems if an OMP command is accessing the task or
 	reports.
 
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
 	Use Glib everywhere and use it consistently.  For example, some parts
 	of the manager use char* while other parts use gchar*.
 
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
 	Consider the effects of Glib's out of memory handling.  Of special concern
 	is the main manager process, where it may be better to try release memory
 	than to exit the manager entirely.
 
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
 	Check the memory management.  A quick valgrind reported memory leaks.
 	There is initial work present for splint coverage which could be
 	completed.
 
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
 	Consider moving tests to openvas-manager/tests/, at least so that src/
 	compiles quicker.
 
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
 	Make the test style uniform, especially the exit style (some tests goto,
 	others duplicate code).
 
-2009-06-16  Matthew Mundell <mmundell@greenbone.net>
+2009-06-16  Matthew Mundell <mmundell@intevation.de>
 
 	In libmanage (src/manage.c), consider separating functions that
 	communicate with the server (start_task, stop_task, request_*,

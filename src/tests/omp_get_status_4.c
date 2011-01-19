@@ -3,7 +3,7 @@
  * Description: Test OMP GET_STATUS with a task id, waiting for the task to end.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH

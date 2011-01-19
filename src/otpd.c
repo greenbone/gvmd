@@ -3,7 +3,7 @@
  * Description: Module for OpenVAS Manager: the OTP daemon.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH
@@ -48,7 +48,7 @@
 #include <gnutls/gnutls.h>
 #include <string.h>
 
-#include <openvas/misc/openvas_server.h>
+#include <openvas_server.h>
 
 /**
  * @brief File descriptor set mask: selecting on client read.

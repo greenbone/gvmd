@@ -14,7 +14,6 @@ CREATE TABLE agents (
 	installer_filename text,
 	installer_signature_64 text,
 	installer_trust integer,
-	installer_trust_time date,
 	howto_install text,
 	howto_use text);
 
@@ -67,8 +66,7 @@ CREATE TABLE targets (
 	name text NOT NULL,
 	hosts text,
 	comment text,
-	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
-	smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT);
+	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT);
 
 CREATE TABLE configs (
 	id integer PRIMARY KEY,
@@ -102,8 +100,7 @@ CREATE TABLE tasks (
 	config integer REFERENCES configs (id) ON DELETE RESTRICT,
 	target integer REFERENCES targets (id) ON DELETE RESTRICT,
 	schedule integer REFERENCES schedules (id) ON DELETE RESTRICT,
-	schedule_next_time date,
-	slave integer REFERENCES slaves (id) ON DELETE RESTRICT);
+	schedule_next_time date);
 
 CREATE TABLE task_files (
 	id integer PRIMARY KEY,
@@ -138,39 +135,7 @@ CREATE TABLE reports (
 	end_time date,
 	nbefile text,
 	comment text,
-	scan_run_status integer,
-	slave_progress text,
-	slave_task_uuid text);
-
-CREATE TABLE report_format_params (
-	id integer PRIMARY KEY,
-	report_format integer REFERENCES report_formats (id) ON DELETE RESTRICT,
-	name text,
-	type integer,
-	value text,
-	type_min integer,
-	type_max integer,
-	type_regex text,
-	fallback text);
-
-CREATE TABLE report_format_param_options (
-	id integer PRIMARY KEY,
-	report_format_param integer REFERENCES report_format_params (id) ON DELETE RESTRICT,
-	value text);
-
-CREATE TABLE report_formats (
-	id integer PRIMARY KEY,
-    uuid text UNIQUE NOT NULL,
-	owner integer REFERENCES users (id) ON DELETE RESTRICT,
-	name text NOT NULL,
-	extension text,
-	content_type text,
-	summary text,
-	description text,
-	signature text,
-	trust integer,
-	trust_time date,
-	flags integer);
+	scan_run_status integer);
 
 CREATE TABLE report_hosts (
 	id integer PRIMARY KEY,
@@ -262,14 +227,3 @@ CREATE TABLE schedules (
 	period integer,
 	period_months integer,
 	duration integer);
-
-CREATE TABLE slaves (
-	id integer PRIMARY KEY,
-	uuid text UNIQUE NOT NULL,
-	owner integer REFERENCES users (id) ON DELETE RESTRICT,
-	name text NOT NULL,
-	comment text,
-	host text,
-	port text,
-	login text,
-	password text);

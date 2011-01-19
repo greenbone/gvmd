@@ -4,11 +4,11 @@ About OpenVAS Manager
 The OpenVAS Manager is a layer between the OpenVAS Scanner and various
 client applications such as the web client GSA (Greenbone Security
 Assistant), the command line client omp (of openvas-cli) and the classic
-application GSD (Greenbone Security Desktop).  Among other features, it
-adds server-side storage of scan results and it removes the need for a scan
-client to keep the connection open until the scan finishes.  All
-communication between OpenVAS Manager and its clients is done via the
-XML-based OpenVAS Management Protocol (OMP).
+application gsa-desktop.  Among other features, it adds server-side storage
+of scan results and it removes the need for a scan client to keep the
+connection open until the scan finishes.  All communication between OpenVAS
+Manager and its clients is done via the XML-based OpenVAS Management
+Protocol (OMP).
 
 OpenVAS Manager is licensed under GNU General Public License Version 2 or
 any later version.  Please see file COPYING for details.
@@ -46,9 +46,6 @@ will update the Manager's NVT cache, and then exit.  The cache must be
 updated every time the Scanner syncs with the NVT feed.  The --rebuild
 option is faster as it locks the database the entire time, whereas --update
 allows clients to access the Manager during the update.
-
-A rebuild within a running Manager can also be invoked by sending the main
-Manager process the SIGHUP signal (signal number 1).
 
 The program usage message follows.
 
@@ -97,7 +94,3 @@ and then run all the tests
 or any one of the tests, for example
 
     src/tests/omp_get_report_0
-
-or, any test containing 'help' in its name
-
-    ctest -R help

@@ -3,7 +3,7 @@
  * Description: Manager Manage library: SQL backend.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
  * Copyright (C) 2009,2010 Greenbone Networks GmbH
@@ -35,24 +35,20 @@
 #include "lsc_user.h"
 #include "tracef.h"
 
-#include <arpa/inet.h>
 #include <assert.h>
 #include <ctype.h>
-#include <dirent.h>
 #include <errno.h>
 #include <sqlite3.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <unistd.h>
 
 #include <openvas/base/openvas_string.h>
-#include <openvas/misc/openvas_auth.h>
-#include <openvas/misc/openvas_logging.h>
-#include <openvas/misc/openvas_uuid.h>
-#include <openvas/misc/resource_request.h>
+#include <openvas/openvas_auth.h>
+#include <openvas/openvas_logging.h>
+#include <openvas/openvas_uuid.h>
+#include <openvas/resource_request.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -152,8 +148,6 @@ const char *message_type_threat (const char *);
 
 int delete_reports (task_t);
 
-int delete_slave_task (slave_t, const char *);
-
 
 /* Static headers. */
 
@@ -213,13 +207,6 @@ task_owner_uuid (task_t);
 
 static int
 insert_nvt_selectors (const char *, const array_t*);
-
-static int
-validate_param_value (report_format_t, report_format_param_t param, const char *,
-                      const char *);
-
-static target_t
-duplicate_target (target_t, const char *);
 
 
 /* Variables. */
@@ -386,69 +373,6 @@ sql (char* sql, ...)
 }
 
 /**
- * @brief Perform an SQL statement, without logging.
- *
- * @param[in]  sql    Format string for SQL statement.
- * @param[in]  ...    Arguments for format string.
- */
-static void
-sql_quiet (char* sql, ...)
-{
-  const char* tail;
-  int ret;
-  sqlite3_stmt* stmt;
-  va_list args;
-  gchar* formatted;
-
-  va_start (args, sql);
-  formatted = g_strdup_vprintf (sql, args);
-  va_end (args);
-
-  /* Prepare statement. */
-
-  while (1)
-    {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
-    }
-
-  /* Run statement. */
-
-  while (1)
-    {
-      ret = sqlite3_step (stmt);
-      if (ret == SQLITE_BUSY) continue;
-      if (ret == SQLITE_DONE) break;
-      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-        {
-          if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-          g_warning ("%s: sqlite3_step failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          abort ();
-        }
-    }
-
-  sqlite3_finalize (stmt);
-}
-
-/**
  * @brief Get a particular cell from a SQL query.
  *
  * @param[in]   col          Column.
@@ -507,6 +431,8 @@ sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
       if (ret == SQLITE_BUSY) continue;
       if (ret == SQLITE_DONE)
         {
+          g_warning ("%s: sqlite3_step finished too soon",
+                     __FUNCTION__);
           return 1;
         }
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
@@ -529,17 +455,13 @@ sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
 /**
  * @brief Get a particular cell from a SQL query, as an int.
  *
- * @warning Aborts on invalid queries.
- *
- * @warning Aborts when the query returns fewer rows than \p row.  The
- *          caller must ensure that the query will return sufficient rows.
- *
  * @param[in]  col    Column.
  * @param[in]  row    Row.
  * @param[in]  sql    Format string for SQL query.
  * @param[in]  ...    Arguments for format string.
  *
  * @return Result of the query as an integer.
+ * @warning Aborts on invalid queries.
  */
 static int
 sql_int (unsigned int col, unsigned int row, char* sql, ...)
@@ -571,8 +493,6 @@ sql_int (unsigned int col, unsigned int row, char* sql, ...)
  * @param[in]  ...    Arguments for format string.
  *
  * @return Freshly allocated string containing the result, NULL otherwise.
- *         NULL means that either the selected value was NULL or there were
- *         fewer rows in the result than \p row.
  */
 static char*
 sql_string (unsigned int col, unsigned int row, char* sql, ...)
@@ -716,68 +636,6 @@ sql_hosts_contains (sqlite3_context *context, int argc, sqlite3_value** argv)
   sqlite3_result_int (context, 0);
 }
 
-/**
- * @brief Make a name unique.
- *
- * This is a callback for a scalar SQL function of three argument.
- *
- * It's up to the caller to ensure there is a read-only transaction.
- *
- * @param[in]  context  SQL context.
- * @param[in]  argc     Number of arguments.
- * @param[in]  argv     Argument array.
- */
-static void
-sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
-{
-  const unsigned char *proposed_name, *type;
-  gchar *candidate_name, *quoted_candidate_name;
-  unsigned int number;
-  sqlite3_int64 owner;
-
-  assert (argc == 3);
-
-  type = sqlite3_value_text (argv[0]);
-  if (type == NULL)
-    {
-      sqlite3_result_error (context, "Failed to get type argument", -1);
-      return;
-    }
-
-  proposed_name = sqlite3_value_text (argv[1]);
-  if (proposed_name == NULL)
-    {
-      sqlite3_result_error (context,
-                            "Failed to get proposed name argument",
-                            -1);
-      return;
-    }
-
-  owner = sqlite3_value_int64 (argv[2]);
-
-  number = 0;
-  candidate_name = g_strdup_printf ("%s %i", proposed_name, ++number);
-  quoted_candidate_name = sql_quote (candidate_name);
-
-  while (sql_int (0, 0,
-                  "SELECT COUNT (*) FROM %ss WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner = %llu));",
-                  type,
-                  quoted_candidate_name,
-                  owner))
-    {
-      g_free (candidate_name);
-      g_free (quoted_candidate_name);
-      candidate_name = g_strdup_printf ("%s %u", proposed_name, ++number);
-      quoted_candidate_name = sql_quote (candidate_name);
-    }
-
-  g_free (quoted_candidate_name);
-
-  sqlite3_result_text (context, candidate_name, -1, SQLITE_TRANSIENT);
-  g_free (candidate_name);
-}
-
 
 /* General helpers. */
 
@@ -827,35 +685,6 @@ user_owns_uuid (const char *resource, const char *uuid)
 }
 
 /**
- * @brief Test whether a user owns a resource.
- *
- * @param[in]  resource  Type of resource, for example "report_format".
- * @param[in]  field     Field to compare with value.
- * @param[in]  value     Identifier value of resource.
- *
- * @return 1 if user owns resource, else 0.
- */
-static int
-user_owns (const char *resource, const char *field, const char *value)
-{
-  int ret;
-
-  assert (current_credentials.uuid);
-
-  ret = sql_int (0, 0,
-                 "SELECT count(*) FROM %ss"
-                 " WHERE %s = '%s'"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                 resource,
-                 field,
-                 value,
-                 current_credentials.uuid);
-
-  return ret;
-}
-
-/**
  * @brief Test whether a user owns a result.
  *
  * @param[in]  uuid      UUID of result.
@@ -882,22 +711,6 @@ user_owns_result (const char *uuid)
   return ret;
 }
 
-/**
- * @brief Ensure a string is in an array.
- *
- * @param[in]  array   Array.
- * @param[in]  string  String.  Copied into array.
- */
-static void
-array_add_new_string (array_t *array, const gchar *string)
-{
-  guint index;
-  for (index = 0; index < array->len; index++)
-    if (strcmp (g_ptr_array_index (array, index), string) == 0)
-      return;
-  array_add (array, g_strdup (string));
-}
-
 
 /* Creation. */
 
@@ -907,7 +720,7 @@ array_add_new_string (array_t *array, const gchar *string)
 static void
 create_tables ()
 {
-  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, installer_trust_time, howto_install TEXT, howto_use TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, howto_install TEXT, howto_use TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
@@ -928,23 +741,14 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
   sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
-  sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_report ON report_hosts (report);");
-  sql ("CREATE TABLE IF NOT EXISTS report_format_param_options (id INTEGER PRIMARY KEY, report_format_param, value);");
-  sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value, type_min, type_max, type_regex, fallback);");
-  sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
-  sql ("CREATE INDEX IF NOT EXISTS report_results_by_report ON report_results (report);");
-  sql ("CREATE INDEX IF NOT EXISTS report_results_by_result ON report_results (result);");
-  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress, slave_task_uuid);");
+  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_task ON results (task);");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_type ON results (type);");
   sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
-  sql ("CREATE TABLE IF NOT EXISTS slaves (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
-  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, smb_lsc_credential INTEGER, port_range);");
+  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
 
   sql ("ANALYZE;");
@@ -1120,9 +924,7 @@ next (iterator_t* iterator)
  *    the new version, all inside an exclusive transaction.  Use the generic
  *    iterator (init_iterator, iterator_string, iterator_int64...) because the
  *    specialised iterators (like init_target_iterator) can change behaviour
- *    across Manager SVN versions.  Use copies of any other "manage" interfaces,
- *    for example update_all_config_caches, as these may also change in later
- *    versions of the Manager.
+ *    across Manager SVN versions.
  *
  *  - Remember to ensure that tables exist in the migrator before the migrator
  *    modifies them.  If a migrator modifies a table then the table must either
@@ -1383,18 +1185,26 @@ migrate_1_to_2 ()
    * may be a redundant conversion, as SQLite may have converted these
    * values automatically in each query anyway. */
 
-  init_iterator (&nvts, "SELECT ROWID, category FROM nvts;");
+  init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
   while (next (&nvts))
     {
       int category;
       const char *category_string;
 
-      category_string = (const char*) sqlite3_column_text (nvts.stmt, 1);
+      /* The category must be accessed with sqlite3_column_text because
+       * nvt_iterator_category returns an int now. */
+
+      if (nvts.done)
+        {
+          cleanup_iterator (&nvts);
+          return -1;
+        }
+      category_string = (const char*) sqlite3_column_text (nvts.stmt, 11);
 
       category = atoi (category_string);
-      sql ("UPDATE nvts SET category = %i WHERE ROWID = %llu;",
+      sql ("UPDATE nvts SET category = %i WHERE category = '%s';",
            category,
-           iterator_int64 (&nvts, 0));
+           category_string);
     }
   cleanup_iterator (&nvts);
 
@@ -2150,14 +1960,9 @@ migrate_5_to_6 ()
       return -1;
     }
 
-  /* This would need a duplicate version of update_all_config_caches that
-   * worked with the version 6 database.  Just let the cache be wrong.  This
-   * is a very old version now. */
-#if 0
   /* Update cache counts for growing configs. */
 
   update_all_config_caches ();
-#endif
 
   /* Set the database version to 6. */
 
@@ -3165,952 +2970,6 @@ migrate_20_to_21 ()
   return 0;
 }
 
-/** @todo Defined in omp.c! */
-int file_utils_rmdir_rf (const gchar *);
-
-/**
- * @brief Migrate the report formats from version 21 to version 22.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_21_to_22 ()
-{
-  iterator_t rows;
-
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 21. */
-
-  if (manage_db_version () != 21)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the report formats.
-   *
-   * The name of the report format directories on disk changed from the report
-   * format name to the report format UUID. */
-
-  /** @todo ROLLBACK on failure. */
-
-  /* Ensure that the report_formats table exists. */
-
-  sql ("CREATE TABLE IF NOT EXISTS report_formats"
-       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension,"
-       "  content_type, summary, description);");
-
-  /* Ensure that the predefined formats all exist in the database. */
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'CPE';")
-      == 0)
-    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-         " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'CPE',"
-         " 'Common Product Enumeration CSV table.',"
-         " 'CPE stands for Common Product Enumeration.  It is a structured naming scheme for\n"
-         "information technology systems, platforms, and packages.  In other words: CPE\n"
-         "provides a unique identifier for virtually any software product that is known for\n"
-         "a vulnerability.\n"
-         "\n"
-         "The CPE dictionary is maintained by MITRE and NIST.  MITRE also maintains CVE\n"
-         "(Common Vulnerability Enumeration) and other relevant security standards.\n"
-         "\n"
-         "The report selects all CPE tables from the results and forms a single table\n"
-         "as a comma separated values file.\n',"
-         " 'csv', 'text/csv');");
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'HTML';")
-      == 0)
-    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-         " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'HTML', 'Single page HTML report.',"
-         " 'A single HTML page listing results of a scan.  Style information is embedded in\n"
-         "the HTML, so the page is suitable for viewing in a browser as is.\n',"
-         " 'html', 'text/html');");
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'ITG';")
-      == 0)
-    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-         " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'ITG',"
-         " 'German \"IT-Grundschutz-Kataloge\" report.',"
-         " 'Tabular report on the German \"IT-Grundschutz-Kataloge\",\n"
-         "as published and maintained by the German Federal Agency for IT-Security.\n',"
-         " 'csv', 'text/csv');");
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'LaTeX';")
-      == 0)
-    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-         " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'LaTeX',"
-         " 'LaTeX source file.',"
-         " 'Report as LaTeX source file for further processing.\n',"
-         " 'tex', 'text/plain');");
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'NBE';")
-      == 0)
-    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-         " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'NBE', 'Legacy OpenVAS report.',"
-         " 'The traditional OpenVAS Scanner text based format.',"
-         " 'nbe', 'text/plain');");
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'PDF';")
-      == 0)
-    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-         " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'PDF',"
-         " 'Portable Document Format report.',"
-         " 'Scan results in Portable Document Format (PDF).',"
-         "'pdf', 'application/pdf');");
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'TXT';")
-      == 0)
-    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-         " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'TXT', 'Plain text report.',"
-         " 'Plain text report, best viewed with fixed font size.',"
-         " 'txt', 'text/plain');");
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'XML';")
-      == 0)
-    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-         " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'XML',"
-         " 'Raw XML report.',"
-         " 'Complete scan report in OpenVAS Manager XML format.',"
-         " 'xml', 'text/xml');");
-
-  /* Update the UUIDs of the predefined formats to the new predefined UUIDs. */
-
-  sql ("UPDATE report_formats SET uuid = 'a0704abb-2120-489f-959f-251c9f4ffebd'"
-       " WHERE name = 'CPE'");
-
-  sql ("UPDATE report_formats SET uuid = 'b993b6f5-f9fb-4e6e-9c94-dd46c00e058d'"
-       " WHERE name = 'HTML'");
-
-  sql ("UPDATE report_formats SET uuid = '929884c6-c2c4-41e7-befb-2f6aa163b458'"
-       " WHERE name = 'ITG'");
-
-  sql ("UPDATE report_formats SET uuid = '9f1ab17b-aaaa-411a-8c57-12df446f5588'"
-       " WHERE name = 'LaTeX'");
-
-  sql ("UPDATE report_formats SET uuid = 'f5c2a364-47d2-4700-b21d-0a7693daddab'"
-       " WHERE name = 'NBE'");
-
-  sql ("UPDATE report_formats SET uuid = '1a60a67e-97d0-4cbf-bc77-f71b08e7043d'"
-       " WHERE name = 'PDF'");
-
-  sql ("UPDATE report_formats SET uuid = '19f6f1b3-7128-4433-888c-ccc764fe6ed5'"
-       " WHERE name = 'TXT'");
-
-  sql ("UPDATE report_formats SET uuid = 'd5da9f67-8551-4e51-807b-b6a873d70e34'"
-       " WHERE name = 'XML'");
-
-  /* Rename the directories. */
-
-  init_iterator (&rows, "SELECT ROWID, uuid, owner, name FROM report_formats;");
-  while (next (&rows))
-    {
-      const char *name, *uuid;
-      gchar *old_dir, *new_dir;
-
-      uuid = iterator_string (&rows, 1);
-      name = iterator_string (&rows, 3);
-
-      if (sql_int (0, 0,
-                   "SELECT owner is NULL FROM report_formats"
-                   " WHERE ROWID = %llu;",
-                   iterator_int64 (&rows, 0)))
-        {
-          /* Global. */
-          old_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                      "openvasmd",
-                                      "global_report_formats",
-                                      name,
-                                      NULL);
-          new_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                      "openvasmd",
-                                      "global_report_formats",
-                                      uuid,
-                                      NULL);
-        }
-      else
-        {
-          char *owner_uuid;
-          owner_uuid = sql_string (0, 0,
-                                   "SELECT uuid FROM users"
-                                   " WHERE ROWID = %llu;",
-                                   iterator_int64 (&rows, 2));
-          if (owner_uuid == NULL)
-            {
-              g_warning ("%s: owner missing from users table\n", __FUNCTION__);
-              cleanup_iterator (&rows);
-              sql ("ROLLBACK;");
-              return -1;
-            }
-          old_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                      "openvasmd",
-                                      "report_formats",
-                                      owner_uuid,
-                                      name,
-                                      NULL);
-          new_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                      "openvasmd",
-                                      "report_formats",
-                                      owner_uuid,
-                                      uuid,
-                                      NULL);
-          free (owner_uuid);
-        }
-      if (g_file_test (new_dir, G_FILE_TEST_EXISTS))
-        {
-          if (g_file_test (old_dir, G_FILE_TEST_EXISTS)
-              && file_utils_rmdir_rf (old_dir))
-            g_warning ("%s: failed to remove %s\n",
-                       __FUNCTION__,
-                       old_dir);
-        }
-      else if (rename (old_dir, new_dir))
-        {
-          g_warning ("%s: renaming %s to %s failed: %s\n",
-                     __FUNCTION__,
-                     old_dir,
-                     new_dir,
-                     strerror (errno));
-          g_free (old_dir);
-          g_free (new_dir);
-          cleanup_iterator (&rows);
-          sql ("ROLLBACK;");
-          return -1;
-        }
-      g_free (old_dir);
-      g_free (new_dir);
-    }
-
-  /* Set the database version to 22. */
-
-  set_db_version (22);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the report formats from version 22 to version 23.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_22_to_23 ()
-{
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 22. */
-
-  if (manage_db_version () != 22)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the report formats.
-   *
-   * The report_formats table got signature and trust columns. */
-
-  /** @todo ROLLBACK on failure. */
-
-  sql ("ALTER TABLE report_formats ADD COLUMN signature;");
-  sql ("UPDATE report_formats SET signature = '';");
-
-  sql ("ALTER TABLE report_formats ADD COLUMN trust;");
-  sql ("UPDATE report_formats SET trust = %i;", TRUST_UNKNOWN);
-
-  /* Set the database version to 23. */
-
-  set_db_version (23);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 23 to version 24.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_23_to_24 ()
-{
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 23. */
-
-  if (manage_db_version () != 23)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* The 8 to 9 migrator cast owner to an integer because owner had
-   * changed from a string to an integer.  This means empty strings would
-   * be converted to 0 instead of NULL, so convert any 0's to NULL. */
-
-  sql ("UPDATE tasks SET owner = NULL where owner = 0;"),
-
-  /* Set the database version to 24. */
-
-  set_db_version (24);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 24 to version 25.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_24_to_25 ()
-{
-  iterator_t rows;
-
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 24. */
-
-  if (manage_db_version () != 24)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* Missing parameter chunking handling in the GSA may have resulted in
-   * empty options in NVT radio preference values. */
-
-  init_iterator (&rows, "SELECT ROWID, name, value FROM nvt_preferences;");
-  while (next (&rows))
-    {
-      const char *name;
-      int type_start = -1, type_end = -1, count;
-
-      name = iterator_string (&rows, 1);
-
-      /* NVT[radio]:Preference */
-      count = sscanf (name, "%*[^[][%nradio%n]:", &type_start, &type_end);
-      if (count == 0 && type_start > 0 && type_end > 0)
-        {
-          const char *value;
-          gchar **split, **point, *quoted_value;
-          GString *string;
-          gboolean first;
-
-          /* Flush any empty options (";a;;b;" becomes "a;b"). */
-          first = TRUE;
-          value = iterator_string (&rows, 2);
-          split = g_strsplit (value, ";", 0);
-          string = g_string_new ("");
-          point = split;
-          while (*point)
-            {
-              if (strlen (*point))
-                {
-                  if (first)
-                    first = FALSE;
-                  else
-                    g_string_append_c (string, ';');
-                  g_string_append (string, *point);
-                }
-              point++;
-            }
-          g_strfreev (split);
-
-          quoted_value = sql_nquote (string->str, string->len);
-          g_string_free (string, TRUE);
-          sql ("UPDATE nvt_preferences SET value = '%s' WHERE ROWID = %llu",
-               quoted_value,
-               iterator_int64 (&rows, 0));
-          g_free (quoted_value);
-        }
-    }
-  cleanup_iterator (&rows);
-
-  init_iterator (&rows,
-                 "SELECT ROWID, name, value FROM config_preferences"
-                 " WHERE type = 'PLUGINS_PREFS';");
-  while (next (&rows))
-    {
-      const char *name;
-      int type_start = -1, type_end = -1, count;
-
-      name = iterator_string (&rows, 1);
-
-      /* NVT[radio]:Preference */
-      count = sscanf (name, "%*[^[][%nradio%n]:", &type_start, &type_end);
-      if (count == 0 && type_start > 0 && type_end > 0)
-        {
-          const char *value;
-          gchar **split, **point, *quoted_value;
-          GString *string;
-          gboolean first;
-
-          /* Flush any empty options (";a;;b;" becomes "a;b"). */
-          first = TRUE;
-          value = iterator_string (&rows, 2);
-          split = g_strsplit (value, ";", 0);
-          string = g_string_new ("");
-          point = split;
-          while (*point)
-            {
-              if (strlen (*point))
-                {
-                  if (first)
-                    first = FALSE;
-                  else
-                    g_string_append_c (string, ';');
-                  g_string_append (string, *point);
-                }
-              point++;
-            }
-          g_strfreev (split);
-
-          quoted_value = sql_nquote (string->str, string->len);
-          g_string_free (string, TRUE);
-          sql ("UPDATE config_preferences SET value = '%s' WHERE ROWID = %llu",
-               quoted_value,
-               iterator_int64 (&rows, 0));
-          g_free (quoted_value);
-        }
-    }
-  cleanup_iterator (&rows);
-
-  /* Set the database version to 25. */
-
-  set_db_version (25);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 25 to version 26.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_25_to_26 ()
-{
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 25. */
-
-  if (manage_db_version () != 25)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* The report_formats table got a trust_time column. */
-
-  sql ("ALTER TABLE report_formats ADD column trust_time;");
-  sql ("UPDATE report_formats SET trust_time = %i;", time (NULL));
-
-  /* Set the database version to 26. */
-
-  set_db_version (26);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 26 to version 27.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_26_to_27 ()
-{
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 26. */
-
-  if (manage_db_version () != 26)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* The reports table got a slave_progress column and the tasks table got a
-   * slave column. */
-
-  sql ("ALTER TABLE reports ADD column slave_progress;");
-  sql ("UPDATE reports SET slave_progress = 0;");
-
-  sql ("ALTER TABLE tasks ADD column slave;");
-  sql ("UPDATE tasks SET slave = 0;");
-
-  /* Set the database version to 27. */
-
-  set_db_version (27);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 27 to version 28.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_27_to_28 ()
-{
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 27. */
-
-  if (manage_db_version () != 27)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* The report_formats table got a flags column. */
-
-  sql ("ALTER TABLE report_formats ADD COLUMN flags INTEGER;");
-  sql ("UPDATE report_formats SET flags = 1;");
-
-  /* Set the database version to 28. */
-
-  set_db_version (28);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 27 to version 28.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_28_to_29 ()
-{
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 28. */
-
-  if (manage_db_version () != 28)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* The reports table got a slave_task_uuid column. */
-
-  sql ("ALTER TABLE reports ADD COLUMN slave_task_uuid;");
-  sql ("UPDATE reports SET slave_task_uuid = ''");
-
-  /* Set the database version to 29. */
-
-  set_db_version (29);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 29 to version 30.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_29_to_30 ()
-{
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 29. */
-
-  if (manage_db_version () != 29)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* The agents table got an installer_trust_time column. */
-
-  sql ("ALTER TABLE agents ADD column installer_trust_time;");
-  sql ("UPDATE agents SET installer_trust_time = %i;", time (NULL));
-
-  /* Set the database version to 30. */
-
-  set_db_version (30);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 30 to version 31.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_30_to_31 ()
-{
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 30. */
-
-  if (manage_db_version () != 30)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* Slaves switched from being targets to being resources of their own.
-   * Just clear any task slaves. */
-
-  sql ("UPDATE tasks SET slave = 0;");
-
-  /* Set the database version to 31. */
-
-  set_db_version (31);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 31 to version 32.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_31_to_32 ()
-{
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 31. */
-
-  if (manage_db_version () != 31)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* Ensure that the report_format_params table exists. */
-
-  sql ("CREATE TABLE IF NOT EXISTS report_format_params"
-       " (id INTEGER PRIMARY KEY, report_format, name, value);");
-
-  /* The report_format_params table got a type column. */
-
-  sql ("ALTER TABLE report_format_params ADD column type INTEGER;");
-  sql ("UPDATE report_format_params SET type = 3;");
-
-  /* Set the database version to 32. */
-
-  set_db_version (32);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 32 to version 33.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_32_to_33 ()
-{
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 32. */
-
-  if (manage_db_version () != 32)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* The report_format_params table got a few new columns. */
-
-  sql ("ALTER TABLE report_format_params ADD column type_min;");
-  sql ("UPDATE report_format_params SET type_min = %lli;", LLONG_MIN);
-
-  sql ("ALTER TABLE report_format_params ADD column type_max;");
-  sql ("UPDATE report_format_params SET type_max = %lli;", LLONG_MAX);
-
-  sql ("ALTER TABLE report_format_params ADD column type_regex;");
-  sql ("UPDATE report_format_params SET type_regex = '';");
-
-  sql ("ALTER TABLE report_format_params ADD column fallback;");
-  sql ("UPDATE report_format_params SET fallback = value;");
-
-  /* Set the database version to 33. */
-
-  set_db_version (33);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Set the pref for migrate_33_to_34.
- *
- * @param[in]  config  Config to set pref on.
- */
-static void
-migrate_33_to_34_set_pref (config_t config)
-{
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM config_preferences"
-               " WHERE config = %llu"
-               " AND name ="
-               " 'Login configurations[checkbox]:NTLMSSP';",
-               config)
-      == 0)
-    sql ("INSERT into config_preferences (config, type, name, value)"
-         " VALUES (%llu, 'PLUGINS_PREFS',"
-         " 'Login configurations[checkbox]:NTLMSSP',"
-         " 'yes');",
-         config);
-}
-
-/**
- * @brief Migrate the database from version 33 to version 34.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_33_to_34 ()
-{
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 33. */
-
-  if (manage_db_version () != 33)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* The preference "NTLMSSP" was set to yes in the predefined configs. */
-
-  /** @todo ROLLBACK on failure. */
-
-  migrate_33_to_34_set_pref (CONFIG_ID_FULL_AND_FAST);
-  migrate_33_to_34_set_pref (CONFIG_ID_FULL_AND_FAST_ULTIMATE);
-  migrate_33_to_34_set_pref (CONFIG_ID_FULL_AND_VERY_DEEP);
-  migrate_33_to_34_set_pref (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE);
-
-  /* Set the database version to 34. */
-
-  set_db_version (34);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 34 to version 35.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_34_to_35 ()
-{
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 34. */
-
-  if (manage_db_version () != 34)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* The LSC credential element of the target resource was split into two
-   * elements, for SSH and SMB. */
-
-  /** @todo ROLLBACK on failure. */
-
-  sql ("ALTER TABLE targets ADD column smb_lsc_credential;");
-  sql ("UPDATE targets SET smb_lsc_credential = lsc_credential;");
-
-  /* Set the database version to 35. */
-
-  set_db_version (35);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 35 to version 36.
- *
- * @return 0 success, -1 error.
- */
-static int
-migrate_35_to_36 ()
-{
-  iterator_t tasks;
-  char *scanner_range, *quoted_scanner_range;
-
-  sql ("BEGIN EXCLUSIVE;");
-
-  /* Ensure that the database is currently version 35. */
-
-  if (manage_db_version () != 35)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* For a time between 1.0.0 beta3 and 1.0.0 beta5 the Manager would create
-   * the example task with name references to the target and config, instead
-   * of ID references.  Correct this now. */
-
-  sql ("UPDATE tasks SET"
-       " target = (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
-       " config = (SELECT ROWID FROM configs WHERE name = 'Full and fast')"
-       " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';");
-
-  /* Scanner preference "port_range" moved from config into target. */
-
-  /** @todo ROLLBACK on failure. */
-
-  sql ("ALTER TABLE targets ADD column port_range;");
-  sql ("UPDATE targets SET port_range = NULL;");
-
-  scanner_range = sql_string (0, 0,
-                              "SELECT value FROM nvt_preferences"
-                              " WHERE name = 'port_range'");
-  if (scanner_range)
-    {
-      quoted_scanner_range = sql_quote (scanner_range);
-      free (scanner_range);
-    }
-  else
-    quoted_scanner_range = NULL;
-
-  init_iterator (&tasks, "SELECT ROWID, target, config FROM tasks;");
-  while (next (&tasks))
-    {
-      char *config_range, *quoted_config_range;
-      target_t target;
-
-      target = iterator_int64 (&tasks, 1);
-
-      if (sql_int (0, 0,
-                   "SELECT port_range IS NULL FROM targets WHERE ROWID = %llu;",
-                   target)
-          == 0)
-        {
-          gchar *name;
-
-          /* Already used this target, use a copy of it. */
-
-          name = sql_string (0, 0,
-                             "SELECT name || ' Migration' FROM targets"
-                             " WHERE ROWID = %llu;",
-                             target);
-          assert (name);
-          target = duplicate_target (target, name);
-          free (name);
-
-          sql ("UPDATE tasks SET target = %llu WHERE ROWID = %llu",
-               target,
-               iterator_int64 (&tasks, 0));
-        }
-
-      config_range = sql_string (0, 0,
-                                 "SELECT value FROM config_preferences"
-                                 " WHERE config = %llu"
-                                 " AND name = 'port_range';",
-                                 iterator_int64 (&tasks, 2));
-
-      if (config_range)
-        {
-          quoted_config_range = sql_quote (config_range);
-          free (config_range);
-        }
-      else
-        quoted_config_range = NULL;
-
-      sql ("UPDATE targets SET port_range = '%s'"
-           " WHERE ROWID = %llu;",
-           quoted_config_range
-            ? quoted_config_range
-            : (quoted_scanner_range ? quoted_scanner_range : "default"),
-           target);
-
-      free (quoted_config_range);
-    }
-  cleanup_iterator (&tasks);
-
-  sql ("UPDATE targets SET port_range = 'default' WHERE port_range IS NULL;");
-
-  sql ("DELETE FROM config_preferences WHERE name = 'port_range';");
-  sql ("DELETE FROM nvt_preferences WHERE name = 'port_range';");
-
-  free (quoted_scanner_range);
-
-  /* Set the database version to 36. */
-
-  set_db_version (36);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
 /**
  * @brief Array of database version migrators.
  */
@@ -4137,21 +2996,6 @@ static migrator_t database_migrators[]
     {19, migrate_18_to_19},
     {20, migrate_19_to_20},
     {21, migrate_20_to_21},
-    {22, migrate_21_to_22},
-    {23, migrate_22_to_23},
-    {24, migrate_23_to_24},
-    {25, migrate_24_to_25},
-    {26, migrate_25_to_26},
-    {27, migrate_26_to_27},
-    {28, migrate_27_to_28},
-    {29, migrate_28_to_29},
-    {30, migrate_29_to_30},
-    {31, migrate_30_to_31},
-    {32, migrate_31_to_32},
-    {33, migrate_32_to_33},
-    {34, migrate_33_to_34},
-    {35, migrate_34_to_35},
-    {36, migrate_35_to_36},
     /* End marker. */
     {-1, NULL}};
 
@@ -4240,8 +3084,6 @@ manage_migrate (GSList *log_config, const gchar *database)
           cleanup_manage_process (TRUE);
           return -1;
         }
-
-      tracef ("   Migrating to %i", migrators->version);
 
       if (migrators->function ())
         {
@@ -4585,7 +3427,7 @@ validate_email (const char* address)
  * @param[in]  method_data     Data for escalation method.
  * @param[out] escalator       Created escalator on success.
  *
- * @return 0 success, 1 escalation exists already, 2 validation of email failed.
+ * @return 0 success, 1 escalation exists already.
  */
 int
 create_escalator (const char* name, const char* comment,
@@ -5122,120 +3964,6 @@ email (const char *to_address, const char *from_address, const char *subject,
 }
 
 /**
- * @brief GET an HTTP resource.
- *
- * @param[in]  url  URL.
- *
- * @return 0 success, -1 error.
- */
-static int
-http_get (const char *url)
-{
-  int ret;
-  gchar *standard_out = NULL;
-  gchar *standard_err = NULL;
-  gint exit_status;
-  gchar **cmd;
-
-  tracef ("   HTTP_GET %s", url);
-
-  cmd = (gchar **) g_malloc (5 * sizeof (gchar *));
-  cmd[0] = g_strdup ("/usr/bin/wget");
-  cmd[1] = g_strdup ("-O");
-  cmd[2] = g_strdup ("-");
-  cmd[3] = g_strdup (url);
-  cmd[4] = NULL;
-  g_debug ("%s: Spawning in /tmp/: %s %s %s %s\n",
-           __FUNCTION__, cmd[0], cmd[1], cmd[2], cmd[3]);
-  if ((g_spawn_sync ("/tmp/",
-                     cmd,
-                     NULL,                  /* Environment. */
-                     G_SPAWN_SEARCH_PATH,
-                     NULL,                  /* Setup function. */
-                     NULL,
-                     &standard_out,
-                     &standard_err,
-                     &exit_status,
-                     NULL)
-       == FALSE)
-      || (WIFEXITED (exit_status) == 0)
-      || WEXITSTATUS (exit_status))
-    {
-      g_debug ("%s: wget failed: %d (WIF %i, WEX %i)",
-               __FUNCTION__,
-               exit_status,
-               WIFEXITED (exit_status),
-               WEXITSTATUS (exit_status));
-      g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
-      g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
-      ret = -1;
-    }
-  else
-    {
-      if (strlen (standard_out) > 80)
-        standard_out[80] = '\0';
-      g_debug ("   HTTP_GET %s: %s", url, standard_out);
-      ret = 0;
-    }
-
-  g_free (cmd[0]);
-  g_free (cmd[1]);
-  g_free (cmd[2]);
-  g_free (cmd[3]);
-  g_free (cmd[4]);
-  g_free (cmd);
-  g_free (standard_out);
-  g_free (standard_err);
-  return ret;
-}
-
-/**
- * @brief Format string for simple notice escalator email.
- */
-#define REPORT_NOTICE_FORMAT                                                  \
- "Task '%s': %s\n"                                                            \
- "\n"                                                                         \
- "After the event %s,\n"                                                      \
- "the following condition was met: %s\n"                                      \
- "\n"                                                                         \
- "This email escalation is configured to apply report format '%s'.\n"         \
- "Full details and other report formats are available on the scan engine.\n"  \
- "\n"                                                                         \
- "%s%s%s"                                                                     \
- "\n"                                                                         \
- "%.*s"                                                                       \
- "%s"                                                                         \
- "\n"                                                                         \
- "\n"                                                                         \
- "Note:\n"                                                                    \
- "This email was sent to you as a configured security scan escalation.\n"     \
- "Please contact your local system administrator if you think you\n"          \
- "should not have received it.\n"
-
-/**
- * @brief Maximum number of bytes of the report included in email escalations.
- */
-#define MAX_CONTENT_LENGTH 2000
-
-/**
- * @brief Format string for simple notice escalator email.
- */
-#define SIMPLE_NOTICE_FORMAT                                                  \
- "%s.\n"                                                                      \
- "\n"                                                                         \
- "After the event %s,\n"                                                      \
- "the following condition was met: %s\n"                                      \
- "\n"                                                                         \
- "This email escalation is not configured to provide more details.\n"         \
- "Full details are stored on the scan engine.\n"                              \
- "\n"                                                                         \
- "\n"                                                                         \
- "Note:\n"                                                                    \
- "This email was sent to you as a configured security scan escalation.\n"     \
- "Please contact your local system administrator if you think you\n"          \
- "should not have received it.\n"
-
-/**
  * @brief Escalate an event.
  *
  * @param[in]  escalator   Escalator.
@@ -5256,7 +3984,7 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
          "The escalator for task %s was triggered "
          "(Event: %s, Condition: %s)",
          task_name (task),
-         event_description (event, event_data, NULL),
+         event_description (event, event_data),
          escalator_condition_description (condition, escalator));
 
   switch (method)
@@ -5281,132 +4009,37 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
               name = task_name (task);
               if (notice && strcmp (notice, "0") == 0)
                 {
-                  gchar *event_desc, *condition_desc, *report_content;
-                  char *format_uuid, *format_name;
-                  report_t report;
-                  report_format_t report_format = 0;
-                  gsize content_length;
+                  gchar *event_desc, *condition_desc;
 
-                  /* Message with report. */
-
-                  switch (sql_int64 (&report, 0, 0,
-                                     "SELECT max (ROWID) FROM reports"
-                                     " WHERE task = %llu",
-                                     task))
-                    {
-                      case 0:
-                        if (report)
-                          break;
-                      case 1:        /* Too few rows in result of query. */
-                      case -1:
-                        free (notice);
-                        free (name);
-                        free (to_address);
-                        free (from_address);
-                        return -1;
-                        break;
-                      default:       /* Programming error. */
-                        assert (0);
-                        return -1;
-                    }
-
-                  format_uuid = escalator_data (escalator,
-                                                "method",
-                                                "notice_report_format");
-                  if ((find_report_format (format_uuid, &report_format)
-                       || (report_format == 0))
-                      /* Fallback to TXT. */
-                      && (find_report_format
-                           ("19f6f1b3-7128-4433-888c-ccc764fe6ed5",
-                            &report_format)
-                          || (report_format == 0)))
-                    {
-                      g_free (format_uuid);
-                      free (notice);
-                      free (name);
-                      free (to_address);
-                      free (from_address);
-                      return -1;
-                    }
-                  g_free (format_uuid);
-                  format_name = report_format_name (report_format);
-
-                  event_desc = event_description (event, event_data, NULL);
+                  /* Summary message. */
+                  event_desc = event_description (event, event_data);
                   condition_desc = escalator_condition_description (condition,
                                                                     escalator);
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
-                  report_content = manage_report (report,
-                                                  report_format,
-                                                  1,       /* Ascending. */
-                                                  NULL,    /* Sort field. */
-                                                  1,       /* Result hosts only. */
-                                                  NULL,    /* Min CVSS base. */
-                                                  NULL,    /* Levels. */
-                                                  1,       /* Apply overrides. */
-                                                  NULL,    /* Search phrase. */
-                                                  1,       /* Notes. */
-                                                  0,       /* Notes details. */
-                                                  1,       /* Overrides. */
-                                                  0,       /* Overrides details. */
-                                                  0,       /* First results. */
-                                                  1000,    /* Max results. */
-                                                  &content_length,
-                                                  NULL,    /* Extension. */
-                                                  NULL);   /* Content type. */
-                  body = g_strdup_printf (REPORT_NOTICE_FORMAT,
-                                          name,
+                  body = g_strdup_printf ("Task: %s\n"
+                                          "Event: %s\n"
+                                          "Condition: %s\n"
+                                          "\n"
+                                          "The event occurred and matched the"
+                                          " task and condition.\n",
+                                          name ? name : "Internal Error",
                                           event_desc,
-                                          event_desc,
-                                          condition_desc,
-                                          format_name,
-                                          ((content_length > MAX_CONTENT_LENGTH)
-                                            ? "Note: This report exceeds the"
-                                              " maximum length of "
-                                            : ""),
-                                          ((content_length > MAX_CONTENT_LENGTH)
-                                            ? G_STRINGIFY (MAX_CONTENT_LENGTH)
-                                            : ""),
-                                          ((content_length > MAX_CONTENT_LENGTH)
-                                            ? " characters and thus\n"
-                                              "was truncated.\n"
-                                            : ""),
-                                          /* Cast for 64 bit.  Safe because
-                                           * MAX_CONTENT_LENGTH is small. */
-                                          (int) MIN (content_length,
-                                                     MAX_CONTENT_LENGTH),
-                                          report_content,
-                                          ((content_length > MAX_CONTENT_LENGTH)
-                                            ? "\n... (report truncated after"
-                                              " "
-                                              G_STRINGIFY (MAX_CONTENT_LENGTH)
-                                              " characters)\n"
-                                            : ""));
-                  free (format_name);
-                  g_free (report_content);
+                                          condition_desc);
                   g_free (event_desc);
                   g_free (condition_desc);
                 }
               else
                 {
-                  gchar *event_desc, *generic_desc, *condition_desc;
-
-                  /* Simple notice message. */
-                  event_desc = event_description (event, event_data, name);
-                  generic_desc = event_description (event, event_data, NULL);
-                  condition_desc = escalator_condition_description (condition,
-                                                                    escalator);
+                  /* Notice message. */
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s':"
                                              " An event occurred",
                                              name);
-                  body = g_strdup_printf (SIMPLE_NOTICE_FORMAT,
-                                          event_desc,
-                                          generic_desc,
-                                          condition_desc);
-                  g_free (event_desc);
-                  g_free (generic_desc);
-                  g_free (condition_desc);
+                  body = g_strdup_printf ("Task: %s\n"
+                                          "\n"
+                                          "An event occurred on the task.\n",
+                                          name);
                 }
               free (name);
               free (notice);
@@ -5420,80 +4053,12 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
           return -1;
           break;
         }
-      case ESCALATOR_METHOD_HTTP_GET:
-        {
-          char *url;
-
-          url = escalator_data (escalator, "method", "URL");
-
-          if (url)
-            {
-              int ret, formatting;
-              gchar *point, *end;
-              GString *new_url;
-
-              new_url = g_string_new ("");
-              for (formatting = 0, point = url, end = (url + strlen (url));
-                   point < end;
-                   point++)
-                if (formatting)
-                  {
-                    switch (*point)
-                      {
-                        case '$':
-                          g_string_append_c (new_url, '$');
-                          break;
-                        case 'c':
-                          {
-                            gchar *condition_desc;
-                            condition_desc = escalator_condition_description
-                                              (condition, escalator);
-                            g_string_append (new_url, condition_desc);
-                            g_free (condition_desc);
-                            break;
-                          }
-                        case 'e':
-                          {
-                            gchar *event_desc;
-                            event_desc = event_description (event, event_data,
-                                                            NULL);
-                            g_string_append (new_url, event_desc);
-                            g_free (event_desc);
-                            break;
-                          }
-                        case 'n':
-                          {
-                            char *name = task_name (task);
-                            g_string_append (new_url, name);
-                            free (name);
-                            break;
-                          }
-                        default:
-                          g_string_append_c (new_url, '$');
-                          g_string_append_c (new_url, *point);
-                          break;
-                      }
-                    formatting = 0;
-                  }
-                else if (*point == '$')
-                  formatting = 1;
-                else
-                  g_string_append_c (new_url, *point);
-
-              ret = http_get (new_url->str);
-              g_string_free (new_url, TRUE);
-              g_free (url);
-              return ret;
-            }
-          return -1;
-          break;
-        }
       case ESCALATOR_METHOD_SYSLOG:
         {
           char *submethod;
           gchar *message, *event_desc, *level;
 
-          event_desc = event_description (event, event_data, NULL);
+          event_desc = event_description (event, event_data);
           message = g_strdup_printf ("%s: %s", event_name (event), event_desc);
           g_free (event_desc);
 
@@ -5820,11 +4385,9 @@ init_task_iterator (iterator_t* iterator,
     {
       if (task)
         init_iterator (iterator,
-                       "SELECT ROWID, uuid, run_status FROM tasks"
-                       /* Include NULL so everyone can see the example task. */
-                       " WHERE ((owner IS NULL) OR owner ="
+                       "SELECT ROWID, uuid, run_status FROM tasks WHERE owner ="
                        " (SELECT ROWID FROM users"
-                       "  WHERE users.uuid = '%s'))"
+                       "  WHERE users.uuid = '%s')"
                        " AND ROWID = %llu"
                        " ORDER BY %s %s;",
                        current_credentials.uuid,
@@ -5979,7 +4542,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
                                     collate_message_type)
           != SQLITE_OK)
         {
-          g_warning ("%s: failed to create collate_message_type", __FUNCTION__);
+          g_message ("%s: failed to create collate_message_type", __FUNCTION__);
           abort ();
         }
 
@@ -5990,7 +4553,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
                                     collate_ip)
           != SQLITE_OK)
         {
-          g_warning ("%s: failed to create collate_ip", __FUNCTION__);
+          g_message ("%s: failed to create collate_ip", __FUNCTION__);
           abort ();
         }
 
@@ -6004,7 +4567,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
                                    NULL)            /* xFinal. */
           != SQLITE_OK)
         {
-          g_warning ("%s: failed to create make_uuid", __FUNCTION__);
+          g_message ("%s: failed to create make_uuid", __FUNCTION__);
           abort ();
         }
 
@@ -6018,21 +4581,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
                                    NULL)            /* xFinal. */
           != SQLITE_OK)
         {
-          g_warning ("%s: failed to create host_contains", __FUNCTION__);
-          abort ();
-        }
-
-      if (sqlite3_create_function (task_db,
-                                   "uniquify",
-                                   3,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_uniquify,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create uniquify", __FUNCTION__);
+          g_message ("%s: failed to create make_uuid", __FUNCTION__);
           abort ();
         }
     }
@@ -6183,53 +4732,6 @@ setup_full_config_prefs (config_t config, int safe_checks,
        " 'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
        " 'yes');",
        config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'PLUGINS_PREFS',"
-       " 'Login configurations[checkbox]:NTLMSSP',"
-       " 'yes');",
-       config);
-}
-
-/**
- * @brief Update the memory cache of NVTs.
- */
-static void
-update_nvti_cache ()
-{
-  iterator_t nvts;
-
-  nvtis_free (nvti_cache);
-
-  nvti_cache = nvtis_new ();
-
-  init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
-  while (next (&nvts))
-    {
-      nvti_t *nvti = nvti_new ();
-      nvti_set_oid (nvti, nvt_iterator_oid (&nvts));
-      nvti_set_name (nvti, nvt_iterator_name (&nvts));
-      nvti_set_family (nvti, nvt_iterator_family (&nvts));
-      nvti_set_cvss_base (nvti, nvt_iterator_cvss_base (&nvts));
-      nvti_set_risk_factor (nvti, nvt_iterator_risk_factor (&nvts));
-      nvti_set_cve (nvti, nvt_iterator_cve (&nvts));
-      nvti_set_bid (nvti, nvt_iterator_bid (&nvts));
-      nvtis_add (nvti_cache, nvti);
-    }
-  cleanup_iterator (&nvts);
-}
-
-/**
- * @brief Update the memory cache of NVTs, if this has been requested.
- */
-void
-manage_update_nvti_cache ()
-{
-  if (sql_int (0, 0,
-               "SELECT value FROM meta WHERE name = 'update_nvti_cache';"))
-    {
-      update_nvti_cache ();
-      sql ("UPDATE meta SET value = 0 WHERE name = 'update_nvti_cache';");
-    }
 }
 
 /**
@@ -6338,14 +4840,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0, "SELECT count(*) FROM users WHERE name = 'om';") == 0)
     sql ("INSERT into users (name, password) VALUES ('om', '');");
-
-  /* Ensure the nvti cache update flag exists and is clear. */
-
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM meta WHERE name = 'update_nvti_cache';"))
-    sql ("UPDATE meta SET value = 0 WHERE name = 'update_nvti_cache';");
-  else
-    sql ("INSERT INTO meta (name, value) VALUES ('update_nvti_cache', 0);");
 
   /* Ensure every part of the predefined selector exists.
    *
@@ -6532,13 +5026,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       == 0)
     {
       sql ("INSERT into tasks (uuid, owner, name, hidden, comment,"
-           " run_status, start_time, end_time, config, target, slave)"
+           " run_status, start_time, end_time, config, target)"
            " VALUES ('" MANAGE_EXAMPLE_TASK_UUID "', NULL, 'Example task',"
            " 1, 'This is an example task for the help pages.', %u,"
            " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009',"
            " (SELECT ROWID FROM configs WHERE name = 'Full and fast'),"
-           " (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
-           " 0);",
+           " (SELECT ROWID FROM targets WHERE name = 'Localhost'));",
            TASK_STATUS_DONE);
     }
 
@@ -6561,12 +5054,11 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       else
         {
           sql ("INSERT into reports (uuid, owner, hidden, task, comment,"
-               " start_time, end_time, scan_run_status, slave_progress,"
-               " slave_task_uuid)"
+               " start_time, end_time, scan_run_status)"
                " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', NULL, 1, %llu,"
                " 'This is an example report for the help pages.',"
                " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009',"
-               " %u, 0, '');",
+               " %u);",
                task,
                TASK_STATUS_DONE);
           report = sqlite3_last_insert_rowid (task_db);
@@ -6587,147 +5079,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
         }
 
       current_credentials.uuid = NULL;
-    }
-
-  /* Ensure the predefined report formats exist. */
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'CPE';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('a0704abb-2120-489f-959f-251c9f4ffebd', NULL, 'CPE',"
-           " 'Common Product Enumeration CSV table.',"
-           " 'CPE stands for Common Product Enumeration.  It is a structured naming scheme for\n"
-           "information technology systems, platforms, and packages.  In other words: CPE\n"
-           "provides a unique identifier for virtually any software product that is known for\n"
-           "a vulnerability.\n"
-           "\n"
-           "The CPE dictionary is maintained by MITRE and NIST.  MITRE also maintains CVE\n"
-           "(Common Vulnerability Enumeration) and other relevant security standards.\n"
-           "\n"
-           "The report selects all CPE tables from the results and forms a single table\n"
-           "as a comma separated values file.\n',"
-           " 'csv', 'text/csv', '', %i, %i, 1);",
-           TRUST_YES,
-           time (NULL));
-      report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
-    }
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'HTML';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('b993b6f5-f9fb-4e6e-9c94-dd46c00e058d', NULL, 'HTML',"
-           " 'Single page HTML report.',"
-           " 'A single HTML page listing results of a scan.  Style information is embedded in\n"
-           "the HTML, so the page is suitable for viewing in a browser as is.\n',"
-           " 'html', 'text/html', '', %i, %i, 1);",
-           TRUST_YES,
-           time (NULL));
-      report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
-    }
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'ITG';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('929884c6-c2c4-41e7-befb-2f6aa163b458', NULL, 'ITG',"
-           " 'German \"IT-Grundschutz-Kataloge\" report.',"
-           " 'Tabular report on the German \"IT-Grundschutz-Kataloge\",\n"
-           "as published and maintained by the German Federal Agency for IT-Security.\n',"
-           " 'csv', 'text/csv', '', %i, %i, 1);",
-           TRUST_YES,
-           time (NULL));
-      report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
-    }
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'LaTeX';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('9f1ab17b-aaaa-411a-8c57-12df446f5588', NULL, 'LaTeX',"
-           " 'LaTeX source file.',"
-           " 'Report as LaTeX source file for further processing.\n',"
-           " 'tex', 'text/plain', '', %i, %i, 1);",
-           TRUST_YES,
-           time (NULL));
-      report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
-    }
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'NBE';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('f5c2a364-47d2-4700-b21d-0a7693daddab', NULL, 'NBE',"
-           " 'Legacy OpenVAS report.',"
-           " 'The traditional OpenVAS Scanner text based format.',"
-           " 'nbe', 'text/plain', '', %i, %i, 1);",
-           TRUST_YES,
-           time (NULL));
-      report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
-    }
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'PDF';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('1a60a67e-97d0-4cbf-bc77-f71b08e7043d', NULL, 'PDF',"
-           " 'Portable Document Format report.',"
-           " 'Scan results in Portable Document Format (PDF).',"
-           "'pdf', 'application/pdf', '', %i, %i, 1);",
-           TRUST_YES,
-           time (NULL));
-      report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
-    }
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'TXT';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('19f6f1b3-7128-4433-888c-ccc764fe6ed5', NULL, 'TXT',"
-           " 'Plain text report.',"
-           " 'Plain text report, best viewed with fixed font size.',"
-           " 'txt', 'text/plain', '', %i, %i, 1);",
-           TRUST_YES,
-           time (NULL));
-      report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
-    }
-
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'XML';")
-      == 0)
-    {
-      report_format_t report_format;
-      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('d5da9f67-8551-4e51-807b-b6a873d70e34', NULL, 'XML',"
-           " 'Raw XML report.',"
-           " 'Complete scan report in OpenVAS Manager XML format.',"
-           " 'xml', 'text/xml', '', %i, %i, 1);",
-           TRUST_YES,
-           time (NULL));
-      report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
     }
 
   if (nvt_cache_mode == 0)
@@ -6796,7 +5147,24 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
   /* Load the NVT cache into memory. */
 
   if (nvti_cache == NULL)
-    update_nvti_cache ();
+    {
+      iterator_t nvts;
+
+      nvti_cache = nvtis_new ();
+
+      init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
+      while (next (&nvts))
+        {
+          nvti_t *nvti = nvti_new ();
+          nvti_set_oid (nvti, nvt_iterator_oid (&nvts));
+          nvti_set_name (nvti, nvt_iterator_name (&nvts));
+          nvti_set_family (nvti, nvt_iterator_family (&nvts));
+          nvti_set_cvss_base (nvti, nvt_iterator_cvss_base (&nvts));
+          nvti_set_risk_factor (nvti, nvt_iterator_risk_factor (&nvts));
+          nvtis_add (nvti_cache, nvti);
+        }
+      cleanup_iterator (&nvts);
+    }
 
   sqlite3_close (task_db);
   task_db = NULL;
@@ -7120,45 +5488,6 @@ void
 set_task_target (task_t task, target_t target)
 {
   sql ("UPDATE tasks SET target = %llu WHERE ROWID = %llu;", target, task);
-}
-
-/**
- * @brief Return the slave of a task.
- *
- * @param[in]  task  Task.
- *
- * @return Slave of task.
- */
-slave_t
-task_slave (task_t task)
-{
-  slave_t slave = 0;
-  switch (sql_int64 (&slave, 0, 0,
-                     "SELECT slave FROM tasks WHERE ROWID = %llu;",
-                     task))
-    {
-      case 0:
-        return slave;
-        break;
-      case 1:        /* Too few rows in result of query. */
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        return 0;
-        break;
-    }
-}
-
-/**
- * @brief Set the slave of a task.
- *
- * @param[in]  task   Task.
- * @param[in]  slave  Slave.
- */
-void
-set_task_slave (task_t task, slave_t slave)
-{
-  sql ("UPDATE tasks SET slave = %llu WHERE ROWID = %llu;", slave, task);
 }
 
 /**
@@ -8196,10 +6525,10 @@ make_report (task_t task, const char* uuid, task_status_t status)
   assert (current_credentials.uuid);
 
   sql ("INSERT into reports (uuid, owner, hidden, task, date, nbefile, comment,"
-       " scan_run_status, slave_progress, slave_task_uuid)"
+       " scan_run_status)"
        " VALUES ('%s',"
        " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       " 0, %llu, %i, '', '', %u, 0, '');",
+       " 0, %llu, %i, '', '', %u);",
        uuid, current_credentials.uuid, task, time (NULL), status);
   report = sqlite3_last_insert_rowid (task_db);
   return report;
@@ -8791,27 +7120,23 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                phrase_sql ? phrase_sql->str : "",
                                cvss_sql ? cvss_sql->str : "",
                                ascending
-                                ? ((strcmp (sort_field, "ROWID") == 0)
-                                    ? " ORDER BY results.ROWID"
-                                    : ((strcmp (sort_field, "port") == 0)
-                                        ? " ORDER BY host COLLATE collate_ip,"
-                                          " port,"
-                                          " new_type"
-                                          " COLLATE collate_message_type DESC"
-                                        : " ORDER BY host COLLATE collate_ip,"
-                                          " new_type COLLATE collate_message_type,"
-                                          " port"))
-                                : ((strcmp (sort_field, "ROWID") == 0)
-                                    ? " ORDER BY results.ROWID DESC"
-                                    : ((strcmp (sort_field, "port") == 0)
-                                        ? " ORDER BY host COLLATE collate_ip,"
-                                          " port DESC,"
-                                          " new_type"
-                                          " COLLATE collate_message_type DESC"
-                                        : " ORDER BY host COLLATE collate_ip,"
-                                          " new_type"
-                                          " COLLATE collate_message_type DESC,"
-                                          " port")),
+                                ? ((strcmp (sort_field, "port") == 0)
+                                    ? " ORDER BY host COLLATE collate_ip,"
+                                      " port,"
+                                      " new_type"
+                                      " COLLATE collate_message_type DESC"
+                                    : " ORDER BY host COLLATE collate_ip,"
+                                      " new_type COLLATE collate_message_type,"
+                                      " port")
+                                : ((strcmp (sort_field, "port") == 0)
+                                    ? " ORDER BY host COLLATE collate_ip,"
+                                      " port DESC,"
+                                      " new_type"
+                                      " COLLATE collate_message_type DESC"
+                                    : " ORDER BY host COLLATE collate_ip,"
+                                      " new_type"
+                                      " COLLATE collate_message_type DESC,"
+                                      " port"),
                                max_results,
                                first_result);
 
@@ -8978,42 +7303,6 @@ result_iterator_nvt_risk_factor (iterator_t *iterator)
 }
 
 /**
- * @brief Get the NVT CVE from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The CVE of the NVT that produced the result, or NULL on error.
- */
-const char*
-result_iterator_nvt_cve (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_cve (nvti);
-  return NULL;
-}
-
-/**
- * @brief Get the NVT BID from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The BID of the NVT that produced the result, or NULL on error.
- */
-const char*
-result_iterator_nvt_bid (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_bid (nvti);
-  return NULL;
-}
-
-/**
  * @brief Get the original type from a result iterator.
  *
  * This is the column 'type'.
@@ -9058,7 +7347,7 @@ DEF_ACCESS (descr, 7);
  * @param[in]  host      Single host to iterate over.  All hosts if NULL.
  */
 void
-init_host_iterator (iterator_t* iterator, report_t report, const char *host)
+init_host_iterator (iterator_t* iterator, report_t report, char *host)
 {
   gchar* sql;
 
@@ -9359,23 +7648,6 @@ report_scan_run_status (report_t report, int* status)
 }
 
 /**
- * @brief Return the run status of the scan associated with a report.
- *
- * @param[in]   report  Report.
- * @param[out]  status  Scan run status.
- *
- * @return 0 on success, -1 on error.
- */
-int
-set_report_scan_run_status (report_t report, task_status_t status)
-{
-  sql ("UPDATE reports SET scan_run_status = %u WHERE ROWID = %llu;",
-       status,
-       report);
-  return 0;
-}
-
-/**
  * @brief Get the number of results in the scan associated with a report.
  *
  * @param[in]   report         Report.
@@ -9482,300 +7754,76 @@ report_scan_result_count (report_t report, const char* levels,
 int
 report_count (report_t report, const char *type, int override, const char *host)
 {
-  if (override
-      && sql_int (0, 0,
-                  "SELECT count(*)"
-                  " FROM overrides"
-                  " WHERE (overrides.owner IS NULL)"
-                  " OR (overrides.owner ="
-                  " (SELECT ROWID FROM users"
-                  "  WHERE users.uuid = '%s'))",
-                  current_credentials.uuid))
+  if (override)
     {
       int count;
-      iterator_t results;
-      task_t task;
+      gchar *ov, *new_type_sql;
 
-      sqlite3_stmt *stmt, *full_stmt;
-      gchar *select;
-      int ret;
+      assert (current_credentials.uuid);
 
-      /* Prepare quick inner statement. */
+      ov = g_strdup_printf
+            ("SELECT overrides.new_threat"
+             " FROM overrides"
+             " WHERE overrides.nvt = results.nvt"
+             " AND ((overrides.owner IS NULL)"
+             " OR (overrides.owner ="
+             " (SELECT ROWID FROM users"
+             "  WHERE users.uuid = '%s')))"
+             " AND (overrides.task ="
+             "      (SELECT reports.task FROM reports"
+             "       WHERE report_results.report = reports.ROWID)"
+             "      OR overrides.task = 0)"
+             " AND (overrides.result = results.ROWID"
+             "      OR overrides.result = 0)"
+             " AND (overrides.hosts is NULL"
+             "      OR overrides.hosts = \"\""
+             "      OR hosts_contains (overrides.hosts, results.host))"
+             " AND (overrides.port is NULL"
+             "      OR overrides.port = \"\""
+             "      OR overrides.port = results.port)"
+             " AND (overrides.threat is NULL"
+             "      OR overrides.threat = \"\""
+             "      OR overrides.threat = results.type)"
+             " ORDER BY overrides.result DESC, overrides.task DESC,"
+             " overrides.port DESC, overrides.threat"
+             " COLLATE collate_message_type ASC",
+             current_credentials.uuid);
 
-      select = g_strdup_printf ("SELECT 1 FROM overrides"
-                                " WHERE (overrides.nvt = $nvt)"
-                                " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                                " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
-                                current_credentials.uuid);
-      while (1)
+      new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
+                                      " THEN type ELSE (%s) END)",
+                                      ov, ov);
+
+      g_free (ov);
+
+      if (host)
         {
-          const char* tail;
-          ret = sqlite3_prepare (task_db, select, -1, &stmt, &tail);
-          if (ret == SQLITE_BUSY) continue;
-          g_free (select);
-          if (ret == SQLITE_OK)
-            {
-              if (stmt == NULL)
-                {
-                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          /** @todo ROLLBACK if in transaction. */
-          abort ();
+          gchar* quoted_host = sql_quote (host);
+          count = sql_int (0, 0,
+                           "SELECT count(*), %s AS new_type"
+                           " FROM results, report_results"
+                           " WHERE results.host = '%s'"
+                           " AND new_type = '%s'"
+                           " AND results.ROWID = report_results.result"
+                           " AND report_results.report = '%llu';",
+                           new_type_sql,
+                           quoted_host,
+                           type,
+                           report);
+          g_free (quoted_host);
         }
+      else
+        count = sql_int (0, 0,
+                         "SELECT count(*), %s AS new_type"
+                         " FROM results, report_results"
+                         " WHERE new_type = '%s'"
+                         " AND results.ROWID = report_results.result"
+                         " AND report_results.report = '%llu';",
+                         new_type_sql,
+                         type,
+                         report);
 
-      /* Prepare full inner statement. */
+      g_free (new_type_sql);
 
-      report_task (report, &task);
-
-      select = g_strdup_printf
-                ("SELECT overrides.new_threat"
-                 " FROM overrides"
-                 " WHERE overrides.nvt = $nvt" // 1
-                 " AND ((overrides.owner IS NULL)"
-                 " OR (overrides.owner ="
-                 " (SELECT users.ROWID FROM users"
-                 "  WHERE users.uuid = '%s')))"
-                 " AND (overrides.task = 0"
-                 "      OR overrides.task = %llu)"
-                 " AND (overrides.result = 0"
-                 "      OR overrides.result = $result)" // 2
-                 " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = \"\""
-                 "      OR hosts_contains (overrides.hosts, $host))" // 3
-                 " AND (overrides.port is NULL"
-                 "      OR overrides.port = \"\""
-                 "      OR overrides.port = $port)" // 4
-                 " AND (overrides.threat is NULL"
-                 "      OR overrides.threat = \"\""
-                 "      OR overrides.threat = $type)" // 5
-                 " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC;",
-                 current_credentials.uuid,
-                 task);
-
-      while (1)
-        {
-          const char* tail;
-          ret = sqlite3_prepare (task_db, select, -1, &full_stmt, &tail);
-          if (ret == SQLITE_BUSY) continue;
-          g_free (select);
-          if (ret == SQLITE_OK)
-            {
-              if (full_stmt == NULL)
-                {
-                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          /** @todo ROLLBACK if in transaction. */
-          abort ();
-        }
-
-      /* Loop through all results. */
-
-      count = 0;
-      init_iterator (&results,
-                     "SELECT results.ROWID, results.nvt, results.type,"
-                     " results.host, results.port"
-                     " FROM results, report_results"
-                     " WHERE report_results.report = %llu"
-                     " AND results.ROWID = report_results.result",
-                     report);
-      while (next (&results))
-        {
-          const char *nvt, *new_type;
-
-          nvt = (const char*) sqlite3_column_text (results.stmt, 1);
-
-          /* Bind the current result values into the quick statement. */
-
-          while (1)
-            {
-              ret = sqlite3_bind_text (stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_OK) break;
-              g_warning ("%s: sqlite3_prepare failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-
-          /* Run the quick inner statement to check for overrides. */
-
-          while (1)
-            {
-              ret = sqlite3_step (stmt);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_DONE) break;
-              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                {
-                  if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-                  g_warning ("%s: sqlite3_step failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-
-          /* Check the result. */
-
-          if (ret == SQLITE_DONE)
-            {
-              new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-              if (new_type && (strcmp (new_type, type) == 0))
-                count++;
-            }
-          else
-            {
-              /* There is an override on this NVT, get the new threat value. */
-
-              /* Bind the current result values into the full statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_bind_text (full_stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  result_t result;
-                  result = (result_t) sqlite3_column_int64 (results.stmt, 0);
-                  ret = sqlite3_bind_int64 (full_stmt, 2, result);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  const char *host;
-                  host = (const char*) sqlite3_column_text (results.stmt, 3);
-                  ret = sqlite3_bind_text (full_stmt, 3, host, -1,
-                                           SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  const char *port;
-                  port = (const char*) sqlite3_column_text (results.stmt, 4);
-                  ret = sqlite3_bind_text (full_stmt, 4, port, -1,
-                                           SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  const char *type;
-                  type = (const char*) sqlite3_column_text (results.stmt, 2);
-                  ret = sqlite3_bind_text (full_stmt, 5, type, -1,
-                                           SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              /* Run the full inner statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_step (full_stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      if (ret == SQLITE_ERROR) ret = sqlite3_reset (full_stmt);
-                      g_warning ("%s: sqlite3_step failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                  break;
-                }
-
-              /* Check the result. */
-
-              if (ret == SQLITE_DONE)
-                new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-              else
-                new_type = (const char*) sqlite3_column_text (full_stmt, 0);
-
-              if (new_type && (strcmp (new_type, type) == 0))
-                count++;
-
-              /* Reset the full inner statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_reset (full_stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      g_warning ("%s: sqlite3_reset failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                }
-            }
-
-          /* Reset the quick inner statement. */
-
-          while (1)
-            {
-              ret = sqlite3_reset (stmt);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                {
-                  g_warning ("%s: sqlite3_reset failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-            }
-        }
-      cleanup_iterator (&results);
-      sqlite3_finalize (stmt);
       return count;
     }
   else if (host)
@@ -9785,7 +7833,7 @@ report_count (report_t report, const char *type, int override, const char *host)
                            "SELECT count(*) FROM results, report_results"
                            " WHERE results.host = '%s' AND results.type = '%s'"
                            " AND results.ROWID = report_results.result"
-                           " AND report_results.report = %llu;",
+                           " AND report_results.report = '%llu';",
                            quoted_host,
                            type,
                            report);
@@ -9795,435 +7843,11 @@ report_count (report_t report, const char *type, int override, const char *host)
   else
     return sql_int (0, 0,
                     "SELECT count(*) FROM results, report_results"
-                    " WHERE report_results.report = %llu"
-                    " AND report_results.result = results.ROWID"
-                    " AND results.type = '%s';",
-                    report,
-                    type);
-}
-
-/**
- * @brief Check if a result matches the filter criteria.
- *
- * @param[in]  results        Result iterator.
- * @param[in]  search_phrase  Search phrase.
- * @param[in]  min_cvss_base  Minimum CVSS base.
- *
- * @return 1 if match, 0 otherwise.
- */
-static int
-report_counts_match (iterator_t *results, const char *search_phrase,
-                     const char *min_cvss_base)
-{
-  if (search_phrase)
-    {
-      if (strstr ((const char*) sqlite3_column_text (results->stmt, 5),
-                  search_phrase))
-        {
-          if (min_cvss_base && sqlite3_column_int (results->stmt, 1))
-            {
-              if (sql_int (0, 0,
-                           "SELECT"
-                           " (CAST (cvss_base AS REAL))"
-                           " >= CAST (%s AS REAL)"
-                           " FROM nvts"
-                           " WHERE nvts.oid = '%s';",
-                           /* Assume valid SQL string. */
-                           min_cvss_base,
-                           sqlite3_column_text (results->stmt, 1)))
-                return 1;
-            }
-          else
-            return 1;
-        }
-    }
-  else if (min_cvss_base && sqlite3_column_int (results->stmt, 1))
-    {
-      if (sql_int (0, 0,
-                   "SELECT"
-                   " (CAST (cvss_base AS REAL))"
-                   " >= CAST (%s AS REAL)"
-                   " FROM nvts"
-                   " WHERE nvts.oid = '%s';",
-                   /* Assume valid SQL string. */
-                   min_cvss_base,
-                   sqlite3_column_text (results->stmt, 1)))
-        return 1;
-    }
-  else
-    return 1;
-  return 0;
-}
-
-/**
- * @brief Get the message count for a report for a specific message type.
- *
- * @param[in]  report     Report.
- * @param[in]  type       Message type.
- * @param[in]  override   Whether to override the threat.
- * @param[in]  host       Host to which to limit the count.  NULL to allow all.
- * @param[in]  min_cvss_base  Minimum CVSS base of filtered results.  All
- *                            results if NULL.
- * @param[in]  search_phrase  Phrase that filtered results must include.  All results
- *                            if NULL or "".
- *
- * @return Message count.
- */
-int
-report_count_filtered (report_t report, const char *type, int override,
-                       const char *host, const char *min_cvss_base,
-                       const char *search_phrase)
-{
-  if (search_phrase && strcmp (search_phrase, "") == 0)
-    search_phrase = NULL;
-
-  if (min_cvss_base && strcmp (min_cvss_base, "") == 0)
-    min_cvss_base = NULL;
-
-  if (override
-      && sql_int (0, 0,
-                  "SELECT count(*)"
-                  " FROM overrides"
-                  " WHERE (overrides.owner IS NULL)"
-                  " OR (overrides.owner ="
-                  " (SELECT ROWID FROM users"
-                  "  WHERE users.uuid = '%s'))",
-                  current_credentials.uuid))
-    {
-      int count;
-      iterator_t results;
-      task_t task;
-
-      sqlite3_stmt *stmt, *full_stmt;
-      gchar *select;
-      int ret;
-
-      /* Prepare quick inner statement. */
-
-      select = g_strdup_printf ("SELECT 1 FROM overrides"
-                                " WHERE (overrides.nvt = $nvt)"
-                                " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                                " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
-                                current_credentials.uuid);
-      while (1)
-        {
-          const char* tail;
-          ret = sqlite3_prepare (task_db, select, -1, &stmt, &tail);
-          if (ret == SQLITE_BUSY) continue;
-          g_free (select);
-          if (ret == SQLITE_OK)
-            {
-              if (stmt == NULL)
-                {
-                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          /** @todo ROLLBACK if in transaction. */
-          abort ();
-        }
-
-      /* Prepare full inner statement. */
-
-      report_task (report, &task);
-
-      select = g_strdup_printf
-                ("SELECT overrides.new_threat"
-                 " FROM overrides"
-                 " WHERE overrides.nvt = $nvt" // 1
-                 " AND ((overrides.owner IS NULL)"
-                 " OR (overrides.owner ="
-                 " (SELECT users.ROWID FROM users"
-                 "  WHERE users.uuid = '%s')))"
-                 " AND (overrides.task = 0"
-                 "      OR overrides.task = %llu)"
-                 " AND (overrides.result = 0"
-                 "      OR overrides.result = $result)" // 2
-                 " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = \"\""
-                 "      OR hosts_contains (overrides.hosts, $host))" // 3
-                 " AND (overrides.port is NULL"
-                 "      OR overrides.port = \"\""
-                 "      OR overrides.port = $port)" // 4
-                 " AND (overrides.threat is NULL"
-                 "      OR overrides.threat = \"\""
-                 "      OR overrides.threat = $type)" // 5
-                 " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC;",
-                 current_credentials.uuid,
-                 task);
-
-      while (1)
-        {
-          const char* tail;
-          ret = sqlite3_prepare (task_db, select, -1, &full_stmt, &tail);
-          if (ret == SQLITE_BUSY) continue;
-          g_free (select);
-          if (ret == SQLITE_OK)
-            {
-              if (full_stmt == NULL)
-                {
-                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          /** @todo ROLLBACK if in transaction. */
-          abort ();
-        }
-
-      /* Loop through all results. */
-
-      count = 0;
-      init_iterator (&results,
-                     "SELECT results.ROWID, results.nvt, results.type,"
-                     " results.host, results.port, results.description"
-                     " FROM results, report_results"
-                     " WHERE report_results.report = %llu"
-                     " AND results.ROWID = report_results.result",
-                     report);
-      while (next (&results))
-        {
-          const char *nvt, *new_type;
-
-          nvt = (const char*) sqlite3_column_text (results.stmt, 1);
-
-          /* Bind the current result values into the quick statement. */
-
-          while (1)
-            {
-              ret = sqlite3_bind_text (stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_OK) break;
-              g_warning ("%s: sqlite3_prepare failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-
-          /* Run the quick inner statement to check for overrides. */
-
-          while (1)
-            {
-              ret = sqlite3_step (stmt);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_DONE) break;
-              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                {
-                  if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-                  g_warning ("%s: sqlite3_step failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-
-          /* Check the result. */
-
-          if (ret == SQLITE_DONE)
-            {
-              new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-              if (new_type
-                  && (strcmp (new_type, type) == 0)
-                  && report_counts_match (&results,
-                                          search_phrase,
-                                          min_cvss_base))
-                count++;
-            }
-          else
-            {
-              /* There is an override on this NVT, get the new threat value. */
-
-              /* Bind the current result values into the full statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_bind_text (full_stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  result_t result;
-                  result = (result_t) sqlite3_column_int64 (results.stmt, 0);
-                  ret = sqlite3_bind_int64 (full_stmt, 2, result);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  const char *host;
-                  host = (const char*) sqlite3_column_text (results.stmt, 3);
-                  ret = sqlite3_bind_text (full_stmt, 3, host, -1,
-                                           SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  const char *port;
-                  port = (const char*) sqlite3_column_text (results.stmt, 4);
-                  ret = sqlite3_bind_text (full_stmt, 4, port, -1,
-                                           SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  const char *type;
-                  type = (const char*) sqlite3_column_text (results.stmt, 2);
-                  ret = sqlite3_bind_text (full_stmt, 5, type, -1,
-                                           SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              /* Run the full inner statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_step (full_stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      if (ret == SQLITE_ERROR) ret = sqlite3_reset (full_stmt);
-                      g_warning ("%s: sqlite3_step failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                  break;
-                }
-
-              /* Check the result. */
-
-              if (ret == SQLITE_DONE)
-                new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-              else
-                new_type = (const char*) sqlite3_column_text (full_stmt, 0);
-
-              if (new_type
-                  && (strcmp (new_type, type) == 0)
-                  && report_counts_match (&results,
-                                          search_phrase,
-                                          min_cvss_base))
-                count++;
-
-              /* Reset the full inner statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_reset (full_stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      g_warning ("%s: sqlite3_reset failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                }
-            }
-
-          /* Reset the quick inner statement. */
-
-          while (1)
-            {
-              ret = sqlite3_reset (stmt);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                {
-                  g_warning ("%s: sqlite3_reset failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-            }
-        }
-      cleanup_iterator (&results);
-      sqlite3_finalize (stmt);
-      return count;
-    }
-  else if (host)
-    {
-      GString *phrase_sql = where_search_phrase (search_phrase);
-      GString *cvss_sql = where_cvss_base (min_cvss_base);
-      gchar* quoted_host = sql_quote (host);
-      int count = sql_int (0, 0,
-                           "SELECT count(*) FROM results, report_results"
-                           " WHERE results.host = '%s' AND results.type = '%s'"
-                           " AND results.ROWID = report_results.result"
-                           " AND report_results.report = %llu"
-                           "%s%s;",
-                           quoted_host,
-                           type,
-                           report,
-                           phrase_sql ? phrase_sql->str : "",
-                           phrase_sql ? phrase_sql->str : "");
-      g_free (quoted_host);
-      if (phrase_sql) g_string_free (phrase_sql, TRUE);
-      if (cvss_sql) g_string_free (cvss_sql, TRUE);
-      return count;
-    }
-  else
-    {
-      int count;
-      GString *phrase_sql = where_search_phrase (search_phrase);
-      GString *cvss_sql = where_cvss_base (min_cvss_base);
-      count = sql_int (0, 0,
-                       "SELECT count(*) FROM results, report_results"
-                       " WHERE report_results.report = %llu"
-                       " AND report_results.result = results.ROWID"
-                       " AND results.type = '%s'"
-                       "%s%s;",
-                       report,
-                       type,
-                       phrase_sql ? phrase_sql->str : "",
-                       cvss_sql ? cvss_sql->str : "");
-      if (phrase_sql) g_string_free (phrase_sql, TRUE);
-      if (cvss_sql) g_string_free (cvss_sql, TRUE);
-      return count;
-    }
+                    " WHERE results.type = '%s'"
+                    " AND results.ROWID = report_results.result"
+                    " AND report_results.report = '%llu';",
+                    type,
+                    report);
 }
 
 /**
@@ -10266,473 +7890,6 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
  * @param[out]  false_positives  Number of false positive messages.
  * @param[in]   override  Whether to override the threat.
  * @param[in]   host      Host to which to limit the count.  NULL to allow all.
- * @param[in]   min_cvss_base     Minimum CVSS base of filtered results.  All
- *                                results if NULL.
- * @param[in]   search_phrase     Phrase that filtered results must include.
- *                                All results if NULL or "".
- *
- * @return 0 on success, -1 on error.
- */
-static int
-report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
-                       int* logs, int* warnings, int* false_positives,
-                       int override, const char *host,
-                       const char *min_cvss_base, const char *search_phrase,
-                       int* filtered_debugs, int* filtered_holes,
-                       int* filtered_infos, int* filtered_logs,
-                       int* filtered_warnings, int* filtered_false_positives)
-{
-  /* This adds time and is out of scope of OMP threat levels, so skip it */
-  if (debugs)
-    *debugs = 0;
-
-  if (search_phrase && strcmp (search_phrase, "") == 0)
-    search_phrase = NULL;
-
-  if (min_cvss_base && strcmp (min_cvss_base, "") == 0)
-    min_cvss_base = NULL;
-
-  if (holes && infos && logs && warnings && false_positives)
-    {
-      if (override
-          && sql_int (0, 0,
-                      "SELECT count(*)"
-                      " FROM overrides"
-                      " WHERE (overrides.owner IS NULL)"
-                      " OR (overrides.owner ="
-                      " (SELECT ROWID FROM users"
-                      "  WHERE users.uuid = '%s'))",
-                      current_credentials.uuid))
-        {
-          iterator_t results;
-          task_t task;
-
-          sqlite3_stmt *stmt, *full_stmt;
-          gchar *select;
-          int ret;
-
-          /* Prepare quick inner statement. */
-
-          select = g_strdup_printf ("SELECT 1 FROM overrides"
-                                    " WHERE (overrides.nvt = $nvt)"
-                                    " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
-                                    current_credentials.uuid);
-          while (1)
-            {
-              const char* tail;
-              ret = sqlite3_prepare (task_db, select, -1, &stmt, &tail);
-              if (ret == SQLITE_BUSY) continue;
-              g_free (select);
-              if (ret == SQLITE_OK)
-                {
-                  if (stmt == NULL)
-                    {
-                      g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                  break;
-                }
-              g_warning ("%s: sqlite3_prepare failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              /** @todo ROLLBACK if in transaction. */
-              abort ();
-            }
-
-          /* Prepare full inner statement. */
-
-          report_task (report, &task);
-
-          select = g_strdup_printf
-                    ("SELECT overrides.new_threat"
-                     " FROM overrides"
-                     " WHERE overrides.nvt = $nvt" // 1
-                     " AND ((overrides.owner IS NULL)"
-                     " OR (overrides.owner ="
-                     " (SELECT users.ROWID FROM users"
-                     "  WHERE users.uuid = '%s')))"
-                     " AND (overrides.task = 0"
-                     "      OR overrides.task = %llu)"
-                     " AND (overrides.result = 0"
-                     "      OR overrides.result = $result)" // 2
-                     " AND (overrides.hosts is NULL"
-                     "      OR overrides.hosts = \"\""
-                     "      OR hosts_contains (overrides.hosts, $host))" // 3
-                     " AND (overrides.port is NULL"
-                     "      OR overrides.port = \"\""
-                     "      OR overrides.port = $port)" // 4
-                     " AND (overrides.threat is NULL"
-                     "      OR overrides.threat = \"\""
-                     "      OR overrides.threat = $type)" // 5
-                     " ORDER BY overrides.result DESC, overrides.task DESC,"
-                     " overrides.port DESC, overrides.threat"
-                     " COLLATE collate_message_type ASC;",
-                     current_credentials.uuid,
-                     task);
-
-          while (1)
-            {
-              const char* tail;
-              ret = sqlite3_prepare (task_db, select, -1, &full_stmt, &tail);
-              if (ret == SQLITE_BUSY) continue;
-              g_free (select);
-              if (ret == SQLITE_OK)
-                {
-                  if (full_stmt == NULL)
-                    {
-                      g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                  break;
-                }
-              g_warning ("%s: sqlite3_prepare failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              /** @todo ROLLBACK if in transaction. */
-              abort ();
-            }
-
-          /* Loop through all results. */
-
-          *holes = *infos = *logs = *warnings = *false_positives = 0;
-          if (filtered_holes) *filtered_holes = 0;
-          if (filtered_infos) *filtered_infos = 0;
-          if (filtered_logs) *filtered_logs = 0;
-          if (filtered_warnings) *filtered_warnings = 0;
-          if (filtered_false_positives) *filtered_false_positives = 0;
-          init_iterator (&results,
-                         "SELECT results.ROWID, results.nvt, results.type,"
-                         " results.host, results.port, results.description"
-                         " FROM results, report_results"
-                         " WHERE report_results.report = %llu"
-                         " AND results.ROWID = report_results.result",
-                         report);
-          while (next (&results))
-            {
-              const char *nvt, *new_type;
-
-              nvt = (const char*) sqlite3_column_text (results.stmt, 1);
-
-              /* Bind the current result values into the quick statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_bind_text (stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              /* Run the quick inner statement to check for overrides. */
-
-              while (1)
-                {
-                  ret = sqlite3_step (stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-                      g_warning ("%s: sqlite3_step failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                  break;
-                }
-
-              /* Check the result. */
-
-              if (ret == SQLITE_DONE)
-                {
-                  new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-                  if (new_type)
-                    {
-                      if (strcmp (new_type, "Security Hole") == 0)
-                        {
-                          (*holes)++;
-                          if (filtered_holes
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      min_cvss_base))
-                            (*filtered_holes)++;
-                        }
-                      else if (strcmp (new_type, "Security Warning") == 0)
-                        {
-                          (*warnings)++;
-                          if (filtered_warnings
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      min_cvss_base))
-                            (*filtered_warnings)++;
-                        }
-                      else if (strcmp (new_type, "Security Note") == 0)
-                        {
-                          (*infos)++;
-                          if (filtered_infos
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      min_cvss_base))
-                            (*filtered_infos)++;
-                        }
-                      else if (strcmp (new_type, "Log Message") == 0)
-                        {
-                          (*logs)++;
-                          if (filtered_logs
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      min_cvss_base))
-                            (*filtered_logs)++;
-                        }
-                      else if (strcmp (new_type, "False Positive") == 0)
-                        {
-                          (*false_positives)++;
-                          if (filtered_false_positives
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      min_cvss_base))
-                            (*filtered_false_positives)++;
-                        }
-                    }
-                }
-              else
-                {
-                  /* There is an override on this NVT, get the new threat value. */
-
-                  /* Bind the current result values into the full statement. */
-
-                  while (1)
-                    {
-                      ret = sqlite3_bind_text (full_stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_OK) break;
-                      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-
-                  while (1)
-                    {
-                      result_t result;
-                      result = (result_t) sqlite3_column_int64 (results.stmt, 0);
-                      ret = sqlite3_bind_int64 (full_stmt, 2, result);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_OK) break;
-                      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-
-                  while (1)
-                    {
-                      const char *host;
-                      host = (const char*) sqlite3_column_text (results.stmt, 3);
-                      ret = sqlite3_bind_text (full_stmt, 3, host, -1,
-                                               SQLITE_TRANSIENT);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_OK) break;
-                      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-
-                  while (1)
-                    {
-                      const char *port;
-                      port = (const char*) sqlite3_column_text (results.stmt, 4);
-                      ret = sqlite3_bind_text (full_stmt, 4, port, -1,
-                                               SQLITE_TRANSIENT);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_OK) break;
-                      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-
-                  while (1)
-                    {
-                      const char *type;
-                      type = (const char*) sqlite3_column_text (results.stmt, 2);
-                      ret = sqlite3_bind_text (full_stmt, 5, type, -1,
-                                               SQLITE_TRANSIENT);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_OK) break;
-                      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-
-                  /* Run the full inner statement. */
-
-                  while (1)
-                    {
-                      ret = sqlite3_step (full_stmt);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_DONE) break;
-                      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                        {
-                          if (ret == SQLITE_ERROR) ret = sqlite3_reset (full_stmt);
-                          g_warning ("%s: sqlite3_step failed: %s\n",
-                                     __FUNCTION__,
-                                     sqlite3_errmsg (task_db));
-                          abort ();
-                        }
-                      break;
-                    }
-
-                  /* Check the result. */
-
-                  if (ret == SQLITE_DONE)
-                    new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-                  else
-                    new_type = (const char*) sqlite3_column_text (full_stmt, 0);
-
-                  if (new_type)
-                    {
-                      if (strcmp (new_type, "Security Hole") == 0)
-                        {
-                          (*holes)++;
-                          if (filtered_holes
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      min_cvss_base))
-                            (*filtered_holes)++;
-                        }
-                      else if (strcmp (new_type, "Security Warning") == 0)
-                        {
-                          (*warnings)++;
-                          if (filtered_warnings
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      min_cvss_base))
-                            (*filtered_warnings)++;
-                        }
-                      else if (strcmp (new_type, "Security Note") == 0)
-                        {
-                          (*infos)++;
-                          if (filtered_infos
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      min_cvss_base))
-                            (*filtered_infos)++;
-                        }
-                      else if (strcmp (new_type, "Log Message") == 0)
-                        {
-                          (*logs)++;
-                          if (filtered_logs
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      min_cvss_base))
-                            (*filtered_logs)++;
-                        }
-                      else if (strcmp (new_type, "False Positive") == 0)
-                        {
-                          (*false_positives)++;
-                          if (filtered_false_positives
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      min_cvss_base))
-                            (*filtered_false_positives)++;
-                        }
-                    }
-
-                  /* Reset the full inner statement. */
-
-                  while (1)
-                    {
-                      ret = sqlite3_reset (full_stmt);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-                      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                        {
-                          g_warning ("%s: sqlite3_reset failed: %s\n",
-                                     __FUNCTION__,
-                                     sqlite3_errmsg (task_db));
-                          abort ();
-                        }
-                    }
-                }
-
-              /* Reset the quick inner statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_reset (stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      g_warning ("%s: sqlite3_reset failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                }
-            }
-          cleanup_iterator (&results);
-          sqlite3_finalize (stmt);
-
-          return 0;
-        }
-    }
-
-  if (false_positives)
-    *false_positives = report_count (report, "False Positive", override, host);
-  if (holes) *holes = report_count (report, "Security Hole", override, host);
-  if (infos) *infos = report_count (report, "Security Note", override, host);
-  if (logs) *logs = report_count (report, "Log Message", override, host);
-  if (warnings)
-    *warnings = report_count (report, "Security Warning", override, host);
-
-  if (filtered_false_positives)
-    *filtered_false_positives
-     = report_count_filtered (report, "False Positive", override, host,
-                              min_cvss_base, search_phrase);
-  if (filtered_holes)
-    *filtered_holes
-     = report_count_filtered (report, "Security Hole", override, host,
-                              min_cvss_base, search_phrase);
-  if (filtered_infos)
-    *filtered_infos
-     = report_count_filtered (report, "Security Note", override, host,
-                              min_cvss_base, search_phrase);
-  if (filtered_logs)
-    *filtered_logs
-     = report_count_filtered (report, "Log Message", override, host,
-                              min_cvss_base, search_phrase);
-  if (filtered_warnings)
-    *filtered_warnings
-     = report_count_filtered (report, "Security Warning", override, host,
-                              min_cvss_base, search_phrase);
-
-  return 0;
-}
-
-/**
- * @brief Get the message counts for a report.
- *
- * @param[in]   report    Report.
- * @param[out]  debugs    Number of debug messages.
- * @param[out]  holes     Number of hole messages.
- * @param[out]  infos     Number of info messages.
- * @param[out]  logs      Number of log messages.
- * @param[out]  warnings  Number of warning messages.
- * @param[out]  false_positives  Number of false positive messages.
- * @param[in]   override  Whether to override the threat.
- * @param[in]   host      Host to which to limit the count.  NULL to allow all.
  *
  * @return 0 on success, -1 on error.
  */
@@ -10741,27 +7898,27 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
                   int* logs, int* warnings, int* false_positives, int override,
                   const char *host)
 {
-  return report_counts_id_filt (report, debugs, holes, infos, logs, warnings,
-                                false_positives, override, host, NULL, NULL,
-                                NULL, NULL, NULL, NULL, NULL, NULL);
-
+  if (debugs) *debugs = report_count (report, "Debug Message", override, host);
+  if (holes) *holes = report_count (report, "Security Hole", override, host);
+  if (infos) *infos = report_count (report, "Security Note", override, host);
+  if (logs) *logs = report_count (report, "Log Message", override, host);
+  if (warnings)
+    *warnings = report_count (report, "Security Warning", override, host);
+  if (false_positives)
+    *false_positives = report_count (report, "False Positive", override, host);
+  return 0;
 }
 
 /**
  * @brief Delete a report.
  *
- * It's up to the caller to provide the transaction.
- *
  * @param[in]  report  Report.
  *
- * @return 0 success, 1 report is hidden, 2 report is in use, -1 error.
+ * @return 0 success, 1 report is hidden, 2 report is in use.
  */
 int
 delete_report (report_t report)
 {
-  task_t task;
-  char *slave_task_uuid;
-
   if (sql_int (0, 0, "SELECT hidden FROM reports WHERE ROWID = %llu;", report))
     return 1;
 
@@ -10785,155 +7942,10 @@ delete_report (report_t report)
                TASK_STATUS_STOP_WAITING))
     return 2;
 
-  if (report_task (report, &task))
-    return -1;
-
-  /* Remove any associated slave task. */
-
-  slave_task_uuid = report_slave_task_uuid (report);
-  if (slave_task_uuid)
-    {
-      slave_t slave;
-
-      /** @todo Store slave on report, in case task's slave changes. */
-      slave = task_slave (task);
-      if (slave == 0)
-        {
-          free (slave_task_uuid);
-          return -1;
-        }
-
-      delete_slave_task (slave, slave_task_uuid);
-    }
-
-  /* Remove the report data. */
-
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
   sql ("DELETE FROM report_results WHERE report = %llu;", report);
   sql ("DELETE FROM reports WHERE ROWID = %llu;", report);
-
-  /* Update the task state. */
-
-  switch (sql_int64 (&report, 0, 0,
-                     "SELECT max (ROWID) FROM reports WHERE task = %llu",
-                     task))
-    {
-      case 0:
-        if (report)
-          {
-            int status;
-            if (report_scan_run_status (report, &status))
-              return -1;
-            sql ("UPDATE tasks SET run_status = %u WHERE ROWID = %llu;",
-                 status,
-                 task);
-          }
-        break;
-      case 1:        /* Too few rows in result of query. */
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        return -1;
-        break;
-    }
-
   return 0;
-}
-
-/**
- * @brief Delete a report.
- *
- * @param[in]  report  Report.
- *
- * @return 0 success, 1 report is hidden, 2 report is in use, -1 error.
- */
-int
-manage_delete_report (report_t report)
-{
-  int ret;
-
-  sql ("BEGIN EXCLUSIVE;");
-
-  ret = delete_report (report);
-  if (ret)
-    {
-      sql ("ROLLBACK;");
-      return ret;
-    }
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Return the slave progress of a report.
- *
- * @param[in]  report  Report.
- *
- * @return Number of reports.
- */
-int
-report_slave_progress (report_t report)
-{
-  return sql_int (0, 0,
-                  "SELECT slave_progress FROM reports WHERE ROWID = %llu;",
-                  report);
-}
-
-/**
- * @brief Set slave progress of a report.
- *
- * @param[in]  report    The report.
- * @param[in]  progress  The new progress value.
- *
- * @return 0 success.
- */
-int
-set_report_slave_progress (report_t report, int progress)
-{
-  sql ("UPDATE reports SET slave_progress = %i WHERE ROWID = %llu;",
-       progress,
-       report);
-  return 0;
-}
-
-/**
- * @brief Return the UUID of the task on the slave.
- *
- * @param[in]  report    The report.
- *
- * @return UUID of the slave task if any, else NULL.
- */
-char*
-report_slave_task_uuid (report_t report)
-{
-  char *uuid;
-
-  uuid = sql_string (0, 0,
-                     "SELECT slave_task_uuid FROM reports WHERE ROWID = %llu;",
-                     report);
-  if (uuid && strlen (uuid))
-    return uuid;
-  free (uuid);
-  return NULL;
-}
-
-/**
- * @brief Set the UUID of the slave task, on the local task.
- *
- * @param[in]  report    The report.
- * @param[in]  uuid  UUID.
- */
-void
-set_report_slave_task_uuid (report_t report, const char *uuid)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  sql ("UPDATE reports SET slave_task_uuid = '%s' WHERE ROWID = %llu;",
-       quoted_uuid,
-       report);
-  g_free (quoted_uuid);
 }
 
 /**
@@ -10962,42 +7974,6 @@ set_report_parameter (report_t report, const char* parameter, const char* value)
   else
     return -2;
   return 0;
-}
-
-/**
- * @brief Prepare a partial report for restarting the scan from the beginning.
- *
- * @param[in]  report  The report.
- */
-void
-trim_report (report_t report)
-{
-  /* Remove results for all hosts. */
-
-  sql ("DELETE FROM report_results WHERE report = %llu AND result IN"
-       " (SELECT results.ROWID FROM report_results, results, report_hosts"
-       "  WHERE report_results.report = %llu"
-       "  AND report_results.result = results.ROWID"
-       "  AND report_hosts.report = %llu"
-       "  AND results.host = report_hosts.host);",
-       report,
-       report,
-       report);
-
-  sql ("DELETE FROM results WHERE ROWID IN"
-       " (SELECT results.ROWID FROM report_results, results, report_hosts"
-       "  WHERE report_results.report = %llu"
-       "  AND report_results.result = results.ROWID"
-       "  AND report_hosts.report = %llu"
-       "  AND results.host = report_hosts.host);",
-       report,
-       report);
-
-  /* Remove all hosts. */
-
-  sql ("DELETE FROM report_hosts"
-       " WHERE report = %llu;",
-       report);
 }
 
 /**
@@ -11037,1153 +8013,6 @@ trim_partial_report (report_t report)
        " WHERE report = %llu"
        " AND (end_time is NULL OR end_time = '');",
        report);
-}
-
-/**
- * @brief Compares two textual threat level representations, sorting
- * @brief descending.
- *
- * @param[in]  arg_one  First threat level.
- * @param[in]  arg_two  Second threat level.
- *
- * @return 1, 0 or -1 if first given threat is less than, equal to or greater
- *         than second.
- */
-static gint
-compare_message_types_desc (gconstpointer arg_one, gconstpointer arg_two)
-{
-  gchar *one_type, *two_type;
-  gchar *one = *((gchar**) arg_one);
-  gchar *two = *((gchar**) arg_two);
-  gint host;
-
-  one += strlen (one) + 1;
-  two += strlen (two) + 1;
-  one_type = one;
-  two_type = two;
-
-  one += strlen (one) + 1;
-  two += strlen (two) + 1;
-  host = strcmp (one, two);
-  if (host == 0)
-    {
-      gint type;
-      type = collate_message_type (NULL,
-                                   strlen (two_type), two_type,
-                                   strlen (one_type), one_type);
-      if (type == 0)
-        {
-          one = *((gchar**) arg_one);
-          two = *((gchar**) arg_two);
-          return strcmp (one, two);
-        }
-
-      return type;
-    }
-  return host;
-}
-
-/**
- * @brief Compares two textual threat level representations, sorting ascending.
- *
- * @param[in]  arg_one  First threat level.
- * @param[in]  arg_two  Second threat level.
- *
- * @return -1, 0 or 1 if first given threat is less than, equal to or greater
- *         than second.
- */
-static gint
-compare_message_types_asc (gconstpointer arg_one, gconstpointer arg_two)
-{
-  gchar *one_type, *two_type;
-  gchar *one = *((gchar**) arg_one);
-  gchar *two = *((gchar**) arg_two);
-  gint host;
-
-  one += strlen (one) + 1;
-  two += strlen (two) + 1;
-  one_type = one;
-  two_type = two;
-
-  one += strlen (one) + 1;
-  two += strlen (two) + 1;
-  host = strcmp (one, two);
-  if (host == 0)
-    {
-      gint type;
-      type = collate_message_type (NULL,
-                                   strlen (one_type), one_type,
-                                   strlen (two_type), two_type);
-      if (type == 0)
-        {
-          one = *((gchar**) arg_one);
-          two = *((gchar**) arg_two);
-          return strcmp (two, one);
-        }
-
-      return type;
-    }
-  return host;
-}
-
-/**
- * @brief Compares two buffered results, sorting by port then threat.
- *
- * @param[in]  arg_one  First result.
- * @param[in]  arg_two  Second result.
- *
- * @return -1, 0 or 1 if first given result is less than, equal to or greater
- *         than second.
- */
-static gint
-compare_port_threat (gconstpointer arg_one, gconstpointer arg_two)
-{
-  int host;
-  gchar *one = *((gchar**) arg_one);
-  gchar *two = *((gchar**) arg_two);
-  gchar *one_threat = one + strlen (one) + 1;
-  gchar *two_threat = two + strlen (two) + 1;
-
-  host = strcmp (one_threat + strlen (one_threat) + 1,
-                 two_threat + strlen (two_threat) + 1);
-  if (host == 0)
-    {
-      int port = strcmp (one, two);
-      if (port == 0)
-        return collate_message_type (NULL,
-                                     strlen (two_threat), two_threat,
-                                     strlen (one_threat), one_threat);
-      return port;
-    }
-  return host;
-}
-
-/**
- * @brief Write to a file or exit.
- *
- * @param[in]   stream    Stream to write to.
- * @param[in]   format    Format specification.
- * @param[in]   args      Arguments.
- */
-#define PRINT(stream, format, args...)                                       \
-  do                                                                         \
-    {                                                                        \
-      if (fprintf (stream, format , ## args) < 0)                            \
-        return -1;                                                           \
-    }                                                                        \
-  while (0)
-
-/** @todo Defined in omp.c! */
-void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int);
-
-#if 0
-void
-dump (GArray *ports)
-{
-  int index;
-  for (index = 0; index < ports->len; index++)
-    {
-      char *port = g_array_index (ports, char*, index);
-      char *threat = port + strlen (port) + 1;
-      tracef ("  == %s %s %s", threat + strlen (threat) + 1, port, threat);
-    }
-}
-#endif
-
-/**
- * @brief Print the XML for a report to a file.
- *
- * @param[in]  report      The report.
- * @param[in]  task        Task associated with report.
- * @param[in]  xml_file    File name.
- * @param[in]  sort_order  Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "type".
- * @param[in]  result_hosts_only  Whether to show only hosts with results.
- * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
- *                                results if NULL.
- * @param[in]  report_format  Format of report that will be created from XML.
- * @param[in]  levels         String describing threat levels (message types)
- *                            to include in count (for example, "hmlgd" for
- *                            High, Medium, Low, loG and Debug).  All levels if
- *                            NULL.
- * @param[in]  apply_overrides    Whether to apply overrides.
- * @param[in]  search_phrase      Phrase that results must include.  All results
- *                                if NULL or "".
- * @param[in]  notes              Whether to include notes.
- * @param[in]  notes_details      If notes, Whether to include details.
- * @param[in]  overrides          Whether to include overrides.
- * @param[in]  overrides_details  If overrides, Whether to include details.
- * @param[in]  first_result       The result to start from.  The results are 0
- *                                indexed.
- * @param[in]  max_results        The maximum number of results returned.
- *
- * @return 0 on success, -1 error.
- */
-static int
-print_report_xml (report_t report, task_t task, gchar* xml_file,
-                  int sort_order, const char* sort_field, int result_hosts_only,
-                  const char *min_cvss_base, report_format_t report_format,
-                  const char *levels, int apply_overrides,
-                  const char *search_phrase, int notes, int notes_details,
-                  int overrides, int overrides_details, int first_result,
-                  int max_results)
-{
-  FILE *out;
-  char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
-  int result_count, filtered_result_count, run_status;
-  array_t *result_hosts;
-  iterator_t results, params;
-
-  out = fopen (xml_file, "w");
-
-  if (out == NULL)
-    {
-      g_warning ("%s: fopen failed: %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      return -1;
-    }
-
-  levels = levels ? levels : "hmlgd";
-
-  if (task && task_uuid (task, &tsk_uuid))
-    {
-      fclose (out);
-      return -1;
-    }
-
-  uuid = report_uuid (report);
-  PRINT (out, "<report id=\"%s\">", uuid);
-  free (uuid);
-
-  PRINT (out, "<report_format>");
-  init_report_format_param_iterator (&params, report_format, 1, NULL);
-  while (next (&params))
-    PRINT (out,
-           "<param><name>%s</name><value>%s</value></param>",
-           report_format_param_iterator_name (&params),
-           report_format_param_iterator_value (&params));
-  cleanup_iterator (&params);
-  PRINT (out, "</report_format>");
-
-  report_scan_result_count (report, NULL, NULL, NULL,
-                            apply_overrides,
-                            &result_count);
-  report_scan_result_count (report,
-                            levels,
-                            search_phrase,
-                            min_cvss_base,
-                            apply_overrides,
-                            &filtered_result_count);
-  report_scan_run_status (report, &run_status);
-  PRINT
-   (out,
-    "<sort><field>%s<order>%s</order></field></sort>"
-    "<filters>"
-    "%s"
-    "<phrase>%s</phrase>"
-    "<notes>%i</notes>"
-    "<overrides>%i</overrides>"
-    "<apply_overrides>%i</apply_overrides>"
-    "<result_hosts_only>%i</result_hosts_only>"
-    "<min_cvss_base>%s</min_cvss_base>",
-    sort_field ? sort_field : "type",
-    sort_order ? "ascending" : "descending",
-    levels,
-    search_phrase ? search_phrase : "",
-    notes ? 1 : 0,
-    overrides ? 1 : 0,
-    apply_overrides ? 1 : 0,
-    result_hosts_only ? 1 : 0,
-    min_cvss_base ? min_cvss_base : "");
-
-  if (strchr (levels, 'h'))
-    PRINT (out, "<filter>High</filter>");
-  if (strchr (levels, 'm'))
-    PRINT (out, "<filter>Medium</filter>");
-  if (strchr (levels, 'l'))
-    PRINT (out, "<filter>Low</filter>");
-  if (strchr (levels, 'g'))
-    PRINT (out, "<filter>Log</filter>");
-  if (strchr (levels, 'd'))
-    PRINT (out, "<filter>Debug</filter>");
-  if (strchr (levels, 'f'))
-    PRINT (out, "<filter>False Positive</filter>");
-
-  PRINT
-   (out,
-    "</filters>"
-    "<scan_run_status>%s</scan_run_status>",
-    run_status_name (run_status
-                      ? run_status
-                      : TASK_STATUS_INTERNAL_ERROR));
-
-  if (task && tsk_uuid)
-    {
-      char* tsk_name = task_name (task);
-      PRINT (out,
-             "<task id=\"%s\">"
-             "<name>%s</name>"
-             "</task>",
-             tsk_uuid,
-             tsk_name ? tsk_name : "");
-      free (tsk_name);
-      free (tsk_uuid);
-    }
-
-  start_time = scan_start_time (report);
-  PRINT (out,
-         "<scan_start>%s</scan_start>",
-         start_time);
-  free (start_time);
-
-  /* Port summary. */
-
-  {
-    gchar *last_port, *last_host;
-    GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
-
-    init_result_iterator
-     (&results, report, 0, NULL,
-      first_result,
-      max_results,
-      /* Sort by the requested field in the requested order, in case there is
-       * a first_result and/or max_results (these are applied after the
-       * sorting). */
-      sort_order,
-      sort_field,
-      levels,
-      search_phrase,
-      min_cvss_base,
-      apply_overrides);
-
-    /* Buffer the results, removing duplicates. */
-
-    last_port = NULL;
-    last_host = NULL;
-    while (next (&results))
-      {
-        const char *port = result_iterator_port (&results);
-        const char *host = result_iterator_host (&results);
-
-        if (last_port == NULL || strcmp (port, last_port)
-            || strcmp (host, last_host))
-          {
-            const char *type;
-            gchar *item;
-            int port_len, type_len;
-
-            g_free (last_port);
-            last_port = g_strdup (port);
-            g_free (last_host);
-            last_host = g_strdup (host);
-
-            type = result_iterator_type (&results);
-            port_len = strlen (port);
-            type_len = strlen (type);
-            item = g_malloc (port_len
-                              + type_len
-                              + strlen (host)
-                              + 3);
-            g_array_append_val (ports, item);
-            strcpy (item, port);
-            strcpy (item + port_len + 1, type);
-            strcpy (item + port_len + type_len + 2, host);
-          }
-
-      }
-    g_free (last_port);
-    g_free (last_host);
-
-    /* Handle sorting by threat and ROWID. */
-
-    if (sort_field == NULL || strcmp (sort_field, "port"))
-      {
-        int index, length;
-
-        /** @todo Sort by ROWID if was requested. */
-
-        /* Sort by port then threat. */
-
-        g_array_sort (ports, compare_port_threat);
-
-        /* Remove duplicates. */
-
-        last_port = NULL;
-        last_host = NULL;
-        for (index = 0, length = ports->len; index < length; index++)
-          {
-            char *port = g_array_index (ports, char*, index);
-            char *host = port + strlen (port) + 1;
-            host += strlen (host) + 1;
-            if (last_port
-                && (strcmp (port, last_port) == 0)
-                && (strcmp (host, last_host) == 0))
-              {
-                g_array_remove_index (ports, index);
-                length = ports->len;
-                index--;
-              }
-            else
-              {
-                last_port = port;
-                last_host = host;
-              }
-          }
-
-        /* Sort by threat. */
-
-        if (sort_order)
-          g_array_sort (ports, compare_message_types_asc);
-        else
-          g_array_sort (ports, compare_message_types_desc);
-      }
-
-    /* Write to file from the buffer. */
-
-    PRINT (out,
-             "<ports"
-             " start=\"%i\""
-             " max=\"%i\">",
-             /* Add 1 for 1 indexing. */
-             first_result + 1,
-             max_results);
-    {
-      gchar *item;
-      int index = 0;
-
-      while ((item = g_array_index (ports, gchar*, index++)))
-        {
-          int port_len = strlen (item);
-          int type_len = strlen (item + port_len + 1);
-          PRINT (out,
-                   "<port>"
-                   "<host>%s</host>"
-                   "%s"
-                   "<threat>%s</threat>"
-                   "</port>",
-                   item + port_len + type_len + 2,
-                   item,
-                   manage_result_type_threat (item + port_len + 1));
-          g_free (item);
-        }
-      g_array_free (ports, TRUE);
-    }
-    PRINT (out, "</ports>");
-    cleanup_iterator (&results);
-  }
-
-  /* Result counts. */
-
-  {
-    int debugs, holes, infos, logs, warnings, false_positives;
-    int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
-
-    report_counts_id_filt (report, &debugs, &holes, &infos, &logs,
-                           &warnings, &false_positives,
-                           apply_overrides, NULL, min_cvss_base, search_phrase,
-                           &f_debugs, &f_holes, &f_infos, &f_logs, &f_warnings,
-                           &f_false_positives);
-
-    PRINT (out,
-             "<result_count>"
-             "<full>%i</full>"
-             "<filtered>%i</filtered>"
-             "<debug><full>%i</full><filtered>%i</filtered></debug>"
-             "<hole><full>%i</full><filtered>%i</filtered></hole>"
-             "<info><full>%i</full><filtered>%i</filtered></info>"
-             "<log><full>%i</full><filtered>%i</filtered></log>"
-             "<warning><full>%i</full><filtered>%i</filtered></warning>"
-             "<false_positive>"
-             "<full>%i</full>"
-             "<filtered>%i</filtered>"
-             "</false_positive>"
-             "</result_count>",
-             result_count,
-             filtered_result_count,
-             debugs,
-             (strchr (levels, 'd') ? f_debugs : 0),
-             holes,
-             (strchr (levels, 'h') ? f_holes : 0),
-             infos,
-             (strchr (levels, 'l') ? f_infos : 0),
-             logs,
-             (strchr (levels, 'g') ? f_logs : 0),
-             warnings,
-             (strchr (levels, 'm') ? f_warnings : 0),
-             false_positives,
-             (strchr (levels, 'f') ? f_false_positives : 0));
-  }
-
-  /* Results. */
-
-  init_result_iterator (&results, report, 0, NULL,
-                        first_result,
-                        max_results,
-                        sort_order,
-                        sort_field,
-                        levels,
-                        search_phrase,
-                        min_cvss_base,
-                        apply_overrides);
-
-  PRINT (out,
-           "<results"
-           " start=\"%i\""
-           " max=\"%i\">",
-           /* Add 1 for 1 indexing. */
-           first_result + 1,
-           max_results);
-  if (result_hosts_only)
-    result_hosts = make_array ();
-  else
-    /* Quiet erroneous compiler warning. */
-    result_hosts = NULL;
-  while (next (&results))
-    {
-      GString *buffer = g_string_new ("");
-      buffer_results_xml (buffer,
-                          &results,
-                          task,
-                          notes,
-                          notes_details,
-                          overrides,
-                          overrides_details);
-      PRINT (out, "%s", buffer->str);
-      g_string_free (buffer, TRUE);
-      if (result_hosts_only)
-        array_add_new_string (result_hosts,
-                              result_iterator_host (&results));
-    }
-  PRINT (out, "</results>");
-  cleanup_iterator (&results);
-
-  if (result_hosts_only)
-    {
-      gchar *host;
-      int index = 0;
-      array_terminate (result_hosts);
-      while ((host = g_ptr_array_index (result_hosts, index++)))
-        {
-          iterator_t hosts;
-          init_host_iterator (&hosts, report, host);
-          if (next (&hosts))
-            {
-              PRINT (out,
-                       "<host_start>"
-                       "<host>%s</host>%s"
-                       "</host_start>",
-                       host,
-                       host_iterator_start_time (&hosts));
-              PRINT (out,
-                       "<host_end>"
-                       "<host>%s</host>%s"
-                       "</host_end>",
-                       host,
-                       host_iterator_end_time (&hosts)
-                         ? host_iterator_end_time (&hosts)
-                         : "");
-            }
-          cleanup_iterator (&hosts);
-        }
-      array_free (result_hosts);
-    }
-  else
-    {
-      iterator_t hosts;
-      init_host_iterator (&hosts, report, NULL);
-      while (next (&hosts))
-        PRINT (out,
-                 "<host_start><host>%s</host>%s</host_start>",
-                 host_iterator_host (&hosts),
-                 host_iterator_start_time (&hosts));
-      cleanup_iterator (&hosts);
-
-      init_host_iterator (&hosts, report, NULL);
-      while (next (&hosts))
-        PRINT (out,
-                 "<host_end><host>%s</host>%s</host_end>",
-                 host_iterator_host (&hosts),
-                 host_iterator_end_time (&hosts)
-                  ? host_iterator_end_time (&hosts)
-                  : "");
-      cleanup_iterator (&hosts);
-    }
-  end_time = scan_end_time (report);
-  PRINT (out,
-           "<scan_end>%s</scan_end>",
-           end_time);
-  free (end_time);
-
-  PRINT (out, "</report>");
-
-  if (fclose (out))
-    {
-      g_warning ("%s: fclose failed: %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      return -1;
-    }
-
-  return 0;
-}
-
-/**
- * @brief Generate a report.
- *
- * @param[in]  report             Report.
- * @param[in]  report_format      Report format.
- * @param[in]  sort_order         Whether to sort ascending or descending.
- * @param[in]  sort_field         Field to sort on, or NULL for "type".
- * @param[in]  result_hosts_only  Whether to show only hosts with results.
- * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
- *                                results if NULL.
- * @param[in]  levels         String describing threat levels (message types)
- *                            to include in count (for example, "hmlgd" for
- *                            High, Medium, Low, loG and Debug).  All levels if
- *                            NULL.
- * @param[in]  apply_overrides    Whether to apply overrides.
- * @param[in]  search_phrase      Phrase that results must include.  All results
- *                                if NULL or "".
- * @param[in]  notes              Whether to include notes.
- * @param[in]  notes_details      If notes, Whether to include details.
- * @param[in]  overrides          Whether to include overrides.
- * @param[in]  overrides_details  If overrides, Whether to include details.
- * @param[in]  first_result       The result to start from.  The results are 0
- *                                indexed.
- * @param[in]  max_results        The maximum number of results returned.
- * @param[out] output_length      NULL or location for length of return.
- * @param[out] extension          NULL or location for report format extension.
- * @param[out] content_type       NULL or location for report format content
- *                                type.
- *
- * @return Contents of report on success, NULL on error.
- */
-gchar *
-manage_report (report_t report, report_format_t report_format, int sort_order,
-               const char* sort_field, int result_hosts_only,
-               const char *min_cvss_base, const char *levels,
-               int apply_overrides, const char *search_phrase, int notes,
-               int notes_details, int overrides, int overrides_details,
-               int first_result, int max_results, gsize *output_length,
-               gchar **extension, gchar **content_type)
-{
-  task_t task;
-  gchar *xml_file;
-  char xml_dir[] = "/tmp/openvasmd_XXXXXX";
-
-  /* Print the report as XML to a file. */
-
-  if (report_task (report, &task))
-    return NULL;
-
-  if (mkdtemp (xml_dir) == NULL)
-    {
-      g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
-      return NULL;
-    }
-
-  xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
-  if (print_report_xml (report, task, xml_file, sort_order, sort_field,
-                        result_hosts_only, min_cvss_base, report_format,
-                        levels, apply_overrides, search_phrase, notes,
-                        notes_details, overrides, overrides_details,
-                        first_result, max_results))
-    {
-      g_free (xml_file);
-      return NULL;
-    }
-
-  /* Pass the file to the report format generate script, sending the output
-   * to a file. */
-
-  {
-    iterator_t formats;
-    const char *uuid_format;
-    char *uuid_report;
-    gchar *script, *script_dir;
-
-    /* Setup file names. */
-
-    uuid_report = report_uuid (report);
-    init_report_format_iterator (&formats, report_format, 1, NULL);
-    if (next (&formats) == FALSE)
-      {
-        g_free (xml_file);
-        cleanup_iterator (&formats);
-        return NULL;
-      }
-
-    /* Set convenience return parameters. */
-    assert (report_format_iterator_extension (&formats));
-    assert (report_format_iterator_content_type (&formats));
-    if (extension)
-      *extension = g_strdup (report_format_iterator_extension (&formats));
-    if (content_type)
-      *content_type = g_strdup (report_format_iterator_content_type (&formats));
-
-    uuid_format = report_format_iterator_uuid (&formats);
-    if (report_format_global (report_format))
-      script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                     "openvasmd",
-                                     "global_report_formats",
-                                     uuid_format,
-                                     NULL);
-    else
-      {
-        assert (current_credentials.uuid);
-        script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                       "openvasmd",
-                                       "report_formats",
-                                       current_credentials.uuid,
-                                       uuid_format,
-                                       NULL);
-      }
-
-    cleanup_iterator (&formats);
-
-    script = g_build_filename (script_dir, "generate", NULL);
-
-    if (!g_file_test (script, G_FILE_TEST_EXISTS))
-      {
-        g_free (script);
-        g_free (script_dir);
-        if (extension) g_free (*extension);
-        if (content_type) g_free (*content_type);
-        g_free (xml_file);
-        return NULL;
-      }
-
-    {
-      gchar *output_file, *command;
-      char *previous_dir;
-      int ret;
-
-      /* Change into the script directory. */
-
-      /** @todo NULL arg is glibc extension. */
-      previous_dir = getcwd (NULL, 0);
-      if (previous_dir == NULL)
-        {
-          g_warning ("%s: Failed to getcwd: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          g_free (previous_dir);
-          g_free (script);
-          g_free (script_dir);
-          g_free (xml_file);
-          if (extension) g_free (*extension);
-          if (content_type) g_free (*content_type);
-          return NULL;
-        }
-
-      if (chdir (script_dir))
-        {
-          g_warning ("%s: Failed to chdir: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          g_free (previous_dir);
-          g_free (script);
-          g_free (script_dir);
-          g_free (xml_file);
-          if (extension) g_free (*extension);
-          if (content_type) g_free (*content_type);
-          return NULL;
-        }
-      g_free (script_dir);
-
-      output_file = g_strdup_printf ("%s/report.out", xml_dir);
-
-      /* Call the script. */
-
-      command = g_strdup_printf ("/bin/sh %s %s > %s"
-                                 " 2> /dev/null",
-                                 script,
-                                 xml_file,
-                                 output_file);
-      g_free (script);
-
-      g_debug ("   command: %s\n", command);
-
-      /* RATS: ignore, command is defined above. */
-      if (ret = system (command),
-          /** @todo ret is always -1. */
-          0 && ((ret) == -1
-                || WEXITSTATUS (ret)))
-        {
-          g_warning ("%s: system failed with ret %i, %i, %s\n",
-                     __FUNCTION__,
-                     ret,
-                     WEXITSTATUS (ret),
-                     command);
-          if (chdir (previous_dir))
-            g_warning ("%s: and chdir failed\n",
-                       __FUNCTION__);
-          g_free (previous_dir);
-          g_free (command);
-          g_free (output_file);
-          if (extension) g_free (*extension);
-          if (content_type) g_free (*content_type);
-          return NULL;
-        }
-
-      {
-        GError *get_error;
-        gchar *output;
-        gsize output_len;
-
-        g_free (command);
-
-        /* Change back to the previous directory. */
-
-        if (chdir (previous_dir))
-          {
-            g_warning ("%s: Failed to chdir back: %s\n",
-                       __FUNCTION__,
-                       strerror (errno));
-            g_free (previous_dir);
-            g_free (xml_file);
-            if (extension) g_free (*extension);
-            if (content_type) g_free (*content_type);
-            return NULL;
-          }
-        g_free (previous_dir);
-
-        /* Read the script output from file. */
-
-        get_error = NULL;
-        g_file_get_contents (output_file,
-                             &output,
-                             &output_len,
-                             &get_error);
-        g_free (output_file);
-        if (get_error)
-          {
-            g_warning ("%s: Failed to get output: %s\n",
-                       __FUNCTION__,
-                       get_error->message);
-            g_error_free (get_error);
-            if (extension) g_free (*extension);
-            if (content_type) g_free (*content_type);
-            return NULL;
-          }
-
-        /* Remove the directory. */
-
-        file_utils_rmdir_rf (xml_dir);
-
-        /* Return the output. */
-
-        if (output_length) *output_length = output_len;
-
-        return output;
-      }
-    }
-  }
-}
-
-/**
- * @brief Size of base64 chunk in manage_send_report.
- */
-#define MANAGE_SEND_REPORT_CHUNK64_SIZE 262144
-
-/**
- * @brief Size of file chunk in manage_send_report.
- */
-#define MANAGE_SEND_REPORT_CHUNK_SIZE (MANAGE_SEND_REPORT_CHUNK64_SIZE * 3 / 4)
-
-/**
- * @brief Generate a report.
- *
- * @param[in]  report             Report.
- * @param[in]  report_format      Report format.
- * @param[in]  sort_order         Whether to sort ascending or descending.
- * @param[in]  sort_field         Field to sort on, or NULL for "type".
- * @param[in]  result_hosts_only  Whether to show only hosts with results.
- * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
- *                                results if NULL.
- * @param[in]  levels         String describing threat levels (message types)
- *                            to include in count (for example, "hmlgd" for
- *                            High, Medium, Low, loG and Debug).  All levels if
- *                            NULL.
- * @param[in]  apply_overrides    Whether to apply overrides.
- * @param[in]  search_phrase      Phrase that results must include.  All results
- *                                if NULL or "".
- * @param[in]  notes              Whether to include notes.
- * @param[in]  notes_details      If notes, Whether to include details.
- * @param[in]  overrides          Whether to include overrides.
- * @param[in]  overrides_details  If overrides, Whether to include details.
- * @param[in]  first_result       The result to start from.  The results are 0
- *                                indexed.
- * @param[in]  max_results        The maximum number of results returned.
- * @param[in]  base64             Whether to base64 encode the report.
- * @param[in]  send               Function to write to client.
- * @param[in]  send_data_1        Second argument to \p send.
- * @param[in]  send_data_2        Third argument to \p send.
- *
- * @return 0 success, -1 error.
- */
-int
-manage_send_report (report_t report, report_format_t report_format,
-                    int sort_order, const char* sort_field,
-                    int result_hosts_only, const char *min_cvss_base,
-                    const char *levels, int apply_overrides,
-                    const char *search_phrase, int notes, int notes_details,
-                    int overrides, int overrides_details, int first_result,
-                    int max_results, int base64,
-                    gboolean (*send) (const char *, int (*) (void*), void*),
-                    int (*send_data_1) (void*), void *send_data_2)
-{
-  task_t task;
-  gchar *xml_file;
-  char xml_dir[] = "/tmp/openvasmd_XXXXXX";
-
-  /* Print the report as XML to a file. */
-
-  if (report_task (report, &task))
-    return -1;
-
-  if (mkdtemp (xml_dir) == NULL)
-    {
-      g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
-      return -1;
-    }
-
-  xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
-  if (print_report_xml (report, task, xml_file, sort_order, sort_field,
-                        result_hosts_only, min_cvss_base, report_format,
-                        levels, apply_overrides, search_phrase, notes,
-                        notes_details, overrides, overrides_details,
-                        first_result, max_results))
-    {
-      g_free (xml_file);
-      return -1;
-    }
-
-  /* Pass the file to the report format generate script, sending the output
-   * to a file. */
-
-  {
-    iterator_t formats;
-    const char *uuid_format;
-    char *uuid_report;
-    gchar *script, *script_dir;
-
-    /* Setup file names. */
-
-    uuid_report = report_uuid (report);
-    init_report_format_iterator (&formats, report_format, 1, NULL);
-    if (next (&formats) == FALSE)
-      {
-        g_free (xml_file);
-        cleanup_iterator (&formats);
-        return -1;
-      }
-
-    uuid_format = report_format_iterator_uuid (&formats);
-    if (report_format_global (report_format))
-      script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                     "openvasmd",
-                                     "global_report_formats",
-                                     uuid_format,
-                                     NULL);
-    else
-      {
-        assert (current_credentials.uuid);
-        script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                       "openvasmd",
-                                       "report_formats",
-                                       current_credentials.uuid,
-                                       uuid_format,
-                                       NULL);
-      }
-
-    cleanup_iterator (&formats);
-
-    script = g_build_filename (script_dir, "generate", NULL);
-
-    if (!g_file_test (script, G_FILE_TEST_EXISTS))
-      {
-        g_free (script);
-        g_free (script_dir);
-        g_free (xml_file);
-        return -1;
-      }
-
-    {
-      gchar *output_file, *command;
-      char *previous_dir;
-      int ret;
-
-      /* Change into the script directory. */
-
-      /** @todo NULL arg is glibc extension. */
-      previous_dir = getcwd (NULL, 0);
-      if (previous_dir == NULL)
-        {
-          g_warning ("%s: Failed to getcwd: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          g_free (previous_dir);
-          g_free (script);
-          g_free (script_dir);
-          g_free (xml_file);
-          return -1;
-        }
-
-      if (chdir (script_dir))
-        {
-          g_warning ("%s: Failed to chdir: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          g_free (previous_dir);
-          g_free (script);
-          g_free (script_dir);
-          g_free (xml_file);
-          return -1;
-        }
-      g_free (script_dir);
-
-      output_file = g_strdup_printf ("%s/report.out", xml_dir);
-
-      /* Call the script. */
-
-      command = g_strdup_printf ("/bin/sh %s %s > %s"
-                                 " 2> /dev/null",
-                                 script,
-                                 xml_file,
-                                 output_file);
-      g_free (script);
-      g_free (xml_file);
-
-      g_debug ("   command: %s\n", command);
-
-      /* RATS: ignore, command is defined above. */
-      if (ret = system (command),
-          /** @todo ret is always -1. */
-          0 && ((ret) == -1
-                || WEXITSTATUS (ret)))
-        {
-          g_warning ("%s: system failed with ret %i, %i, %s\n",
-                     __FUNCTION__,
-                     ret,
-                     WEXITSTATUS (ret),
-                     command);
-          if (chdir (previous_dir))
-            g_warning ("%s: and chdir failed\n",
-                       __FUNCTION__);
-          g_free (previous_dir);
-          g_free (command);
-          g_free (output_file);
-          return -1;
-        }
-
-      {
-        char chunk[MANAGE_SEND_REPORT_CHUNK_SIZE + 1];
-        FILE *stream;
-
-        g_free (command);
-
-        /* Change back to the previous directory. */
-
-        if (chdir (previous_dir))
-          {
-            g_warning ("%s: Failed to chdir back: %s\n",
-                       __FUNCTION__,
-                       strerror (errno));
-            g_free (previous_dir);
-            g_free (output_file);
-            return -1;
-          }
-        g_free (previous_dir);
-
-        /* Read the script output from file in chunks, sending to client. */
-
-        stream = fopen (output_file, "r");
-        g_free (output_file);
-        if (stream == NULL)
-          {
-            g_warning ("%s: %s\n",
-                       __FUNCTION__,
-                       strerror (errno));
-            return -1;
-          }
-
-        while (1)
-          {
-            int left;
-            char *dest;
-
-            /* Read a chunk. */
-
-            left = MANAGE_SEND_REPORT_CHUNK_SIZE;
-            dest = chunk;
-            while (1)
-              {
-                int ret = fread (dest, 1, left, stream);
-                if (ferror (stream))
-                  {
-                    fclose (stream);
-                    g_warning ("%s: error after fread\n", __FUNCTION__);
-                    return -1;
-                  }
-                left -= ret;
-                if (left == 0)
-                  break;
-                if (feof (stream))
-                  break;
-                dest += ret;
-              }
-
-            /* Send the chunk. */
-
-            if (left < MANAGE_SEND_REPORT_CHUNK_SIZE)
-              {
-                if (base64)
-                  {
-                    gchar *chunk64;
-                    chunk64 = g_base64_encode ((guchar*) chunk,
-                                               MANAGE_SEND_REPORT_CHUNK_SIZE
-                                                - left);
-                    if (send (chunk64, send_data_1, send_data_2))
-                      {
-                        g_free (chunk64);
-                        fclose (stream);
-                        g_warning ("%s: send error\n", __FUNCTION__);
-                        return -1;
-                      }
-                    g_free (chunk64);
-                  }
-                else
-                  {
-                    chunk[MANAGE_SEND_REPORT_CHUNK_SIZE - left] = '\0';
-                    if (send (chunk, send_data_1, send_data_2))
-                      {
-                        fclose (stream);
-                        g_warning ("%s: send error\n", __FUNCTION__);
-                        return -1;
-                      }
-                  }
-              }
-
-            /* Check if there's more. */
-
-            if (feof (stream))
-              break;
-          }
-
-        fclose (stream);
-
-        /* Remove the directory. */
-
-        file_utils_rmdir_rf (xml_dir);
-
-        /* Return the output. */
-
-        return 0;
-      }
-    }
-  }
 }
 
 
@@ -12236,8 +8065,8 @@ const char *
 task_trend (task_t task, int override)
 {
   report_t last_report, second_last_report;
-  int holes_a, warns_a, infos_a, logs_a, threat_a, false_positives_a;
-  int holes_b, warns_b, infos_b, logs_b, threat_b, false_positives_b;
+  int holes_a, warns_a, infos_a, threat_a;
+  int holes_b, warns_b, infos_b, threat_b;
 
   /* Ensure there are enough reports. */
 
@@ -12255,10 +8084,8 @@ task_trend (task_t task, int override)
   if (last_report == 0)
     return "";
 
-  /* Count the logs and false positives too, as report_counts_id is faster
-   * with all five. */
-  if (report_counts_id (last_report, NULL, &holes_a, &infos_a, &logs_a, &warns_a,
-                        &false_positives_a, override, NULL))
+  if (report_counts_id (last_report, NULL, &holes_a, &infos_a, NULL, &warns_a,
+                        NULL, override, NULL))
     /** @todo Either fail better or abort at SQL level. */
     abort ();
 
@@ -12277,10 +8104,8 @@ task_trend (task_t task, int override)
   if (second_last_report == 0)
     return "";
 
-  /* Count the logs and false positives too, as report_counts_id is faster
-   * with all five. */
-  if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, &logs_b,
-                        &warns_b, &false_positives_b, override, NULL))
+  if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, NULL,
+                        &warns_b, NULL, override, NULL))
     /** @todo Either fail better or abort at SQL level. */
     abort ();
 
@@ -12478,9 +8303,9 @@ make_task (char* name, unsigned int time, char* comment)
   quoted_comment = comment ? sql_quote ((gchar*) comment) : NULL;
   sql ("INSERT into tasks"
        " (owner, uuid, name, hidden, time, comment, schedule,"
-       "  schedule_next_time, slave)"
+       "  schedule_next_time)"
        " VALUES ((SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "         '%s', '%s', 0, %u, '%s', 0, 0, 0);",
+       "         '%s', '%s', 0, %u, '%s', 0, 0);",
        current_credentials.uuid,
        uuid,
        quoted_name ? quoted_name : "",
@@ -12577,11 +8402,11 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
       {
         config_t config;
         target_t target;
-        char *config_name, *config_uuid;
+        char *config_name;
         char *quoted_config_name, *quoted_selector;
 
-        config_uuid = task_config_uuid (task);
-        if (config_uuid == NULL)
+        config_name = task_config_name (task);
+        if (config_name == NULL)
           {
             g_free (rc);
             sql ("ROLLBACK");
@@ -12591,22 +8416,22 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
         target = task_target (task);
         if (target == 0)
           {
-            free (config_uuid);
+            free (config_name);
             g_free (rc);
             sql ("ROLLBACK");
             return -1;
           }
 
-        if (find_config (config_uuid, &config))
+        if (find_config (config_name, &config))
           {
-            free (config_uuid);
+            free (config_name);
             g_free (rc);
             sql ("ROLLBACK");
             return -1;
           }
         else if (config == 0)
           {
-            free (config_uuid);
+            free (config_name);
             g_free (rc);
             sql ("ROLLBACK");
             return -1;
@@ -12614,16 +8439,6 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
         else
           {
             char *hosts, *selector;
-
-            free (config_uuid);
-
-            config_name = task_config_name (task);
-            if (config_name == NULL)
-              {
-                g_free (rc);
-                sql ("ROLLBACK");
-                return -1;
-              }
 
             selector = config_nvt_selector (config);
             if (selector == NULL)
@@ -12761,34 +8576,23 @@ delete_task (task_t task)
 
   tracef ("   delete task %u\n", task_id (task));
 
-  sql ("BEGIN EXCLUSIVE;");
-
   if (sql_int (0, 0, "SELECT hidden from tasks WHERE ROWID = %llu;", task))
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
+    return -1;
 
   /** @todo Many other places just assert this. */
-  if (current_credentials.uuid == NULL)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
+  if (current_credentials.uuid == NULL) return -1;
 
-  if (task_uuid (task, &tsk_uuid)
-      || delete_reports (task))
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
+  if (task_uuid (task, &tsk_uuid)) return -1;
+
+  /** @todo There may be atomic access problems here. */
+
+  if (delete_reports (task)) return -1;
 
   sql ("DELETE FROM results WHERE task = %llu;", task);
   sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
   sql ("DELETE FROM task_escalators WHERE task = %llu;", task);
   sql ("DELETE FROM task_files WHERE task = %llu;", task);
 
-  sql ("COMMIT;");
   return 0;
 }
 
@@ -13129,387 +8933,6 @@ find_target (const char* uuid, target_t* target)
 }
 
 /**
- * @brief Make a copy of a target.
- *
- * @param[in]  target  Target to copy.
- * @param[in]  name    Name for new target.
- *
- * @return Address of matching character, else NULL.
- */
-static target_t
-duplicate_target (target_t target, const char *name)
-{
-  char *quoted_name = sql_quote (name);
-  sql ("INSERT INTO targets"
-       " (uuid, owner, name, hosts, comment, lsc_credential,"
-       "  smb_lsc_credential)"
-       " SELECT make_uuid (), owner, uniquify ('target', '%s', owner), hosts,"
-       "        comment, lsc_credential, smb_lsc_credential"
-       " FROM targets WHERE ROWID = %llu;",
-       quoted_name,
-       target);
-  g_free (quoted_name);
-  return sqlite3_last_insert_rowid (task_db);
-}
-
-/**
- * @brief Search backwards in a string for a character.
- *
- * Start at the character before \p point.
- *
- * @param[in]  start  Start of string.
- * @param[in]  point  Current position.
- * @param[in]  ch     Character.
- *
- * @return Address of matching character, else NULL.
- */
-static char *
-strbchr (char *start, char *point, char ch)
-{
-  while (1)
-    {
-      if (point == start)
-        return NULL;
-      point--;
-      if (*point == ch)
-        return point;
-    }
-}
-
-/**
- * @brief Return number of hosts described by a hosts string.
- *
- * @param[in]  hosts  String describing hosts.
- *
- * @return Number of hosts, or -1 on error.
- */
-int
-manage_max_hosts (const char *hosts)
-{
-  long count = 0;
-  gchar** split = g_strsplit (hosts, ",", 0);
-  gchar** point = split;
-
-  /** @todo Check for errors in "hosts". */
-
-  while (*point)
-    {
-      gchar *slash, *hyphen;
-      slash = strchr (*point, '/');
-      hyphen = strchr (*point, '-');
-      if (slash)
-        {
-          if (hyphen)
-            /* Range and netmask. */
-            return -1;
-
-          slash++;
-          if (*slash)
-            {
-              long int mask;
-              struct in_addr addr;
-
-              if (strchr (*point, ':'))
-                /* IPv6.  Scanner current only supports single addresses. */
-                count++;
-              else
-                {
-                  /* IPv4. */
-
-                  /* Convert text after slash to a bit netmask. */
-
-                  if (strchr (slash, '.')
-                      && (atoi (slash) > 32)
-                      && inet_aton (slash, &addr))
-                    {
-                      in_addr_t haddr;
-
-                      /* 192.168.200.0/255.255.255.252 */
-
-                      haddr = ntohl (addr.s_addr);
-                      mask = 32;
-                      while ((haddr & 1) == 0)
-                        {
-                          mask--;
-                          haddr = haddr >> 1;
-                        }
-                      if (mask < 8 || mask > 32) return -1;
-                    }
-                  else
-                    {
-                      /* 192.168.200.0/30 */
-
-                      errno = 0;
-                      mask = strtol (slash, NULL, 10);
-                      if (errno == ERANGE || mask < 8 || mask > 32) return -1;
-                    }
-
-                  /* Calculate number of hosts. */
-
-                  count += 1L << (32 - mask);
-                  /* Leave out the network and broadcast addresses. */
-                  if (mask < 31) count--;
-                }
-            }
-          else
-            /* Just a trailing /. */
-            count++;
-        }
-      else if (hyphen)
-        {
-          hyphen++;
-          if (*hyphen)
-            {
-              int dot_count, total_dot_count;
-              const gchar* dot;
-
-              /* An address specifying a range. */
-
-              if (strchr (hyphen, '-'))
-                /* Multiple ranges. */
-                return -1;
-
-              dot_count = 0;
-              dot = hyphen;
-              while ((dot = strchr (dot, '.')))
-                dot++, dot_count++;
-
-              dot_count = 0;
-              dot = hyphen;
-              while ((dot = strchr (dot, '.')))
-                dot++, dot_count++;
-
-              total_dot_count = 0;
-              dot = *point;
-              while ((dot = strchr (dot, '.')))
-                dot++, total_dot_count++;
-
-              if (total_dot_count == 6)
-                {
-                  int one, two, subcount;
-                  char *pos_one, *pos_two;
-
-                  /* 192.168.1.102-192.168.1.104 */
-
-                  pos_one = *point;
-                  pos_two = hyphen;
-                  subcount = 0;
-
-                  /* First. */
-
-                  one = atoi (pos_one);
-                  two = atoi (pos_two);
-
-                  if (one > two)
-                    return -1;
-                  if (one < two)
-                    subcount += (two - one + 1) * 256 * 256 * 255;
-
-                  /* Second. */
-
-                  pos_one = strchr (pos_one, '.');
-                  pos_one++;
-
-                  pos_two = strchr (pos_two, '.');
-                  pos_two++;
-
-                  one = atoi (pos_one);
-                  two = atoi (pos_two);
-
-                  if (one > two)
-                    return -1;
-                  if (one < two)
-                    subcount += (two - one + 1) * 256 * 255;
-
-                  /* Third. */
-
-                  pos_one = strchr (pos_one, '.');
-                  pos_one++;
-
-                  pos_two = strchr (pos_two, '.');
-                  pos_two++;
-
-                  one = atoi (pos_one);
-                  two = atoi (pos_two);
-
-                  if (one > two)
-                    return -1;
-                  if (one < two)
-                    subcount += (two - one + 1) * 255;
-
-                  /* Fourth. */
-
-                  pos_one = strchr (pos_one, '.');
-                  pos_one++;
-
-                  pos_two = strchr (pos_two, '.');
-                  pos_two++;
-                  if (*pos_two == '\0')
-                    /* Trailing dot. */
-                    return -1;
-
-                  one = atoi (pos_one);
-                  two = atoi (pos_two);
-
-                  if (one > two)
-                    return -1;
-                  if (one < two)
-                    subcount += (two - one + 1);
-
-                  count += subcount;
-                }
-              else if (total_dot_count <= 3)
-                {
-                  int start, end;
-
-                  /* 192.168.1.102-104 */
-
-                  end = atoi (hyphen);
-                  dot = strbchr (*point, hyphen, '.');
-                  dot = dot ? (dot + 1) : *point;
-                  start = atoi (dot);
-
-                  if (end < start)
-                    {
-                      int tem = end;
-                      end = start;
-                      start = tem;
-                    }
-
-                  if (end - start > 255)
-                    return -1;
-
-                  if (start == end)
-                    count++;
-                  else
-                    count += (end - start + 1);
-                }
-              else
-                {
-                  /* 192.168-169.1.102-104 */
-                  return -1;
-                }
-            }
-          else
-            /* Just a trailing -. */
-            count++;
-        }
-      else
-        count++;
-      point += 1;
-    }
-  return count;
-}
-
-/**
- * @brief Validate a port range.
- *
- * Scanner accepts "-100,103,200-1024,3000-4000,60000-".
- *
- * Manager accepts "103,200-1024,3000-4000".
- *
- * @param[in]   port_range      A port range.
- *
- * @return 0 success, 1 failed.
- */
-static int
-validate_port_range (const char* port_range)
-{
-  gchar **split, **point;
-
-  if (strcmp (port_range, "default") == 0)
-    return 0;
-
-  while (*port_range && isblank (*port_range)) port_range++;
-  if (strcmp (port_range, "") == 0)
-    return 1;
-
-  split = g_strsplit (port_range, ",", 0);
-  point = split;
-
-  while (*point)
-    {
-      gchar *hyphen;
-
-      hyphen = strchr (*point, '-');
-      if (hyphen)
-        {
-          long int number1, number2;
-          const char *first;
-          char *end;
-
-          hyphen++;
-
-          /* Check the first number. */
-
-          first = *point;
-          while (*first && isblank (*first)) first++;
-          if (*first == '-')
-            goto fail;
-
-          errno = 0;
-          number1 = strtol (first, &end, 10);
-          while (*end && isblank (*end)) end++;
-          if (errno || (*end != '-'))
-            goto fail;
-          if (number1 == 0)
-            goto fail;
-          if (number1 > 65535)
-            goto fail;
-
-          /* Check the second number. */
-
-          while (*hyphen && isblank (*hyphen)) hyphen++;
-          if (*hyphen == '\0')
-            goto fail;
-
-          errno = 0;
-          number2 = strtol (hyphen, &end, 10);
-          while (*end && isblank (*end)) end++;
-          if (errno || *end)
-            goto fail;
-          if (number2 == 0)
-            goto fail;
-          if (number2 > 65535)
-            goto fail;
-
-          if (number1 > number2)
-            goto fail;
-        }
-      else
-        {
-          long int number;
-          const char *only;
-          char *end;
-
-          /* Check the single number. */
-
-          only = *point;
-          while (*only && isblank (*only)) only++;
-          if (*only == '\0')
-            goto fail;
-          errno = 0;
-          number = strtol (only, &end, 10);
-          while (*end && isblank (*end)) end++;
-          if (errno || *end)
-            goto fail;
-          if (number == 0)
-            goto fail;
-          if (number > 65535)
-            goto fail;
-        }
-      point += 1;
-    }
-
-  g_strfreev (split);
-  return 0;
-
- fail:
-  g_strfreev (split);
-  return 1;
-}
-
-/**
  * @brief Create a target.
  *
  * The \param hosts and \param target_locator parameters are mutually
@@ -13518,33 +8941,23 @@ validate_port_range (const char* port_range)
  * @param[in]   name            Name of target.
  * @param[in]   hosts           Host list of target.
  * @param[in]   comment         Comment on target.
- * @param[in]   port_range      Port range of target.
- * @param[in]   ssh_lsc_credential  SSH LSC credential.
- * @param[in]   smb_lsc_credential  SMB LSC credential.
+ * @param[in]   lsc_credential  LSC credential.
  * @param[in]   target_locator  Name of target_locator to import target(s)
  *                              from.
  * @param[in]   username        Username to authenticate with against source.
  * @param[in]   password        Password for user \p username.
  * @param[out]  target          Created target.
  *
- * @return 0 success, 1 target exists already, 2 error in host specification,
- *         3 too many hosts, 4 error in port range, -1 if import from target
- *         locator failed or response was empty.
+ * @return 0 success, 1 target exists already, -1 if import from target locator
+ *         failed or response was empty.
  */
 int
 create_target (const char* name, const char* hosts, const char* comment,
-               const char* port_range, lsc_credential_t ssh_lsc_credential,
-               lsc_credential_t smb_lsc_credential, const char* target_locator,
+               lsc_credential_t lsc_credential, const char* target_locator,
                const char* username, const char* password, target_t* target)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
-  gchar *quoted_hosts, *quoted_comment, *quoted_port_range;
-
-  if (port_range == NULL)
-    port_range = "default";
-
-  if (validate_port_range (port_range))
-    return 4;
+  gchar *quoted_hosts, *quoted_comment;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -13567,7 +8980,6 @@ create_target (const char* name, const char* hosts, const char* comment,
   /* Import targets from target locator. */
   if (target_locator != NULL)
     {
-      int max;
       GSList* hosts_list = resource_request_resource (target_locator,
                                                       RESOURCE_TYPE_TARGET,
                                                       username ? username : "",
@@ -13584,80 +8996,40 @@ create_target (const char* name, const char* hosts, const char* comment,
                                                                 ", ");
 
       openvas_string_list_free (hosts_list);
-      max = manage_max_hosts (import_hosts);
-      if (max == -1)
-        {
-          g_free (import_hosts);
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 2;
-        }
-      if (max > MANAGE_MAX_HOSTS)
-        {
-          g_free (import_hosts);
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 3;
-        }
       quoted_hosts = sql_nquote (import_hosts, strlen (import_hosts));
       g_free (import_hosts);
     }
   else
     {
-      int max;
-
       /* User provided hosts. */
-
-      max = manage_max_hosts (hosts);
-      if (max == -1)
-        {
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 2;
-        }
-      if (max > MANAGE_MAX_HOSTS)
-        {
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 3;
-        }
-
       quoted_hosts = sql_nquote (hosts, strlen (hosts));
     }
-
-  quoted_port_range = port_range
-                       ? sql_quote (port_range)
-                       : g_strdup ("default");
 
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO targets"
-           " (uuid, name, owner, hosts, comment, lsc_credential,"
-           "  smb_lsc_credential, port_range)"
+           " (uuid, name, owner, hosts, comment, lsc_credential)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', %llu, %llu, '%s');",
+           " '%s', '%s', %llu);",
            quoted_name, current_credentials.uuid, quoted_hosts, quoted_comment,
-           ssh_lsc_credential, smb_lsc_credential, quoted_port_range);
+           lsc_credential);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO targets"
-         " (uuid, name, owner, hosts, comment, lsc_credential,"
-         "  smb_lsc_credential, port_range)"
-         " VALUES (make_uuid (), '%s',"
+         " (uuid, name, owner, hosts, comment, lsc_credential)"
+         " VALUES (make_uuid, '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', %llu, %llu, '%s');",
-         quoted_name, current_credentials.uuid, quoted_hosts,
-         ssh_lsc_credential, smb_lsc_credential, quoted_port_range);
+         " '%s', '', %llu);",
+         quoted_name, current_credentials.uuid, quoted_hosts, lsc_credential);
 
   if (target)
     *target = sqlite3_last_insert_rowid (task_db);
 
   g_free (quoted_name);
   g_free (quoted_hosts);
-  g_free (quoted_port_range);
 
   sql ("COMMIT;");
 
@@ -13703,8 +9075,7 @@ init_target_iterator (iterator_t* iterator, target_t target,
 
   if (target)
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " smb_lsc_credential, port_range"
+                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential"
                    " FROM targets"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -13716,8 +9087,7 @@ init_target_iterator (iterator_t* iterator, target_t target,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " smb_lsc_credential, port_range"
+                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential"
                    " FROM targets"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -13785,45 +9155,20 @@ target_iterator_comment (iterator_t* iterator)
 }
 
 /**
- * @brief Get the SSH LSC credential from a target iterator.
+ * @brief Get the LSC credential from a target iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return SSH LSC credential.
+ * @return LSC credential.
  */
 int
-target_iterator_ssh_credential (iterator_t* iterator)
+target_iterator_lsc_credential (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
   ret = (int) sqlite3_column_int (iterator->stmt, 5);
   return ret;
 }
-
-/**
- * @brief Get the SMB LSC credential from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return SMB LSC credential.
- */
-int
-target_iterator_smb_credential (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 6);
-  return ret;
-}
-
-/**
- * @brief Get the port range of the target from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Port range of the target or NULL if iteration is complete.
- */
-DEF_ACCESS (target_iterator_port_range, 7);
 
 /**
  * @brief Return the UUID of a target.
@@ -13872,66 +9217,19 @@ target_hosts (target_t target)
 }
 
 /**
- * @brief Return the port range of a target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated port range if available, else NULL.
- */
-char*
-target_port_range (target_t target)
-{
-  return sql_string (0, 0,
-                     "SELECT port_range FROM targets WHERE ROWID = %llu;",
-                     target);
-}
-
-/**
- * @brief Return the SSH credential associated with a target, if any.
+ * @brief Return the credential associated with a target, if any.
  *
  * @param[in]  target  Target (corresponds to rowid).
  *
- * @return SSH credential if any, else 0.
+ * @return Credential if any, else 0.
  */
 lsc_credential_t
-target_ssh_lsc_credential (target_t target)
+target_lsc_credential (target_t target)
 {
   lsc_credential_t lsc_credential;
 
   switch (sql_int64 (&lsc_credential, 0, 0,
                      "SELECT lsc_credential FROM targets"
-                     " WHERE ROWID = %llu;",
-                     target))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        return 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        /** @todo Move return to arg; return -1. */
-        return 0;
-        break;
-    }
-  return lsc_credential;
-}
-
-/**
- * @brief Return the SMB credential associated with a target, if any.
- *
- * @param[in]  target  Target (corresponds to rowid).
- *
- * @return SMB credential if any, else 0.
- */
-lsc_credential_t
-target_smb_lsc_credential (target_t target)
-{
-  lsc_credential_t lsc_credential;
-
-  switch (sql_int64 (&lsc_credential, 0, 0,
-                     "SELECT smb_lsc_credential FROM targets"
                      " WHERE ROWID = %llu;",
                      target))
     {
@@ -15287,7 +10585,7 @@ config_nvt_selector (config_t config)
  * @param[in]  value_64  Preference value in base64.  NULL for an NVT
  *                       preference removes the preference from the config.
  *
- * @return 0 success, 1 config in use, 2 empty radio value, -1 error.
+ * @return 0 success, 1 config in use, -1 error.
  */
 int
 manage_set_config_preference (config_t config, const char* nvt, const char* name,
@@ -15363,14 +10661,6 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
           gchar **split, **point;
           GString *string;
 
-          if (strlen (value) == 0)
-            {
-              g_free (quoted_name);
-              g_free (value);
-              sql ("ROLLBACK;");
-              return 2;
-            }
-
           /* A radio.  Put the new value on the front of the list of options. */
 
           old_value = sql_string (0, 0,
@@ -15394,16 +10684,6 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
               point = split;
               while (*point)
                 {
-                  if (strlen (*point) == 0)
-                    {
-                      g_free (quoted_name);
-                      g_strfreev (split);
-                      g_free (value);
-                      g_string_free (string, TRUE);
-                      sql ("ROLLBACK;");
-                      return -1;
-                    }
-
                   if (strcmp (*point, value))
                     {
                       g_string_append_c (string, ';');
@@ -15808,10 +11088,6 @@ nvts_md5sum ()
 
 /**
  * @brief Set the md5sum of the plugins in the plugin cache.
- *
- * @param[in]  md5sum  New md5sum.
- *
- * Also queue an update to the nvti cache.
  */
 void
 set_nvts_md5sum (const char *md5sum)
@@ -15821,8 +11097,6 @@ set_nvts_md5sum (const char *md5sum)
        " VALUES ('nvts_md5sum', '%s');",
        quoted);
   g_free (quoted);
-
-  sql ("UPDATE meta SET value = 1 WHERE name = 'update_nvti_cache';");
 }
 
 /**
@@ -17742,10 +13016,9 @@ manage_nvt_preference_add (const char* name, const char* value, int remove)
       sql ("DELETE FROM nvt_preferences WHERE name = '%s';", quoted_name);
     }
 
-  if (strcmp (name, "port_range"))
-    sql ("INSERT into nvt_preferences (name, value)"
-         " VALUES ('%s', '%s');",
-         quoted_name, quoted_value);
+  sql ("INSERT into nvt_preferences (name, value)"
+       " VALUES ('%s', '%s');",
+       quoted_name, quoted_value);
 
   if (remove)
     sql ("COMMIT;");
@@ -18023,7 +13296,9 @@ create_lsc_credential (const char* name, const char* comment,
                        lsc_credential_t *lsc_credential)
 {
   gchar *quoted_name;
-  gchar *public_key, *private_key;
+  gchar *quoted_comment, *quoted_login, *public_key, *private_key, *base64;
+  void *rpm, *deb, *exe;
+  gsize rpm_size, deb_size, exe_size;
   int i;
   GRand *rand;
   gchar password[PASSWORD_LENGTH];
@@ -18032,7 +13307,13 @@ create_lsc_credential (const char* name, const char* comment,
   assert (name && strlen (name) > 0);
   assert (login && strlen (login) > 0);
   assert (current_credentials.uuid);
-  assert (comment);
+
+  while (*s)
+    if (isalnum (*s) || (*s == '\\') || (*s == '.') || (*s == '@')
+        || (*s == '_'))
+      s++;
+    else
+      return 2;
 
   quoted_name = sql_quote (name);
 
@@ -18064,7 +13345,7 @@ create_lsc_credential (const char* name, const char* comment,
            " VALUES"
            " (make_uuid (), '%s',"
            "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           "  '%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL);",
+           "  '%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL)",
            quoted_name,
            current_credentials.uuid,
            quoted_login,
@@ -18083,18 +13364,6 @@ create_lsc_credential (const char* name, const char* comment,
       return 0;
     }
 
-  /* Ensure the login is alphanumeric, to help the package generation. */
-
-  while (*s)
-    if (isalnum (*s))
-      s++;
-    else
-      {
-        g_free (quoted_name);
-        sql ("ROLLBACK;");
-        return 2;
-      }
-
   /* Create the keys and packages. */
 
   rand = g_rand_new ();
@@ -18103,46 +13372,246 @@ create_lsc_credential (const char* name, const char* comment,
   password[PASSWORD_LENGTH - 1] = '\0';
   g_rand_free (rand);
 
-  if (lsc_user_keys_create (login,
-                            password,
-                            &public_key,
-                            &private_key))
+  if (lsc_user_all_create (login,
+                           password,
+                           &public_key,
+                           &private_key,
+                           &rpm, &rpm_size,
+                           &deb, &deb_size,
+                           &exe, &exe_size))
     {
       g_free (quoted_name);
       sql ("ROLLBACK;");
       return -1;
     }
 
+  /* Insert the packages. */
+
   {
-    gchar *quoted_login = sql_quote (login);
-    gchar *quoted_password = sql_quote (password);
-    gchar *quoted_comment = sql_quote (comment);
-    gchar *quoted_public_key = sql_quote (public_key);
-    gchar *quoted_private_key = sql_quote (private_key);
+    const char* tail;
+    int ret;
+    sqlite3_stmt* stmt;
+    gchar* formatted, *quoted_password;
 
-    /* Password-only credential. */
-
-    sql_quiet ("INSERT INTO lsc_credentials"
-               " (uuid, name, owner, login, password, comment, public_key,"
-               "  private_key, rpm, deb, exe)"
-               " VALUES"
-               " (make_uuid (), '%s',"
-               "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-               "  '%s', '%s', '%s', '%s', '%s', NULL, NULL, NULL);",
-               quoted_name,
-               current_credentials.uuid,
-               quoted_login,
-               quoted_password,
-               quoted_comment,
-               quoted_public_key,
-               quoted_private_key);
+    quoted_login = sql_quote (login);
+    quoted_password = sql_nquote (password, strlen (password));
+    if (comment)
+      {
+        quoted_comment = sql_nquote (comment, strlen (comment));
+        formatted = g_strdup_printf ("INSERT INTO lsc_credentials"
+                                     " (uuid, name, owner, login, password,"
+                                     "  comment, public_key, private_key,"
+                                     "  rpm, deb, exe)"
+                                     " VALUES"
+                                     " (make_uuid (), '%s',"
+                                     "  (SELECT ROWID FROM users"
+                                     "   WHERE users.uuid = '%s'),"
+                                     "  '%s', '%s', '%s',"
+                                     "  $public_key, $private_key,"
+                                     "  $rpm, $deb, $exe);",
+                                     quoted_name,
+                                     current_credentials.uuid,
+                                     quoted_login,
+                                     quoted_password,
+                                     quoted_comment);
+        g_free (quoted_comment);
+      }
+    else
+      {
+        formatted = g_strdup_printf ("INSERT INTO lsc_credentials"
+                                     " (uuid, name, owner, login, password,"
+                                     "  comment, public_key, private_key,"
+                                     "  rpm, deb, exe)"
+                                     " VALUES"
+                                     " (make_uuid (), '%s',"
+                                     "  (SELECT ROWID FROM users"
+                                     "   WHERE users.uuid = '%s'),"
+                                     "  '%s', '%s', '',"
+                                     "  $public_key, $private_key,"
+                                     "  $rpm, $deb, $exe);",
+                                     quoted_name,
+                                     current_credentials.uuid,
+                                     quoted_login,
+                                     quoted_password);
+      }
 
     g_free (quoted_name);
     g_free (quoted_login);
     g_free (quoted_password);
-    g_free (quoted_comment);
-    g_free (quoted_public_key);
-    g_free (quoted_private_key);
+
+    tracef ("   sql: %s\n", formatted);
+
+    /* Prepare statement. */
+
+    while (1)
+      {
+        ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+        if (ret == SQLITE_BUSY) continue;
+        g_free (formatted);
+        if (ret == SQLITE_OK)
+          {
+            if (stmt == NULL)
+              {
+                g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                           __FUNCTION__,
+                           sqlite3_errmsg (task_db));
+                sql ("ROLLBACK;");
+                g_free (public_key);
+                g_free (private_key);
+                g_free (rpm);
+                g_free (deb);
+                g_free (exe);
+                return -1;
+              }
+            break;
+          }
+        g_warning ("%s: sqlite3_prepare failed: %s\n",
+                   __FUNCTION__,
+                   sqlite3_errmsg (task_db));
+        sql ("ROLLBACK;");
+        g_free (public_key);
+        g_free (private_key);
+        g_free (rpm);
+        g_free (deb);
+        g_free (exe);
+        return -1;
+      }
+
+    /* Bind the keys to the "$values" in the SQL statement. */
+
+    while (1)
+      {
+        ret = sqlite3_bind_text (stmt,
+                                 1,
+                                 public_key,
+                                 strlen (public_key),
+                                 SQLITE_TRANSIENT);
+        if (ret == SQLITE_BUSY) continue;
+        if (ret == SQLITE_OK) break;
+        g_warning ("%s: sqlite3_prepare failed: %s\n",
+                   __FUNCTION__,
+                   sqlite3_errmsg (task_db));
+        sql ("ROLLBACK;");
+        g_free (public_key);
+        g_free (private_key);
+        g_free (rpm);
+        g_free (deb);
+        g_free (exe);
+        return -1;
+      }
+    g_free (public_key);
+
+    while (1)
+      {
+        ret = sqlite3_bind_text (stmt,
+                                 2,
+                                 private_key,
+                                 strlen (private_key),
+                                 SQLITE_TRANSIENT);
+        if (ret == SQLITE_BUSY) continue;
+        if (ret == SQLITE_OK) break;
+        g_warning ("%s: sqlite3_prepare failed: %s\n",
+                   __FUNCTION__,
+                   sqlite3_errmsg (task_db));
+        sql ("ROLLBACK;");
+        g_free (private_key);
+        g_free (rpm);
+        g_free (deb);
+        g_free (exe);
+        return -1;
+      }
+    g_free (private_key);
+
+    /* Bind the packages to the "$values" in the SQL statement. */
+
+    base64 = (rpm && strlen (rpm))
+             ? g_base64_encode (rpm, rpm_size)
+             : g_strdup ("");
+    g_free (rpm);
+    while (1)
+      {
+        ret = sqlite3_bind_text (stmt,
+                                 3,
+                                 base64,
+                                 strlen (base64),
+                                 SQLITE_TRANSIENT);
+        if (ret == SQLITE_BUSY) continue;
+        if (ret == SQLITE_OK) break;
+        g_warning ("%s: sqlite3_prepare failed: %s\n",
+                   __FUNCTION__,
+                   sqlite3_errmsg (task_db));
+        sql ("ROLLBACK;");
+        g_free (base64);
+        g_free (deb);
+        g_free (exe);
+        return -1;
+      }
+    g_free (base64);
+
+    base64 = (deb && strlen (deb))
+             ? g_base64_encode (deb, deb_size)
+             : g_strdup ("");
+    g_free (deb);
+    while (1)
+      {
+        ret = sqlite3_bind_text (stmt,
+                                 4,
+                                 base64,
+                                 strlen (base64),
+                                 SQLITE_TRANSIENT);
+        if (ret == SQLITE_BUSY) continue;
+        if (ret == SQLITE_OK) break;
+        g_warning ("%s: sqlite3_prepare failed: %s\n",
+                   __FUNCTION__,
+                   sqlite3_errmsg (task_db));
+        sql ("ROLLBACK;");
+        g_free (base64);
+        g_free (exe);
+        return -1;
+      }
+    g_free (base64);
+
+    base64 = (exe && strlen (exe))
+             ? g_base64_encode (exe, exe_size)
+             : g_strdup ("");
+    g_free (exe);
+    while (1)
+      {
+        ret = sqlite3_bind_blob (stmt,
+                                 5,
+                                 base64,
+                                 strlen (base64),
+                                 SQLITE_TRANSIENT);
+        if (ret == SQLITE_BUSY) continue;
+        if (ret == SQLITE_OK) break;
+        g_warning ("%s: sqlite3_prepare failed: %s\n",
+                   __FUNCTION__,
+                   sqlite3_errmsg (task_db));
+        sql ("ROLLBACK;");
+        g_free (base64);
+        return -1;
+      }
+    g_free (base64);
+
+    /* Run the statement. */
+
+    while (1)
+      {
+        ret = sqlite3_step (stmt);
+        if (ret == SQLITE_BUSY) continue;
+        if (ret == SQLITE_DONE) break;
+        if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+          {
+            if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
+            g_warning ("%s: sqlite3_step failed: %s\n",
+                       __FUNCTION__,
+                       sqlite3_errmsg (task_db));
+            sql ("ROLLBACK;");
+            return -1;
+          }
+      }
+
+    sqlite3_finalize (stmt);
   }
 
   if (lsc_credential)
@@ -18176,88 +13645,6 @@ delete_lsc_credential (lsc_credential_t lsc_credential)
   sql ("DELETE FROM lsc_credentials WHERE ROWID = %llu;", lsc_credential);
   sql ("COMMIT;");
   return 0;
-}
-
-/**
- * @brief Set the name of an LSC credential.
- *
- * @param[in]  lsc_credential  The LSC credential.
- * @param[in]  name            Name.
- */
-void
-set_lsc_credential_name (lsc_credential_t lsc_credential, const char *name)
-{
-  gchar *quoted_name = sql_quote (name);
-  sql ("UPDATE lsc_credentials SET name = '%s' WHERE ROWID = %llu;",
-       quoted_name,
-       lsc_credential);
-  g_free (quoted_name);
-}
-
-/**
- * @brief Set the comment of an LSC credential.
- *
- * @param[in]  lsc_credential  The LSC credential.
- * @param[in]  comment         Comment.
- */
-void
-set_lsc_credential_comment (lsc_credential_t lsc_credential,
-                            const char *comment)
-{
-  gchar *quoted_comment = sql_quote (comment);
-  sql ("UPDATE lsc_credentials SET comment = '%s' WHERE ROWID = %llu;",
-       quoted_comment,
-       lsc_credential);
-  g_free (quoted_comment);
-}
-
-/**
- * @brief Set the login of an LSC credential.
- *
- * @param[in]  lsc_credential  The LSC credential.
- * @param[in]  login           Login.
- */
-void
-set_lsc_credential_login (lsc_credential_t lsc_credential, const char *login)
-{
-  gchar *quoted_login = sql_quote (login);
-  sql ("UPDATE lsc_credentials SET login = '%s' WHERE ROWID = %llu;",
-       quoted_login,
-       lsc_credential);
-  g_free (quoted_login);
-}
-
-/**
- * @brief Set the password of an LSC credential.
- *
- * @param[in]  lsc_credential  The LSC credential.
- * @param[in]  password        Password.
- */
-void
-set_lsc_credential_password (lsc_credential_t lsc_credential,
-                             const char *password)
-{
-  gchar *quoted_password = sql_quote (password);
-  sql ("UPDATE lsc_credentials SET password = '%s' WHERE ROWID = %llu;",
-       quoted_password,
-       lsc_credential);
-  g_free (quoted_password);
-}
-
-/**
- * @brief Return whether an LSC credential is the packaged type.
- *
- * @param[in]  lsc_credential  The LSC credential.
- *
- * @return 0 false, else true.
- */
-int
-lsc_credential_packaged (lsc_credential_t lsc_credential)
-{
-  return sql_int (0, 0,
-                  "SELECT public_key NOTNULL FROM lsc_credentials"
-                  " WHERE ROWID = %llu;",
-                  lsc_credential);
 }
 
 /**
@@ -18403,26 +13790,7 @@ DEF_ACCESS (lsc_credential_iterator_private_key, 7);
  * @return Rpm, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-const char*
-lsc_credential_iterator_rpm (iterator_t *iterator)
-{
-  const char *public_key, *name;
-  void *rpm;
-  gsize rpm_size;
-  gchar *rpm64;
-
-  if (iterator->done) return NULL;
-
-  public_key = (const char*) sqlite3_column_text (iterator->stmt, 6);
-  name = (const char*) sqlite3_column_text (iterator->stmt, 3);
-  if (lsc_user_rpm_recreate (name, public_key, &rpm, &rpm_size))
-    return NULL;
-  rpm64 = (rpm && rpm_size)
-          ? g_base64_encode (rpm, rpm_size)
-          : g_strdup ("");
-  free (rpm);
-  return rpm64;
-}
+DEF_ACCESS (lsc_credential_iterator_rpm, 8);
 
 /**
  * @brief Get the deb from an LSC credential iterator.
@@ -18432,33 +13800,7 @@ lsc_credential_iterator_rpm (iterator_t *iterator)
  * @return Deb, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-const char*
-lsc_credential_iterator_deb (iterator_t *iterator)
-{
-  const char *name, *public_key;
-  void *deb, *rpm;
-  gsize deb_size, rpm_size;
-  gchar *deb64;
-
-  if (iterator->done) return NULL;
-
-  public_key = (const char*) sqlite3_column_text (iterator->stmt, 6);
-  name = (const char*) sqlite3_column_text (iterator->stmt, 3);
-  if (lsc_user_rpm_recreate (name, public_key, &rpm, &rpm_size))
-    return NULL;
-
-  if (lsc_user_deb_recreate (name, rpm, rpm_size, &deb, &deb_size))
-    {
-      free (rpm);
-      return NULL;
-    }
-  free (rpm);
-  deb64 = (deb && deb_size)
-          ? g_base64_encode (deb, deb_size)
-          : g_strdup ("");
-  free (deb);
-  return deb64;
-}
+DEF_ACCESS (lsc_credential_iterator_deb, 9);
 
 /**
  * @brief Get the exe from an LSC credential iterator.
@@ -18468,26 +13810,7 @@ lsc_credential_iterator_deb (iterator_t *iterator)
  * @return Exe, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-const char*
-lsc_credential_iterator_exe (iterator_t *iterator)
-{
-  const char *name, *password;
-  void *exe;
-  gsize exe_size;
-  gchar *exe64;
-
-  if (iterator->done) return NULL;
-
-  name = (const char*) sqlite3_column_text (iterator->stmt, 3);
-  password = (const char*) sqlite3_column_text (iterator->stmt, 4);
-  if (lsc_user_exe_recreate (name, password, &exe, &exe_size))
-    return NULL;
-  exe64 = (exe && exe_size)
-          ? g_base64_encode (exe, exe_size)
-          : g_strdup ("");
-  free (exe);
-  return exe64;
-}
+DEF_ACCESS (lsc_credential_iterator_exe, 10);
 
 /**
  * @brief Get the "in use" state from an LSC credential iterator.
@@ -18550,10 +13873,8 @@ init_lsc_credential_target_iterator (iterator_t* iterator,
                                      int ascending)
 {
   init_iterator (iterator,
-                 "SELECT uuid, name FROM targets"
-                 " WHERE lsc_credential = %llu OR smb_lsc_credential = %llu"
+                 "SELECT uuid, name FROM targets WHERE lsc_credential = %llu"
                  " ORDER BY name %s;",
-                 lsc_credential,
                  lsc_credential,
                  ascending ? "ASC" : "DESC");
 }
@@ -18623,16 +13944,15 @@ find_agent (const char* uuid, agent_t* agent)
 /**
  * @brief Find a signature in a feed.
  *
- * @param[in]   location            Feed directory to search for signature.
  * @param[in]   installer_filename  Installer filename.
- * @param[out]  signature           Freshly allocated installer signature.
+ * @param[out]  signature           Installer signature.
  * @param[out]  signature_size      Size of installer signature.
  *
  * @return 0 success, -1 error.
  */
 static int
-find_signature (const gchar *location, const gchar *installer_filename,
-                gchar **signature, gsize *signature_size)
+find_signature (const gchar *installer_filename, gchar **signature,
+                gsize *signature_size)
 {
   gchar *installer_basename = g_path_get_basename (installer_filename);
 
@@ -18646,7 +13966,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
       signature_filename = g_build_filename (OPENVAS_LIB_INSTALL_DIR,
                                              "openvas",
                                              "plugins",
-                                             location,
+                                             "agents",
                                              signature_basename,
                                              NULL);
       g_free (signature_basename);
@@ -18846,7 +14166,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
     {
       g_free (installer_signature);
 
-      if (find_signature ("agents", installer_filename, &installer_signature,
+      if (find_signature (installer_filename, &installer_signature,
                           &installer_signature_size)
           == 0)
         {
@@ -18894,8 +14214,8 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                      " (uuid, name, owner, comment, installer,"
                                      "  installer_64, installer_filename,"
                                      "  installer_signature_64,"
-                                     "  installer_trust, installer_trust_time,"
-                                     "  howto_install, howto_use)"
+                                     "  installer_trust, howto_install,"
+                                     "  howto_use)"
                                      " VALUES"
                                      " (make_uuid (), '%s',"
                                      "  (SELECT ROWID FROM users"
@@ -18904,14 +14224,13 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                      "  $installer, $installer_64,"
                                      "  '%s',"
                                      "  $installer_signature_64,"
-                                     "  %i, %i, $howto_install,"
+                                     "  %i, $howto_install,"
                                      "  $howto_use);",
                                      quoted_name,
                                      current_credentials.uuid,
                                      quoted_comment,
                                      quoted_filename,
-                                     installer_trust,
-                                     (int) time (NULL));
+                                     installer_trust);
         g_free (quoted_comment);
       }
     else
@@ -18930,13 +14249,12 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                      "  $installer, $installer_64,"
                                      "  '%s',"
                                      "  $installer_signature_64,"
-                                     "  %i, %i, $howto_install,"
+                                     "  %i, $howto_install,"
                                      "  $howto_use);",
                                      quoted_name,
                                      current_credentials.uuid,
                                      quoted_filename,
-                                     installer_trust,
-                                     (int) time (NULL));
+                                     installer_trust);
       }
 
     g_free (quoted_name);
@@ -19100,118 +14418,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 int
 delete_agent (agent_t agent)
 {
-  sql ("DELETE FROM agents WHERE ROWID = %llu;", agent);
-  return 0;
-}
-
-/**
- * @brief Verify an agent.
- *
- * @param[in]  agent  Agent.
- *
- * @return 0 success, -1 error.
- */
-int
-verify_agent (agent_t agent)
-{
-  int agent_trust = TRUST_UNKNOWN;
-  iterator_t agents;
-
-  sql ("BEGIN IMMEDIATE;");
-
-  init_agent_iterator (&agents, agent, 1, NULL);
-  if (next (&agents))
-    {
-      const char *signature_64;
-      gchar *agent_signature = NULL;
-      gsize agent_signature_size;
-
-      signature_64 = agent_iterator_installer_signature_64 (&agents);
-
-      find_signature ("agents",
-                      agent_iterator_installer_filename (&agents),
-                      &agent_signature,
-                      &agent_signature_size);
-
-      if ((signature_64 && strlen (signature_64))
-          || agent_signature)
-        {
-          const char *installer;
-          gsize installer_size;
-
-          installer = agent_iterator_installer (&agents);
-          installer_size = agent_iterator_installer_size (&agents);
-
-          if (signature_64 && strlen (signature_64))
-            {
-              gchar *signature;
-              gsize signature_length;
-
-              /* Try the signature from the database. */
-
-              signature = (gchar*) g_base64_decode (signature_64,
-                                                    &signature_length);
-
-              if (verify_signature (installer, installer_size, signature,
-                                    signature_length, &agent_trust))
-                {
-                  cleanup_iterator (&agents);
-                  g_free (agent_signature);
-                  sql ("ROLLBACK;");
-                  return -1;
-                }
-            }
-
-          /* If the database signature is empty or the database
-           * signature is bad, and there is a feed signature, then
-           * try the feed signature. */
-          if (((agent_trust == TRUST_NO)
-               || (agent_trust == TRUST_UNKNOWN))
-              && agent_signature)
-            {
-              if (verify_signature (installer, installer_size, agent_signature,
-                                    strlen (agent_signature), &agent_trust))
-                {
-                  cleanup_iterator (&agents);
-                  g_free (agent_signature);
-                  sql ("ROLLBACK;");
-                  return -1;
-                }
-
-              if (agent_trust == TRUST_YES)
-                {
-                  gchar *quoted_signature, *base64;
-                  base64 = (strlen (agent_signature)
-                            ? g_base64_encode ((guchar*) agent_signature,
-                                               agent_signature_size)
-                            : g_strdup (""));
-                  quoted_signature = sql_quote (base64);
-                  g_free (base64);
-                  sql ("UPDATE agents SET installer_signature_64 = '%s'"
-                       " WHERE ROWID = %llu;",
-                       quoted_signature,
-                       agent);
-                  g_free (quoted_signature);
-                }
-            }
-          g_free (agent_signature);
-        }
-    }
-  else
-    {
-      cleanup_iterator (&agents);
-      sql ("ROLLBACK;");
-      return -1;
-    }
-  cleanup_iterator (&agents);
-
-  sql ("UPDATE agents SET installer_trust = %i, installer_trust_time = %i"
-       " WHERE ROWID = %llu;",
-       agent_trust,
-       time (NULL),
-       agent);
-  sql ("COMMIT;");
-
+  sql ("DELETE FROM agents WHERE ROWID = '%llu';", agent);
   return 0;
 }
 
@@ -19248,9 +14455,8 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
 
   if (agent)
     init_iterator (iterator,
-                   "SELECT uuid, name, comment, installer, installer_64,"
-                   " installer_filename, installer_signature_64,"
-                   " installer_trust, installer_trust_time, howto_install,"
+                   "SELECT uuid, name, comment, installer_64,"
+                   " installer_filename, installer_trust, howto_install,"
                    " howto_use"
                    " FROM agents"
                    " WHERE ROWID = %llu"
@@ -19263,9 +14469,8 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT uuid, name, comment, installer, installer_64,"
-                   " installer_filename, installer_signature_64,"
-                   " installer_trust, installer_trust_time, howto_install,"
+                   "SELECT uuid, name, comment, installer_64,"
+                   " installer_filename, installer_trust, howto_install,"
                    " howto_use"
                    " FROM agents"
                    " WHERE ((owner IS NULL) OR (owner ="
@@ -19313,16 +14518,6 @@ agent_iterator_comment (iterator_t* iterator)
 }
 
 /**
- * @brief Get the installer from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Installer, or NULL if iteration is complete.  Freed
- *         by cleanup_iterator.
- */
-DEF_ACCESS (agent_iterator_installer, 3);
-
-/**
  * @brief Get the installer_64 from an agent iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -19330,33 +14525,7 @@ DEF_ACCESS (agent_iterator_installer, 3);
  * @return Base 64 encoded installer, or NULL if iteration is complete.  Freed
  *         by cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_installer_64, 4);
-
-/**
- * @brief Get the installer size from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Installer size, or NULL if iteration is complete.  Freed
- *         by cleanup_iterator.
- */
-gsize
-agent_iterator_installer_size (iterator_t* iterator)
-{
-  const char *installer_64;
-  gsize installer_size;
-
-  installer_64 = agent_iterator_installer_64 (iterator);
-  if (installer_64 && strlen (installer_64))
-    {
-      gchar *installer;
-      installer = (gchar*) g_base64_decode ((gchar*) installer_64,
-                                            &installer_size);
-      g_free (installer);
-      return installer_size;
-    }
-  return 0;
-}
+DEF_ACCESS (agent_iterator_installer_64, 3);
 
 /**
  * @brief Get the installer_filename from an agent iterator.
@@ -19366,17 +14535,7 @@ agent_iterator_installer_size (iterator_t* iterator)
  * @return Installer filename, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_installer_filename, 5);
-
-/**
- * @brief Get the installer_signature_64 from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Installer signature in base64, or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
- */
-DEF_ACCESS (agent_iterator_installer_signature_64, 6);
+DEF_ACCESS (agent_iterator_installer_filename, 4);
 
 /**
  * @brief Get the trust value from an agent iterator.
@@ -19389,29 +14548,13 @@ const char*
 agent_iterator_trust (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  switch (sqlite3_column_int (iterator->stmt, 7))
+  switch (sqlite3_column_int (iterator->stmt, 5))
     {
       case 1:  return "yes";
       case 2:  return "no";
       case 3:  return "unknown";
       default: return NULL;
     }
-}
-
-/**
- * @brief Get the installer trust time from a agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Time agent installer was verified.
- */
-time_t
-agent_iterator_trust_time (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 8);
-  return ret;
 }
 
 /**
@@ -19422,7 +14565,7 @@ agent_iterator_trust_time (iterator_t* iterator)
  * @return Install HOWTO, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_howto_install, 9);
+DEF_ACCESS (agent_iterator_howto_install, 6);
 
 /**
  * @brief Get the usage HOWTO from an agent iterator.
@@ -19432,7 +14575,7 @@ DEF_ACCESS (agent_iterator_howto_install, 9);
  * @return Usage HOWTO, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_howto_use, 10);
+DEF_ACCESS (agent_iterator_howto_use, 7);
 
 /**
  * @brief Get the name of an agent.
@@ -20108,8 +15251,7 @@ modify_override (override_t override, const char* text, const char* hosts,
 
   if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
       && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
-      && strcmp (new_threat, "Debug") && strcmp (new_threat, "False Positive")
-      && strcmp (new_threat, ""))
+      && strcmp (new_threat, "Debug") && strcmp (new_threat, ""))
     return -1;
 
   quoted_text = sql_insert (text);
@@ -21182,2200 +16324,5 @@ DEF_ACCESS (schedule_task_iterator_uuid, 1);
  *         cleanup_iterator.
  */
 DEF_ACCESS (schedule_task_iterator_name, 2);
-
-
-/* Report Formats. */
-
-/**
- * @brief Possible port types.
- */
-typedef enum
-{
-  REPORT_FORMAT_FLAG_ACTIVE = 1
-} report_format_flag_t;
-
-/**
- * @brief Find a report format given a UUID.
- *
- * @param[in]   uuid           UUID of report format.
- * @param[out]  report_format  Report format return, 0 if succesfully failed to
- *                             find report format.
- *
- * @return FALSE on success (including if failed to find report format), TRUE
- *         on error.
- */
-gboolean
-find_report_format (const char* uuid, report_format_t* report_format)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("report_format", quoted_uuid) == 0)
-    {
-      g_free (quoted_uuid);
-      *report_format = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (report_format, 0, 0,
-                     "SELECT ROWID FROM report_formats WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *report_format = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
-
-/**
- * @brief Find a report format given a name.
- *
- * @param[in]   name           Name of report_format.
- * @param[out]  report_format  Report format return, 0 if succesfully failed to
- *                             find report_format.
- *
- * @return FALSE on success (including if failed to find report format), TRUE
- *         on error.
- */
-gboolean
-lookup_report_format (const char* name, report_format_t* report_format)
-{
-  gchar *quoted_name = sql_quote (name);
-  if (user_owns ("report_format", "name", quoted_name) == 0)
-    {
-      g_free (quoted_name);
-      *report_format = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (report_format, 0, 0,
-                     "SELECT ROWID FROM report_formats WHERE name = '%s';",
-                     quoted_name))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *report_format = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_name);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_name);
-  return FALSE;
-}
-
-/**
- * @brief Create a report format.
- *
- * @param[in]   uuid           UUID of format.
- * @param[in]   name           Name of format.
- * @param[in]   content_type   Content type of format.
- * @param[in]   extension      File extension of format.
- * @param[in]   summary        Summary of format.
- * @param[in]   description    Description of format.
- * @param[in]   global         Whether the report is global.
- * @param[in]   files          Array of memory.  Each item is a file name
- *                             string, a terminating NULL, the file contents
- *                             in base64 and a terminating NULL.
- * @param[in]   params         Array of params.
- * @param[in]   params_options Array.  Each item is an array corresponding to
- *                             params.  Each item of an inner array is a string,
- *                             the text of an option in a selection.
- * @param[in]   signature      Signature.
- * @param[out]  report_format  Created report format.
- *
- * @return 0 success, 1 report format exists, 2 empty file name, 3 param value
- *         validation failed, 4 param value validation failed, 5 param default
- *         missing, 6 param min or max out of range, 7 param type missing,
- *         8 duplicate param name, 9 bogus param type name, -1 error.
- */
-int
-create_report_format (const char *uuid, const char *name,
-                      const char *content_type, const char *extension,
-                      const char *summary, const char *description, int global,
-                      array_t *files, array_t *params, array_t *params_options,
-                      const char *signature, report_format_t *report_format)
-{
-  gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
-  gchar *quoted_content_type, *quoted_signature, *file_name, *dir;
-  report_format_t report_format_rowid;
-  int index;
-  gchar *format_signature = NULL;
-  gsize format_signature_size;
-  int format_trust = TRUST_UNKNOWN;
-  create_report_format_param_t *param;
-
-  /* Verify the signature. */
-
-  if (signature
-      || (find_signature ("report_formats", uuid, &format_signature,
-                          &format_signature_size)
-          == 0))
-    {
-      GString *format;
-
-      format = g_string_new ("");
-
-      g_string_append_printf (format,
-                              "%s%s%s%s%s%s%i",
-                              uuid,
-                              name,
-                              extension,
-                              content_type,
-                              summary,
-                              description,
-                              global & 1);
-
-      index = 0;
-      while ((file_name = (gchar*) g_ptr_array_index (files, index++)))
-        g_string_append_printf (format,
-                                "%s%s",
-                                file_name,
-                                file_name + strlen (file_name) + 1);
-
-      index = 0;
-      while ((param
-               = (create_report_format_param_t*) g_ptr_array_index (params,
-                                                                    index++)))
-        {
-          g_string_append_printf (format,
-                                  "%s%s%s",
-                                  param->name,
-                                  param->value,
-                                  param->type);
-
-          if (param->type_min)
-            {
-              long long int min;
-              min = strtoll (param->type_min, NULL, 0);
-              if (min == LLONG_MIN)
-                return 6;
-              g_string_append_printf (format, "%lli", min);
-            }
-
-          if (param->type_max)
-            {
-              long long int max;
-              max = strtoll (param->type_max, NULL, 0);
-              if (max == LLONG_MAX)
-                return 6;
-              g_string_append_printf (format, "%lli", max);
-            }
-
-          g_string_append_printf (format,
-                                  "%s",
-                                  param->fallback);
-
-          {
-            array_t *options;
-            int option_index;
-            gchar *option_value;
-
-            options = (array_t*) g_ptr_array_index (params_options, index - 1);
-            if (options == NULL)
-              return -1;
-            option_index = 0;
-            while ((option_value = (gchar*) g_ptr_array_index (options,
-                                                               option_index++)))
-              g_string_append_printf (format, "%s", option_value);
-          }
-        }
-
-      g_string_append_printf (format, "\n");
-
-      if (signature == NULL)
-        signature = (const char*) format_signature;
-
-      if (verify_signature (format->str, format->len, signature,
-                            strlen (signature), &format_trust))
-        {
-          g_free (format_signature);
-          g_string_free (format, TRUE);
-          return -1;
-        }
-      g_string_free (format, TRUE);
-
-      g_free (format_signature);
-    }
-
-  sql ("BEGIN IMMEDIATE;");
-
-  assert (current_credentials.uuid);
-  assert (uuid);
-  assert (name);
-  assert (files);
-  assert (params);
-
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM report_formats"
-               " WHERE uuid = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               uuid,
-               current_credentials.uuid))
-    {
-      sql ("ROLLBACK;");
-      return 1;
-    }
-
-  quoted_name = sql_quote (name);
-
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM report_formats"
-               " WHERE name = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               current_credentials.uuid))
-    {
-      g_free (quoted_name);
-      sql ("ROLLBACK;");
-      return 1;
-    }
-
-  /* Write files to disk. */
-
-  if (global)
-    dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                            "openvasmd",
-                            "global_report_formats",
-                            uuid,
-                            NULL);
-  else
-    {
-      assert (current_credentials.uuid);
-      dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                              "openvasmd",
-                              "report_formats",
-                              current_credentials.uuid,
-                              uuid,
-                              NULL);
-    }
-
-  if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
-    {
-      g_warning ("%s: failed to remove dir %s", __FUNCTION__, dir);
-      g_free (dir);
-      g_free (quoted_name);
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
-    {
-      g_warning ("%s: failed to create dir %s", __FUNCTION__, dir);
-      g_free (dir);
-      g_free (quoted_name);
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  index = 0;
-  while ((file_name = (gchar*) g_ptr_array_index (files, index++)))
-    {
-      gchar *contents, *file, *full_file_name;
-      gsize contents_size;
-      GError *error;
-
-      if (strlen (file_name) == 0)
-        {
-          file_utils_rmdir_rf (dir);
-          g_free (dir);
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 2;
-        }
-
-      file = file_name + strlen (file_name) + 1;
-      if (strlen (file))
-        contents = (gchar*) g_base64_decode (file, &contents_size);
-      else
-        {
-          contents = g_strdup ("");
-          contents_size = 0;
-        }
-
-      full_file_name = g_build_filename (dir, file_name, NULL);
-
-      error = NULL;
-      g_file_set_contents (full_file_name, contents, contents_size, &error);
-      g_free (contents);
-      g_free (full_file_name);
-      if (error)
-        {
-          g_warning ("%s: %s", __FUNCTION__, error->message);
-          g_error_free (error);
-          file_utils_rmdir_rf (dir);
-          g_free (dir);
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return -1;
-        }
-    }
-
-  /* Add format to database. */
-
-  quoted_summary = summary ? sql_quote (summary) : NULL;
-  quoted_description = description ? sql_quote (description) : NULL;
-  quoted_extension = extension ? sql_quote (extension) : NULL;
-  quoted_content_type = content_type ? sql_quote (content_type) : NULL;
-  quoted_signature = signature ? sql_quote (signature) : NULL;
-
-  if (global)
-    sql ("INSERT INTO report_formats"
-         " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust, trust_time, flags)"
-         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', %i, %i, 0);",
-         uuid,
-         quoted_name,
-         quoted_summary ? quoted_summary : "",
-         quoted_description ? quoted_description : "",
-         quoted_extension ? quoted_extension : "",
-         quoted_content_type ? quoted_content_type : "",
-         quoted_signature ? quoted_signature : "",
-         format_trust,
-         time (NULL));
-  else
-    sql ("INSERT INTO report_formats"
-         " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust, trust_time, flags)"
-         " VALUES ('%s', '%s',"
-         " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '%s', '%s', '%s', '%s', %i, %i, 0);",
-         uuid,
-         quoted_name,
-         current_credentials.uuid,
-         quoted_summary ? quoted_summary : "",
-         quoted_description ? quoted_description : "",
-         quoted_extension ? quoted_extension : "",
-         quoted_content_type ? quoted_content_type : "",
-         quoted_signature ? quoted_signature : "",
-         format_trust,
-         time (NULL));
-
-  g_free (quoted_summary);
-  g_free (quoted_description);
-  g_free (quoted_extension);
-  g_free (quoted_content_type);
-  g_free (quoted_signature);
-  g_free (quoted_name);
-
-  /* Add params to database. */
-
-  report_format_rowid = sqlite3_last_insert_rowid (task_db);
-  index = 0;
-  while ((param = (create_report_format_param_t*) g_ptr_array_index (params,
-                                                                     index++)))
-    {
-      gchar *quoted_param_name, *quoted_param_value, *quoted_param_fallback;
-      rowid_t param_rowid;
-      long long int min, max;
-
-      if (param->type == NULL)
-        {
-          file_utils_rmdir_rf (dir);
-          g_free (dir);
-          sql ("ROLLBACK;");
-          return 7;
-        }
-
-      if (report_format_param_type_from_name (param->type)
-          == REPORT_FORMAT_PARAM_TYPE_ERROR)
-        {
-          file_utils_rmdir_rf (dir);
-          g_free (dir);
-          sql ("ROLLBACK;");
-          return 9;
-        }
-
-      /* Param min and max are optional.  LLONG_MIN and LLONG_MAX mark in the db
-       * that they were missing, so if the user gives LLONG_MIN or LLONG_MAX it
-       * is an error.  This ensures that GPG verification works, because the
-       * verification knows when to leave out min and max. */
-
-      if (param->type_min)
-        {
-          min = strtoll (param->type_min, NULL, 0);
-          if (min == LLONG_MIN)
-            {
-              file_utils_rmdir_rf (dir);
-              g_free (dir);
-              sql ("ROLLBACK;");
-              return 6;
-            }
-        }
-      else
-        min = LLONG_MIN;
-
-      if (param->type_max)
-        {
-          max = strtoll (param->type_max, NULL, 0);
-          if (max == LLONG_MAX)
-            {
-              file_utils_rmdir_rf (dir);
-              g_free (dir);
-              sql ("ROLLBACK;");
-              return 6;
-            }
-        }
-      else
-        max = LLONG_MAX;
-
-      if (param->fallback == NULL)
-        {
-          file_utils_rmdir_rf (dir);
-          g_free (dir);
-          sql ("ROLLBACK;");
-          return 5;
-        }
-
-      quoted_param_name = sql_quote (param->name);
-
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM report_format_params"
-                   " WHERE name = '%s' AND report_format = %llu;",
-                   quoted_param_name,
-                   report_format_rowid))
-        {
-          g_free (quoted_param_name);
-          file_utils_rmdir_rf (dir);
-          g_free (dir);
-          sql ("ROLLBACK;");
-          return 8;
-        }
-
-      quoted_param_value = sql_quote (param->value);
-      quoted_param_fallback = sql_quote (param->fallback);
-
-      sql ("INSERT INTO report_format_params"
-           " (report_format, name, type, value, type_min, type_max, type_regex,"
-           "  fallback)"
-           " VALUES (%llu, '%s', %u, '%s', %lli, %lli, '', '%s');",
-           report_format_rowid,
-           quoted_param_name,
-           report_format_param_type_from_name (param->type),
-           quoted_param_value,
-           min,
-           max,
-           quoted_param_fallback);
-
-      g_free (quoted_param_name);
-      g_free (quoted_param_value);
-      g_free (quoted_param_fallback);
-
-      param_rowid = sqlite3_last_insert_rowid (task_db);
-
-      {
-        array_t *options;
-        int option_index;
-        gchar *option_value;
-
-        options = (array_t*) g_ptr_array_index (params_options, index - 1);
-        if (options == NULL)
-          {
-            file_utils_rmdir_rf (dir);
-            g_free (dir);
-            sql ("ROLLBACK;");
-            return -1;
-          }
-        option_index = 0;
-        while ((option_value = (gchar*) g_ptr_array_index (options,
-                                                           option_index++)))
-          {
-            gchar *quoted_option_value = sql_quote (option_value);
-            sql ("INSERT INTO report_format_param_options"
-                 " (report_format_param, value)"
-                 " VALUES (%llu, '%s');",
-                 param_rowid,
-                 quoted_option_value);
-            g_free (quoted_option_value);
-          }
-      }
-
-      if (validate_param_value (report_format_rowid, param_rowid, param->name,
-                                param->value))
-        {
-          file_utils_rmdir_rf (dir);
-          g_free (dir);
-          sql ("ROLLBACK;");
-          return 3;
-        }
-
-      if (validate_param_value (report_format_rowid, param_rowid, param->name,
-                                param->fallback))
-        {
-          file_utils_rmdir_rf (dir);
-          g_free (dir);
-          sql ("ROLLBACK;");
-          return 4;
-        }
-    }
-
-  if (report_format)
-    *report_format = report_format_rowid;
-
-  g_free (dir);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Delete a report format.
- *
- * @param[in]  report_format  Report format.
- *
- * @return 0 success, -1 error.
- */
-int
-delete_report_format (report_format_t report_format)
-{
-  char *uuid;
-  gchar *dir;
-
-  sql ("BEGIN IMMEDIATE;");
-
-  uuid = report_format_uuid (report_format);
-  if (uuid == NULL)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  if (report_format_global (report_format))
-    dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                            "openvasmd",
-                            "global_report_formats",
-                            uuid,
-                            NULL);
-  else
-    dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                            "openvasmd",
-                            "report_formats",
-                            current_credentials.uuid,
-                            uuid,
-                            NULL);
-  free (uuid);
-  if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
-    {
-      g_free (dir);
-      sql ("ROLLBACK;");
-      return -1;
-    }
-  g_free (dir);
-
-  sql ("DELETE FROM report_formats WHERE ROWID = %llu;", report_format);
-  sql ("DELETE FROM report_format_param_options WHERE report_format_param"
-       " IN (SELECT ROWID from report_format_params WHERE report_format = %llu);",
-       report_format);
-  sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
-       report_format);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Verify a report format.
- *
- * @param[in]  report_format  Report format.
- *
- * @return 0 success, -1 error.
- */
-int
-verify_report_format (report_format_t report_format)
-{
-  int format_trust = TRUST_UNKNOWN;
-  iterator_t formats;
-
-  sql ("BEGIN IMMEDIATE;");
-
-  init_report_format_iterator (&formats, report_format, 1, NULL);
-  if (next (&formats))
-    {
-      const char *signature;
-      gchar *format_signature = NULL;
-      gsize format_signature_size;
-
-      signature = report_format_iterator_signature (&formats);
-
-      find_signature ("report_formats",
-                      report_format_iterator_uuid (&formats),
-                      &format_signature,
-                      &format_signature_size);
-
-      if ((signature && strlen (signature))
-          || format_signature)
-        {
-          GString *format;
-          file_iterator_t files;
-          iterator_t params;
-          report_format_t report_format;
-
-          format = g_string_new ("");
-
-          g_string_append_printf
-           (format,
-            "%s%s%s%s%s%s%i",
-            report_format_iterator_uuid (&formats),
-            report_format_iterator_name (&formats),
-            report_format_iterator_extension (&formats),
-            report_format_iterator_content_type (&formats),
-            report_format_iterator_summary (&formats),
-            report_format_iterator_description (&formats),
-            report_format_iterator_global (&formats) & 1);
-
-          report_format = report_format_iterator_report_format (&formats);
-
-          init_report_format_file_iterator (&files, report_format);
-          while (next_file (&files))
-            {
-              gchar *content = file_iterator_content_64 (&files);
-              g_string_append_printf (format,
-                                      "%s%s",
-                                      file_iterator_name (&files),
-                                      content);
-              g_free (content);
-            }
-          cleanup_file_iterator (&files);
-
-          init_report_format_param_iterator (&params,
-                                             report_format,
-                                             1,
-                                             NULL);
-          while (next (&params))
-            {
-              g_string_append_printf
-               (format,
-                "%s%s%s",
-                report_format_param_iterator_name (&params),
-                report_format_param_iterator_value (&params),
-                report_format_param_iterator_type_name (&params));
-
-              if (report_format_param_iterator_type_min (&params) > LLONG_MIN)
-                g_string_append_printf
-                 (format,
-                  "%lli",
-                  report_format_param_iterator_type_min (&params));
-
-              if (report_format_param_iterator_type_max (&params) < LLONG_MAX)
-                g_string_append_printf
-                 (format,
-                  "%lli",
-                  report_format_param_iterator_type_max (&params));
-
-              g_string_append_printf
-               (format,
-                "%s%s",
-                report_format_param_iterator_type_regex (&params),
-                report_format_param_iterator_fallback (&params));
-
-              {
-                iterator_t options;
-                init_param_option_iterator
-                 (&options,
-                  report_format_param_iterator_param (&params),
-                  1,
-                  NULL);
-                while (next (&options))
-                  if (param_option_iterator_value (&options))
-                    g_string_append_printf
-                     (format,
-                      "%s",
-                      param_option_iterator_value (&options));
-              }
-            }
-          cleanup_iterator (&params);
-
-          g_string_append_printf (format, "\n");
-
-          if (signature && strlen (signature))
-            {
-              /* Try the signature from the database. */
-              if (verify_signature (format->str, format->len, signature,
-                                    strlen (signature), &format_trust))
-                {
-                  cleanup_iterator (&formats);
-                  g_free (format_signature);
-                  sql ("ROLLBACK;");
-                  g_string_free (format, TRUE);
-                  return -1;
-                }
-            }
-
-          /* If the database signature is empty or the database
-           * signature is bad, and there is a feed signature, then
-           * try the feed signature. */
-          if (((format_trust == TRUST_NO)
-               || (format_trust == TRUST_UNKNOWN))
-              && format_signature)
-            {
-              if (verify_signature (format->str, format->len, format_signature,
-                                    strlen (format_signature), &format_trust))
-                {
-                  cleanup_iterator (&formats);
-                  g_free (format_signature);
-                  sql ("ROLLBACK;");
-                  g_string_free (format, TRUE);
-                  return -1;
-                }
-
-              if (format_trust == TRUST_YES)
-                {
-                  gchar *quoted_signature;
-                  quoted_signature = sql_quote (format_signature);
-                  sql ("UPDATE report_formats SET signature = '%s'"
-                       " WHERE ROWID = %llu;",
-                       quoted_signature,
-                       report_format);
-                  g_free (quoted_signature);
-                }
-            }
-          g_free (format_signature);
-          g_string_free (format, TRUE);
-        }
-    }
-  else
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-  cleanup_iterator (&formats);
-
-  sql ("UPDATE report_formats SET trust = %i, trust_time = %i"
-       " WHERE ROWID = %llu;",
-       format_trust,
-       time (NULL),
-       report_format);
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Return the UUID of a report format.
- *
- * @param[in]  report_format  Report format.
- *
- * @return Newly allocated UUID.
- */
-char *
-report_format_uuid (report_format_t report_format)
-{
-  return sql_string (0, 0,
-                     "SELECT uuid FROM report_formats WHERE ROWID = %llu;",
-                     report_format);
-}
-
-/**
- * @brief Set the active flag of a report format.
- *
- * @param[in]  report_format  The report format.
- * @param[in]  active         Active flag.
- */
-void
-set_report_format_active (report_format_t report_format, int active)
-{
-  if (active)
-    sql ("UPDATE report_formats SET flags = (flags | %llu) WHERE ROWID = %llu;",
-         (long long int) REPORT_FORMAT_FLAG_ACTIVE,
-         report_format);
-  else
-    sql ("UPDATE report_formats SET flags = (flags & ~ %llu) WHERE ROWID = %llu;",
-         (long long int) REPORT_FORMAT_FLAG_ACTIVE,
-         report_format);
-}
-
-/**
- * @brief Return the name of a report format.
- *
- * @param[in]  report_format  Report format.
- *
- * @return Newly allocated name.
- */
-char *
-report_format_name (report_format_t report_format)
-{
-  return sql_string (0, 0,
-                     "SELECT name FROM report_formats WHERE ROWID = %llu;",
-                     report_format);
-}
-
-/**
- * @brief Return the content type of a report format.
- *
- * @param[in]  report_format  Report format.
- *
- * @return Newly allocated content type.
- */
-char *
-report_format_content_type (report_format_t report_format)
-{
-  return sql_string (0, 0,
-                     "SELECT content_type FROM report_formats WHERE ROWID = %llu;",
-                     report_format);
-}
-
-
-/**
- * @brief Return the extension of a report format.
- *
- * @param[in]  report_format  Report format.
- *
- * @return Newly allocated extension.
- */
-char *
-report_format_extension (report_format_t report_format)
-{
-  return sql_string (0, 0,
-                     "SELECT extension FROM report_formats WHERE ROWID = %llu;",
-                     report_format);
-}
-
-/**
- * @brief Set the name of the report format.
- *
- * @param[in]  report_format  The report format.
- * @param[in]  name           Name.
- */
-void
-set_report_format_name (report_format_t report_format, const char *name)
-{
-  gchar *quoted_name = sql_quote (name);
-  sql ("UPDATE report_formats SET name = '%s' WHERE ROWID = %llu;",
-       quoted_name,
-       report_format);
-  g_free (quoted_name);
-}
-
-/**
- * @brief Return whether a report format is global.
- *
- * @param[in]  report_format  Report format.
- *
- * @return 1 if global, else 0.
- */
-int
-report_format_global (report_format_t report_format)
-{
-  return sql_int (0, 0,
-                  "SELECT owner is NULL FROM report_formats"
-                  " WHERE ROWID = %llu;",
-                  report_format);
-}
-
-/**
- * @brief Return whether a report format is active.
- *
- * @param[in]  report_format  Report format.
- *
- * @return -1 on error, 1 if active, else 0.
- */
-int
-report_format_active (report_format_t report_format)
-{
-  long long int flag;
-  switch (sql_int64 (&flag, 0, 0,
-                     "SELECT flags & %llu FROM report_formats"
-                     " WHERE ROWID = %llu;",
-                     (long long int) REPORT_FORMAT_FLAG_ACTIVE,
-                     report_format))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        return 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        return -1;
-        break;
-    }
-  return flag ? 1 : 0;
-}
-
-/**
- * @brief Set the summary of the report format.
- *
- * @param[in]  report_format  The report format.
- * @param[in]  summary        Summary.
- */
-void
-set_report_format_summary (report_format_t report_format, const char *summary)
-{
-  gchar *quoted_summary = sql_quote (summary);
-  sql ("UPDATE report_formats SET summary = '%s' WHERE ROWID = %llu;",
-       quoted_summary,
-       report_format);
-  g_free (quoted_summary);
-}
-
-/**
- * @brief Return the type max of a report format param.
- *
- * @param[in]  report_format  Report format.
- * @param[in]  name           Name of param.
- *
- * @return Param type.
- */
-static report_format_param_type_t
-report_format_param_type (report_format_t report_format, const char *name)
-{
-  report_format_param_type_t type;
-  gchar *quoted_name = sql_quote (name);
-  type = (report_format_param_type_t)
-         sql_int (0, 0,
-                  "SELECT type FROM report_format_params"
-                  " WHERE report_format = %llu AND name = '%s';",
-                  report_format,
-                  quoted_name);
-  g_free (quoted_name);
-  return type;
-}
-
-/**
- * @brief Return the type max of a report format param.
- *
- * @param[in]  report_format  Report format.
- * @param[in]  name           Name of param.
- *
- * @return Max.
- */
-static long long int
-report_format_param_type_max (report_format_t report_format, const char *name)
-{
-  long long int max = 0;
-  gchar *quoted_name = sql_quote (name);
-  /* Assume it's there. */
-  sql_int64 (&max, 0, 0,
-             "SELECT type_max FROM report_format_params"
-             " WHERE report_format = %llu AND name = '%s';",
-             report_format,
-             quoted_name);
-  g_free (quoted_name);
-  return max;
-}
-
-/**
- * @brief Return the type min of a report format param.
- *
- * @param[in]  report_format  Report format.
- * @param[in]  name           Name of param.
- *
- * @return Min.
- */
-static long long int
-report_format_param_type_min (report_format_t report_format, const char *name)
-{
-  long long int min = 0;
-  gchar *quoted_name = sql_quote (name);
-  /* Assume it's there. */
-  sql_int64 (&min, 0, 0,
-             "SELECT type_min FROM report_format_params"
-             " WHERE report_format = %llu AND name = '%s';",
-             report_format,
-             quoted_name);
-  g_free (quoted_name);
-  return min;
-}
-
-
-/**
- * @brief Validate a value for a report format param.
- *
- * @param[in]  report_format  Report format.
- * @param[in]  param          Param.
- * @param[in]  name           Name of param.
- * @param[in]  value          Potential value of param.
- *
- * @return 0 success, 1 fail.
- */
-static int
-validate_param_value (report_format_t report_format,
-                      report_format_param_t param, const char *name,
-                      const char *value)
-{
-  switch (report_format_param_type (report_format, name))
-    {
-      case REPORT_FORMAT_PARAM_TYPE_INTEGER:
-        {
-          long long int min, max, actual;
-          min = report_format_param_type_min (report_format, name);
-          /* Simply truncate out of range values. */
-          actual = strtoll (value, NULL, 0);
-          if (actual < min)
-            return 1;
-          max = report_format_param_type_max (report_format, name);
-          if (actual > max)
-            return 1;
-        }
-        break;
-      case REPORT_FORMAT_PARAM_TYPE_SELECTION:
-        {
-          iterator_t options;
-          int found = 0;
-
-          init_param_option_iterator (&options, param, 1, NULL);
-          while (next (&options))
-            if (param_option_iterator_value (&options)
-                && (strcmp (param_option_iterator_value (&options), value)
-                    == 0))
-              {
-                found = 1;
-                break;
-              }
-          cleanup_iterator (&options);
-          if (found)
-            break;
-          return 1;
-        }
-      case REPORT_FORMAT_PARAM_TYPE_STRING:
-      case REPORT_FORMAT_PARAM_TYPE_TEXT:
-        {
-          long long int min, max, actual;
-          min = report_format_param_type_min (report_format, name);
-          actual = strlen (value);
-          if (actual < min)
-            return 1;
-          max = report_format_param_type_max (report_format, name);
-          if (actual > max)
-            return 1;
-        }
-        break;
-      default:
-        break;
-    }
-  return 0;
-}
-
-/**
- * @brief Set the value of the report format param.
- *
- * @param[in]  report_format  The report format.
- * @param[in]  name           Param name.
- * @param[in]  value_64       Param value in base64.
- *
- * @return 0 success, 1 failed to find param, 2 validation of value failed,
- *         -1 error.
- */
-int
-set_report_format_param (report_format_t report_format, const char *name,
-                         const char *value_64)
-{
-  gchar *quoted_name, *quoted_value, *value;
-  gsize value_size;
-  report_format_param_t param;
-
-  quoted_name = sql_quote (name);
-
-  sql ("BEGIN IMMEDIATE;");
-
-  /* Ensure the param exists. */
-
-  switch (sql_int64 (&param, 0, 0,
-                     "SELECT ROWID FROM report_format_params"
-                     " WHERE name = '%s';",
-                     quoted_name))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        g_free (quoted_name);
-        sql ("ROLLBACK;");
-        return 1;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_name);
-        sql ("ROLLBACK;");
-        return -1;
-        break;
-    }
-
-  /* Translate the value. */
-
-  if (value_64 && strlen (value_64))
-    value = (gchar*) g_base64_decode (value_64, &value_size);
-  else
-    {
-      value = g_strdup ("");
-      value_size = 0;
-    }
-
-  /* Validate the value. */
-
-  if (validate_param_value (report_format, param, name, value))
-    {
-      sql ("ROLLBACK;");
-      g_free (quoted_name);
-      return 2;
-    }
-
-  quoted_value = sql_quote (value);
-  g_free (value);
-
-  /* Update the database. */
-
-  sql ("UPDATE report_format_params SET value = '%s'"
-       " WHERE report_format = %llu AND name = '%s';",
-       quoted_value,
-       report_format,
-       quoted_name);
-
-  g_free (quoted_name);
-  g_free (quoted_value);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Initialise a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  report_format  Single report_format to iterate over, or 0 for all.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
- */
-void
-init_report_format_iterator (iterator_t* iterator, report_format_t report_format,
-                             int ascending, const char* sort_field)
-{
-  if (report_format)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, extension, content_type,"
-                   " summary, description, owner IS NULL, signature, trust,"
-                   " trust_time, flags"
-                   " FROM report_formats"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   report_format,
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, extension, content_type,"
-                   " summary, description, owner is NULL, signature, trust,"
-                   " trust_time, flags"
-                   " FROM report_formats"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-}
-
-/**
- * @brief Get the report format from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Report_Format.
- */
-report_format_t
-report_format_iterator_report_format (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (report_format_t) sqlite3_column_int64 (iterator->stmt, 0);
-}
-
-/**
- * @brief Get the UUID from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (report_format_iterator_uuid, 1);
-
-/**
- * @brief Get the name from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (report_format_iterator_name, 2);
-
-/**
- * @brief Get the extension from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Extension, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (report_format_iterator_extension, 3);
-
-/**
- * @brief Get the content type from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Content type, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (report_format_iterator_content_type, 4);
-
-/**
- * @brief Get the summary from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Summary, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (report_format_iterator_summary, 5);
-
-/**
- * @brief Get the description from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Description, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (report_format_iterator_description, 6);
-
-/**
- * @brief Get the global state from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Global flag, or -1 if iteration is complete.
- */
-int
-report_format_iterator_global (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return sqlite3_column_int (iterator->stmt, 7);
-}
-
-/**
- * @brief Get the signature from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Signature, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (report_format_iterator_signature, 8);
-
-/**
- * @brief Get the trust value from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Trust value.
- */
-const char*
-report_format_iterator_trust (iterator_t* iterator)
-{
-  if (iterator->done) return NULL;
-  switch (sqlite3_column_int (iterator->stmt, 9))
-    {
-      case 1:  return "yes";
-      case 2:  return "no";
-      case 3:  return "unknown";
-      default: return NULL;
-    }
-}
-
-/**
- * @brief Get the trust time from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Time report format was verified.
- */
-time_t
-report_format_iterator_trust_time (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 10);
-  return ret;
-}
-
-/**
- * @brief Get the active flag from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Active flag, or -1 if iteration is complete.
- */
-int
-report_format_iterator_active (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return (sqlite3_column_int64 (iterator->stmt, 11) & REPORT_FORMAT_FLAG_ACTIVE)
-          ? 1 : 0;
-}
-
-/**
- * @brief Initialise a report format iterator.
- *
- * @param[in]  iterator       Iterator.
- * @param[in]  report_format  Single report_format to iterate over, or 0 for all.
- * @param[in]  ascending      Whether to sort ascending or descending.
- * @param[in]  sort_field     Field to sort on, or NULL for "ROWID".
- */
-void
-init_report_format_param_iterator (iterator_t* iterator, report_format_t report_format,
-                                   int ascending, const char* sort_field)
-{
-  if (report_format)
-    init_iterator (iterator,
-                   "SELECT ROWID, name, value, type, type_min, type_max,"
-                   " type_regex, fallback"
-                   " FROM report_format_params"
-                   " WHERE report_format = %llu"
-                   " ORDER BY %s %s;",
-                   report_format,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT ROWID, name, value, type, type_min, type_max,"
-                   " type_regex, fallback"
-                   " FROM report_format_params"
-                   " ORDER BY %s %s;",
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-}
-
-/**
- * @brief Get the report format param from a report format param iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Report format param.
- */
-report_format_param_t
-report_format_param_iterator_param (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (report_format_param_t) sqlite3_column_int64 (iterator->stmt, 0);
-}
-
-/**
- * @brief Get the name from a report format param iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (report_format_param_iterator_name, 1);
-
-/**
- * @brief Get the value from a report format param iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Value, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (report_format_param_iterator_value, 2);
-
-/**
- * @brief Get the name of the type of a report format param iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Static string naming type, or NULL if iteration is complete.
- */
-const char *
-report_format_param_iterator_type_name (iterator_t* iterator)
-{
-  if (iterator->done) return NULL;
-  return report_format_param_type_name (sqlite3_column_int (iterator->stmt, 3));
-}
-
-/**
- * @brief Get the type from a report format param iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Type.
- */
-report_format_param_type_t
-report_format_param_iterator_type (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return sqlite3_column_int (iterator->stmt, 3);
-}
-
-/**
- * @brief Get the type min from a report format param iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Type min.
- */
-long long int
-report_format_param_iterator_type_min (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return sqlite3_column_int64 (iterator->stmt, 4);
-}
-
-/**
- * @brief Get the type max from a report format param iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Type max.
- */
-long long int
-report_format_param_iterator_type_max (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return sqlite3_column_int64 (iterator->stmt, 5);
-}
-
-/**
- * @brief Get the type regex from a report format param iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Type regex, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (report_format_param_iterator_type_regex, 6);
-
-/**
- * @brief Get the default from a report format param iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Default, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (report_format_param_iterator_fallback, 7);
-
-/**
- * @brief Initialise a report format param option iterator.
- *
- * @param[in]  iterator             Iterator.
- * @param[in]  report_format_param  Param whose options to iterate over.
- * @param[in]  ascending            Whether to sort ascending or descending.
- * @param[in]  sort_field           Field to sort on, or NULL for "ROWID".
- */
-void
-init_param_option_iterator (iterator_t* iterator,
-                            report_format_param_t report_format_param,
-                            int ascending, const char *sort_field)
-{
-  init_iterator (iterator,
-                 "SELECT ROWID, value"
-                 " FROM report_format_param_options"
-                 " WHERE report_format_param = %llu"
-                 " ORDER BY %s %s;",
-                 report_format_param,
-                 sort_field ? sort_field : "ROWID",
-                 ascending ? "ASC" : "DESC");
-}
-
-/**
- * @brief Get the value from a report format param option iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Value, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (param_option_iterator_value, 1);
-
-
-/* Slaves. */
-
-/**
- * @brief Find a slave given a UUID.
- *
- * @param[in]   uuid   UUID of slave.
- * @param[out]  slave  Slave return, 0 if succesfully failed to find slave.
- *
- * @return FALSE on success (including if failed to find slave), TRUE on error.
- */
-gboolean
-find_slave (const char* uuid, slave_t* slave)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("slave", quoted_uuid) == 0)
-    {
-      g_free (quoted_uuid);
-      *slave = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (slave, 0, 0,
-                     "SELECT ROWID FROM slaves WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *slave = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
-
-/**
- * @brief Create a slave.
- *
- * @param[in]   name            Name of slave.
- * @param[in]   comment         Comment on slave.
- * @param[in]   host            Host of slave.
- * @param[in]   port            Port on host.
- * @param[in]   login           Host login name.
- * @param[in]   password        Password for \p login.
- * @param[out]  slave           NULL, or address for created slave.
- *
- * @return 0 success, 1 slave exists already, -1 error.
- */
-int
-create_slave (const char* name, const char* comment, const char* host,
-              const char* port, const char* login, const char* password,
-              slave_t* slave)
-{
-  gchar *quoted_name, *quoted_host, *quoted_port, *quoted_login;
-  gchar *quoted_password;
-
-  assert (name);
-  assert (host);
-  assert (port);
-  assert (login);
-  assert (password);
-
-  quoted_name = sql_quote (name);
-
-  sql ("BEGIN IMMEDIATE;");
-
-  assert (current_credentials.uuid);
-
-  /* Check whether a slave with the same name exists already. */
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM slaves"
-               " WHERE name = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               current_credentials.uuid))
-    {
-      g_free (quoted_name);
-      sql ("ROLLBACK;");
-      return 1;
-    }
-
-  quoted_host = sql_quote (host);
-  quoted_port = sql_quote (port);
-  quoted_login = sql_quote (login);
-  quoted_password = sql_quote (password);
-
-  if (comment)
-    {
-      gchar *quoted_comment = sql_quote (comment);
-      sql ("INSERT INTO slaves"
-           " (uuid, name, owner, comment, host, port, login, password)"
-           " VALUES (make_uuid (), '%s',"
-           " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', '%s', '%s', '%s');",
-           quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
-           quoted_port, quoted_login, quoted_password);
-      g_free (quoted_comment);
-    }
-  else
-    sql ("INSERT INTO slaves"
-         " (uuid, name, owner, comment, host, port, login, password)"
-         " VALUES (make_uuid (), '%s',"
-         " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', '%s', '%s', '%s');",
-         quoted_name, current_credentials.uuid, quoted_host, quoted_port,
-         quoted_login, quoted_password);
-
-  if (slave)
-    *slave = sqlite3_last_insert_rowid (task_db);
-
-  g_free (quoted_name);
-  g_free (quoted_host);
-  g_free (quoted_port);
-  g_free (quoted_login);
-  g_free (quoted_password);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Delete a slave.
- *
- * @param[in]  slave  Slave.
- *
- * @return 0 success, 1 fail because a task refers to the slave, -1 error.
- */
-int
-delete_slave (slave_t slave)
-{
-  sql ("BEGIN IMMEDIATE;");
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE slave = %llu;",
-               slave))
-    {
-      sql ("ROLLBACK;");
-      return 1;
-    }
-  sql ("DELETE FROM slaves WHERE ROWID = %llu;", slave);
-  sql ("COMMIT;");
-  return 0;
-}
-
-/**
- * @brief Initialise a slave iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  slave       Slave to limit iteration to.  0 for all.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
- */
-void
-init_slave_iterator (iterator_t* iterator, slave_t slave, int ascending,
-                     const char* sort_field)
-{
-  assert (current_credentials.uuid);
-
-  if (slave)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment, host, port, login,"
-                   " password"
-                   " FROM slaves"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   slave,
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment, host, port, login,"
-                   " password"
-                   " FROM slaves"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-}
-
-/**
- * @brief Get the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Slave.
- */
-slave_t
-slave_iterator_slave (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (slave_t) sqlite3_column_int64 (iterator->stmt, 0);
-}
-
-/**
- * @brief Get the UUID of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID of the slave or NULL if iteration is complete.
- */
-DEF_ACCESS (slave_iterator_uuid, 1);
-
-/**
- * @brief Get the name of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the slave or NULL if iteration is complete.
- */
-DEF_ACCESS (slave_iterator_name, 2);
-
-/**
- * @brief Get the comment from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Comment.
- */
-const char*
-slave_iterator_comment (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
-  return ret ? ret : "";
-}
-
-/**
- * @brief Get the host of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Host of the slave or NULL if iteration is complete.
- */
-DEF_ACCESS (slave_iterator_host, 4);
-
-/**
- * @brief Get the port of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Port of the slave or NULL if iteration is complete.
- */
-DEF_ACCESS (slave_iterator_port, 5);
-
-/**
- * @brief Get the login of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Login of the slave or NULL if iteration is complete.
- */
-DEF_ACCESS (slave_iterator_login, 6);
-
-/**
- * @brief Get the password of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Password of the slave or NULL if iteration is complete.
- */
-DEF_ACCESS (slave_iterator_password, 7);
-
-/**
- * @brief Return the UUID of a slave.
- *
- * @param[in]  slave  Slave.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-slave_uuid (slave_t slave)
-{
-  return sql_string (0, 0,
-                     "SELECT uuid FROM slaves WHERE ROWID = %llu;",
-                     slave);
-}
-
-/**
- * @brief Return the name of a slave.
- *
- * @param[in]  slave  Slave.
- *
- * @return Newly allocated name if available, else NULL.
- */
-char*
-slave_name (slave_t slave)
-{
-  return sql_string (0, 0,
-                     "SELECT name FROM slaves WHERE ROWID = %llu;",
-                     slave);
-}
-
-/**
- * @brief Return the host associated with a slave.
- *
- * @param[in]  slave  Slave.
- *
- * @return Newly allocated host if available, else NULL.
- */
-char*
-slave_host (slave_t slave)
-{
-  return sql_string (0, 0,
-                     "SELECT host FROM slaves WHERE ROWID = %llu;",
-                     slave);
-}
-
-/**
- * @brief Return the login associated with a slave.
- *
- * @param[in]  slave  Slave.
- *
- * @return Newly allocated login if available, else NULL.
- */
-char*
-slave_login (slave_t slave)
-{
-  return sql_string (0, 0,
-                     "SELECT login FROM slaves WHERE ROWID = %llu;",
-                     slave);
-}
-
-/**
- * @brief Return the password associated with a slave.
- *
- * @param[in]  slave  Slave.
- *
- * @return Newly allocated password if available, else NULL.
- */
-char*
-slave_password (slave_t slave)
-{
-  return sql_string (0, 0,
-                     "SELECT password FROM slaves WHERE ROWID = %llu;",
-                     slave);
-}
-
-/**
- * @brief Return the port associated with a slave.
- *
- * @param[in]  slave  Slave.
- *
- * @return Port number on success; -1 on error.
- */
-int
-slave_port (slave_t slave)
-{
-  int ret;
-  char *port = sql_string (0, 0,
-                           "SELECT port FROM slaves WHERE ROWID = %llu;",
-                           slave);
-  if (port == NULL)
-    return -1;
-  ret = atoi (port);
-  free (port);
-  return ret;
-}
-
-/**
- * @brief Set the host associated with a slave.
- *
- * @param[in]  slave  Slave.
- * @param[in]  host   New value for host.
- */
-void
-set_slave_host (slave_t slave, const char *host)
-{
-  gchar* quoted_host;
-
-  assert (host);
-
-  quoted_host = sql_quote (host);
-  sql ("UPDATE slaves SET host = '%s' WHERE ROWID = %llu;",
-       quoted_host, slave);
-  g_free (quoted_host);
-}
-
-/**
- * @brief Return whether a slave is referenced by a task
- *
- * @param[in]  slave  Slave.
- *
- * @return 1 if in use, else 0.
- */
-int
-slave_in_use (slave_t slave)
-{
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks WHERE slave = %llu;",
-                  slave);
-}
-
-/**
- * @brief Initialise a slave task iterator.
- *
- * Iterates over all tasks that use the slave.
- *
- * @param[in]  iterator   Iterator.
- * @param[in]  slave      Slave.
- * @param[in]  ascending  Whether to sort ascending or descending.
- */
-void
-init_slave_task_iterator (iterator_t* iterator, slave_t slave, int ascending)
-{
-  assert (current_credentials.uuid);
-
-  init_iterator (iterator,
-                 "SELECT name, uuid FROM tasks"
-                 " WHERE slave = %llu"
-                 " AND hidden = 0"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                 " ORDER BY name %s;",
-                 slave,
-                 current_credentials.uuid,
-                 ascending ? "ASC" : "DESC");
-}
-
-/**
- * @brief Get the name from a slave task iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the host, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (slave_task_iterator_name, 0);
-
-/**
- * @brief Get the uuid from a slave task iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The uuid of the host, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (slave_task_iterator_uuid, 1);
-
-
-/* Schema. */
-
-/**
- * @brief Generate the OMP schema.
- *
- * @param[in]  format         Name of schema format, "XML" or NULL for XML.
- * @param[out] output_return  NULL or location for output.
- * @param[out] output_length  NULL or location for length of output.
- * @param[out] extension      NULL or location for schema extension.
- * @param[out] content_type   NULL or location for schema content type.
- *
- * @return 0 success, 1 failed to find schema format, -1 error.
- */
-int
-manage_schema (gchar *format, gchar **output_return, gsize *output_length,
-               gchar **extension, gchar **content_type)
-{
-  /* Pass the XML file to the schema generate script, sending the output
-   * to a file. */
-
-  {
-    gchar *script, *script_dir;
-    gchar *uuid_format;
-    char output_dir[] = "/tmp/openvasmd_schema_XXXXXX";
-
-    if (mkdtemp (output_dir) == NULL)
-      {
-        g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
-        return -1;
-      }
-
-    /* Setup file names. */
-
-    if (format == NULL)
-      {
-        if (extension)
-          *extension = g_strdup ("xml");
-        if (content_type)
-          *content_type = g_strdup ("text/xml");
-        uuid_format = "18e826fc-dab6-11df-b913-002264764cea";
-      }
-    else if (strcasecmp (format, "HTML") == 0)
-      {
-        if (extension)
-          *extension = g_strdup ("html");
-        if (content_type)
-          *content_type = g_strdup ("text/html");
-        uuid_format = "02052818-dab6-11df-9be4-002264764cea";
-      }
-    else if (strcasecmp (format, "RNC") == 0)
-      {
-        if (extension)
-          *extension = g_strdup ("rnc");
-        if (content_type)
-          *content_type = g_strdup ("text/x-rnc");
-        uuid_format = "787a4a18-dabc-11df-9486-002264764cea";
-      }
-    else if (strcasecmp (format, "XML") == 0)
-      {
-        if (extension)
-          *extension = g_strdup ("xml");
-        if (content_type)
-          *content_type = g_strdup ("text/xml");
-        uuid_format = "18e826fc-dab6-11df-b913-002264764cea";
-      }
-    else
-      return 1;
-
-    script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                   "openvasmd",
-                                   "global_schema_formats",
-                                   uuid_format,
-                                   NULL);
-
-    script = g_build_filename (script_dir, "generate", NULL);
-
-    if (!g_file_test (script, G_FILE_TEST_EXISTS))
-      {
-        g_free (script);
-        g_free (script_dir);
-        if (extension) g_free (*extension);
-        if (content_type) g_free (*content_type);
-        return -1;
-      }
-
-    {
-      gchar *output_file, *command;
-      char *previous_dir;
-      int ret;
-
-      /* Change into the script directory. */
-
-      /** @todo NULL arg is glibc extension. */
-      previous_dir = getcwd (NULL, 0);
-      if (previous_dir == NULL)
-        {
-          g_warning ("%s: Failed to getcwd: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          g_free (previous_dir);
-          g_free (script);
-          g_free (script_dir);
-          if (extension) g_free (*extension);
-          if (content_type) g_free (*content_type);
-          return -1;
-        }
-
-      if (chdir (script_dir))
-        {
-          g_warning ("%s: Failed to chdir: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          g_free (previous_dir);
-          g_free (script);
-          g_free (script_dir);
-          if (extension) g_free (*extension);
-          if (content_type) g_free (*content_type);
-          return -1;
-        }
-      g_free (script_dir);
-
-      output_file = g_strdup_printf ("%s/report.out", output_dir);
-
-      /* Call the script. */
-
-      command = g_strdup_printf ("/bin/sh %s " OPENVAS_SYSCONF_DIR
-                                 "/openvasmd/global_schema_formats"
-                                 "/18e826fc-dab6-11df-b913-002264764cea/OMP.xml"
-                                 " > %s"
-                                 " 2> /dev/null",
-                                 script,
-                                 output_file);
-      g_free (script);
-
-      g_debug ("   command: %s\n", command);
-
-      /* RATS: ignore, command is defined above. */
-      if (ret = system (command),
-          /** @todo ret is always -1. */
-          0 && ((ret) == -1
-                || WEXITSTATUS (ret)))
-        {
-          g_warning ("%s: system failed with ret %i, %i, %s\n",
-                     __FUNCTION__,
-                     ret,
-                     WEXITSTATUS (ret),
-                     command);
-          if (chdir (previous_dir))
-            g_warning ("%s: and chdir failed\n",
-                       __FUNCTION__);
-          g_free (previous_dir);
-          g_free (command);
-          g_free (output_file);
-          if (extension) g_free (*extension);
-          if (content_type) g_free (*content_type);
-          return -1;
-        }
-
-      {
-        GError *get_error;
-        gchar *output;
-        gsize output_len;
-
-        g_free (command);
-
-        /* Change back to the previous directory. */
-
-        if (chdir (previous_dir))
-          {
-            g_warning ("%s: Failed to chdir back: %s\n",
-                       __FUNCTION__,
-                       strerror (errno));
-            g_free (previous_dir);
-            if (extension) g_free (*extension);
-            if (content_type) g_free (*content_type);
-            return -1;
-          }
-        g_free (previous_dir);
-
-        /* Read the script output from file. */
-
-        get_error = NULL;
-        g_file_get_contents (output_file,
-                             &output,
-                             &output_len,
-                             &get_error);
-        g_free (output_file);
-        if (get_error)
-          {
-            g_warning ("%s: Failed to get output: %s\n",
-                       __FUNCTION__,
-                       get_error->message);
-            g_error_free (get_error);
-            if (extension) g_free (*extension);
-            if (content_type) g_free (*content_type);
-            return -1;
-          }
-
-        /* Remove the output directory. */
-
-        file_utils_rmdir_rf (output_dir);
-
-        /* Return the output. */
-
-        if (output_length) *output_length = output_len;
-
-        if (output_return) *output_return = output;
-        return 0;
-      }
-    }
-  }
-}
-
-
 
 #undef DEF_ACCESS
