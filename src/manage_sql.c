@@ -4018,8 +4018,8 @@ migrate_35_to_36 ()
    * of ID references.  Correct this now. */
 
   sql ("UPDATE tasks SET"
-       " target = (SELECT ROWID FROM configs WHERE name = 'Full and fast'),"
-       " config = (SELECT ROWID FROM targets WHERE name = 'Localhost')"
+       " target = (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
+       " config = (SELECT ROWID FROM configs WHERE name = 'Full and fast')"
        " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';");
 
   /* Scanner preference "port_range" moved from config into target. */
