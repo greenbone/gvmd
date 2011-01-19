@@ -1,3 +1,28 @@
+openvas-manager 1.0.4 (2011-01-19)
+
+This is the fourth maintenance release and the first
+security release for the 1.0 series of the Manager
+module for the Open Vulnerability Assessment System (OpenVAS).
+
+It fixes a serious security bug and it is highly recommended
+to update any installation of OpenVAS Manager 1.0 with this release.
+Apart from this, the update introduces a full protocol self-documentation
+of OMP 1.0 and fixes inconsistencies regarding PDF/LaTeX reports.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell.
+
+Main changes since 1.0.3:
+* A security-relevant bug has been fixed regarding email escalation
+  methods. Configured OpenVAS users were able to damage installation
+  and/or gain higher privileges.
+* Full OMP 1.0 documentation now included as "doc/omp.html" and
+  "doc/omp.rnc".
+* PDF and LaTeX reports were not consistent with other reports.
+  The filter procedure was updated to behave identical to other
+  report formats, espcially with the report shown in the GSA. 
+
+
 openvas-manager 1.0.3 (2010-10-29)
 
 This is the third maintenance release for the 1.0 series of the openvas-manager
