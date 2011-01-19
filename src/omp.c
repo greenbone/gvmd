@@ -112,7 +112,7 @@
 #include <openvas/base/certificate.h>
 #include <openvas/base/nvti.h>
 #include <openvas/base/openvas_string.h>
-#include <openvas/nvt_categories.h>
+#include <openvas/misc/nvt_categories.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/resource_request.h>
 
