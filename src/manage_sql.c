@@ -4112,6 +4112,44 @@ migrate_35_to_36 ()
 }
 
 /**
+ * @brief Migrate the database from version 36 to version 37.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_36_to_37 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 36. */
+
+  if (manage_db_version () != 36)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The target and config clauses were swapped in the example task statement
+     in migrate_35_to_36 in SVN for some time.  Run the statement again with
+     the correct clauses. */
+
+  sql ("UPDATE tasks SET"
+       " target = (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
+       " config = (SELECT ROWID FROM configs WHERE name = 'Full and fast')"
+       " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';");
+
+  /* Set the database version to 37. */
+
+  set_db_version (37);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -4152,6 +4190,7 @@ static migrator_t database_migrators[]
     {34, migrate_33_to_34},
     {35, migrate_34_to_35},
     {36, migrate_35_to_36},
+    {37, migrate_36_to_37},
     /* End marker. */
     {-1, NULL}};
 

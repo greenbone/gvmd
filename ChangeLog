@@ -1,5 +1,15 @@
 2011-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Cleanup an error in the 35 to 36 migrator, in a new migrator.  Increase
+	database version to 37.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 37.
+
+	* src/manage_sql.c (migrate_36_to_37): New function.
+	(database_migrators): Add migrate_36_to_37.
+
+2011-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (migrate_35_to_36): Set target and config from correct
 	table.
 
