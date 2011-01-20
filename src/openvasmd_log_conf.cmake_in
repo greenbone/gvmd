@@ -1,3 +1,8 @@
+# OpenVAS Manager logging configuration
+#
+# WARNING: Setting the level of any group (besides event*) to include debug
+#          may reveal passwords in the logs.
+
 [md   main]
 prepend=%t %p
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
