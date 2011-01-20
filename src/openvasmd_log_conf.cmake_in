@@ -2,37 +2,37 @@
 prepend=%t %p
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
 file=${OPENVAS_LOG_DIR}/openvasmd.log
-level=128
+level=7
 
 [md   comm]
 prepend=%t %p
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
 file=${OPENVAS_LOG_DIR}/openvasmd.log
-level=128
+level=7
 
 [md   file]
 prepend=%t %p
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
 file=${OPENVAS_LOG_DIR}/openvasmd.log
-level=128
+level=7
 
 [md manage]
 prepend=%t %p
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
 file=${OPENVAS_LOG_DIR}/openvasmd.log
-level=128
+level=7
 
 [md    omp]
 prepend=%t %p
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
 file=${OPENVAS_LOG_DIR}/openvasmd.log
-level=128
+level=7
 
 [md    otp]
 prepend=%t %p
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
 file=${OPENVAS_LOG_DIR}/openvasmd.log
-level=128
+level=7
 
 [event syslog]
 prepend=%t %p
@@ -52,4 +52,4 @@ level=128
 prepend=%t %p
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
 file=${OPENVAS_LOG_DIR}/openvasmd.log
-level=128
+level=7

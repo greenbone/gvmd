@@ -1,3 +1,8 @@
+2011-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd_log_conf.cmake_in: Reduce max log level to warning in all
+	groups, to prevent loggin of passwords in the standard install.
+
 2011-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Cleanup an error in the 35 to 36 migrator, in a new migrator.  Increase
