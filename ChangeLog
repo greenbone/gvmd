@@ -1,3 +1,11 @@
+2011-01-21  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 2.0+rc3 crelease.
+
+	* CHANGES: Updated.
+
+	* INSTALL: Updated prerequisites.
+
 2011-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd_log_conf.cmake_in: Add warning about passwords.

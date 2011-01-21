@@ -1,3 +1,27 @@
+openvas-manager 2.0+rc3 (2011-01-21)
+
+This is the third release candidate for the upcoming 2.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients. Release 2.0 is part of OpenVAS 4, the next
+generation of the Open Vulnerability Assessment System.
+
+It fixes a serious security bug and it is highly recommended to update any
+installation of OpenVAS Manager 2.0 with this release. It also fixes a database
+migration issue and introduces a better setting for the default logging.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Jan-Oliver Wagner and Michael Wiegand.
+
+Main changes since 2.0+rc2:
+* A security-relevant bug has been fixed regarding email escalation methods.
+  Configured OpenVAS users were able to damage installation and/or gain higher
+  privileges.
+* An issue which caused database migration to fail under certain circumstances
+  has been fixed.
+* The default log level has been reduced to warning to prevent the logging of
+  potentially sensitive information in the default configuration.
+
+
 openvas-manager 2.0+rc2 (2011-01-10)
 
 This is the second release candidate for the upcoming 2.0 release of the OpenVAS
