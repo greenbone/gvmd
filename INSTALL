@@ -92,6 +92,26 @@ Please note that the target directory in the commands above might have
 to be prefixed with the prefix you have set earlier.
 
 
+Creating a administrator user for OpenVAS
+-----------------------------------------
+
+You can create a administrator user in two ways, either
+via the OpenVAS Administrator command line tool "openvasad":
+
+$ openvasad -c add_user --name=myuser --password=mypw --role=Admin
+
+or via the OpenVAS Scanner script tool "openvas-adduser":
+
+$ openvas-adduser
+[ ... follow the guide ... ]
+$ touch /var/lib/openvas/users/myuser/isadmin
+
+A administrator user can later create further users or
+administrators via clients like the Greenbone Security Assistant (GSA).
+
+Also, the new user can change her password via GSA.
+
+
 Prerequisites for Optional Features
 -----------------------------------
 
