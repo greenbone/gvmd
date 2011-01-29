@@ -112,6 +112,31 @@ administrators via clients like the Greenbone Security Assistant (GSA).
 Also, the new user can change her password via GSA.
 
 
+Initializing the Database
+-------------------------
+
+Now you can initialize the OpenVAS Manager database.
+You need a running OpenVAS Scanner (openvassd) for this
+as the Manager will retrieve all NVT details from the Scanner.
+Run this command if you are using the default ports:
+ 
+$ openvasmd --rebuild
+
+This command can be repeated anytime to update the database
+with updated NVT data, reardless of whether openvasmd already
+runs as a service in the background or not.
+
+
+Migrating the Database
+----------------------
+
+If you have used Manager before, you might need to migrate
+the database to the current data model. Use this command
+ot run the migration:
+
+$ openvasmd --migrate
+
+
 Prerequisites for Optional Features
 -----------------------------------
 
