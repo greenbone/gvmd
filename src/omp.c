@@ -11021,11 +11021,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
                                 "CREATE_NOTE requires a TEXT entity"));
-          else if ((max = manage_max_hosts (create_note_data->hosts)) == -1)
+          else if (create_note_data->hosts
+                   && ((max = manage_max_hosts (create_note_data->hosts))
+                       == -1))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
                                 "Error in host specification"));
-          else if (max > MANAGE_MAX_HOSTS)
+          else if (create_note_data->hosts && (max > MANAGE_MAX_HOSTS))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
                                 "Host specification exceeds"
@@ -11138,11 +11140,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "CREATE_OVERRIDE requires a TEXT entity"));
-          else if ((max = manage_max_hosts (create_override_data->hosts)) == -1)
+          else if (create_override_data->hosts
+                   && ((max = manage_max_hosts (create_override_data->hosts))
+                       == -1))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "Error in host specification"));
-          else if (max > MANAGE_MAX_HOSTS)
+          else if (create_override_data->hosts && (max > MANAGE_MAX_HOSTS))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "Host specification exceeds"
