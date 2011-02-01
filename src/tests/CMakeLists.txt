@@ -26,11 +26,11 @@
 
 add_definitions (-DTASKS_SQL)
 
-exec_program (libopenvas-config
-              ARGS --cflags
+exec_program (pkg-config
+              ARGS --cflags libopenvas
 			  OUTPUT_VARIABLE OPENVAS_CFLAGS)
-exec_program (libopenvas-config
-              ARGS --libs
+exec_program (pkg-config
+              ARGS --libs libopenvas
 			  OUTPUT_VARIABLE OPENVAS_LDFLAGS)
 
 if (OPENVAS_HEADER_INSTALL_DIR)

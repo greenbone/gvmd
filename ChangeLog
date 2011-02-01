@@ -1,3 +1,15 @@
+2011-02-01  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Switch openvas-manager to pkg-config.
+
+	* CMakeLists.txt: Move checks for openvas-libraries, glib and gnutls
+	to pkg-config.
+
+	* INSTALL: Update requirements and installation instructions.
+
+	* src/CMakeLists.txt, src/tests/CMakeLists.txt: Replace calls to
+	libopenvas-config with the appropriate pkg-config calls.
+
 2011-01-29  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* INSTALL: Added sections on database initialization and
