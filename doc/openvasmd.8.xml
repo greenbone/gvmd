@@ -27,10 +27,10 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
-<manpage name="openvasmd" section="8" desc="The manager layer of the OpenVAS Security Scanner">
+<manpage name="openvasmd" section="8" desc="Manager daemon of the Open Vulerability Assessment System (OpenVAS)">
 
   <synopsis>
-    <cmd>openvasmd OPTION</cmd>
+    <cmd>openvasmd OPTIONS</cmd>
   </synopsis>
 
   <description>
@@ -44,8 +44,14 @@
       The OpenVAS Manager is a OTP client and adds various management
       functionalities to handle and organise scan results.
       Thus OpenVAS Manager acts as a layer between the
-      OpenVAS Scanner and its own clients which connect via the OMP
-      protocol to the OpenVAS Manager.
+      OpenVAS Scanner and its own clients (for example omp(8),
+      gsad(8) or gsd(8)) which connect via the OMP protocol
+      to the OpenVAS Manager. 
+    </p>
+
+    <p>
+      A related service is OpenVAS Administrator, openvasad(8) which
+      among other tasks also managers user accounts for OpenVAS.
     </p>
   </description>
 
@@ -110,13 +116,16 @@
 
   <section name="EXAMPLES">
     <p>openvasmd --port 1241 --sport 7772</p>
-    <p>Serve the client on port 1241 and connect to the server on 7772.</p>
+    <p>Serve OMP clients on port 1241 and connect to a OTP server on 7772.</p>
   </section>
 
   <section name="SEE ALSO">
     <p>
-      <manref name="openvas"  section="1"/>,
       <manref name="openvassd" section="8"/>
+      <manref name="openvasad" section="8"/>
+      <manref name="gsad" section="8"/>
+      <manref name="omp" section="8"/>
+      <manref name="gsd" section="8"/>
     </p>
   </section>
 
@@ -134,7 +143,10 @@
   </section>
 
   <section name="COPYRIGHT">
-    <p>The OpenVAS manager is release under the GNU GPL, version 2.</p>
+    <p>
+      The OpenVAS Manager is release under the GNU GPL, version 2,
+      or, at your option, any later version.
+    </p>
   </section>
 
 </manpage>
