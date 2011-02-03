@@ -1,5 +1,10 @@
 2011-02-03  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* CMakeLists.txt: Removed check for libopenvas_base as
+	this is already tested via pkgconf.
+
+2011-02-03  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* doc/openvasmd.8.xml: Updated.
 
 	* doc/openvasmd.html, doc/openvasmd.8: Rebuild.

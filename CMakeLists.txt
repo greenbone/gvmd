@@ -198,13 +198,6 @@ if (NOT GPGME)
   message (FATAL_ERROR "The gpgme library is required.")
 endif (NOT GPGME)
 
-message (STATUS "Looking for openvas_base...")
-find_library (OPENVAS_BASE openvas_base)
-message (STATUS "Looking for openvas_base... ${OPENVAS_BASE}")
-if (NOT OPENVAS_BASE)
-  message (FATAL_ERROR "The openvas_base library is required.")
-endif (NOT OPENVAS_BASE)
-
 message (STATUS "Looking for uuid...")
 find_library (UUID uuid)
 message (STATUS "Looking for uuid... ${UUID}")
