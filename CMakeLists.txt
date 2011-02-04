@@ -171,15 +171,6 @@ message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 ## list and throw an error, otherwise long install-cmake-install-cmake cycles
 ## might occur.
 
-# TODO The version check of libopenvas will probably is required by other
-# modules, too (e.g. gsad). Either
-# 1) Move to the next CMake version with built-in version comparison functions
-# 2) Use the pkg-config configuration file that kost provided when installing
-#    openvas-libraries
-# 3) Move following checks in an own CMake- module to reuse. Other parts of
-#    the various CMakeLists.txt could be moved in a common ("openvas") module,
-#    too.
-
 pkg_check_modules (LIBOPENVAS REQUIRED libopenvas>=4.0.0)
 pkg_check_modules (GNUTLS REQUIRED gnutls)
 pkg_check_modules (GLIB REQUIRED glib-2.0)
