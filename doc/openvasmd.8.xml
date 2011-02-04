@@ -27,7 +27,7 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
-<manpage name="openvasmd" section="8" desc="Manager daemon of the Open Vulerability Assessment System (OpenVAS)">
+<manpage name="openvasmd" section="8" desc="Manager daemon of the Open Vulnerability Assessment System (OpenVAS)">
 
   <synopsis>
     <cmd>openvasmd OPTIONS</cmd>
@@ -51,7 +51,7 @@
 
     <p>
       A related service is OpenVAS Administrator, openvasad(8) which
-      among other tasks also managers user accounts for OpenVAS.
+      among other tasks also manages user accounts for OpenVAS.
     </p>
   </description>
 
@@ -99,8 +99,13 @@
     </option>
 
     <option>
-      <p><opt>-v, --version</opt></p>
+      <p><opt>--version</opt></p>
       <optdesc><p>Print version.</p></optdesc>
+    </option>
+
+    <option>
+      <p><opt>-v, --verbose</opt></p>
+      <optdesc><p>Print progress messages.</p></optdesc>
     </option>
 
     <option>

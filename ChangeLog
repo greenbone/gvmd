@@ -1,3 +1,9 @@
+2011-02-04  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* doc/openvasmd.8.xml: Fix typos, add missing option.
+
+	* doc/openvasmd.html, doc/openvasmd.8: Regenerated.
+
 2011-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl (report): Include host in port selection.

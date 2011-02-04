@@ -1,6 +1,6 @@
 .TH openvasmd 8 User Manuals
 .SH NAME
-openvasmd \- Manager daemon of the Open Vulerability Assessment System (OpenVAS)
+openvasmd \- Manager daemon of the Open Vulnerability Assessment System (OpenVAS)
 .SH SYNOPSIS
 \fBopenvasmd OPTIONS
 \f1
@@ -9,7 +9,7 @@ OpenVAS Scanner, openvassd(8), acts as a service and offers a communication prot
 
 The OpenVAS Manager is a OTP client and adds various management functionalities to handle and organise scan results. Thus OpenVAS Manager acts as a layer between the OpenVAS Scanner and its own clients (for example omp(8), gsad(8) or gsd(8)) which connect via the OMP protocol to the OpenVAS Manager. 
 
-A related service is OpenVAS Administrator, openvasad(8) which among other tasks also managers user accounts for OpenVAS. 
+A related service is OpenVAS Administrator, openvasad(8) which among other tasks also manages user accounts for OpenVAS. 
 .SH OPTIONS
 .TP
 \fB-a, --listen=\fIADDRESS\fB\f1
@@ -30,8 +30,11 @@ Rebuild the database with information from a running scanner (openvassd) and exi
 \fB-s, --sport=\fINUMBER\fB\f1
 Connect to server (openvassd) on port number \fINUMBER\f1.
 .TP
-\fB-v, --version\f1
+\fB--version\f1
 Print version.
+.TP
+\fB-v, --verbose\f1
+Print progress messages.
 .TP
 \fB-?, --help\f1
 Show help.
