@@ -23270,7 +23270,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
     else
       return 1;
 
-    script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+    script_dir = g_build_filename (OPENVAS_DATA_DIR,
                                    "openvasmd",
                                    "global_schema_formats",
                                    uuid_format,
@@ -23327,7 +23327,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
 
       /* Call the script. */
 
-      command = g_strdup_printf ("/bin/sh %s " OPENVAS_SYSCONF_DIR
+      command = g_strdup_printf ("/bin/sh %s " OPENVAS_DATA_DIR
                                  "/openvasmd/global_schema_formats"
                                  "/18e826fc-dab6-11df-b913-002264764cea/OMP.xml"
                                  " > %s"

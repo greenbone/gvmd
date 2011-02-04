@@ -203,18 +203,18 @@ install (FILES report_formats/XML/generate
 install (FILES schema_formats/HTML/generate
                schema_formats/RNC/rnc.xsl
                schema_formats/HTML/HTML.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_schema_formats/02052818-dab6-11df-9be4-002264764cea/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/02052818-dab6-11df-9be4-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
 install (FILES schema_formats/RNC/generate
                schema_formats/RNC/rnc.xsl
                schema_formats/RNC/RNC.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_schema_formats/787a4a18-dabc-11df-9486-002264764cea/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/787a4a18-dabc-11df-9486-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
 install (FILES schema_formats/XML/generate
          schema_formats/XML/OMP.xml
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_schema_formats/18e826fc-dab6-11df-b913-002264764cea/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/18e826fc-dab6-11df-b913-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
 ## Tests

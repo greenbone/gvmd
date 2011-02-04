@@ -1,5 +1,16 @@
 2011-02-04  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Place global schema formats into the correct directory to comply with
+	the Filesystem Hierarchy Standard (FHS), version 2.3.
+
+	* src/CMakeLists.txt: Install global schema formats to
+	OPENVAS_DATA_DIR instead of OPENVAS_SYSCONF_DIR.
+
+	* src/manage_sql.c (manage_schema): Read global schema formats from
+	OPENVAS_DATA_DIR instead of OPENVAS_SYSCONF_DIR.
+
+2011-02-04  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* CMakeLists.txt: Remove obsolete comment.
 
 2011-02-04  Michael Wiegand <michael.wiegand@greenbone.net>
