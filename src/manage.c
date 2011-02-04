@@ -3430,7 +3430,7 @@ init_report_format_file_iterator (file_iterator_t* iterator,
     return -1;
 
   if (report_format_global (report_format))
-    dir_name = g_build_filename (OPENVAS_SYSCONF_DIR,
+    dir_name = g_build_filename (OPENVAS_DATA_DIR,
                                  "openvasmd",
                                  "global_report_formats",
                                  uuid,
@@ -3438,7 +3438,7 @@ init_report_format_file_iterator (file_iterator_t* iterator,
   else
     {
       assert (current_credentials.uuid);
-      dir_name = g_build_filename (OPENVAS_SYSCONF_DIR,
+      dir_name = g_build_filename (OPENVAS_STATE_DIR,
                                    "openvasmd",
                                    "report_formats",
                                    current_credentials.uuid,

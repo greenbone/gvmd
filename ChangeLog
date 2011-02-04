@@ -1,3 +1,22 @@
+2011-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Place report formats in the directories required by the FHS.  Hence
+	increase database version to 38.  Add database migration from version
+	37 to 38.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 38.
+
+	* src/manage_sql.c (migrate_37_to_38): New function.
+	(database_migrators): Add migrate_37_to_38.
+	(manage_report, manage_send_report, create_report_format)
+	(delete_report_format): User data dir for global report formats, and state
+	dir for user report formats.
+
+	* src/manage.c (init_report_format_file_iterator): User data dir for
+	global report formats, and state dir for user report formats.
+
+	* src/CMakeLists.txt: Install global report formats to data dir.
+
 2011-02-04  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Place global schema formats into the correct directory to comply with

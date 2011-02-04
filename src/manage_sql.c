@@ -4150,6 +4150,91 @@ migrate_36_to_37 ()
 }
 
 /**
+ * @brief Migrate the database from version 37 to version 38.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_37_to_38 ()
+{
+  gchar *old_dir, *new_dir;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 37. */
+
+  if (manage_db_version () != 37)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The report formats moved to FHS compliant locations. */
+
+  /* Remove the global report format dirs, as they should have been
+   * installed in the new location already. */
+
+  old_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                              "openvasmd",
+                              "global_report_formats",
+                              NULL);
+
+  if (file_utils_rmdir_rf (old_dir))
+    {
+      g_warning ("%s: failed to remove dir %s", __FUNCTION__, old_dir);
+      g_free (old_dir);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  g_free (old_dir);
+
+  /* Move user uploaded report formats. */
+
+  new_dir = g_build_filename (OPENVAS_STATE_DIR,
+                              "openvasmd",
+                              "report_formats",
+                              NULL);
+
+  if (g_mkdir_with_parents (new_dir, 0755 /* "rwxr-xr-x" */))
+    {
+      g_warning ("%s: failed to create dir %s", __FUNCTION__, new_dir);
+      g_free (new_dir);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  old_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                              "openvasmd",
+                              "report_formats",
+                              NULL);
+
+  if (rename (old_dir, new_dir))
+    {
+      g_warning ("%s: renaming %s to %s failed: %s\n",
+                 __FUNCTION__,
+                 old_dir,
+                 new_dir,
+                 strerror (errno));
+      g_free (old_dir);
+      g_free (new_dir);
+      sql ("ROLLBACK;");
+    }
+
+  g_free (old_dir);
+  g_free (new_dir);
+
+  /* Set the database version to 38. */
+
+  set_db_version (38);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -4191,6 +4276,7 @@ static migrator_t database_migrators[]
     {35, migrate_34_to_35},
     {36, migrate_35_to_36},
     {37, migrate_36_to_37},
+    {38, migrate_37_to_38},
     /* End marker. */
     {-1, NULL}};
 
@@ -11763,7 +11849,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
 
     uuid_format = report_format_iterator_uuid (&formats);
     if (report_format_global (report_format))
-      script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+      script_dir = g_build_filename (OPENVAS_DATA_DIR,
                                      "openvasmd",
                                      "global_report_formats",
                                      uuid_format,
@@ -11771,7 +11857,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
     else
       {
         assert (current_credentials.uuid);
-        script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+        script_dir = g_build_filename (OPENVAS_STATE_DIR,
                                        "openvasmd",
                                        "report_formats",
                                        current_credentials.uuid,
@@ -12021,7 +12107,7 @@ manage_send_report (report_t report, report_format_t report_format,
 
     uuid_format = report_format_iterator_uuid (&formats);
     if (report_format_global (report_format))
-      script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+      script_dir = g_build_filename (OPENVAS_DATA_DIR,
                                      "openvasmd",
                                      "global_report_formats",
                                      uuid_format,
@@ -12029,7 +12115,7 @@ manage_send_report (report_t report, report_format_t report_format,
     else
       {
         assert (current_credentials.uuid);
-        script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+        script_dir = g_build_filename (OPENVAS_STATE_DIR,
                                        "openvasmd",
                                        "report_formats",
                                        current_credentials.uuid,
@@ -21487,7 +21573,7 @@ create_report_format (const char *uuid, const char *name,
   /* Write files to disk. */
 
   if (global)
-    dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+    dir = g_build_filename (OPENVAS_DATA_DIR,
                             "openvasmd",
                             "global_report_formats",
                             uuid,
@@ -21495,7 +21581,7 @@ create_report_format (const char *uuid, const char *name,
   else
     {
       assert (current_credentials.uuid);
-      dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+      dir = g_build_filename (OPENVAS_STATE_DIR,
                               "openvasmd",
                               "report_formats",
                               current_credentials.uuid,
@@ -21795,13 +21881,13 @@ delete_report_format (report_format_t report_format)
     }
 
   if (report_format_global (report_format))
-    dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+    dir = g_build_filename (OPENVAS_DATA_DIR,
                             "openvasmd",
                             "global_report_formats",
                             uuid,
                             NULL);
   else
-    dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+    dir = g_build_filename (OPENVAS_STATE_DIR,
                             "openvasmd",
                             "report_formats",
                             current_credentials.uuid,
