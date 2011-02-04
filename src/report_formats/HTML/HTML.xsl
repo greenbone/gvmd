@@ -370,7 +370,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <td>Threat Level</td>
         </tr>
 
-        <xsl:for-each select="../ports/port">
+        <xsl:for-each select="../ports/port[host=$current_host]">
           <tr>
             <td><xsl:value-of select="text()"/></td>
             <td><xsl:value-of select="threat"/></td>
