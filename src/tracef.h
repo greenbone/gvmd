@@ -95,11 +95,31 @@ extern GSList *log_config;
         g_free (msg_);                                           \
       }                                                          \
   } while (0)
+
+/**
+ * @brief Formatted info output.
+ *
+ * Print the printf style \a args to stderr, preceded by the process ID.
+ */
+#define infof(args...)                                           \
+  do {                                                           \
+    if (verbose)                                                 \
+      {                                                          \
+        gchar* msg_ = g_strdup_printf (args);                    \
+        g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "%s", msg_);      \
+        g_free (msg_);                                           \
+      }                                                          \
+  } while (0)
 #else
 /**
  * @brief Dummy macro, enabled with TRACE.
  */
 #define tracef(format, args...)
+
+/**
+ * @brief Dummy macro, enabled with TRACE.
+ */
+#define infof(format, args...)
 #endif
 
 #endif

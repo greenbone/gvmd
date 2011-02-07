@@ -4366,7 +4366,7 @@ manage_migrate (GSList *log_config, const gchar *database)
           return -1;
         }
 
-      tracef ("   Migrating to %i", migrators->version);
+      infof ("   Migrating to %i", migrators->version);
 
       if (migrators->function ())
         {

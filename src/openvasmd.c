@@ -819,7 +819,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
 
   /* Setup security. */
 
-  tracef ("   Set to connect to address %s port %i\n",
+  infof ("   Set to connect to address %s port %i\n",
           scanner_address_string,
           ntohs (scanner_address.sin_port));
 
@@ -900,7 +900,7 @@ fork_update_nvt_cache ()
 
         /* Update the cache. */
 
-        tracef ("   internal NVT cache update\n");
+        infof ("   internal NVT cache update\n");
 
         update_or_rebuild_nvt_cache (0,
                                      scanner_address_string,
@@ -1115,17 +1115,17 @@ main (int argc, char** argv)
   g_free (rc_name);
   setup_log_handlers (log_config);
 
-  tracef ("   OpenVAS Manager\n");
+  infof ("   OpenVAS Manager\n");
 
   if (backup_database)
     {
-      tracef ("   Backing up database.\n");
+      infof ("   Backing up database.\n");
 
       /* Backup the database and then exit. */
       switch (manage_backup_db (database))
         {
           case 0:
-            tracef ("   Backup succeeded.\n");
+            infof ("   Backup succeeded.\n");
             return EXIT_SUCCESS;
           case -1:
             g_critical ("%s: database backup failed\n",
@@ -1141,13 +1141,13 @@ main (int argc, char** argv)
 
   if (migrate_database)
     {
-      tracef ("   Migrating database.\n");
+      infof ("   Migrating database.\n");
 
       /* Migrate the database to the version supported by this manager. */
       switch (manage_migrate (log_config, database))
         {
           case 0:
-            tracef ("   Migration succeeded.\n");
+            infof ("   Migration succeeded.\n");
             return EXIT_SUCCESS;
           case 1:
             g_warning ("%s: database is already at the supported version\n",
@@ -1424,12 +1424,12 @@ main (int argc, char** argv)
       exit (EXIT_FAILURE);
     }
 
-  tracef ("   Manager bound to address %s port %i\n",
-          manager_address_string ? manager_address_string : "*",
-          ntohs (manager_address.sin_port));
-  tracef ("   Set to connect to address %s port %i\n",
-          scanner_address_string,
-          ntohs (scanner_address.sin_port));
+  infof ("   Manager bound to address %s port %i\n",
+         manager_address_string ? manager_address_string : "*",
+         ntohs (manager_address.sin_port));
+  infof ("   Set to connect to address %s port %i\n",
+         scanner_address_string,
+         ntohs (scanner_address.sin_port));
 
   /* Enable connections to the socket. */
 

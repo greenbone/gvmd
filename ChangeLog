@@ -1,5 +1,17 @@
 2011-02-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Enable logging of key informational messages when --verbose is given.
+
+	* src/openvasmd_log_conf.cmake_in: Change levels to show all levels below
+	DEBUG.
+
+	* src/tracef.h (infof): New macro.
+
+	* src/openvasmd.c, src/ompd.c, src/omp.c, src/manage_sql.c: Change
+	appropriate tracefs to infos.
+
+2011-02-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_config_task_iterator): Select current user's
 	tasks only.
 
