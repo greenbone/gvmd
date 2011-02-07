@@ -10454,13 +10454,20 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
  * @param[out]  infos     Number of info messages.
  * @param[out]  logs      Number of log messages.
  * @param[out]  warnings  Number of warning messages.
- * @param[out]  false_positives  Number of false positive messages.
- * @param[in]   override  Whether to override the threat.
- * @param[in]   host      Host to which to limit the count.  NULL to allow all.
- * @param[in]   min_cvss_base     Minimum CVSS base of filtered results.  All
- *                                results if NULL.
- * @param[in]   search_phrase     Phrase that filtered results must include.
- *                                All results if NULL or "".
+ * @param[out]  false_positives    Number of false positive messages.
+ * @param[in]   override           Whether to override the threat.
+ * @param[in]   host               Host to which to limit the count.  NULL to allow all.
+ * @param[in]   min_cvss_base      Minimum CVSS base of filtered results.  All
+ *                                 results if NULL.
+ * @param[in]   search_phrase      Phrase that filtered results must include.
+ *                                 All results if NULL or "".
+ * @param[out]  filtered_debugs    Number of debug messages after filtering.
+ * @param[out]  filtered_holes     Number of hole messages after filtering.
+ * @param[out]  filtered_infos     Number of info messages after filtering.
+ * @param[out]  filtered_logs      Number of log messages after filtering.
+ * @param[out]  filtered_warnings  Number of warning messages after filtering.
+ * @param[out]  filtered_false_positives  Number of false positive messages after
+ *                                        filtering.
  *
  * @return 0 on success, -1 on error.
  */
