@@ -82,13 +82,10 @@ else (NOT DOXYGEN_EXECUTABLE)
     .built-html_db db.png omp.rnc omp.html)
 endif (NOT DOXYGEN_EXECUTABLE)
 
-add_custom_target (man COMMENT "Building manual page..."
-                   DEPENDS openvasmd.8)
-
-add_custom_target (man-html COMMENT "Building manual page HTML..."
-                   DEPENDS openvasmd.html)
-
 if (XMLTOMAN_EXECUTABLE)
+  add_custom_target (man COMMENT "Building manual page..."
+    DEPENDS openvasmd.8)
+
   add_custom_command (OUTPUT openvasmd.8
 					  COMMAND sh
 					  ARGS -c \"${XMLTOMAN_EXECUTABLE} openvasmd.8.xml > openvasmd.8\;\"
@@ -101,6 +98,9 @@ else (XMLTOMAN_EXECUTABLE)
 endif (XMLTOMAN_EXECUTABLE)
 
 if (XMLMANTOHTML_EXECUTABLE)
+  add_custom_target (man-html COMMENT "Building manual page HTML..."
+    DEPENDS openvasmd.html)
+
   add_custom_command (OUTPUT openvasmd.html
 					  COMMAND sh
 					  ARGS -c \"${XMLMANTOHTML_EXECUTABLE} openvasmd.8.xml > openvasmd.html\;\"
@@ -170,8 +170,6 @@ add_custom_command (OUTPUT omp.html
 #         DESTINATION share/doc/openvas-manager/html/
 #         COMPONENT doc)
 
-if (XMLTOMAN_EXECUTABLE)
-  install (FILES openvasmd.8
-		   DESTINATION share/man/man8/
-		   COMPONENT doc)
-endif (XMLTOMAN_EXECUTABLE)
+install (FILES openvasmd.8
+  DESTINATION share/man/man8/
+  COMPONENT doc)
