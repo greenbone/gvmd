@@ -15845,12 +15845,17 @@ void
 init_config_task_iterator (iterator_t* iterator, config_t config,
                            int ascending)
 {
+  assert (current_credentials.uuid);
+
   init_iterator (iterator,
                  "SELECT name, uuid FROM tasks"
                  " WHERE config = %llu"
                  " AND hidden = 0"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY name %s;",
                  config,
+                 current_credentials.uuid,
                  ascending ? "ASC" : "DESC");
 }
 
