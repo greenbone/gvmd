@@ -4181,13 +4181,7 @@ migrate_37_to_38 ()
                               "global_report_formats",
                               NULL);
 
-  if (file_utils_rmdir_rf (old_dir))
-    {
-      g_warning ("%s: failed to remove dir %s", __FUNCTION__, old_dir);
-      g_free (old_dir);
-      sql ("ROLLBACK;");
-      return -1;
-    }
+  file_utils_rmdir_rf (old_dir);
   g_free (old_dir);
 
   /* Move user uploaded report formats. */
@@ -4209,6 +4203,9 @@ migrate_37_to_38 ()
                               "openvasmd",
                               "report_formats",
                               NULL);
+
+  /* Ensure the old dir exists. */
+  g_mkdir_with_parents (old_dir, 0755 /* "rwxr-xr-x" */);
 
   if (rename (old_dir, new_dir))
     {
