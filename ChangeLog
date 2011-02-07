@@ -1,3 +1,15 @@
+2011-02-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove the slow w3af NVT from the predefined configs.  Hence increase
+	database version to 39.  Add database migration from version 38 to 39.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 39.
+
+	* src/manage_sql.c (migrate_38_to_39): New function.
+	(database_migrators): Add migrate_38_to_39.
+	(init_manage): Add w3af excluder to the "all" NVT selector.  Adjust
+	predefined config comments to match.
+
 2011-02-07  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* doc/CMakeLists.txt: Enable man and man-html targets only if the
@@ -6,8 +18,8 @@
 
 2011-02-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (migrate_37_to_38): Succeed if either old directories
-	is missing.
+	* src/manage_sql.c (migrate_37_to_38): Succeed even if one of the old
+	directories is missing.
 
 2011-02-07  Matthew Mundell <matthew.mundell@greenbone.net>
 

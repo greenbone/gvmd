@@ -4232,6 +4232,58 @@ migrate_37_to_38 ()
 }
 
 /**
+ * @brief Migrate the database from version 38 to version 39.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_38_to_39 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 38. */
+
+  if (manage_db_version () != 38)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The w3af NVT (80109) was removed from the predefined configs. */
+
+  /* Just update the config comments, because init_manage will add the new
+   * selectors. */
+
+  sql ("UPDATE configs SET comment ="
+       " 'Most NVT''s; optimized by using previously collected information.'"
+       " WHERE id = " G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ";");
+
+  sql ("UPDATE configs SET comment ="
+       " 'Most NVT''s including those that can stop services/hosts;"
+       " optimized by using previously collected information.'"
+       " WHERE id = " G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ";");
+
+  sql ("UPDATE configs SET comment ="
+       " 'Most NVT''s; don''t trust previously collected information; slow.'"
+       " WHERE id = " G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ";");
+
+  sql ("UPDATE configs SET comment ="
+       " 'Most NVT''s including those that can stop services/hosts;"
+       " don''t trust previously collected information; slow.'"
+       " WHERE id = " G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE) ";");
+
+  /* Set the database version to 39. */
+
+  set_db_version (39);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -4274,6 +4326,7 @@ static migrator_t database_migrators[]
     {36, migrate_35_to_36},
     {37, migrate_36_to_37},
     {38, migrate_37_to_38},
+    {39, migrate_38_to_39},
     /* End marker. */
     {-1, NULL}};
 
@@ -6487,7 +6540,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
   if (sql_int (0, 0,
                "SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
-               " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ";")
+               " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+               " AND family_or_nvt = 'Port scanners';")
       == 0)
     {
       sql ("INSERT into nvt_selectors"
@@ -6527,6 +6581,21 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " '1.3.6.1.4.1.25623.1.0.100315', 'Port scanners');");
     }
 
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM nvt_selectors WHERE name ="
+               " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+               " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+               " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.80109';")
+      == 0)
+    {
+      sql ("INSERT into nvt_selectors"
+           " (name, exclude, type, family_or_nvt, family)"
+           " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 1, "
+           G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
+           /* OID of the "w3af (NASL wrapper)" NVT. */
+           " '1.3.6.1.4.1.25623.1.0.80109', 'Web application abuses');");
+    }
+
   /* Ensure the predefined configs exist. */
 
   if (sql_int (0, 0,
@@ -6541,7 +6610,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ","
            " '" CONFIG_UUID_FULL_AND_FAST "', NULL, 'Full and fast',"
            " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
-           " 'All NVT''s; optimized by using previously collected information.',"
+           " 'Most NVT''s; optimized by using previously collected information.',"
            " %i, %i, 1, 1);",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
@@ -6563,7 +6632,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ","
            " '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "', NULL,"
            " 'Full and fast ultimate', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
-           " 'All NVT''s including those that can stop services/hosts;"
+           " 'Most NVT''s including those that can stop services/hosts;"
            " optimized by using previously collected information.',"
            " %i, %i, 1, 1);",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
@@ -6586,7 +6655,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ","
            " '" CONFIG_UUID_FULL_AND_VERY_DEEP "', NULL,"
            " 'Full and very deep', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
-           " 'All NVT''s; don''t trust previously collected information; slow.',"
+           " 'Most NVT''s; don''t trust previously collected information; slow.',"
            " %i, %i, 1, 1);",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
@@ -6609,7 +6678,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "',"
            " NULL, 'Full and very deep ultimate',"
            " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
-           " 'All NVT''s including those that can stop services/hosts;"
+           " 'Most NVT''s including those that can stop services/hosts;"
            " don''t trust previously collected information; slow.',"
            " %i, %i, 1, 1);",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
