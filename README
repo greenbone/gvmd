@@ -29,18 +29,17 @@ Note also that the Manager will always refuse to authenticate this special
 "om" user, so you must add another user in order to connect to the Manager.
 
 For example, if openvassd is running on port 9391, the following command
-starts the Manager on port 9390.  The client can then connect to port 9390
-as though it was connecting to openvassd.
+starts the Manager on port 9390.
 
-    openvasmd --port 9390 --sport 9391
+    openvasmd
 
 A command like
 
-    openvasmd --sport 9391 --update
+    openvasmd --update
 
 or
 
-    openvasmd --sport 9391 --rebuild
+    openvasmd --rebuild
 
 will update the Manager's NVT cache, and then exit.  The cache must be
 updated every time the Scanner syncs with the NVT feed.  The --rebuild
@@ -78,7 +77,7 @@ Testing
 There are some tests under src/tests.  To run them, start your openvasmd,
 for example with
 
-    openvasmd --port 9390 --sport 9391
+    openvasmd
 
 then set the environment variables for the user and password
 
