@@ -1,3 +1,7 @@
+2011-02-08  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* CHANGES: Updated for 2.0.0.
+
 2011-02-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml: Add MAX_NVT_COUNT and KNOWN_NVT_COUNT
