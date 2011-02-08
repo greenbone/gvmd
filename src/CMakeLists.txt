@@ -24,22 +24,6 @@
 
 ## Config
 
-add_definitions (-Werror -D_BSD_SOURCE -D_ISOC99_SOURCE -D_SVID_SOURCE)
-
-message (STATUS "Looking for sqlite3...")
-find_library (SQLITE3 sqlite3)
-message (STATUS "Looking for sqlite3... ${SQLITE3}")
-if (NOT SQLITE3)
-  message (FATAL_ERROR "The sqlite3 database library is required.")
-endif (NOT SQLITE3)
-
-exec_program (pkg-config
-              ARGS --cflags glib-2.0
-              OUTPUT_VARIABLE GLIB_CFLAGS)
-exec_program (pkg-config
-              ARGS --libs glib-2.0
-              OUTPUT_VARIABLE GLIB_LDFLAGS)
-
 if (OPENVAS_HEADER_INSTALL_DIR)
   set (HEADER_TEMP "-I${OPENVAS_HEADER_INSTALL_DIR}")
 else (OPENVAS_HEADER_INSTALL_DIR)
@@ -51,16 +35,6 @@ if (OPENVAS_LIB_INSTALL_DIR)
 else (OPENVAS_LIB_INSTALL_DIR)
   set (LIB_TEMP "")
 endif (OPENVAS_LIB_INSTALL_DIR)
-
-
-## Gather flags from libopenvas
-
-exec_program (pkg-config
-              ARGS --cflags libopenvas
-              OUTPUT_VARIABLE OPENVAS_CFLAGS)
-exec_program (pkg-config
-              ARGS --libs libopenvas
-              OUTPUT_VARIABLE OPENVAS_LDFLAGS)
 
 ## Libraries
 
@@ -141,16 +115,13 @@ if (OPENVAS_LIB_INSTALL_DIR)
 endif (OPENVAS_LIB_INSTALL_DIR)
 
 set_target_properties (openvasmd PROPERTIES LINK_FLAGS
-                       "${LIB_TEMP} -lsqlite3 -lgnutls -luuid ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
+                       "${LIB_TEMP} ${SQLITE3_LDFLAGS} ${GNUTLS_LDFLAGS} ${UUID_LDFLAGS} ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
 
 set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
-                       "${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+                       "${HEADER_TEMP} ${SQLITE3_CFLAGS} ${GNUTLS_CFLAGS} ${UUID_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 mark_as_advanced (LIB_TEMP)
 mark_as_advanced (HEADER_TEMP)
-
-configure_file (openvasmd_log_conf.cmake_in
-                "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd_log.conf")
 
 ## Install
 
@@ -158,64 +129,6 @@ install (TARGETS openvasmd
          RUNTIME DESTINATION ${SBINDIR}
          LIBRARY DESTINATION ${LIBDIR}
          ARCHIVE DESTINATION ${LIBDIR}/static)
-
-install (FILES openvasmd_log.conf
-         DESTINATION ${OPENVAS_SYSCONF_DIR})
-
-install (FILES report_formats/CPE/generate
-               report_formats/CPE/CPE.xsl
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/a0704abb-2120-489f-959f-251c9f4ffebd/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/HTML/generate
-               report_formats/HTML/HTML.xsl
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/b993b6f5-f9fb-4e6e-9c94-dd46c00e058d/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/ITG/generate
-               report_formats/ITG/ITG.xsl
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/929884c6-c2c4-41e7-befb-2f6aa163b458/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/LaTeX/generate
-               report_formats/LaTeX/latex.xsl
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/9f1ab17b-aaaa-411a-8c57-12df446f5588/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/NBE/generate
-               report_formats/NBE/NBE.xsl
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/f5c2a364-47d2-4700-b21d-0a7693daddab/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/PDF/generate
-               report_formats/LaTeX/latex.xsl
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/1a60a67e-97d0-4cbf-bc77-f71b08e7043d/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/TXT/generate report_formats/TXT/TXT.xsl
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/19f6f1b3-7128-4433-888c-ccc764fe6ed5/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES report_formats/XML/generate
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/d5da9f67-8551-4e51-807b-b6a873d70e34/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES schema_formats/HTML/generate
-               schema_formats/RNC/rnc.xsl
-               schema_formats/HTML/HTML.xsl
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/02052818-dab6-11df-9be4-002264764cea/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES schema_formats/RNC/generate
-               schema_formats/RNC/rnc.xsl
-               schema_formats/RNC/RNC.xsl
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/787a4a18-dabc-11df-9486-002264764cea/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
-
-install (FILES schema_formats/XML/generate
-         schema_formats/XML/OMP.xml
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/18e826fc-dab6-11df-b913-002264764cea/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
 ## Tests
 

@@ -174,6 +174,8 @@ message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 pkg_check_modules (LIBOPENVAS REQUIRED libopenvas>=4.0.0)
 pkg_check_modules (GNUTLS REQUIRED gnutls)
 pkg_check_modules (GLIB REQUIRED glib-2.0)
+pkg_check_modules (SQLITE3 REQUIRED sqlite3)
+pkg_check_modules (UUID REQUIRED uuid)
 
 message (STATUS "Looking for pcap...")
 find_library (PCAP pcap)
@@ -189,12 +191,40 @@ if (NOT GPGME)
   message (FATAL_ERROR "The gpgme library is required.")
 endif (NOT GPGME)
 
-message (STATUS "Looking for uuid...")
-find_library (UUID uuid)
-message (STATUS "Looking for uuid... ${UUID}")
-if (NOT UUID)
-  message (FATAL_ERROR "The uuid library is required.")
-endif (NOT UUID)
+execute_process (COMMAND pkg-config --cflags glib-2.0
+  OUTPUT_VARIABLE GLIB_CFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process (COMMAND pkg-config --libs glib-2.0
+  OUTPUT_VARIABLE GLIB_LDFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+execute_process (COMMAND pkg-config --cflags libopenvas
+  OUTPUT_VARIABLE OPENVAS_CFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process (COMMAND pkg-config --libs libopenvas
+  OUTPUT_VARIABLE OPENVAS_LDFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+execute_process (COMMAND pkg-config --cflags gnutls
+  OUTPUT_VARIABLE GNUTLS_CFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process (COMMAND pkg-config --libs gnutls
+  OUTPUT_VARIABLE GNUTLS_LDFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+execute_process (COMMAND pkg-config --cflags sqlite3
+  OUTPUT_VARIABLE SQLITE3_CFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process (COMMAND pkg-config --libs sqlite3
+  OUTPUT_VARIABLE SQLITE3_LDFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+execute_process (COMMAND pkg-config --cflags uuid
+  OUTPUT_VARIABLE UUID_CFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process (COMMAND pkg-config --libs uuid
+  OUTPUT_VARIABLE UUID_LDFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 ## Version
 
@@ -205,13 +235,14 @@ string (REPLACE "
 configure_file (doc/Doxyfile.in doc/Doxyfile)
 configure_file (doc/Doxyfile_full.in doc/Doxyfile_full)
 configure_file (VERSION.in VERSION)
+configure_file (src/openvasmd_log_conf.cmake_in src/openvasmd_log.conf)
 
 ## Program
 
 set (HARDENING_FLAGS            "-Wformat -Wformat-security -O2 -D_FORTIFY_SOURCE=2 -fstack-protector -Wl,-z,relro -Wl,-z,now")
 
 set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG}")
-set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} ${HARDENING_FLAGS} -Wall -Werror")
+set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} ${HARDENING_FLAGS} -Wall -Werror -D_BSD_SOURCE -D_ISOC99_SOURCE -D_SVID_SOURCE")
 
 add_subdirectory (src)
 
@@ -222,5 +253,65 @@ add_subdirectory (doc)
 ## Tests
 
 enable_testing ()
+
+## Install
+
+install (FILES src/openvasmd_log.conf
+         DESTINATION ${OPENVAS_SYSCONF_DIR})
+
+install (FILES src/report_formats/CPE/generate
+               src/report_formats/CPE/CPE.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/a0704abb-2120-489f-959f-251c9f4ffebd/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
+install (FILES src/report_formats/HTML/generate
+               src/report_formats/HTML/HTML.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/b993b6f5-f9fb-4e6e-9c94-dd46c00e058d/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
+install (FILES src/report_formats/ITG/generate
+               src/report_formats/ITG/ITG.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/929884c6-c2c4-41e7-befb-2f6aa163b458/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
+install (FILES src/report_formats/LaTeX/generate
+               src/report_formats/LaTeX/latex.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/9f1ab17b-aaaa-411a-8c57-12df446f5588/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
+install (FILES src/report_formats/NBE/generate
+               src/report_formats/NBE/NBE.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/f5c2a364-47d2-4700-b21d-0a7693daddab/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
+install (FILES src/report_formats/PDF/generate
+               src/report_formats/LaTeX/latex.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/1a60a67e-97d0-4cbf-bc77-f71b08e7043d/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
+install (FILES src/report_formats/TXT/generate src/report_formats/TXT/TXT.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/19f6f1b3-7128-4433-888c-ccc764fe6ed5/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
+install (FILES src/report_formats/XML/generate
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/d5da9f67-8551-4e51-807b-b6a873d70e34/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
+install (FILES src/schema_formats/HTML/generate
+               src/schema_formats/RNC/rnc.xsl
+               src/schema_formats/HTML/HTML.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/02052818-dab6-11df-9be4-002264764cea/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
+install (FILES src/schema_formats/RNC/generate
+               src/schema_formats/RNC/rnc.xsl
+               src/schema_formats/RNC/RNC.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/787a4a18-dabc-11df-9486-002264764cea/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
+install (FILES src/schema_formats/XML/generate
+         src/schema_formats/XML/OMP.xml
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/18e826fc-dab6-11df-b913-002264764cea/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
 ## End

@@ -1,3 +1,17 @@
+2011-02-08  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Consolidation: Move most of configuration and installation handling to
+	top level CMakeLists.txt.
+
+	* CMakeLists.txt: Move sqlite3 and uuid detection to pkg-config. Set
+	all _CFLAGS and _LDFLAGS properly. Add all defines to CMAKE_C_FLAGS.
+	Handle installation of logging configuration, report formats and
+	schema formats.
+
+	* src/CMakeLists.txt: Remove most configuration and installation. Use
+	the LINK_FLAGS and COMPILE_FLAGS reported by pkg-config instead of
+	hard coding them.
+
 2011-02-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_counts_id_filt): Doc all params.
