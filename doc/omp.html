@@ -4789,6 +4789,16 @@ get_agents_response_agent_package_filename
 </li></ul>
 </li>
 <li>
+              &lt;<b>max_nvt_count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Total number of NVTs in the families selected by the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>known_nvt_count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Total number of known NVTs selected by the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>in_use</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether any tasks are using the config.</div>
 <ul style="list-style: none"></ul>
@@ -4911,6 +4921,8 @@ get_configs_response_config
        &amp; get_configs_response_config_comment
        &amp; get_configs_response_config_family_count
        &amp; get_configs_response_config_nvt_count
+       &amp; get_configs_response_config_max_nvt_count
+       &amp; get_configs_response_config_known_nvt_count
        &amp; get_configs_response_config_in_use
        &amp; get_configs_response_config_tasks
        &amp; get_configs_response_config_families?
@@ -4953,6 +4965,18 @@ get_configs_response_config_nvt_count_growing
  = element growing
      {
        boolean
+     }
+
+get_configs_response_config_max_nvt_count
+ = element max_nvt_count
+     {
+       integer
+     }
+
+get_configs_response_config_known_nvt_count
+ = element known_nvt_count
+     {
+       integer
      }
 
 get_configs_response_config_in_use

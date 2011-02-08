@@ -2643,6 +2643,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>comment</e>
           <e>family_count</e>
           <e>nvt_count</e>
+          <e>max_nvt_count</e>
+          <e>known_nvt_count</e>
           <e>in_use</e>
           <e>tasks</e>
           <o><e>families</e></o>
@@ -2688,6 +2690,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </summary>
             <pattern><t>boolean</t></pattern>
           </ele>
+        </ele>
+        <ele>
+          <name>max_nvt_count</name>
+          <summary>Total number of NVTs in the families selected by the config</summary>
+          <pattern>
+            <t>integer</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>known_nvt_count</name>
+          <summary>Total number of known NVTs selected by the config</summary>
+          <pattern>
+            <t>integer</t>
+          </pattern>
         </ele>
         <ele>
           <name>in_use</name>

@@ -1,3 +1,10 @@
+2011-02-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml: Add MAX_NVT_COUNT and KNOWN_NVT_COUNT
+	to CONFIG in GET_CONFIGS response.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2011-02-08  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Consolidation: Move most of configuration and installation handling to

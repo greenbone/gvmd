@@ -2602,6 +2602,8 @@ get_configs_response_config
        & get_configs_response_config_comment
        & get_configs_response_config_family_count
        & get_configs_response_config_nvt_count
+       & get_configs_response_config_max_nvt_count
+       & get_configs_response_config_known_nvt_count
        & get_configs_response_config_in_use
        & get_configs_response_config_tasks
        & get_configs_response_config_families?
@@ -2650,6 +2652,20 @@ get_configs_response_config_nvt_count_growing
  = element growing
      {
        boolean
+     }
+
+# Total number of NVTs in the families selected by the config.
+get_configs_response_config_max_nvt_count
+ = element max_nvt_count
+     {
+       integer
+     }
+
+# Total number of known NVTs selected by the config.
+get_configs_response_config_known_nvt_count
+ = element known_nvt_count
+     {
+       integer
      }
 
 # Whether any tasks are using the config.
