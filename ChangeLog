@@ -1,3 +1,9 @@
+2011-02-08  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 2.0.0 release.
+
+	* CMakeLists.txt: Updated version number.
+
 2011-02-08  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CHANGES: Updated for 2.0.0.
