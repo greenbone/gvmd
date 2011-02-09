@@ -256,7 +256,7 @@ enable_testing ()
 
 ## Install
 
-install (FILES src/openvasmd_log.conf
+install (FILES ${CMAKE_BINARY_DIR}/src/openvasmd_log.conf
          DESTINATION ${OPENVAS_SYSCONF_DIR})
 
 install (FILES src/report_formats/CPE/generate
