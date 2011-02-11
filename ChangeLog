@@ -1,3 +1,8 @@
+2011-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_SYSTEM_REPORTS
+	add a simple fallback text report to the error response.
+
 2011-02-09  Stephan Kleine
 
 	* CMakeLists.txt: Fix out of surce builds.

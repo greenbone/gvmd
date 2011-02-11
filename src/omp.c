@@ -13985,8 +13985,53 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 assert (0);
                 /*@fallthrough@*/
               case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("get_system_reports"));
+                {
+                  int ret;
+                  double load[3];
+                  GError *get_error;
+                  gchar *output;
+                  gsize output_len;
+
+                  SEND_TO_CLIENT_OR_FAIL
+                   ("<get_system_reports_response"
+                    " status=\"" STATUS_INTERNAL_ERROR "\""
+                    " status_text=\"" STATUS_INTERNAL_ERROR_TEXT "\">"
+                    "<fallback>");
+
+                  ret = getloadavg (load, 3);
+                  if (ret == 3)
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("Load average for past minute:     %.1f\n",
+                        load[0]);
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("Load average for past 5 minutes:  %.1f\n",
+                        load[1]);
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("Load average for past 15 minutes: %.1f\n",
+                        load[2]);
+                    }
+                  else
+                    SEND_TO_CLIENT_OR_FAIL ("Error getting load averages.\n");
+
+                  get_error = NULL;
+                  g_file_get_contents ("/proc/meminfo",
+                                       &output,
+                                       &output_len,
+                                       &get_error);
+                  if (get_error)
+                    g_error_free (get_error);
+                  else
+                    {
+                      SEND_TO_CLIENT_OR_FAIL ("\n/proc/meminfo:\n\n");
+                      SEND_TO_CLIENT_OR_FAIL (output);
+                      g_free (output);
+                    }
+
+                  SEND_TO_CLIENT_OR_FAIL
+                   ("</fallback>"
+                    "</get_system_reports_response>");
+                }
                 break;
               case 0:
                 {
