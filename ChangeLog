@@ -1,5 +1,19 @@
 2011-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Make the fallback system report case more like the others.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_SYSTEM_REPORTS let
+	init_system_report_type_iterator and manage_system_report produce the
+	fallback report.  Set the format to txt for the fallback report.  Return
+	the entire fallback report always, even when brief is true.
+
+	* src/manage.c (get_system_report_types, manage_system_report): Return the
+	fallback report on openvasmr failure.
+	(init_system_report_type_iterator): Include fallback return in check.
+	(FALLBACK_SYSTEM_REPORT_HEADER): New define.
+
+2011-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_SYSTEM_REPORTS
 	add a simple fallback text report to the error response.
 

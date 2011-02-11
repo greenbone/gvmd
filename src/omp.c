@@ -13949,14 +13949,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_SYSTEM_REPORTS:
         {
-          assert (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0);
-
+          int ret;
           report_type_iterator_t types;
 
-          switch (init_system_report_type_iterator
-                   (&types,
-                    get_system_reports_data->name,
-                    get_system_reports_data->slave_id))
+          assert (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0);
+
+          ret = init_system_report_type_iterator
+                 (&types,
+                  get_system_reports_data->name,
+                  get_system_reports_data->slave_id);
+          switch (ret)
             {
               case 1:
                 if (send_find_error_to_client ("get_system_reports",
@@ -13985,56 +13987,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 assert (0);
                 /*@fallthrough@*/
               case -1:
-                {
-                  int ret;
-                  double load[3];
-                  GError *get_error;
-                  gchar *output;
-                  gsize output_len;
-
-                  SEND_TO_CLIENT_OR_FAIL
-                   ("<get_system_reports_response"
-                    " status=\"" STATUS_INTERNAL_ERROR "\""
-                    " status_text=\"" STATUS_INTERNAL_ERROR_TEXT "\">"
-                    "<fallback>");
-
-                  ret = getloadavg (load, 3);
-                  if (ret == 3)
-                    {
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("Load average for past minute:     %.1f\n",
-                        load[0]);
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("Load average for past 5 minutes:  %.1f\n",
-                        load[1]);
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("Load average for past 15 minutes: %.1f\n",
-                        load[2]);
-                    }
-                  else
-                    SEND_TO_CLIENT_OR_FAIL ("Error getting load averages.\n");
-
-                  get_error = NULL;
-                  g_file_get_contents ("/proc/meminfo",
-                                       &output,
-                                       &output_len,
-                                       &get_error);
-                  if (get_error)
-                    g_error_free (get_error);
-                  else
-                    {
-                      SEND_TO_CLIENT_OR_FAIL ("\n/proc/meminfo:\n\n");
-                      SEND_TO_CLIENT_OR_FAIL (output);
-                      g_free (output);
-                    }
-
-                  SEND_TO_CLIENT_OR_FAIL
-                   ("</fallback>"
-                    "</get_system_reports_response>");
-                }
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("get_system_reports"));
                 break;
               case 0:
+              case 3:
                 {
+                  int report_ret;
                   char *report;
                   SEND_TO_CLIENT_OR_FAIL ("<get_system_reports_response"
                                           " status=\"" STATUS_OK "\""
@@ -14042,7 +14001,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           STATUS_OK_TEXT
                                           "\">");
                   while (next_report_type (&types))
-                    if (get_system_reports_data->brief)
+                    if (get_system_reports_data->brief
+                        && (ret != 3))
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<system_report>"
                         "<name>%s</name>"
@@ -14050,11 +14010,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         "</system_report>",
                         report_type_iterator_name (&types),
                         report_type_iterator_title (&types));
-                    else if (manage_system_report
-                              (report_type_iterator_name (&types),
-                               get_system_reports_data->duration,
-                               get_system_reports_data->slave_id,
-                               &report))
+                    else if ((report_ret = manage_system_report
+                                            (report_type_iterator_name (&types),
+                                             get_system_reports_data->duration,
+                                             get_system_reports_data->slave_id,
+                                             &report))
+                             && (report_ret != 3))
                       {
                         cleanup_report_type_iterator (&types);
                         internal_error_send_to_client (error);
@@ -14066,12 +14027,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          ("<system_report>"
                           "<name>%s</name>"
                           "<title>%s</title>"
-                          "<report format=\"png\" duration=\"%s\">"
+                          "<report format=\"%s\" duration=\"%s\">"
                           "%s"
                           "</report>"
                           "</system_report>",
                           report_type_iterator_name (&types),
                           report_type_iterator_title (&types),
+                          (ret == 3 ? "txt" : "png"),
                           get_system_reports_data->duration
                            ? get_system_reports_data->duration
                            : "86400",

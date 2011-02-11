@@ -2639,7 +2639,7 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
  * @param[out]  slave_id       ID of slave.
  *
  * @return 0 if successful, 1 failed to find report type, 2 failed to find
- *         slave, -1 otherwise.
+ *         slave, 3 serving the fallback, -1 otherwise.
  */
 static int
 get_system_report_types (const char *required_type, gchar ***start,
@@ -2670,7 +2670,10 @@ get_system_report_types (const char *required_type, gchar ***start,
       tracef ("%s: stderr: %s", __FUNCTION__, astderr);
       g_free (astdout);
       g_free (astderr);
-      return -1;
+      *start = *types = g_malloc0 (sizeof (gchar*) * 2);
+      (*start)[0] = g_strdup ("fallback Fallback Report");
+      (*start)[0][strlen ("fallback")] = '\0';
+      return 3;
     }
   if (astdout)
     {
@@ -2735,7 +2738,7 @@ get_system_report_types (const char *required_type, gchar ***start,
  * @param[in]  slave_id    ID of slave to get reports from.  0 for local.
  *
  * @return 0 on success, 1 failed to find report type, 2 failed to find slave,
- *         -1 on error.
+ *         3 used the fallback report, -1 on error.
  */
 int
 init_system_report_type_iterator (report_type_iterator_t* iterator,
@@ -2745,10 +2748,12 @@ init_system_report_type_iterator (report_type_iterator_t* iterator,
   int ret;
   ret = get_system_report_types (type, &iterator->start, &iterator->current,
                                  slave_id);
-  if (ret)
-    return ret;
-  iterator->current--;
-  return 0;
+  if (ret == 0 || ret == 3)
+    {
+      iterator->current--;
+      return ret;
+    }
+  return ret;
 }
 
 /**
@@ -2880,6 +2885,14 @@ slave_system_report (const char *name, const char *duration,
 }
 
 /**
+ * @brief Header for fallback system report.
+ */
+#define FALLBACK_SYSTEM_REPORT_HEADER \
+"This is the most basic, fallback report.  The system can be configured to\n" \
+"produce more powerful reports.  Please contact your system administrator\n" \
+"for more information.\n\n"
+
+/**
  * @brief Get a system report.
  *
  * @param[in]   name      Name of report.
@@ -2888,7 +2901,8 @@ slave_system_report (const char *name, const char *duration,
  * @param[out]  report    On success, report in base64 if such a report exists
  *                        else NULL.  Arbitrary on error.
  *
- * @return 0 if successful (including failure to find report), -1 on error.
+ * @return 0 if successful (including failure to find report), -1 on error,
+ *         3 if used the fallback report.
  */
 int
 manage_system_report (const char *name, const char *duration,
@@ -2922,13 +2936,57 @@ manage_system_report (const char *name, const char *duration,
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
+      int ret;
+      double load[3];
+      GError *get_error;
+      gchar *output;
+      gsize output_len;
+      GString *buffer;
+
       tracef ("%s: openvasmr failed with %d", __FUNCTION__, exit_status);
       tracef ("%s: stdout: %s", __FUNCTION__, astdout);
       tracef ("%s: stderr: %s", __FUNCTION__, astderr);
       g_free (astdout);
       g_free (astderr);
       g_free (command);
-      return -1;
+
+      buffer = g_string_new (FALLBACK_SYSTEM_REPORT_HEADER);
+
+      ret = getloadavg (load, 3);
+      if (ret == 3)
+        {
+          g_string_append_printf (buffer,
+                                  "Load average for past minute:     %.1f\n",
+                                  load[0]);
+          g_string_append_printf (buffer,
+                                  "Load average for past 5 minutes:  %.1f\n",
+                                  load[1]);
+          g_string_append_printf (buffer,
+                                  "Load average for past 15 minutes: %.1f\n",
+                                  load[2]);
+        }
+      else
+        g_string_append (buffer, "Error getting load averages.\n");
+
+      get_error = NULL;
+      g_file_get_contents ("/proc/meminfo",
+                           &output,
+                           &output_len,
+                           &get_error);
+      if (get_error)
+        g_error_free (get_error);
+      else
+        {
+          gchar *safe;
+          g_string_append (buffer, "\n/proc/meminfo:\n\n");
+          safe = g_markup_escape_text (output, strlen (output));
+          g_free (output);
+          g_string_append (buffer, safe);
+          g_free (safe);
+        }
+
+      *report = g_string_free (buffer, FALSE);
+      return 3;
     }
   g_free (astderr);
   g_free (command);
