@@ -1,3 +1,15 @@
+2011-02-16  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Fix the location where openvasmd looks for signatures.
+
+	* CMakeLists.txt: Ensure OPENVAS_NVT_DIR is set.
+
+	* src/CMakeLists.txt: Expose OPENVAS_NVT_DIR.
+
+	* src/manage_sql.c (find_signature): Look for signatures in the
+	subdirs of OPENVAS_NVT_DIR instead of
+	OPENVAS_LIB_INSTALL_DIR/openvas/plugins.
+
 2011-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Make the fallback system report case more like the others.

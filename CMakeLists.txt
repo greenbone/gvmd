@@ -161,6 +161,7 @@ set (OPENVAS_CLIENT_KEY          "${OPENVAS_STATE_DIR}/private/CA/clientkey.pem"
 set (OPENVAS_CA_CERTIFICATE      "${OPENVAS_STATE_DIR}/CA/cacert.pem")
 
 set (OPENVAS_USERS_DIR           "${OPENVAS_STATE_DIR}/users/")
+set (OPENVAS_NVT_DIR             "${OPENVAS_STATE_DIR}/plugins/")
 
 message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 

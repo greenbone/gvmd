@@ -114,6 +114,10 @@ if (OPENVAS_LIB_INSTALL_DIR)
   add_definitions (-DOPENVAS_LIB_INSTALL_DIR=\\\"${OPENVAS_LIB_INSTALL_DIR}\\\")
 endif (OPENVAS_LIB_INSTALL_DIR)
 
+if (OPENVAS_NVT_DIR)
+  add_definitions (-DOPENVAS_NVT_DIR=\\\"${OPENVAS_NVT_DIR}\\\")
+endif (OPENVAS_NVT_DIR)
+
 set_target_properties (openvasmd PROPERTIES LINK_FLAGS
                        "${LIB_TEMP} ${SQLITE3_LDFLAGS} ${GNUTLS_LDFLAGS} ${UUID_LDFLAGS} ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
 

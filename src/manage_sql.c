@@ -18846,9 +18846,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
 
       signature_basename  = g_strdup_printf ("%s.asc", installer_basename);
       g_free (installer_basename);
-      signature_filename = g_build_filename (OPENVAS_LIB_INSTALL_DIR,
-                                             "openvas",
-                                             "plugins",
+      signature_filename = g_build_filename (OPENVAS_NVT_DIR,
                                              location,
                                              signature_basename,
                                              NULL);
