@@ -4284,6 +4284,60 @@ migrate_38_to_39 ()
 }
 
 /**
+ * @brief Set the pref for migrate_39_to_40.
+ *
+ * @param[in]  config  Config to set pref on.
+ */
+static void
+migrate_39_to_40_set_pref (config_t config)
+{
+  sql ("UPDATE config_preferences SET value = 'yes'"
+       " WHERE config = %llu"
+       " AND type = 'SERVER_PREFS'"
+       " AND name = 'unscanned_closed';",
+       config);
+}
+
+/**
+ * @brief Migrate the database from version 39 to version 40.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_39_to_40 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 39. */
+
+  if (manage_db_version () != 39)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The preference "unscanned_closed" was set to yes in the predefined
+   * configs. */
+
+  /** @todo ROLLBACK on failure. */
+
+  migrate_39_to_40_set_pref (CONFIG_ID_FULL_AND_FAST);
+  migrate_39_to_40_set_pref (CONFIG_ID_FULL_AND_FAST_ULTIMATE);
+  migrate_39_to_40_set_pref (CONFIG_ID_FULL_AND_VERY_DEEP);
+  migrate_39_to_40_set_pref (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE);
+
+  /* Set the database version to 40. */
+
+  set_db_version (40);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -4327,6 +4381,7 @@ static migrator_t database_migrators[]
     {37, migrate_36_to_37},
     {38, migrate_37_to_38},
     {39, migrate_38_to_39},
+    {40, migrate_39_to_40},
     /* End marker. */
     {-1, NULL}};
 
@@ -6290,7 +6345,7 @@ setup_full_config_prefs (config_t config, int safe_checks,
        " VALUES (%i, 'SERVER_PREFS', 'use_mac_addr', 'no');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'unscanned_closed', 'no');",
+       " VALUES (%i, 'SERVER_PREFS', 'unscanned_closed', 'yes');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'save_knowledge_base', 'yes');",
@@ -6350,7 +6405,7 @@ setup_full_config_prefs (config_t config, int safe_checks,
        " VALUES (%i, 'SERVER_PREFS', 'use_mac_addr', 'no');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'unscanned_closed', 'no');",
+       " VALUES (%i, 'SERVER_PREFS', 'unscanned_closed', 'yes');",
        config);
 
   sql ("INSERT into config_preferences (config, type, name, value)"

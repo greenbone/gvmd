@@ -1,3 +1,17 @@
+2011-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Set "unscanned_closed" to yes in the predefined configs.  Hence increase
+	database version to 40.  Add database migration from version 39 to 40.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 40.
+
+	* src/manage_sql.c (migrate_39_to_40_set_pref, migrate_39_to_40): New
+	functions.
+	(database_migrators): Add migrate_39_to_40.
+	(setup_full_config_prefs): Set "unscanned_closed" to "yes".
+
+	* doc/db.png: Update for version change.
+
 2011-02-16  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Fix the location where openvasmd looks for signatures.
