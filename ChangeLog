@@ -1,5 +1,9 @@
 2011-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (setup_full_config_prefs): Remove duplicates.
+
+2011-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Set "unscanned_closed" to yes in the predefined configs.  Hence increase
 	database version to 40.  Add database migration from version 39 to 40.
 
