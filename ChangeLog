@@ -1,5 +1,11 @@
 2011-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/create_signatures: Setup fake PDF/latex.xsl.  Quote
+	$name in if test.  Add more verbose output.  Include parameters in signed
+	file.
+
+2011-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (setup_full_config_prefs): Remove duplicates.
 
 2011-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
