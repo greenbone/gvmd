@@ -1,3 +1,7 @@
+2011-02-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/create_signatures: Mandate the locale.
+
 2011-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/create_signatures: Setup fake PDF/latex.xsl.  Quote

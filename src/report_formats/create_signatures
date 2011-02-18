@@ -30,6 +30,7 @@
 DB=$1
 if [ $# = 0 ]; then DB=/var/lib/openvas/mgr/tasks.db; fi
 
+export LC_ALL C
 echo -n Faking latex.xsl for PDF
 ln -s ../LaTeX/latex.xsl PDF/latex.xsl || exit 1
 echo .
