@@ -1,5 +1,12 @@
 2011-02-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (get_report_format_files): Mandate the C locale.
+
+	* src/report_formats/create_signatures: Correct LC_ALL export.  Spotted by
+	Michael Wiegand.  List files with ls instead of glob.
+
+2011-02-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/create_signatures: Mandate the locale.
 
 2011-02-16  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -30,7 +30,7 @@
 DB=$1
 if [ $# = 0 ]; then DB=/var/lib/openvas/mgr/tasks.db; fi
 
-export LC_ALL C
+export LC_ALL=C
 echo -n Faking latex.xsl for PDF
 ln -s ../LaTeX/latex.xsl PDF/latex.xsl || exit 1
 echo .
@@ -44,8 +44,8 @@ for uuid in `sqlite3 -noheader -init "" $DB 'SELECT uuid FROM report_formats' 2>
     rm -f ${uuid}
     fore=`sqlite3 -separator '' -noheader -init "" $DB "SELECT uuid, name, extension, content_type, summary, description, '1' FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
     echo -n "$fore" > ${uuid}
-    for file in `sqlite3 -noheader -init "" $DB "SELECT name FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`/*; do
-      echo "    File $file"
+    for file in `ls $name`; do
+      echo "    File $name/$file"
       case $file in
         *.BAK)
           ;;
@@ -56,8 +56,8 @@ for uuid in `sqlite3 -noheader -init "" $DB 'SELECT uuid FROM report_formats' 2>
         *.bak)
           ;;
         *)
-          echo -n `basename $file` >> ${uuid}
-          base64 -w 0 $file >> ${uuid}
+          echo -n `basename $name/$file` >> ${uuid}
+          base64 -w 0 $name/$file >> ${uuid}
           ;;
       esac
     done

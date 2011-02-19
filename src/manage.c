@@ -45,6 +45,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <glib.h>
+#include <locale.h>
 #include <uuid/uuid.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -3439,10 +3440,13 @@ get_report_format_files (const char *dir_name, GPtrArray **start)
   GPtrArray *files;
   struct dirent **names;
   int n, index;
+  char *locale;
 
   files = g_ptr_array_new ();
 
+  locale = setlocale (LC_ALL, "C");
   n = scandir (dir_name, &names, NULL, alphasort);
+  setlocale (LC_ALL, locale);
   if (n < 0)
     {
       g_warning ("%s: failed to open dir %s: %s\n",
