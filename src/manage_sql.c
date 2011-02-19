@@ -13428,10 +13428,26 @@ int
 manage_max_hosts (const char *hosts)
 {
   long count = 0;
-  gchar** split = g_strsplit (hosts, ",", 0);
-  gchar** point = split;
+  gchar** split;
+  gchar** point;
+  const char *mark;
 
   /** @todo Check for errors in "hosts". */
+
+  /* Check for hostname. */
+  mark = hosts;
+  while (*mark)
+    if (isalpha (*mark))
+      {
+        if (strchr (hosts, '/'))
+          return -1;
+        return 1;
+      }
+    else
+      mark++;
+
+  split = g_strsplit (hosts, ",", 0);
+  point = split;
 
   while (*point)
     {
