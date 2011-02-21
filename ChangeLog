@@ -1,5 +1,11 @@
 2011-02-21  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Preparing the openvas-manager 2.0.1 release.
+
+	* CHANGES: Updated.
+
+2011-02-21  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* INSTALL: Add gnupg and wget as optional prerequisites. Add a note
 	regarding the optional prerequisites to the main prerequisites
 	section. Fix typos.

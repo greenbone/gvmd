@@ -1,3 +1,31 @@
+openvas-manager 2.0.1 (2011-02-18)
+
+This is the first maintenance release of the openvas-manager 2.0 module for the
+Open Vulnerability Assessment System release 4 (OpenVAS-4). The OpenVAS Manager
+is the central management service between the actual security scanner and
+various user clients.
+
+This release adds support for fallback system reports, changes the default value
+of the "unscanned_closed" preference to "yes" for predefined configurations and
+fixes an issue with signature verification in the manager. It also contains
+improvements to report format signature infrastructure and fixes an issue with
+the host name validation.
+
+Many thanks to everyone who has contributed to this release:
+Stephan Kleine, Matthew Mundell and Michael Wiegand.
+
+Main changes since 2.0.0:
+* Support for fallback system reports has been added in case where a full system
+  report is unavailable.
+* The expected location for signatures has been updated to match the FHS related
+  changes in OpenVAS Scanner.
+* The "unscanned_closed" preference now defaults to "yes" for predefined
+  configs.
+* The report format signature infrastructure has been improved.
+* A bug which caused valid host names to be reject under certain circumstances
+  has been fixed.
+
+
 openvas-manager 2.0.0 (2011-02-08)
 
 This is the first release of the openvas-manager 2.0 module for the Open
