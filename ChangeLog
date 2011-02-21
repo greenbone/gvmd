@@ -1,3 +1,9 @@
+2011-02-21  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* INSTALL: Add gnupg and wget as optional prerequisites. Add a note
+	regarding the optional prerequisites to the main prerequisites
+	section. Fix typos.
+
 2011-02-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Prefer the feed to the imported signature when verifying report

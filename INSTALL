@@ -23,6 +23,9 @@ Prerequisites for building documentation:
 * xmltoman (optional, for building man page)
 * sqlfairy (optional, for producing database diagram)
 
+Please see the section "Prerequisites for Optional Features" below additional
+optional prerequisites.
+
 If you have installed required libraries to a non-standard location, remember to
 set the PKG_CONFIG_PATH environment variable to the location of you pkg-config
 files before configuring:
@@ -81,7 +84,7 @@ control over the process:
 
     $ openvas-mkcert-client
 
-If you did not use the "-i" option described aboved, the script will
+If you did not use the "-i" option described above, the script will
 create the client certificate and key in a temporary directory.  In order
 to have the manager use the certificate and key, you have to copy the
 files into a specific location.  Change into the temporary directory
@@ -125,7 +128,7 @@ Run this command if you are using the default ports:
 $ openvasmd --rebuild
 
 This command can be repeated anytime to update the database
-with updated NVT data, reardless of whether openvasmd already
+with updated NVT data, regardless of whether openvasmd already
 runs as a service in the background or not.
 
 
@@ -134,7 +137,7 @@ Migrating the Database
 
 If you have used Manager before, you might need to migrate
 the database to the current data model. Use this command
-ot run the migration:
+to run the migration:
 
 $ openvasmd --migrate
 
@@ -169,3 +172,9 @@ Prerequisites for generating system reports:
   type "blank", openvasmr must print a PNG in base64 for the Manager to
   use when a request for one of the titled types fails.  openvasmr may
   indicate failure by simply refraining from printing.
+
+Prerequisites for signature verification:
+* gnupg
+
+Prerequisites for HTTP escalators:
+* wget
