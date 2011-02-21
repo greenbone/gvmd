@@ -1,5 +1,21 @@
 2011-02-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Prefer the feed to the imported signature when verifying report
+	formats.  Hence increase database version to 41.  Add database
+	migration from version 40 to 41.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 41.
+
+	* src/manage_sql.c (migrate_40_to_41): New function.
+	(database_migrators): Add migrate_40_to_41.
+	(verify_report_format): Check the feed signature if there is one,
+	otherwise check the database signature if there is one.  Remove storage
+	of signature in database from feed.
+
+	* doc/db.png: Update for version change.
+
+2011-02-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* report_formats/simple_topo_plot/create_report_import: In signature
 	source file creation, remove empty param and order params as in the XML.
 

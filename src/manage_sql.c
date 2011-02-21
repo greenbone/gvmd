@@ -4338,6 +4338,58 @@ migrate_39_to_40 ()
 }
 
 /**
+ * @brief Migrate the database from version 40 to version 41.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_40_to_41 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 40. */
+
+  if (manage_db_version () != 40)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* For report formats, feed signatures were given priority over signatures
+   * in imported XML.  This includes only setting the db signature when it is
+   * imported.  So remove the db signatures for all predefined reports. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("UPDATE report_formats SET signature = NULL"
+       " WHERE uuid = 'a0704abb-2120-489f-959f-251c9f4ffebd';");
+  sql ("UPDATE report_formats SET signature = NULL"
+       " WHERE uuid = 'b993b6f5-f9fb-4e6e-9c94-dd46c00e058d';");
+  sql ("UPDATE report_formats SET signature = NULL"
+       " WHERE uuid = '929884c6-c2c4-41e7-befb-2f6aa163b458';");
+  sql ("UPDATE report_formats SET signature = NULL"
+       " WHERE uuid = '9f1ab17b-aaaa-411a-8c57-12df446f5588';");
+  sql ("UPDATE report_formats SET signature = NULL"
+       " WHERE uuid = 'f5c2a364-47d2-4700-b21d-0a7693daddab';");
+  sql ("UPDATE report_formats SET signature = NULL"
+       " WHERE uuid = '1a60a67e-97d0-4cbf-bc77-f71b08e7043d';");
+  sql ("UPDATE report_formats SET signature = NULL"
+       " WHERE uuid = '19f6f1b3-7128-4433-888c-ccc764fe6ed5';");
+  sql ("UPDATE report_formats SET signature = NULL"
+       " WHERE uuid = 'd5da9f67-8551-4e51-807b-b6a873d70e34';");
+
+  /* Set the database version to 41. */
+
+  set_db_version (41);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -4382,6 +4434,7 @@ static migrator_t database_migrators[]
     {38, migrate_37_to_38},
     {39, migrate_38_to_39},
     {40, migrate_39_to_40},
+    {41, migrate_40_to_41},
     /* End marker. */
     {-1, NULL}};
 
@@ -22163,7 +22216,20 @@ verify_report_format (report_format_t report_format)
 
           g_string_append_printf (format, "\n");
 
-          if (signature && strlen (signature))
+          if (format_signature)
+            {
+              /* Try the feed signature. */
+              if (verify_signature (format->str, format->len, format_signature,
+                                    strlen (format_signature), &format_trust))
+                {
+                  cleanup_iterator (&formats);
+                  g_free (format_signature);
+                  sql ("ROLLBACK;");
+                  g_string_free (format, TRUE);
+                  return -1;
+                }
+            }
+          else if (signature && strlen (signature))
             {
               /* Try the signature from the database. */
               if (verify_signature (format->str, format->len, signature,
@@ -22177,34 +22243,6 @@ verify_report_format (report_format_t report_format)
                 }
             }
 
-          /* If the database signature is empty or the database
-           * signature is bad, and there is a feed signature, then
-           * try the feed signature. */
-          if (((format_trust == TRUST_NO)
-               || (format_trust == TRUST_UNKNOWN))
-              && format_signature)
-            {
-              if (verify_signature (format->str, format->len, format_signature,
-                                    strlen (format_signature), &format_trust))
-                {
-                  cleanup_iterator (&formats);
-                  g_free (format_signature);
-                  sql ("ROLLBACK;");
-                  g_string_free (format, TRUE);
-                  return -1;
-                }
-
-              if (format_trust == TRUST_YES)
-                {
-                  gchar *quoted_signature;
-                  quoted_signature = sql_quote (format_signature);
-                  sql ("UPDATE report_formats SET signature = '%s'"
-                       " WHERE ROWID = %llu;",
-                       quoted_signature,
-                       report_format);
-                  g_free (quoted_signature);
-                }
-            }
           g_free (format_signature);
           g_string_free (format, TRUE);
         }
