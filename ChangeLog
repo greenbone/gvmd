@@ -1,3 +1,8 @@
+2011-02-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* report_formats/simple_topo_plot/create_report_import: In signature
+	source file creation, remove empty param and order params as in the XML.
+
 2011-02-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (manage_max_hosts): Explicitly deal with hostnames first.
