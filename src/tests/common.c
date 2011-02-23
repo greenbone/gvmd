@@ -62,8 +62,8 @@ int verbose = 0;
 #include <stdlib.h>
 #include <string.h>
 
-#include <openvas/openvas_server.h>
-#include <openvas/openvas_logging.h>
+#include <openvas/misc/openvas_server.h>
+#include <openvas/misc/openvas_logging.h>
 
 /**
  * @brief Manager address.

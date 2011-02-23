@@ -1,3 +1,9 @@
+2011-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/tests/common.c, src/tests/common.h,
+	src/tests/make_report_uuid_0.c: Correct include locations, so that more
+	tests compile.
+
 2011-02-21  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
@@ -39,7 +45,8 @@
 
 2011-02-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage.c (manage_max_hosts): Explicitly deal with hostnames first.
+	* src/manage_sql.c (manage_max_hosts): Explicitly deal with hostnames
+	first.
 
 2011-02-18  Matthew Mundell <matthew.mundell@greenbone.net>
 

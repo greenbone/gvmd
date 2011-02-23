@@ -29,7 +29,7 @@
 
 #include "../manage.h"
 
-#include <openvas/openvas_uuid.h>
+#include <openvas/misc/openvas_uuid.h>
 
 /**
  * @brief The log stream, for ovas-mngr-comm.
