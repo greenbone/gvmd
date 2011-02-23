@@ -74,6 +74,12 @@ set_target_properties (make_report_uuid_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAG
 set_target_properties (make_report_uuid_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS} -luuid")
 add_test (make_report_uuid_0 make_report_uuid_0)
 
+add_executable (manage_max_hosts_0 manage_max_hosts_0.c ../oxpd.c)
+target_link_libraries (manage_max_hosts_0 manage ovas-mngr-comm omp)
+set_target_properties (manage_max_hosts_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
+set_target_properties (manage_max_hosts_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+add_test (manage_max_hosts_0 manage_max_hosts_0)
+
 add_executable (strip_space_0 strip_space_0.c)
 set_target_properties (strip_space_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
 set_target_properties (strip_space_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")

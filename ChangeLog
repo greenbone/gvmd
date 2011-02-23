@@ -1,5 +1,17 @@
 2011-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Correct the host counting change from 2011-02-19, which overlooked many
+	cases.  Add test manage_max_hosts_0 to test the basic cases.
+
+	* src/manage_sql.c (manage_max_hosts): Replace the initial hostname check
+	with similar checks on each host, done after the list is split into host.
+
+	* src/tests/CMakeLists.txt: Add test manage_max_hosts_0.
+
+	* src/tests/manage_max_hosts_0.c: New file.
+
+2011-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/tests/common.c, src/tests/common.h,
 	src/tests/make_report_uuid_0.c: Correct include locations, so that more
 	tests compile.

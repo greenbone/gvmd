@@ -13483,21 +13483,8 @@ manage_max_hosts (const char *hosts)
   long count = 0;
   gchar** split;
   gchar** point;
-  const char *mark;
 
   /** @todo Check for errors in "hosts". */
-
-  /* Check for hostname. */
-  mark = hosts;
-  while (*mark)
-    if (isalpha (*mark))
-      {
-        if (strchr (hosts, '/'))
-          return -1;
-        return 1;
-      }
-    else
-      mark++;
 
   split = g_strsplit (hosts, ",", 0);
   point = split;
@@ -13509,8 +13496,16 @@ manage_max_hosts (const char *hosts)
       hyphen = strchr (*point, '-');
       if (slash)
         {
+          gchar *first;
+
           if (hyphen)
             /* Range and netmask. */
+            return -1;
+
+          first = *point;
+          while (*first && isspace (*first)) first++;
+          if (*first && (isalpha (*first) || (first == slash)))
+            /* Hostname with netmask, or empty hostname. */
             return -1;
 
           slash++;
@@ -13568,7 +13563,10 @@ manage_max_hosts (const char *hosts)
       else if (hyphen)
         {
           hyphen++;
-          if (*hyphen)
+          if (*hyphen && isalpha (*hyphen))
+            /* A hostname. */
+            count++;
+          else if (*hyphen)
             {
               int dot_count, total_dot_count;
               const gchar* dot;
