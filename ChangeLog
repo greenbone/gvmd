@@ -1,5 +1,16 @@
 2011-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Close some leaks found by Felix Wolfsteller.
+
+	* src/manage_sql.c (PRINT): Close stream.
+	(print_report_xml): Note about leaks.
+	(create_target, create_agent): Free quoted_name before returning on error.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS free
+	first_report.
+
+2011-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/lsc_user.c (create_nsis_script): Compare fopen return to NULL
 	instead of an integer.  From Felix Wolfsteller.
 

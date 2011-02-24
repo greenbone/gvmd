@@ -11453,7 +11453,7 @@ compare_port_threat (gconstpointer arg_one, gconstpointer arg_two)
 }
 
 /**
- * @brief Write to a file or exit.
+ * @brief Write to a file or close stream and exit.
  *
  * @param[in]   stream    Stream to write to.
  * @param[in]   format    Format specification.
@@ -11463,7 +11463,10 @@ compare_port_threat (gconstpointer arg_one, gconstpointer arg_two)
   do                                                                         \
     {                                                                        \
       if (fprintf (stream, format , ## args) < 0)                            \
-        return -1;                                                           \
+        {                                                                    \
+          fclose (stream);                                                   \
+          return -1;                                                         \
+        }                                                                    \
     }                                                                        \
   while (0)
 
@@ -11527,6 +11530,8 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
   int result_count, filtered_result_count, run_status;
   array_t *result_hosts;
   iterator_t results, params;
+
+  /** @todo Leaks on error in PRINT.  The process normally exits then anyway. */
 
   out = fopen (xml_file, "w");
 
@@ -13852,7 +13857,10 @@ create_target (const char* name, const char* hosts, const char* comment,
     port_range = "default";
 
   if (validate_port_range (port_range))
-    return 4;
+    {
+      g_free (quoted_name);
+      return 4;
+    }
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -19148,6 +19156,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
       if (verify_signature (installer, installer_size, installer_signature,
                             installer_signature_size, &installer_trust))
         {
+          g_free (quoted_name);
           g_free (installer);
           g_free (installer_signature);
           return -1;
@@ -19164,6 +19173,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
           if (verify_signature (installer, installer_size, installer_signature,
                                 installer_signature_size, &installer_trust))
             {
+              g_free (quoted_name);
               g_free (installer);
               g_free (installer_signature);
               return -1;

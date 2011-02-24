@@ -14562,6 +14562,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     free (task_target_name);
                     free (task_target_uuid);
                     g_free (progress_xml);
+                    g_free (first_report);
                     g_free (last_report);
                     g_free (second_last_report);
                     ret = send_to_client (response,
@@ -14951,6 +14952,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     free (task_target_name);
                     free (task_target_uuid);
                     g_free (progress_xml);
+                    g_free (first_report);
                     g_free (last_report);
                     g_free (second_last_report);
                     free (name);
