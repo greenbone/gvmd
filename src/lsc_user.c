@@ -1001,7 +1001,7 @@ create_nsis_script (const gchar *script_name, const gchar *package_name,
   FILE* fd;
 
   fd = fopen (script_name, "w");
-  if (fd <= 0)
+  if (fd == NULL)
     return -1;
 
   // Write part about default section
