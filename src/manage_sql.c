@@ -3316,6 +3316,7 @@ migrate_21_to_22 ()
     {
       const char *name, *uuid;
       gchar *old_dir, *new_dir;
+      int user_format = 0;
 
       uuid = iterator_string (&rows, 1);
       name = iterator_string (&rows, 3);
@@ -3364,6 +3365,7 @@ migrate_21_to_22 ()
                                       uuid,
                                       NULL);
           free (owner_uuid);
+          user_format = 1;
         }
       if (g_file_test (new_dir, G_FILE_TEST_EXISTS))
         {
@@ -3373,7 +3375,11 @@ migrate_21_to_22 ()
                        __FUNCTION__,
                        old_dir);
         }
-      else if (rename (old_dir, new_dir))
+      /* If the old dir of a predefined format is missing that's OK, the
+       * Manager will create the dir when it starts proper. */
+      else if ((g_file_test (old_dir, G_FILE_TEST_EXISTS)
+                || user_format)
+               && rename (old_dir, new_dir))
         {
           g_warning ("%s: renaming %s to %s failed: %s\n",
                      __FUNCTION__,

@@ -1,5 +1,10 @@
 2011-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (migrate_21_to_22): Keep going if it's a predefined
+	format and the old directory is missing.
+
+2011-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Close some leaks found by Felix Wolfsteller.
 
 	* src/manage_sql.c (PRINT): Close stream.
