@@ -1,3 +1,27 @@
+openvas-manager 2.0.2 (2011-03-02)
+
+This is the second maintenance release of the openvas-manager 2.0 module for the
+Open Vulnerability Assessment System release 4 (OpenVAS-4). The OpenVAS Manager
+is the central management service between the actual security scanner and
+various user clients.
+
+This release closes a number of memory and resource leaks discovered after the
+release of OpenVAS Manager 2.0.1, fixes the host count calculation and fixes an
+issue which occurred when upgrading very old installations.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Michael Wiegand and Felix Wolfsteller.
+
+Main changes since 2.0.1:
+* The test infrastructure has been updated.
+* A bug which caused the host count to be calculated incorrectly under certain
+  circumstances has been fixed.
+* A number of memory and resource leaks discovered by Felix Wolfsteller have
+  been closed.
+* A bug which caused database migration to fail when upgrading very old
+  installations has been fixed.
+
+
 openvas-manager 2.0.1 (2011-02-18)
 
 This is the first maintenance release of the openvas-manager 2.0 module for the
