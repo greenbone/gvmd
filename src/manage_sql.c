@@ -18493,7 +18493,9 @@ delete_lsc_credential (lsc_credential_t lsc_credential)
   sql ("BEGIN IMMEDIATE;");
 
   if (sql_int (0, 0,
-               "SELECT count(*) FROM targets WHERE lsc_credential = %llu;",
+               "SELECT count(*) FROM targets"
+               " WHERE lsc_credential = %llu OR smb_lsc_credential = %llu;",
+               lsc_credential,
                lsc_credential))
     {
       sql ("ROLLBACK;");
@@ -18608,6 +18610,8 @@ init_lsc_credential_iterator (iterator_t* iterator,
                    " public_key, private_key, rpm, deb, exe,"
                    " (SELECT count(*) > 0 FROM targets"
                    "  WHERE lsc_credential = lsc_credentials.ROWID)"
+                   " + (SELECT count(*) > 0 FROM targets"
+                   "    WHERE smb_lsc_credential = lsc_credentials.ROWID)"
                    " FROM lsc_credentials"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -18623,6 +18627,8 @@ init_lsc_credential_iterator (iterator_t* iterator,
                    " public_key, private_key, rpm, deb, exe,"
                    " (SELECT count(*) > 0 FROM targets"
                    "  WHERE lsc_credential = lsc_credentials.ROWID)"
+                   " + (SELECT count(*) > 0 FROM targets"
+                   "    WHERE smb_lsc_credential = lsc_credentials.ROWID)"
                    " FROM lsc_credentials"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
