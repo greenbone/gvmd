@@ -2520,7 +2520,11 @@ process_otp_scanner_input ()
                                                  TASK_STATUS_STOPPED);
                             break;
                           case TASK_STATUS_DELETE_REQUESTED:
-                            delete_task (current_scanner_task);
+                            delete_task_lock (current_scanner_task, 0);
+                            current_report = (report_t) 0;
+                            break;
+                          case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
+                            delete_task_lock (current_scanner_task, 1);
                             current_report = (report_t) 0;
                             break;
                           default:

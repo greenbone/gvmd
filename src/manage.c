@@ -406,6 +406,8 @@ run_status_name (task_status_t status)
   switch (status)
     {
       case TASK_STATUS_DELETE_REQUESTED: return "Delete Requested";
+      case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
+        return "Ultimate Delete Requested";
       case TASK_STATUS_DONE:             return "Done";
       case TASK_STATUS_NEW:              return "New";
 
@@ -1306,8 +1308,8 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
 
       if (target_ssh_credential)
         {
-          init_lsc_credential_iterator (&credentials, target_ssh_credential, 1,
-                                        NULL);
+          init_lsc_credential_iterator (&credentials, target_ssh_credential, 0,
+                                        1, NULL);
           if (next (&credentials))
             {
               const char *user, *password;
@@ -1344,8 +1346,8 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
 
       if (target_smb_credential)
         {
-          init_lsc_credential_iterator (&credentials, target_smb_credential, 1,
-                                        NULL);
+          init_lsc_credential_iterator (&credentials, target_smb_credential, 0,
+                                        1, NULL);
           if (next (&credentials))
             {
               const char *user, *password;
@@ -1385,7 +1387,7 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
 
       /* Create the target on the slave. */
 
-      init_target_iterator (&targets, target, 1, NULL);
+      init_target_iterator (&targets, target, 0, 1, NULL);
       if (next (&targets))
         {
           const char *hosts;
@@ -1565,6 +1567,7 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
           case TASK_STATUS_PAUSE_WAITING:
           case TASK_STATUS_RESUME_WAITING:
           case TASK_STATUS_DELETE_REQUESTED:
+          case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
           case TASK_STATUS_DONE:
           case TASK_STATUS_NEW:
           case TASK_STATUS_REQUESTED:
@@ -2020,7 +2023,7 @@ run_task (task_t task, char **report_id, int from)
     {
       iterator_t credentials;
 
-      init_lsc_credential_iterator (&credentials, ssh_credential, 1, NULL);
+      init_lsc_credential_iterator (&credentials, ssh_credential, 0, 1, NULL);
       if (next (&credentials))
         {
           const char *user = lsc_credential_iterator_login (&credentials);
@@ -2103,7 +2106,7 @@ run_task (task_t task, char **report_id, int from)
     {
       iterator_t credentials;
 
-      init_lsc_credential_iterator (&credentials, smb_credential, 1, NULL);
+      init_lsc_credential_iterator (&credentials, smb_credential, 0, 1, NULL);
       if (next (&credentials))
         {
           const char *user = lsc_credential_iterator_login (&credentials);
@@ -2511,6 +2514,7 @@ manage_check_current_task ()
             return 1;
             break;
           case TASK_STATUS_DELETE_REQUESTED:
+          case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
           case TASK_STATUS_DONE:
           case TASK_STATUS_NEW:
           case TASK_STATUS_REQUESTED:

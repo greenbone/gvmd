@@ -152,7 +152,8 @@ typedef enum
   TASK_STATUS_STOP_REQUESTED   = 10,
   TASK_STATUS_STOP_WAITING     = 11,
   TASK_STATUS_STOPPED = 12,
-  TASK_STATUS_INTERNAL_ERROR = 13
+  TASK_STATUS_INTERNAL_ERROR = 13,
+  TASK_STATUS_DELETE_ULTIMATE_REQUESTED = 14
 } task_status_t;
 
 typedef long long int agent_t;
@@ -222,7 +223,7 @@ create_escalator (const char*, const char*, event_t, GPtrArray*,
                   GPtrArray*, escalator_t*);
 
 int
-delete_escalator (escalator_t);
+delete_escalator (const char *, int);
 
 int
 escalator_uuid (escalator_t, char **);
@@ -234,7 +235,7 @@ int
 escalate (escalator_t, task_t, event_t, const void*);
 
 void
-init_escalator_iterator (iterator_t*, escalator_t, task_t, event_t, int,
+init_escalator_iterator (iterator_t*, escalator_t, task_t, event_t, int, int,
                          const char*);
 
 escalator_t
@@ -286,7 +287,7 @@ escalator_method_t
 escalator_method_from_name (const char*);
 
 void
-init_escalator_data_iterator (iterator_t *, escalator_t, const char *);
+init_escalator_data_iterator (iterator_t *, escalator_t, int, const char *);
 
 const char*
 escalator_data_iterator_name (iterator_t*);
@@ -322,7 +323,7 @@ unsigned int
 task_count ();
 
 void
-init_task_iterator (iterator_t*, task_t, int, const char*);
+init_task_iterator (iterator_t*, task_t, int, int, const char*);
 
 task_t
 task_iterator_task (iterator_t*);
@@ -357,11 +358,17 @@ task_config_uuid (task_t);
 char*
 task_config_name (task_t);
 
+int
+task_config_in_trash (task_t);
+
 void
 set_task_config (task_t, config_t);
 
 target_t
 task_target (task_t);
+
+int
+task_target_in_trash (task_t);
 
 void
 set_task_target (task_t, target_t);
@@ -371,6 +378,9 @@ task_slave (task_t);
 
 void
 set_task_slave (task_t, target_t);
+
+int
+task_slave_in_trash (task_t);
 
 char*
 task_description (task_t);
@@ -411,6 +421,9 @@ task_escalator_uuid (task_t);
 escalator_t
 task_escalator (task_t);
 
+int
+task_escalator_in_trash (task_t);
+
 void
 add_task_escalator (task_t, escalator_t);
 
@@ -431,6 +444,9 @@ task_trend (task_t, int);
 
 schedule_t
 task_schedule (task_t);
+
+int
+task_schedule_in_trash (task_t);
 
 int
 task_schedule_next_time (task_t);
@@ -484,10 +500,17 @@ set_task_parameter (task_t,
                     /*@null@*/ /*@only@*/ char*);
 
 int
+request_delete_task_uuid (const char *, int);
+
+int
 request_delete_task (task_t*);
 
 int
-delete_task (task_t);
+delete_task (task_t, int);
+
+/* For otp.c. */
+int
+delete_task_lock (task_t, int);
 
 void
 append_to_task_comment (task_t, const char*, int);
@@ -787,10 +810,10 @@ create_target (const char*, const char*, const char*, const char*,
                const char*, target_t*);
 
 int
-delete_target (target_t);
+delete_target (const char*, int);
 
 void
-init_target_iterator (iterator_t*, target_t, int, const char*);
+init_target_iterator (iterator_t*, target_t, int, int, const char*);
 
 target_t
 target_iterator_target (iterator_t*);
@@ -816,6 +839,12 @@ target_iterator_smb_credential (iterator_t*);
 const char*
 target_iterator_port_range (iterator_t*);
 
+int
+target_iterator_ssh_trash (iterator_t*);
+
+int
+target_iterator_smb_trash (iterator_t*);
+
 char*
 target_uuid (target_t);
 
@@ -825,8 +854,14 @@ target_name (target_t);
 char*
 target_hosts (target_t);
 
+char*
+trash_target_hosts (target_t);
+
 int
 target_in_use (target_t);
+
+int
+trash_target_in_use (target_t);
 
 char*
 target_lsc_credential_name (const char *);
@@ -878,7 +913,7 @@ int
 copy_config (const char*, const char*, config_t, config_t*);
 
 int
-delete_config (config_t);
+delete_config (const char*, int);
 
 gboolean
 find_config (const char*, config_t*);
@@ -890,7 +925,7 @@ char *
 config_nvt_timeout (config_t, const char *);
 
 void
-init_config_iterator (iterator_t*, config_t, int, const char*);
+init_config_iterator (iterator_t*, config_t, int, int, const char*);
 
 config_t
 config_iterator_config (iterator_t*);
@@ -918,6 +953,9 @@ config_nvt_selector (config_t);
 
 int
 config_in_use (config_t);
+
+int
+trash_config_in_use (config_t);
 
 int
 config_families_growing (config_t);
@@ -1115,7 +1153,7 @@ create_lsc_credential (const char*, const char*, const char*, const char*,
                        lsc_credential_t*);
 
 int
-delete_lsc_credential (lsc_credential_t);
+delete_lsc_credential (const char *, int);
 
 int
 lsc_credential_packaged (lsc_credential_t);
@@ -1133,7 +1171,8 @@ void
 set_lsc_credential_password (lsc_credential_t, const char *);
 
 void
-init_lsc_credential_iterator (iterator_t*, lsc_credential_t, int, const char*);
+init_lsc_credential_iterator (iterator_t*, lsc_credential_t, int, int,
+                              const char*);
 
 lsc_credential_t
 lsc_credential_iterator_lsc_credential (iterator_t*);
@@ -1172,7 +1211,13 @@ char*
 lsc_credential_uuid (lsc_credential_t);
 
 char*
+trash_lsc_credential_uuid (lsc_credential_t);
+
+char*
 lsc_credential_name (lsc_credential_t);
+
+char*
+trash_lsc_credential_name (lsc_credential_t);
 
 void
 init_lsc_credential_target_iterator (iterator_t*, lsc_credential_t, int);
@@ -1194,7 +1239,7 @@ create_agent (const char*, const char*, const char*, const char*, const char*,
               const char*, const char*, agent_t*);
 
 int
-delete_agent (agent_t);
+delete_agent (const char *, int);
 
 int
 verify_agent (agent_t);
@@ -1203,7 +1248,7 @@ int
 agent_uuid (agent_t, char **);
 
 void
-init_agent_iterator (iterator_t*, agent_t, int, const char*);
+init_agent_iterator (iterator_t*, agent_t, int, int, const char*);
 
 const char*
 agent_iterator_uuid (iterator_t*);
@@ -1424,7 +1469,7 @@ create_schedule (const char*, const char *, time_t, time_t, time_t,
                  time_t, schedule_t *);
 
 int
-delete_schedule (schedule_t);
+delete_schedule (const char*, int);
 
 void
 manage_auth_allow_all ();
@@ -1448,7 +1493,7 @@ char *
 schedule_name (schedule_t);
 
 void
-init_schedule_iterator (iterator_t*, schedule_t, int, const char*);
+init_schedule_iterator (iterator_t*, schedule_t, int, int, const char*);
 
 schedule_t
 schedule_iterator_schedule (iterator_t*);
@@ -1520,7 +1565,7 @@ create_report_format (const char *, const char *, const char *, const char *,
                       array_t *, const char *, report_format_t *);
 
 int
-delete_report_format (report_format_t);
+delete_report_format (const char *, int);
 
 int
 verify_report_format (report_format_t);
@@ -1556,7 +1601,8 @@ int
 report_format_active (report_format_t);
 
 void
-init_report_format_iterator (iterator_t*, report_format_t, int, const char*);
+init_report_format_iterator (iterator_t*, report_format_t, int, int,
+                             const char*);
 
 report_format_t
 report_format_iterator_report_format (iterator_t*);
@@ -1643,7 +1689,7 @@ report_format_param_type_from_name (const char *);
 
 void
 init_report_format_param_iterator (iterator_t*, report_format_t, int,
-                                   const char*);
+                                   int, const char*);
 
 report_format_param_t
 report_format_param_iterator_param (iterator_t*);
@@ -1690,10 +1736,10 @@ create_slave (const char*, const char*, const char*, const char*,
               const char*, const char*, slave_t*);
 
 int
-delete_slave (slave_t);
+delete_slave (const char*, int);
 
 void
-init_slave_iterator (iterator_t*, slave_t, int, const char*);
+init_slave_iterator (iterator_t*, slave_t, int, int, const char*);
 
 slave_t
 slave_iterator_slave (iterator_t*);
@@ -1740,6 +1786,9 @@ slave_port (slave_t);
 int
 slave_in_use (slave_t);
 
+int
+trash_slave_in_use (slave_t);
+
 void
 init_slave_task_iterator (iterator_t*, slave_t, int);
 
@@ -1754,6 +1803,15 @@ slave_task_iterator_uuid (iterator_t*);
 
 int
 manage_schema (gchar *, gchar **, gsize *, gchar **, gchar **);
+
+
+/* Schema. */
+
+int
+manage_restore (const char *);
+
+int
+manage_empty_trashcan ();
 
 
 /* Tags. */

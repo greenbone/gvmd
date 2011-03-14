@@ -61,6 +61,8 @@
 
 /* Internal types and preprocessor definitions. */
 
+typedef long long int resource_t;
+
 /**
  * @brief Database ROWID of 'Full and fast' config.
  */
@@ -137,6 +139,16 @@
  * @brief Trust constant for unknown.
  */
 #define TRUST_UNKNOWN 3
+
+/**
+ * @brief Location of a constituent of a trashcan resource.
+ */
+#define LOCATION_TABLE 0
+
+/**
+ * @brief Location of a constituent of a trashcan resource.
+ */
+#define LOCATION_TRASH 1
 
 
 /* Headers for symbols defined in manage.c which are private to libmanage. */
@@ -220,6 +232,9 @@ validate_param_value (report_format_t, report_format_param_t param, const char *
 
 static target_t
 duplicate_target (target_t, const char *);
+
+int
+delete_task_lock (task_t, int);
 
 
 /* Variables. */
@@ -829,6 +844,33 @@ user_owns_uuid (const char *resource, const char *uuid)
 /**
  * @brief Test whether a user owns a resource.
  *
+ * @param[in]  resource  Type of resource, for example "task".
+ * @param[in]  uuid      UUID of resource.
+ *
+ * @return 1 if user owns resource, else 0.
+ */
+static int
+user_owns_trash_uuid (const char *resource, const char *uuid)
+{
+  int ret;
+
+  assert (current_credentials.uuid);
+
+  ret = sql_int (0, 0,
+                 "SELECT count(*) FROM %ss_trash"
+                 " WHERE uuid = '%s'"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                 resource,
+                 uuid,
+                 current_credentials.uuid);
+
+  return ret;
+}
+
+/**
+ * @brief Test whether a user owns a resource.
+ *
  * @param[in]  resource  Type of resource, for example "report_format".
  * @param[in]  field     Field to compare with value.
  * @param[in]  value     Identifier value of resource.
@@ -898,6 +940,47 @@ array_add_new_string (array_t *array, const gchar *string)
   array_add (array, g_strdup (string));
 }
 
+/**
+ * @brief Find a resource in the trashcan given a UUID.
+ *
+ * @param[in]   type      Type of resource.
+ * @param[in]   uuid      UUID of resource.
+ * @param[out]  resource  Resource return, 0 if succesfully failed to find resource.
+ *
+ * @return FALSE on success (including if failed to find resource), TRUE on error.
+ */
+static gboolean
+find_trash (const char *type, const char *uuid, resource_t *resource)
+{
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_owns_trash_uuid (type, quoted_uuid) == 0)
+    {
+      g_free (quoted_uuid);
+      *resource = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (resource, 0, 0,
+                     "SELECT ROWID FROM %ss_trash WHERE uuid = '%s';",
+                     type,
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *resource = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
 
 /* Creation. */
 
@@ -908,13 +991,21 @@ static void
 create_tables ()
 {
   sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, installer_trust_time, howto_install TEXT, howto_use TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS agents_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, installer_trust_time, howto_install TEXT, howto_use TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
+  sql ("CREATE TABLE IF NOT EXISTS config_preferences_trash (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS configs_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data_trash (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_event_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS escalator_event_data_trash (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_method_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS escalator_method_data_trash (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalators (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS escalators_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
@@ -930,8 +1021,11 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_report ON report_hosts (report);");
   sql ("CREATE TABLE IF NOT EXISTS report_format_param_options (id INTEGER PRIMARY KEY, report_format_param, value);");
+  sql ("CREATE TABLE IF NOT EXISTS report_format_param_options_trash (id INTEGER PRIMARY KEY, report_format_param, value);");
   sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value, type_min, type_max, type_regex, fallback);");
+  sql ("CREATE TABLE IF NOT EXISTS report_format_params_trash (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value, type_min, type_max, type_regex, fallback);");
   sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS report_formats_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER, original_uuid);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE INDEX IF NOT EXISTS report_results_by_report ON report_results (report);");
   sql ("CREATE INDEX IF NOT EXISTS report_results_by_result ON report_results (result);");
@@ -940,11 +1034,14 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS results_by_task ON results (task);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_type ON results (type);");
   sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
+  sql ("CREATE TABLE IF NOT EXISTS schedules_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
   sql ("CREATE TABLE IF NOT EXISTS slaves (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
+  sql ("CREATE TABLE IF NOT EXISTS slaves_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, smb_lsc_credential INTEGER, port_range);");
+  sql ("CREATE TABLE IF NOT EXISTS targets_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, smb_lsc_credential INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
-  sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER, escalator_location INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
 
   sql ("ANALYZE;");
@@ -4396,6 +4493,59 @@ migrate_40_to_41 ()
 }
 
 /**
+ * @brief Migrate the database from version 41 to version 42.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_41_to_42 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Require that the database is currently version 41. */
+
+  if (manage_db_version () != 41)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Two task tables got trashcan location fields. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("ALTER TABLE tasks ADD column config_location INTEGER;");
+  sql ("ALTER TABLE tasks ADD column target_location INTEGER;");
+  sql ("ALTER TABLE tasks ADD column schedule_location INTEGER;");
+  sql ("ALTER TABLE tasks ADD column slave_location INTEGER;");
+
+  sql ("UPDATE tasks SET"
+       " config_location = " G_STRINGIFY (LOCATION_TABLE) ","
+       " target_location = " G_STRINGIFY (LOCATION_TABLE) ","
+       " schedule_location = " G_STRINGIFY (LOCATION_TABLE) ","
+       " slave_location = " G_STRINGIFY (LOCATION_TABLE) ";");
+
+  /* Ensure that the task_escalators table exists. */
+  sql ("CREATE TABLE IF NOT EXISTS task_escalators"
+       " (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
+
+  sql ("ALTER TABLE task_escalators ADD column escalator_location INTEGER;");
+
+  sql ("UPDATE task_escalators"
+       " SET escalator_location = " G_STRINGIFY (LOCATION_TABLE) ";");
+
+  /* Set the database version to 42. */
+
+  set_db_version (42);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -4441,6 +4591,7 @@ static migrator_t database_migrators[]
     {39, migrate_38_to_39},
     {40, migrate_39_to_40},
     {41, migrate_40_to_41},
+    {42, migrate_41_to_42},
     /* End marker. */
     {-1, NULL}};
 
@@ -4983,21 +5134,118 @@ create_escalator (const char* name, const char* comment,
 /**
  * @brief Delete an escalator.
  *
- * @param[in]  escalator  Escalator.
+ * @param[in]  escalator_id  UUID of escalator.
+ * @param[in]  ultimate      Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 1 fail because a task refers to the escalator, -1 error.
+ * @return 0 success, 1 fail because a task refers to the escalator, 2 failed
+ *         to find target, -1 error.
  */
 int
-delete_escalator (escalator_t escalator)
+delete_escalator (const char *escalator_id, int ultimate)
 {
+  escalator_t escalator = 0;
+
   sql ("BEGIN IMMEDIATE;");
+
+  if (find_escalator (escalator_id, &escalator))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (escalator == 0)
+    {
+      if (find_trash ("escalator", escalator_id, &escalator))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (escalator == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      /* Check if it's in use by a task in the trashcan. */
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM task_escalators"
+                   " WHERE escalator = %llu"
+                   " AND escalator_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+                   escalator))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      sql ("DELETE FROM escalator_condition_data_trash WHERE escalator = %llu;",
+           escalator);
+      sql ("DELETE FROM escalator_event_data_trash WHERE escalator = %llu;",
+           escalator);
+      sql ("DELETE FROM escalator_method_data_trash WHERE escalator = %llu;",
+           escalator);
+      sql ("DELETE FROM escalators_trash WHERE ROWID = %llu;", escalator);
+      sql ("COMMIT;");
+      return 0;
+    }
+
   if (sql_int (0, 0,
-               "SELECT count(*) FROM task_escalators WHERE escalator = %llu;",
+               "SELECT count(*) FROM task_escalators"
+               " WHERE escalator = %llu"
+               " AND escalator_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+               " AND (SELECT hidden < 2 FROM tasks"
+               "      WHERE ROWID = task_escalators.task);",
                escalator))
     {
       sql ("ROLLBACK;");
       return 1;
     }
+
+  if (ultimate == 0)
+    {
+      escalator_t trash_escalator;
+
+      sql ("INSERT INTO escalators_trash"
+           " (uuid, owner, name, comment, event, condition, method)"
+           " SELECT uuid, owner, name, comment, event, condition, method"
+           " FROM escalators WHERE ROWID = %llu;",
+           escalator);
+
+      trash_escalator = sqlite3_last_insert_rowid (task_db);
+
+      sql ("INSERT INTO escalator_condition_data_trash"
+           " (escalator, name, data)"
+           " SELECT %llu, name, data"
+           " FROM escalator_condition_data WHERE ROWID = %llu;",
+           trash_escalator);
+
+      sql ("INSERT INTO escalator_event_data_trash"
+           " (escalator, name, data)"
+           " SELECT %llu, name, data"
+           " FROM escalator_event_data WHERE ROWID = %llu;",
+           trash_escalator);
+
+      sql ("INSERT INTO escalator_method_data_trash"
+           " (escalator, name, data)"
+           " SELECT %llu, name, data"
+           " FROM escalator_method_data WHERE ROWID = %llu;",
+           trash_escalator);
+
+      /* Update the location of the escalator in any trashcan tasks. */
+      sql ("UPDATE task_escalators"
+           " SET escalator = %llu,"
+           "     escalator_location = " G_STRINGIFY (LOCATION_TRASH)
+           " WHERE escalator = %llu"
+           " AND escalator_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           trash_escalator,
+           escalator);
+   }
+
   sql ("DELETE FROM escalator_condition_data WHERE escalator = %llu;",
        escalator);
   sql ("DELETE FROM escalator_event_data WHERE escalator = %llu;", escalator);
@@ -5062,30 +5310,44 @@ escalator_method (escalator_t escalator)
  * @param[in]  task        Iterate over escalators for this task.  0 for all.
  * @param[in]  event       Iterate over escalators handling this event.  0 for
  *                         all.
+ * @param[in]  trash       Whether to iterate over trashcan escalators.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
 init_escalator_iterator (iterator_t *iterator, escalator_t escalator,
-                         task_t task, event_t event, int ascending,
+                         task_t task, event_t event, int trash, int ascending,
                          const char *sort_field)
 {
   assert (escalator ? task == 0 : (task ? escalator == 0 : 1));
   assert (escalator ? event == 0 : (event ? escalator == 0 : 1));
   assert (event ? task : 1);
   assert (current_credentials.uuid);
+  assert (task ? trash == 0 : 1);
 
   if (escalator)
     init_iterator (iterator,
-                   "SELECT escalators.ROWID, uuid, name, comment,"
+                   "SELECT escalators%s.ROWID, uuid, name, comment,"
                    " 0, event, condition, method,"
                    " (SELECT count(*) > 0 FROM task_escalators"
-                   "  WHERE task_escalators.escalator = escalators.ROWID)"
-                   " FROM escalators"
+                   "  WHERE task_escalators.escalator = escalators%s.ROWID"
+                   "  %s)"
+                   " FROM escalators%s"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   (trash
+                     ? "  AND escalator_location"
+                       "      = " G_STRINGIFY (LOCATION_TRASH)
+                     : "  AND escalator_location"
+                       "      = " G_STRINGIFY (LOCATION_TABLE)
+                       "  AND (SELECT hidden FROM tasks"
+                       "       WHERE ROWID = task_escalators.task)"
+                       "      < 2"), /* Task in table. */
+                   trash ? "_trash" : "",
                    escalator,
                    current_credentials.uuid,
                    sort_field ? sort_field : "escalators.ROWID",
@@ -5107,14 +5369,26 @@ init_escalator_iterator (iterator_t *iterator, escalator_t escalator,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT escalators.ROWID, uuid, name, comment,"
+                   "SELECT escalators%s.ROWID, uuid, name, comment,"
                    " 0, event, condition, method,"
                    " (SELECT count(*) > 0 FROM task_escalators"
-                   "  WHERE task_escalators.escalator = escalators.ROWID)"
-                   " FROM escalators"
+                   "  WHERE task_escalators.escalator = escalators%s.ROWID"
+                   "  %s)"
+                   " FROM escalators%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   (trash
+                     ? "  AND escalator_location"
+                       "      = " G_STRINGIFY (LOCATION_TRASH)
+                     : "  AND escalator_location"
+                       "      = " G_STRINGIFY (LOCATION_TABLE)
+                       "  AND (SELECT hidden FROM tasks"
+                       "       WHERE ROWID = task_escalators.task)"
+                       "      < 2"), /* Task in table. */
+                   trash ? "_trash" : "",
                    current_credentials.uuid,
                    sort_field ? sort_field : "escalators.ROWID",
                    ascending ? "ASC" : "DESC");
@@ -5235,18 +5509,20 @@ escalator_iterator_in_use (iterator_t* iterator)
  *
  * @param[in]  iterator   Iterator.
  * @param[in]  escalator  Escalator.
+ * @param[in]  trash      Whether to iterate over trashcan escalator data.
  * @param[in]  table      Type of data: "condition", "event" or "method",
  *                        corresponds to substring of the table to select
  *                        from.
  */
 void
 init_escalator_data_iterator (iterator_t *iterator, escalator_t escalator,
-                              const char *table)
+                              int trash, const char *table)
 {
   init_iterator (iterator,
-                 "SELECT name, data FROM escalator_%s_data"
+                 "SELECT name, data FROM escalator_%s_data%s"
                  " WHERE escalator = %llu;",
                  table,
+                 trash ? "_trash" : "",
                  escalator);
 }
 
@@ -5975,7 +6251,7 @@ event (task_t task, event_t event, void* event_data)
 {
   iterator_t escalators;
   tracef ("   EVENT %i on task %llu", event, task);
-  init_escalator_iterator (&escalators, 0, task, event, 1, NULL);
+  init_escalator_iterator (&escalators, 0, task, event, 0, 1, NULL);
   while (next (&escalators))
     {
       escalator_t escalator = escalator_iterator_escalator (&escalators);
@@ -6096,12 +6372,14 @@ append_to_task_string (task_t task, const char* field, const char* value)
  *
  * @param[in]  iterator    Task iterator.
  * @param[in]  task        Task to limit iteration to.  0 for all.
+ * @param[in]  trash       Whether to iterate over trashcan tasks.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
 init_task_iterator (iterator_t* iterator,
                     task_t task,
+                    int trash,
                     int ascending,
                     const char *sort_field)
 {
@@ -6115,9 +6393,11 @@ init_task_iterator (iterator_t* iterator,
                        " (SELECT ROWID FROM users"
                        "  WHERE users.uuid = '%s'))"
                        " AND ROWID = %llu"
+                       "%s"
                        " ORDER BY %s %s;",
                        current_credentials.uuid,
                        task,
+                       trash ? " AND hidden = 2" : " AND hidden = 0",
                        sort_field ? sort_field : "ROWID",
                        ascending ? "ASC" : "DESC");
       else
@@ -6125,8 +6405,10 @@ init_task_iterator (iterator_t* iterator,
                        "SELECT ROWID, uuid, run_status FROM tasks WHERE owner ="
                        " (SELECT ROWID FROM users"
                        "  WHERE users.uuid = '%s')"
+                       "%s"
                        " ORDER BY %s %s;",
                        current_credentials.uuid,
+                       trash ? " AND hidden = 2" : " AND hidden = 0",
                        sort_field ? sort_field : "ROWID",
                        ascending ? "ASC" : "DESC");
     }
@@ -6136,14 +6418,18 @@ init_task_iterator (iterator_t* iterator,
         init_iterator (iterator,
                        "SELECT ROWID, uuid, run_status FROM tasks"
                        " WHERE ROWID = %llu"
+                       "%s"
                        " ORDER BY %s %s;",
                        task,
+                       trash ? " AND hidden = 2" : " AND hidden = 0",
                        sort_field ? sort_field : "ROWID",
                        ascending ? "ASC" : "DESC");
       else
         init_iterator (iterator,
                        "SELECT ROWID, uuid, run_status FROM tasks"
+                       "%s"
                        " ORDER BY %s %s;",
+                       trash ? " WHERE hidden = 2" : " WHERE hidden = 0",
                        sort_field ? sort_field : "ROWID",
                        ascending ? "ASC" : "DESC");
     }
@@ -7030,12 +7316,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       /* Set requested, paused and running tasks to stopped. */
 
       assert (current_credentials.uuid == NULL);
-      init_task_iterator (&tasks, 0, 1, NULL);
+      init_task_iterator (&tasks, 0, 0, 1, NULL);
       while (next (&tasks))
         {
           switch (task_iterator_run_status (&tasks))
             {
               case TASK_STATUS_DELETE_REQUESTED:
+              case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
               case TASK_STATUS_PAUSE_REQUESTED:
               case TASK_STATUS_PAUSE_WAITING:
               case TASK_STATUS_PAUSED:
@@ -7072,9 +7359,11 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " OR scan_run_status = %u"
            " OR scan_run_status = %u"
            " OR scan_run_status = %u"
+           " OR scan_run_status = %u"
            " OR scan_run_status = %u;",
            TASK_STATUS_STOPPED,
            TASK_STATUS_DELETE_REQUESTED,
+           TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
            TASK_STATUS_PAUSE_REQUESTED,
            TASK_STATUS_PAUSE_WAITING,
            TASK_STATUS_PAUSED,
@@ -7342,6 +7631,11 @@ task_config (task_t task)
 char*
 task_config_uuid (task_t task)
 {
+  if (task_config_in_trash (task))
+    return sql_string (0, 0,
+                       "SELECT uuid FROM configs_trash WHERE ROWID ="
+                       " (SELECT config FROM tasks WHERE ROWID = %llu);",
+                       task);
   return sql_string (0, 0,
                      "SELECT uuid FROM configs WHERE ROWID ="
                      " (SELECT config FROM tasks WHERE ROWID = %llu);",
@@ -7358,10 +7652,31 @@ task_config_uuid (task_t task)
 char*
 task_config_name (task_t task)
 {
+  if (task_config_in_trash (task))
+    return sql_string (0, 0,
+                       "SELECT name FROM configs_trash WHERE ROWID ="
+                       " (SELECT config FROM tasks WHERE ROWID = %llu);",
+                       task);
   return sql_string (0, 0,
                      "SELECT name FROM configs WHERE ROWID ="
                      " (SELECT config FROM tasks WHERE ROWID = %llu);",
                      task);
+}
+
+/**
+ * @brief Return whether the config of a task is in the trashcan.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if in trashcan, else 0.
+ */
+int
+task_config_in_trash (task_t task)
+{
+  return sql_int (0, 0,
+                  "SELECT config_location = " G_STRINGIFY (LOCATION_TRASH)
+                  " FROM tasks WHERE ROWID = %llu;",
+                  task);
 }
 
 /**
@@ -7416,6 +7731,23 @@ set_task_target (task_t task, target_t target)
 }
 
 /**
+ * @brief Return whether the target of a task is in the trashcan.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if in trash, else 0.
+ */
+int
+task_target_in_trash (task_t task)
+{
+  return sql_int (0, 0,
+                  "SELECT target_location = " G_STRINGIFY (LOCATION_TRASH)
+                  " FROM tasks WHERE ROWID = %llu;",
+                  task);
+}
+
+
+/**
  * @brief Return the slave of a task.
  *
  * @param[in]  task  Task.
@@ -7452,6 +7784,22 @@ void
 set_task_slave (task_t task, slave_t slave)
 {
   sql ("UPDATE tasks SET slave = %llu WHERE ROWID = %llu;", slave, task);
+}
+
+/**
+ * @brief Return whether the slave of a task is in the trashcan.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if in trash, else 0.
+ */
+int
+task_slave_in_trash (task_t task)
+{
+  return sql_int (0, 0,
+                  "SELECT slave_location = " G_STRINGIFY (LOCATION_TRASH)
+                  " FROM tasks WHERE ROWID = %llu;",
+                  task);
 }
 
 /**
@@ -7557,7 +7905,8 @@ set_task_requested (task_t task, task_status_t *status)
       || run_status == TASK_STATUS_RESUME_WAITING
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_STOP_WAITING
-      || run_status == TASK_STATUS_DELETE_REQUESTED)
+      || run_status == TASK_STATUS_DELETE_REQUESTED
+      || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED)
     {
       sql ("END;");
       *status = run_status;
@@ -7900,6 +8249,25 @@ task_escalator (task_t task)
 }
 
 /**
+ * @brief Return whether the escalator of a task is in the trashcan.
+ *
+ * Caller must check that there is an escalator on the task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if in trashcan, else 0.
+ */
+int
+task_escalator_in_trash (task_t task)
+{
+  return sql_int (0, 0,
+                 "SELECT escalator_location = " G_STRINGIFY (LOCATION_TRASH)
+                 " FROM task_escalators"
+                 " WHERE task = %llu;",
+                 task);
+}
+
+/**
  * @brief Add an escalator to a task.
  *
  * @param[in]  task       Task.
@@ -7908,8 +8276,8 @@ task_escalator (task_t task)
 void
 add_task_escalator (task_t task, escalator_t escalator)
 {
-  sql ("INSERT INTO task_escalators (task, escalator)"
-       " VALUES (%llu, %llu);",
+  sql ("INSERT INTO task_escalators (task, escalator, escalator_location)"
+       " VALUES (%llu, %llu, " G_STRINGIFY (LOCATION_TABLE) ");",
        task,
        escalator);
 }
@@ -7924,8 +8292,8 @@ void
 set_task_escalator (task_t task, escalator_t escalator)
 {
   sql ("DELETE FROM task_escalators where task = %llu;", task);
-  sql ("INSERT INTO task_escalators (task, escalator)"
-       " VALUES (%llu, %llu);",
+  sql ("INSERT INTO task_escalators (task, escalator, escalator_location)"
+       " VALUES (%llu, %llu, " G_STRINGIFY (LOCATION_TABLE) ");",
        task,
        escalator);
 }
@@ -8188,6 +8556,23 @@ task_schedule (task_t task)
         return 0;
         break;
     }
+}
+
+/**
+ * @brief Get whether the task schedule is in the trash.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if in trash, else 0.
+ */
+int
+task_schedule_in_trash (task_t task)
+{
+  return sql_int (0, 0,
+                  "SELECT schedule_location = " G_STRINGIFY (LOCATION_TRASH)
+                  " FROM tasks"
+                  " WHERE ROWID = %llu;",
+                  task);
 }
 
 /**
@@ -11071,7 +11456,8 @@ delete_report (report_t report)
                " OR scan_run_status = %u OR scan_run_status = %u"
                " OR scan_run_status = %u OR scan_run_status = %u"
                " OR scan_run_status = %u OR scan_run_status = %u"
-               " OR scan_run_status = %u OR scan_run_status = %u);",
+               " OR scan_run_status = %u OR scan_run_status = %u"
+               " OR scan_run_status = %u);",
                report,
                TASK_STATUS_RUNNING,
                TASK_STATUS_PAUSE_REQUESTED,
@@ -11081,6 +11467,7 @@ delete_report (report_t report)
                TASK_STATUS_RESUME_WAITING,
                TASK_STATUS_REQUESTED,
                TASK_STATUS_DELETE_REQUESTED,
+               TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
                TASK_STATUS_STOP_REQUESTED,
                TASK_STATUS_STOP_WAITING))
     return 2;
@@ -11562,7 +11949,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
   free (uuid);
 
   PRINT (out, "<report_format>");
-  init_report_format_param_iterator (&params, report_format, 1, NULL);
+  init_report_format_param_iterator (&params, report_format, 0, 1, NULL);
   while (next (&params))
     PRINT (out,
            "<param><name>%s</name><value>%s</value></param>",
@@ -12011,7 +12398,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
     /* Setup file names. */
 
     uuid_report = report_uuid (report);
-    init_report_format_iterator (&formats, report_format, 1, NULL);
+    init_report_format_iterator (&formats, report_format, 0, 1, NULL);
     if (next (&formats) == FALSE)
       {
         g_free (xml_file);
@@ -12277,7 +12664,7 @@ manage_send_report (report_t report, report_format_t report_format,
     /* Setup file names. */
 
     uuid_report = report_uuid (report);
-    init_report_format_iterator (&formats, report_format, 1, NULL);
+    init_report_format_iterator (&formats, report_format, 0, 1, NULL);
     if (next (&formats) == FALSE)
       {
         g_free (xml_file);
@@ -12783,9 +13170,10 @@ make_task (char* name, unsigned int time, char* comment)
   quoted_comment = comment ? sql_quote ((gchar*) comment) : NULL;
   sql ("INSERT into tasks"
        " (owner, uuid, name, hidden, time, comment, schedule,"
-       "  schedule_next_time, slave)"
+       "  schedule_next_time, slave, config_location, target_location,"
+       "  schedule_location, slave_location)"
        " VALUES ((SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "         '%s', '%s', 0, %u, '%s', 0, 0, 0);",
+       "         '%s', '%s', 0, %u, '%s', 0, 0, 0, 0, 0, 0, 0);",
        current_credentials.uuid,
        uuid,
        quoted_name ? quoted_name : "",
@@ -13014,6 +13402,8 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
  *
  * Stop the task beforehand with \ref stop_task, if it is running.
  *
+ * Used only for CREATE_TASK in omp.c.  Always ultimate.
+ *
  * @param[in]  task_pointer  A pointer to the task.
  *
  * @return 0 if deleted, 1 if delete requested, 2 if task is hidden,
@@ -13023,22 +13413,29 @@ int
 request_delete_task (task_t* task_pointer)
 {
   task_t task = *task_pointer;
+  int hidden;
 
   tracef ("   request delete task %u\n", task_id (task));
 
-  if (sql_int (0, 0,
-               "SELECT hidden from tasks WHERE ROWID = %llu;",
-               *task_pointer))
+  hidden = sql_int (0, 0,
+                    "SELECT hidden from tasks WHERE ROWID = %llu;",
+                    *task_pointer);
+
+  if (hidden == 1)
     return 2;
+
+  /* Technically the task could be in the trashcan, if someone gets the UUID
+   * with GET_TASKS before the CREATE_TASK finishes, and removes the task.
+   * Pretend it was deleted.  There'll be half a task in the trashcan. */
+  if (hidden == 2)
+    return 0;
 
   if (current_credentials.uuid == NULL) return -1;
 
   switch (stop_task (task))
     {
       case 0:    /* Stopped. */
-        /** @todo Check delete-task return. */
-        delete_task (task);
-        return 0;
+        return delete_task_lock (task, 1);
       case 1:    /* Stop requested. */
         set_task_run_status (task, TASK_STATUS_DELETE_REQUESTED);
         return 1;
@@ -13052,23 +13449,179 @@ request_delete_task (task_t* task_pointer)
   return 0;
 }
 
+static gboolean
+find_trash_task (const char*, task_t*);
+
+/**
+ * @brief Request deletion of a task.
+ *
+ * Stop the task beforehand with \ref stop_task, if it is running.
+ *
+ * @param[in]  task_id   UUID of task.
+ * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 if deleted, 1 if delete requested, 2 if task is hidden, 3 failed
+ *         to find task, -1 if error.
+ */
+int
+request_delete_task_uuid (const char *task_id, int ultimate)
+{
+  task_t task = 0;
+
+  /* Tasks have special handling for the trashcan.  Other resources have trash
+   * tables, like targets_trash.  Tasks are marked as trash in the tasks table
+   * by giving the "hidden" field a value of 2.  This means that the results can
+   * stay in the results table and will still refer to the correct task.  This
+   * should all work because there is already handling of the hidden flag
+   * everywhere else. */
+
+  tracef ("   request delete task %s\n", task_id);
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (find_task (task_id, &task))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (task == 0)
+    {
+      if (find_trash_task (task_id, &task))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (task == 0)
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      if (delete_reports (task))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      sql ("DELETE FROM results WHERE task = %llu;", task);
+      sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
+      sql ("DELETE FROM task_escalators WHERE task = %llu;", task);
+      sql ("DELETE FROM task_files WHERE task = %llu;", task);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  if (sql_int (0, 0,
+               "SELECT hidden from tasks WHERE ROWID = %llu;",
+               task)
+      == 1)
+    {
+      sql ("ROLLBACK;");
+      return 2;
+    }
+
+  if (current_credentials.uuid == NULL)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  switch (stop_task (task))
+    {
+      case 0:    /* Stopped. */
+        {
+          int ret;
+          ret = delete_task (task, ultimate);
+          if (ret)
+            sql ("ROLLBACK;");
+          else
+            sql ("COMMIT;");
+          return ret;
+        }
+      case 1:    /* Stop requested. */
+        if (ultimate)
+          set_task_run_status (task, TASK_STATUS_DELETE_REQUESTED);
+        else
+          set_task_run_status (task, TASK_STATUS_DELETE_ULTIMATE_REQUESTED);
+        sql ("COMMIT;");
+        return 1;
+      default:   /* Programming error. */
+        assert (0);
+      case -1:   /* Error. */
+        sql ("ROLLBACK;");
+        return -1;
+        break;
+    }
+
+  /*@notreached@*/
+  sql ("COMMIT;");
+  return 0;
+}
+
 /**
  * @brief Complete deletion of a task.
  *
- * @param[in]  task  A pointer to the task.
+ * The caller must do the locking, and must do the hidden check.
+ *
+ * The caller must handle the case where the task is already in the trashcan.
+ *
+ * @param[in]  task      The task.
+ * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
  * @return 0 on success, 1 if task is hidden, -1 on error.
  */
 int
-delete_task (task_t task)
+delete_task (task_t task, int ultimate)
 {
-  char* tsk_uuid;
+  tracef ("   delete task %llu\n", task);
 
-  tracef ("   delete task %u\n", task_id (task));
+  /** @todo Many other places just assert this. */
+  if (current_credentials.uuid == NULL)
+    return -1;
+
+  if (ultimate)
+    {
+      if (delete_reports (task))
+        return -1;
+
+      sql ("DELETE FROM results WHERE task = %llu;", task);
+      sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
+      sql ("DELETE FROM task_escalators WHERE task = %llu;", task);
+      sql ("DELETE FROM task_files WHERE task = %llu;", task);
+    }
+  else
+    sql ("UPDATE tasks SET hidden = 2 WHERE ROWID = %llu;", task);
+
+  return 0;
+}
+
+/**
+ * @brief Complete deletion of a task.
+ *
+ * This sets up a transaction around the delete.
+ *
+ * @param[in]  task      The task.
+ * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 on success, 1 if task is hidden, -1 on error.
+ */
+int
+delete_task_lock (task_t task, int ultimate)
+{
+  int ret;
+
+  tracef ("   delete task %llu\n", task);
 
   sql ("BEGIN EXCLUSIVE;");
 
-  if (sql_int (0, 0, "SELECT hidden from tasks WHERE ROWID = %llu;", task))
+  if (sql_int (0, 0, "SELECT hidden FROM tasks WHERE ROWID = %llu;", task))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -13081,19 +13634,48 @@ delete_task (task_t task)
       return -1;
     }
 
-  if (task_uuid (task, &tsk_uuid)
-      || delete_reports (task))
+  ret = delete_task (task, ultimate);
+  if (ret)
+    sql ("ROLLBACK;");
+  else
+    sql ("COMMIT;");
+  return ret;
+}
+
+/**
+ * @brief Delete all trash tasks.
+ *
+ * The caller must do the transaction.
+ *
+ * @param[in]  task      The task.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+delete_trash_tasks ()
+{
+  iterator_t tasks;
+
+  init_task_iterator (&tasks, 0, 1, 1, NULL);
+  while (next (&tasks))
     {
-      sql ("ROLLBACK;");
-      return -1;
+      task_t task;
+
+      task = task_iterator_task (&tasks);
+
+      if (delete_reports (task))
+        {
+          cleanup_iterator (&tasks);
+          return -1;
+        }
+
+      sql ("DELETE FROM results WHERE task = %llu;", task);
+      sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
+      sql ("DELETE FROM task_escalators WHERE task = %llu;", task);
+      sql ("DELETE FROM task_files WHERE task = %llu;", task);
     }
+  cleanup_iterator (&tasks);
 
-  sql ("DELETE FROM results WHERE task = %llu;", task);
-  sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
-  sql ("DELETE FROM task_escalators WHERE task = %llu;", task);
-  sql ("DELETE FROM task_files WHERE task = %llu;", task);
-
-  sql ("COMMIT;");
   return 0;
 }
 
@@ -13187,7 +13769,44 @@ find_task (const char* uuid, task_t* task)
       return FALSE;
     }
   switch (sql_int64 (task, 0, 0,
-                     "SELECT ROWID FROM tasks WHERE uuid = '%s';",
+                     "SELECT ROWID FROM tasks WHERE uuid = '%s'"
+                     " AND hidden != 2;",
+                     uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *task = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+
+  return FALSE;
+}
+
+/**
+ * @brief Find a task in the trashcan, given an identifier.
+ *
+ * @param[in]   uuid  A task identifier.
+ * @param[out]  task  Task return, 0 if succesfully failed to find task.
+ *
+ * @return FALSE on success (including if failed to find task), TRUE on error.
+ */
+static gboolean
+find_trash_task (const char* uuid, task_t* task)
+{
+  if (user_owns_uuid ("task", uuid) == 0)
+    {
+      *task = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (task, 0, 0,
+                     "SELECT ROWID FROM tasks WHERE uuid = '%s'"
+                     " AND hidden = 2;",
                      uuid))
     {
       case 0:
@@ -13989,22 +14608,94 @@ create_target (const char* name, const char* hosts, const char* comment,
 /**
  * @brief Delete a target.
  *
- * @param[in]  target  Target.
+ * @param[in]  target_id  UUID of target.
+ * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 1 fail because a task refers to the target, -1 error.
+ * @return 0 success, 1 fail because a task refers to the target, 2 failed
+ *         to find target, -1 error.
  */
 int
-delete_target (target_t target)
+delete_target (const char *target_id, int ultimate)
 {
+  target_t target = 0;
+
   sql ("BEGIN IMMEDIATE;");
+
+  if (find_target (target_id, &target))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (target == 0)
+    {
+      if (find_trash ("target", target_id, &target))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (target == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      /* Check if it's in use by a task in the trashcan. */
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE target = %llu"
+                   " AND target_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+                   target))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      sql ("DELETE FROM targets_trash WHERE ROWID = %llu;", target);
+      sql ("COMMIT;");
+      return 0;
+    }
+
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE target = %llu;",
+               "SELECT count(*) FROM tasks"
+               " WHERE target = %llu"
+               " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
+               " AND (hidden = 0 OR hidden = 1);",
                target))
     {
       sql ("ROLLBACK;");
       return 1;
     }
+
+  if (ultimate == 0)
+    {
+      sql ("INSERT INTO targets_trash"
+           " (uuid, owner, name, hosts, comment, lsc_credential,"
+           "  smb_lsc_credential, ssh_location, smb_location)"
+           " SELECT uuid, owner, name, hosts, comment, lsc_credential,"
+           "        smb_lsc_credential, " G_STRINGIFY (LOCATION_TABLE) ", "
+           "      " G_STRINGIFY (LOCATION_TABLE)
+           " FROM targets WHERE ROWID = %llu;",
+           target);
+
+      /* Update the location of the target in any trashcan tasks. */
+      sql ("UPDATE tasks"
+           " SET target = %llu,"
+           "     target_location = " G_STRINGIFY (LOCATION_TRASH)
+           " WHERE target = %llu"
+           " AND target_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           sqlite3_last_insert_rowid (task_db),
+           target);
+    }
+
   sql ("DELETE FROM targets WHERE ROWID = %llu;", target);
+
   sql ("COMMIT;");
   return 0;
 }
@@ -14014,11 +14705,12 @@ delete_target (target_t target)
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  target      Target to limit iteration to.  0 for all.
+ * @param[in]  trash       Whether to iterate over trashcan targets.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_target_iterator (iterator_t* iterator, target_t target,
+init_target_iterator (iterator_t* iterator, target_t target, int trash,
                       int ascending, const char* sort_field)
 {
   assert (current_credentials.uuid);
@@ -14026,12 +14718,15 @@ init_target_iterator (iterator_t* iterator, target_t target,
   if (target)
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " smb_lsc_credential, port_range"
-                   " FROM targets"
+                   " smb_lsc_credential, port_range, %s, %s"
+                   " FROM targets%s"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash ? "ssh_location" : "0",
+                   trash ? "smb_location" : "0",
+                   trash ? "_trash" : "",
                    target,
                    current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
@@ -14039,11 +14734,14 @@ init_target_iterator (iterator_t* iterator, target_t target,
   else
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " smb_lsc_credential, port_range"
-                   " FROM targets"
+                   " smb_lsc_credential, port_range, %s, %s"
+                   " FROM targets%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash ? "ssh_location" : "0",
+                   trash ? "smb_location" : "0",
+                   trash ? "_trash" : "",
                    current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
@@ -14148,6 +14846,38 @@ target_iterator_smb_credential (iterator_t* iterator)
 DEF_ACCESS (target_iterator_port_range, 7);
 
 /**
+ * @brief Get the location of the SSH LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 0 in table, 1 in trash
+ */
+int
+target_iterator_ssh_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 8);
+  return ret;
+}
+
+/**
+ * @brief Get the location of the SMB LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 0 in table, 1 in trash
+ */
+int
+target_iterator_smb_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 9);
+  return ret;
+}
+
+/**
  * @brief Return the UUID of a target.
  *
  * @param[in]  target  Target.
@@ -14190,6 +14920,22 @@ target_hosts (target_t target)
 {
   return sql_string (0, 0,
                      "SELECT hosts FROM targets WHERE ROWID = %llu;",
+                     target);
+}
+
+/**
+ * @brief Return the hosts associated with a trashcan target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated comma separated list of hosts if available,
+ *         else NULL.
+ */
+char*
+trash_target_hosts (target_t target)
+{
+  return sql_string (0, 0,
+                     "SELECT hosts FROM targets_trash WHERE ROWID = %llu;",
                      target);
 }
 
@@ -14292,7 +15038,7 @@ set_target_hosts (target_t target, const char *hosts)
 }
 
 /**
- * @brief Return whether a target is referenced by a task
+ * @brief Return whether a target is in use by a task.
  *
  * @param[in]  target  Target.
  *
@@ -14302,7 +15048,27 @@ int
 target_in_use (target_t target)
 {
   return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks WHERE target = %llu;",
+                  "SELECT count(*) FROM tasks"
+                  " WHERE target = %llu"
+                  " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
+                  " AND (hidden = 0 OR hidden = 1);",
+                  target);
+}
+
+/**
+ * @brief Return whether a trashcan target is referenced by a task.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+trash_target_in_use (target_t target)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM tasks"
+                  " WHERE target = %llu"
+                  " AND target_location = " G_STRINGIFY (LOCATION_TRASH),
                   target);
 }
 
@@ -15264,36 +16030,122 @@ copy_config (const char* name, const char* comment, config_t config,
 /**
  * @brief Delete a config.
  *
- * @param[in]  config  Config.
+ * @param[in]  config    UUID of config.
+ * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 1 fail because a task refers to the config, -1 error.
+ * @return 0 success, 1 fail because a task refers to the config, 2 failed to
+ *         find config, -1 error.
  */
 int
-delete_config (config_t config)
+delete_config (const char *config_id, int ultimate)
 {
-  if (config == CONFIG_ID_FULL_AND_FAST
-      || config == CONFIG_ID_FULL_AND_FAST_ULTIMATE
-      || config == CONFIG_ID_FULL_AND_VERY_DEEP
-      || config == CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE
-      || config == sql_int (0, 0,
-                            "SELECT ROWID FROM configs WHERE name = 'empty';"))
+  config_t config = 0;
+
+  if ((strcmp (config_id, CONFIG_UUID_FULL_AND_FAST_ULTIMATE) == 0)
+      || (strcmp (config_id, CONFIG_UUID_FULL_AND_FAST_ULTIMATE) == 0)
+      || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP) == 0)
+      || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE) == 0)
+      || (strcmp (config_id, CONFIG_UUID_EMPTY) == 0))
     return 1;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (find_config (config_id, &config))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (config == 0)
+    {
+      if (find_trash ("config", config_id, &config))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (config == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      /* Check if it's in use by a task in the trashcan. */
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE config = %llu"
+                   " AND config_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+                   config))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      sql ("DELETE FROM nvt_selectors WHERE name ="
+           " (SELECT nvt_selector FROM configs_trash WHERE ROWID = %llu);",
+           config);
+      sql ("DELETE FROM config_preferences_trash WHERE config = %llu;",
+           config);
+      sql ("DELETE FROM configs_trash WHERE ROWID = %llu;",
+           config);
+      sql ("COMMIT;");
+      return 0;
+    }
+
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE config = %llu;",
+               "SELECT count(*) FROM tasks"
+               " WHERE config = %llu"
+               " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
+               " AND (hidden = 0 OR hidden = 1);",
                config))
     {
       sql ("ROLLBACK;");
       return 1;
     }
-  sql ("DELETE FROM nvt_selectors WHERE name ="
-       " (SELECT nvt_selector FROM configs WHERE ROWID = %llu);",
-       config);
-  sql ("DELETE FROM config_preferences WHERE config = %llu;",
-       config);
-  sql ("DELETE FROM configs WHERE ROWID = %llu;",
-       config);
+
+  if (ultimate)
+    sql ("DELETE FROM nvt_selectors WHERE name ="
+         " (SELECT nvt_selector FROM configs_trash WHERE ROWID = %llu);",
+         config);
+  else
+    {
+      config_t trash_config;
+
+      sql ("INSERT INTO configs_trash"
+           " (uuid, owner, name, nvt_selector, comment, family_count, nvt_count,"
+           "  families_growing, nvts_growing)"
+           " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
+           "        nvt_count, families_growing, nvts_growing"
+           " FROM configs WHERE ROWID = %llu;",
+           config);
+
+      trash_config = sqlite3_last_insert_rowid (task_db);
+
+      sql ("INSERT INTO config_preferences_trash"
+           " (config, type, name, value)"
+           " SELECT %llu, type, name, value"
+           " FROM config_preferences WHERE config = %llu;",
+           trash_config,
+           config);
+
+      /* Update the location of the config in any trashcan tasks. */
+      sql ("UPDATE tasks"
+           " SET config = %llu,"
+           "     config_location = " G_STRINGIFY (LOCATION_TRASH)
+           " WHERE config = %llu"
+           " AND config_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           trash_config,
+           config);
+    }
+
+  sql ("DELETE FROM config_preferences WHERE config = %llu;", config);
+  sql ("DELETE FROM configs WHERE ROWID = %llu;", config);
+
   sql ("COMMIT;");
   return 0;
 }
@@ -15308,11 +16160,12 @@ delete_config (config_t config)
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  config      Config.  0 for all.
+ * @param[in]  trash       Whether to iterate over trashcan configs.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_config_iterator (iterator_t* iterator, config_t config,
+init_config_iterator (iterator_t* iterator, config_t config, int trash,
                       int ascending, const char* sort_field)
 
 {
@@ -15322,23 +16175,25 @@ init_config_iterator (iterator_t* iterator, config_t config,
 
   if (config)
     sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_FIELDS
-                           " FROM configs"
+                           " FROM configs%s"
                            " WHERE ROWID = %llu"
                            " AND ((owner IS NULL) OR (owner ="
                            " (SELECT ROWID FROM users"
                            "  WHERE users.uuid = '%s')))"
                            " ORDER BY %s %s;",
+                           trash ? "_trash" : "",
                            config,
                            current_credentials.uuid,
                            sort_field ? sort_field : "ROWID",
                            ascending ? "ASC" : "DESC");
   else
     sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_FIELDS
-                           " FROM configs"
+                           " FROM configs%s"
                            " WHERE ((owner IS NULL) OR (owner ="
                            " (SELECT ROWID FROM users"
                            "  WHERE users.uuid = '%s')))"
                            " ORDER BY %s %s;",
+                           trash ? "_trash" : "",
                            current_credentials.uuid,
                            sort_field ? sort_field : "ROWID",
                            ascending ? "ASC" : "DESC");
@@ -15459,7 +16314,27 @@ config_in_use (config_t config)
     return 1;
 
   return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks WHERE config = %llu;",
+                  "SELECT count(*) FROM tasks"
+                  " WHERE config = %llu"
+                  " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
+                  " AND (hidden = 0 OR hidden = 1);",
+                  config);
+}
+
+/**
+ * @brief Return whether a trashcan config is referenced by a task.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+trash_config_in_use (config_t config)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM tasks"
+                  " WHERE config = %llu"
+                  " AND config_location = " G_STRINGIFY (LOCATION_TRASH),
                   config);
 }
 
@@ -16599,7 +17474,7 @@ update_config_caches (config_t config)
 {
   iterator_t configs;
 
-  init_config_iterator (&configs, config, 1, NULL);
+  init_config_iterator (&configs, config, 0, 1, NULL);
   while (next (&configs))
     update_config_cache (&configs);
   cleanup_iterator (&configs);
@@ -18483,18 +19358,71 @@ create_lsc_credential (const char* name, const char* comment,
 /**
  * @brief Delete an LSC credential.
  *
- * @param[in]  lsc_credential  LSC credential.
+ * @param[in]  lsc_credential_id  UUID of LSC credential.
+ * @param[in]  ultimate           Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because the LSC credential is in use, -1 error.
  */
 int
-delete_lsc_credential (lsc_credential_t lsc_credential)
+delete_lsc_credential (const char *lsc_credential_id, int ultimate)
 {
+  lsc_credential_t lsc_credential = 0;
+
   sql ("BEGIN IMMEDIATE;");
+
+  if (find_lsc_credential (lsc_credential_id, &lsc_credential))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (lsc_credential == 0)
+    {
+      if (find_trash ("lsc_credential", lsc_credential_id, &lsc_credential))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (lsc_credential == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      /* Check if it's in use by a target in the trashcan. */
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM targets_trash"
+                   " WHERE (lsc_credential = %llu"
+                   "        AND ssh_location = " G_STRINGIFY (LOCATION_TRASH) ")"
+                   " OR (smb_lsc_credential = %llu;",
+                   "     AND smb_location = " G_STRINGIFY (LOCATION_TRASH) ");",
+                   lsc_credential,
+                   lsc_credential))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      sql ("DELETE FROM lsc_credentials_trash WHERE ROWID = %llu;", lsc_credential);
+      sql ("COMMIT;");
+      return 0;
+    }
+
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM targets"
-               " WHERE lsc_credential = %llu OR smb_lsc_credential = %llu;",
+               " WHERE"
+               " (lsc_credential = %llu"
+               "  AND ssh_location = " G_STRINGIFY (LOCATION_TABLE) ")"
+               " OR"
+               " (smb_lsc_credential = %llu"
+               "  AND smb_location = " G_STRINGIFY (LOCATION_TABLE) ")",
                lsc_credential,
                lsc_credential))
     {
@@ -18502,7 +19430,34 @@ delete_lsc_credential (lsc_credential_t lsc_credential)
       return 1;
     }
 
+  if (ultimate == 0)
+    {
+      sql ("INSERT INTO lsc_credentials_trash"
+           " (uuid, owner, name, login, password, comment, public_key,"
+           "  private_key, rpm, deb, exe)"
+           " SELECT uuid, owner, name, login, password, comment, public_key,"
+           "  private_key, rpm, deb, exe"
+           " FROM lsc_credentials WHERE ROWID = %llu;",
+           lsc_credential);
+      /* Update the credential references in any trashcan targets.  This
+       * situation is possible if the user restores the credential when the
+       * target is in the trashcan. */
+      sql ("UPDATE targets_trash"
+           " SET ssh_location = " G_STRINGIFY (LOCATION_TRASH) ","
+           "     lsc_credential = %llu"
+           " WHERE lsc_credential = %llu;",
+           sqlite3_last_insert_rowid (task_db),
+           lsc_credential);
+      sql ("UPDATE targets_trash"
+           " SET smb_location = " G_STRINGIFY (LOCATION_TRASH) ","
+           " smb_lsc_credential = %llu"
+           " WHERE smb_lsc_credential = %llu;",
+           sqlite3_last_insert_rowid (task_db),
+           lsc_credential);
+    }
+
   sql ("DELETE FROM lsc_credentials WHERE ROWID = %llu;", lsc_credential);
+
   sql ("COMMIT;");
   return 0;
 }
@@ -18594,13 +19549,14 @@ lsc_credential_packaged (lsc_credential_t lsc_credential)
  *
  * @param[in]  iterator        Iterator.
  * @param[in]  lsc_credential  Single LSC credential to iterate, 0 for all.
+ * @param[in]  trash           Whether to iterate over trashcan credentials.
  * @param[in]  ascending       Whether to sort ascending or descending.
  * @param[in]  sort_field      Field to sort on, or NULL for "ROWID".
  */
 void
 init_lsc_credential_iterator (iterator_t* iterator,
-                              lsc_credential_t lsc_credential, int ascending,
-                              const char* sort_field)
+                              lsc_credential_t lsc_credential, int trash,
+                              int ascending, const char* sort_field)
 {
   assert (current_credentials.uuid);
 
@@ -18608,15 +19564,20 @@ init_lsc_credential_iterator (iterator_t* iterator,
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, login, password, comment,"
                    " public_key, private_key, rpm, deb, exe,"
-                   " (SELECT count(*) > 0 FROM targets"
-                   "  WHERE lsc_credential = lsc_credentials.ROWID)"
-                   " + (SELECT count(*) > 0 FROM targets"
-                   "    WHERE smb_lsc_credential = lsc_credentials.ROWID)"
-                   " FROM lsc_credentials"
+                   " (SELECT count(*) > 0 FROM targets%s"
+                   "  WHERE lsc_credential = lsc_credentials%s.ROWID)"
+                   " + (SELECT count(*) > 0 FROM targets%s"
+                   "    WHERE smb_lsc_credential = lsc_credentials%s.ROWID)"
+                   " FROM lsc_credentials%s"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
                    lsc_credential,
                    current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
@@ -18625,14 +19586,19 @@ init_lsc_credential_iterator (iterator_t* iterator,
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, login, password, comment,"
                    " public_key, private_key, rpm, deb, exe,"
-                   " (SELECT count(*) > 0 FROM targets"
-                   "  WHERE lsc_credential = lsc_credentials.ROWID)"
-                   " + (SELECT count(*) > 0 FROM targets"
-                   "    WHERE smb_lsc_credential = lsc_credentials.ROWID)"
-                   " FROM lsc_credentials"
+                   " (SELECT count(*) > 0 FROM targets%s"
+                   "  WHERE lsc_credential = lsc_credentials%s.ROWID)"
+                   " + (SELECT count(*) > 0 FROM targets%s"
+                   "    WHERE smb_lsc_credential = lsc_credentials%s.ROWID)"
+                   " FROM lsc_credentials%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
                    current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
@@ -18854,6 +19820,22 @@ lsc_credential_uuid (lsc_credential_t lsc_credential)
 }
 
 /**
+ * @brief Get the UUID of an LSC credential in the trashcan.
+ *
+ * @param[in]  lsc_credential  LSC credential.
+ *
+ * @return UUID.
+ */
+char*
+trash_lsc_credential_uuid (lsc_credential_t lsc_credential)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM lsc_credentials_trash"
+                     " WHERE ROWID = %llu;",
+                     lsc_credential);
+}
+
+/**
  * @brief Get the name of an LSC credential.
  *
  * @param[in]  lsc_credential  LSC credential.
@@ -18865,6 +19847,22 @@ lsc_credential_name (lsc_credential_t lsc_credential)
 {
   return sql_string (0, 0,
                      "SELECT name FROM lsc_credentials WHERE ROWID = %llu;",
+                     lsc_credential);
+}
+
+/**
+ * @brief Get the name of an LSC credential in the trashcan.
+ *
+ * @param[in]  lsc_credential  LSC credential.
+ *
+ * @return Name.
+ */
+char*
+trash_lsc_credential_name (lsc_credential_t lsc_credential)
+{
+  return sql_string (0, 0,
+                     "SELECT name FROM lsc_credentials_trash"
+                     " WHERE ROWID = %llu;",
                      lsc_credential);
 }
 
@@ -19426,14 +20424,64 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 /**
  * @brief Delete an agent.
  *
- * @param[in]  agent  Agent.
+ * @param[in]  agent_id   UUID of agent.
+ * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 2 failed to find agent, -1 error.
  */
 int
-delete_agent (agent_t agent)
+delete_agent (const char *agent_id, int ultimate)
 {
+  agent_t agent = 0;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (find_agent (agent_id, &agent))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (agent == 0)
+    {
+      if (find_trash ("agent", agent_id, &agent))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (agent == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      sql ("DELETE FROM agents_trash WHERE ROWID = %llu;", agent);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  if (ultimate == 0)
+    {
+      sql ("INSERT INTO agents_trash"
+           " (uuid, owner, name, comment, installer, installer_64,"
+           "  installer_filename, installer_signature_64, installer_trust,"
+           "  installer_trust_time, howto_install, howto_use)"
+           " SELECT"
+           "  uuid, owner, name, comment, installer, installer_64,"
+           "  installer_filename, installer_signature_64, installer_trust,"
+           "  installer_trust_time, howto_install, howto_use"
+           " FROM agents WHERE ROWID = %llu;",
+           agent);
+    }
+
   sql ("DELETE FROM agents WHERE ROWID = %llu;", agent);
+  sql ("COMMIT;");
   return 0;
 }
 
@@ -19452,7 +20500,7 @@ verify_agent (agent_t agent)
 
   sql ("BEGIN IMMEDIATE;");
 
-  init_agent_iterator (&agents, agent, 1, NULL);
+  init_agent_iterator (&agents, agent, 0, 1, NULL);
   if (next (&agents))
     {
       const char *signature_64;
@@ -19570,11 +20618,12 @@ agent_uuid (agent_t agent, char ** id)
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  agent       Single agent to iterate, 0 for all.
+ * @param[in]  trash       Whether to iterate over trashcan targets.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_agent_iterator (iterator_t* iterator, agent_t agent,
+init_agent_iterator (iterator_t* iterator, agent_t agent, int trash,
                      int ascending, const char* sort_field)
 {
   assert (current_credentials.uuid);
@@ -19585,11 +20634,12 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
                    " installer_filename, installer_signature_64,"
                    " installer_trust, installer_trust_time, howto_install,"
                    " howto_use"
-                   " FROM agents"
+                   " FROM agents%s"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
                    agent,
                    current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
@@ -19600,10 +20650,11 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
                    " installer_filename, installer_signature_64,"
                    " installer_trust, installer_trust_time, howto_install,"
                    " howto_use"
-                   " FROM agents"
+                   " FROM agents%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
                    current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
@@ -20890,21 +21941,91 @@ create_schedule (const char* name, const char *comment, time_t first_time,
  * @brief Delete a schedule.
  *
  * @param[in]  schedule  Schedule.
+ * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the schedule, -1 error.
  */
 int
-delete_schedule (schedule_t schedule)
+delete_schedule (const char *schedule_id, int ultimate)
 {
+  schedule_t schedule = 0;
+
   sql ("BEGIN IMMEDIATE;");
+
+  if (find_schedule (schedule_id, &schedule))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (schedule == 0)
+    {
+      if (find_trash ("schedule", schedule_id, &schedule))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (schedule == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      /* Check if it's in use by a task in the trashcan. */
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE schedule = %llu"
+                   " AND schedule_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+                   schedule))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      sql ("DELETE FROM schedules_trash WHERE ROWID = %llu;", schedule);
+      sql ("COMMIT;");
+      return 0;
+    }
+
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE schedule = %llu;",
+               "SELECT count(*) FROM tasks"
+               " WHERE schedule = %llu"
+               " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE)
+               " AND (hidden = 0 OR hidden = 1);",
                schedule))
     {
       sql ("ROLLBACK;");
       return 1;
     }
+
+  if (ultimate == 0)
+    {
+      sql ("INSERT INTO schedules_trash"
+           " (uuid, owner, name, comment, first_time, period, period_months,"
+           "  duration)"
+           " SELECT uuid, owner, name, comment, first_time, period, period_months,"
+           "        duration"
+           " FROM schedules WHERE ROWID = %llu;",
+           schedule);
+
+      /* Update the location of the schedule in any trashcan tasks. */
+      sql ("UPDATE tasks"
+           " SET schedule = %llu,"
+           "     schedule_location = " G_STRINGIFY (LOCATION_TRASH)
+           " WHERE schedule = %llu"
+           " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           sqlite3_last_insert_rowid (task_db),
+           schedule);
+    }
+
   sql ("DELETE FROM schedules WHERE ROWID = %llu;", schedule);
+
   sql ("COMMIT;");
   return 0;
 }
@@ -21047,19 +22168,38 @@ schedule_name (schedule_t schedule)
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  schedule  Single schedule to iterate over, or 0 for all.
+ * @param[in]  trash       Whether to iterate over trashcan targets.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_schedule_iterator (iterator_t* iterator, schedule_t schedule,
+init_schedule_iterator (iterator_t* iterator, schedule_t schedule, int trash,
                         int ascending, const char* sort_field)
 {
-  if (schedule)
+  if (schedule && trash)
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, first_time,"
                    " period, period_months, duration,"
                    " (SELECT count(*) > 0 FROM tasks"
-                   "  WHERE tasks.schedule = schedules.ROWID)"
+                   "  WHERE tasks.schedule = schedules_trash.ROWID"
+                   "  AND schedule_location = " G_STRINGIFY (LOCATION_TRASH) ")"
+                   " FROM schedules_trash"
+                   " WHERE ROWID = %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   schedule,
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+  else if (schedule)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, comment, first_time,"
+                   " period, period_months, duration,"
+                   " (SELECT count(*) > 0 FROM tasks"
+                   "  WHERE tasks.schedule = schedules.ROWID"
+                   "  AND (hidden = 0 OR hidden = 1)"
+                   "  AND schedule_location = " G_STRINGIFY (LOCATION_TABLE) ")"
                    " FROM schedules"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -21069,12 +22209,28 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule,
                    current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
+  else if (trash)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, comment, first_time,"
+                   " period, period_months, duration,"
+                   " (SELECT count(*) > 0 FROM tasks"
+                   "  WHERE tasks.schedule = schedules_trash.ROWID"
+                   "  AND schedule_location = " G_STRINGIFY (LOCATION_TRASH) ")"
+                   " FROM schedules_trash"
+                   " WHERE ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, first_time,"
                    " period, period_months, duration,"
                    " (SELECT count(*) > 0 FROM tasks"
-                   "  WHERE tasks.schedule = schedules.ROWID)"
+                   "  WHERE tasks.schedule = schedules.ROWID"
+                   "  AND (hidden = 0 OR hidden = 1)"
+                   "  AND schedule_location = " G_STRINGIFY (LOCATION_TABLE) ")"
                    " FROM schedules"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -21492,7 +22648,8 @@ void
 init_schedule_task_iterator (iterator_t* iterator, schedule_t schedule)
 {
   init_iterator (iterator,
-                 "SELECT ROWID, uuid, name FROM tasks WHERE schedule = %llu;",
+                 "SELECT ROWID, uuid, name FROM tasks"
+                 " WHERE schedule = %llu AND hidden = 0;",
                  schedule);
 }
 
@@ -22069,46 +23226,183 @@ create_report_format (const char *uuid, const char *name,
 /**
  * @brief Delete a report format.
  *
- * @param[in]  report_format  Report format.
+ * @param[in]  report_format_id  UUID of Report format.
+ * @param[in]  ultimate          Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 2 failed to find agent, -1 error.
  */
 int
-delete_report_format (report_format_t report_format)
+delete_report_format (const char *report_format_id, int ultimate)
 {
-  char *uuid;
   gchar *dir;
+  report_format_t report_format, trash_report_format;
+
+  /* This is complicated in two ways
+   *
+   *   - the UUID of a report format is the same every time it is
+   *     imported, so to prevent multiple deletes from producing
+   *     duplicate UUIDs in the trashcan, each report format in the
+   *     trashcan gets a new UUID,
+   *
+   *   - the report format has information on disk on top of the
+   *     info in the db, so the disk information has to be held
+   *     in a special trashcan directory. */
 
   sql ("BEGIN IMMEDIATE;");
 
-  uuid = report_format_uuid (report_format);
-  if (uuid == NULL)
+  /* Look in the "real" table. */
+
+  if (find_report_format (report_format_id, &report_format))
     {
       sql ("ROLLBACK;");
-      return -1;
+      return 3;
+    }
+
+  if (report_format == 0)
+    {
+      gchar *report_format_string;
+
+      /* Look in the trashcan. */
+
+      if (find_trash ("report_format", report_format_id, &report_format))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (report_format == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      /* Remove entirely. */
+
+      sql ("DELETE FROM report_formats_trash WHERE ROWID = %llu;",
+           report_format);
+      sql ("DELETE FROM report_format_param_options_trash"
+           " WHERE report_format_param"
+           " IN (SELECT ROWID from report_format_params_trash"
+           "     WHERE report_format = %llu);",
+           report_format);
+      sql ("DELETE FROM report_format_params_trash WHERE report_format = %llu;",
+           report_format);
+
+      /* Remove the dir last, in case any SQL rolls back. */
+      report_format_string = g_strdup_printf ("%llu", report_format);
+      dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                              "openvasmd",
+                              "report_formats_trash",
+                              report_format_string,
+                              NULL);
+      g_free (report_format_string);
+      if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
+        {
+          g_free (dir);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      g_free (dir);
+
+      sql ("COMMIT;");
+
+      return 0;
     }
 
   if (report_format_global (report_format))
     dir = g_build_filename (OPENVAS_DATA_DIR,
                             "openvasmd",
                             "global_report_formats",
-                            uuid,
+                            report_format_id,
                             NULL);
   else
     dir = g_build_filename (OPENVAS_STATE_DIR,
                             "openvasmd",
                             "report_formats",
                             current_credentials.uuid,
-                            uuid,
+                            report_format_id,
                             NULL);
-  free (uuid);
-  if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
+
+  if (ultimate)
     {
-      g_free (dir);
-      sql ("ROLLBACK;");
-      return -1;
+      /* Remove directory. */
+
+      if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
+        {
+          g_free (dir);
+          sql ("ROLLBACK;");
+          return -1;
+        }
     }
-  g_free (dir);
+  else
+    {
+      iterator_t params;
+      gchar *trash_dir;
+
+      /* Move to trash. */
+
+      trash_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                  "openvasmd",
+                                  "report_formats_trash",
+                                  NULL);
+      if (g_mkdir_with_parents (trash_dir, 0755 /* "rwxr-xr-x" */))
+        {
+          g_warning ("%s: failed to create dir %s", __FUNCTION__, dir);
+          g_free (trash_dir);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      g_free (trash_dir);
+
+      sql ("INSERT INTO report_formats_trash"
+           " (uuid, owner, name, extension, content_type, summary,"
+           "  description, signature, trust, trust_time, flags, original_uuid)"
+           " SELECT"
+           "  make_uuid (), owner, name, extension, content_type, summary,"
+           "  description, signature, trust, trust_time, flags, uuid"
+           " FROM report_formats"
+           " WHERE ROWID = %llu;",
+           report_format);
+
+      trash_report_format = sqlite3_last_insert_rowid (task_db);
+
+      init_report_format_param_iterator (&params, report_format, 0, 1, NULL);
+      while (next (&params))
+        {
+          report_format_param_t param, trash_param;
+
+          param = report_format_param_iterator_param (&params);
+
+          sql ("INSERT INTO report_format_params_trash"
+               " (report_format, name, type, value, type_min, type_max,"
+               "  type_regex, fallback)"
+               " SELECT"
+               "  %llu, name, type, value, type_min, type_max,"
+               "  type_regex, fallback"
+               " FROM report_format_params"
+               " WHERE ROWID = %llu;",
+               trash_report_format,
+               param);
+
+          trash_param = sqlite3_last_insert_rowid (task_db);
+
+          sql ("INSERT INTO report_format_param_options_trash"
+               " (report_format_param, value)"
+               " SELECT %llu, value"
+               " FROM report_format_param_options"
+               " WHERE report_format_param = %llu;",
+               trash_param,
+               param);
+        }
+      cleanup_iterator (&params);
+    }
+
+  /* Remove from "real" tables. */
 
   sql ("DELETE FROM report_formats WHERE ROWID = %llu;", report_format);
   sql ("DELETE FROM report_format_param_options WHERE report_format_param"
@@ -22116,6 +23410,44 @@ delete_report_format (report_format_t report_format)
        report_format);
   sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
        report_format);
+
+  /* Move the dir last, in case any SQL rolls back. */
+
+  if (ultimate == 0)
+    {
+      gchar *new_dir, *report_format_string;
+
+      report_format_string = g_strdup_printf ("%llu", trash_report_format);
+      new_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                  "openvasmd",
+                                  "report_formats_trash",
+                                  report_format_string,
+                                  NULL);
+      g_free (report_format_string);
+      if (g_file_test (dir, G_FILE_TEST_EXISTS))
+        {
+          if (rename (dir, new_dir))
+            {
+              g_warning ("%s: rename %s to %s: %s\n",
+                         __FUNCTION__, dir, new_dir, strerror (errno));
+              g_free (dir);
+              g_free (new_dir);
+              sql ("ROLLBACK;");
+              return -1;
+            }
+        }
+      else
+        {
+          g_warning ("%s: report dir missing: %s\n",
+                     __FUNCTION__, dir);
+          g_free (dir);
+          g_free (new_dir);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      g_free (new_dir);
+    }
+  g_free (dir);
 
   sql ("COMMIT;");
 
@@ -22137,7 +23469,7 @@ verify_report_format (report_format_t report_format)
 
   sql ("BEGIN IMMEDIATE;");
 
-  init_report_format_iterator (&formats, report_format, 1, NULL);
+  init_report_format_iterator (&formats, report_format, 0, 1, NULL);
   if (next (&formats))
     {
       const char *signature;
@@ -22188,6 +23520,7 @@ verify_report_format (report_format_t report_format)
 
           init_report_format_param_iterator (&params,
                                              report_format,
+                                             0,
                                              1,
                                              NULL);
           while (next (&params))
@@ -22392,6 +23725,22 @@ report_format_global (report_format_t report_format)
 {
   return sql_int (0, 0,
                   "SELECT owner is NULL FROM report_formats"
+                  " WHERE ROWID = %llu;",
+                  report_format);
+}
+
+/**
+ * @brief Return whether a report format is global.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return 1 if global, else 0.
+ */
+static int
+report_format_trash_global (report_format_t report_format)
+{
+  return sql_int (0, 0,
+                  "SELECT owner is NULL FROM report_formats_trash"
                   " WHERE ROWID = %llu;",
                   report_format);
 }
@@ -22669,23 +24018,25 @@ set_report_format_param (report_format_t report_format, const char *name,
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  report_format  Single report_format to iterate over, or 0 for all.
+ * @param[in]  trash       Whether to iterate over trashcan report formats.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
 init_report_format_iterator (iterator_t* iterator, report_format_t report_format,
-                             int ascending, const char* sort_field)
+                             int trash, int ascending, const char* sort_field)
 {
   if (report_format)
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, extension, content_type,"
                    " summary, description, owner IS NULL, signature, trust,"
                    " trust_time, flags"
-                   " FROM report_formats"
+                   " FROM report_formats%s"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
                    report_format,
                    current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
@@ -22695,10 +24046,11 @@ init_report_format_iterator (iterator_t* iterator, report_format_t report_format
                    "SELECT ROWID, uuid, name, extension, content_type,"
                    " summary, description, owner is NULL, signature, trust,"
                    " trust_time, flags"
-                   " FROM report_formats"
+                   " FROM report_formats%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
                    current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
@@ -22858,20 +24210,25 @@ report_format_iterator_active (iterator_t* iterator)
  *
  * @param[in]  iterator       Iterator.
  * @param[in]  report_format  Single report_format to iterate over, or 0 for all.
+ * @param[in]  trash          Whether to iterate over trashcan report formats.
  * @param[in]  ascending      Whether to sort ascending or descending.
  * @param[in]  sort_field     Field to sort on, or NULL for "ROWID".
  */
 void
-init_report_format_param_iterator (iterator_t* iterator, report_format_t report_format,
-                                   int ascending, const char* sort_field)
+init_report_format_param_iterator (iterator_t* iterator,
+                                   report_format_t report_format,
+                                   int trash,
+                                   int ascending,
+                                   const char* sort_field)
 {
   if (report_format)
     init_iterator (iterator,
                    "SELECT ROWID, name, value, type, type_min, type_max,"
                    " type_regex, fallback"
-                   " FROM report_format_params"
+                   " FROM report_format_params%s"
                    " WHERE report_format = %llu"
                    " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
                    report_format,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
@@ -22879,8 +24236,9 @@ init_report_format_param_iterator (iterator_t* iterator, report_format_t report_
     init_iterator (iterator,
                    "SELECT ROWID, name, value, type, type_min, type_max,"
                    " type_regex, fallback"
-                   " FROM report_format_params"
+                   " FROM report_format_params%s"
                    " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
 }
@@ -23160,21 +24518,90 @@ create_slave (const char* name, const char* comment, const char* host,
 /**
  * @brief Delete a slave.
  *
- * @param[in]  slave  Slave.
+ * @param[in]  slave_id  UUID of slave.
+ * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 1 fail because a task refers to the slave, -1 error.
+ * @return 0 success, 1 fail because a task refers to the slave, 2 failed to
+ *         find agent, -1 error.
  */
 int
-delete_slave (slave_t slave)
+delete_slave (const char *slave_id, int ultimate)
 {
+  slave_t slave = 0;
+
   sql ("BEGIN IMMEDIATE;");
+
+  if (find_slave (slave_id, &slave))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (slave == 0)
+    {
+      if (find_trash ("slave", slave_id, &slave))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (slave == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      /* Check if it's in use by a task in the trashcan. */
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE slave = %llu"
+                   " AND slave_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+                   slave))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      sql ("DELETE FROM slaves_trash WHERE ROWID = %llu;", slave);
+      sql ("COMMIT;");
+      return 0;
+    }
+
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE slave = %llu;",
+               "SELECT count(*) FROM tasks"
+               " WHERE slave = %llu"
+               " AND slave_location = " G_STRINGIFY (LOCATION_TABLE)
+               " AND (hidden = 0 OR hidden = 1);",
                slave))
     {
       sql ("ROLLBACK;");
       return 1;
     }
+
+  if (ultimate == 0)
+    {
+      sql ("INSERT INTO slaves_trash"
+           "  (uuid, owner, name, comment, host, port, login, password)"
+           " SELECT"
+           "  uuid, owner, name, comment, host, port, login, password"
+           " FROM slaves WHERE ROWID = %llu;",
+           slave);
+
+      /* Update the location of the slave in any trashcan tasks. */
+      sql ("UPDATE tasks"
+           " SET slave = %llu,"
+           "     slave_location = " G_STRINGIFY (LOCATION_TRASH)
+           " WHERE slave = %llu"
+           " AND slave_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           sqlite3_last_insert_rowid (task_db),
+           slave);
+    }
+
   sql ("DELETE FROM slaves WHERE ROWID = %llu;", slave);
   sql ("COMMIT;");
   return 0;
@@ -23185,12 +24612,13 @@ delete_slave (slave_t slave)
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  slave       Slave to limit iteration to.  0 for all.
+ * @param[in]  trash       Whether to iterate over trashcan report formats.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_slave_iterator (iterator_t* iterator, slave_t slave, int ascending,
-                     const char* sort_field)
+init_slave_iterator (iterator_t* iterator, slave_t slave, int trash,
+                     int ascending, const char* sort_field)
 {
   assert (current_credentials.uuid);
 
@@ -23198,11 +24626,12 @@ init_slave_iterator (iterator_t* iterator, slave_t slave, int ascending,
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, host, port, login,"
                    " password"
-                   " FROM slaves"
+                   " FROM slaves%s"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
                    slave,
                    current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
@@ -23211,10 +24640,11 @@ init_slave_iterator (iterator_t* iterator, slave_t slave, int ascending,
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, host, port, login,"
                    " password"
-                   " FROM slaves"
+                   " FROM slaves%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
                    current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
@@ -23430,7 +24860,27 @@ int
 slave_in_use (slave_t slave)
 {
   return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks WHERE slave = %llu;",
+                  "SELECT count(*) FROM tasks"
+                  " WHERE slave = %llu"
+                  " AND slave_location = " G_STRINGIFY (LOCATION_TABLE)
+                  " AND (hidden = 0 OR hidden = 1);",
+                  slave);
+}
+
+/**
+ * @brief Return whether a slave is referenced by a task
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+trash_slave_in_use (slave_t slave)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM tasks"
+                  " WHERE slave = %llu"
+                  " AND slave_location = " G_STRINGIFY (LOCATION_TRASH),
                   slave);
 }
 
@@ -23694,6 +25144,581 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
   }
 }
 
+
+/* Trashcan. */
 
+/**
+ * @brief Restore a resource from the trashcan.
+ *
+ * @param[in]  id  UUID of resource.
+ *
+ * @return 0 success, 1 fail because the resource refers to another resource
+ *         in the trashcan, 2 failed to find resource in trashcan, 3 fail
+ *         because resource with such name exists already, -1 error.
+ */
+int
+manage_restore (const char *id)
+{
+  resource_t resource = 0;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  /* Agent. */
+
+  if (find_trash ("agent", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM agents"
+                   " WHERE name ="
+                   " (SELECT name FROM agents_trash WHERE ROWID = %llu);",
+                   resource))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      sql ("INSERT INTO agents"
+           " (uuid, owner, name, comment, installer, installer_64,"
+           "  installer_filename, installer_signature_64, installer_trust,"
+           "  installer_trust_time, howto_install, howto_use)"
+           " SELECT"
+           "  uuid, owner, name, comment, installer, installer_64,"
+           "  installer_filename, installer_signature_64, installer_trust,"
+           "  installer_trust_time, howto_install, howto_use"
+           " FROM agents_trash WHERE ROWID = %llu;",
+           resource);
+
+      sql ("DELETE FROM agents_trash WHERE ROWID = %llu;", resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  /* Config. */
+
+  if (find_trash ("config", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      config_t config;
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM configs"
+                   " WHERE name ="
+                   " (SELECT name FROM configs_trash WHERE ROWID = %llu);",
+                   resource))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      sql ("INSERT INTO configs"
+           " (uuid, owner, name, nvt_selector, comment, family_count, nvt_count,"
+           "  families_growing, nvts_growing)"
+           " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
+           "        nvt_count, families_growing, nvts_growing"
+           " FROM configs_trash WHERE ROWID = %llu;",
+           resource);
+
+      config = sqlite3_last_insert_rowid (task_db);
+
+      sql ("INSERT INTO config_preferences"
+           " (config, type, name, value)"
+           " SELECT %llu, type, name, value"
+           " FROM config_preferences_trash WHERE config = %llu;",
+           config,
+           resource);
+
+      /* Update the config in any trashcan tasks. */
+      sql ("UPDATE tasks"
+           " SET config = %llu,"
+           "     config_location = " G_STRINGIFY (LOCATION_TABLE)
+           " WHERE config = %llu"
+           " AND config_location = " G_STRINGIFY (LOCATION_TRASH),
+           config,
+           resource);
+
+      sql ("DELETE FROM config_preferences_trash WHERE config = %llu;",
+           resource);
+      sql ("DELETE FROM configs_trash WHERE ROWID = %llu;", resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  /* Escalator. */
+
+  if (find_trash ("escalator", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      escalator_t escalator;
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM escalators"
+                   " WHERE name ="
+                   " (SELECT name FROM escalators_trash WHERE ROWID = %llu);",
+                   resource))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      sql ("INSERT INTO escalators"
+           " (uuid, owner, name, comment, event, condition, method)"
+           " SELECT uuid, owner, name, comment, event, condition, method"
+           " FROM escalators_trash WHERE ROWID = %llu;",
+           resource);
+
+      escalator = sqlite3_last_insert_rowid (task_db);
+
+      sql ("INSERT INTO escalator_condition_data"
+           " (escalator, name, data)"
+           " SELECT %llu, name, data"
+           " FROM escalator_condition_data_trash WHERE ROWID = %llu;",
+           escalator);
+
+      sql ("INSERT INTO escalator_event_data"
+           " (escalator, name, data)"
+           " SELECT %llu, name, data"
+           " FROM escalator_event_data_trash WHERE ROWID = %llu;",
+           escalator);
+
+      sql ("INSERT INTO escalator_method_data"
+           " (escalator, name, data)"
+           " SELECT %llu, name, data"
+           " FROM escalator_method_data_trash WHERE ROWID = %llu;",
+           escalator);
+
+      /* Update the escalator in any trashcan tasks. */
+      sql ("UPDATE task_escalators"
+           " SET escalator = %llu,"
+           "     escalator_location = " G_STRINGIFY (LOCATION_TABLE)
+           " WHERE escalator = %llu"
+           " AND escalator_location = " G_STRINGIFY (LOCATION_TRASH),
+           escalator,
+           resource);
+
+      sql ("DELETE FROM escalator_condition_data_trash WHERE escalator = %llu;",
+           resource);
+      sql ("DELETE FROM escalator_event_data_trash WHERE escalator = %llu;",
+           resource);
+      sql ("DELETE FROM escalator_method_data_trash WHERE escalator = %llu;",
+           resource);
+      sql ("DELETE FROM escalators_trash WHERE ROWID = %llu;",
+           resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  /* LSC credential. */
+
+  if (find_trash ("lsc_credential", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      lsc_credential_t credential;
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM lsc_credentials"
+                   " WHERE name ="
+                   " (SELECT name FROM lsc_credentials_trash WHERE ROWID = %llu);",
+                   resource))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      sql ("INSERT INTO lsc_credentials"
+           " (uuid, owner, name, login, password, comment, public_key,"
+           "  private_key, rpm, deb, exe)"
+           " SELECT uuid, owner, name, login, password, comment, public_key,"
+           "  private_key, rpm, deb, exe"
+           " FROM lsc_credentials_trash WHERE ROWID = %llu;",
+           resource);
+
+      /* Update the credentials in any trashcan targets. */
+      credential = sqlite3_last_insert_rowid (task_db);
+      sql ("UPDATE targets_trash"
+           " SET ssh_location = " G_STRINGIFY (LOCATION_TABLE) ","
+           "     lsc_credential = %llu"
+           " WHERE lsc_credential = %llu"
+           " AND ssh_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           credential,
+           resource);
+      sql ("UPDATE targets_trash"
+           " SET smb_location = " G_STRINGIFY (LOCATION_TABLE) ","
+           "     smb_lsc_credential = %llu"
+           " WHERE smb_lsc_credential = %llu"
+           " AND smb_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           credential,
+           resource);
+
+      sql ("DELETE FROM lsc_credentials_trash WHERE ROWID = %llu;", resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  /* Report format. */
+
+  if (find_trash ("report_format", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      iterator_t params;
+      report_format_t report_format;
+      gchar *dir, *trash_dir, *resource_string;
+      int global;
+      char *trash_uuid;
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM report_formats"
+                   " WHERE name ="
+                   " (SELECT name FROM report_formats_trash WHERE ROWID = %llu);",
+                   resource))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      /* Move to "real" tables. */
+
+      sql ("INSERT INTO report_formats"
+           " (uuid, owner, name, extension, content_type, summary,"
+           "  description, signature, trust, trust_time, flags)"
+           " SELECT"
+           "  original_uuid, owner, name, extension, content_type, summary,"
+           "  description, signature, trust, trust_time, flags"
+           " FROM report_formats_trash"
+           " WHERE ROWID = %llu;",
+           resource);
+
+      report_format = sqlite3_last_insert_rowid (task_db);
+
+      init_report_format_param_iterator (&params, resource, 1, 1, NULL);
+      while (next (&params))
+        {
+          report_format_param_t param, trash_param;
+
+          trash_param = report_format_param_iterator_param (&params);
+
+          sql ("INSERT INTO report_format_params"
+               " (report_format, name, type, value, type_min, type_max,"
+               "  type_regex, fallback)"
+               " SELECT"
+               "  %llu, name, type, value, type_min, type_max,"
+               "  type_regex, fallback"
+               " FROM report_format_params_trash"
+               " WHERE ROWID = %llu;",
+               report_format,
+               trash_param);
+
+          param = sqlite3_last_insert_rowid (task_db);
+
+          sql ("INSERT INTO report_format_param_options"
+               " (report_format_param, value)"
+               " SELECT %llu, value"
+               " FROM report_format_param_options_trash"
+               " WHERE report_format_param = %llu;",
+               param,
+               trash_param);
+        }
+      cleanup_iterator (&params);
+
+      global = report_format_trash_global (resource);
+
+      trash_uuid = sql_string (0, 0,
+                               "SELECT original_uuid FROM report_formats_trash"
+                               " WHERE ROWID = %llu;",
+                               resource);
+      if (trash_uuid == NULL)
+        abort ();
+
+      /* Remove from trash tables. */
+
+      sql ("DELETE FROM report_formats_trash WHERE ROWID = %llu;",
+           resource);
+      sql ("DELETE FROM report_format_param_options_trash"
+           " WHERE report_format_param"
+           " IN (SELECT ROWID from report_format_params_trash"
+           "     WHERE report_format = %llu);",
+           resource);
+      sql ("DELETE FROM report_format_params_trash WHERE report_format = %llu;",
+           resource);
+
+      /* Move the dir last, in case any SQL rolls back. */
+
+      if (global)
+        dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                "openvasmd",
+                                "global_report_formats",
+                                trash_uuid,
+                                NULL);
+      else
+        dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                "openvasmd",
+                                "report_formats",
+                                current_credentials.uuid,
+                                trash_uuid,
+                                NULL);
+      free (trash_uuid);
+
+      resource_string = g_strdup_printf ("%llu", resource);
+      trash_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                    "openvasmd",
+                                    "report_formats_trash",
+                                    resource_string,
+                                    NULL);
+      g_free (resource_string);
+      if (g_file_test (trash_dir, G_FILE_TEST_EXISTS))
+        {
+          if (rename (trash_dir, dir))
+            {
+              g_warning ("%s: rename %s to %s: %s\n",
+                         __FUNCTION__, dir, trash_dir, strerror (errno));
+              g_free (dir);
+              g_free (trash_dir);
+              sql ("ROLLBACK;");
+              return -1;
+            }
+        }
+      else
+        {
+          g_warning ("%s: report trash dir missing: %s\n",
+                     __FUNCTION__, trash_dir);
+          g_free (dir);
+          g_free (trash_dir);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      g_free (dir);
+      g_free (trash_dir);
+
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  /* Schedule. */
+
+  if (find_trash ("schedule", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM schedules"
+                   " WHERE name ="
+                   " (SELECT name FROM schedules_trash WHERE ROWID = %llu);",
+                   resource))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      sql ("INSERT INTO schedules"
+           " (uuid, owner, name, comment, first_time, period, period_months,"
+           "  duration)"
+           " SELECT uuid, owner, name, comment, first_time, period,"
+           "        period_months, duration"
+           " FROM schedules_trash WHERE ROWID = %llu;",
+           resource);
+
+      /* Update the schedule in any trashcan tasks. */
+      sql ("UPDATE tasks"
+           " SET schedule = %llu,"
+           "     schedule_location = " G_STRINGIFY (LOCATION_TABLE)
+           " WHERE schedule = %llu"
+           " AND schedule_location = " G_STRINGIFY (LOCATION_TRASH),
+           sqlite3_last_insert_rowid (task_db),
+           resource);
+
+      sql ("DELETE FROM schedules_trash WHERE ROWID = %llu;", resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  /* Slave. */
+
+  if (find_trash ("slave", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM slaves"
+                   " WHERE name ="
+                   " (SELECT name FROM slaves_trash WHERE ROWID = %llu);",
+                   resource))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      sql ("INSERT INTO slaves"
+           "  (uuid, owner, name, comment, host, port, login, password)"
+           " SELECT"
+           "  uuid, owner, name, comment, host, port, login, password"
+           " FROM slaves_trash WHERE ROWID = %llu;",
+           resource);
+
+      /* Update the slave in any trashcan tasks. */
+      sql ("UPDATE tasks"
+           " SET slave = %llu,"
+           "     slave_location = " G_STRINGIFY (LOCATION_TABLE)
+           " WHERE slave = %llu"
+           " AND slave_location = " G_STRINGIFY (LOCATION_TRASH),
+           sqlite3_last_insert_rowid (task_db),
+           resource);
+
+      sql ("DELETE FROM slaves_trash WHERE ROWID = %llu;", resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  /* Target. */
+
+  if (find_trash ("target", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM targets"
+                   " WHERE name ="
+                   " (SELECT name FROM targets_trash WHERE ROWID = %llu);",
+                   resource))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      /* Check if it's in use by a credential in the trashcan. */
+      if (sql_int (0, 0,
+                   "SELECT ssh_location = " G_STRINGIFY (LOCATION_TRASH)
+                   " OR smb_location = " G_STRINGIFY (LOCATION_TRASH)
+                   " FROM targets_trash WHERE ROWID = %llu;",
+                   resource))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      sql ("INSERT INTO targets"
+           " (uuid, owner, name, hosts, comment, lsc_credential,"
+           "  smb_lsc_credential)"
+           " SELECT uuid, owner, name, hosts, comment, lsc_credential,"
+           "        smb_lsc_credential"
+           " FROM targets_trash WHERE ROWID = %llu;",
+           resource);
+
+      /* Update the target in any trashcan tasks. */
+      sql ("UPDATE tasks"
+           " SET target = %llu,"
+           "     target_location = " G_STRINGIFY (LOCATION_TABLE)
+           " WHERE target = %llu"
+           " AND target_location = " G_STRINGIFY (LOCATION_TRASH),
+           sqlite3_last_insert_rowid (task_db),
+           resource);
+
+      sql ("DELETE FROM targets_trash WHERE ROWID = %llu;", resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  /* Task. */
+
+  if (find_trash_task (id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      /* Check if it's in use by a resource in the trashcan. */
+      if (sql_int (0, 0,
+                   "SELECT (target_location = " G_STRINGIFY (LOCATION_TRASH) ")"
+                   " OR (config_location = " G_STRINGIFY (LOCATION_TRASH) ")"
+                   " OR (schedule_location = " G_STRINGIFY (LOCATION_TRASH) ")"
+                   " OR (slave_location = " G_STRINGIFY (LOCATION_TRASH) ")"
+                   " OR (SELECT count(*) > 0 FROM task_escalators"
+                   "     WHERE task = tasks.ROWID"
+                   "     AND escalator_location = " G_STRINGIFY (LOCATION_TRASH) ")"
+                   " FROM tasks WHERE ROWID = %llu;",
+                   resource))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      sql ("UPDATE tasks SET hidden = 0 WHERE ROWID = %llu;", resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  sql ("ROLLBACK;");
+  return 2;
+}
+
+/**
+ * @brief Empty the trashcan.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_empty_trashcan ()
+{
+  sql ("BEGIN IMMEDIATE;");
+  sql ("DELETE FROM agents_trash;");
+  sql ("DELETE FROM nvt_selectors WHERE name IN"
+       " (SELECT nvt_selector FROM configs_trash);");
+  sql ("DELETE FROM config_preferences_trash;");
+  sql ("DELETE FROM configs_trash;");
+  sql ("DELETE FROM escalator_condition_data_trash;");
+  sql ("DELETE FROM escalator_event_data_trash;");
+  sql ("DELETE FROM escalator_method_data_trash;");
+  sql ("DELETE FROM escalators_trash;");
+  sql ("DELETE FROM lsc_credentials_trash;");
+  sql ("DELETE FROM report_formats_trash;");
+  sql ("DELETE FROM schedules_trash;");
+  sql ("DELETE FROM slaves_trash;");
+  sql ("DELETE FROM targets_trash;");
+  if (delete_trash_tasks ())
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  sql ("COMMIT;");
+  return 0;
+}
 
 #undef DEF_ACCESS

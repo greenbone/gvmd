@@ -393,6 +393,7 @@ static char* help_text = "\n"
 "    DELETE_SLAVE           Delete a slave.\n"
 "    DELETE_TARGET          Delete a target.\n"
 "    DELETE_TASK            Delete a task.\n"
+"    EMPTY_TRASHCAN         Empty the trashcan.\n"
 "    GET_AGENTS             Get all agents.\n"
 #if 0
 "    GET_CERTIFICATES       Get all available certificates.\n"
@@ -426,6 +427,7 @@ static char* help_text = "\n"
 "    MODIFY_REPORT_FORMAT   Modify an existing report format.\n"
 "    MODIFY_TASK            Update an existing task.\n"
 "    PAUSE_TASK             Pause a running task.\n"
+"    RESTORE                Restore a resource.\n"
 "    RESUME_OR_START_TASK   Resume task if stopped, else start task.\n"
 "    RESUME_PAUSED_TASK     Resume a paused task.\n"
 "    RESUME_STOPPED_TASK    Resume a stopped task.\n"
@@ -1120,6 +1122,7 @@ create_task_data_reset (create_task_data_t *data)
 typedef struct
 {
   char *agent_id;   ///< ID of agent to delete.
+  int ultimate;     ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_agent_data_t;
 
 /**
@@ -1141,6 +1144,7 @@ delete_agent_data_reset (delete_agent_data_t *data)
 typedef struct
 {
   char *config_id;   ///< ID of config to delete.
+  int ultimate;      ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_config_data_t;
 
 /**
@@ -1162,6 +1166,7 @@ delete_config_data_reset (delete_config_data_t *data)
 typedef struct
 {
   char *escalator_id;   ///< ID of escalator to delete.
+  int ultimate;     ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_escalator_data_t;
 
 /**
@@ -1183,6 +1188,7 @@ delete_escalator_data_reset (delete_escalator_data_t *data)
 typedef struct
 {
   char *lsc_credential_id;   ///< ID of LSC credential to delete.
+  int ultimate;      ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_lsc_credential_data_t;
 
 /**
@@ -1267,6 +1273,7 @@ delete_report_data_reset (delete_report_data_t *data)
 typedef struct
 {
   char *report_format_id;   ///< ID of report format to delete.
+  int ultimate;     ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_report_format_data_t;
 
 /**
@@ -1288,6 +1295,7 @@ delete_report_format_data_reset (delete_report_format_data_t *data)
 typedef struct
 {
   char *schedule_id;   ///< ID of schedule to delete.
+  int ultimate;        ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_schedule_data_t;
 
 /**
@@ -1309,6 +1317,7 @@ delete_schedule_data_reset (delete_schedule_data_t *data)
 typedef struct
 {
   char *slave_id;   ///< ID of slave to delete.
+  int ultimate;     ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_slave_data_t;
 
 /**
@@ -1330,6 +1339,7 @@ delete_slave_data_reset (delete_slave_data_t *data)
 typedef struct
 {
   char *target_id;   ///< ID of target to delete.
+  int ultimate;      ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_target_data_t;
 
 /**
@@ -1351,6 +1361,7 @@ delete_target_data_reset (delete_target_data_t *data)
 typedef struct
 {
   char *task_id;   ///< ID of task to delete.
+  int ultimate;    ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_task_data_t;
 
 /**
@@ -1375,6 +1386,7 @@ typedef struct
   char *format;          ///< Format requested: "installer", "howto_use", ....
   char *sort_field;      ///< Field to sort results on.
   int sort_order;        ///< Result sort order: 0 descending, else ascending.
+  int trash;             ///< Boolean.  Whether to return agents from trashcan.
 } get_agents_data_t;
 
 /**
@@ -1403,6 +1415,7 @@ typedef struct
   int preferences;       ///< Boolean.  Whether to include config preferences.
   char *sort_field;      ///< Field to sort results on.
   int sort_order;        ///< Result sort order: 0 descending, else ascending.
+  int trash;             ///< Boolean.  Whether to return configs from trashcan.
 } get_configs_data_t;
 
 /**
@@ -1448,6 +1461,7 @@ typedef struct
   char *escalator_id;    ///< ID of single escalator to get.
   char *sort_field;      ///< Field to sort results on.
   int sort_order;        ///< Result sort order: 0 descending, else ascending.
+  int trash;             ///< Boolean.  Whether to return escalators from trashcan.
 } get_escalators_data_t;
 
 /**
@@ -1473,6 +1487,7 @@ typedef struct
   char *lsc_credential_id; ///< Single LSC credential to iterate over.
   char *sort_field;        ///< Field to sort results on.
   int sort_order;          ///< Result sort order: 0 descending, else ascending.
+  int trash;         ///< Boolean.  Whether to return agents from trashcan.
 } get_lsc_credentials_data_t;
 
 /**
@@ -1695,6 +1710,7 @@ typedef struct
   char *sort_field;       ///< Field to sort results on.
   int sort_order;         ///< Result sort order: 0 descending, else ascending.
   char *report_format_id; ///< ID of single report format to get.
+  int trash;              ///< Boolean.  Whether to return agents from trashcan.
 } get_report_formats_data_t;
 
 /**
@@ -1744,10 +1760,11 @@ get_results_data_reset (get_results_data_t *data)
  */
 typedef struct
 {
-  char *schedule_id;     ///< ID of single schedule to get.
-  char *sort_field;      ///< Field to sort results on.
-  int sort_order;        ///< Result sort order: 0 descending, else ascending.
-  int details;           ///< Boolean.  Whether to include full details.
+  char *schedule_id;   ///< ID of single schedule to get.
+  char *sort_field;    ///< Field to sort results on.
+  int sort_order;      ///< Result sort order: 0 descending, else ascending.
+  int details;         ///< Boolean.  Whether to include full details.
+  int trash;           ///< Boolean.  Whether to return schedules from trashcan.
 } get_schedules_data_t;
 
 /**
@@ -1772,6 +1789,7 @@ typedef struct
   int sort_order;      ///< Result sort order: 0 descending, else ascending.
   char *slave_id;      ///< ID of single slave to get.
   int tasks;           ///< Boolean.  Whether to include tasks that use slave.
+  int trash;           ///< Boolean.  Whether to return agents from trashcan.
 } get_slaves_data_t;
 
 /**
@@ -1823,6 +1841,7 @@ typedef struct
   int sort_order;      ///< Result sort order: 0 descending, else ascending.
   char *target_id;     ///< ID of single target to get.
   int tasks;           ///< Boolean.  Whether to include tasks that use target.
+  int trash;           ///< Boolean.  Whether to return targets from trashcan.
 } get_targets_data_t;
 
 /**
@@ -1874,6 +1893,7 @@ typedef struct
   int rcfile;            ///< Boolean.  Whether to include RC defining task.
   char *sort_field;      ///< Field to sort results on.
   int sort_order;        ///< Result sort order: 0 descending, else ascending.
+  int trash;             ///< Boolean.  Whether to return tasks from trashcan.
 } get_tasks_data_t;
 
 /**
@@ -2153,6 +2173,27 @@ pause_task_data_reset (pause_task_data_t *data)
 }
 
 /**
+ * @brief Command data for the restore command.
+ */
+typedef struct
+{
+  char *id;   ///< ID of resource to pause.
+} restore_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+restore_data_reset (restore_data_t *data)
+{
+  free (data->id);
+
+  memset (data, 0, sizeof (restore_data_t));
+}
+
+/**
  * @brief Command data for the resume_or_start_task command.
  */
 typedef struct
@@ -2377,6 +2418,7 @@ typedef union
   modify_report_format_data_t modify_report_format;   ///< modify_report_format
   modify_task_data_t modify_task;                     ///< modify_task
   pause_task_data_t pause_task;                       ///< pause_task
+  restore_data_t restore;                             ///< restore
   resume_or_start_task_data_t resume_or_start_task;   ///< resume_or_start_task
   resume_paused_task_data_t resume_paused_task;       ///< resume_paused_task
   resume_stopped_task_data_t resume_stopped_task;     ///< resume_stopped_task
@@ -2717,6 +2759,12 @@ pause_task_data_t *pause_task_data
  = (pause_task_data_t*) &(command_data.pause_task);
 
 /**
+ * @brief Parser callback data for RESTORE.
+ */
+restore_data_t *restore_data
+ = (restore_data_t*) &(command_data.restore);
+
+/**
  * @brief Parser callback data for RESUME_OR_START_TASK.
  */
 resume_or_start_task_data_t *resume_or_start_task_data
@@ -2957,6 +3005,7 @@ typedef enum
   CLIENT_DELETE_SLAVE,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TARGET,
+  CLIENT_EMPTY_TRASHCAN,
   CLIENT_GET_AGENTS,
 #if 0
   CLIENT_GET_CERTIFICATES,
@@ -3035,6 +3084,7 @@ typedef enum
   CLIENT_MODIFY_TASK_SCHEDULE,
   CLIENT_MODIFY_TASK_SLAVE,
   CLIENT_PAUSE_TASK,
+  CLIENT_RESTORE,
   CLIENT_RESUME_OR_START_TASK,
   CLIENT_RESUME_PAUSED_TASK,
   CLIENT_RESUME_STOPPED_TASK,
@@ -3574,28 +3624,53 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
           {
+            const gchar* attribute;
             append_attribute (attribute_names, attribute_values,
                               "agent_id", &delete_agent_data->agent_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_agent_data->ultimate = strcmp (attribute, "ultimate");
+            else
+              delete_agent_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_AGENT);
           }
         else if (strcasecmp ("DELETE_CONFIG", element_name) == 0)
           {
+            const gchar* attribute;
             append_attribute (attribute_names, attribute_values,
                               "config_id", &delete_config_data->config_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_config_data->ultimate = strcmp (attribute, "ultimate");
+            else
+              delete_config_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_CONFIG);
           }
         else if (strcasecmp ("DELETE_ESCALATOR", element_name) == 0)
           {
+            const gchar* attribute;
             append_attribute (attribute_names, attribute_values,
                               "escalator_id",
                               &delete_escalator_data->escalator_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_escalator_data->ultimate = strcmp (attribute, "ultimate");
+            else
+              delete_escalator_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_ESCALATOR);
           }
         else if (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0)
           {
+            const gchar* attribute;
             append_attribute (attribute_names, attribute_values,
                               "lsc_credential_id",
                               &delete_lsc_credential_data->lsc_credential_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_lsc_credential_data->ultimate
+               = strcmp (attribute, "ultimate");
+            else
+              delete_lsc_credential_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("DELETE_NOTE", element_name) == 0)
@@ -3618,34 +3693,67 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DELETE_REPORT_FORMAT", element_name) == 0)
           {
+            const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "report_format_id",
                               &delete_report_format_data->report_format_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_report_format_data->ultimate = strcmp (attribute,
+                                                            "ultimate");
+            else
+              delete_report_format_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_REPORT_FORMAT);
           }
         else if (strcasecmp ("DELETE_SCHEDULE", element_name) == 0)
           {
+            const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "schedule_id",
                               &delete_schedule_data->schedule_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_schedule_data->ultimate = strcmp (attribute, "ultimate");
+            else
+              delete_schedule_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_SCHEDULE);
           }
         else if (strcasecmp ("DELETE_SLAVE", element_name) == 0)
           {
+            const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "slave_id",
                               &delete_slave_data->slave_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_slave_data->ultimate = strcmp (attribute, "ultimate");
+            else
+              delete_slave_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_SLAVE);
           }
         else if (strcasecmp ("DELETE_TARGET", element_name) == 0)
           {
+            const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "target_id",
                               &delete_target_data->target_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_target_data->ultimate = strcmp (attribute, "ultimate");
+            else
+              delete_target_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_TARGET);
           }
         else if (strcasecmp ("DELETE_TASK", element_name) == 0)
           {
+            const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "task_id",
                               &delete_task_data->task_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_task_data->ultimate = strcmp (attribute, "ultimate");
+            else
+              delete_task_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_TASK);
           }
+        else if (strcasecmp ("EMPTY_TRASHCAN", element_name) == 0)
+          set_client_state (CLIENT_EMPTY_TRASHCAN);
         else if (strcasecmp ("GET_AGENTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -3655,6 +3763,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_agents_data->format);
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_agents_data->sort_field);
+            if (find_attribute (attribute_names, attribute_values,
+                                "trash", &attribute))
+              get_agents_data->trash = strcmp (attribute, "0");
+            else
+              get_agents_data->trash = 0;
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
               get_agents_data->sort_order = strcmp (attribute, "descending");
@@ -3676,6 +3789,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_configs_data->families = atoi (attribute);
             else
               get_configs_data->families = 0;
+            if (find_attribute (attribute_names, attribute_values,
+                                "trash", &attribute))
+              get_configs_data->trash = strcmp (attribute, "0");
+            else
+              get_configs_data->trash = 0;
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_configs_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
@@ -3707,6 +3825,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values,
                               "escalator_id",
                               &get_escalators_data->escalator_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "trash", &attribute))
+              get_escalators_data->trash = strcmp (attribute, "0");
+            else
+              get_escalators_data->trash = 0;
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_escalators_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
@@ -3725,6 +3848,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_lsc_credentials_data->lsc_credential_id);
             append_attribute (attribute_names, attribute_values, "format",
                               &get_lsc_credentials_data->format);
+            if (find_attribute (attribute_names, attribute_values,
+                                "trash", &attribute))
+              get_lsc_credentials_data->trash = strcmp (attribute, "0");
+            else
+              get_lsc_credentials_data->trash = 0;
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_lsc_credentials_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
@@ -3981,6 +4109,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               get_report_formats_data->params = 0;
 
+            if (find_attribute (attribute_names, attribute_values,
+                                "trash", &attribute))
+              get_report_formats_data->trash = strcmp (attribute, "0");
+            else
+              get_report_formats_data->trash = 0;
+
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_report_formats_data->sort_field);
 
@@ -4048,6 +4182,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               get_schedules_data->details = 0;
 
+            if (find_attribute (attribute_names, attribute_values,
+                                "trash", &attribute))
+              get_schedules_data->trash = strcmp (attribute, "0");
+            else
+              get_schedules_data->trash = 0;
+
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_schedules_data->sort_field);
 
@@ -4069,6 +4209,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_slaves_data->tasks = strcmp (attribute, "0");
             else
               get_slaves_data->tasks = 0;
+            if (find_attribute (attribute_names, attribute_values,
+                                "trash", &attribute))
+              get_slaves_data->trash = strcmp (attribute, "0");
+            else
+              get_slaves_data->trash = 0;
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_slaves_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
@@ -4108,6 +4253,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_targets_data->tasks = strcmp (attribute, "0");
             else
               get_targets_data->tasks = 0;
+            if (find_attribute (attribute_names, attribute_values,
+                                "trash", &attribute))
+              get_targets_data->trash = strcmp (attribute, "0");
+            else
+              get_targets_data->trash = 0;
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_targets_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
@@ -4144,6 +4294,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_tasks_data->sort_field);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "trash", &attribute))
+              get_tasks_data->trash = strcmp (attribute, "0");
+            else
+              get_tasks_data->trash = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
@@ -4210,6 +4366,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "task_id",
                               &pause_task_data->task_id);
             set_client_state (CLIENT_PAUSE_TASK);
+          }
+        else if (strcasecmp ("RESTORE", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &restore_data->id);
+            set_client_state (CLIENT_RESTORE);
           }
         else if (strcasecmp ("RESUME_OR_START_TASK", element_name) == 0)
           {
@@ -6436,6 +6598,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_EMPTY_TRASHCAN:
+        if (send_element_error_to_client ("empty_trashcan", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
       case CLIENT_MODIFY_NOTE:
         if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_MODIFY_NOTE_HOSTS);
@@ -6558,6 +6735,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_PAUSE_TASK:
         if (send_element_error_to_client ("pause_task", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
+      case CLIENT_RESTORE:
+        if (send_element_error_to_client ("restore", element_name,
                                           write_to_client,
                                           write_to_client_data))
           {
@@ -8438,25 +8630,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("DELETE_REPORT_FORMAT", element_name) == 0);
         if (delete_report_format_data->report_format_id)
           {
-            report_format_t report_format;
-
-            if (find_report_format (delete_report_format_data->report_format_id,
-                                    &report_format))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_report_format"));
-            else if (report_format == 0)
-              {
-                if (send_find_error_to_client
-                     ("delete_report_format",
-                      "report format",
-                      delete_report_format_data->report_format_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (delete_report_format (report_format))
+            switch (delete_report_format
+                     (delete_report_format_data->report_format_id,
+                      delete_report_format_data->ultimate))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_report_format"));
@@ -8466,6 +8642,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    (XML_ERROR_SYNTAX ("delete_report_format",
                                       "Attempt to delete a hidden report"
                                       " format"));
+                  break;
+                case 2:
+                  if (send_find_error_to_client
+                       ("delete_report_format",
+                        "report format",
+                        delete_report_format_data->report_format_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL
@@ -8486,24 +8674,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("DELETE_SCHEDULE", element_name) == 0);
         if (delete_schedule_data->schedule_id)
           {
-            schedule_t schedule;
-
-            if (find_schedule (delete_schedule_data->schedule_id, &schedule))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_schedule"));
-            else if (schedule == 0)
-              {
-                if (send_find_error_to_client
-                     ("delete_schedule",
-                      "schedule",
-                      delete_schedule_data->schedule_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (delete_schedule (schedule))
+            switch (delete_schedule (delete_schedule_data->schedule_id,
+                                     delete_schedule_data->ultimate))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_schedule"));
@@ -8515,6 +8687,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("delete_schedule",
                                       "Schedule is in use"));
+                  g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                         "Schedule %s could not be deleted",
+                         delete_schedule_data->schedule_id);
+                  break;
+                case 2:
+                  if (send_find_error_to_client
+                       ("delete_schedule",
+                        "schedule",
+                        delete_schedule_data->schedule_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
                   g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
                          "Schedule %s could not be deleted",
                          delete_schedule_data->schedule_id);
@@ -8729,6 +8916,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               init_report_format_iterator (&report_formats,
                                            report_format,
+                                           get_report_formats_data->trash,
                                            get_report_formats_data->sort_order,
                                            get_report_formats_data->sort_field);
               while (next (&report_formats))
@@ -8760,7 +8948,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       iterator_t params;
                       init_report_format_param_iterator
                        (&params,
+                        // FIX ->trash
                         report_format_iterator_report_format (&report_formats),
+                        0,
                         1,
                         NULL);
                       while (next (&params))
@@ -9019,6 +9209,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               init_schedule_iterator (&schedules,
                                       schedule,
+                                      get_schedules_data->trash,
                                       get_schedules_data->sort_order,
                                       get_schedules_data->sort_field);
               buffer_schedules_xml (buffer, &schedules, get_schedules_data->details
@@ -9040,23 +9231,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("DELETE_AGENT", element_name) == 0);
         if (delete_agent_data->agent_id)
           {
-            agent_t agent;
-
-            if (find_agent (delete_agent_data->agent_id, &agent))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agent"));
-            else if (agent == 0)
-              {
-                if (send_find_error_to_client ("delete_agent",
-                                               "agent",
-                                               delete_agent_data->agent_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (delete_agent (agent))
+            switch (delete_agent (delete_agent_data->agent_id,
+                                  delete_agent_data->ultimate))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_agent"));
@@ -9065,6 +9241,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("delete_agent",
                                       "Agent is in use"));
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("delete_agent",
+                                                 "agent",
+                                                 delete_agent_data->agent_id,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL
@@ -9084,23 +9271,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("DELETE_CONFIG", element_name) == 0);
         if (delete_config_data->config_id)
           {
-            config_t config = 0;
-
-            if (find_config (delete_config_data->config_id, &config))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
-            else if (config == 0)
-              {
-                if (send_find_error_to_client ("delete_config",
-                                               "config",
-                                               delete_config_data->config_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (delete_config (config))
+            switch (delete_config (delete_config_data->config_id,
+                                   delete_config_data->ultimate))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_config"));
@@ -9111,6 +9283,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 case 1:
                   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_config",
                                                             "Config is in use"));
+                  g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                         "Scan config %s could not be deleted",
+                         delete_config_data->config_id);
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("delete_config",
+                                                 "config",
+                                                 delete_config_data->config_id,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
                   g_log ("event config", G_LOG_LEVEL_MESSAGE,
                          "Scan config %s could not be deleted",
                          delete_config_data->config_id);
@@ -9134,25 +9320,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("DELETE_ESCALATOR", element_name) == 0);
         if (delete_escalator_data->escalator_id)
           {
-            escalator_t escalator;
-
-            if (find_escalator (delete_escalator_data->escalator_id,
-                                &escalator))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_escalator"));
-            else if (escalator == 0)
-              {
-                if (send_find_error_to_client
-                     ("delete_escalator",
-                      "escalator",
-                      delete_escalator_data->escalator_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (delete_escalator (escalator))
+            switch (delete_escalator (delete_escalator_data->escalator_id,
+                                      delete_escalator_data->ultimate))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_escalator"));
@@ -9164,6 +9333,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("delete_escalator",
                                       "Escalator is in use"));
+                  g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
+                         "Escalator %s could not be deleted",
+                         delete_escalator_data->escalator_id);
+                  break;
+                case 2:
+                  if (send_find_error_to_client
+                       ("delete_escalator",
+                        "escalator",
+                        delete_escalator_data->escalator_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
                   g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
                          "Escalator %s could not be deleted",
                          delete_escalator_data->escalator_id);
@@ -9188,16 +9372,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_LSC_CREDENTIAL:
         assert (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0);
         if (delete_lsc_credential_data->lsc_credential_id)
-          {
-            lsc_credential_t lsc_credential = 0;
-
-            if (find_lsc_credential
-                 (delete_lsc_credential_data->lsc_credential_id,
-                  &lsc_credential))
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_INTERNAL_ERROR ("delete_lsc_credential"));
-            else if (lsc_credential == 0)
-              {
+          switch (delete_lsc_credential
+                   (delete_lsc_credential_data->lsc_credential_id,
+                    delete_lsc_credential_data->ultimate))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_lsc_credential"));
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_lsc_credential",
+                                    "LSC credential is in use"));
+                break;
+              case 2:
                 if (send_find_error_to_client
                      ("delete_lsc_credential",
                       "LSC credential",
@@ -9209,22 +9396,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     error_send_to_client (error);
                     return;
                   }
-              }
-            else switch (delete_lsc_credential (lsc_credential))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_lsc_credential"));
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("delete_lsc_credential",
-                                      "LSC credential is in use"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("delete_lsc_credential"));
-              }
-          }
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("delete_lsc_credential"));
+            }
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("delete_lsc_credential",
@@ -9238,23 +9414,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("DELETE_SLAVE", element_name) == 0);
         if (delete_slave_data->slave_id)
           {
-            slave_t slave = 0;
-
-            if (find_slave (delete_slave_data->slave_id, &slave))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_slave"));
-            else if (slave == 0)
-              {
-                if (send_find_error_to_client ("delete_slave",
-                                               "slave",
-                                               delete_slave_data->slave_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (delete_slave (slave))
+            switch (delete_slave (delete_slave_data->slave_id,
+                                  delete_slave_data->ultimate))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_slave"));
@@ -9268,6 +9429,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   g_log ("event slave", G_LOG_LEVEL_MESSAGE,
                          "Slave %s could not be deleted",
                          delete_slave_data->slave_id);
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("delete_slave",
+                                                 "slave",
+                                                 delete_slave_data->slave_id,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_slave"));
@@ -9287,13 +9459,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_TARGET:
         assert (strcasecmp ("DELETE_TARGET", element_name) == 0);
         if (delete_target_data->target_id)
-          {
-            target_t target = 0;
-
-            if (find_target (delete_target_data->target_id, &target))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
-            else if (target == 0)
-              {
+          switch (delete_target (delete_target_data->target_id,
+                                 delete_target_data->ultimate))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_target"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target %s has been deleted",
+                       delete_target_data->target_id);
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_target",
+                                                          "Target is in use"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target %s could not be deleted",
+                       delete_target_data->target_id);
+                break;
+              case 2:
                 if (send_find_error_to_client ("delete_target",
                                                "target",
                                                delete_target_data->target_id,
@@ -9303,29 +9485,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     error_send_to_client (error);
                     return;
                   }
-              }
-            else switch (delete_target (target))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_target"));
-                  g_log ("event target", G_LOG_LEVEL_MESSAGE,
-                         "Target %s has been deleted",
-                         delete_target_data->target_id);
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_target",
-                                                            "Target is in use"));
-                  g_log ("event target", G_LOG_LEVEL_MESSAGE,
-                         "Target %s could not be deleted",
-                         delete_target_data->target_id);
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
-                  g_log ("event target", G_LOG_LEVEL_MESSAGE,
-                         "Target %s could not be deleted",
-                         delete_target_data->target_id);
-              }
-          }
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target %s could not be deleted",
+                       delete_target_data->target_id);
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target %s could not be deleted",
+                       delete_target_data->target_id);
+            }
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("delete_target",
@@ -9337,22 +9506,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_TASK:
         if (delete_task_data->task_id)
           {
-            task_t task;
-            if (find_task (delete_task_data->task_id, &task))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_task"));
-            else if (task == 0)
-              {
-                if (send_find_error_to_client ("delete_task",
-                                               "task",
-                                               delete_task_data->task_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (request_delete_task (&task))
+            switch (request_delete_task_uuid (delete_task_data->task_id,
+                                              delete_task_data->ultimate))
               {
                 case 0:    /* Deleted. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_task"));
@@ -9373,6 +9528,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   g_log ("event task", G_LOG_LEVEL_MESSAGE,
                          "Task %s could not be deleted",
                          delete_task_data->task_id);
+                  break;
+                case 3:  /* Failed to find task. */
+                  if (send_find_error_to_client
+                       ("delete_task",
+                        "task",
+                        delete_task_data->task_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
                   break;
                 default:   /* Programming error. */
                   assert (0);
@@ -11978,6 +12145,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           slave_t slave = 0;
           char *tsk_uuid, *name, *description;
 
+          /* @todo Buffer the entire task creation and pass everything to a
+           *       libmanage function, so that libmanage can do the locking
+           *       properly instead of exposing the task_t.  Probably easier
+           *       after removing the option to create a task from an RC
+           *       file. */
+
           assert (strcasecmp ("CREATE_TASK", element_name) == 0);
           assert (create_task_data->task != (task_t) 0);
 
@@ -12350,6 +12523,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_TASK);
         break;
 
+      case CLIENT_EMPTY_TRASHCAN:
+        switch (manage_empty_trashcan ())
+          {
+            case 0:
+              SEND_TO_CLIENT_OR_FAIL (XML_OK ("empty_trashcan"));
+              g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                     "Trashcan has been emptied");
+              break;
+            default:  /* Programming error. */
+              assert (0);
+            case -1:
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("empty_trashcan"));
+              break;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_MODIFY_NOTE:
         {
           task_t task = 0;
@@ -12672,6 +12862,51 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("pause_task"));
         pause_task_data_reset (pause_task_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_RESTORE:
+        if (restore_data->id)
+          {
+            switch (manage_restore (restore_data->id))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("restore"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Resource %s has been restored",
+                         restore_data->id);
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("restore", "Resource is in use"));
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("restore",
+                                                 "resource",
+                                                 restore_data->id,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 3:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("restore",
+                                      "A resource with this name exists"
+                                      " already"));
+                  break;
+                default:  /* Programming error. */
+                  assert (0);
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("restore"));
+                  break;
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("restore"));
+        restore_data_reset (restore_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -13214,6 +13449,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               init_agent_iterator (&agents,
                                    agent,
+                                   get_agents_data->trash,
                                    get_agents_data->sort_order,
                                    get_agents_data->sort_field);
               while (next (&agents))
@@ -13317,6 +13553,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
+          else if ((get_configs_data->export
+                    || get_configs_data->families
+                    || get_configs_data->preferences)
+                   && get_configs_data->trash)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_configs",
+                                "GET_CONFIGS trash given with export, families"
+                                " or preferences"));
           else
             {
               SEND_TO_CLIENT_OR_FAIL ("<get_configs_response"
@@ -13324,6 +13568,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               init_config_iterator (&configs,
                                     request_config,
+                                    get_configs_data->trash,
                                     get_configs_data->sort_order,
                                     get_configs_data->sort_field);
               while (next (&configs))
@@ -13367,12 +13612,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                config_iterator_name (&configs),
                                                config_iterator_comment
                                                 (&configs),
+                                               // FIX these access config table
                                                config_family_count (config),
                                                config_families_growing,
                                                config_nvt_count (config),
                                                config_nvts_growing,
-                                               config_in_use (config));
+                                               get_configs_data->trash
+                                                ? trash_config_in_use (config)
+                                                : config_in_use (config));
 
+                      // FIX skip if ->trash
                       init_config_task_iterator (&tasks,
                                                  config,
                                                  get_configs_data->sort_order);
@@ -13529,7 +13778,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_ESCALATORS", element_name) == 0);
 
-          if (get_escalators_data->escalator_id
+          if (get_escalators_data->escalator_id && get_escalators_data->trash)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_escalators",
+                                "GET_ESCALATORS trash given with"
+                                " escalator_id"));
+          else if (get_escalators_data->escalator_id
               && find_escalator (get_escalators_data->escalator_id, &escalator))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_escalators"));
           else if (get_escalators_data->escalator_id && escalator == 0)
@@ -13555,6 +13809,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        escalator,
                                        (task_t) 0,
                                        (event_t) 0,
+                                       get_escalators_data->trash,
                                        get_escalators_data->sort_order,
                                        get_escalators_data->sort_field);
               while (next (&escalators))
@@ -13579,6 +13834,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_escalator_data_iterator (&data,
                                                 escalator_iterator_escalator
                                                  (&escalators),
+                                                get_escalators_data->trash,
                                                 "condition");
                   while (next (&data))
                     SENDF_TO_CLIENT_OR_FAIL ("<data>"
@@ -13596,8 +13852,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            event_name (escalator_iterator_event
                                             (&escalators)));
                   init_escalator_data_iterator (&data,
+                                                get_escalators_data->trash,
                                                 escalator_iterator_escalator
                                                  (&escalators),
+
                                                 "event");
                   while (next (&data))
                     SENDF_TO_CLIENT_OR_FAIL ("<data>"
@@ -13618,6 +13876,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_escalator_data_iterator (&data,
                                                 escalator_iterator_escalator
                                                  (&escalators),
+                                                get_escalators_data->trash,
                                                 "method");
                   while (next (&data))
                     SENDF_TO_CLIENT_OR_FAIL ("<data>"
@@ -13729,6 +13988,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               init_lsc_credential_iterator (&credentials,
                                             lsc_credential,
+                                            get_lsc_credentials_data->trash,
                                             get_lsc_credentials_data->sort_order,
                                             get_lsc_credentials_data->sort_field);
               while (next (&credentials))
@@ -13873,7 +14133,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_SLAVES", element_name) == 0);
 
-          if (get_slaves_data->slave_id
+          if (get_slaves_data->tasks && get_slaves_data->trash)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_slave",
+                                "GET_SLAVE tasks given with trash"));
+          else if (get_slaves_data->slave_id
               && find_slave (get_slaves_data->slave_id, &slave))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_slaves"));
           else if (get_slaves_data->slave_id && slave == 0)
@@ -13897,6 +14161,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               init_slave_iterator (&slaves,
                                    slave,
+                                   get_slaves_data->trash,
                                    get_slaves_data->sort_order,
                                    get_slaves_data->sort_field);
               while (next (&slaves))
@@ -13914,9 +14179,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            slave_iterator_host (&slaves),
                                            slave_iterator_port (&slaves),
                                            slave_iterator_login (&slaves),
-                                           slave_in_use
-                                            (slave_iterator_slave (&slaves)));
+                                           get_slaves_data->trash
+                                            ? trash_slave_in_use
+                                               (slave_iterator_slave
+                                                 (&slaves))
+                                            : slave_in_use
+                                               (slave_iterator_slave
+                                                 (&slaves)));
 
+                  // FIX prevent if ->trash
                   if (get_slaves_data->tasks)
                     {
                       iterator_t tasks;
@@ -14080,6 +14351,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               init_target_iterator (&targets,
                                     target,
+                                    get_targets_data->trash,
                                     get_targets_data->sort_order,
                                     get_targets_data->sort_field);
               while (next (&targets))
@@ -14090,10 +14362,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   ssh_credential = target_iterator_ssh_credential (&targets);
                   smb_credential = target_iterator_smb_credential (&targets);
-                  ssh_lsc_name = lsc_credential_name (ssh_credential);
-                  ssh_lsc_uuid = lsc_credential_uuid (ssh_credential);
-                  smb_lsc_name = lsc_credential_name (smb_credential);
-                  smb_lsc_uuid = lsc_credential_uuid (smb_credential);
+                  if (get_targets_data->trash
+                      && target_iterator_ssh_trash (&targets))
+                    {
+                      ssh_lsc_name = trash_lsc_credential_name (ssh_credential);
+                      ssh_lsc_uuid = trash_lsc_credential_uuid (ssh_credential);
+                    }
+                  else
+                    {
+                      ssh_lsc_name = lsc_credential_name (ssh_credential);
+                      ssh_lsc_uuid = lsc_credential_uuid (ssh_credential);
+                    }
+                  if (get_targets_data->trash
+                      && target_iterator_smb_trash (&targets))
+                    {
+                      smb_lsc_name = trash_lsc_credential_name (smb_credential);
+                      smb_lsc_uuid = trash_lsc_credential_uuid (smb_credential);
+                    }
+                  else
+                    {
+                      smb_lsc_name = lsc_credential_name (smb_credential);
+                      smb_lsc_uuid = lsc_credential_uuid (smb_credential);
+                    }
                   port_range = target_iterator_port_range (&targets);
 
                   SENDF_TO_CLIENT_OR_FAIL ("<target id=\"%s\">"
@@ -14105,9 +14395,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<port_range>%s</port_range>"
                                            "<ssh_lsc_credential id=\"%s\">"
                                            "<name>%s</name>"
+                                           "<trash>%i</trash>"
                                            "</ssh_lsc_credential>"
                                            "<smb_lsc_credential id=\"%s\">"
                                            "<name>%s</name>"
+                                           "<trash>%i</trash>"
                                            "</smb_lsc_credential>",
                                            target_iterator_uuid (&targets),
                                            target_iterator_name (&targets),
@@ -14115,14 +14407,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            manage_max_hosts
                                             (target_iterator_hosts (&targets)),
                                            target_iterator_comment (&targets),
-                                           target_in_use
-                                            (target_iterator_target (&targets)),
+                                           get_targets_data->trash
+                                            ? trash_target_in_use
+                                               (target_iterator_target
+                                                 (&targets))
+                                            : target_in_use
+                                               (target_iterator_target
+                                                 (&targets)),
                                            port_range ? port_range : "",
                                            ssh_lsc_uuid ? ssh_lsc_uuid : "",
                                            ssh_lsc_name ? ssh_lsc_name : "",
+                                           (get_targets_data->trash
+                                             && target_iterator_ssh_trash
+                                                 (&targets)),
                                            smb_lsc_uuid ? smb_lsc_uuid : "",
-                                           smb_lsc_name ? smb_lsc_name : "");
+                                           smb_lsc_name ? smb_lsc_name : "",
+                                           (get_targets_data->trash
+                                             && target_iterator_smb_trash
+                                                 (&targets)));
 
+                  // FIX prevent if get_targets_data->trash
                   if (get_targets_data->tasks)
                     {
                       iterator_t tasks;
@@ -14210,9 +14514,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               init_task_iterator (&tasks,
                                   task,
+                                  get_tasks_data->trash,
                                   get_tasks_data->sort_order,
                                   get_tasks_data->sort_field);
               while (next (&tasks))
+                // FIX prevent if ->trash?
                 if (get_tasks_data->details)
                   {
                     /* The detailed version. */
@@ -14616,7 +14922,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     gchar *description64, *last_report_id, *last_report;
                     gchar *second_last_report_id, *second_last_report;
                     report_t running_report;
-                    int maximum_hosts;
+                    int maximum_hosts, target_in_trash, schedule_in_trash;
                     schedule_t schedule;
                     time_t next_time;
                     int debugs, holes, infos, logs, warnings;
@@ -14629,7 +14935,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (task_uuid (index, &tsk_uuid)) abort ();
 
                     target = task_target (index);
-                    hosts = target ? target_hosts (target) : NULL;
+                    target_in_trash = task_target_in_trash (index);
+                    if (target_in_trash)
+                      hosts = target ? target_hosts (target) : NULL;
+                    else
+                      hosts = target ? trash_target_hosts (target) : NULL;
                     maximum_hosts = hosts ? manage_max_hosts (hosts) : 0;
 
                     slave = task_slave (index);
@@ -14883,11 +15193,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       {
                         task_schedule_uuid = schedule_uuid (schedule);
                         task_schedule_name = schedule_name (schedule);
+                        schedule_in_trash = task_schedule_in_trash (index);
                       }
                     else
                       {
                         task_schedule_uuid = (char*) g_strdup ("");
                         task_schedule_name = (char*) g_strdup ("");
+                        schedule_in_trash = 0;
                       }
                     next_time = task_schedule_next_time (index);
                     line = g_strdup_printf ("<task"
@@ -14896,15 +15208,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             "<comment>%s</comment>"
                                             "<config id=\"%s\">"
                                             "<name>%s</name>"
+                                            "<trash>%i</trash>"
                                             "</config>"
                                             "<escalator id=\"%s\">"
                                             "<name>%s</name>"
+                                            "<trash>%i</trash>"
                                             "</escalator>"
                                             "<target id=\"%s\">"
                                             "<name>%s</name>"
+                                            "<trash>%i</trash>"
                                             "</target>"
                                             "<slave id=\"%s\">"
                                             "<name>%s</name>"
+                                            "<trash>%i</trash>"
                                             "</slave>"
                                             "<status>%s</status>"
                                             "<progress>%s</progress>"
@@ -14916,6 +15232,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             "<schedule id=\"%s\">"
                                             "<name>%s</name>"
                                             "<next_time>%s</next_time>"
+                                            "<trash>%i</trash>"
                                             "</schedule>"
                                             "%s%s%s"
                                             "</task>",
@@ -14924,12 +15241,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             comment,
                                             config_uuid ? config_uuid : "",
                                             config ? config : "",
+                                            task_config_in_trash (index),
                                             escalator_uuid ? escalator_uuid : "",
                                             escalator ? escalator : "",
+                                            escalator
+                                             ? task_escalator_in_trash (index)
+                                             : 0,
                                             task_target_uuid ? task_target_uuid : "",
                                             task_target_name ? task_target_name : "",
+                                            target_in_trash,
                                             task_slave_uuid ? task_slave_uuid : "",
                                             task_slave_name ? task_slave_name : "",
+                                            task_slave_in_trash (index),
                                             task_run_status_name (index),
                                             progress_xml,
                                             description64,
@@ -14943,6 +15266,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             (next_time == 0
                                               ? "over"
                                               : ctime_strip_newline (&next_time)),
+                                            schedule_in_trash,
                                             first_report,
                                             last_report,
                                             second_last_report);

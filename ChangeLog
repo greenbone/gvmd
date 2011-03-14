@@ -1,3 +1,76 @@
+2011-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add a trashcan, including new OMP commands EMPTY_TRASHCAN and RESTORE.
+	Hence increase database version to 42.  Add database migration from
+	version 41 to 42.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 42.
+
+	* src/manage_sql.c (resource_t): New type.
+	(LOCATION_TABLE, LOCATION_TRASH): New defines.
+	(user_owns_trash_uuid, find_trash): New functions.
+	(create_tables): Add trash tables.  Add trash location columns to tables
+	task_escalators and tasks.
+	(migrate_41_to_42): New function.
+	(database_migrators): Add migrate_41_to_42.
+	(delete_escalator, delete_task, delete_target, delete_config)
+	(delete_lsc_credential, delete_agent, delete_schedule)
+	(delete_report_format, delete_slave): Add ultimate flag param.  Update callers.
+	(init_escalator_iterator, init_escalator_data_iterator)
+	(init_task_iterator, init_target_iterator, init_config_iterator)
+	(init_lsc_credential_iterator, init_agent_iterator, init_schedule_iterator)
+	(init_report_format_iterator, init_report_format_param_iterator)
+	(init_slave_iterator): Add trash flag param.  Update callers.
+	(init_manage, set_task_requested, delete_report): Add
+	TASK_STATUS_DELETE_ULTIMATE_REQUESTED cases.
+	(task_config_uuid, task_config_name): Add trash check.
+	(task_config_in_trash, task_target_in_trash, task_slave_in_trash)
+	(task_escalator_in_trash, task_schedule_in_trash): New functions.
+	(add_task_escalator, set_task_escalator): Set location field.
+	(request_delete_task): Call delete_task_lock instead of delete_task.
+	(request_delete_task_uuid): New function.  Allows OMP DELETE_TASK to pass
+	UUID.
+	(delete_task_lock): New function.  Calls delete_task inside transaction.
+	(delete_trash_tasks, find_trash_task): New functions.
+	(find_task): Exclude trash tasks.
+	(target_iterator_ssh_trash, target_iterator_smb_trash, trash_target_hosts)
+	(trash_target_in_use, trash_config_in_use, trash_lsc_credential_uuid)
+	(trash_lsc_credential_name, report_format_trash_global)
+	(trash_slave_in_use): New functions.
+	(target_in_use, init_schedule_task_iterator, slave_in_use): Take trash
+	resources into account.
+	(manage_restore, manage_empty_trashcan): New functions.  Trashcan
+	specific.
+
+	* src/manage.c: Update iterator calls.
+	(run_status_name, run_slave_task, manage_check_current_task): Add
+	TASK_STATUS_DELETE_ULTIMATE_REQUESTED case.
+
+	* src/manage.h: Update headers accordingly.
+	(task_status_t): Add TASK_STATUS_DELETE_ULTIMATE_REQUESTED.
+
+	* src/omp.c (help_text): Add trashcan commands.
+	(delete_agent_data_t, delete_escalator_data_t)
+	(delete_lsc_credential_data_t, delete_report_format_data_t)
+	(delete_schedule_data_t, delete_slave_data_t, delete_target_data_t)
+	(delete_task_data_t): Add ultimate flag.
+	(get_agents_data_t, get_configs_data_t, get_escalators_data_t)
+	(get_lsc_credentials_data_t, get_report_formats_data_t)
+	(get_schedules_data_t, get_targets_data_t, get_tasks_data_t): Add trash
+	flag.
+	(restore_data_t): New types.
+	(restore_data_reset, restore_data_reset): New functions.
+	(command_data_t): Add restore field.
+	(restore_data): New variable.
+	(client_state_t): Add states for trashcan commands.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add trashcan
+	command handling.  Add ultimate handling to DELETE commands.  Add trash
+	handling to GET commands.
+
+	* src/otp.c (process_otp_scanner_input): In SCANNER_TIME_SCAN_END add
+	STATUS_DELETE_ULTIMATE_REQUESTED case and call delete_task_lock instead
+	of delete_task.
+
 2011-03-09  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post branch version bump.
