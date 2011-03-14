@@ -7533,6 +7533,22 @@ task_uuid (task_t task, char ** id)
 }
 
 /**
+ * @brief Return whether a task is in the trashcan.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if in trashcan, else 0.
+ */
+int
+task_in_trash (task_t task)
+{
+  return sql_int (0, 0,
+                  "SELECT hidden = 2"
+                  " FROM tasks WHERE ROWID = %llu;",
+                  task);
+}
+
+/**
  * @brief Return the name of the owner of a task.
  *
  * @param[in]  task  Task.

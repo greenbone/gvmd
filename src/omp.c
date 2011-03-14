@@ -7341,11 +7341,18 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
         {
           char *name_task;
           time_t creation_time, mod_time;
+          int trash_task;
 
           if (uuid_task)
-            name_task = task_name (note_iterator_task (notes));
+            {
+              name_task = task_name (note_iterator_task (notes));
+              trash_task = task_in_trash (note_iterator_task (notes));
+            }
           else
-            name_task = NULL;
+            {
+              name_task = NULL;
+              trash_task = 0;
+            }
 
           creation_time = note_iterator_creation_time (notes);
           mod_time = note_iterator_modification_time (notes);
@@ -7360,7 +7367,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             "<hosts>%s</hosts>"
             "<port>%s</port>"
             "<threat>%s</threat>"
-            "<task id=\"%s\"><name>%s</name></task>"
+            "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
             note_iterator_uuid (notes),
             note_iterator_nvt_oid (notes),
@@ -7376,6 +7383,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
              ? note_iterator_threat (notes) : "",
             uuid_task ? uuid_task : "",
             name_task ? name_task : "",
+            trash_task,
             ((note_iterator_task (notes) && (uuid_task == NULL))
              || (note_iterator_result (notes) && (uuid_result == NULL))));
 
@@ -7472,11 +7480,18 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
         {
           char *name_task;
           time_t creation_time, mod_time;
+          int trash_task;
 
           if (uuid_task)
-            name_task = task_name (override_iterator_task (overrides));
+            {
+              name_task = task_name (override_iterator_task (overrides));
+              trash_task = task_in_trash (override_iterator_task (overrides));
+            }
           else
-            name_task = NULL;
+            {
+              name_task = NULL;
+              trash_task = 0;
+            }
 
           creation_time = override_iterator_creation_time (overrides);
           mod_time = override_iterator_modification_time (overrides);
@@ -7492,7 +7507,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             "<port>%s</port>"
             "<threat>%s</threat>"
             "<new_threat>%s</new_threat>"
-            "<task id=\"%s\"><name>%s</name></task>"
+            "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
             override_iterator_uuid (overrides),
             override_iterator_nvt_oid (overrides),
@@ -7509,6 +7524,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             override_iterator_new_threat (overrides),
             uuid_task ? uuid_task : "",
             name_task ? name_task : "",
+            trash_task,
             ((override_iterator_task (overrides) && (uuid_task == NULL))
              || (override_iterator_result (overrides) && (uuid_result == NULL))));
 

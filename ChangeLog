@@ -1,4 +1,13 @@
-2011-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
+2011-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (task_in_trash): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (buffer_notes_xml, buffer_overrides_xml): Add TRASH flag to
+	TASK.
+
+2011-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add a trashcan, including new OMP commands EMPTY_TRASHCAN and RESTORE.
 	Hence increase database version to 42.  Add database migration from

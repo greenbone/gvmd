@@ -340,6 +340,9 @@ task_id (task_t);
 int
 task_uuid (task_t, /*@out@*/ char **);
 
+int
+task_in_trash (task_t);
+
 char*
 task_owner_name (task_t);
 
