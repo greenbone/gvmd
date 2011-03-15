@@ -23311,7 +23311,7 @@ delete_report_format (const char *report_format_id, int ultimate)
 
       /* Remove the dir last, in case any SQL rolls back. */
       report_format_string = g_strdup_printf ("%llu", report_format);
-      dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+      dir = g_build_filename (OPENVAS_DATA_DIR,
                               "openvasmd",
                               "report_formats_trash",
                               report_format_string,
@@ -23362,10 +23362,10 @@ delete_report_format (const char *report_format_id, int ultimate)
 
       /* Move to trash. */
 
-      trash_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                  "openvasmd",
-                                  "report_formats_trash",
-                                  NULL);
+      trash_dir = g_build_filename (OPENVAS_DATA_DIR,
+                                    "openvasmd",
+                                    "report_formats_trash",
+                                    NULL);
       if (g_mkdir_with_parents (trash_dir, 0755 /* "rwxr-xr-x" */))
         {
           g_warning ("%s: failed to create dir %s", __FUNCTION__, dir);
@@ -23434,7 +23434,7 @@ delete_report_format (const char *report_format_id, int ultimate)
       gchar *new_dir, *report_format_string;
 
       report_format_string = g_strdup_printf ("%llu", trash_report_format);
-      new_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+      new_dir = g_build_filename (OPENVAS_DATA_DIR,
                                   "openvasmd",
                                   "report_formats_trash",
                                   report_format_string,
@@ -25485,13 +25485,13 @@ manage_restore (const char *id)
       /* Move the dir last, in case any SQL rolls back. */
 
       if (global)
-        dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+        dir = g_build_filename (OPENVAS_DATA_DIR,
                                 "openvasmd",
                                 "global_report_formats",
                                 trash_uuid,
                                 NULL);
       else
-        dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+        dir = g_build_filename (OPENVAS_STATE_DIR,
                                 "openvasmd",
                                 "report_formats",
                                 current_credentials.uuid,
@@ -25500,7 +25500,7 @@ manage_restore (const char *id)
       free (trash_uuid);
 
       resource_string = g_strdup_printf ("%llu", resource);
-      trash_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+      trash_dir = g_build_filename (OPENVAS_DATA_DIR,
                                     "openvasmd",
                                     "report_formats_trash",
                                     resource_string,
