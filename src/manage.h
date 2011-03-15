@@ -970,7 +970,13 @@ int
 config_family_count (config_t);
 
 int
+trash_config_family_count (config_t);
+
+int
 config_nvt_count (config_t);
+
+int
+trash_config_nvt_count (config_t);
 
 int
 manage_set_config_preference (config_t, const char*, const char*,
@@ -1772,7 +1778,13 @@ char*
 slave_uuid (slave_t);
 
 char*
+trash_slave_uuid (slave_t);
+
+char*
 slave_name (slave_t);
+
+char*
+trash_slave_name (slave_t);
 
 char*
 slave_host (slave_t);

@@ -8964,9 +8964,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       iterator_t params;
                       init_report_format_param_iterator
                        (&params,
-                        // FIX ->trash
                         report_format_iterator_report_format (&report_formats),
-                        0,
+                        get_report_formats_data->trash,
                         1,
                         NULL);
                       while (next (&params))
@@ -13622,34 +13621,42 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                "<nvt_count>"
                                                "%i<growing>%i</growing>"
                                                "</nvt_count>"
-                                               "<in_use>%i</in_use>"
-                                               "<tasks>",
+                                               "<in_use>%i</in_use>",
                                                config_iterator_uuid (&configs),
                                                config_iterator_name (&configs),
                                                config_iterator_comment
                                                 (&configs),
-                                               // FIX these access config table
-                                               config_family_count (config),
+                                               get_configs_data->trash
+                                                ? trash_config_family_count
+                                                   (config)
+                                                : config_family_count (config),
                                                config_families_growing,
-                                               config_nvt_count (config),
+                                               get_configs_data->trash
+                                                ? trash_config_nvt_count
+                                                   (config)
+                                                : config_nvt_count (config),
                                                config_nvts_growing,
                                                get_configs_data->trash
                                                 ? trash_config_in_use (config)
                                                 : config_in_use (config));
 
-                      // FIX skip if ->trash
-                      init_config_task_iterator (&tasks,
-                                                 config,
-                                                 get_configs_data->sort_order);
-                      while (next (&tasks))
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<task id=\"%s\">"
-                          "<name>%s</name>"
-                          "</task>",
-                          config_task_iterator_uuid (&tasks),
-                          config_task_iterator_name (&tasks));
-                      cleanup_iterator (&tasks);
-                      SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+                      if (get_configs_data->trash == 0)
+                        {
+                          SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+                          init_config_task_iterator
+                           (&tasks,
+                            config,
+                            get_configs_data->sort_order);
+                          while (next (&tasks))
+                            SENDF_TO_CLIENT_OR_FAIL
+                             ("<task id=\"%s\">"
+                              "<name>%s</name>"
+                              "</task>",
+                              config_task_iterator_uuid (&tasks),
+                              config_task_iterator_name (&tasks));
+                          cleanup_iterator (&tasks);
+                          SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+                        }
 
                       if (get_configs_data->families)
                         {
@@ -14152,7 +14159,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (get_slaves_data->tasks && get_slaves_data->trash)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_slave",
-                                "GET_SLAVE tasks given with trash"));
+                                "GET_SLAVES tasks given with trash"));
           else if (get_slaves_data->slave_id
               && find_slave (get_slaves_data->slave_id, &slave))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_slaves"));
@@ -14203,7 +14210,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                (slave_iterator_slave
                                                  (&slaves)));
 
-                  // FIX prevent if ->trash
                   if (get_slaves_data->tasks)
                     {
                       iterator_t tasks;
@@ -14343,7 +14349,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_TARGETS", element_name) == 0);
 
-          if (get_targets_data->target_id
+          if (get_targets_data->tasks && get_targets_data->trash)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_target",
+                                "GET_TARGETS tasks given with trash"));
+          else if (get_targets_data->target_id
               && find_target (get_targets_data->target_id, &target))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_targets"));
           else if (get_targets_data->target_id && target == 0)
@@ -14442,7 +14452,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                              && target_iterator_smb_trash
                                                  (&targets)));
 
-                  // FIX prevent if get_targets_data->trash
                   if (get_targets_data->tasks)
                     {
                       iterator_t tasks;
@@ -14482,7 +14491,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_TASKS", element_name) == 0);
 
-          if (get_tasks_data->task_id
+          if (get_tasks_data->details && get_tasks_data->trash)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_task",
+                                "GET_TASKS details given with trash"));
+          else if (get_tasks_data->task_id
               && find_task (get_tasks_data->task_id, &task))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_tasks"));
           else if (get_tasks_data->task_id && task == 0)
@@ -14534,7 +14547,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   get_tasks_data->sort_order,
                                   get_tasks_data->sort_field);
               while (next (&tasks))
-                // FIX prevent if ->trash?
                 if (get_tasks_data->details)
                   {
                     /* The detailed version. */
@@ -15202,8 +15214,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     escalator_uuid = task_escalator_uuid (index);
                     task_target_uuid = target_uuid (target);
                     task_target_name = target_name (target);
-                    task_slave_uuid = slave_uuid (slave);
-                    task_slave_name = slave_name (slave);
+                    if (task_slave_in_trash (index))
+                      {
+                        task_slave_uuid = trash_slave_uuid (slave);
+                        task_slave_name = trash_slave_name (slave);
+                      }
+                    else
+                      {
+                        task_slave_uuid = slave_uuid (slave);
+                        task_slave_name = slave_name (slave);
+                      }
                     schedule = task_schedule (index);
                     if (schedule)
                       {

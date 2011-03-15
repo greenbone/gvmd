@@ -17878,6 +17878,23 @@ config_family_count (config_t config)
 }
 
 /**
+ * @brief Get the number of families included in a trashcan config.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return Family count if known, else -1.
+ */
+int
+trash_config_family_count (config_t config)
+{
+  return sql_int (0, 0,
+                  "SELECT family_count FROM configs_trash"
+                  " WHERE ROWID = %llu"
+                  " LIMIT 1;",
+                  config);
+}
+
+/**
  * @brief Get the number of NVTs included in a config.
  *
  * @param[in]  config  Config.
@@ -17889,6 +17906,23 @@ config_nvt_count (config_t config)
 {
   return sql_int (0, 0,
                   "SELECT nvt_count FROM configs"
+                  " WHERE ROWID = %llu"
+                  " LIMIT 1;",
+                  config);
+}
+
+/**
+ * @brief Get the number of NVTs included in a trashcan config.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return NVT count if known, else -1.
+ */
+int
+trash_config_nvt_count (config_t config)
+{
+  return sql_int (0, 0,
+                  "SELECT nvt_count FROM configs_trash"
                   " WHERE ROWID = %llu"
                   " LIMIT 1;",
                   config);
@@ -24761,6 +24795,21 @@ slave_uuid (slave_t slave)
 }
 
 /**
+ * @brief Return the UUID of a slave in the trashcan.
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+trash_slave_uuid (slave_t slave)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM slaves_trash WHERE ROWID = %llu;",
+                     slave);
+}
+
+/**
  * @brief Return the name of a slave.
  *
  * @param[in]  slave  Slave.
@@ -24772,6 +24821,21 @@ slave_name (slave_t slave)
 {
   return sql_string (0, 0,
                      "SELECT name FROM slaves WHERE ROWID = %llu;",
+                     slave);
+}
+
+/**
+ * @brief Return the name of a slave in the trashcan.
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char*
+trash_slave_name (slave_t slave)
+{
+  return sql_string (0, 0,
+                     "SELECT name FROM slaves_trash WHERE ROWID = %llu;",
                      slave);
 }
 

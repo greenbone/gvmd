@@ -1,5 +1,20 @@
 2011-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (trash_config_family_count, trash_config_nvt_count)
+	(trash_slave_uuid, trash_slave_name): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT_FORMATS
+	pass the trash flag to init_report_format_param_iterator instead of 0.  In
+	CLIENT_GET_CONFIGS get the counts for the trash config if required, and
+	refuse to serve the task list for the trashcan.  In CLIENT_GET_SLAVES
+	correct an error message.  In CLIENT_GET_TARGETS refuse to serve trash
+	with tasks.  In CLIENT_GET_TASKS refuse to serve trash and details, and
+	get the slave info from trash if required.
+
+2011-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_lsc_credential): Remove attempt at location
 	check from "in use" test.  The credential of a target can only be in the
 	trash when the target is in the trash.
