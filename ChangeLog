@@ -1,5 +1,12 @@
 2011-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db_postgres.sql (targets, targets_trash): Add port_range field that
+	appeared in db version 36.
+
+	* doc/db.png: Update from SQL.
+
+2011-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Update database diagram for trashcan.
 
 	* doc/db_postgres.sql (agents_trash, escalator_condition_data_trash)

@@ -111,7 +111,8 @@ CREATE TABLE targets (
 	hosts text,
 	comment text,
 	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
-	smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT);
+	smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,
+	port_range text);
 
 CREATE TABLE targets_trash (
 	id integer PRIMARY KEY,
@@ -122,6 +123,7 @@ CREATE TABLE targets_trash (
 	comment text,
 	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
 	smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,
+	port_range text,
 	ssh_location integer,
 	smb_location integer);
 
