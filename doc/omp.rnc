@@ -34,6 +34,7 @@ command
     | delete_slave
     | delete_target
     | delete_task
+    | empty_trashcan
     | get_agents
     | get_configs
     | get_dependencies
@@ -64,6 +65,7 @@ command
     | modify_report_format
     | modify_task
     | pause_task
+    | restore
     | resume_or_start_task
     | resume_paused_task
     | resume_stopped_task
@@ -99,6 +101,7 @@ response
     | delete_slave_response
     | delete_target_response
     | delete_task_response
+    | empty_trashcan_response
     | get_agents_response
     | get_configs_response
     | get_dependencies_response
@@ -129,6 +132,7 @@ response
     | modify_report_format_response
     | modify_task_response
     | pause_task_response
+    | restore_response
     | resume_or_start_task_response
     | resume_paused_task_response
     | resume_stopped_task_response
@@ -492,6 +496,7 @@ commands
            | delete_slave
            | delete_target
            | delete_task
+           | empty_trashcan
            | get_agents
            | get_configs
            | get_dependencies
@@ -520,6 +525,7 @@ commands
            | modify_report
            | modify_task
            | pause_task
+           | restore
            | resume_or_start_task
            | resume_paused_task
            | resume_stopped_task
@@ -1244,6 +1250,8 @@ delete_agent
  = element delete_agent
      {
        attribute agent_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
      }
 
 ## Command delete_config
@@ -1254,6 +1262,8 @@ delete_config
  = element delete_config
      {
        attribute config_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
      }
 
 ## Command delete_escalator
@@ -1264,6 +1274,8 @@ delete_escalator
  = element delete_escalator
      {
        attribute escalator_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
      }
 
 ## Command delete_lsc_credential
@@ -1274,6 +1286,8 @@ delete_lsc_credential
  = element delete_lsc_credential
      {
        attribute lsc_credential_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
      }
 
 ## Command delete_note
@@ -1314,6 +1328,8 @@ delete_report_format
  = element delete_report_format
      {
        attribute report_format_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
      }
 
 ## Command delete_schedule
@@ -1324,6 +1340,8 @@ delete_schedule
  = element delete_schedule
      {
        attribute schedule_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
      }
 
 ## Command delete_slave
@@ -1334,6 +1352,8 @@ delete_slave
  = element delete_slave
      {
        attribute slave_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
      }
 
 ## Command delete_target
@@ -1344,6 +1364,8 @@ delete_target
  = element delete_target
      {
        attribute target_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
      }
 
 ## Command delete_task
@@ -1354,6 +1376,18 @@ delete_task
  = element delete_task
      {
        attribute task_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
+     }
+
+## Command empty_trashcan
+##
+## Empty the trashcan.
+
+empty_trashcan
+ = element empty_trashcan
+     {
+       ""
      }
 
 ## Command get_agents
@@ -1365,6 +1399,8 @@ get_agents
      {
        # ID of single agent to get.
        attribute agent_id { uuid }?
+       & # Whether to get the trashcan agents instead.
+       attribute trash { boolean }?
        & attribute format { xsd:token { pattern = "installer|howto_install|howto_use" } }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
@@ -1379,6 +1415,8 @@ get_configs
      {
        # ID of single config to get.
        attribute config_id { uuid }?
+       & # Whether to get the trashcan configs instead.
+       attribute trash { boolean }?
        & attribute families { boolean }?
        & attribute preferences { boolean }?
        & attribute sort_order { sort_order }?
@@ -1405,6 +1443,8 @@ get_escalators
      {
        # ID of single escalator to get.
        attribute escalator_id { uuid }?
+       & # Whether to get the trashcan escalators instead.
+       attribute trash { boolean }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
      }
@@ -1418,6 +1458,8 @@ get_lsc_credentials
      {
        # ID of single LSC credential to get.
        attribute lsc_credential_id { uuid }?
+       & # Whether to get the trashcan LSC credentials instead.
+       attribute trash { boolean }?
        & attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
@@ -1560,6 +1602,8 @@ get_report_formats
      {
        # ID of single report format to get.
        attribute report_format_id { uuid }?
+       & # Whether to get the trashcan report formats instead.
+       attribute trash { boolean }?
        & # Whether to get report format in importable form.
        attribute export { boolean }?
        & # Whether to include report format parameters.
@@ -1600,6 +1644,8 @@ get_schedules
      {
        # ID of single schedule to get.
        attribute schedule_id { uuid }?
+       & # Whether to get the trashcan schedules instead.
+       attribute trash { boolean }?
        & # Whether to include full schedule details.
        attribute details { boolean }?
        & attribute sort_order { sort_order }?
@@ -1615,6 +1661,8 @@ get_slaves
      {
        # ID of single slave to get.
        attribute slave_id { uuid }?
+       & # Whether to get the trashcan slaves instead.
+       attribute trash { boolean }?
        & # Whether to include a list of tasks using the slave.
        attribute tasks { boolean }?
        & attribute sort_order { sort_order }?
@@ -1657,6 +1705,8 @@ get_targets
      {
        # ID of single target to get.
        attribute target_id { uuid }?
+       & # Whether to get the trashcan targets instead.
+       attribute trash { boolean }?
        & # Whether to include list of tasks that use the target.
        attribute tasks { boolean }?
        & attribute sort_order { sort_order }?
@@ -1672,6 +1722,8 @@ get_tasks
      {
        # ID of single task to get.
        attribute task_id { uuid }?
+       & # Whether to get the trashcan tasks instead.
+       attribute trash { boolean }?
        & # Whether to include full task details.
        attribute details { boolean }?
        & # Whether to include task RC file (for openvas-client).
@@ -2132,6 +2184,16 @@ pause_task
        attribute task_id { uuid }
      }
 
+## Command restore
+##
+## Restore a resource.
+
+restore
+ = element restore
+     {
+       attribute id { uuid }
+     }
+
 ## Command resume_or_start_task
 ##
 ## Resume task if stopped, else start task.
@@ -2253,6 +2315,7 @@ commands_response
            | delete_slave_response
            | delete_target_response
            | delete_task_response
+           | empty_trashcan_response
            | get_agents_response
            | get_configs_response
            | get_dependencies_response
@@ -2281,6 +2344,7 @@ commands_response
            | modify_report_response
            | modify_task_response
            | pause_task_response
+           | restore_response
            | resume_or_start_task_response
            | resume_paused_task_response
            | resume_stopped_task_response
@@ -2502,6 +2566,15 @@ delete_target_response
 
 delete_task_response
  = element delete_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to empty_trashcan
+
+empty_trashcan_response
+ = element empty_trashcan_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -5545,6 +5618,15 @@ modify_task_response
 
 pause_task_response
  = element pause_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to restore
+
+restore_response
+ = element restore_response
      {
        attribute status { status }
        & attribute status_text { text }

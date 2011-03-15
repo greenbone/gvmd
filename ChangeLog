@@ -1,5 +1,12 @@
 2011-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Add new trashcan commands EMPTY_TRASHCAN
+	and RESTORE.  Update DELETE and GET commands with trashcan flags.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2011-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_config, delete_schedule): Correct arg in doc.
 	(delete_trash_tasks): Remove arg from doc.
 

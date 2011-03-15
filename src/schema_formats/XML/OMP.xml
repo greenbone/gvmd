@@ -482,6 +482,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_slave</c>
           <c>delete_target</c>
           <c>delete_task</c>
+          <c>empty_trashcan</c>
           <c>get_agents</c>
           <c>get_configs</c>
           <c>get_dependencies</c>
@@ -510,6 +511,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_report</c>
           <c>modify_task</c>
           <c>pause_task</c>
+          <c>restore</c>
           <c>resume_or_start_task</c>
           <c>resume_paused_task</c>
           <c>resume_stopped_task</c>
@@ -556,6 +558,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_slave</r>
             <r>delete_target</r>
             <r>delete_task</r>
+            <r>empty_trashcan</r>
             <r>get_agents</r>
             <r>get_configs</r>
             <r>get_dependencies</r>
@@ -584,6 +587,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_report</r>
             <r>modify_task</r>
             <r>pause_task</r>
+            <r>restore</r>
             <r>resume_or_start_task</r>
             <r>resume_paused_task</r>
             <r>resume_stopped_task</r>
@@ -1875,6 +1879,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
         <required>1</required>
       </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -1918,6 +1928,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>config_id</name>
         <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
         <required>1</required>
       </attrib>
     </pattern>
@@ -1966,6 +1982,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
         <required>1</required>
       </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -2010,6 +2032,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>lsc_credential_id</name>
         <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
         <required>1</required>
       </attrib>
     </pattern>
@@ -2193,6 +2221,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
         <required>1</required>
       </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -2236,6 +2270,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>schedule_id</name>
         <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
         <required>1</required>
       </attrib>
     </pattern>
@@ -2283,6 +2323,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
         <required>1</required>
       </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -2326,6 +2372,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>target_id</name>
         <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
         <required>1</required>
       </attrib>
     </pattern>
@@ -2374,6 +2426,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
         <required>1</required>
       </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -2401,6 +2459,41 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>empty_trashcan</name>
+    <summary>Empty the trashcan</summary>
+    <description>
+      <p>
+        The client uses the empty_trashcan command to empty the trashcan.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Empty the trashcan</summary>
+      <request>
+        <empty_trashcan>
+        </empty_trashcan>
+      </request>
+      <response>
+        <empty_trashcan_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_agents</name>
     <summary>Get all agents</summary>
     <description>
@@ -2420,6 +2513,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>agent_id</name>
         <summary>ID of single agent to get</summary>
         <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan agents instead</summary>
+        <type>boolean</type>
       </attrib>
       <attrib>
         <name>format</name>
@@ -2604,6 +2702,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>config_id</name>
         <summary>ID of single config to get</summary>
         <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan configs instead</summary>
+        <type>boolean</type>
       </attrib>
       <attrib>
         <name>families</name>
@@ -3025,6 +3128,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan escalators instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>sort_order</name>
         <type>sort_order</type>
       </attrib>
@@ -3204,6 +3312,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>lsc_credential_id</name>
         <summary>ID of single LSC credential to get</summary>
         <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan LSC credentials instead</summary>
+        <type>boolean</type>
       </attrib>
       <attrib>
         <name>format</name>
@@ -5266,6 +5379,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan report formats instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>export</name>
         <summary>Whether to get report format in importable form</summary>
         <type>boolean</type>
@@ -5859,6 +5977,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan schedules instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>details</name>
         <summary>Whether to include full schedule details</summary>
         <type>boolean</type>
@@ -6029,6 +6152,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>slave_id</name>
         <summary>ID of single slave to get</summary>
         <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan slaves instead</summary>
+        <type>boolean</type>
       </attrib>
       <attrib>
         <name>tasks</name>
@@ -6358,6 +6486,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan targets instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>tasks</name>
         <summary>Whether to include list of tasks that use the target</summary>
         <type>boolean</type>
@@ -6439,11 +6572,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <e>trash</e>
           </pattern>
           <ele>
             <name>name</name>
             <summary>The name of the SSH LSC credential</summary>
             <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the LSC credential is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
         <ele>
@@ -6458,11 +6597,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <e>trash</e>
           </pattern>
           <ele>
             <name>name</name>
             <summary>The name of the SMB LSC credential</summary>
             <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the LSC credential is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
         <ele>
@@ -6568,6 +6713,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>task_id</name>
         <summary>ID of single task to get</summary>
         <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan tasks instead</summary>
+        <type>boolean</type>
       </attrib>
       <attrib>
         <name>details</name>
@@ -6709,11 +6859,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <e>trash</e>
           </pattern>
           <ele>
             <name>name</name>
             <summary>The name of the config</summary>
             <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the config is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
         <ele>
@@ -6726,11 +6882,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <e>trash</e>
           </pattern>
           <ele>
             <name>name</name>
             <summary>The name of the target</summary>
             <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the target is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
         <ele>
@@ -6743,11 +6905,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <e>trash</e>
           </pattern>
           <ele>
             <name>name</name>
             <summary>The name of the escalator</summary>
             <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the escalator is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
         <ele>
@@ -6760,11 +6928,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <e>trash</e>
           </pattern>
           <ele>
             <name>name</name>
             <summary>The name of the schedule</summary>
             <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the schedule is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
         <ele>
@@ -6777,11 +6951,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <e>trash</e>
           </pattern>
           <ele>
             <name>name</name>
             <summary>The name of the slave</summary>
             <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the slave is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
         <ele>
@@ -7399,6 +7579,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             DELETE_SLAVE           Delete a slave.
             DELETE_TARGET          Delete a target.
             DELETE_TASK            Delete a task.
+            EMPTY_TRASHCAN         Empty the trashcan.
             GET_AGENTS             Get all agents.
             GET_CONFIGS            Get all configs.
             GET_DEPENDENCIES       Get dependencies for all available NVTs.
@@ -7429,6 +7610,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             MODIFY_REPORT_FORMAT   Modify an existing report format.
             MODIFY_TASK            Update an existing task.
             PAUSE_TASK             Pause a running task.
+            RESTORE                Restore a resource.
             RESUME_OR_START_TASK   Resume task if stopped, else start task.
             RESUME_PAUSED_TASK     Resume a paused task.
             RESUME_STOPPED_TASK    Resume a stopped task.
@@ -8387,6 +8569,46 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <pause_task_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>restore</name>
+    <summary>Restore a resource</summary>
+    <description>
+      <p>
+        The client uses the restore a resource from the trashcan.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Restore a target</summary>
+      <request>
+        <restore id="97390ade-e075-11df-9973-002264764cea">
+        </restore>
+      </request>
+      <response>
+        <restore_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
