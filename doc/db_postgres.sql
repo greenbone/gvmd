@@ -18,7 +18,28 @@ CREATE TABLE agents (
 	howto_install text,
 	howto_use text);
 
+CREATE TABLE agents_trash (
+	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	comment text,
+	installer text,
+	installer_64 text,
+	installer_filename text,
+	installer_signature_64 text,
+	installer_trust integer,
+	installer_trust_time date,
+	howto_install text,
+	howto_use text);
+
 CREATE TABLE escalator_condition_data (
+	id integer PRIMARY KEY,
+	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
+	name text,
+	data text);
+
+CREATE TABLE escalator_condition_data_trash (
 	id integer PRIMARY KEY,
 	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
 	name text,
@@ -30,13 +51,35 @@ CREATE TABLE escalator_event_data (
 	name text,
 	data text);
 
+CREATE TABLE escalator_event_data_trash (
+	id integer PRIMARY KEY,
+	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
+	name text,
+	data text);
+
 CREATE TABLE escalator_method_data (
 	id integer PRIMARY KEY,
 	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
 	name text,
 	data text);
 
+CREATE TABLE escalator_method_data_trash (
+	id integer PRIMARY KEY,
+	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
+	name text,
+	data text);
+
 CREATE TABLE escalators (
+	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	comment text,
+	event integer,
+	condition integer,
+	method integer);
+
+CREATE TABLE escalators_trash (
 	id integer PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
@@ -70,6 +113,18 @@ CREATE TABLE targets (
 	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
 	smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT);
 
+CREATE TABLE targets_trash (
+	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	hosts text,
+	comment text,
+	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
+	smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,
+	ssh_location integer,
+	smb_location integer);
+
 CREATE TABLE configs (
 	id integer PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
@@ -82,7 +137,25 @@ CREATE TABLE configs (
 	families_growing integer,
 	nvts_growing integer);
 
+CREATE TABLE configs_trash (
+	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	nvt_selector text REFERENCES nvt_selectors (name) ON DELETE RESTRICT,
+	comment text,
+	family_count integer,
+	nvt_count integer,
+	families_growing integer,
+	nvts_growing integer);
+
 CREATE TABLE config_preferences (
+	config integer PRIMARY KEY REFERENCES configs (id) ON DELETE RESTRICT,
+	type text PRIMARY KEY, -- openvasrc section name or NULL for top-level prefs
+	name text PRIMARY KEY,
+	value text);
+
+CREATE TABLE config_preferences_trash (
 	config integer PRIMARY KEY REFERENCES configs (id) ON DELETE RESTRICT,
 	type text PRIMARY KEY, -- openvasrc section name or NULL for top-level prefs
 	name text PRIMARY KEY,
@@ -103,7 +176,11 @@ CREATE TABLE tasks (
 	target integer REFERENCES targets (id) ON DELETE RESTRICT,
 	schedule integer REFERENCES schedules (id) ON DELETE RESTRICT,
 	schedule_next_time date,
-	slave integer REFERENCES slaves (id) ON DELETE RESTRICT);
+	slave integer REFERENCES slaves (id) ON DELETE RESTRICT,
+	config_location integer,
+	target_location integer,
+	schedule_location integer,
+	slave_location integer);
 
 CREATE TABLE task_files (
 	id integer PRIMARY KEY,
@@ -114,7 +191,8 @@ CREATE TABLE task_files (
 CREATE TABLE task_escalators (
 	id integer PRIMARY KEY,
 	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
-	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT);
+	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
+	escalator_location integer);
 
 CREATE TABLE results (
 	id integer PRIMARY KEY,
@@ -153,12 +231,42 @@ CREATE TABLE report_format_params (
 	type_regex text,
 	fallback text);
 
+CREATE TABLE report_format_params_trash (
+	id integer PRIMARY KEY,
+	report_format integer REFERENCES report_formats (id) ON DELETE RESTRICT,
+	name text,
+	type integer,
+	value text,
+	type_min integer,
+	type_max integer,
+	type_regex text,
+	fallback text);
+
 CREATE TABLE report_format_param_options (
 	id integer PRIMARY KEY,
 	report_format_param integer REFERENCES report_format_params (id) ON DELETE RESTRICT,
 	value text);
 
+CREATE TABLE report_format_param_options_trash (
+	id integer PRIMARY KEY,
+	report_format_param integer REFERENCES report_format_params (id) ON DELETE RESTRICT,
+	value text);
+
 CREATE TABLE report_formats (
+	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	extension text,
+	content_type text,
+	summary text,
+	description text,
+	signature text,
+	trust integer,
+	trust_time date,
+	flags integer);
+
+CREATE TABLE report_formats_trash (
 	id integer PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
@@ -223,6 +331,20 @@ CREATE TABLE lsc_credentials (
 	deb bytea,
 	exe bytea);
 
+CREATE TABLE lsc_credentials_trash (
+	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	login text,
+	password text,
+	comment text,
+	public_key text,
+	private_key text,
+	rpm bytea,
+	deb bytea,
+	exe bytea);
+
 CREATE TABLE notes (
 	id integer PRIMARY KEY,
 	uuid text UNIQUE NOT NULL,
@@ -263,7 +385,29 @@ CREATE TABLE schedules (
 	period_months integer,
 	duration integer);
 
+CREATE TABLE schedules_trash (
+	id integer PRIMARY KEY,
+	uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	comment text,
+	first_time date,
+	period integer,
+	period_months integer,
+	duration integer);
+
 CREATE TABLE slaves (
+	id integer PRIMARY KEY,
+	uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	comment text,
+	host text,
+	port text,
+	login text,
+	password text);
+
+CREATE TABLE slaves_trash (
 	id integer PRIMARY KEY,
 	uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,

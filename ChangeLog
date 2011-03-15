@@ -1,5 +1,19 @@
 2011-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Update database diagram for trashcan.
+
+	* doc/db_postgres.sql (agents_trash, escalator_condition_data_trash)
+	(escalator_event_data_trash, escalator_method_data_trash)
+	(escalators_trash, targets_trash, configs_trash, config_preferences_trash)
+	(report_format_params_trash, report_format_param_options_trash)
+	(report_formats_trash, lsc_credentials_trash, schedules_trash)
+	(slaves_trash): New tables.
+	(tasks, task_escalators): Add location fields.
+
+	* doc/db.png: Update from SQL.
+
+2011-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (trash_config_family_count, trash_config_nvt_count)
 	(trash_slave_uuid, trash_slave_name): New functions.
 
