@@ -1,5 +1,10 @@
 2011-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_config, delete_schedule): Correct arg in doc.
+	(delete_trash_tasks): Remove arg from doc.
+
+2011-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql (targets, targets_trash): Add port_range field that
 	appeared in db version 36.
 

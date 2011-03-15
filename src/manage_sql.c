@@ -13663,8 +13663,6 @@ delete_task_lock (task_t task, int ultimate)
  *
  * The caller must do the transaction.
  *
- * @param[in]  task      The task.
- *
  * @return 0 on success, -1 on error.
  */
 static int
@@ -16046,8 +16044,8 @@ copy_config (const char* name, const char* comment, config_t config,
 /**
  * @brief Delete a config.
  *
- * @param[in]  config    UUID of config.
- * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
+ * @param[in]  config_id  UUID of config.
+ * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the config, 2 failed to
  *         find config, -1 error.
@@ -21985,8 +21983,8 @@ create_schedule (const char* name, const char *comment, time_t first_time,
 /**
  * @brief Delete a schedule.
  *
- * @param[in]  schedule  Schedule.
- * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
+ * @param[in]  schedule_id  Schedule.
+ * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the schedule, -1 error.
  */
