@@ -19433,12 +19433,7 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM targets"
-               " WHERE"
-               " (lsc_credential = %llu"
-               "  AND ssh_location = " G_STRINGIFY (LOCATION_TABLE) ")"
-               " OR"
-               " (smb_lsc_credential = %llu"
-               "  AND smb_location = " G_STRINGIFY (LOCATION_TABLE) ")",
+               " WHERE lsc_credential = %llu OR smb_lsc_credential = %llu",
                lsc_credential,
                lsc_credential))
     {
