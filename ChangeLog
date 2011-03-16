@@ -1,5 +1,10 @@
 2011-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS account for
+	trash tasks in counts.
+
+2011-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_count): Exclude trashcan tasks.
 	(trash_task_count): New function.
 

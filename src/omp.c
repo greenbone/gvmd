@@ -14519,7 +14519,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               response = g_strdup_printf ("<task_count>%u</task_count>",
-                                          task ? 1 : task_count ());
+                                          task ? 1
+                                               : (get_tasks_data->trash
+                                                   ? trash_task_count ()
+                                                   : task_count ()));
               if (send_to_client (response,
                                   write_to_client,
                                   write_to_client_data))
