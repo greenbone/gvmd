@@ -1,5 +1,12 @@
 2011-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_count): Exclude trashcan tasks.
+	(trash_task_count): New function.
+
+	* src/manage.h: Add header accordingly.
+
+2011-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_task_iterator): Correct test in last commit for
 	the all case.
 

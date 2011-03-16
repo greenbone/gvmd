@@ -322,6 +322,9 @@ extern /*@null@*/ report_t current_report;
 unsigned int
 task_count ();
 
+unsigned int
+trash_task_count ();
+
 void
 init_task_iterator (iterator_t*, task_t, int, int, const char*);
 

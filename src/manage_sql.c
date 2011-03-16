@@ -7496,7 +7496,24 @@ task_count ()
   return (unsigned int) sql_int (0, 0,
                                  "SELECT count(*) FROM tasks WHERE owner ="
                                  " (SELECT ROWID FROM users"
-                                 "  WHERE users.uuid = '%s');",
+                                 "  WHERE users.uuid = '%s')"
+                                 " AND hidden < 2;",
+                                 current_credentials.uuid);
+}
+
+/**
+ * @brief Return the number of trash tasks associated with the current user.
+ *
+ * @return The number of trash tasks associated with the current user.
+ */
+unsigned int
+trash_task_count ()
+{
+  return (unsigned int) sql_int (0, 0,
+                                 "SELECT count(*) FROM tasks WHERE owner ="
+                                 " (SELECT ROWID FROM users"
+                                 "  WHERE users.uuid = '%s')"
+                                 " AND hidden = 2;",
                                  current_credentials.uuid);
 }
 
