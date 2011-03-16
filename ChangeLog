@@ -1,5 +1,10 @@
 2011-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_task_iterator): Include the hidden tasks as
+	before to enable access to the example task.
+
+2011-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Add new trashcan commands EMPTY_TRASHCAN
 	and RESTORE.  Update DELETE and GET commands with trashcan flags.
 
