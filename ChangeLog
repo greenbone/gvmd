@@ -1,3 +1,8 @@
+2011-03-16  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_sql.c (setup_full_config_prefs): Remove setting of the
+	obsolete and unused legacy preferences "ping_hosts" and "language".
+
 2011-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS account for
