@@ -1,4 +1,9 @@
-2011-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
+2011-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_task_iterator): Correct test in last commit for
+	the all case.
+
+2011-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_task_iterator): Include the hidden tasks as
 	before to enable access to the example task.

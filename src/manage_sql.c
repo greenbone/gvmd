@@ -6408,7 +6408,7 @@ init_task_iterator (iterator_t* iterator,
                        "%s"
                        " ORDER BY %s %s;",
                        current_credentials.uuid,
-                       trash ? " AND hidden = 2" : " AND hidden < 0",
+                       trash ? " AND hidden = 2" : " AND hidden < 2",
                        sort_field ? sort_field : "ROWID",
                        ascending ? "ASC" : "DESC");
     }
@@ -6429,7 +6429,7 @@ init_task_iterator (iterator_t* iterator,
                        "SELECT ROWID, uuid, run_status FROM tasks"
                        "%s"
                        " ORDER BY %s %s;",
-                       trash ? " WHERE hidden = 2" : " WHERE hidden < 0",
+                       trash ? " WHERE hidden = 2" : " WHERE hidden < 2",
                        sort_field ? sort_field : "ROWID",
                        ascending ? "ASC" : "DESC");
     }
