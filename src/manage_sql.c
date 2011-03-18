@@ -53,6 +53,7 @@
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_uuid.h>
 #include <openvas/misc/resource_request.h>
+#include <openvas/omp/xml.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -62,6 +63,7 @@
 /* Internal types and preprocessor definitions. */
 
 typedef long long int resource_t;
+typedef long long int report_host_t;
 
 /**
  * @brief Database ROWID of 'Full and fast' config.
@@ -1018,6 +1020,7 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_name ON nvts (name);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
   sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS report_host_details (id INTEGER PRIMARY KEY, report_host INTEGER, source_type, source_name, source_description, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_report ON report_hosts (report);");
   sql ("CREATE TABLE IF NOT EXISTS report_format_param_options (id INTEGER PRIMARY KEY, report_format_param, value);");
@@ -9769,8 +9772,8 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host)
 
   assert (report);
 
-  sql = g_strdup_printf ("SELECT host, start_time, end_time, attack_state,"
-                         " current_port, max_port"
+  sql = g_strdup_printf ("SELECT ROWID, host, start_time, end_time,"
+                         " attack_state, current_port, max_port"
                          " FROM report_hosts WHERE report = %llu"
                          "%s%s%s"
                          " ORDER BY host COLLATE collate_ip;",
@@ -9793,6 +9796,20 @@ name (iterator_t* iterator) \
 }
 
 /**
+ * @brief Get the report host from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Report host.
+ */
+static report_host_t
+host_iterator_report_host (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (report_host_t) sqlite3_column_int64 (iterator->stmt, 0);
+}
+
+/**
  * @brief Get the host from a host iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -9800,7 +9817,7 @@ name (iterator_t* iterator) \
  * @return The host of the host.  Caller must use only before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (host_iterator_host, 0);
+DEF_ACCESS (host_iterator_host, 1);
 
 /**
  * @brief Get the start time from a host iterator.
@@ -9810,7 +9827,7 @@ DEF_ACCESS (host_iterator_host, 0);
  * @return The start time of the host.  Caller must use only before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (host_iterator_start_time, 1);
+DEF_ACCESS (host_iterator_start_time, 2);
 
 /**
  * @brief Get the end time from a host iterator.
@@ -9820,7 +9837,7 @@ DEF_ACCESS (host_iterator_start_time, 1);
  * @return The end time of the host.  Caller must use only before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (host_iterator_end_time, 2);
+DEF_ACCESS (host_iterator_end_time, 3);
 
 /**
  * @brief Get the attack state from a host iterator.
@@ -9830,7 +9847,7 @@ DEF_ACCESS (host_iterator_end_time, 2);
  * @return The attack state of the host.  Caller must use only before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (host_iterator_attack_state, 3);
+DEF_ACCESS (host_iterator_attack_state, 4);
 
 /**
  * @brief Get the current port from a host iterator.
@@ -9844,7 +9861,7 @@ host_iterator_current_port (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 4);
+  ret = (int) sqlite3_column_int (iterator->stmt, 5);
   return ret;
 }
 
@@ -9860,7 +9877,7 @@ host_iterator_max_port (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 5);
+  ret = (int) sqlite3_column_int (iterator->stmt, 6);
   return ret;
 }
 
@@ -9886,6 +9903,74 @@ manage_report_host_has_results (report_t report, const char *host)
   g_free (quoted_host);
   return ret ? 1 : 0;
 }
+
+/**
+ * @brief Initialise a report host details iterator.
+ *
+ * @param[in]  iterator     Iterator.
+ * @param[in]  report_host  Report host whose details the iterator loops over.
+ *                          All report_hosts if NULL.
+ */
+static void
+init_report_host_details_iterator (iterator_t* iterator,
+                                   report_host_t report_host)
+{
+  init_iterator (iterator,
+                 "SELECT ROWID, name, value, source_type, source_name,"
+                 " source_description"
+                 " FROM report_host_details WHERE report_host = %llu;",
+                 report_host);
+}
+
+/**
+ * @brief Get the name from a report host details iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the report host detail.  Caller must use only before
+ *         calling cleanup_iterator.
+ */
+DEF_ACCESS (report_host_details_iterator_name, 1);
+
+/**
+ * @brief Get the value from a report host details iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The value of the report host detail.  Caller must use only before
+ *         calling cleanup_iterator.
+ */
+DEF_ACCESS (report_host_details_iterator_value, 2);
+
+/**
+ * @brief Get the source type from a report host details iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The source type of the report host detail.  Caller must use only
+ *         before calling cleanup_iterator.
+ */
+DEF_ACCESS (report_host_details_iterator_source_type, 3);
+
+/**
+ * @brief Get the source name from a report host details iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The source name of the report host detail.  Caller must use only
+ *         before calling cleanup_iterator.
+ */
+DEF_ACCESS (report_host_details_iterator_source_name, 4);
+
+/**
+ * @brief Get the source description from a report host details iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The source description of the report host detail.  Caller must use
+ *         only before calling cleanup_iterator.
+ */
+DEF_ACCESS (report_host_details_iterator_source_desc, 5);
 
 /**
  * @brief Set the end time of a task.
@@ -11522,6 +11607,9 @@ delete_report (report_t report)
 
   /* Remove the report data. */
 
+  sql ("DELETE FROM report_host_details WHERE report_host IN"
+       " (SELECT ROWID FROM report_hosts WHERE report = %llu);",
+       report);
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
   sql ("DELETE FROM report_results WHERE report = %llu;", report);
   sql ("DELETE FROM reports WHERE ROWID = %llu;", report);
@@ -11707,8 +11795,11 @@ trim_report (report_t report)
        report,
        report);
 
-  /* Remove all hosts. */
+  /* Remove all hosts and host details. */
 
+  sql ("DELETE FROM report_host_details WHERE report_host IN"
+       " (SELECT ROWID FROM report_hosts WHERE report = %llu);",
+       report);
   sql ("DELETE FROM report_hosts"
        " WHERE report = %llu;",
        report);
@@ -11745,8 +11836,11 @@ trim_partial_report (report_t report)
        report,
        report);
 
-  /* Remove partial hosts. */
+  /* Remove partial hosts and host details. */
 
+  sql ("DELETE FROM report_host_details WHERE report_host IN"
+       " (SELECT ROWID FROM report_hosts WHERE report = %llu);",
+       report);
   sql ("DELETE FROM report_hosts"
        " WHERE report = %llu"
        " AND (end_time is NULL OR end_time = '');",
@@ -12288,6 +12382,42 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
           init_host_iterator (&hosts, report, host);
           if (next (&hosts))
             {
+              iterator_t details;
+
+              PRINT (out,
+                     "<host>"
+                     "<ip>%s</ip>"
+                     "<start>%s</start>"
+                     "<end>%s</end>",
+                     host,
+                     host_iterator_start_time (&hosts),
+                     host_iterator_end_time (&hosts)
+                       ? host_iterator_end_time (&hosts)
+                       : "");
+
+              init_report_host_details_iterator
+               (&details, host_iterator_report_host (&hosts));
+              while (next (&details))
+                PRINT (out,
+                       "<detail>"
+                       "<name>%s</name>"
+                       "<value>%s</value>"
+                       "<source>"
+                       "<type>%s</type>"
+                       "<name>%s</name>"
+                       "<description>%s</description>"
+                       "</source>"
+                       "</detail>",
+                       report_host_details_iterator_name (&details),
+                       report_host_details_iterator_value (&details),
+                       report_host_details_iterator_source_type (&details),
+                       report_host_details_iterator_source_name (&details),
+                       report_host_details_iterator_source_desc (&details));
+              cleanup_iterator (&details);
+
+              PRINT (out,
+                     "</host>");
+
               PRINT (out,
                        "<host_start>"
                        "<host>%s</host>%s"
@@ -12312,10 +12442,48 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
       iterator_t hosts;
       init_host_iterator (&hosts, report, NULL);
       while (next (&hosts))
-        PRINT (out,
+        {
+          iterator_t details;
+
+          PRINT (out,
+                 "<host>"
+                 "<ip>%s</ip>"
+                 "<start>%s</start>"
+                 "<end>%s</end>",
+                 host_iterator_host (&hosts),
+                 host_iterator_start_time (&hosts),
+                 host_iterator_end_time (&hosts)
+                   ? host_iterator_end_time (&hosts)
+                   : "");
+
+          init_report_host_details_iterator
+           (&details, host_iterator_report_host (&hosts));
+          while (next (&details))
+            PRINT (out,
+                   "<detail>"
+                   "<name>%s</name>"
+                   "<value>%s</value>"
+                   "<source>"
+                   "<type>%s</type>"
+                   "<name>%s</name>"
+                   "<description>%s</description>"
+                   "</source>"
+                   "</detail>",
+                   report_host_details_iterator_name (&details),
+                   report_host_details_iterator_value (&details),
+                   report_host_details_iterator_source_type (&details),
+                   report_host_details_iterator_source_name (&details),
+                   report_host_details_iterator_source_desc (&details));
+          cleanup_iterator (&details);
+
+          PRINT (out,
+                 "</host>");
+
+          PRINT (out,
                  "<host_start><host>%s</host>%s</host_start>",
                  host_iterator_host (&hosts),
                  host_iterator_start_time (&hosts));
+        }
       cleanup_iterator (&hosts);
 
       init_host_iterator (&hosts, report, NULL);
@@ -25802,6 +25970,89 @@ manage_empty_trashcan ()
       return -1;
     }
   sql ("COMMIT;");
+  return 0;
+}
+
+
+/* Host inventory. */
+
+/**
+ * @brief Add a host detail to a report host.
+ *
+ * @param[in]  current_report  UUID of resource.
+ * @param[in]  host            Host.
+ * @param[in]  xml             Report host detail XML.
+ *
+ * @return 0 success, -1 failed to parse XML, -2 host was NULL.
+ */
+int
+manage_report_host_detail (report_t report, const char *host, const char *xml)
+{
+  entity_t entity, detail;
+  entities_t details;
+
+  if (host == NULL)
+    return -2;
+
+  entity = NULL;
+  if (parse_entity (xml, &entity))
+    return -1;
+
+  details = entity->entities;
+  while ((detail = first_entity (details)))
+    {
+      if (strcmp (entity_name (detail), "detail") == 0)
+        {
+          entity_t source, source_type, source_name, source_desc, name, value;
+          gchar *quoted_host, *quoted_source_name, *quoted_source_type;
+          gchar *quoted_source_desc, *quoted_name, *quoted_value;
+
+          source = entity_child (detail, "source");
+          if (source == NULL)
+            return -1;
+          source_type = entity_child (source, "type");
+          if (source_type == NULL)
+            return -1;
+          source_name = entity_child (source, "name");
+          if (source_name == NULL)
+            return -1;
+          source_desc = entity_child (source, "description");
+          if (source_desc == NULL)
+            return -1;
+          name = entity_child (detail, "name");
+          if (name == NULL)
+            return -1;
+          value = entity_child (detail, "value");
+          if (value == NULL)
+            return -1;
+
+          quoted_host = sql_quote (host);
+          quoted_source_type = sql_quote (entity_text (source_type));
+          quoted_source_name = sql_quote (entity_text (source_name));
+          quoted_source_desc = sql_quote (entity_text (source_desc));
+          quoted_name = sql_quote (entity_text (name));
+          quoted_value = sql_quote (entity_text (value));
+          sql ("INSERT INTO report_host_details"
+               " (report_host, source_type, source_name, source_description,"
+               "  name, value)"
+               " VALUES"
+               " ((SELECT ROWID FROM report_hosts"
+               "   WHERE report = %llu AND host = '%s'),"
+               "  '%s', '%s', '%s', '%s', '%s');",
+               report, quoted_host, quoted_source_type, quoted_source_name,
+               quoted_source_desc, quoted_name, quoted_value);
+          g_free (quoted_host);
+          g_free (quoted_source_type);
+          g_free (quoted_source_name);
+          g_free (quoted_source_desc);
+          g_free (quoted_name);
+          g_free (quoted_value);
+        }
+      details = next_entities (details);
+    }
+
+  free_entity (entity);
+
   return 0;
 }
 

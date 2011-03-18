@@ -44,6 +44,7 @@
 
 #include "otp.h"
 #include "manage.h"
+#include "manage_sql.h"
 #include "tracef.h"
 #include "types.h"
 
@@ -424,7 +425,28 @@ append_info_message (task_t task, message_t* message)
 static void
 append_log_message (task_t task, message_t* message)
 {
-  write_message (task, message, "Log Message");
+  assert (current_report);
+
+  if (message->description && (message->description[0] == '<'))
+    {
+      int len;
+      /* Strip trailing \n. */
+      len = strlen (message->description);
+      if ((len > 2)
+          && (message->description[len - 1] == 'n')
+          && (message->description[len - 2] == '\\'))
+        message->description[len - 2] = '\0';
+      /* Add detail to report. */
+      if (manage_report_host_detail (current_report,
+                                     message->host,
+                                     message->description))
+        g_warning ("%s: Failed to add report detail for host '%s': %s\n",
+                   __FUNCTION__,
+                   message->host,
+                   message->description);
+    }
+  else
+    write_message (task, message, "Log Message");
 }
 
 /**

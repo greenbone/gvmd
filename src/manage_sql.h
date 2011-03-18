@@ -97,4 +97,6 @@ void reinit_manage_process ();
 
 void manage_update_nvti_cache ();
 
+int manage_report_host_detail (report_t, const char *, const char *);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */
