@@ -1,3 +1,8 @@
+2011-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (find_report_format): Add a user check to the
+	constraint XML because multiple users can import the same report format.
+
 2011-03-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add support for Scanner generated report host details.
