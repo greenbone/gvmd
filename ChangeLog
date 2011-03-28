@@ -1,3 +1,8 @@
+2011-03-28  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* report_formats/sourcefire/create_report_import: Create a signature
+	when creating report import.
+
 2011-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (find_report_format): Add a user check to the
