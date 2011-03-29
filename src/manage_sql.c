@@ -8923,7 +8923,7 @@ make_report (task_t task, const char* uuid, task_status_t status)
  * @return 0 success, -1 current_report is already set, -2 failed to generate ID.
  */
 int
-create_report (task_t task, char **report_id, task_status_t status)
+create_current_report (task_t task, char **report_id, task_status_t status)
 {
   char *id;
 
@@ -8941,6 +8941,132 @@ create_report (task_t task, char **report_id, task_status_t status)
   /* Create the report. */
 
   current_report = make_report (task, *report_id, status);
+
+  return 0;
+}
+
+/**
+ * @brief Create a report from an array of results.
+ *
+ * @param[in]   results       Array of create_report_result_t pointers.
+ * @param[in]   task_name     Name for container task.
+ * @param[in]   task_comment  Comment for container task.
+ * @param[in]   host_starts   Array of create_report_result_t pointers.  Host
+ *                            name in host, time in description.
+ * @param[in]   host_ends     Array of create_report_result_t pointers.  Host
+ *                            name in host, time in description.
+ * @param[out]  report_id     Report ID.
+ *
+ * @return 0 success, -1 error, -2 failed to generate ID, -3 task_name is NULL.
+ */
+int
+create_report (array_t *results, const char *task_name,
+               const char *task_comment, array_t *host_ends,
+               array_t *host_starts, char **report_id)
+{
+  int index;
+  create_report_result_t *result, *end, *start;
+  report_t report;
+  task_t task;
+
+  if (task_name == NULL)
+    return -3;
+
+  /* Generate report UUID. */
+
+  *report_id = openvas_uuid_make ();
+  if (*report_id == NULL) return -2;
+
+  /* Create the task. */
+
+  task = make_task (g_strdup (task_name),
+                    0,
+                    task_comment ? g_strdup (task_comment) : NULL);
+
+  /* Create the report. */
+
+  report = make_report (task, *report_id, TASK_STATUS_DONE);
+
+  /* Add the results. */
+
+  index = 0;
+  while ((result = (create_report_result_t*) g_ptr_array_index (results,
+                                                                index++)))
+    {
+      gchar *quoted_subnet, *quoted_host, *quoted_port, *quoted_nvt_oid;
+      gchar *quoted_description;
+
+      quoted_subnet = sql_quote (result->subnet ? result->subnet : "");
+      quoted_host = sql_quote (result->host ? result->host : "");
+      quoted_port = sql_quote (result->port ? result->port : "");
+      quoted_nvt_oid = sql_quote (result->nvt_oid ? result->nvt_oid : "");
+      quoted_description = sql_quote (result->description
+                                       ? result->description
+                                       : "");
+
+      sql ("INSERT INTO results"
+           " (uuid, task, subnet, host, port, nvt, type, description)"
+           " VALUES"
+           " (make_uuid (), 0, '%s', '%s', '%s', '%s', '%s', '%s');",
+           quoted_subnet,
+           quoted_host,
+           quoted_port,
+           quoted_nvt_oid,
+           result->threat
+            ? threat_message_type (result->threat)
+            : "Log Message",
+           quoted_description);
+
+      g_free (quoted_host);
+      g_free (quoted_subnet);
+      g_free (quoted_port);
+      g_free (quoted_nvt_oid);
+      g_free (quoted_description);
+
+      sql ("INSERT INTO report_results (report, result) VALUES (%llu, %llu);",
+           report,
+           sqlite3_last_insert_rowid (task_db));
+    }
+
+  index = 0;
+  while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
+                                                               index++)))
+    if (start->host && start->description)
+      {
+        gchar *quoted_host, *quoted_time;
+
+        quoted_host = sql_quote (start->host);
+        quoted_time = sql_quote (start->description);
+
+        sql ("INSERT INTO report_hosts (report, host, start_time)"
+             " VALUES (%llu, '%s', '%s');",
+             report,
+             quoted_host,
+             quoted_time);
+
+        g_free (quoted_host);
+        g_free (quoted_time);
+      }
+
+  index = 0;
+  while ((end = (create_report_result_t*) g_ptr_array_index (host_ends,
+                                                             index++)))
+    if (end->host && end->description)
+      {
+        gchar *quoted_host, *quoted_time;
+
+        quoted_host = sql_quote (end->host);
+        quoted_time = sql_quote (end->description);
+
+        sql ("UPDATE report_hosts SET end_time = '%s'"
+             " WHERE report = %llu AND host = '%s';",
+             quoted_time,
+             report,
+             quoted_host);
+
+        g_free (quoted_host);
+        g_free (quoted_time);
+      }
 
   return 0;
 }

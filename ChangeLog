@@ -1,3 +1,29 @@
+2011-03-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP command CREATE_REPORT.
+
+	* src/manage_sql.c (create_current_report): New name for create_report.
+	(create_report): New function.  Creates report from result list.
+
+	* src/manage.h: Add header accordingly.
+	(create_report_result_t): New type.
+
+	* src/manage_sql.h: Update header accordingly.
+
+	* src/manage.c (run_task): Rename create_report call.
+
+	* src/omp.c (help_text): Add new command.
+	(omp_parser_t): Add read_over flag.
+	(omp_parser_new): Init read_over.
+	(create_report_data_t): New type.
+	(create_report_data_reset): New function.
+	(command_data_t, client_state_t): Add new command elements.
+	(create_report_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Read over element if parser flag set.  Add
+	CREATE_REPORT handling.
+	(buffer_results_xml): Only print notes and overrides if there's a task.
+
 2011-03-28  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* report_formats/sourcefire/create_report_import: Create a signature

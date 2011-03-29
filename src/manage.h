@@ -621,6 +621,23 @@ result_t
 make_result (task_t, const char*, const char*, const char*, const char*,
              const char*, const char*);
 
+/**
+ * @brief A CREATE_REPORT result.
+ */
+typedef struct
+{
+  char *description;       ///< Description of NVT.
+  char *host;              ///< Host.
+  char *nvt_oid;           ///< OID of NVT.
+  char *port;              ///< Port.
+  char *subnet;            ///< Subnet.
+  char *threat;            ///< Threat.
+} create_report_result_t;
+
+int
+create_report (array_t*, const char *, const char *, array_t*, array_t*,
+               char **);
+
 void
 report_add_result (report_t, result_t);
 

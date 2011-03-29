@@ -1838,7 +1838,7 @@ run_task (task_t task, char **report_id, int from)
 
       /* Create the report. */
 
-      if (create_report (task, report_id, TASK_STATUS_REQUESTED))
+      if (create_current_report (task, report_id, TASK_STATUS_REQUESTED))
         {
           free (hosts);
           set_task_run_status (task, run_status);

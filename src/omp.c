@@ -377,6 +377,7 @@ static char* help_text = "\n"
 "    CREATE_NOTE            Create a note.\n"
 "    CREATE_OVERRIDE        Create an override.\n"
 "    CREATE_REPORT_FORMAT   Create a report format.\n"
+"    CREATE_REPORT          Create a report.\n"
 "    CREATE_SCHEDULE        Create a schedule.\n"
 "    CREATE_SLAVE           Create a slave.\n"
 "    CREATE_TARGET          Create a target.\n"
@@ -565,6 +566,7 @@ typedef struct
 {
   int (*client_writer) (void*);   ///< Function to write to the client.
   void* client_writer_data;       ///< Argument to client_writer.
+  int read_over;                  ///< Read over any child elements.
 } omp_parser_t;
 
 /**
@@ -581,6 +583,7 @@ omp_parser_new (int (*write_to_client) (void*), void* write_to_client_data)
   omp_parser_t *omp_parser = (omp_parser_t*) g_malloc (sizeof (omp_parser_t));
   omp_parser->client_writer = write_to_client;
   omp_parser->client_writer_data = write_to_client_data;
+  omp_parser->read_over = 0;
   return omp_parser;
 }
 
@@ -903,6 +906,69 @@ create_override_data_reset (create_override_data_t *data)
   free (data->threat);
 
   memset (data, 0, sizeof (create_override_data_t));
+}
+
+/**
+ * @brief Command data for the create_report command.
+ */
+typedef struct
+{
+  char *host_end;                 ///< End time for a host.
+  char *host_end_host;            ///< Host name for end time.
+  array_t *host_ends;             ///< All host ends.
+  char *host_start;               ///< Start time for a host.
+  char *host_start_host;          ///< Host name for start time.
+  array_t *host_starts;           ///< All host starts.
+  char *result_description;       ///< Description of NVT for current result.
+  char *result_host;              ///< Host for current result.
+  char *result_nvt_oid;           ///< OID of NVT for current result.
+  char *result_port;              ///< Port for current result.
+  char *result_subnet;            ///< Subnet for current result.
+  char *result_threat;            ///< Message type for current result.
+  array_t *results;               ///< All results.
+  char *task_comment;             ///< Comment for container task.
+  char *task_name;                ///< Name for container task.
+} create_report_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+create_report_data_reset (create_report_data_t *data)
+{
+  free (data->host_end);
+  free (data->host_start);
+  free (data->result_description);
+  free (data->result_host);
+  free (data->result_nvt_oid);
+  free (data->result_port);
+  free (data->result_subnet);
+  free (data->result_threat);
+  if (data->results)
+    {
+      guint index = data->results->len;
+      while (index--)
+        {
+          create_report_result_t *result;
+          result = (create_report_result_t*) g_ptr_array_index (data->results,
+                                                                index);
+          if (result)
+            {
+              free (result->host);
+              free (result->description);
+              free (result->nvt_oid);
+              free (result->port);
+              free (result->subnet);
+            }
+        }
+      array_free (data->results);
+    }
+  free (data->task_comment);
+  free (data->task_name);
+
+  memset (data, 0, sizeof (create_report_data_t));
 }
 
 /**
@@ -2375,6 +2441,7 @@ typedef union
   create_lsc_credential_data_t create_lsc_credential; ///< create_lsc_credential
   create_note_data_t create_note;                     ///< create_note
   create_override_data_t create_override;             ///< create_override
+  create_report_data_t create_report;                 ///< create_report
   create_report_format_data_t create_report_format;   ///< create_report_format
   create_schedule_data_t create_schedule;             ///< create_schedule
   create_slave_data_t create_slave;                   ///< create_slave
@@ -2481,6 +2548,12 @@ create_note_data_t *create_note_data
  */
 create_override_data_t *create_override_data
  = (create_override_data_t*) &(command_data.create_override);
+
+/**
+ * @brief Parser callback data for CREATE_REPORT.
+ */
+create_report_data_t *create_report_data
+ = (create_report_data_t*) &(command_data.create_report);
 
 /**
  * @brief Parser callback data for CREATE_REPORT_FORMAT.
@@ -2931,6 +3004,44 @@ typedef enum
   CLIENT_CREATE_OVERRIDE_TASK,
   CLIENT_CREATE_OVERRIDE_TEXT,
   CLIENT_CREATE_OVERRIDE_THREAT,
+  /* CREATE_REPORT. */
+  CLIENT_CREATE_REPORT,
+  CLIENT_CREATE_REPORT_REPORT,
+  CLIENT_CREATE_REPORT_RR,
+  CLIENT_CREATE_REPORT_RR_FILTERS,
+  CLIENT_CREATE_REPORT_RR_HOST,
+  CLIENT_CREATE_REPORT_RR_HOST_END,
+  CLIENT_CREATE_REPORT_RR_HOST_END_HOST,
+  CLIENT_CREATE_REPORT_RR_HOST_START,
+  CLIENT_CREATE_REPORT_RR_HOST_START_HOST,
+  CLIENT_CREATE_REPORT_RR_PORTS,
+  CLIENT_CREATE_REPORT_RR_REPORT_FORMAT,
+  CLIENT_CREATE_REPORT_RR_RESULTS,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NOTES,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_BID,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CVE,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CVSS_BASE,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_NAME,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_RISK_FACTOR,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT,
+  CLIENT_CREATE_REPORT_RR_RESULT_COUNT,
+  CLIENT_CREATE_REPORT_RR_SCAN_RUN_STATUS,
+  CLIENT_CREATE_REPORT_RR_SCAN_END,
+  CLIENT_CREATE_REPORT_RR_SCAN_START,
+  CLIENT_CREATE_REPORT_RR_SORT,
+  CLIENT_CREATE_REPORT_RR_TASK,
+  CLIENT_CREATE_REPORT_TASK,
+  CLIENT_CREATE_REPORT_TASK_NAME,
+  CLIENT_CREATE_REPORT_TASK_COMMENT,
+  /* CREATE_REPORT_FORMAT. */
   CLIENT_CREATE_REPORT_FORMAT,
   /* get_report_formats (GRF) is used for report format export.  CLIENT_CRF is
    * for CLIENT_CREATE_REPORT_FORMAT. */
@@ -3497,7 +3608,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
   tracef ("   XML  start: %s (%i)\n", element_name, client_state);
 
-  switch (client_state)
+  if (omp_parser->read_over)
+    omp_parser->read_over++;
+  else switch (client_state)
     {
       case CLIENT_TOP:
         if (strcasecmp ("GET_VERSION", element_name) == 0)
@@ -3600,6 +3713,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_NOTE);
         else if (strcasecmp ("CREATE_OVERRIDE", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE);
+        else if (strcasecmp ("CREATE_REPORT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT);
         else if (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_FORMAT);
         else if (strcasecmp ("CREATE_SLAVE", element_name) == 0)
@@ -6025,6 +6140,292 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_CREATE_REPORT:
+        if (strcasecmp ("REPORT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_REPORT);
+        else if (strcasecmp ("TASK", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_TASK);
+        else
+          {
+            if (send_element_error_to_client ("create_report",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_REPORT_REPORT:
+        if (strcasecmp ("REPORT", element_name) == 0)
+          {
+            create_report_data->host_ends = make_array ();
+            create_report_data->host_starts = make_array ();
+            create_report_data->results = make_array ();
+            set_client_state (CLIENT_CREATE_REPORT_RR);
+          }
+        else
+          {
+            if (send_element_error_to_client ("create_report",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_REPORT_RR:
+        if (strcasecmp ("FILTERS", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_FILTERS);
+          }
+        else if (strcasecmp ("HOST", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_HOST);
+          }
+        else if (strcasecmp ("HOST_END", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_HOST_END);
+        else if (strcasecmp ("HOST_START", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_HOST_START);
+        else if (strcasecmp ("PORTS", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_PORTS);
+          }
+        else if (strcasecmp ("REPORT_FORMAT", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_REPORT_FORMAT);
+          }
+        else if (strcasecmp ("RESULTS", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS);
+        else if (strcasecmp ("RESULT_COUNT", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_RESULT_COUNT);
+          }
+        else if (strcasecmp ("SCAN_RUN_STATUS", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state
+             (CLIENT_CREATE_REPORT_RR_SCAN_RUN_STATUS);
+          }
+        else if (strcasecmp ("SCAN_END", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_SCAN_END);
+          }
+        else if (strcasecmp ("SCAN_START", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_SCAN_START);
+          }
+        else if (strcasecmp ("SORT", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_SORT);
+          }
+        else if (strcasecmp ("TASK", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_TASK);
+          }
+        else
+          {
+            if (send_element_error_to_client ("create_report",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_REPORT_RR_HOST_END:
+        if (strcasecmp ("HOST", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_HOST_END_HOST);
+        else
+          {
+            if (send_element_error_to_client ("create_report",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_REPORT_RR_HOST_START:
+        if (strcasecmp ("HOST", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_HOST_START_HOST);
+        else
+          {
+            if (send_element_error_to_client ("create_report",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_REPORT_RR_RESULTS:
+        if (strcasecmp ("RESULT", element_name) == 0)
+          set_client_state
+           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
+        else
+          {
+            if (send_element_error_to_client ("create_report",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT:
+        if (strcasecmp ("DESCRIPTION", element_name) == 0)
+          set_client_state
+           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION);
+        else if (strcasecmp ("HOST", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST);
+        else if (strcasecmp ("NOTES", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NOTES);
+        else if (strcasecmp ("NVT", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "oid",
+                              &create_report_data->result_nvt_oid);
+            set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT);
+          }
+        else if (strcasecmp ("ORIGINAL_THREAT", element_name) == 0)
+          set_client_state
+           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT);
+        else if (strcasecmp ("OVERRIDES", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES);
+        else if (strcasecmp ("PORT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT);
+        else if (strcasecmp ("SUBNET", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET);
+        else if (strcasecmp ("THREAT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT);
+        else
+          {
+            if (send_element_error_to_client ("create_report",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT:
+        if (strcasecmp ("BID", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_BID);
+        else if (strcasecmp ("CVE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CVE);
+        else if (strcasecmp ("CVSS_BASE", element_name) == 0)
+          set_client_state
+           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CVSS_BASE);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_NAME);
+        else if (strcasecmp ("RISK_FACTOR", element_name) == 0)
+          set_client_state
+           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_RISK_FACTOR);
+        else
+          {
+            if (send_element_error_to_client ("create_report",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_REPORT_TASK:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_TASK_COMMENT);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_TASK_NAME);
+        else
+          {
+            if (send_element_error_to_client ("create_report",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
       case CLIENT_CREATE_REPORT_FORMAT:
         if (strcasecmp ("GET_REPORT_FORMATS_RESPONSE", element_name) == 0)
           {
@@ -7694,45 +8095,45 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   if (include_notes)
     {
-      iterator_t notes;
-
-      assert (task);
-
       g_string_append (buffer, "<notes>");
 
-      init_note_iterator (&notes,
-                          0,
-                          0,
-                          result_iterator_result (results),
-                          task,
-                          0, /* Most recent first. */
-                          "creation_time");
-      buffer_notes_xml (buffer, &notes, include_notes_details, 0);
-      cleanup_iterator (&notes);
-
-      g_string_append (buffer, "</notes>");
-    }
-
-  if (include_overrides)
-    {
-      iterator_t overrides;
-
-      assert (task);
-
-      g_string_append (buffer, "<overrides>");
-
-      init_override_iterator (&overrides,
+      if (task)
+        {
+          iterator_t notes;
+          init_note_iterator (&notes,
                               0,
                               0,
                               result_iterator_result (results),
                               task,
                               0, /* Most recent first. */
                               "creation_time");
-      buffer_overrides_xml (buffer,
-                            &overrides,
-                            include_overrides_details,
-                            0);
-      cleanup_iterator (&overrides);
+          buffer_notes_xml (buffer, &notes, include_notes_details, 0);
+          cleanup_iterator (&notes);
+        }
+
+      g_string_append (buffer, "</notes>");
+    }
+
+  if (include_overrides)
+    {
+      g_string_append (buffer, "<overrides>");
+
+      if (task)
+        {
+          iterator_t overrides;
+          init_override_iterator (&overrides,
+                                  0,
+                                  0,
+                                  result_iterator_result (results),
+                                  task,
+                                  0, /* Most recent first. */
+                                  "creation_time");
+          buffer_overrides_xml (buffer,
+                                &overrides,
+                                include_overrides_details,
+                                0);
+          cleanup_iterator (&overrides);
+        }
 
       g_string_append (buffer, "</overrides>");
     }
@@ -7839,7 +8240,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
   tracef ("   XML    end: %s\n", element_name);
 
-  switch (client_state)
+  if (omp_parser->read_over > 1)
+    omp_parser->read_over--;
+  else switch (client_state)
     {
       case CLIENT_TOP:
         assert (0);
@@ -11432,6 +11835,284 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_OVERRIDE_THREAT:
         assert (strcasecmp ("THREAT", element_name) == 0);
         set_client_state (CLIENT_CREATE_OVERRIDE);
+        break;
+
+      case CLIENT_CREATE_REPORT:
+        {
+          char *uuid;
+
+          assert (strcasecmp ("CREATE_REPORT", element_name) == 0);
+
+          array_terminate (create_report_data->results);
+          array_terminate (create_report_data->host_ends);
+          array_terminate (create_report_data->host_starts);
+
+          if (create_report_data->results == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_report",
+                                "CREATE_REPORT requires a REPORT element"));
+          else switch (create_report
+                        (create_report_data->results,
+                         create_report_data->task_name,
+                         create_report_data->task_comment,
+                         create_report_data->host_starts,
+                         create_report_data->host_ends,
+                         &uuid))
+            {
+              case -1:
+              case -2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_report"));
+                g_log ("event report", G_LOG_LEVEL_MESSAGE,
+                       "Report could not be created");
+                break;
+              case -3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_report",
+                                    "CREATE_REPORT TASK_NAME is required"));
+                g_log ("event report", G_LOG_LEVEL_MESSAGE,
+                       "Report could not be created");
+                break;
+              default:
+                {
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_OK_CREATED_ID ("create_report"),
+                    uuid);
+                  g_log ("event report", G_LOG_LEVEL_MESSAGE,
+                         "Report %s has been created", uuid);
+                  free (uuid);
+                  break;
+                }
+            }
+
+          create_report_data_reset (create_report_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_CREATE_REPORT_REPORT:
+        assert (strcasecmp ("REPORT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT);
+        break;
+      case CLIENT_CREATE_REPORT_RR:
+        assert (strcasecmp ("REPORT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_REPORT);
+        break;
+      case CLIENT_CREATE_REPORT_RR_FILTERS:
+        assert (strcasecmp ("FILTERS", element_name) == 0);
+        omp_parser->read_over = 0;
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+      case CLIENT_CREATE_REPORT_RR_HOST:
+        assert (strcasecmp ("HOST", element_name) == 0);
+        omp_parser->read_over = 0;
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+      case CLIENT_CREATE_REPORT_RR_HOST_END:
+        assert (strcasecmp ("HOST_END", element_name) == 0);
+
+        if (create_report_data->host_end_host)
+          {
+            create_report_result_t *result;
+
+            assert (create_report_data->host_ends);
+            assert (create_report_data->host_end);
+            assert (create_report_data->host_end_host);
+
+            result = g_malloc (sizeof (create_report_result_t));
+            result->description = create_report_data->host_end;
+            result->host = create_report_data->host_end_host;
+
+            array_add (create_report_data->host_ends, result);
+
+            create_report_data->host_end = NULL;
+            create_report_data->host_end_host = NULL;
+          }
+        else
+          openvas_free_string_var (&create_report_data->host_end);
+
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+      case CLIENT_CREATE_REPORT_RR_HOST_START:
+        assert (strcasecmp ("HOST_START", element_name) == 0);
+
+        if (create_report_data->host_start_host)
+          {
+            create_report_result_t *result;
+
+            assert (create_report_data->host_starts);
+            assert (create_report_data->host_start);
+            assert (create_report_data->host_start_host);
+
+            result = g_malloc (sizeof (create_report_result_t));
+            result->description = create_report_data->host_start;
+            result->host = create_report_data->host_start_host;
+
+            array_add (create_report_data->host_starts, result);
+
+            create_report_data->host_start = NULL;
+            create_report_data->host_start_host = NULL;
+          }
+        else
+          openvas_free_string_var (&create_report_data->host_start);
+
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+      case CLIENT_CREATE_REPORT_RR_PORTS:
+        assert (strcasecmp ("PORTS", element_name) == 0);
+        omp_parser->read_over = 0;
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+      case CLIENT_CREATE_REPORT_RR_REPORT_FORMAT:
+        assert (strcasecmp ("REPORT_FORMAT", element_name) == 0);
+        omp_parser->read_over = 0;
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS:
+        assert (strcasecmp ("RESULTS", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+      case CLIENT_CREATE_REPORT_RR_SCAN_RUN_STATUS:
+        assert (strcasecmp ("SCAN_RUN_STATUS", element_name) == 0);
+        omp_parser->read_over = 0;
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+      case CLIENT_CREATE_REPORT_RR_SCAN_END:
+        assert (strcasecmp ("SCAN_END", element_name) == 0);
+        omp_parser->read_over = 0;
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+      case CLIENT_CREATE_REPORT_RR_SCAN_START:
+        assert (strcasecmp ("SCAN_START", element_name) == 0);
+        omp_parser->read_over = 0;
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+      case CLIENT_CREATE_REPORT_RR_SORT:
+        assert (strcasecmp ("SORT", element_name) == 0);
+        omp_parser->read_over = 0;
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+      case CLIENT_CREATE_REPORT_RR_TASK:
+        assert (strcasecmp ("TASK", element_name) == 0);
+        omp_parser->read_over = 0;
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULT_COUNT:
+        assert (strcasecmp ("RESULT_COUNT", element_name) == 0);
+        omp_parser->read_over = 0;
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+
+      case CLIENT_CREATE_REPORT_RR_HOST_END_HOST:
+        assert (strcasecmp ("HOST", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_HOST_END);
+        break;
+      case CLIENT_CREATE_REPORT_RR_HOST_START_HOST:
+        assert (strcasecmp ("HOST", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_HOST_START);
+        break;
+
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT:
+        {
+          create_report_result_t *result;
+
+          assert (strcasecmp ("RESULT", element_name) == 0);
+          assert (create_report_data->results);
+          assert (create_report_data->result_description);
+          assert (create_report_data->result_host);
+          assert (create_report_data->result_nvt_oid);
+          assert (create_report_data->result_port);
+          assert (create_report_data->result_subnet);
+          assert (create_report_data->result_threat);
+
+          result = g_malloc (sizeof (create_report_result_t));
+          result->description = create_report_data->result_description;
+          result->host = create_report_data->result_host;
+          result->nvt_oid = create_report_data->result_nvt_oid;
+          result->port = create_report_data->result_port;
+          result->subnet = create_report_data->result_subnet;
+          result->threat = create_report_data->result_threat;
+
+          array_add (create_report_data->results, result);
+
+          create_report_data->result_description = NULL;
+          create_report_data->result_host = NULL;
+          create_report_data->result_nvt_oid = NULL;
+          create_report_data->result_port = NULL;
+          create_report_data->result_subnet = NULL;
+          create_report_data->result_threat = NULL;
+
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS);
+          break;
+        }
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION:
+        assert (strcasecmp ("DESCRIPTION", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST:
+        assert (strcasecmp ("HOST", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NOTES:
+        assert (strcasecmp ("NOTES", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT:
+        assert (strcasecmp ("NVT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT:
+        assert (strcasecmp ("ORIGINAL_THREAT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES:
+        assert (strcasecmp ("OVERRIDES", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT:
+        assert (strcasecmp ("PORT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET:
+        assert (strcasecmp ("SUBNET", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT:
+        assert (strcasecmp ("THREAT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
+        break;
+
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_BID:
+        assert (strcasecmp ("BID", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CVE:
+        assert (strcasecmp ("CVE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CVSS_BASE:
+        assert (strcasecmp ("CVSS_BASE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_RISK_FACTOR:
+        assert (strcasecmp ("RISK_FACTOR", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT);
+        break;
+
+      case CLIENT_CREATE_REPORT_TASK:
+        assert (strcasecmp ("TASK", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT);
+        break;
+      case CLIENT_CREATE_REPORT_TASK_COMMENT:
+        assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_TASK);
+        break;
+      case CLIENT_CREATE_REPORT_TASK_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_TASK);
         break;
 
       case CLIENT_CREATE_REPORT_FORMAT:
@@ -15767,6 +16448,64 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_OVERRIDE_THREAT:
         openvas_append_text (&create_override_data->threat, text, text_len);
+        break;
+
+      case CLIENT_CREATE_REPORT_RR_HOST_END:
+        openvas_append_text (&create_report_data->host_end,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_REPORT_RR_HOST_END_HOST:
+        openvas_append_text (&create_report_data->host_end_host,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_REPORT_RR_HOST_START:
+        openvas_append_text (&create_report_data->host_start,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_REPORT_RR_HOST_START_HOST:
+        openvas_append_text (&create_report_data->host_start_host,
+                             text,
+                             text_len);
+        break;
+
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION:
+        openvas_append_text (&create_report_data->result_description,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST:
+        openvas_append_text (&create_report_data->result_host,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT:
+        openvas_append_text (&create_report_data->result_port,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET:
+        openvas_append_text (&create_report_data->result_subnet,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT:
+        openvas_append_text (&create_report_data->result_threat,
+                             text,
+                             text_len);
+        break;
+
+      case CLIENT_CREATE_REPORT_TASK_NAME:
+        openvas_append_text (&create_report_data->task_name,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_REPORT_TASK_COMMENT:
+        openvas_append_text (&create_report_data->task_comment,
+                             text,
+                             text_len);
         break;
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE:

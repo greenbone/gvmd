@@ -57,7 +57,7 @@ lsc_credential_t target_ssh_lsc_credential (target_t);
 lsc_credential_t target_smb_lsc_credential (target_t);
 const char *lsc_credential_iterator_password (iterator_t *);
 
-int create_report (task_t, char **, task_status_t);
+int create_current_report (task_t, char **, task_status_t);
 
 char *escalator_data (escalator_t, const char *, const char *);
 
