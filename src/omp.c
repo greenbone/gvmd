@@ -14006,13 +14006,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                              start_task_data->task_id);
                       break;
                     case -2:
+                      /* Task lacks target.  This is true for container
+                       * tasks. */
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("start_task",
+                                          "Task must have a target"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to start",
+                             start_task_data->task_id);
+                      break;
+                    case -4:
                       /* Task target lacks hosts.  This is checked when the
                        * target is created. */
-                      assert (0);
-                      /*@fallthrough@*/
-                    case -4:
-                      /* Task lacks target.  This is checked when the task is
-                       * created anyway. */
                       assert (0);
                       /*@fallthrough@*/
                     case -3: /* Failed to create report. */

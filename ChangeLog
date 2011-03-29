@@ -1,5 +1,11 @@
 2011-03-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_START_TASK if target
+	is missing return an error, as this can happen for report container tasks.
+	Swap comments at same time.
+
+2011-03-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OMP command CREATE_REPORT.
 
 	* src/manage_sql.c (create_current_report): New name for create_report.
