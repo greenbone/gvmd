@@ -10594,7 +10594,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         /** @todo Update to match "create_task (config, target)". */
         if (modify_task_data->task_id)
           {
-            task_t task;
+            task_t task = 0;
             if (find_task (modify_task_data->task_id, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_task"));
             else if (task == 0)
@@ -10625,6 +10625,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_task",
                                   "Too many parameters at once"));
+            else if ((task_target (task) == 0)
+                     && (modify_task_data->rcfile
+                         || modify_task_data->escalator_id
+                         || modify_task_data->schedule_id
+                         || modify_task_data->slave_id))
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_task",
+                                  "For container tasks only name and comment"
+                                  " can be modified"));
             else if (modify_task_data->action)
               {
                 if (modify_task_data->file_name == NULL)
