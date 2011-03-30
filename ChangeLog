@@ -1,5 +1,10 @@
 2011-03-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (migrate_37_to_38): Use "mv" to do the move, because
+	"rename" requires the dirs to be on the same file system.
+
+2011-03-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_MODIFY_TASK restrict
 	modification of container tasks, and init task for find_task.
 
