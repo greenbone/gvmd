@@ -1,3 +1,12 @@
+2011-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (report): New element.  From get_reports
+	command.
+	(create_report): New command.
+	(get_reports): Use the new report element as a type.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2011-03-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (migrate_37_to_38): Use "mv" to do the move, because

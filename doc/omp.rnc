@@ -17,6 +17,7 @@ command
     | create_lsc_credential
     | create_note
     | create_override
+    | create_report
     | create_report_format
     | create_schedule
     | create_slave
@@ -84,6 +85,7 @@ response
     | create_lsc_credential_response
     | create_note_response
     | create_override_response
+    | create_report_response
     | create_report_format_response
     | create_schedule_response
     | create_slave_response
@@ -431,6 +433,432 @@ command_definition_ele
            | ( command_definition_type
            & command_definition_ele* ) )
        & command_definition_example*
+     }
+
+## Element Type report
+##
+## Actually attributes and either base64 or a report.
+
+report
+ = element report
+     {
+       text # RNC limitation: base64
+       & attribute id { uuid }
+       & attribute format_id { uuid }
+       & attribute extension { text }
+       & attribute content_type { text }
+       & report_report
+     }
+
+report_report
+ = element report
+     {
+       attribute id { uuid }
+       & ( report_report_sort
+           & report_report_filters
+           & report_report_scan_run_status
+           & report_report_result_count
+           & report_report_task
+           & report_report_ports
+           & report_report_results
+           & report_report_scan_start
+           & report_report_host_start*
+           & report_report_host_end*
+           & report_report_scan_end )?
+     }
+
+# Result sorting information.
+report_report_sort
+ = element sort
+     {
+       report_report_sort_field
+     }
+
+# Sort field.
+report_report_sort_field
+ = element field
+     {
+       text
+       & report_report_sort_field_order
+     }
+
+# Sort order of field.
+report_report_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+# Result filtering information.
+report_report_filters
+ = element filters
+     {
+       text # RNC limitation: levels
+       & report_report_filters_phrase
+       & report_report_filters_notes
+       & report_report_filters_overrides
+       & report_report_filters_apply_overrides
+       & report_report_filters_result_hosts_only
+       & report_report_filters_min_cvss_base
+       & report_report_filters_filter*
+     }
+
+# Search phrase.
+report_report_filters_phrase
+ = element phrase
+     {
+       text
+     }
+
+# Whether notes are included.
+report_report_filters_notes
+ = element notes
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+# Whether overrides are included.
+report_report_filters_overrides
+ = element overrides
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+# Whether overrides are applied.
+report_report_filters_apply_overrides
+ = element apply_overrides
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+# Whether only those hosts that have results are included.
+report_report_filters_result_hosts_only
+ = element result_hosts_only
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+# Minimum CVSS base if in effect, else empty string.
+report_report_filters_min_cvss_base
+ = element min_cvss_base
+     {
+       text
+     }
+
+# Level filter.
+report_report_filters_filter
+ = element filter
+     {
+       xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+     }
+
+# Run status of task scan at time of report.
+report_report_scan_run_status
+ = element scan_run_status
+     {
+       task_status
+     }
+
+report_report_result_count
+ = element result_count
+     {
+       report_report_result_count_full
+       & report_report_result_count_filtered
+       & report_report_result_count_debug
+       & report_report_result_count_hole
+       & report_report_result_count_info
+       & report_report_result_count_log
+       & report_report_result_count_warning
+     }
+
+# Total number of results produced by scan.
+report_report_result_count_full
+ = element full
+     {
+       integer
+     }
+
+# Number of results after filtering.
+report_report_result_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of "debug" results (threat level Debug).
+report_report_result_count_debug
+ = element debug
+     {
+       report_report_result_count_debug_full
+       & report_report_result_count_debug_filtered
+     }
+
+# Total number of results.
+report_report_result_count_debug_full
+ = element full
+     {
+       integer
+     }
+
+# Number of results after filtering.
+report_report_result_count_debug_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of "hole" results (threat level High).
+report_report_result_count_hole
+ = element hole
+     {
+       report_report_result_count_hole_full
+       & report_report_result_count_hole_filtered
+     }
+
+# Total number of results.
+report_report_result_count_hole_full
+ = element full
+     {
+       integer
+     }
+
+# Number of results after filtering.
+report_report_result_count_hole_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of "info" results (threat level Low).
+report_report_result_count_info
+ = element info
+     {
+       report_report_result_count_info_full
+       & report_report_result_count_info_filtered
+     }
+
+# Total number of results.
+report_report_result_count_info_full
+ = element full
+     {
+       integer
+     }
+
+# Number of results after filtering.
+report_report_result_count_info_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of "log" results (threat level Log).
+report_report_result_count_log
+ = element log
+     {
+       report_report_result_count_log_full
+       & report_report_result_count_log_filtered
+     }
+
+# Total number of results.
+report_report_result_count_log_full
+ = element full
+     {
+       integer
+     }
+
+# Number of results after filtering.
+report_report_result_count_log_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of "warning" results (threat level Medium).
+report_report_result_count_warning
+ = element warning
+     {
+       report_report_result_count_warning_full
+       & report_report_result_count_warning_filtered
+     }
+
+# Total number of results.
+report_report_result_count_warning_full
+ = element full
+     {
+       integer
+     }
+
+# Number of results after filtering.
+report_report_result_count_warning_filtered
+ = element filtered
+     {
+       integer
+     }
+
+report_report_task
+ = element task
+     {
+       attribute id { uuid }
+       & report_report_task_name
+     }
+
+# The name of the task.
+report_report_task_name
+ = element name
+     {
+       name
+     }
+
+report_report_ports
+ = element ports
+     {
+       attribute start { integer }
+       & attribute max { integer }
+       & report_report_ports_port*
+     }
+
+report_report_ports_port
+ = element port
+     {
+       text
+       & report_report_ports_port_host
+       & report_report_ports_port_threat
+     }
+
+report_report_ports_port_host
+ = element host
+     {
+       text
+     }
+
+report_report_ports_port_threat
+ = element threat
+     {
+       threat
+     }
+
+report_report_results
+ = element results
+     {
+       attribute start { integer }
+       & attribute max { integer }
+       & report_report_results_result*
+     }
+
+report_report_results_result
+ = element result
+     {
+       attribute id { uuid }
+       & report_report_results_result_subnet
+       & report_report_results_result_host
+       & report_report_results_result_port
+       & report_report_results_result_nvt
+       & report_report_results_result_threat
+       & report_report_results_result_description
+     }
+
+report_report_results_result_subnet
+ = element subnet
+     {
+       text
+     }
+
+report_report_results_result_host
+ = element host
+     {
+       text
+     }
+
+report_report_results_result_port
+ = element port
+     {
+       text
+     }
+
+# NVT to which result applies.
+report_report_results_result_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & report_report_results_result_nvt_name
+       & report_report_results_result_nvt_cvss_base
+       & report_report_results_result_nvt_risk_factor
+     }
+
+# The name of the NVT.
+report_report_results_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+# CVSS base value associated with the NVT.
+report_report_results_result_nvt_cvss_base
+ = element cvss_base
+     {
+       integer
+     }
+
+# Risk factor associated with the NVT.
+report_report_results_result_nvt_risk_factor
+ = element risk_factor
+     {
+       integer
+     }
+
+report_report_results_result_threat
+ = element threat
+     {
+       threat
+     }
+
+# Description of the result.
+report_report_results_result_description
+ = element description
+     {
+       text
+     }
+
+# Start time of scan.
+report_report_scan_start
+ = element scan_start
+     {
+       ctime
+     }
+
+# Start time of a particular host.
+report_report_host_start
+ = element host_start
+     {
+       text # RNC limitation: ctime
+       & report_report_host_start_host
+     }
+
+report_report_host_start_host
+ = element host
+     {
+       text
+     }
+
+# End time of a particular host.
+report_report_host_end
+ = element host_end
+     {
+       text # RNC limitation: ctime
+       & report_report_host_end_host
+     }
+
+report_report_host_end_host
+ = element host
+     {
+       text
+     }
+
+# End time of scan.
+report_report_scan_end
+ = element scan_end
+     {
+       ctime
      }
 
 ### Commands
@@ -923,6 +1351,28 @@ create_override_threat
  = element threat
      {
        threat
+     }
+
+## Command create_report
+##
+## Create a report.
+
+create_report
+ = element create_report
+     {
+       create_report_report
+     }
+
+# A report wrapper, as in the GET_REPORTS response.
+create_report_report
+ = element report    # type report
+     {
+       text # RNC limitation: base64
+       & attribute id { uuid }
+       & attribute format_id { uuid }
+       & attribute extension { text }
+       & attribute content_type { text }
+       & report_report
      }
 
 ## Command create_report_format
@@ -2413,6 +2863,16 @@ create_override_response
        & attribute id { uuid }
      }
 
+## Response to create_report
+
+create_report_response
+ = element create_report_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
 ## Response to create_report_format
 
 create_report_format_response
@@ -3792,425 +4252,14 @@ get_reports_response
 
 # Actually attributes and either base64 or a report.
 get_reports_response_report
- = element report
+ = element report    # type report
      {
        text # RNC limitation: base64
        & attribute id { uuid }
        & attribute format_id { uuid }
        & attribute extension { text }
        & attribute content_type { text }
-       & get_reports_response_report_report
-     }
-
-get_reports_response_report_report
- = element report
-     {
-       attribute id { uuid }
-       & ( get_reports_response_report_report_sort
-           & get_reports_response_report_report_filters
-           & get_reports_response_report_report_scan_run_status
-           & get_reports_response_report_report_result_count
-           & get_reports_response_report_report_task
-           & get_reports_response_report_report_ports
-           & get_reports_response_report_report_results
-           & get_reports_response_report_report_scan_start
-           & get_reports_response_report_report_host_start*
-           & get_reports_response_report_report_host_end*
-           & get_reports_response_report_report_scan_end )?
-     }
-
-# Result sorting information.
-get_reports_response_report_report_sort
- = element sort
-     {
-       get_reports_response_report_report_sort_field
-     }
-
-# Sort field.
-get_reports_response_report_report_sort_field
- = element field
-     {
-       text
-       & get_reports_response_report_report_sort_field_order
-     }
-
-# Sort order of field.
-get_reports_response_report_report_sort_field_order
- = element order
-     {
-       xsd:token { pattern = "ascending|descending" }
-     }
-
-# Result filtering information.
-get_reports_response_report_report_filters
- = element filters
-     {
-       text # RNC limitation: levels
-       & get_reports_response_report_report_filters_phrase
-       & get_reports_response_report_report_filters_notes
-       & get_reports_response_report_report_filters_overrides
-       & get_reports_response_report_report_filters_apply_overrides
-       & get_reports_response_report_report_filters_result_hosts_only
-       & get_reports_response_report_report_filters_min_cvss_base
-       & get_reports_response_report_report_filters_filter*
-     }
-
-# Search phrase.
-get_reports_response_report_report_filters_phrase
- = element phrase
-     {
-       text
-     }
-
-# Whether notes are included.
-get_reports_response_report_report_filters_notes
- = element notes
-     {
-       xsd:token { pattern = "0|1" }
-     }
-
-# Whether overrides are included.
-get_reports_response_report_report_filters_overrides
- = element overrides
-     {
-       xsd:token { pattern = "0|1" }
-     }
-
-# Whether overrides are applied.
-get_reports_response_report_report_filters_apply_overrides
- = element apply_overrides
-     {
-       xsd:token { pattern = "0|1" }
-     }
-
-# Whether only those hosts that have results are included.
-get_reports_response_report_report_filters_result_hosts_only
- = element result_hosts_only
-     {
-       xsd:token { pattern = "0|1" }
-     }
-
-# Minimum CVSS base if in effect, else empty string.
-get_reports_response_report_report_filters_min_cvss_base
- = element min_cvss_base
-     {
-       text
-     }
-
-# Level filter.
-get_reports_response_report_report_filters_filter
- = element filter
-     {
-       xsd:token { pattern = "High|Medium|Low|Log|Debug" }
-     }
-
-# Run status of task scan at time of report.
-get_reports_response_report_report_scan_run_status
- = element scan_run_status
-     {
-       task_status
-     }
-
-get_reports_response_report_report_result_count
- = element result_count
-     {
-       get_reports_response_report_report_result_count_full
-       & get_reports_response_report_report_result_count_filtered
-       & get_reports_response_report_report_result_count_debug
-       & get_reports_response_report_report_result_count_hole
-       & get_reports_response_report_report_result_count_info
-       & get_reports_response_report_report_result_count_log
-       & get_reports_response_report_report_result_count_warning
-     }
-
-# Total number of results produced by scan.
-get_reports_response_report_report_result_count_full
- = element full
-     {
-       integer
-     }
-
-# Number of results after filtering.
-get_reports_response_report_report_result_count_filtered
- = element filtered
-     {
-       integer
-     }
-
-# Number of "debug" results (threat level Debug).
-get_reports_response_report_report_result_count_debug
- = element debug
-     {
-       get_reports_response_report_report_result_count_debug_full
-       & get_reports_response_report_report_result_count_debug_filtered
-     }
-
-# Total number of results.
-get_reports_response_report_report_result_count_debug_full
- = element full
-     {
-       integer
-     }
-
-# Number of results after filtering.
-get_reports_response_report_report_result_count_debug_filtered
- = element filtered
-     {
-       integer
-     }
-
-# Number of "hole" results (threat level High).
-get_reports_response_report_report_result_count_hole
- = element hole
-     {
-       get_reports_response_report_report_result_count_hole_full
-       & get_reports_response_report_report_result_count_hole_filtered
-     }
-
-# Total number of results.
-get_reports_response_report_report_result_count_hole_full
- = element full
-     {
-       integer
-     }
-
-# Number of results after filtering.
-get_reports_response_report_report_result_count_hole_filtered
- = element filtered
-     {
-       integer
-     }
-
-# Number of "info" results (threat level Low).
-get_reports_response_report_report_result_count_info
- = element info
-     {
-       get_reports_response_report_report_result_count_info_full
-       & get_reports_response_report_report_result_count_info_filtered
-     }
-
-# Total number of results.
-get_reports_response_report_report_result_count_info_full
- = element full
-     {
-       integer
-     }
-
-# Number of results after filtering.
-get_reports_response_report_report_result_count_info_filtered
- = element filtered
-     {
-       integer
-     }
-
-# Number of "log" results (threat level Log).
-get_reports_response_report_report_result_count_log
- = element log
-     {
-       get_reports_response_report_report_result_count_log_full
-       & get_reports_response_report_report_result_count_log_filtered
-     }
-
-# Total number of results.
-get_reports_response_report_report_result_count_log_full
- = element full
-     {
-       integer
-     }
-
-# Number of results after filtering.
-get_reports_response_report_report_result_count_log_filtered
- = element filtered
-     {
-       integer
-     }
-
-# Number of "warning" results (threat level Medium).
-get_reports_response_report_report_result_count_warning
- = element warning
-     {
-       get_reports_response_report_report_result_count_warning_full
-       & get_reports_response_report_report_result_count_warning_filtered
-     }
-
-# Total number of results.
-get_reports_response_report_report_result_count_warning_full
- = element full
-     {
-       integer
-     }
-
-# Number of results after filtering.
-get_reports_response_report_report_result_count_warning_filtered
- = element filtered
-     {
-       integer
-     }
-
-get_reports_response_report_report_task
- = element task
-     {
-       attribute id { uuid }
-       & get_reports_response_report_report_task_name
-     }
-
-# The name of the task.
-get_reports_response_report_report_task_name
- = element name
-     {
-       name
-     }
-
-get_reports_response_report_report_ports
- = element ports
-     {
-       attribute start { integer }
-       & attribute max { integer }
-       & get_reports_response_report_report_ports_port*
-     }
-
-get_reports_response_report_report_ports_port
- = element port
-     {
-       text
-       & get_reports_response_report_report_ports_port_host
-       & get_reports_response_report_report_ports_port_threat
-     }
-
-get_reports_response_report_report_ports_port_host
- = element host
-     {
-       text
-     }
-
-get_reports_response_report_report_ports_port_threat
- = element threat
-     {
-       threat
-     }
-
-get_reports_response_report_report_results
- = element results
-     {
-       attribute start { integer }
-       & attribute max { integer }
-       & get_reports_response_report_report_results_result*
-     }
-
-get_reports_response_report_report_results_result
- = element result
-     {
-       attribute id { uuid }
-       & get_reports_response_report_report_results_result_subnet
-       & get_reports_response_report_report_results_result_host
-       & get_reports_response_report_report_results_result_port
-       & get_reports_response_report_report_results_result_nvt
-       & get_reports_response_report_report_results_result_threat
-       & get_reports_response_report_report_results_result_description
-     }
-
-get_reports_response_report_report_results_result_subnet
- = element subnet
-     {
-       text
-     }
-
-get_reports_response_report_report_results_result_host
- = element host
-     {
-       text
-     }
-
-get_reports_response_report_report_results_result_port
- = element port
-     {
-       text
-     }
-
-# NVT to which result applies.
-get_reports_response_report_report_results_result_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       & get_reports_response_report_report_results_result_nvt_name
-       & get_reports_response_report_report_results_result_nvt_cvss_base
-       & get_reports_response_report_report_results_result_nvt_risk_factor
-     }
-
-# The name of the NVT.
-get_reports_response_report_report_results_result_nvt_name
- = element name
-     {
-       name
-     }
-
-# CVSS base value associated with the NVT.
-get_reports_response_report_report_results_result_nvt_cvss_base
- = element cvss_base
-     {
-       integer
-     }
-
-# Risk factor associated with the NVT.
-get_reports_response_report_report_results_result_nvt_risk_factor
- = element risk_factor
-     {
-       integer
-     }
-
-get_reports_response_report_report_results_result_threat
- = element threat
-     {
-       threat
-     }
-
-# Description of the result.
-get_reports_response_report_report_results_result_description
- = element description
-     {
-       text
-     }
-
-# Start time of scan.
-get_reports_response_report_report_scan_start
- = element scan_start
-     {
-       ctime
-     }
-
-# Start time of a particular host.
-get_reports_response_report_report_host_start
- = element host_start
-     {
-       text # RNC limitation: ctime
-       & get_reports_response_report_report_host_start_host
-     }
-
-get_reports_response_report_report_host_start_host
- = element host
-     {
-       text
-     }
-
-# End time of a particular host.
-get_reports_response_report_report_host_end
- = element host_end
-     {
-       text # RNC limitation: ctime
-       & get_reports_response_report_report_host_end_host
-     }
-
-get_reports_response_report_report_host_end_host
- = element host
-     {
-       text
-     }
-
-# End time of scan.
-get_reports_response_report_report_scan_end
- = element scan_end
-     {
-       ctime
+       & report_report
      }
 
 ## Response to get_report_formats
@@ -4906,6 +4955,7 @@ get_targets_response_target_ssh_lsc_credential
      {
        attribute id { uuid_or_empty }
        & get_targets_response_target_ssh_lsc_credential_name
+       & get_targets_response_target_ssh_lsc_credential_trash
      }
 
 # The name of the SSH LSC credential.
@@ -4915,11 +4965,19 @@ get_targets_response_target_ssh_lsc_credential_name
        name
      }
 
+# Whether the LSC credential is in the trashcan.
+get_targets_response_target_ssh_lsc_credential_trash
+ = element trash
+     {
+       boolean
+     }
+
 get_targets_response_target_smb_lsc_credential
  = element smb_lsc_credential
      {
        attribute id { uuid_or_empty }
        & get_targets_response_target_smb_lsc_credential_name
+       & get_targets_response_target_smb_lsc_credential_trash
      }
 
 # The name of the SMB LSC credential.
@@ -4927,6 +4985,13 @@ get_targets_response_target_smb_lsc_credential_name
  = element name
      {
        name
+     }
+
+# Whether the LSC credential is in the trashcan.
+get_targets_response_target_smb_lsc_credential_trash
+ = element trash
+     {
+       boolean
      }
 
 # Port range of the target.
@@ -5071,6 +5136,7 @@ get_tasks_response_task_config
      {
        attribute id { uuid }
        & get_tasks_response_task_config_name
+       & get_tasks_response_task_config_trash
      }
 
 # The name of the config.
@@ -5080,12 +5146,20 @@ get_tasks_response_task_config_name
        name
      }
 
+# Whether the config is in the trashcan.
+get_tasks_response_task_config_trash
+ = element trash
+     {
+       boolean
+     }
+
 # The hosts scanned by the task.
 get_tasks_response_task_target
  = element target
      {
        attribute id { uuid }
        & get_tasks_response_task_target_name
+       & get_tasks_response_task_target_trash
      }
 
 # The name of the target.
@@ -5095,12 +5169,20 @@ get_tasks_response_task_target_name
        name
      }
 
+# Whether the target is in the trashcan.
+get_tasks_response_task_target_trash
+ = element trash
+     {
+       boolean
+     }
+
 # An escalator that applies to the task.
 get_tasks_response_task_escalator
  = element escalator
      {
        attribute id { uuid_or_empty }
        & get_tasks_response_task_escalator_name
+       & get_tasks_response_task_escalator_trash
      }
 
 # The name of the escalator.
@@ -5110,12 +5192,20 @@ get_tasks_response_task_escalator_name
        name
      }
 
+# Whether the escalator is in the trashcan.
+get_tasks_response_task_escalator_trash
+ = element trash
+     {
+       boolean
+     }
+
 # When the task will run.
 get_tasks_response_task_schedule
  = element schedule
      {
        attribute id { uuid_or_empty }
        & get_tasks_response_task_schedule_name
+       & get_tasks_response_task_schedule_trash
      }
 
 # The name of the schedule.
@@ -5125,12 +5215,20 @@ get_tasks_response_task_schedule_name
        name
      }
 
+# Whether the schedule is in the trashcan.
+get_tasks_response_task_schedule_trash
+ = element trash
+     {
+       boolean
+     }
+
 # The slave that the task will run on.
 get_tasks_response_task_slave
  = element slave
      {
        attribute id { uuid }
        & get_tasks_response_task_slave_name
+       & get_tasks_response_task_slave_trash
      }
 
 # The name of the slave.
@@ -5138,6 +5236,13 @@ get_tasks_response_task_slave_name
  = element name
      {
        name
+     }
+
+# Whether the slave is in the trashcan.
+get_tasks_response_task_slave_trash
+ = element trash
+     {
+       boolean
      }
 
 # Number of reports.
