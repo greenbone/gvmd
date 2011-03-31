@@ -1,3 +1,9 @@
+2011-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (migrate_37_to_38): Use "mv" to do the move, because
+	"rename" requires the dirs to be on the same file system.  Backported from
+	trunk.
+
 2011-03-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_lsc_credential)

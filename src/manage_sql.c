@@ -4194,7 +4194,6 @@ migrate_37_to_38 ()
 
   new_dir = g_build_filename (OPENVAS_STATE_DIR,
                               "openvasmd",
-                              "report_formats",
                               NULL);
 
   if (g_mkdir_with_parents (new_dir, 0755 /* "rwxr-xr-x" */))
@@ -4213,17 +4212,51 @@ migrate_37_to_38 ()
   /* Ensure the old dir exists. */
   g_mkdir_with_parents (old_dir, 0755 /* "rwxr-xr-x" */);
 
-  if (rename (old_dir, new_dir))
-    {
-      g_warning ("%s: renaming %s to %s failed: %s\n",
-                 __FUNCTION__,
-                 old_dir,
-                 new_dir,
-                 strerror (errno));
-      g_free (old_dir);
-      g_free (new_dir);
-      sql ("ROLLBACK;");
-    }
+  {
+    gchar **cmd;
+    gchar *standard_out = NULL;
+    gchar *standard_err = NULL;
+    gint exit_status;
+
+    cmd = (gchar **) g_malloc (4 * sizeof (gchar *));
+    cmd[0] = g_strdup ("mv");
+    cmd[1] = old_dir;
+    cmd[2] = new_dir;
+    cmd[3] = NULL;
+    g_debug ("%s: Spawning in .: %s %s %s\n",
+             __FUNCTION__, cmd[0], cmd[1], cmd[2]);
+    if ((g_spawn_sync (".",
+                       cmd,
+                       NULL,                  /* Environment. */
+                       G_SPAWN_SEARCH_PATH,
+                       NULL,                  /* Setup function. */
+                       NULL,
+                       &standard_out,
+                       &standard_err,
+                       &exit_status,
+                       NULL)
+         == FALSE)
+        || (WIFEXITED (exit_status) == 0)
+        || WEXITSTATUS (exit_status))
+      {
+        g_warning ("%s: failed rename: %d (WIF %i, WEX %i)",
+                   __FUNCTION__,
+                   exit_status,
+                   WIFEXITED (exit_status),
+                 WEXITSTATUS (exit_status));
+        g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
+        g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+        g_free (old_dir);
+        g_free (new_dir);
+        g_free (cmd[0]);
+        g_free (cmd);
+        sql ("ROLLBACK;");
+        return -1;
+      }
+
+    g_free (cmd[0]);
+    g_free (cmd);
+  }
 
   g_free (old_dir);
   g_free (new_dir);
