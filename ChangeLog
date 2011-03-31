@@ -1,5 +1,9 @@
 2011-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_report_host_detail): Correct name in doc.
+
+2011-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql (report_formats): Remove the uuid UNIQUE constraint
 	because multiple users can upload the same report format.
 

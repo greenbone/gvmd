@@ -26143,9 +26143,9 @@ manage_empty_trashcan ()
 /**
  * @brief Add a host detail to a report host.
  *
- * @param[in]  current_report  UUID of resource.
- * @param[in]  host            Host.
- * @param[in]  xml             Report host detail XML.
+ * @param[in]  report  UUID of resource.
+ * @param[in]  host    Host.
+ * @param[in]  xml     Report host detail XML.
  *
  * @return 0 success, -1 failed to parse XML, -2 host was NULL.
  */
