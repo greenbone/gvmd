@@ -21580,9 +21580,14 @@ find_report_format (const char* uuid, report_format_t* report_format)
       *report_format = 0;
       return FALSE;
     }
+  assert (current_credentials.uuid);
   switch (sql_int64 (report_format, 0, 0,
-                     "SELECT ROWID FROM report_formats WHERE uuid = '%s';",
-                     quoted_uuid))
+                     "SELECT ROWID FROM report_formats WHERE uuid = '%s'"
+                     " AND ((owner IS NULL) OR (owner ="
+                     " (SELECT users.ROWID FROM users"
+                     "  WHERE users.uuid = '%s')));",
+                     quoted_uuid,
+                     current_credentials.uuid))
     {
       case 0:
         break;
