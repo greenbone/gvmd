@@ -256,7 +256,7 @@ CREATE TABLE report_format_param_options_trash (
 
 CREATE TABLE report_formats (
 	id integer PRIMARY KEY,
-    uuid text UNIQUE NOT NULL,
+	uuid text NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text NOT NULL,
 	extension text,
