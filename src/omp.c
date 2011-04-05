@@ -14324,7 +14324,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                "<nvt_count>"
                                                "%i<growing>%i</growing>"
                                                "</nvt_count>"
-                                               "<in_use>%i</in_use>",
+                                               "<in_use>%i</in_use>"
+                                               "<writable>%i</writable>",
                                                config_iterator_uuid (&configs),
                                                config_iterator_name (&configs),
                                                config_iterator_comment
@@ -14341,7 +14342,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                config_nvts_growing,
                                                get_configs_data->trash
                                                 ? trash_config_in_use (config)
-                                                : config_in_use (config));
+                                                : config_in_use (config),
+                                               get_configs_data->trash
+                                                || config_writable (config));
 
                       if (get_configs_data->trash == 0)
                         {

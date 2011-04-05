@@ -5786,6 +5786,11 @@ get_agents_response_agent_package_filename
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether any tasks are using the config, including trashcan tasks.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>tasks</b>&gt;
               <div style="margin-left: 15px; display: inline;">All tasks using the config.</div>
 <ul style="list-style: none"><li>
@@ -5907,6 +5912,7 @@ get_configs_response_config
        &amp; get_configs_response_config_max_nvt_count
        &amp; get_configs_response_config_known_nvt_count
        &amp; get_configs_response_config_in_use
+       &amp; get_configs_response_config_writable
        &amp; get_configs_response_config_tasks
        &amp; get_configs_response_config_families?
        &amp; get_configs_response_config_preferences?
@@ -5964,6 +5970,12 @@ get_configs_response_config_known_nvt_count
 
 get_configs_response_config_in_use
  = element in_use
+     {
+       boolean
+     }
+
+get_configs_response_config_writable
+ = element writable
      {
        boolean
      }

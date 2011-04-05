@@ -3260,6 +3260,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>max_nvt_count</e>
           <e>known_nvt_count</e>
           <e>in_use</e>
+          <e>writable</e>
           <e>tasks</e>
           <o><e>families</e></o>
           <o><e>preferences</e></o>
@@ -3322,6 +3323,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>in_use</name>
           <summary>Whether any tasks are using the config</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>
+            Whether any tasks are using the config, including trashcan tasks
+          </summary>
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>

@@ -16674,6 +16674,30 @@ config_in_use (config_t config)
 }
 
 /**
+ * @brief Return whether a config is referenced by a task outside the trashcan.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+config_writable (config_t config)
+{
+  if (config == CONFIG_ID_FULL_AND_FAST
+      || config == CONFIG_ID_FULL_AND_FAST_ULTIMATE
+      || config == CONFIG_ID_FULL_AND_VERY_DEEP
+      || config == CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE
+      || config == sql_int (0, 0,
+                            "SELECT ROWID FROM configs WHERE name = 'empty';"))
+    return 0;
+
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM tasks"
+                  " WHERE config = %llu",
+                  config);
+}
+
+/**
  * @brief Return whether a trashcan config is referenced by a task.
  *
  * @param[in]  config  Config.

@@ -3138,6 +3138,7 @@ get_configs_response_config
        & get_configs_response_config_max_nvt_count
        & get_configs_response_config_known_nvt_count
        & get_configs_response_config_in_use
+       & get_configs_response_config_writable
        & get_configs_response_config_tasks
        & get_configs_response_config_families?
        & get_configs_response_config_preferences?
@@ -3204,6 +3205,13 @@ get_configs_response_config_known_nvt_count
 # Whether any tasks are using the config.
 get_configs_response_config_in_use
  = element in_use
+     {
+       boolean
+     }
+
+# Whether any tasks are using the config, including trashcan tasks.
+get_configs_response_config_writable
+ = element writable
      {
        boolean
      }
