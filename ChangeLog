@@ -1,3 +1,9 @@
+2011-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Read over children of OVERRIDES and NOTES in
+	RESULT during a CREATE_REPORT.
+
 2011-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_report_host_detail): Correct name in doc.

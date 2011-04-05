@@ -6336,7 +6336,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("HOST", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST);
         else if (strcasecmp ("NOTES", element_name) == 0)
-          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NOTES);
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NOTES);
+          }
         else if (strcasecmp ("NVT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "oid",
@@ -6347,7 +6350,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT);
         else if (strcasecmp ("OVERRIDES", element_name) == 0)
-          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES);
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES);
+          }
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT);
         else if (strcasecmp ("SUBNET", element_name) == 0)
@@ -12063,6 +12069,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NOTES:
         assert (strcasecmp ("NOTES", element_name) == 0);
+        omp_parser->read_over = 0;
         set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
         break;
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT:
@@ -12075,6 +12082,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES:
         assert (strcasecmp ("OVERRIDES", element_name) == 0);
+        omp_parser->read_over = 0;
         set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
         break;
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT:
