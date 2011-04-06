@@ -1,3 +1,32 @@
+2011-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add LSC SSH ports to targets, including sending the new auth_port_ssh
+	Scanner preference.  Hence increase database version to 43.  Add database
+	migration from version 42 to 43.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 43.
+
+	* src/manage_sql.c (create_tables): Add ssh_port to target tables.
+	(migrate_42_to_43): New function.
+	(database_migrators): Add migrate_42_to_43.
+	(validate_port): New function.
+	(create_target): Add ssh_port arg.
+	(delete_target): Add ssh_port field.
+	(init_target_iterator): Add ssh_port.
+	(target_iterator_ssh_port): New function.  Increment other accessors
+	accordingly.
+	(target_ssh_port): New function.
+
+	* src/manage.c (run_task): Send SSH port to Scanner.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (create_target_data_t, create_target_data_reset)
+	(client_state_t): Add SSH port.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add SSH_LSC_CREDENTIAL/PORT handling to
+	CREATE_TARGET.  Add SSH port to target in GET_TARGETS.
+
 2011-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (config_writable): New function.

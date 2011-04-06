@@ -1124,6 +1124,7 @@ typedef struct
   char *hosts;                   ///< Hosts for new target.
   char *port_range;              ///< Port range for new target.
   char *ssh_lsc_credential_id;   ///< SSH LSC credential for new target.
+  char *ssh_port;                ///< Port for SSH LSC.
   char *smb_lsc_credential_id;   ///< SMB LSC credential for new target.
   char *name;                    ///< Name of new target.
   char *target_locator;          ///< Target locator (source name).
@@ -1143,6 +1144,7 @@ create_target_data_reset (create_target_data_t *data)
   free (data->hosts);
   free (data->port_range);
   free (data->ssh_lsc_credential_id);
+  free (data->ssh_port);
   free (data->smb_lsc_credential_id);
   free (data->name);
   free (data->target_locator);
@@ -3089,6 +3091,7 @@ typedef enum
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_HOSTS,
   CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL,
+  CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT,
   CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_NAME,
   CLIENT_CREATE_TARGET_PORT_RANGE,
@@ -6907,6 +6910,26 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_NAME);
         else if (strcasecmp ("TARGET_LOCATOR", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR);
+        else
+          {
+            if (send_element_error_to_client ("create_target", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL:
+        if (strcasecmp ("PORT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT);
         else
           {
             if (send_element_error_to_client ("create_target", element_name,
@@ -12755,6 +12778,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          create_target_data->comment,
                          create_target_data->port_range,
                          ssh_lsc_credential,
+                         create_target_data->ssh_port,
                          smb_lsc_credential,
                          create_target_data->target_locator,
                          create_target_data->target_locator_username,
@@ -12788,6 +12812,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
                                     "Error in port range"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be created");
+                break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "Error in SSH port"));
                 g_log ("event target", G_LOG_LEVEL_MESSAGE,
                        "Target could not be created");
                 break;
@@ -12849,6 +12880,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME:
         assert (strcasecmp ("USERNAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR);
+        break;
+
+      case CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT:
+        assert (strcasecmp ("PORT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL);
         break;
 
       case CLIENT_CREATE_TASK:
@@ -13051,8 +13087,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
-              if (create_target (target_name, hosts, NULL, NULL, 0, 0, NULL,
-                                 NULL, NULL, &target))
+              if (create_target (target_name, hosts, NULL, NULL, 0, NULL, 0,
+                                 NULL, NULL, NULL, &target))
                 {
                   request_delete_task (&create_task_data->task);
                   g_free (target_name);
@@ -15089,7 +15125,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               while (next (&targets))
                 {
                   char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
-                  const char *port_range;
+                  const char *port_range, *ssh_port;
                   lsc_credential_t ssh_credential, smb_credential;
 
                   ssh_credential = target_iterator_ssh_credential (&targets);
@@ -15117,6 +15153,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       smb_lsc_uuid = lsc_credential_uuid (smb_credential);
                     }
                   port_range = target_iterator_port_range (&targets);
+                  ssh_port = target_iterator_ssh_port (&targets);
 
                   SENDF_TO_CLIENT_OR_FAIL ("<target id=\"%s\">"
                                            "<name>%s</name>"
@@ -15127,6 +15164,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<port_range>%s</port_range>"
                                            "<ssh_lsc_credential id=\"%s\">"
                                            "<name>%s</name>"
+                                           "<port>%s</port>"
                                            "<trash>%i</trash>"
                                            "</ssh_lsc_credential>"
                                            "<smb_lsc_credential id=\"%s\">"
@@ -15149,6 +15187,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            port_range ? port_range : "",
                                            ssh_lsc_uuid ? ssh_lsc_uuid : "",
                                            ssh_lsc_name ? ssh_lsc_name : "",
+                                           ssh_port ? ssh_port : "",
                                            (get_targets_data->trash
                                              && target_iterator_ssh_trash
                                                  (&targets)),
@@ -16698,6 +16737,10 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         openvas_append_text (&create_target_data->target_locator_username,
                              text,
                              text_len);
+        break;
+
+      case CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT:
+        openvas_append_text (&create_target_data->ssh_port, text, text_len);
         break;
 
       case CLIENT_CREATE_TASK_COMMENT:

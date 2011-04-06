@@ -1040,8 +1040,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS schedules_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
   sql ("CREATE TABLE IF NOT EXISTS slaves (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
   sql ("CREATE TABLE IF NOT EXISTS slaves_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
-  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, smb_lsc_credential INTEGER, port_range);");
-  sql ("CREATE TABLE IF NOT EXISTS targets_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, smb_lsc_credential INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range);");
+  sql ("CREATE TABLE IF NOT EXISTS targets_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER, escalator_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER);");
@@ -4582,6 +4582,47 @@ migrate_41_to_42 ()
 }
 
 /**
+ * @brief Migrate the database from version 42 to version 43.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_42_to_43 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Require that the database is currently version 42. */
+
+  if (manage_db_version () != 42)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The targets table got an ssh_port field. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("ALTER TABLE targets ADD column ssh_port;");
+  sql ("ALTER TABLE targets_trash ADD column ssh_port;");
+
+  sql ("UPDATE targets SET ssh_port = " G_STRINGIFY (SSH_PORT)
+       " WHERE lsc_credential > 0;");
+  sql ("UPDATE targets_trash SET ssh_port = " G_STRINGIFY (SSH_PORT)
+       " WHERE lsc_credential > 0;");
+
+  /* Set the database version to 43. */
+
+  set_db_version (43);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -4628,6 +4669,7 @@ static migrator_t database_migrators[]
     {40, migrate_39_to_40},
     {41, migrate_40_to_41},
     {42, migrate_41_to_42},
+    {43, migrate_42_to_43},
     /* End marker. */
     {-1, NULL}};
 
@@ -14692,6 +14734,34 @@ manage_max_hosts (const char *hosts)
 }
 
 /**
+ * @brief Validate a single port.
+ *
+ * @param[in]   port      A port.
+ *
+ * @return 0 success, 1 failed.
+ */
+static int
+validate_port (const char *port)
+{
+  const char *first;
+
+  while (*port && isblank (*port)) port++;
+  if (*port == '\0')
+    return 1;
+
+  first = port;
+  while (*first && isdigit (*first)) first++;
+  if (first == port)
+    return 1;
+
+  while (*first && isblank (*first)) first++;
+  if (*first == '\0')
+    return 0;
+
+  return 1;
+}
+
+/**
  * @brief Validate a port range.
  *
  * Scanner accepts "-100,103,200-1024,3000-4000,60000-".
@@ -14810,6 +14880,7 @@ validate_port_range (const char* port_range)
  * @param[in]   comment         Comment on target.
  * @param[in]   port_range      Port range of target.
  * @param[in]   ssh_lsc_credential  SSH LSC credential.
+ * @param[in]   ssh_port        Port for SSH LSC login.
  * @param[in]   smb_lsc_credential  SMB LSC credential.
  * @param[in]   target_locator  Name of target_locator to import target(s)
  *                              from.
@@ -14818,17 +14889,18 @@ validate_port_range (const char* port_range)
  * @param[out]  target          Created target.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
- *         3 too many hosts, 4 error in port range, -1 if import from target
- *         locator failed or response was empty.
+ *         3 too many hosts, 4 error in port range, 5 error in SSH port,
+ *         -1 if import from target locator failed or response was empty.
  */
 int
 create_target (const char* name, const char* hosts, const char* comment,
                const char* port_range, lsc_credential_t ssh_lsc_credential,
-               lsc_credential_t smb_lsc_credential, const char* target_locator,
-               const char* username, const char* password, target_t* target)
+               const char* ssh_port, lsc_credential_t smb_lsc_credential,
+               const char* target_locator, const char* username,
+               const char* password, target_t* target)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
-  gchar *quoted_hosts, *quoted_comment, *quoted_port_range;
+  gchar *quoted_hosts, *quoted_comment, *quoted_port_range, *quoted_ssh_port;
 
   if (port_range == NULL)
     port_range = "default";
@@ -14837,6 +14909,12 @@ create_target (const char* name, const char* hosts, const char* comment,
     {
       g_free (quoted_name);
       return 4;
+    }
+
+  if (ssh_port && validate_port (ssh_port))
+    {
+      g_free (quoted_name);
+      return 5;
     }
 
   sql ("BEGIN IMMEDIATE;");
@@ -14921,29 +14999,32 @@ create_target (const char* name, const char* hosts, const char* comment,
   quoted_port_range = port_range
                        ? sql_quote (port_range)
                        : g_strdup ("default");
+  quoted_ssh_port = sql_quote (ssh_port ? ssh_port : "22");
 
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO targets"
            " (uuid, name, owner, hosts, comment, lsc_credential,"
-           "  smb_lsc_credential, port_range)"
+           "  ssh_port, smb_lsc_credential, port_range)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', %llu, %llu, '%s');",
+           " '%s', '%s', %llu, '%s', %llu, '%s');",
            quoted_name, current_credentials.uuid, quoted_hosts, quoted_comment,
-           ssh_lsc_credential, smb_lsc_credential, quoted_port_range);
+           ssh_lsc_credential, quoted_ssh_port, smb_lsc_credential,
+           quoted_port_range);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO targets"
          " (uuid, name, owner, hosts, comment, lsc_credential,"
-         "  smb_lsc_credential, port_range)"
+         "  ssh_port, smb_lsc_credential, port_range)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', %llu, %llu, '%s');",
+         " '%s', '', %llu, '%s', %llu, '%s');",
          quoted_name, current_credentials.uuid, quoted_hosts,
-         ssh_lsc_credential, smb_lsc_credential, quoted_port_range);
+         ssh_lsc_credential, quoted_ssh_port, smb_lsc_credential,
+         quoted_port_range);
 
   if (target)
     *target = sqlite3_last_insert_rowid (task_db);
@@ -14951,6 +15032,7 @@ create_target (const char* name, const char* hosts, const char* comment,
   g_free (quoted_name);
   g_free (quoted_hosts);
   g_free (quoted_port_range);
+  g_free (quoted_ssh_port);
 
   sql ("COMMIT;");
 
@@ -15028,9 +15110,9 @@ delete_target (const char *target_id, int ultimate)
   if (ultimate == 0)
     {
       sql ("INSERT INTO targets_trash"
-           " (uuid, owner, name, hosts, comment, lsc_credential,"
+           " (uuid, owner, name, hosts, comment, lsc_credential, ssh_port"
            "  smb_lsc_credential, ssh_location, smb_location)"
-           " SELECT uuid, owner, name, hosts, comment, lsc_credential,"
+           " SELECT uuid, owner, name, hosts, comment, lsc_credential, ssh_port"
            "        smb_lsc_credential, " G_STRINGIFY (LOCATION_TABLE) ", "
            "      " G_STRINGIFY (LOCATION_TABLE)
            " FROM targets WHERE ROWID = %llu;",
@@ -15070,7 +15152,7 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
   if (target)
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " smb_lsc_credential, port_range, %s, %s"
+                   " ssh_port, smb_lsc_credential, port_range, %s, %s"
                    " FROM targets%s"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -15086,7 +15168,7 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
   else
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " smb_lsc_credential, port_range, %s, %s"
+                   " ssh_port, smb_lsc_credential, port_range, %s, %s"
                    " FROM targets%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -15173,6 +15255,15 @@ target_iterator_ssh_credential (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the SSH LSC port of the target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return SSH LSC port of the target or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_ssh_port, 6);
+
+/**
  * @brief Get the SMB LSC credential from a target iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -15184,7 +15275,7 @@ target_iterator_smb_credential (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 6);
+  ret = (int) sqlite3_column_int (iterator->stmt, 7);
   return ret;
 }
 
@@ -15195,7 +15286,7 @@ target_iterator_smb_credential (iterator_t* iterator)
  *
  * @return Port range of the target or NULL if iteration is complete.
  */
-DEF_ACCESS (target_iterator_port_range, 7);
+DEF_ACCESS (target_iterator_port_range, 8);
 
 /**
  * @brief Get the location of the SSH LSC credential from a target iterator.
@@ -15209,7 +15300,7 @@ target_iterator_ssh_trash (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 8);
+  ret = (int) sqlite3_column_int (iterator->stmt, 9);
   return ret;
 }
 
@@ -15225,7 +15316,7 @@ target_iterator_smb_trash (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 9);
+  ret = (int) sqlite3_column_int (iterator->stmt, 10);
   return ret;
 }
 
@@ -15303,6 +15394,21 @@ target_port_range (target_t target)
 {
   return sql_string (0, 0,
                      "SELECT port_range FROM targets WHERE ROWID = %llu;",
+                     target);
+}
+
+/**
+ * @brief Return the SSH LSC port of a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated port if available, else NULL.
+ */
+char*
+target_ssh_port (target_t target)
+{
+  return sql_string (0, 0,
+                     "SELECT ssh_port FROM targets WHERE ROWID = %llu;",
                      target);
 }
 
@@ -26073,9 +26179,9 @@ manage_restore (const char *id)
         }
 
       sql ("INSERT INTO targets"
-           " (uuid, owner, name, hosts, comment, lsc_credential,"
+           " (uuid, owner, name, hosts, comment, lsc_credential, ssh_port"
            "  smb_lsc_credential)"
-           " SELECT uuid, owner, name, hosts, comment, lsc_credential,"
+           " SELECT uuid, owner, name, hosts, comment, lsc_credential, ssh_port"
            "        smb_lsc_credential"
            " FROM targets_trash WHERE ROWID = %llu;",
            resource);

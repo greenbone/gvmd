@@ -1760,7 +1760,7 @@ static int
 run_task (task_t task, char **report_id, int from)
 {
   target_t target;
-  char *hosts, *port_range;
+  char *hosts, *port_range, *port;
   gchar *plugins;
   int fail, pid;
   GSList *files = NULL;
@@ -1999,6 +1999,18 @@ run_task (task_t task, char **report_id, int from)
       return -10;
     }
   free (port_range);
+
+  /* Send the SSH LSC port. */
+
+  port = target_ssh_port (target);
+  if (port && sendf_to_server ("auth_port_ssh <|> %s\n", port))
+    {
+      free (port);
+      set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
+      return -10;
+    }
+  free (port);
 
   /* Collect task files to send. */
 

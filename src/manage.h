@@ -829,8 +829,8 @@ find_target (const char*, target_t*);
 
 int
 create_target (const char*, const char*, const char*, const char*,
-               lsc_credential_t, lsc_credential_t, const char*, const char*,
-               const char*, target_t*);
+               lsc_credential_t, const char*, lsc_credential_t, const char*,
+               const char*, const char*, target_t*);
 
 int
 delete_target (const char*, int);
@@ -856,6 +856,9 @@ target_iterator_comment (iterator_t*);
 int
 target_iterator_ssh_credential (iterator_t*);
 
+const char*
+target_iterator_ssh_port (iterator_t*);
+
 int
 target_iterator_smb_credential (iterator_t*);
 
@@ -876,6 +879,9 @@ target_name (target_t);
 
 char*
 target_hosts (target_t);
+
+char*
+target_ssh_port (target_t);
 
 char*
 trash_target_hosts (target_t);
