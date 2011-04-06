@@ -1,5 +1,10 @@
 2011-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_target): Only set the SSH port when there is a
+	credential.
+
+2011-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add LSC SSH ports to targets, including sending the new auth_port_ssh
 	Scanner preference.  Hence increase database version to 43.  Add database
 	migration from version 42 to 43.

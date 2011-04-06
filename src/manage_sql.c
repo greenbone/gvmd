@@ -14999,7 +14999,10 @@ create_target (const char* name, const char* hosts, const char* comment,
   quoted_port_range = port_range
                        ? sql_quote (port_range)
                        : g_strdup ("default");
-  quoted_ssh_port = sql_quote (ssh_port ? ssh_port : "22");
+  if (ssh_lsc_credential)
+    quoted_ssh_port = sql_insert (ssh_port ? ssh_port : "22");
+  else
+    quoted_ssh_port = g_strdup ("NULL");
 
   if (comment)
     {
@@ -15009,7 +15012,7 @@ create_target (const char* name, const char* hosts, const char* comment,
            "  ssh_port, smb_lsc_credential, port_range)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', %llu, '%s', %llu, '%s');",
+           " '%s', '%s', %llu, %s, %llu, '%s');",
            quoted_name, current_credentials.uuid, quoted_hosts, quoted_comment,
            ssh_lsc_credential, quoted_ssh_port, smb_lsc_credential,
            quoted_port_range);
@@ -15021,7 +15024,7 @@ create_target (const char* name, const char* hosts, const char* comment,
          "  ssh_port, smb_lsc_credential, port_range)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', %llu, '%s', %llu, '%s');",
+         " '%s', '', %llu, %s, %llu, '%s');",
          quoted_name, current_credentials.uuid, quoted_hosts,
          ssh_lsc_credential, quoted_ssh_port, smb_lsc_credential,
          quoted_port_range);
