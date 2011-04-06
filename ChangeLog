@@ -1,5 +1,10 @@
 2011-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_target, manage_restore): Add missing comma in
+	SSH port SQL.
+
+2011-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_target): Only set the SSH port when there is a
 	credential.
 

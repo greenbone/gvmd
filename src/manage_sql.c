@@ -15113,9 +15113,9 @@ delete_target (const char *target_id, int ultimate)
   if (ultimate == 0)
     {
       sql ("INSERT INTO targets_trash"
-           " (uuid, owner, name, hosts, comment, lsc_credential, ssh_port"
+           " (uuid, owner, name, hosts, comment, lsc_credential, ssh_port,"
            "  smb_lsc_credential, ssh_location, smb_location)"
-           " SELECT uuid, owner, name, hosts, comment, lsc_credential, ssh_port"
+           " SELECT uuid, owner, name, hosts, comment, lsc_credential, ssh_port,"
            "        smb_lsc_credential, " G_STRINGIFY (LOCATION_TABLE) ", "
            "      " G_STRINGIFY (LOCATION_TABLE)
            " FROM targets WHERE ROWID = %llu;",
@@ -26182,9 +26182,9 @@ manage_restore (const char *id)
         }
 
       sql ("INSERT INTO targets"
-           " (uuid, owner, name, hosts, comment, lsc_credential, ssh_port"
+           " (uuid, owner, name, hosts, comment, lsc_credential, ssh_port,"
            "  smb_lsc_credential)"
-           " SELECT uuid, owner, name, hosts, comment, lsc_credential, ssh_port"
+           " SELECT uuid, owner, name, hosts, comment, lsc_credential, ssh_port,"
            "        smb_lsc_credential"
            " FROM targets_trash WHERE ROWID = %llu;",
            resource);
