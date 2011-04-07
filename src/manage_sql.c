@@ -62,7 +62,14 @@
 
 /* Internal types and preprocessor definitions. */
 
+/**
+ * @brief A user visible resource.
+ */
 typedef long long int resource_t;
+
+/**
+ * @brief A report host.
+ */
 typedef long long int report_host_t;
 
 /**
@@ -5476,6 +5483,8 @@ init_escalator_iterator (iterator_t *iterator, escalator_t escalator,
  * @brief Return the escalator from an escalator iterator.
  *
  * @param[in]  iterator  Iterator.
+ *
+ * @return Escalator of the iterator or NULL if iteration is complete.
  */
 escalator_t
 escalator_iterator_escalator (iterator_t* iterator)
@@ -5488,6 +5497,8 @@ escalator_iterator_escalator (iterator_t* iterator)
  * @brief Return the UUID from an escalator iterator.
  *
  * @param[in]  iterator  Iterator.
+ *
+ * @return UUID of the escalator or NULL if iteration is complete.
  */
 const char*
 escalator_iterator_uuid (iterator_t* iterator)
@@ -5502,6 +5513,8 @@ escalator_iterator_uuid (iterator_t* iterator)
  * @brief Return the name from an escalator iterator.
  *
  * @param[in]  iterator  Iterator.
+ *
+ * @return Name the escalator or NULL if iteration is complete.
  */
 const char*
 escalator_iterator_name (iterator_t* iterator)
@@ -5516,6 +5529,8 @@ escalator_iterator_name (iterator_t* iterator)
  * @brief Return the comment on an escalator iterator.
  *
  * @param[in]  iterator  Iterator.
+ *
+ * @return Comment on the escalator or NULL if iteration is complete.
  */
 const char *
 escalator_iterator_comment (iterator_t* iterator)
@@ -5530,6 +5545,8 @@ escalator_iterator_comment (iterator_t* iterator)
  * @brief Return the event from an escalator iterator.
  *
  * @param[in]  iterator  Iterator.
+ *
+ * @return Event of the escalator or NULL if iteration is complete.
  */
 int
 escalator_iterator_event (iterator_t* iterator)
@@ -5544,6 +5561,8 @@ escalator_iterator_event (iterator_t* iterator)
  * @brief Return the condition from an escalator iterator.
  *
  * @param[in]  iterator  Iterator.
+ *
+ * @return Condition of the escalator or NULL if iteration is complete.
  */
 int
 escalator_iterator_condition (iterator_t* iterator)
@@ -5558,6 +5577,8 @@ escalator_iterator_condition (iterator_t* iterator)
  * @brief Return the method from an escalator iterator.
  *
  * @param[in]  iterator  Iterator.
+ *
+ * @return Method of the escalator or NULL if iteration is complete.
  */
 int
 escalator_iterator_method (iterator_t* iterator)
@@ -5572,6 +5593,8 @@ escalator_iterator_method (iterator_t* iterator)
  * @brief Return whether an escalator is in use.
  *
  * @param[in]  iterator  Iterator.
+ *
+ * @return Use state of the escalator or NULL if iteration is complete.
  */
 int
 escalator_iterator_in_use (iterator_t* iterator)
@@ -5608,6 +5631,8 @@ init_escalator_data_iterator (iterator_t *iterator, escalator_t escalator,
  * @brief Return the name from an escalator data iterator.
  *
  * @param[in]  iterator  Iterator.
+ *
+ * @return Name of the escalator data or NULL if iteration is complete.
  */
 const char*
 escalator_data_iterator_name (iterator_t* iterator)
@@ -5622,6 +5647,9 @@ escalator_data_iterator_name (iterator_t* iterator)
  * @brief Return the data from an escalator data iterator.
  *
  * @param[in]  iterator  Iterator.
+ *
+ *
+ * @return Data of the escalator data or NULL if iteration is complete.
  */
 const char*
 escalator_data_iterator_data (iterator_t* iterator)
@@ -6383,6 +6411,8 @@ init_escalator_task_iterator (iterator_t* iterator, escalator_t escalator,
  * @brief Return the name from an escalator task iterator.
  *
  * @param[in]  iterator  Iterator.
+ *
+ * @return Name of the task or NULL if iteration is complete.
  */
 const char*
 escalator_task_iterator_name (iterator_t* iterator)
@@ -6397,6 +6427,8 @@ escalator_task_iterator_name (iterator_t* iterator)
  * @brief Return the uuid from an escalator task iterator.
  *
  * @param[in]  iterator  Iterator.
+ *
+ * @return UUID of the task or NULL if iteration is complete.
  */
 const char*
 escalator_task_iterator_uuid (iterator_t* iterator)

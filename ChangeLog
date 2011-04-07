@@ -1,5 +1,12 @@
 2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (report_type_iterator_name)
+	(report_type_iterator_title): Doc return.
+
+	* src/manage_sql.c: Add missing docs and return docs.
+
+2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In the CLIENT_GET_TASKS brief
 	case get the target hosts from the right place.
 

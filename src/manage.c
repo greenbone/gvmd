@@ -2805,6 +2805,8 @@ next_report_type (report_type_iterator_t* iterator)
  * @brief Return the name from a report type iterator.
  *
  * @param[in]  iterator  Iterator.
+ *
+ * @return Name.
  */
 const char*
 report_type_iterator_name (report_type_iterator_t* iterator)
@@ -2816,6 +2818,8 @@ report_type_iterator_name (report_type_iterator_t* iterator)
  * @brief Return the title from a report type iterator.
  *
  * @param[in]  iterator  Iterator.
+ *
+ * @return Title.
  */
 const char*
 report_type_iterator_title (report_type_iterator_t* iterator)
