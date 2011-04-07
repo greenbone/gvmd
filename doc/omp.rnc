@@ -1867,6 +1867,7 @@ get_configs
        attribute config_id { uuid }?
        & # Whether to get the trashcan configs instead.
        attribute trash { boolean }?
+       & attribute export { boolean }?
        & attribute families { boolean }?
        & attribute preferences { boolean }?
        & attribute sort_order { sort_order }?

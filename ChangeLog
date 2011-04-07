@@ -1,5 +1,14 @@
 2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/CMakeLists.txt (omp.rnc, omp.html): Put the generate command
+	directly in the shell command, because passing args to "." is a bashism.
+
+	* src/schema_formats/XML/OMP.xml: Add GET_CONFIGS "export" attribute.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (report_type_iterator_name)
 	(report_type_iterator_title): Doc return.
 

@@ -5712,6 +5712,10 @@ get_agents_response_agent_package_filename
           Whether to get the trashcan configs instead.
           </li>
 <li>
+          @<b>export</b>
+          (<a href="#type_boolean">boolean</a>)
+          </li>
+<li>
           @<b>families</b>
           (<a href="#type_boolean">boolean</a>)
           </li>
@@ -5888,6 +5892,7 @@ get_agents_response_agent_package_filename
      {
        attribute config_id { uuid }?
        &amp; attribute trash { boolean }?
+       &amp; attribute export { boolean }?
        &amp; attribute families { boolean }?
        &amp; attribute preferences { boolean }?
        &amp; attribute sort_order { sort_order }?

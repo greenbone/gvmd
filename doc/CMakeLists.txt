@@ -146,7 +146,7 @@ add_custom_command (OUTPUT .built-html_full
 
 add_custom_command (OUTPUT omp.rnc
                     COMMAND sh
-					ARGS -c \"cd ../src/schema_formats/RNC && . ./generate ../XML/OMP.xml > ../../../doc/omp.rnc\;\"
+					ARGS -c \"cd ../src/schema_formats/RNC && xsltproc ./RNC.xsl ../XML/OMP.xml > ../../../doc/omp.rnc\;\"
 					DEPENDS
 					../src/schema_formats/XML/OMP.xml
 					../src/schema_formats/RNC/generate
@@ -155,7 +155,7 @@ add_custom_command (OUTPUT omp.rnc
 
 add_custom_command (OUTPUT omp.html
                     COMMAND sh
-					ARGS -c \"cd ../src/schema_formats/HTML && . ./generate ../XML/OMP.xml > ../../../doc/omp.html\;\"
+					ARGS -c \"cd ../src/schema_formats/HTML && xsltproc ./HTML.xsl ../XML/OMP.xml > ../../../doc/omp.html\;\"
 					DEPENDS
 					../src/schema_formats/XML/OMP.xml
 					../src/schema_formats/HTML/generate
