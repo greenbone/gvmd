@@ -881,6 +881,9 @@ char*
 target_name (target_t);
 
 char*
+trash_target_name (target_t);
+
+char*
 target_hosts (target_t);
 
 char*

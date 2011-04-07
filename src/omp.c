@@ -15960,8 +15960,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     config_uuid = task_config_uuid (index);
                     escalator = task_escalator_name (index);
                     escalator_uuid = task_escalator_uuid (index);
-                    task_target_uuid = target_uuid (target);
-                    task_target_name = target_name (target);
+                    if (target_in_trash)
+                      {
+                        task_target_uuid = trash_target_uuid (target);
+                        task_target_name = trash_target_name (target);
+                      }
+                    else
+                      {
+                        task_target_uuid = target_uuid (target);
+                        task_target_name = target_name (target);
+                      }
                     if (task_slave_in_trash (index))
                       {
                         task_slave_uuid = trash_slave_uuid (slave);

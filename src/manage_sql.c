@@ -15391,6 +15391,21 @@ target_name (target_t target)
 }
 
 /**
+ * @brief Return the name of a trashcan target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char*
+trash_target_name (target_t target)
+{
+  return sql_string (0, 0,
+                     "SELECT name FROM targets_trash WHERE ROWID = %llu;",
+                     target);
+}
+
+/**
  * @brief Return the hosts associated with a target.
  *
  * @param[in]  target  Target.

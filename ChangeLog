@@ -1,5 +1,15 @@
 2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (trash_target_name): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In the CLIENT_GET_TASKS brief
+	case get the name and UUID or the target from the trashcan when
+	appropriate.
+
+2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* ChangeLog: Clear tabs out of text.
 
 2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
