@@ -15713,9 +15713,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     target = task_target (index);
                     target_in_trash = task_target_in_trash (index);
                     if (target_in_trash)
-                      hosts = target ? target_hosts (target) : NULL;
-                    else
                       hosts = target ? trash_target_hosts (target) : NULL;
+                    else
+                      hosts = target ? target_hosts (target) : NULL;
                     maximum_hosts = hosts ? manage_max_hosts (hosts) : 0;
 
                     slave = task_slave (index);

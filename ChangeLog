@@ -1,5 +1,10 @@
 2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In the CLIENT_GET_TASKS brief
+	case get the target hosts from the right place.
+
+2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (trash_target_name): New function.
 
 	* src/manage.h: Add header accordingly.
