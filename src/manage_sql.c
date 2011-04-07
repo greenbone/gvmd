@@ -12334,13 +12334,28 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
 
   if (task && tsk_uuid)
     {
-      char* tsk_name = task_name (task);
+      char *tsk_name, *task_target_uuid;
+      target_t target;
+
+      tsk_name = task_name (task);
+
+      target = task_target (task);
+      if (task_target_in_trash (task))
+        task_target_uuid = trash_target_uuid (target);
+      else
+        task_target_uuid = target_uuid (target);
+
       PRINT (out,
              "<task id=\"%s\">"
              "<name>%s</name>"
+             "<target id=\"%s\">"
+             "<trash>%i</trash>"
+             "</target>"
              "</task>",
              tsk_uuid,
-             tsk_name ? tsk_name : "");
+             tsk_name ? tsk_name : "",
+             task_target_uuid ? task_target_uuid : "",
+             task_target_in_trash (task));
       free (tsk_name);
       free (tsk_uuid);
     }
@@ -15342,6 +15357,21 @@ target_uuid (target_t target)
 {
   return sql_string (0, 0,
                      "SELECT uuid FROM targets WHERE ROWID = %llu;",
+                     target);
+}
+
+/**
+ * @brief Return the UUID of a trashcan target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+trash_target_uuid (target_t target)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM targets_trash WHERE ROWID = %llu;",
                      target);
 }
 

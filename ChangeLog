@@ -1,3 +1,11 @@
+2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Add the target to the task, so that
+	clients can see if the task is a container task.
+	(trash_target_uuid): New function.
+
+	* src/manage.h: Add header accordingly.
+
 2011-04-07  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* doc/openvasmd.8.xml: Fixed typo.
