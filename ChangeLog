@@ -1,3 +1,7 @@
+2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (validate_port): Ensure port is within range.
+
 2011-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_target, manage_restore): Add missing comma in

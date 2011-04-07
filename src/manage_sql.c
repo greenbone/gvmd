@@ -14756,8 +14756,15 @@ validate_port (const char *port)
 
   while (*first && isblank (*first)) first++;
   if (*first == '\0')
-    return 0;
-
+    {
+      long int number;
+      number = strtol (port, NULL, 10);
+      if (number <= 0)
+        return 1;
+      if (number > 65535)
+        return 1;
+      return 0;
+    }
   return 1;
 }
 
