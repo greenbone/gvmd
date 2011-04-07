@@ -1,3 +1,9 @@
+2011-04-07  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* doc/openvasmd.8.xml: Fixed typo.
+
+	* doc/openvasmd.html, doc/openvasmd.8: Regenerated.
+
 2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (migrate_42_to_43): Replace ref to missing define with
