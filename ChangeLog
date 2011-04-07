@@ -1,5 +1,10 @@
 2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (migrate_42_to_43): Replace ref to missing define with
+	fixed value.
+
+2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql (targets): Add ssh_port.
 	(report_host_details): New table.
 

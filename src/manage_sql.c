@@ -4608,9 +4608,9 @@ migrate_42_to_43 ()
   sql ("ALTER TABLE targets ADD column ssh_port;");
   sql ("ALTER TABLE targets_trash ADD column ssh_port;");
 
-  sql ("UPDATE targets SET ssh_port = " G_STRINGIFY (SSH_PORT)
+  sql ("UPDATE targets SET ssh_port = 22"
        " WHERE lsc_credential > 0;");
-  sql ("UPDATE targets_trash SET ssh_port = " G_STRINGIFY (SSH_PORT)
+  sql ("UPDATE targets_trash SET ssh_port = 22"
        " WHERE lsc_credential > 0;");
 
   /* Set the database version to 43. */
