@@ -1379,6 +1379,20 @@ command_definition_ele
               <div style="margin-left: 15px; display: inline;">The name of the task.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>target</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The target of the task.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>trash</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 <li>
@@ -1739,12 +1753,26 @@ report_report_task
      {
        attribute id { uuid }
        &amp; report_report_task_name
+       &amp; report_report_task_target
      }
 
 report_report_task_name
  = element name
      {
        name
+     }
+
+report_report_task_target
+ = element target
+     {
+       attribute id { uuid }
+       &amp; report_report_task_target_trash
+     }
+
+report_report_task_target_trash
+ = element trash
+     {
+       boolean
      }
 
 report_report_ports
@@ -4282,10 +4310,17 @@ create_slave_password
 <li>
               &lt;<b>ssh_lsc_credential</b>&gt;
               <div style="margin-left: 15px; display: inline;">SSH login credentials for target.</div>
-<ul style="list-style: none"><li>
+<ul style="list-style: none">
+<li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
-          </li></ul>
+          </li>
+<li>
+              &lt;<b>port</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The port the LSCs will use.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>smb_lsc_credential</b>&gt;
@@ -4371,6 +4406,13 @@ create_target_ssh_lsc_credential
  = element ssh_lsc_credential
      {
        attribute id { uuid }
+       &amp; create_target_ssh_lsc_credential_port
+     }
+
+create_target_ssh_lsc_credential_port
+ = element port
+     {
+       text
      }
 
 create_target_smb_lsc_credential
@@ -10584,6 +10626,11 @@ get_target_locators_response_target_locator_name
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>port</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The port the LSCs will use.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>trash</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the LSC credential is in the trashcan.</div>
 <ul style="list-style: none"></ul>
@@ -10706,6 +10753,7 @@ get_targets_response_target_ssh_lsc_credential
      {
        attribute id { uuid_or_empty }
        &amp; get_targets_response_target_ssh_lsc_credential_name
+       &amp; get_targets_response_target_ssh_lsc_credential_port
        &amp; get_targets_response_target_ssh_lsc_credential_trash
      }
 
@@ -10713,6 +10761,12 @@ get_targets_response_target_ssh_lsc_credential_name
  = element name
      {
        name
+     }
+
+get_targets_response_target_ssh_lsc_credential_port
+ = element port
+     {
+       text
      }
 
 get_targets_response_target_ssh_lsc_credential_trash

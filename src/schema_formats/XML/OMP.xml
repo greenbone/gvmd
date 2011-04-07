@@ -652,11 +652,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>name</e>
+          <e>target</e>
         </pattern>
         <ele>
           <name>name</name>
           <summary>The name of the task</summary>
           <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>target</name>
+          <summary>The target of the task</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>trash</name>
+            <pattern><t>boolean</t></pattern>
+          </ele>
         </ele>
       </ele>
       <ele>
@@ -2162,7 +2179,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>uuid</type>
           <required>1</required>
         </attrib>
+        <e>port</e>
       </pattern>
+      <ele>
+        <name>port</name>
+        <summary>The port the LSCs will use</summary>
+        <pattern>text</pattern>
+      </ele>
     </ele>
     <ele>
       <name>smb_lsc_credential</name>
@@ -6656,12 +6679,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <e>port</e>
             <e>trash</e>
           </pattern>
           <ele>
             <name>name</name>
             <summary>The name of the SSH LSC credential</summary>
             <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>port</name>
+            <summary>The port the LSCs will use</summary>
+            <pattern>text</pattern>
           </ele>
           <ele>
             <name>trash</name>

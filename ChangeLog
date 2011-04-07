@@ -1,5 +1,12 @@
 2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Add TARGET to TASK in element REPORT.
+	Add PORT to SSH_LSC_CREDENTIAL in CREATE_TARGET and GET_TARGETS.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/CMakeLists.txt (omp.rnc, omp.html): Put the generate command
 	directly in the shell command, because passing args to "." is a bashism.
 

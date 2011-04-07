@@ -700,6 +700,7 @@ report_report_task
      {
        attribute id { uuid }
        & report_report_task_name
+       & report_report_task_target
      }
 
 # The name of the task.
@@ -707,6 +708,20 @@ report_report_task_name
  = element name
      {
        name
+     }
+
+# The target of the task.
+report_report_task_target
+ = element target
+     {
+       attribute id { uuid }
+       & report_report_task_target_trash
+     }
+
+report_report_task_target_trash
+ = element trash
+     {
+       boolean
      }
 
 report_report_ports
@@ -1581,6 +1596,14 @@ create_target_ssh_lsc_credential
  = element ssh_lsc_credential
      {
        attribute id { uuid }
+       & create_target_ssh_lsc_credential_port
+     }
+
+# The port the LSCs will use.
+create_target_ssh_lsc_credential_port
+ = element port
+     {
+       text
      }
 
 # SMB login credentials for target.
@@ -4964,6 +4987,7 @@ get_targets_response_target_ssh_lsc_credential
      {
        attribute id { uuid_or_empty }
        & get_targets_response_target_ssh_lsc_credential_name
+       & get_targets_response_target_ssh_lsc_credential_port
        & get_targets_response_target_ssh_lsc_credential_trash
      }
 
@@ -4972,6 +4996,13 @@ get_targets_response_target_ssh_lsc_credential_name
  = element name
      {
        name
+     }
+
+# The port the LSCs will use.
+get_targets_response_target_ssh_lsc_credential_port
+ = element port
+     {
+       text
      }
 
 # Whether the LSC credential is in the trashcan.
