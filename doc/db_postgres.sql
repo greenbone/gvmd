@@ -111,6 +111,7 @@ CREATE TABLE targets (
 	hosts text,
 	comment text,
 	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
+	ssh_port text,
 	smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,
 	port_range text);
 
@@ -291,6 +292,15 @@ CREATE TABLE report_hosts (
 	attack_state INTEGER,
 	current_port text,
 	max_port text);
+
+CREATE TABLE report_host_details (
+	id integer PRIMARY KEY,
+	report_host integer REFERENCES report_hosts (id) ON DELETE RESTRICT,
+	source_type text,
+	source_name text,
+	source_description text,
+	name text,
+	value text);
 
 CREATE TABLE report_results (
 	report integer PRIMARY KEY REFERENCES reports (id) ON DELETE RESTRICT,

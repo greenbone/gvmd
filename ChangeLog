@@ -1,5 +1,12 @@
 2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db_postgres.sql (targets): Add ssh_port.
+	(report_host_details): New table.
+
+	* doc/db.png: Update from SQL.
+
+2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (validate_port): Ensure port is within range.
 
 2011-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
