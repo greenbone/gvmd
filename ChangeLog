@@ -1,5 +1,9 @@
 2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* ChangeLog: Clear tabs out of text.
+
+2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Add the target to the task, so that
 	clients can see if the task is a container task.
 	(trash_target_uuid): New function.
@@ -10217,7 +10221,7 @@
 	src/tests/omp_get_report_4.c, src/tests/omp_get_report_6.c,
 	src/tests/omp_start_task_2.c, src/tests/omp_get_report_8.c,
 	src/tests/omp_delete_task_0.c, src/tests/omp_delete_task_2.c,
-	src/tests/omp_get_configs_3.c: Replace "server"	with "scanner" everywhere.
+	src/tests/omp_get_configs_3.c: Replace "server" with "scanner" everywhere.
 
 2009-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
@@ -10358,7 +10362,7 @@
 	src/tests/omp_delete_task_2.c, src/tests/omp_help_0.c,
 	src/tests/omp_get_configs_1.c, src/tests/omp_get_rules_0.c,
 	src/tests/omp_create_config_1.c, src/tests/omp_get_configs_3.c,
-	src/tests/omp_delete_report_1.c, src/tests/omp_get_preferences_0.c:	Use
+	src/tests/omp_delete_report_1.c, src/tests/omp_get_preferences_0.c: Use
 	new openvas-library/omp interface names.
 
 2009-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
@@ -10397,7 +10401,7 @@
 	(connect_to_server): Remove.  Replaced in openvas_server library.
 
 	* src/openvasmd.c, src/otpd.c, src/ompd.c: Replace calls to make_session,
-	end_session	and connect_to_server with calls to the new openvas_server
+	end_session and connect_to_server with calls to the new openvas_server
 	equivalents.
 
 2009-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
@@ -10544,7 +10548,7 @@
 	(init_manage): Load NVT cache from DB into memory.
 	(insert_rc_into_config): Do the family lookup with nvti_cache and use the
 	families hash table for counting only.  Also only do the family lookup if
-	the plugin is included ("yes"), and	use a single SQL statement to cache
+	the plugin is included ("yes"), and use a single SQL statement to cache
 	all the config info.
 
 2009-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
@@ -11138,7 +11142,7 @@
 	* src/manage.h (report_task): New header.
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT add report
-	ID and task with ID and name to the XML	report.
+	ID and task with ID and name to the XML report.
 
 2009-08-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
@@ -11442,7 +11446,7 @@
 
 2009-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Add more specific status_text attributes for "resource missing"	(404)
+	Add more specific status_text attributes for "resource missing" (404)
 	errors.
 
 	* src/manage.c (start_task): Return -3 if create_report fails.
@@ -11978,9 +11982,9 @@
 	(omp_xml_handle_end_element): Adjust CLIENT_DELETE_REPORT for new
 	delete_report interface.  Rework CLIENT_GET_REPORT to reduce indentation,
 	building the nbe from the results table.  Adjust CLIENT_MODIFY_REPORT for
-	new	set_report_parameter interface.  In CLIENT_GET_STATUS pass task to
+	new set_report_parameter interface.  In CLIENT_GET_STATUS pass task to
 	task_last_report_id instead of passing uuid, free timestamp and add
-	missing	cleanup_task_iterator calls.
+	missing cleanup_task_iterator calls.
 
 	* src/otp.c (write_message): Call make_result instead of writing to
 	stream.
@@ -12163,8 +12167,8 @@
 
 2009-07-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Correct the handling of the case where the initial OMP XML elements	are
-	shorter	than the OTP init string.
+	Correct the handling of the case where the initial OMP XML elements are
+	shorter than the OTP init string.
 
 	* src/oxpd.c (read_protocol): Update the comment about how much is read.
 	Convert some direct returns to break out of the main loop instead.  Break
@@ -12249,7 +12253,7 @@
 	(serve_omp): Account for new init states when preparing for select.
 
 	* src/otp.c (process_otp_server_input): Add
-	SERVER_INIT_SENT_COMPLETE_LIST and SERVER_INIT_SENT_PASSWORD to the	done
+	SERVER_INIT_SENT_COMPLETE_LIST and SERVER_INIT_SENT_PASSWORD to the done
 	init state case.  In SERVER_PLUGIN_LIST_OID and SERVER_PLUGINS_MD5 set a
 	further init state instead of replying to the server directly.
 
@@ -13575,7 +13579,7 @@
 
 	* src/tests/omp_version_0.c: Remove.  Rename to omp_get_version_0.c.
 	* src/tests/omp_get_version_0.c: New file.  Was omp_version_0.c.  Adjust
-	for	new name.
+	for new name.
 
 2009-05-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
@@ -14520,8 +14524,8 @@
 	(message_data_t): Annotate members temp.
 	(append_debug_message, append_hole_message, append_info_message,
 	append_log_message, append_note_message): Annotate message arg keep.
-	(current_server_preference,	current_server_plugin_dependency_name,
-	current_server_plugin_dependency_dependencies): Annotate only.
+	(current_server_preference, current_server_plugin_dependency_name)
+	(current_server_plugin_dependency_dependencies): Annotate only.
 	(add_server_preference,
 	append_to_current_server_plugin_dependency): Annotate args keep.
 	(add_server_plugins_dependency): Annotate args keep.  Make assert
@@ -14534,7 +14538,7 @@
 	(parse_server_preference_value, parse_server_preference_value): Make
 	assert explicitly boolean. Cast char for memchr.
 	(parse_server_plugin_dependency_dependency, parse_server_server): Make
-	from_start and from_end	buffer_size_t.  Annotate dependent variables.
+	from_start and from_end buffer_size_t.  Annotate dependent variables.
 	Correct <|> checks.
 	(sync_buffer): Use buffer_size_t format in tracef.
 	(process_otp_server_input): Make from_start and from_end size_t.
@@ -14580,7 +14584,7 @@
 	from_server_start, from_server_end): Change to buffer_size_t.
 	(serve_otp): Use buffer_size_t format for tracef.  Make fds checks
 	explicitly boolean.  Change initial_start to buffer_size_t.  Cast count
-	for	gnutls_perror.
+	for gnutls_perror.
 
 	* src/openvasmd.c (from_buffer_size, from_client_start, from_client_end,
 	from_server_start, from_server_end): Change to buffer_size_t.
@@ -14674,8 +14678,8 @@
 	(only_dirent_pointer): New type.
 	(load_tasks_free, save_task_error): New functions.
 	(load_tasks): Check names after scandir.  Call a shared cleanup function
-	instead	of jumping.  Free file_name at the end of each task iteration.
-	(save_task): Call a shared cleanup function	instead	of jumping.  Check
+	instead of jumping.  Free file_name at the end of each task iteration.
+	(save_task): Call a shared cleanup function instead of jumping.  Check
 	task->description before using it.
 	(set_task_parameter): Annotate value arg.  Check parameter for tracef.
 	Fail if parameter is NULL.  Check values before freeing them.  Always free
@@ -14972,7 +14976,7 @@
 	functions.
 	(delete_report, set_report_parameter): Switch to UUIDs.
 
-	* src/omp.c (send_reports): Switch to UUIDs.  Free all names on	send fail.
+	* src/omp.c (send_reports): Switch to UUIDs.  Free all names on send fail.
 	(omp_xml_handle_end_element): Switch to UUIDs for reports.  Correct
 	response tag in CLIENT_GET_REPORT.
 
@@ -15186,7 +15190,7 @@
 
 	* src/tests/omp_abort_task_0.c, src/tests/omp_start_task_0.c,
 	src/tests/omp_modify_task_0.c, src/tests/omp_modify_task_0.c: Wait for
-	server with	wait_for_task_start.  Delete task on exit.
+	server with wait_for_task_start.  Delete task on exit.
 
 2009-03-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
@@ -15230,7 +15234,7 @@
 	Start separating the implementation into components.
 
 	* src/openvasmd.c: Move most functions and variables out to new files.
-	Improve	implementation notes in @file.
+	Improve implementation notes in @file.
 	(free_g_ptr_array): Remove old function.
 	(OMP): Remove old directive.
 	(BUFFER_SIZE): Rename FROM_BUFFER_SIZE.
@@ -15326,7 +15330,7 @@
 
 	Add Base64 task file handling.  Add new library with function
 	rmdir_recursively.  Add tests of rmdir_recursively.  Update DELETE_TASK
-	to remove the task directory on	disk.  Update tests to use shared
+	to remove the task directory on disk.  Update tests to use shared
 	functions for creating tasks.
 
 	* src/file.h, src/file.c, src/tests/new_task_empty_rc,
@@ -15389,7 +15393,7 @@
 	(process_omp_client_input): Add some error trace messages.
 	(serve_omp): Note behaviour on process_omp_client_input error.
 	(serve_client): Neaten some formatting.
-	(accept_and_maybe_fork): Remove task loading now done after	authentication.
+	(accept_and_maybe_fork): Remove task loading now done after authentication.
 	(cleanup): Adjust credential freeing.
 
 	* src/tests/common.c (authenticate): New function.
@@ -15765,7 +15769,7 @@
 	Add simple tests of XML OMP OMP_VERSION, NEW_TASK and MODIFY_TASK.
 
 	* src/tests/common.c, src/tests/common.h, src/tests/omp_modify_task_0.c,
-	src/tests/omp_new_task_0.c,	src/tests/omp_version_0.c: New files.
+	src/tests/omp_new_task_0.c, src/tests/omp_version_0.c: New files.
 
 	* src/tests/CMakeLists.txt: Add config library and new tests.
 
@@ -16042,7 +16046,7 @@
 	* footer.html, Doxyfile: Removed (moved to doc/).
 
 	* CMakeLists.txt, doc/, doc/CMakeLists.txt, INSTALL,
-	src/CMakeLists.txt,	doc/openvasmd.8.xml: New.
+	src/CMakeLists.txt, doc/openvasmd.8.xml: New.
 
 	* doc/footer.html, doc/Doxyfile: New (moved from ..).
 
