@@ -4612,6 +4612,12 @@ migrate_42_to_43 ()
 
   /** @todo ROLLBACK on failure. */
 
+  /* Ensure that the targets_trash table exists. */
+  sql ("CREATE TABLE IF NOT EXISTS targets_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
+       "  comment, lsc_credential INTEGER, smb_lsc_credential INTEGER,"
+       "  port_range, ssh_location INTEGER, smb_location INTEGER);");
+
   sql ("ALTER TABLE targets ADD column ssh_port;");
   sql ("ALTER TABLE targets_trash ADD column ssh_port;");
 
