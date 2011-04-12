@@ -1,5 +1,11 @@
 2011-04-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (report): Add HOST.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2011-04-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (migrate_42_to_43): Ensure that targets_trash exists.
 
 2011-04-07  Matthew Mundell <matthew.mundell@greenbone.net>

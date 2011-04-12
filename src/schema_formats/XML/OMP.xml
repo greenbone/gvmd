@@ -409,6 +409,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>task</e>
             <e>ports</e>
             <e>results</e>
+            <e>host</e>
             <e>scan_start</e>
             <any><e>host_start</e></any>
             <any><e>host_end</e></any>
@@ -787,6 +788,73 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>description</name>
             <summary>Description of the result</summary>
             <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>host</name>
+        <pattern>
+          <e>ip</e>
+          <e>start</e>
+          <e>end</e>
+          <any><e>detail</e></any>
+        </pattern>
+        <ele>
+          <name>ip</name>
+          <summary>IP of the host</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>start</name>
+          <summary>Scan start time for this host</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>end</name>
+          <summary>Scan end time for this host</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>detail</name>
+          <summary>A detail associated with the host</summary>
+          <pattern>
+            <e>name</e>
+            <e>value</e>
+            <e>source</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the detail</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>value</name>
+            <summary>The value of the detail</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>source</name>
+            <summary>Where the detail comes from</summary>
+            <pattern>
+              <e>type</e>
+              <e>name</e>
+              <e>description</e>
+            </pattern>
+            <ele>
+              <name>type</name>
+              <summary>The type of the detail source</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>name</name>
+              <summary>The name of the detail source</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>description</name>
+              <summary>A description of the detail source</summary>
+              <pattern>text</pattern>
+            </ele>
           </ele>
         </ele>
       </ele>

@@ -461,6 +461,7 @@ report_report
            & report_report_task
            & report_report_ports
            & report_report_results
+           & report_report_host
            & report_report_scan_start
            & report_report_host_start*
            & report_report_host_end*
@@ -829,6 +830,89 @@ report_report_results_result_threat
 
 # Description of the result.
 report_report_results_result_description
+ = element description
+     {
+       text
+     }
+
+report_report_host
+ = element host
+     {
+       report_report_host_ip
+       & report_report_host_start
+       & report_report_host_end
+       & report_report_host_detail*
+     }
+
+# IP of the host.
+report_report_host_ip
+ = element ip
+     {
+       text
+     }
+
+# Scan start time for this host.
+report_report_host_start
+ = element start
+     {
+       text
+     }
+
+# Scan end time for this host.
+report_report_host_end
+ = element end
+     {
+       text
+     }
+
+# A detail associated with the host.
+report_report_host_detail
+ = element detail
+     {
+       report_report_host_detail_name
+       & report_report_host_detail_value
+       & report_report_host_detail_source
+     }
+
+# The name of the detail.
+report_report_host_detail_name
+ = element name
+     {
+       text
+     }
+
+# The value of the detail.
+report_report_host_detail_value
+ = element value
+     {
+       text
+     }
+
+# Where the detail comes from.
+report_report_host_detail_source
+ = element source
+     {
+       report_report_host_detail_source_type
+       & report_report_host_detail_source_name
+       & report_report_host_detail_source_description
+     }
+
+# The type of the detail source.
+report_report_host_detail_source_type
+ = element type
+     {
+       text
+     }
+
+# The name of the detail source.
+report_report_host_detail_source_name
+ = element name
+     {
+       text
+     }
+
+# A description of the detail source.
+report_report_host_detail_source_description
  = element description
      {
        text

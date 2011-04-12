@@ -1490,6 +1490,63 @@ command_definition_ele
 </ul>
 </li>
 <li>
+              &lt;<b>host</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>ip</b>&gt;
+              <div style="margin-left: 15px; display: inline;">IP of the host.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>start</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Scan start time for this host.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>end</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Scan end time for this host.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>detail</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">A detail associated with the host.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the detail.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The value of the detail.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>source</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Where the detail comes from.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The type of the detail source.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the detail source.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>description</b>&gt;
+              <div style="margin-left: 15px; display: inline;">A description of the detail source.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>scan_start</b>&gt;
               <div style="margin-left: 15px; display: inline;">Start time of scan.</div>
 <ul style="list-style: none"></ul>
@@ -1543,6 +1600,7 @@ report_report
            &amp; report_report_task
            &amp; report_report_ports
            &amp; report_report_results
+           &amp; report_report_host
            &amp; report_report_scan_start
            &amp; report_report_host_start*
            &amp; report_report_host_end*
@@ -1875,6 +1933,79 @@ report_report_results_result_threat
      }
 
 report_report_results_result_description
+ = element description
+     {
+       text
+     }
+
+report_report_host
+ = element host
+     {
+       report_report_host_ip
+       &amp; report_report_host_start
+       &amp; report_report_host_end
+       &amp; report_report_host_detail*
+     }
+
+report_report_host_ip
+ = element ip
+     {
+       text
+     }
+
+report_report_host_start
+ = element start
+     {
+       text
+     }
+
+report_report_host_end
+ = element end
+     {
+       text
+     }
+
+report_report_host_detail
+ = element detail
+     {
+       report_report_host_detail_name
+       &amp; report_report_host_detail_value
+       &amp; report_report_host_detail_source
+     }
+
+report_report_host_detail_name
+ = element name
+     {
+       text
+     }
+
+report_report_host_detail_value
+ = element value
+     {
+       text
+     }
+
+report_report_host_detail_source
+ = element source
+     {
+       report_report_host_detail_source_type
+       &amp; report_report_host_detail_source_name
+       &amp; report_report_host_detail_source_description
+     }
+
+report_report_host_detail_source_type
+ = element type
+     {
+       text
+     }
+
+report_report_host_detail_source_name
+ = element name
+     {
+       text
+     }
+
+report_report_host_detail_source_description
  = element description
      {
        text
