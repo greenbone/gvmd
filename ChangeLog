@@ -1,5 +1,12 @@
 2011-04-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db_postgres.sql (report_formats): Revert the uuid UNIQUE constraint.
+	The Manager refuses to create a report with a duplicate UUID.
+
+	* doc/db.png: Update from SQL.
+
+2011-04-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (config_writable): Check whether the count is zero.
 
 2011-04-12  Matthew Mundell <matthew.mundell@greenbone.net>
