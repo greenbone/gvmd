@@ -1,5 +1,9 @@
 2011-04-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (config_writable): Check whether the count is zero.
+
+2011-04-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (report): Add HOST.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.

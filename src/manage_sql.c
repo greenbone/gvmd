@@ -16893,7 +16893,8 @@ config_writable (config_t config)
   return sql_int (0, 0,
                   "SELECT count(*) FROM tasks"
                   " WHERE config = %llu",
-                  config);
+                  config)
+         == 0;
 }
 
 /**
