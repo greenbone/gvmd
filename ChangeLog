@@ -1,3 +1,8 @@
+2011-04-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/otp.c (append_log_message): Detect special host details messages by
+	port instead of description.
+
 2011-04-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/db_postgres.sql (report_formats): Revert the uuid UNIQUE constraint.

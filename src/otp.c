@@ -427,7 +427,8 @@ append_log_message (task_t task, message_t* message)
 {
   assert (current_report);
 
-  if (message->description && (message->description[0] == '<'))
+  if (message->port.string
+      && (strcmp (message->port.string, "general/Host_Details") == 0))
     {
       int len;
       /* Strip trailing \n. */
