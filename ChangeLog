@@ -1,3 +1,7 @@
+2011-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (main): Set very restrictive umask.
+
 2011-04-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/otp.c (append_log_message): Detect special host details messages by
