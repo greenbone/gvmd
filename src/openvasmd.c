@@ -993,6 +993,10 @@ main (int argc, char** argv)
     }
   tzset ();
 
+  /* Set umask to hoard created files, including the database. */
+
+  umask (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
+
   /* Set GnuPG home directory. */
 
   gnupg_home = g_build_filename (OPENVAS_SYSCONF_DIR, "gnupg/", NULL);

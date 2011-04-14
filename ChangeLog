@@ -1,3 +1,8 @@
+2011-04-14  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/openvasmd.c (main): Set very restrictive umask. Backport from
+	trunk; initially committed by Matthew Mundell in r10758.
+
 2011-01-19  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Post release version bump.
