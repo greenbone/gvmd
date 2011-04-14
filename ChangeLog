@@ -1,5 +1,16 @@
 2011-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_report, manage_send_report): Accept only
+	trusted report formats.
+	(report_format_trust): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS check
+	report format trust.
+
+2011-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* CMakeLists.txt: Create the user report_formats directory, so that it's
 	world readable, for nobody.  Make the predefined report formats world
 	readable, for nobody.

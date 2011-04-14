@@ -12878,6 +12878,9 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
 
   /* Print the report as XML to a file. */
 
+  if (report_format_trust (report_format) != TRUST_YES)
+    return NULL;
+
   if (report_task (report, &task))
     return NULL;
 
@@ -13173,6 +13176,9 @@ manage_send_report (report_t report, report_format_t report_format,
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
 
   /* Print the report as XML to a file. */
+
+  if (report_format_trust (report_format) != TRUST_YES)
+    return -1;
 
   if (report_task (report, &task))
     return -1;
@@ -24796,6 +24802,21 @@ set_report_format_param (report_format_t report_format, const char *name,
   sql ("COMMIT;");
 
   return 0;
+}
+
+/**
+ * @brief Return the trust of a report format.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return Trust: 1 yes, 2 no, 2 unknown.
+ */
+int
+report_format_trust (report_format_t report_format)
+{
+  return sql_int (0, 0,
+                  "SELECT trust FROM report_formats WHERE ROWID = %llu;",
+                  report_format);
 }
 
 /**

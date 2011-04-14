@@ -1644,6 +1644,9 @@ report_format_global (report_format_t);
 int
 report_format_active (report_format_t);
 
+int
+report_format_trust (report_format_t);
+
 void
 init_report_format_iterator (iterator_t*, report_format_t, int, int,
                              const char*);
