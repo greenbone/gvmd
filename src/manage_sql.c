@@ -4508,6 +4508,24 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       abort ();
     }
 
+  {
+    struct stat state;
+    stat (database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db", &state);
+    if (state.st_mode & (S_IXUSR | S_IRWXG | S_IRWXO))
+      {
+        g_warning ("%s: database permissions are too loose, repairing\n",
+                   __FUNCTION__);
+        if (chmod (database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db",
+                   S_IRUSR | S_IWUSR))
+          {
+            g_warning ("%s: chmod failed: %s\n",
+                       __FUNCTION__,
+                       strerror (errno));
+            abort ();
+          }
+      }
+  }
+
 #ifndef S_SPLINT_S
   /* Open the database. */
   if (sqlite3_open (database ? database
