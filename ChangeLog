@@ -1,5 +1,11 @@
 2011-04-14  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/manage_sql.c (init_manage_process): Reduce permissions if they are
+	too loose. Backport from trunk; initially committed by Matthew Mundell
+	in r10762 and r10763.
+
+2011-04-14  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/openvasmd.c (main): Set very restrictive umask. Backport from
 	trunk; initially committed by Matthew Mundell in r10758.
 
