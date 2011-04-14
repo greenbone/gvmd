@@ -4636,6 +4636,49 @@ migrate_42_to_43 ()
 }
 
 /**
+ * @brief Migrate the database from version 43 to version 44.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_43_to_44 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Require that the database is currently version 43. */
+
+  if (manage_db_version () != 43)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The file permission got much tighter. */
+
+  if (chmod (task_db_name ? task_db_name : OPENVAS_STATE_DIR "/mgr/tasks.db",
+             S_IRUSR | S_IWUSR))
+    {
+      g_warning ("%s: failed to chmod %s: %s",
+                 __FUNCTION__,
+                 task_db_name ? task_db_name
+                              : OPENVAS_STATE_DIR "/mgr/tasks.db",
+                 strerror (errno));
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Set the database version to 44. */
+
+  set_db_version (44);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -4683,6 +4726,7 @@ static migrator_t database_migrators[]
     {41, migrate_40_to_41},
     {42, migrate_41_to_42},
     {43, migrate_42_to_43},
+    {44, migrate_43_to_44},
     /* End marker. */
     {-1, NULL}};
 

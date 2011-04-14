@@ -1,5 +1,17 @@
 2011-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add database migrator from version 43 to new version 44, to ensure that
+	the database file permissions are tight.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 44.
+
+	* src/manage_sql.c (migrate_43_to_44): New function.
+	(database_migrators): Add migrate_43_to_44.
+
+	* doc/db.png: Update for version change.
+
+2011-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (main): Set very restrictive umask.
 
 2011-04-13  Matthew Mundell <matthew.mundell@greenbone.net>
