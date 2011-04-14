@@ -6683,13 +6683,18 @@ init_manage_process (int update_nvt_cache, const gchar *database)
   {
     struct stat state;
     stat (database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db", &state);
-    if (state.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))
-      g_warning ("%s: database is executable\n", __FUNCTION__);
-    if (state.st_mode & (S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH))
+    if (state.st_mode & (S_IXUSR | S_IRWXG | S_IRWXO))
       {
-        g_warning ("%s: database is accessible by group or other users; this"
-                   " could expose sensitive information.\n",
+        g_warning ("%s: database permissions are too loose, repairing\n",
                    __FUNCTION__);
+        if (chmod (database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db",
+                   S_IRUSR | S_IWUSR))
+          {
+            g_warning ("%s: chmod failed: %s\n",
+                       __FUNCTION__,
+                       strerror (errno));
+            abort ();
+          }
       }
   }
 

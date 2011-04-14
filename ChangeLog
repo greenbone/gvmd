@@ -1,5 +1,10 @@
 2011-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage_process): Reduce permissions if they are
+	too loose.
+
+2011-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage_process): Warn if permissions are loose.
 
 2011-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
