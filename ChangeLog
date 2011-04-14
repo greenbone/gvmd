@@ -1,3 +1,8 @@
+2011-04-14  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/openvasmd.c (main): Set very restrictive umask. Backport from
+	trunk; initially committed by Matthew Mundell in r10758.
+
 2011-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (find_report_format): Add a user check to the
