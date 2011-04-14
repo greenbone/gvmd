@@ -1,5 +1,17 @@
 2011-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Create the user report_formats directory, so that it's
+	world readable, for nobody.  Make the predefined report formats world
+	readable, for nobody.
+
+	* src/manage_sql.c (manage_report, manage_send_report): Drop to nobody
+	within the spawned command when running as root.  This prevents the report
+	formats from having root access.
+	(create_report_format): Ensure that nobody can access the installed report
+	formats.
+
+2011-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage_process): Reduce permissions if they are
 	too loose.
 
