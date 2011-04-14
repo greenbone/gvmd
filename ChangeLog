@@ -1,5 +1,9 @@
 2011-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage_process): Warn if permissions are loose.
+
+2011-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add database migrator from version 43 to new version 44, to ensure that
 	the database file permissions are tight.
 
