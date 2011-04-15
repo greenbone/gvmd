@@ -1,5 +1,16 @@
 2011-04-15  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Make predefined report formats always available. Adapted from trunk
+	from code committed by Matthew Mundell in r10777.
+
+	* src/omp.c (omp_xml_handle_end_element): In OMP GET_REPORT_FORMATS
+	allow predefined formats always.
+
+	* src/manage_sql.c (manage_report, manage_send_report): Allow predefined
+	formats always.
+
+2011-04-15  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Refuse to delete predefined report formats. Adapted from trunk from
 	code committed by Matthew Mundell in r10776.
 

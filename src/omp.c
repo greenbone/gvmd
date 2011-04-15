@@ -8632,12 +8632,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        if (report_format_trust (report_format) > 1)
+        if ((report_format_predefined (report_format) == 0)
+            && (report_format_trust (report_format) > 1))
           {
             get_reports_data_reset (get_reports_data);
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_reports",
-                                "GET_REPORTS report format must be trusted"));
+                                "GET_REPORTS report format must be predefined"
+                                " or trusted"));
             set_client_state (CLIENT_AUTHENTIC);
             break;
           }

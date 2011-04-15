@@ -12031,7 +12031,8 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
 
   /* Print the report as XML to a file. */
 
-  if (report_format_trust (report_format) != TRUST_YES)
+  if ((report_format_predefined (report_format) == 0)
+      && (report_format_trust (report_format) != TRUST_YES))
     return NULL;
 
   if (report_task (report, &task))
@@ -12330,7 +12331,8 @@ manage_send_report (report_t report, report_format_t report_format,
 
   /* Print the report as XML to a file. */
 
-  if (report_format_trust (report_format) != TRUST_YES)
+  if ((report_format_predefined (report_format) == 0)
+      && (report_format_trust (report_format) != TRUST_YES))
     return -1;
 
   if (report_task (report, &task))
