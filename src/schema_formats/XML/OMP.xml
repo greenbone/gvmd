@@ -1891,6 +1891,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <truncated>...</truncated>
               </description>
               <global>1</global>
+              <predefined>1</predefined>
               <trust>
                 yes
                 <time>Thu Dec  2 13:22:26 2010</time>
@@ -1954,6 +1955,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <truncated>...</truncated>
               </description>
               <global>1</global>
+              <predefined>1</predefined>
               <trust>
                 yes
                 <time>Thu Dec  2 13:22:26 2010</time>
@@ -5605,6 +5607,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>extension</e>
           <e>content_type</e>
           <e>global</e>
+          <e>predefined</e>
           <any><e>param</e></any>
           <or>
             <any><e>file</e></any>
@@ -5638,6 +5641,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>content_type</name>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>predefined</name>
+          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>param</name>
@@ -5762,6 +5769,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <truncated>...</truncated>
             </description>
             <global>1</global>
+            <predefined>1</predefined>
             <trust>
               no
               <time>Thu Dec  2 13:22:26 2010</time>
@@ -5790,6 +5798,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <truncated>...</truncated>
             </description>
             <global>1</global>
+            <predefined>1</predefined>
             <file name="HTML.xsl">
               PD9ldD4K
               <truncated>...</truncated>

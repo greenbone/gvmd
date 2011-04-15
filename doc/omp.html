@@ -3967,6 +3967,7 @@ create_report_report
          ...
        &lt;/description&gt;
        &lt;global&gt;1&lt;/global&gt;
+       &lt;predefined&gt;1&lt;/predefined&gt;
        &lt;trust&gt;
          yes
          &lt;time&gt;Thu Dec 2 13:22:26 2010&lt;/time&gt;
@@ -4048,6 +4049,7 @@ create_report_report
          ...
        &lt;/description&gt;
        &lt;global&gt;1&lt;/global&gt;
+       &lt;predefined&gt;1&lt;/predefined&gt;
        &lt;trust&gt;
          yes
          &lt;time&gt;Thu Dec 2 13:22:26 2010&lt;/time&gt;
@@ -9144,6 +9146,10 @@ get_reports_response_report
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>predefined</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>param</b>&gt;
               *<ul style="list-style: none">
 <li>
@@ -9260,6 +9266,7 @@ get_report_formats_response_report_format
        &amp; get_report_formats_response_report_format_extension
        &amp; get_report_formats_response_report_format_content_type
        &amp; get_report_formats_response_report_format_global
+       &amp; get_report_formats_response_report_format_predefined
        &amp; get_report_formats_response_report_format_param*
        &amp; ( get_report_formats_response_report_format_file*
            | ( get_report_formats_response_report_format_trust
@@ -9300,6 +9307,12 @@ get_report_formats_response_report_format_content_type
  = element content_type
      {
        text
+     }
+
+get_report_formats_response_report_format_predefined
+ = element predefined
+     {
+       boolean
      }
 
 get_report_formats_response_report_format_param
@@ -9406,6 +9419,7 @@ get_report_formats_response_report_format_active
        ...
      &lt;/description&gt;
      &lt;global&gt;1&lt;/global&gt;
+     &lt;predefined&gt;1&lt;/predefined&gt;
      &lt;trust&gt;
        no
        &lt;time&gt;Thu Dec 2 13:22:26 2010&lt;/time&gt;
@@ -9432,6 +9446,7 @@ get_report_formats_response_report_format_active
        ...
      &lt;/description&gt;
      &lt;global&gt;1&lt;/global&gt;
+     &lt;predefined&gt;1&lt;/predefined&gt;
      &lt;file name="HTML.xsl"&gt;
        PD9ldD4K
        ...

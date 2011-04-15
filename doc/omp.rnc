@@ -4398,6 +4398,7 @@ get_report_formats_response_report_format
        & get_report_formats_response_report_format_extension
        & get_report_formats_response_report_format_content_type
        & get_report_formats_response_report_format_global
+       & get_report_formats_response_report_format_predefined
        & get_report_formats_response_report_format_param*
        & ( get_report_formats_response_report_format_file*
            | ( get_report_formats_response_report_format_trust
@@ -4439,6 +4440,12 @@ get_report_formats_response_report_format_content_type
  = element content_type
      {
        text
+     }
+
+get_report_formats_response_report_format_predefined
+ = element predefined
+     {
+       boolean
      }
 
 get_report_formats_response_report_format_param

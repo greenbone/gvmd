@@ -3064,6 +3064,7 @@ typedef enum
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE,
+  CLIENT_CRF_GRFR_REPORT_FORMAT_PREDEFINED,
   CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE,
   CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY,
   CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST,
@@ -6517,6 +6518,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             create_report_format_data->param_options = make_array ();
             set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
           }
+        else if (strcasecmp ("PREDEFINED", element_name) == 0)
+          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PREDEFINED);
         else if (strcasecmp ("SIGNATURE", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE);
         else if (strcasecmp ("SUMMARY", element_name) == 0)
@@ -6733,6 +6736,22 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX:
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN:
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE:
+        if (send_element_error_to_client ("create_report_format",
+                                          element_name,
+                                          write_to_client,
+                                          write_to_client_data))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PREDEFINED:
         if (send_element_error_to_client ("create_report_format",
                                           element_name,
                                           write_to_client,
@@ -9267,12 +9286,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        if (report_format_trust (report_format) > 1)
+        if ((report_format_predefined (report_format) == 0)
+            && (report_format_trust (report_format) > 1))
           {
             get_reports_data_reset (get_reports_data);
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_reports",
-                                "GET_REPORTS report format must be trusted"));
+                                "GET_REPORTS report format must be predefined"
+                                " or trusted"));
             set_client_state (CLIENT_AUTHENTIC);
             break;
           }
@@ -9391,14 +9412,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     "<content_type>%s</content_type>"
                     "<summary>%s</summary>"
                     "<description>%s</description>"
-                    "<global>%i</global>",
+                    "<global>%i</global>"
+                    "<predefined>%i</predefined>",
                     report_format_iterator_uuid (&report_formats),
                     report_format_iterator_name (&report_formats),
                     report_format_iterator_extension (&report_formats),
                     report_format_iterator_content_type (&report_formats),
                     report_format_iterator_summary (&report_formats),
                     report_format_iterator_description (&report_formats),
-                    report_format_iterator_global (&report_formats));
+                    report_format_iterator_global (&report_formats),
+                    report_format_predefined
+                     (report_format_iterator_report_format (&report_formats)));
 
                   if (get_report_formats_data->params
                       || get_report_formats_data->export)
@@ -12432,6 +12456,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE:
         assert (strcasecmp ("VALUE", element_name) == 0);
         set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
+        break;
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PREDEFINED:
+        assert (strcasecmp ("PREDEFINED", element_name) == 0);
+        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
         break;
       case CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE:
         assert (strcasecmp ("SIGNATURE", element_name) == 0);

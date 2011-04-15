@@ -1,5 +1,19 @@
 2011-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_report, manage_send_report): Allow predefined
+	formats always.
+
+	* src/omp.c (omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(client_state_t): Add PREDEFINED to REPORT_FORMAT in OMP
+	GET_REPORT_FORMATS and CREATE_REPORT_FORMAT.  In OMP GET_REPORT_FORMATS
+	allow predefined formats always.
+
+	* src/schema_formats/XML/OMP.xml (get_report_formats): Add PREDEFINED.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2011-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_report_format): Fail if format is predefined.
 	(report_format_predefined): New function.
 
