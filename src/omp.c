@@ -9085,12 +9085,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_report_format"));
                   break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("delete_report_format",
-                                      "Attempt to delete a hidden report"
-                                      " format"));
-                  break;
                 case 2:
                   if (send_find_error_to_client
                        ("delete_report_format",
@@ -9102,6 +9096,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       error_send_to_client (error);
                       return;
                     }
+                  break;
+                case 3:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_report_format",
+                                      "Attempt to delete a predefined report"
+                                      " format"));
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL

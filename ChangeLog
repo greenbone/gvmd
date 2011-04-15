@@ -1,3 +1,13 @@
+2011-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (delete_report_format): Fail if format is predefined.
+	(report_format_predefined): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS remove
+	erroneous case and add predefined case.
+
 2011-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_report, manage_send_report): Accept only

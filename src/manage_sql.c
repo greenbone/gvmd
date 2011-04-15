@@ -24020,7 +24020,8 @@ create_report_format (const char *uuid, const char *name,
  * @param[in]  report_format_id  UUID of Report format.
  * @param[in]  ultimate          Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 2 failed to find agent, -1 error.
+ * @return 0 success, 2 failed to find report format, 3 predefined report
+ *         format, -1 error.
  */
 int
 delete_report_format (const char *report_format_id, int ultimate)
@@ -24046,7 +24047,7 @@ delete_report_format (const char *report_format_id, int ultimate)
   if (find_report_format (report_format_id, &report_format))
     {
       sql ("ROLLBACK;");
-      return 3;
+      return -1;
     }
 
   if (report_format == 0)
@@ -24103,6 +24104,12 @@ delete_report_format (const char *report_format_id, int ultimate)
       sql ("COMMIT;");
 
       return 0;
+    }
+
+  if (report_format_predefined (report_format))
+    {
+      sql ("ROLLBACK;");
+      return 3;
     }
 
   if (report_format_global (report_format))
@@ -24516,6 +24523,30 @@ report_format_global (report_format_t report_format)
 {
   return sql_int (0, 0,
                   "SELECT owner is NULL FROM report_formats"
+                  " WHERE ROWID = %llu;",
+                  report_format);
+}
+
+/**
+ * @brief Return whether a report format is predefined.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+report_format_predefined (report_format_t report_format)
+{
+  return sql_int (0, 0,
+                  "SELECT uuid = 'a0704abb-2120-489f-959f-251c9f4ffebd'"
+                  " OR uuid = 'b993b6f5-f9fb-4e6e-9c94-dd46c00e058d'"
+                  " OR uuid = '929884c6-c2c4-41e7-befb-2f6aa163b458'"
+                  " OR uuid = '9f1ab17b-aaaa-411a-8c57-12df446f5588'"
+                  " OR uuid = 'f5c2a364-47d2-4700-b21d-0a7693daddab'"
+                  " OR uuid = '1a60a67e-97d0-4cbf-bc77-f71b08e7043d'"
+                  " OR uuid = '19f6f1b3-7128-4433-888c-ccc764fe6ed5'"
+                  " OR uuid = 'd5da9f67-8551-4e51-807b-b6a873d70e34'"
+                  " FROM report_formats"
                   " WHERE ROWID = %llu;",
                   report_format);
 }
