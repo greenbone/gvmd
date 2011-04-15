@@ -23643,8 +23643,6 @@ create_report_format (const char *uuid, const char *name,
           return -1;
         }
       g_string_free (format, TRUE);
-
-      g_free (format_signature);
     }
 
   sql ("BEGIN IMMEDIATE;");
@@ -23823,6 +23821,7 @@ create_report_format (const char *uuid, const char *name,
   quoted_extension = extension ? sql_quote (extension) : NULL;
   quoted_content_type = content_type ? sql_quote (content_type) : NULL;
   quoted_signature = signature ? sql_quote (signature) : NULL;
+  g_free (format_signature);
 
   if (global)
     sql ("INSERT INTO report_formats"

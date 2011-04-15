@@ -1,3 +1,8 @@
+2011-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_report_format): Free format_signature after
+	last use.
+
 2011-04-15  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/manage_sql.c (manage_report, manage_send_report, copy_config)
