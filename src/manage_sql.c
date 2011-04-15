@@ -13021,6 +13021,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
               g_free (xml_file);
               if (extension) g_free (*extension);
               if (content_type) g_free (*content_type);
+              g_free (output_file);
               return NULL;
             }
 
@@ -13305,6 +13306,7 @@ manage_send_report (report_t report, report_format_t report_format,
               g_free (previous_dir);
               g_free (script);
               g_free (xml_file);
+              g_free (output_file);
               return -1;
             }
 
@@ -16594,7 +16596,10 @@ copy_config (const char* name, const char* comment, config_t config,
 
   config_selector = config_nvt_selector (config);
   if (config_selector == NULL)
-    return -1;
+    {
+      g_free (quoted_name);
+      return -1;
+    }
   quoted_config_selector = sql_quote (config_selector);
   free (config_selector);
 
@@ -17383,8 +17388,11 @@ manage_set_config_nvts (config_t config, const char* family,
 
   selector = config_nvt_selector (config);
   if (selector == NULL)
-    /* The config should always have a selector. */
-    return -1;
+    {
+      /* The config should always have a selector. */
+      g_free (quoted_family);
+      return -1;
+    }
 
   quoted_selector = sql_quote (selector);
 

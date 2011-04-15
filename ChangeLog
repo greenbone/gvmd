@@ -1,3 +1,8 @@
+2011-04-15  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* src/manage_sql.c (manage_report, manage_send_report, copy_config)
+	(manage_set_config_nvts): Closed memleaks reported by cppcheck.
+
 2011-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_report, manage_send_report): Allow predefined
