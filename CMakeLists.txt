@@ -257,62 +257,64 @@ enable_testing ()
 
 ## Install
 
+install (CODE "file (MAKE_DIRECTORY ${OPENVAS_STATE_DIR}/openvasmd/report_formats/)")
+
 install (FILES ${CMAKE_BINARY_DIR}/src/openvasmd_log.conf
          DESTINATION ${OPENVAS_SYSCONF_DIR})
 
 install (FILES src/report_formats/CPE/generate
                src/report_formats/CPE/CPE.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/a0704abb-2120-489f-959f-251c9f4ffebd/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/HTML/generate
                src/report_formats/HTML/HTML.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/b993b6f5-f9fb-4e6e-9c94-dd46c00e058d/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/ITG/generate
                src/report_formats/ITG/ITG.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/929884c6-c2c4-41e7-befb-2f6aa163b458/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/LaTeX/generate
                src/report_formats/LaTeX/latex.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/9f1ab17b-aaaa-411a-8c57-12df446f5588/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/NBE/generate
                src/report_formats/NBE/NBE.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/f5c2a364-47d2-4700-b21d-0a7693daddab/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/PDF/generate
                src/report_formats/LaTeX/latex.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/1a60a67e-97d0-4cbf-bc77-f71b08e7043d/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/TXT/generate src/report_formats/TXT/TXT.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/19f6f1b3-7128-4433-888c-ccc764fe6ed5/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/XML/generate
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/d5da9f67-8551-4e51-807b-b6a873d70e34/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/schema_formats/HTML/generate
                src/schema_formats/RNC/rnc.xsl
                src/schema_formats/HTML/HTML.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/02052818-dab6-11df-9be4-002264764cea/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/schema_formats/RNC/generate
                src/schema_formats/RNC/rnc.xsl
                src/schema_formats/RNC/RNC.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/787a4a18-dabc-11df-9486-002264764cea/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/schema_formats/XML/generate
          src/schema_formats/XML/OMP.xml
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/18e826fc-dab6-11df-b913-002264764cea/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 ## End

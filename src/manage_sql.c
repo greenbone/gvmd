@@ -40,6 +40,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <pwd.h>
 #include <sqlite3.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12152,11 +12153,41 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
 
       /* Call the script. */
 
-      command = g_strdup_printf ("/bin/sh %s %s > %s"
-                                 " 2> /dev/null",
-                                 script,
-                                 xml_file,
-                                 output_file);
+      if (getuid () == 0)
+        {
+          struct passwd *nobody;
+
+          nobody = getpwnam ("nobody");
+          if ((nobody == NULL)
+              || chown (xml_dir, nobody->pw_uid, nobody->pw_gid)
+              || chown (xml_file, nobody->pw_uid, nobody->pw_gid))
+            {
+              g_warning ("%s: Failed to set dir permissions: %s\n",
+                         __FUNCTION__,
+                         strerror (errno));
+              g_free (previous_dir);
+              g_free (script);
+              g_free (xml_file);
+              if (extension) g_free (*extension);
+              if (content_type) g_free (*content_type);
+              return NULL;
+            }
+
+          command = g_strdup_printf ("/bin/sh -c \"su nobody"
+                                     " -c \\\"/bin/sh %s %s > %s"
+                                     " 2> /dev/null\\\""
+                                     " > /dev/null 2>&1\""
+                                     " > /dev/null 2>&1",
+                                     script,
+                                     xml_file,
+                                     output_file);
+        }
+      else
+        command = g_strdup_printf ("/bin/sh %s %s > %s"
+                                   " 2> /dev/null",
+                                   script,
+                                   xml_file,
+                                   output_file);
       g_free (script);
 
       g_debug ("   command: %s\n", command);
@@ -12404,11 +12435,39 @@ manage_send_report (report_t report, report_format_t report_format,
 
       /* Call the script. */
 
-      command = g_strdup_printf ("/bin/sh %s %s > %s"
-                                 " 2> /dev/null",
-                                 script,
-                                 xml_file,
-                                 output_file);
+      if (getuid () == 0)
+        {
+          struct passwd *nobody;
+
+          nobody = getpwnam ("nobody");
+          if ((nobody == NULL)
+              || chown (xml_dir, nobody->pw_uid, nobody->pw_gid)
+              || chown (xml_file, nobody->pw_uid, nobody->pw_gid))
+            {
+              g_warning ("%s: Failed to set dir permissions: %s\n",
+                         __FUNCTION__,
+                         strerror (errno));
+              g_free (previous_dir);
+              g_free (script);
+              g_free (xml_file);
+              return -1;
+            }
+
+          command = g_strdup_printf ("/bin/sh -c \"su nobody"
+                                     " -c \\\"/bin/sh %s %s > %s"
+                                     " 2> /dev/null\\\""
+                                     " > /dev/null 2>&1\""
+                                     " > /dev/null 2>&1",
+                                     script,
+                                     xml_file,
+                                     output_file);
+        }
+      else
+        command = g_strdup_printf ("/bin/sh %s %s > %s"
+                                   " 2> /dev/null",
+                                   script,
+                                   xml_file,
+                                   output_file);
       g_free (script);
       g_free (xml_file);
 
@@ -21871,6 +21930,45 @@ create_report_format (const char *uuid, const char *name,
       return -1;
     }
 
+  if (global == 0)
+    {
+      gchar *report_dir;
+
+      /* glib seems to apply the mode to the first dir only. */
+
+      report_dir = g_build_filename (OPENVAS_STATE_DIR,
+                                     "openvasmd",
+                                     "report_formats",
+                                     current_credentials.uuid,
+                                     NULL);
+
+      if (chmod (report_dir, 0755 /* rwxr-xr-x */))
+        {
+          g_warning ("%s: chmod failed: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          g_free (dir);
+          g_free (report_dir);
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      g_free (report_dir);
+    }
+
+  /* glib seems to apply the mode to the first dir only. */
+  if (chmod (dir, 0755 /* rwxr-xr-x */))
+    {
+      g_warning ("%s: chmod failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      g_free (dir);
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
   index = 0;
   while ((file_name = (gchar*) g_ptr_array_index (files, index++)))
     {
@@ -21901,17 +21999,32 @@ create_report_format (const char *uuid, const char *name,
       error = NULL;
       g_file_set_contents (full_file_name, contents, contents_size, &error);
       g_free (contents);
-      g_free (full_file_name);
       if (error)
         {
           g_warning ("%s: %s", __FUNCTION__, error->message);
           g_error_free (error);
           file_utils_rmdir_rf (dir);
+          g_free (full_file_name);
           g_free (dir);
           g_free (quoted_name);
           sql ("ROLLBACK;");
           return -1;
         }
+
+      if (chmod (full_file_name, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH))
+        {
+          g_warning ("%s: chmod failed: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          file_utils_rmdir_rf (dir);
+          g_free (full_file_name);
+          g_free (dir);
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      g_free (full_file_name);
     }
 
   /* Add format to database. */
