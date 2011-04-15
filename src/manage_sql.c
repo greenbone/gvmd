@@ -22268,6 +22268,7 @@ delete_report_format (report_format_t report_format)
   if (report_format_predefined (report_format))
     {
       sql ("ROLLBACK;");
+      free (uuid);
       return 3;
     }
 

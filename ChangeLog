@@ -1,5 +1,10 @@
 2011-04-15  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/manage_sql.c (delete_report_format): Free allocated char on
+	failure.
+
+2011-04-15  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Make predefined report formats always available. Adapted from trunk
 	from code committed by Matthew Mundell in r10777.
 
