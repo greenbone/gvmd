@@ -9421,8 +9421,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     report_format_iterator_summary (&report_formats),
                     report_format_iterator_description (&report_formats),
                     report_format_iterator_global (&report_formats),
-                    report_format_predefined
-                     (report_format_iterator_report_format (&report_formats)));
+                    get_report_formats_data->trash
+                      ? 0
+                      : report_format_predefined
+                         (report_format_iterator_report_format
+                           (&report_formats)));
 
                   if (get_report_formats_data->params
                       || get_report_formats_data->export)

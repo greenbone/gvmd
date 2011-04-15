@@ -1,5 +1,10 @@
 2011-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT_FORMATS
+	use contant for PREDEFINED for trashcan formats.
+
+2011-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_report_format): Free format_signature after
 	last use.
 
