@@ -1,3 +1,34 @@
+openvas-manager 2.0.3 (2011-04-15)
+
+This is the third maintenance release of the openvas-manager 2.0 module for the
+Open Vulnerability Assessment System release 4 (OpenVAS-4). The OpenVAS Manager
+is the central management service between the actual security scanner and
+various user clients.
+
+This release fixes a severe security issue discovered after the release of
+openvas-manager 2.0.2. By crafting a special report format plugin, and knowing
+about the operating system on which OpenVAS Manager is running, a rogue user
+was able to upload the plugin and execute arbitrary code with the privileges of
+the user running the OpenVAS Manager.
+
+This release enforces strict permissions on sensitive OpenVAS Manager files and
+will drop privileges when executing report format plugins if it is running with
+potentially dangerous privileges. Furthermore, it forces report formats to be
+trusted before executing them.
+
+We strongly recommended upgrading existing installations of OpenVAS-4 to
+openvas-manager 2.0.3.
+
+Many thanks to everyone who has contributed to this release:
+Henri Doreau, Matthew Mundell, Michael Wiegand and Jan-Oliver Wagner.
+
+Main changes since 2.0.2:
+* Enforces strict permissions on sensitive OpenVAS Manager files.
+* Drop privileges before executing report format plugins if running with
+  elevated privileges.
+* Ensures report formats are trusted before executing them.
+
+
 openvas-manager 2.0.2 (2011-03-02)
 
 This is the second maintenance release of the openvas-manager 2.0 module for the

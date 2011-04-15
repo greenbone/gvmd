@@ -1,5 +1,11 @@
 2011-04-15  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Preparing the openvas-manager 2.0.3 release.
+
+	* CHANGES: Updated.
+
+2011-04-15  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/manage_sql.c (delete_report_format): Free allocated char on
 	failure.
 
