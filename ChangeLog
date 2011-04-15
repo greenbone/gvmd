@@ -1,5 +1,18 @@
 2011-04-15  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Refuse to delete predefined report formats. Adapted from trunk from
+	code committed by Matthew Mundell in r10776.
+
+	* src/manage_sql.c (delete_report_format): Fail if format is predefined.
+	(report_format_predefined): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS remove
+	erroneous case and add predefined case.
+
+2011-04-15  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Require that format trust is "yes". Backport from trunk; initially
 	committed by Matthew Mundell in r10774.
 

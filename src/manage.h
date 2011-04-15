@@ -1553,6 +1553,9 @@ int
 report_format_global (report_format_t);
 
 int
+report_format_predefined (report_format_t);
+
+int
 report_format_active (report_format_t);
 
 void
