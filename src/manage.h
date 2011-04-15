@@ -1641,6 +1641,9 @@ report_format_param_type_name (report_format_param_type_t);
 report_format_param_type_t
 report_format_param_type_from_name (const char *);
 
+int
+report_format_trust (report_format_t);
+
 void
 init_report_format_param_iterator (iterator_t*, report_format_t, int,
                                    const char*);

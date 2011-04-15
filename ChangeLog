@@ -1,5 +1,19 @@
 2011-04-15  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Require that format trust is "yes". Backport from trunk; initially
+	committed by Matthew Mundell in r10774.
+
+	* src/manage_sql.c (manage_report, manage_send_report): Accept only
+	trusted report formats.
+	(report_format_trust): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS check
+	report format trust.
+
+2011-04-15  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Drop privileges in report creation when running as root. Backport from
 	trunk; initially committed by Matthew Mundell in r10772.
 
