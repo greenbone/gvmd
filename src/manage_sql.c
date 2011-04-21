@@ -5912,6 +5912,207 @@ http_get (const char *url)
 }
 
 /**
+ * @brief Send a report to a Sourcefire Defense Center.
+ *
+ * @param[in]  ip        IP of center.
+ * @param[in]  port      Port of center.
+ * @param[in]  pkcs12    PKCS12 content.
+ * @param[in]  report    Report in "Sourcefire" format.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+send_to_sourcefire (const char *ip, const char *port, const char *pkcs12,
+                    const char *report)
+{
+  gchar *script, *script_dir;
+  gchar *report_file, *pkcs12_file;
+  char report_dir[] = "/tmp/openvasmd_escalate_XXXXXX";
+  GError *error;
+
+  if ((report == NULL) || (ip == NULL) || (port == NULL))
+    return -1;
+
+  tracef ("send to sourcefire: %s:%s", ip, port);
+  tracef ("pkcs12: %s", pkcs12);
+  tracef ("report: %s", report);
+
+  /* Setup files. */
+
+  if (mkdtemp (report_dir) == NULL)
+    {
+      g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
+      return -1;
+    }
+
+  report_file = g_strdup_printf ("%s/report", report_dir);
+
+  error = NULL;
+  g_file_set_contents (report_file, report, strlen (report), &error);
+  if (error)
+    {
+      g_warning ("%s", error->message);
+      g_error_free (error);
+      g_free (report_file);
+      return -1;
+    }
+
+  pkcs12_file = g_strdup_printf ("%s/pkcs12", report_dir);
+
+  error = NULL;
+  g_file_set_contents (pkcs12_file, pkcs12, strlen (pkcs12), &error);
+  if (error)
+    {
+      g_warning ("%s", error->message);
+      g_error_free (error);
+      g_free (report_file);
+      g_free (pkcs12_file);
+      return -1;
+    }
+
+  /* Setup file names. */
+
+  script_dir = g_build_filename (OPENVAS_DATA_DIR,
+                                 "openvasmd",
+                                 "global_escalator_methods",
+                                 "cd1f5a34-6bdc-11e0-9827-002264764cea",
+                                 NULL);
+
+  script = g_build_filename (script_dir, "escalate", NULL);
+
+  if (!g_file_test (script, G_FILE_TEST_EXISTS))
+    {
+      g_free (report_file);
+      g_free (pkcs12_file);
+      g_free (script);
+      g_free (script_dir);
+      return -1;
+    }
+
+  {
+    gchar *command;
+    char *previous_dir;
+    int ret;
+
+    /* Change into the script directory. */
+
+    /** @todo NULL arg is glibc extension. */
+    previous_dir = getcwd (NULL, 0);
+    if (previous_dir == NULL)
+      {
+        g_warning ("%s: Failed to getcwd: %s\n",
+                   __FUNCTION__,
+                   strerror (errno));
+        g_free (report_file);
+        g_free (pkcs12_file);
+        g_free (previous_dir);
+        g_free (script);
+        g_free (script_dir);
+        return -1;
+      }
+
+    if (chdir (script_dir))
+      {
+        g_warning ("%s: Failed to chdir: %s\n",
+                   __FUNCTION__,
+                   strerror (errno));
+        g_free (report_file);
+        g_free (pkcs12_file);
+        g_free (previous_dir);
+        g_free (script);
+        g_free (script_dir);
+        return -1;
+      }
+    g_free (script_dir);
+
+    /* Call the script. */
+
+    if (getuid () == 0)
+      {
+        struct passwd *nobody;
+
+        nobody = getpwnam ("nobody");
+        if ((nobody == NULL)
+            || chown (report_dir, nobody->pw_uid, nobody->pw_gid)
+            || chown (report_file, nobody->pw_uid, nobody->pw_gid))
+          {
+            g_warning ("%s: Failed to set dir permissions: %s\n",
+                       __FUNCTION__,
+                       strerror (errno));
+            g_free (report_file);
+            g_free (pkcs12_file);
+            g_free (previous_dir);
+            g_free (script);
+            return -1;
+          }
+
+        command = g_strdup_printf ("/bin/sh -c \"su nobody"
+                                   " -c \\\"/bin/sh %s %s %s %s %s > /dev/null"
+                                   " 2> /dev/null\\\""
+                                   " > /dev/null 2>&1\""
+                                   " > /dev/null 2>&1",
+                                   script,
+                                   ip,
+                                   port,
+                                   pkcs12_file,
+                                   report_file);
+      }
+    else
+      command = g_strdup_printf ("/bin/sh %s %s %s %s %s > /dev/null"
+                                 " 2> /dev/null",
+                                 script,
+                                 ip,
+                                 port,
+                                 pkcs12_file,
+                                 report_file);
+    g_free (report_file);
+    g_free (pkcs12_file);
+    g_free (script);
+
+    g_debug ("   command: %s\n", command);
+
+    /* RATS: ignore, command is defined above. */
+    if (ret = system (command),
+        /** @todo ret is always -1. */
+        0 && ((ret) == -1
+              || WEXITSTATUS (ret)))
+      {
+        g_warning ("%s: system failed with ret %i, %i, %s\n",
+                   __FUNCTION__,
+                   ret,
+                   WEXITSTATUS (ret),
+                   command);
+        if (chdir (previous_dir))
+          g_warning ("%s: and chdir failed\n",
+                     __FUNCTION__);
+        g_free (previous_dir);
+        g_free (command);
+        return -1;
+      }
+
+    g_free (command);
+
+    /* Change back to the previous directory. */
+
+    if (chdir (previous_dir))
+      {
+        g_warning ("%s: Failed to chdir back: %s\n",
+                   __FUNCTION__,
+                   strerror (errno));
+        g_free (previous_dir);
+        return -1;
+      }
+    g_free (previous_dir);
+
+    /* Remove the directory. */
+
+    file_utils_rmdir_rf (report_dir);
+
+    return 0;
+  }
+}
+
+/**
  * @brief Format string for simple notice escalator email.
  */
 #define REPORT_NOTICE_FORMAT                                                  \
@@ -6208,6 +6409,77 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
               return ret;
             }
           return -1;
+          break;
+        }
+      case ESCALATOR_METHOD_SOURCEFIRE:
+        {
+          char *ip, *port, *pkcs12;
+          gchar *report_content;
+          gsize content_length;
+          report_t report;
+          report_format_t report_format;
+          int ret;
+
+          if (lookup_report_format ("Sourcefire", &report_format)
+              || (report_format == 0))
+            return -1;
+
+          switch (sql_int64 (&report, 0, 0,
+                             "SELECT max (ROWID) FROM reports"
+                             " WHERE task = %llu",
+                             task))
+            {
+              case 0:
+                if (report)
+                  break;
+              case 1:        /* Too few rows in result of query. */
+              case -1:
+                return -1;
+                break;
+              default:       /* Programming error. */
+                assert (0);
+                return -1;
+            }
+
+          report_content = manage_report (report,
+                                          report_format,
+                                          1,       /* Ascending. */
+                                          NULL,    /* Sort field. */
+                                          0,       /* Result hosts only. */
+                                          NULL,    /* Min CVSS base. */
+                                          NULL,    /* Levels. */
+                                          1,       /* Apply overrides. */
+                                          NULL,    /* Search phrase. */
+                                          0,       /* Notes. */
+                                          0,       /* Notes details. */
+                                          0,       /* Overrides. */
+                                          0,       /* Overrides details. */
+                                          0,       /* First results. */
+                                          -1,      /* Max results. */
+                                          &content_length,
+                                          NULL,    /* Extension. */
+                                          NULL);   /* Content type. */
+          if (report_content == NULL)
+            return -1;
+
+          ip = escalator_data (escalator, "method", "defense_center_ip");
+          port = escalator_data (escalator, "method", "defense_center_port");
+          if (port == NULL)
+            port = g_strdup ("8307");
+          pkcs12 = escalator_data (escalator, "method", "pkcs12");
+
+          tracef ("  sourcefire   ip: %s", ip);
+          tracef ("  sourcefire port: %s", port);
+          tracef ("sourcefire pkcs12: %s", pkcs12);
+
+          ret = send_to_sourcefire (ip, port, pkcs12, report_content);
+
+          free (ip);
+          free (port);
+          free (pkcs12);
+          g_free (report_content);
+
+          return ret;
           break;
         }
       case ESCALATOR_METHOD_SYSLOG:

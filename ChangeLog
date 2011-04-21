@@ -1,5 +1,24 @@
 2011-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add a Sourcefire Connector escalator.
+
+	* CMakeLists.txt: Install escalator script.
+
+	* src/manage.c (escalator_method_name, escalator_method_from_name): Add
+	Sourcefire method.
+
+	* src/manage.h (escalator_method_t): Add Sourcefire method.
+
+	* src/manage_sql.c (send_to_sourcefire): New function.
+	(escalate_1): Add Sourcefire method.
+
+	* src/escalator_methods/Sourcefire/,
+	src/escalator_methods/Sourcefire/escalate: New dir and file.
+
+	* INSTALL: Add escalator program to requirements.
+
+2011-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_tasks): Send target hosts in "network_targets"
 	preferences.
 
@@ -13,7 +32,7 @@
 2011-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT_FORMATS
-	use contant for PREDEFINED for trashcan formats.
+	use constant for PREDEFINED for trashcan formats.
 
 2011-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
 

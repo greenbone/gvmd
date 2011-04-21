@@ -124,7 +124,7 @@ Now you can initialize the OpenVAS Manager database.
 You need a running OpenVAS Scanner (openvassd) for this
 as the Manager will retrieve all NVT details from the Scanner.
 Run this command if you are using the default ports:
- 
+
 $ openvasmd --rebuild
 
 This command can be repeated anytime to update the database
@@ -178,3 +178,7 @@ Prerequisites for signature verification:
 
 Prerequisites for HTTP escalators:
 * wget
+
+Prerequisites for Sourcefire Connector escalator:
+* A program in the PATH called greenbone_sourcefire_connector that takes args
+  IP, port, PKCS12 file and report file in Sourcefire format.

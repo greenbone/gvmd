@@ -330,10 +330,11 @@ escalator_method_name (escalator_method_t method)
 {
   switch (method)
     {
-      case ESCALATOR_METHOD_EMAIL:    return "Email";
-      case ESCALATOR_METHOD_HTTP_GET: return "HTTP Get";
-      case ESCALATOR_METHOD_SYSLOG:   return "Syslog";
-      default:                        return "Internal Error";
+      case ESCALATOR_METHOD_EMAIL:       return "Email";
+      case ESCALATOR_METHOD_HTTP_GET:    return "HTTP Get";
+      case ESCALATOR_METHOD_SOURCEFIRE:  return "Sourcefire Connector";
+      case ESCALATOR_METHOD_SYSLOG:      return "Syslog";
+      default:                           return "Internal Error";
     }
 }
 
@@ -385,6 +386,8 @@ escalator_method_from_name (const char* name)
     return ESCALATOR_METHOD_EMAIL;
   if (strcasecmp (name, "HTTP Get") == 0)
     return ESCALATOR_METHOD_HTTP_GET;
+  if (strcasecmp (name, "Sourcefire Connector") == 0)
+    return ESCALATOR_METHOD_SOURCEFIRE;
   if (strcasecmp (name, "Syslog") == 0)
     return ESCALATOR_METHOD_SYSLOG;
   return ESCALATOR_METHOD_ERROR;

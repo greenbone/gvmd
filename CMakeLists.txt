@@ -317,4 +317,8 @@ install (FILES src/schema_formats/XML/generate
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/18e826fc-dab6-11df-b913-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
+install (FILES src/escalator_methods/Sourcefire/escalate
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_escalator_methods/cd1f5a34-6bdc-11e0-9827-002264764cea/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
 ## End
