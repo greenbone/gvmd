@@ -1,5 +1,9 @@
 2011-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/escalator_methods/Sourcefire/escalate: New file from last commit.
+
+2011-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add a Sourcefire Connector escalator.
 
 	* CMakeLists.txt: Install escalator script.
