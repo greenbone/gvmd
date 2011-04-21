@@ -19745,6 +19745,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                      " AND name != 'cache_folder'"
                      " AND name != 'include_folders'"
                      " AND name != 'nasl_no_signature_check'"
+                     " AND name != 'network_targets'"
                      " AND name != 'ntp_save_sessions'"
                      " AND name NOT LIKE 'server_info_%'"
                      " ORDER BY name ASC",
@@ -19757,6 +19758,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                    " WHERE name != 'cache_folder'"
                    " AND name != 'include_folders'"
                    " AND name != 'nasl_no_signature_check'"
+                   " AND name != 'network_targets'"
                    " AND name != 'ntp_save_sessions'"
                    " AND name NOT LIKE 'server_info_%'"
                    " ORDER BY name ASC");

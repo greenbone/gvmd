@@ -2029,6 +2029,19 @@ run_task (task_t task, char **report_id, int from)
       return -10;
     }
 
+  /* Send network_targets preference. */
+
+  if (sendf_to_server ("network_targets <|> %s\n", hosts))
+    {
+      free (hosts);
+      g_ptr_array_add (preference_files, NULL);
+      array_free (preference_files);
+      slist_free (files);
+      set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
+      return -10;
+    }
+
   /* Send credential preferences if there are credentials linked to target. */
 
   if (ssh_credential)
