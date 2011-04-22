@@ -257,7 +257,7 @@ enable_testing ()
 
 ## Install
 
-install (CODE "file (MAKE_DIRECTORY ${OPENVAS_STATE_DIR}/openvasmd/report_formats/)")
+install (CODE "FILE(MAKE_DIRECTORY \$ENV{DESTDIR}${OPENVAS_STATE_DIR}/openvasmd/report_formats)")
 
 install (FILES ${CMAKE_BINARY_DIR}/src/openvasmd_log.conf
          DESTINATION ${OPENVAS_SYSCONF_DIR})

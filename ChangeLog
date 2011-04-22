@@ -1,3 +1,7 @@
+2011-04-22  Stephan Kleine
+
+	* CMakeLists.txt: Fix installation with DESTDIR.
+
 2011-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Extend CREATE_LSC_CREDENTIAL with a key pair option.
