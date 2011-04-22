@@ -18088,6 +18088,19 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   gchar *quoted_cvss_base, *quoted_risk_factor, *quoted_sign_key_ids;
   gchar *quoted_family;
 
+  if (remove)
+    {
+      sql ("BEGIN EXCLUSIVE;");
+      sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
+    }
+
+  if (nvti_family (nvti) && (strcmp (nvti_family (nvti), "Credentials") == 0))
+    {
+      if (remove)
+        sql ("COMMIT;");
+      return 0;
+    }
+
   quoted_version = sql_quote (nvti_version (nvti));
   quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
   quoted_summary = sql_quote (nvti_summary (nvti) ? nvti_summary (nvti) : "");
@@ -18111,12 +18124,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
                                    ? nvti_sign_key_ids (nvti)
                                    : "");
   quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
-
-  if (remove)
-    {
-      sql ("BEGIN EXCLUSIVE;");
-      sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
-    }
 
   sql ("INSERT into nvts (oid, version, name, summary, description, copyright,"
        " cve, bid, xref, tag, sign_key_ids, category, family, cvss_base,"

@@ -1035,7 +1035,6 @@ static int
 parse_scanner_preference_value (char** messages)
 {
   char *value, *end, *match;
-  assert (current_scanner_preference != NULL);
   end = *messages + from_scanner_end - from_scanner_start;
   while (*messages < end && ((*messages)[0] == ' '))
     { (*messages)++; from_scanner_start++; }
@@ -1045,10 +1044,13 @@ parse_scanner_preference_value (char** messages)
     {
       match[0] = '\0';
       value = g_strdup (*messages);
-      if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE)
-        manage_nvt_preference_add (current_scanner_preference, value, 0);
-      else if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
-        manage_nvt_preference_add (current_scanner_preference, value, 1);
+      if (current_scanner_preference)
+        {
+          if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE)
+            manage_nvt_preference_add (current_scanner_preference, value, 0);
+          else if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
+            manage_nvt_preference_add (current_scanner_preference, value, 1);
+        }
       set_scanner_state (SCANNER_PREFERENCE_NAME);
       from_scanner_start += match + 1 - *messages;
       *messages = match + 1;
@@ -2220,8 +2222,19 @@ process_otp_scanner_input ()
                         }
                       break;
                     }
+
                   {
-                    current_scanner_preference = g_strdup (field);
+                    int value_start = -1, value_end = -1, count;
+                    char name[21];
+                    /* LDAPsearch[entry]:Timeout value */
+                    count = sscanf (field, "%20[^[][%*[^]]]:%n%*[ -~]%n",
+                                    name, &value_start, &value_end);
+                    if (count == 1 && value_start > 0 && value_end > 0
+                        && ((strcmp (name, "SSH Authorization") == 0)
+                            || (strcmp (name, "SMB Authorization") == 0)))
+                      current_scanner_preference = NULL;
+                    else
+                      current_scanner_preference = g_strdup (field);
                     set_scanner_state (SCANNER_PREFERENCE_VALUE);
                     switch (parse_scanner_preference_value (&messages))
                       {

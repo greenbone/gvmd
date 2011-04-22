@@ -1,3 +1,24 @@
+2011-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove admission of the "Credentials" family, handling the communication
+	with the Scanner about the credentials automatically according to the
+	task's credentials.
+
+	* src/manage.c (run_task): Enable auth plugins when credentials are
+	present.
+
+	* src/manage_sql.c (make_nvt_from_nvti): Skip NVTs in the "Credentials"
+	family.
+
+	* src/otp.c (parse_scanner_preference_value): Only add the preference when
+	current_scanner_preference is set.
+	(process_otp_scanner_input): In SCANNER_PREFERENCE_NAME prevent adding the
+	preferences of the "Credentials" family NVTs.
+
+2011-04-22  Stephan Kleine
+
+	* CMakeLists.txt: Fix formatting.
+
 2011-04-22  Stephan Kleine
 
 	* CMakeLists.txt: Fix installation with DESTDIR.

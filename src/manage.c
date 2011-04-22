@@ -1935,7 +1935,23 @@ run_task (task_t task, char **report_id, int from)
 
   plugins = nvt_selector_plugins (config);
   if (plugins)
-    fail = sendf_to_server ("plugin_set <|> %s\n", plugins);
+    {
+      if (ssh_credential && smb_credential)
+        fail = sendf_to_server ("plugin_set <|>"
+                                " 1.3.6.1.4.1.25623.1.0.90022;"
+                                "1.3.6.1.4.1.25623.1.0.90023;%s\n",
+                                plugins);
+      else if (ssh_credential)
+        fail = sendf_to_server ("plugin_set <|>"
+                                " 1.3.6.1.4.1.25623.1.0.90022;%s\n",
+                                plugins);
+      else if (smb_credential)
+        fail = sendf_to_server ("plugin_set <|>"
+                                " 1.3.6.1.4.1.25623.1.0.90023;%s\n",
+                                plugins);
+      else
+        fail = sendf_to_server ("plugin_set <|> %s\n", plugins);
+    }
   else
     fail = send_to_server ("plugin_set <|> 0\n");
   free (plugins);
