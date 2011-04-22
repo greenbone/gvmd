@@ -1,3 +1,16 @@
+2011-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Extend CREATE_LSC_CREDENTIAL with a key pair option.
+
+	* src/manage_sql.c (create_lsc_credential): Add key args.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (create_lsc_credential_data_t)
+	(create_lsc_credential_data_reset, client_state_t): Add key elements
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add KEY to CREATE_LSC_CREDENTIAL.
+
 2011-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/escalator_methods/Sourcefire/escalate: New file from last commit.

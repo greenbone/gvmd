@@ -20257,6 +20257,7 @@ find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
 int
 create_lsc_credential (const char* name, const char* comment,
                        const char* login, const char* given_password,
+                       const char* key_private, const char* key_public,
                        lsc_credential_t *lsc_credential)
 {
   gchar *quoted_name;
@@ -20285,6 +20286,52 @@ create_lsc_credential (const char* name, const char* comment,
       g_free (quoted_name);
       sql ("ROLLBACK;");
       return 1;
+    }
+
+  if (key_public)
+    {
+      gchar *quoted_login, *quoted_phrase, *quoted_comment;
+      gchar *quoted_public, *quoted_private;
+
+      /* Key pair credential. */
+
+      if (key_private == NULL)
+        return -1;
+
+      quoted_login = sql_quote (login);
+      quoted_comment = sql_quote (comment);
+      quoted_phrase = given_password ? sql_quote (given_password)
+                                     : g_strdup ("");
+      quoted_private = sql_quote (key_private);
+      quoted_public = sql_quote (key_public);
+
+      sql ("INSERT INTO lsc_credentials"
+           " (uuid, name, owner, login, password, comment, public_key,"
+           "  private_key, rpm, deb, exe)"
+           " VALUES"
+           " (make_uuid (), '%s',"
+           "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+           "  '%s', '%s', '%s', '%s', '%s', NULL, NULL, NULL);",
+           quoted_name,
+           current_credentials.uuid,
+           quoted_login,
+           quoted_phrase,
+           quoted_comment,
+           quoted_public,
+           quoted_private);
+
+      g_free (quoted_name);
+      g_free (quoted_login);
+      g_free (quoted_phrase);
+      g_free (quoted_comment);
+      g_free (quoted_private);
+      g_free (quoted_public);
+
+      if (lsc_credential)
+        *lsc_credential = sqlite3_last_insert_rowid (task_db);
+
+      sql ("COMMIT;");
+      return 0;
     }
 
   if (given_password)
@@ -20357,7 +20404,7 @@ create_lsc_credential (const char* name, const char* comment,
     gchar *quoted_public_key = sql_quote (public_key);
     gchar *quoted_private_key = sql_quote (private_key);
 
-    /* Password-only credential. */
+    /* Generated key credential. */
 
     sql_quiet ("INSERT INTO lsc_credentials"
                " (uuid, name, owner, login, password, comment, public_key,"

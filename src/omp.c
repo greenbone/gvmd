@@ -819,6 +819,10 @@ create_escalator_data_reset (create_escalator_data_t *data)
 typedef struct
 {
   char *comment;           ///< Comment.
+  int key;                 ///< Whether the command included a key element.
+  char *key_phrase;        ///< Passphrase for key.
+  char *key_private;       ///< Private key from key.
+  char *key_public;        ///< Public key from key.
   char *login;             ///< Login name.
   char *name;              ///< LSC credential name.
   char *password;          ///< Password associated with login name.
@@ -833,6 +837,9 @@ static void
 create_lsc_credential_data_reset (create_lsc_credential_data_t *data)
 {
   free (data->comment);
+  free (data->key_phrase);
+  free (data->key_private);
+  free (data->key_public);
   free (data->login);
   free (data->name);
   free (data->password);
@@ -2989,6 +2996,10 @@ typedef enum
   CLIENT_CREATE_LSC_CREDENTIAL_NAME,
   CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD,
   CLIENT_CREATE_LSC_CREDENTIAL_LOGIN,
+  CLIENT_CREATE_LSC_CREDENTIAL_KEY,
+  CLIENT_CREATE_LSC_CREDENTIAL_KEY_PHRASE,
+  CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE,
+  CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC,
   CLIENT_CREATE_NOTE,
   CLIENT_CREATE_NOTE_HOSTS,
   CLIENT_CREATE_NOTE_NVT,
@@ -6061,6 +6072,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_LSC_CREDENTIAL:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_COMMENT);
+        else if (strcasecmp ("KEY", element_name) == 0)
+          {
+            create_lsc_credential_data->key = 1;
+            set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY);
+          }
         else if (strcasecmp ("LOGIN", element_name) == 0)
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_LOGIN);
         else if (strcasecmp ("NAME", element_name) == 0)
@@ -6070,6 +6086,34 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&create_lsc_credential_data->password, "");
             set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD);
           }
+        else
+          {
+            if (send_element_error_to_client ("create_lsc_credential",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_LSC_CREDENTIAL_KEY:
+        if (strcasecmp ("PHRASE", element_name) == 0)
+          {
+            openvas_append_string (&create_lsc_credential_data->key_phrase, "");
+            set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PHRASE);
+          }
+        else if (strcasecmp ("PRIVATE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE);
+        else if (strcasecmp ("PUBLIC", element_name) == 0)
+          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC);
         else
           {
             if (send_element_error_to_client ("create_lsc_credential",
@@ -11609,11 +11653,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "CREATE_LSC_CREDENTIAL login must be at"
                                   " least one character long"));
             }
+          else if (create_lsc_credential_data->key
+                   && ((create_lsc_credential_data->key_public == NULL)
+                       || (create_lsc_credential_data->key_private == NULL)))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_lsc_credential",
+                                  "CREATE_LSC_CREDENTIAL KEY requires a PUBLIC"
+                                  " and a PRIVATE"));
+            }
           else switch (create_lsc_credential
                         (create_lsc_credential_data->name,
                          create_lsc_credential_data->comment,
                          create_lsc_credential_data->login,
-                         create_lsc_credential_data->password,
+                         create_lsc_credential_data->key_public
+                          ? create_lsc_credential_data->key_phrase
+                          : create_lsc_credential_data->password,
+                         create_lsc_credential_data->key_private,
+                         create_lsc_credential_data->key_public,
                          &new_lsc_credential))
             {
               case 0:
@@ -11650,6 +11707,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_LSC_CREDENTIAL_COMMENT:
         assert (strcasecmp ("COMMENT", element_name) == 0);
         set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
+        break;
+      case CLIENT_CREATE_LSC_CREDENTIAL_KEY:
+        assert (strcasecmp ("KEY", element_name) == 0);
+        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
+        break;
+      case CLIENT_CREATE_LSC_CREDENTIAL_KEY_PHRASE:
+        assert (strcasecmp ("PHRASE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY);
+        break;
+      case CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE:
+        assert (strcasecmp ("PRIVATE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY);
+        break;
+      case CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC:
+        assert (strcasecmp ("PUBLIC", element_name) == 0);
+        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY);
         break;
       case CLIENT_CREATE_LSC_CREDENTIAL_LOGIN:
         assert (strcasecmp ("LOGIN", element_name) == 0);
@@ -16479,6 +16552,21 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_LSC_CREDENTIAL_COMMENT:
         openvas_append_text (&create_lsc_credential_data->comment,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_LSC_CREDENTIAL_KEY_PHRASE:
+        openvas_append_text (&create_lsc_credential_data->key_phrase,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE:
+        openvas_append_text (&create_lsc_credential_data->key_private,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC:
+        openvas_append_text (&create_lsc_credential_data->key_public,
                              text,
                              text_len);
         break;
