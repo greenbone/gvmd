@@ -1,5 +1,10 @@
 2011-04-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (send_to_sourcefire): Remove user change from script
+	call, as script is managed by sysadmin for now.
+
+2011-04-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_report, manage_send_report): Drop privileges
 	directly instead of with su via the shell.
 

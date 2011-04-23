@@ -6027,44 +6027,13 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12,
 
     /* Call the script. */
 
-    if (getuid () == 0)
-      {
-        struct passwd *nobody;
-
-        nobody = getpwnam ("nobody");
-        if ((nobody == NULL)
-            || chown (report_dir, nobody->pw_uid, nobody->pw_gid)
-            || chown (report_file, nobody->pw_uid, nobody->pw_gid))
-          {
-            g_warning ("%s: Failed to set dir permissions: %s\n",
-                       __FUNCTION__,
-                       strerror (errno));
-            g_free (report_file);
-            g_free (pkcs12_file);
-            g_free (previous_dir);
-            g_free (script);
-            return -1;
-          }
-
-        command = g_strdup_printf ("/bin/sh -c \"su nobody"
-                                   " -c \\\"/bin/sh %s %s %s %s %s > /dev/null"
-                                   " 2> /dev/null\\\""
-                                   " > /dev/null 2>&1\""
-                                   " > /dev/null 2>&1",
-                                   script,
-                                   ip,
-                                   port,
-                                   pkcs12_file,
-                                   report_file);
-      }
-    else
-      command = g_strdup_printf ("/bin/sh %s %s %s %s %s > /dev/null"
-                                 " 2> /dev/null",
-                                 script,
-                                 ip,
-                                 port,
-                                 pkcs12_file,
-                                 report_file);
+    command = g_strdup_printf ("/bin/sh %s %s %s %s %s > /dev/null"
+                               " 2> /dev/null",
+                               script,
+                               ip,
+                               port,
+                               pkcs12_file,
+                               report_file);
     g_free (report_file);
     g_free (pkcs12_file);
     g_free (script);
