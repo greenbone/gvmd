@@ -1,3 +1,8 @@
+2011-04-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_report, manage_send_report): Drop privileges
+	directly instead of with su via the shell.
+
 2011-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove admission of the "Credentials" family, handling the communication
