@@ -9421,6 +9421,26 @@ create_report (array_t *results, const char *task_name,
   /* Add the results. */
 
   index = 0;
+  while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
+                                                               index++)))
+    if (start->host && start->description)
+      {
+        gchar *quoted_host, *quoted_time;
+
+        quoted_host = sql_quote (start->host);
+        quoted_time = sql_quote (start->description);
+
+        sql ("INSERT INTO report_hosts (report, host, start_time)"
+             " VALUES (%llu, '%s', '%s');",
+             report,
+             quoted_host,
+             quoted_time);
+
+        g_free (quoted_host);
+        g_free (quoted_time);
+      }
+
+  index = 0;
   while ((result = (create_report_result_t*) g_ptr_array_index (results,
                                                                 index++)))
     {
@@ -9458,26 +9478,6 @@ create_report (array_t *results, const char *task_name,
            report,
            sqlite3_last_insert_rowid (task_db));
     }
-
-  index = 0;
-  while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
-                                                               index++)))
-    if (start->host && start->description)
-      {
-        gchar *quoted_host, *quoted_time;
-
-        quoted_host = sql_quote (start->host);
-        quoted_time = sql_quote (start->description);
-
-        sql ("INSERT INTO report_hosts (report, host, start_time)"
-             " VALUES (%llu, '%s', '%s');",
-             report,
-             quoted_host,
-             quoted_time);
-
-        g_free (quoted_host);
-        g_free (quoted_time);
-      }
 
   index = 0;
   while ((end = (create_report_result_t*) g_ptr_array_index (host_ends,
