@@ -9399,6 +9399,7 @@ create_report (array_t *results, const char *task_name,
   create_report_result_t *result, *end, *start;
   report_t report;
   task_t task;
+  pid_t pid;
 
   if (task_name == NULL)
     return -3;
@@ -9416,7 +9417,34 @@ create_report (array_t *results, const char *task_name,
 
   /* Create the report. */
 
-  report = make_report (task, *report_id, TASK_STATUS_DONE);
+  report = make_report (task, *report_id, TASK_STATUS_RUNNING);
+
+  /* Show that the upload has started. */
+
+  set_task_run_status (task, TASK_STATUS_RUNNING);
+
+  /* Fork a child to import the results while the parent responds to the
+   * client. */
+
+  pid = fork ();
+  switch (pid)
+    {
+      case 0:
+        /* Child.  Reopen the database (required after fork) and carry on
+         * to import the reports, . */
+        reinit_manage_process ();
+        break;
+      case -1:
+        /* Parent when error. */
+        g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
+        set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+        return -1;
+        break;
+      default:
+        /* Parent.  Return, in order to respond to client. */
+        return 0;
+        break;
+    }
 
   /* Add the results. */
 
@@ -9499,6 +9527,14 @@ create_report (array_t *results, const char *task_name,
         g_free (quoted_time);
       }
 
+  current_scanner_task = task;
+  current_report = report;
+  set_task_run_status (task, TASK_STATUS_DONE);
+  current_scanner_task = 0;
+  current_report = 0;
+
+  exit (EXIT_SUCCESS);
+  /*@notreached@*/
   return 0;
 }
 
