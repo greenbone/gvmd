@@ -1742,6 +1742,7 @@ typedef struct
 {
   int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
   char *format_id;       ///< ID of report format.
+  char *escalator_id;    ///< ID of escalator.
   char *report_id;       ///< ID of single report to get.
   int first_result;      ///< Skip over results before this result number.
   int max_results;       ///< Maximum number of results return.
@@ -1766,6 +1767,7 @@ static void
 get_reports_data_reset (get_reports_data_t *data)
 {
   free (data->format_id);
+  free (data->escalator_id);
   free (data->report_id);
   free (data->sort_field);
   free (data->levels);
@@ -4136,6 +4138,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "report_id",
                               &get_reports_data->report_id);
+
+            append_attribute (attribute_names, attribute_values, "escalator_id",
+                              &get_reports_data->escalator_id);
 
             append_attribute (attribute_names, attribute_values, "format_id",
                               &get_reports_data->format_id);
@@ -9389,7 +9394,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "d5da9f67-8551-4e51-807b-b6a873d70e34"),
                                     send_to_client,
                                     write_to_client,
-                                    write_to_client_data))
+                                    write_to_client_data,
+                                    get_reports_data->escalator_id))
               {
                 cleanup_iterator (&reports);
                 internal_error_send_to_client (error);

@@ -1,5 +1,20 @@
 2011-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add an escalation option to GET_REPORTS.
+
+	* src/manage_sql.c (escalate_2): Add report param.  Update callers.
+	(manage_send_report): Add escalator_id param.  If given escalate report
+	instead of getting it.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (get_reports_data_t, get_reports_data_reset): Add
+	escalator_id.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	escalator_id attribute to GET_REPORTS.
+
+2011-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (escalate_2): New function.  Body from escalate_1, with
 	report filtering args.
 	(escalate_1): Call through to escalate_2.
@@ -58,7 +73,7 @@
 	* src/manage.h: Update header accordingly.
 
 	* src/omp.c (create_lsc_credential_data_t)
-	(create_lsc_credential_data_reset, client_state_t): Add key elements
+	(create_lsc_credential_data_reset, client_state_t): Add key elements.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element)
 	(omp_xml_handle_text): Add KEY to CREATE_LSC_CREDENTIAL.
 

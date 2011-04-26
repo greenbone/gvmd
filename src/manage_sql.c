@@ -6132,6 +6132,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12,
  *
  * @param[in]  escalator   Escalator.
  * @param[in]  task        Task.
+ * @param[in]  task        Report.  0 for most recent report.
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
  * @param[in]  method      Method from escalator.
@@ -6159,7 +6160,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12,
  * @return 0 success, -1 error.
  */
 static int
-escalate_2 (escalator_t escalator, task_t task, event_t event,
+escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
             const void* event_data, escalator_method_t method,
             escalator_condition_t condition,
             /* Report filtering. */
@@ -6201,32 +6202,32 @@ escalate_2 (escalator_t escalator, task_t task, event_t event,
                 {
                   gchar *event_desc, *condition_desc, *report_content;
                   char *format_uuid, *format_name;
-                  report_t report;
                   report_format_t report_format = 0;
                   gsize content_length;
 
                   /* Message with report. */
 
-                  switch (sql_int64 (&report, 0, 0,
-                                     "SELECT max (ROWID) FROM reports"
-                                     " WHERE task = %llu",
-                                     task))
-                    {
-                      case 0:
-                        if (report)
+                  if (report == 0)
+                    switch (sql_int64 (&report, 0, 0,
+                                       "SELECT max (ROWID) FROM reports"
+                                       " WHERE task = %llu",
+                                       task))
+                      {
+                        case 0:
+                          if (report)
+                            break;
+                        case 1:        /* Too few rows in result of query. */
+                        case -1:
+                          free (notice);
+                          free (name);
+                          free (to_address);
+                          free (from_address);
+                          return -1;
                           break;
-                      case 1:        /* Too few rows in result of query. */
-                      case -1:
-                        free (notice);
-                        free (name);
-                        free (to_address);
-                        free (from_address);
-                        return -1;
-                        break;
-                      default:       /* Programming error. */
-                        assert (0);
-                        return -1;
-                    }
+                        default:       /* Programming error. */
+                          assert (0);
+                          return -1;
+                      }
 
                   format_uuid = escalator_data (escalator,
                                                 "method",
@@ -6405,7 +6406,6 @@ escalate_2 (escalator_t escalator, task_t task, event_t event,
           char *ip, *port, *pkcs12;
           gchar *report_content;
           gsize content_length;
-          report_t report;
           report_format_t report_format;
           int ret;
 
@@ -6413,22 +6413,23 @@ escalate_2 (escalator_t escalator, task_t task, event_t event,
               || (report_format == 0))
             return -1;
 
-          switch (sql_int64 (&report, 0, 0,
-                             "SELECT max (ROWID) FROM reports"
-                             " WHERE task = %llu",
-                             task))
-            {
-              case 0:
-                if (report)
+          if (report == 0)
+            switch (sql_int64 (&report, 0, 0,
+                               "SELECT max (ROWID) FROM reports"
+                               " WHERE task = %llu",
+                               task))
+              {
+                case 0:
+                  if (report)
+                    break;
+                case 1:        /* Too few rows in result of query. */
+                case -1:
+                  return -1;
                   break;
-              case 1:        /* Too few rows in result of query. */
-              case -1:
-                return -1;
-                break;
-              default:       /* Programming error. */
-                assert (0);
-                return -1;
-            }
+                default:       /* Programming error. */
+                  assert (0);
+                  return -1;
+              }
 
           report_content = manage_report (report, report_format,
                                           sort_order, sort_field,
@@ -6513,7 +6514,7 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
             const void* event_data, escalator_method_t method,
             escalator_condition_t condition)
 {
-  return escalate_2 (escalator, task, event, event_data, method, condition,
+  return escalate_2 (escalator, task, 0, event, event_data, method, condition,
                      1,       /* Ascending. */
                      NULL,    /* Sort field. */
                      0,       /* Result hosts only. */
@@ -13631,8 +13632,11 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
  * @param[in]  send               Function to write to client.
  * @param[in]  send_data_1        Second argument to \p send.
  * @param[in]  send_data_2        Third argument to \p send.
+ * @param[in]  escalator_id       ID of escalator to escalate report with,
+ *                                instead of getting report.  NULL to get
+ *                                report.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, 1 failed to find escalator.
  */
 int
 manage_send_report (report_t report, report_format_t report_format,
@@ -13643,19 +13647,59 @@ manage_send_report (report_t report, report_format_t report_format,
                     int overrides, int overrides_details, int first_result,
                     int max_results, int base64,
                     gboolean (*send) (const char *, int (*) (void*), void*),
-                    int (*send_data_1) (void*), void *send_data_2)
+                    int (*send_data_1) (void*), void *send_data_2,
+                    const char *escalator_id)
 {
   task_t task;
   gchar *xml_file;
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
 
+  if (report_task (report, &task))
+    return -1;
+
+  /* Escalate instead, if requested. */
+
+  if (escalator_id)
+    {
+      escalator_t escalator = 0;
+      int ret;
+      escalator_condition_t condition;
+      escalator_method_t method;
+
+      sql ("BEGIN IMMEDIATE;");
+
+      if (find_escalator (escalator_id, &escalator))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (escalator == 0)
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      condition = escalator_condition (escalator);
+      method = escalator_method (escalator);
+
+      ret = escalate_2 (escalator, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
+                        (void*) TASK_STATUS_DONE, method, condition,
+                        /* Report filtering. */
+                        sort_order, sort_field, result_hosts_only,
+                        min_cvss_base, levels, apply_overrides,
+                        search_phrase, notes, notes_details, overrides,
+                        overrides_details, first_result, max_results);
+
+      sql ("COMMIT;");
+
+      return ret;
+    }
+
   /* Print the report as XML to a file. */
 
   if ((report_format_predefined (report_format) == 0)
       && (report_format_trust (report_format) != TRUST_YES))
-    return -1;
-
-  if (report_task (report, &task))
     return -1;
 
   if (mkdtemp (xml_dir) == NULL)

@@ -806,7 +806,7 @@ manage_send_report (report_t, report_format_t, int, const char*, int,
                     const char *, const char *, int, const char *, int, int,
                     int, int, int, int, int,
                     gboolean (*) (const char *, int (*) (void*), void*),
-                    int (*) (void*), void *);
+                    int (*) (void*), void *, const char *);
 
 
 /* RC's. */
