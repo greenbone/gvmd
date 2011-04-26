@@ -6136,13 +6136,39 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12,
  * @param[in]  event_data  Event data.
  * @param[in]  method      Method from escalator.
  * @param[in]  condition   Condition from escalator, which was met by event.
+ * @param[in]  sort_order         Whether to sort ascending or descending.
+ * @param[in]  sort_field         Field to sort on, or NULL for "type".
+ * @param[in]  result_hosts_only  Whether to show only hosts with results.
+ * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
+ *                                results if NULL.
+ * @param[in]  levels         String describing threat levels (message types)
+ *                            to include in count (for example, "hmlgd" for
+ *                            High, Medium, Low, loG and Debug).  All levels if
+ *                            NULL.
+ * @param[in]  apply_overrides    Whether to apply overrides.
+ * @param[in]  search_phrase      Phrase that results must include.  All results
+ *                                if NULL or "".
+ * @param[in]  notes              Whether to include notes.
+ * @param[in]  notes_details      If notes, Whether to include details.
+ * @param[in]  overrides          Whether to include overrides.
+ * @param[in]  overrides_details  If overrides, Whether to include details.
+ * @param[in]  first_result       The result to start from.  The results are 0
+ *                                indexed.
+ * @param[in]  max_results        The maximum number of results returned.
  *
  * @return 0 success, -1 error.
  */
 static int
-escalate_1 (escalator_t escalator, task_t task, event_t event,
+escalate_2 (escalator_t escalator, task_t task, event_t event,
             const void* event_data, escalator_method_t method,
-            escalator_condition_t condition)
+            escalator_condition_t condition,
+            /* Report filtering. */
+            int sort_order, const char* sort_field,
+            int result_hosts_only, const char *min_cvss_base,
+            const char *levels, int apply_overrides,
+            const char *search_phrase, int notes, int notes_details,
+            int overrides, int overrides_details, int first_result,
+            int max_results)
 {
   g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
          "The escalator for task %s was triggered "
@@ -6229,21 +6255,15 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
-                  report_content = manage_report (report,
-                                                  report_format,
-                                                  1,       /* Ascending. */
-                                                  NULL,    /* Sort field. */
-                                                  1,       /* Result hosts only. */
-                                                  NULL,    /* Min CVSS base. */
-                                                  NULL,    /* Levels. */
-                                                  1,       /* Apply overrides. */
-                                                  NULL,    /* Search phrase. */
-                                                  1,       /* Notes. */
-                                                  0,       /* Notes details. */
-                                                  1,       /* Overrides. */
-                                                  0,       /* Overrides details. */
-                                                  0,       /* First results. */
-                                                  1000,    /* Max results. */
+                  report_content = manage_report (report, report_format,
+                                                  sort_order, sort_field,
+                                                  result_hosts_only,
+                                                  min_cvss_base, levels,
+                                                  apply_overrides,
+                                                  search_phrase, notes,
+                                                  notes_details, overrides,
+                                                  overrides_details,
+                                                  first_result, max_results,
                                                   &content_length,
                                                   NULL,    /* Extension. */
                                                   NULL);   /* Content type. */
@@ -6410,21 +6430,15 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
                 return -1;
             }
 
-          report_content = manage_report (report,
-                                          report_format,
-                                          1,       /* Ascending. */
-                                          NULL,    /* Sort field. */
-                                          0,       /* Result hosts only. */
-                                          NULL,    /* Min CVSS base. */
-                                          NULL,    /* Levels. */
-                                          1,       /* Apply overrides. */
-                                          NULL,    /* Search phrase. */
-                                          0,       /* Notes. */
-                                          0,       /* Notes details. */
-                                          0,       /* Overrides. */
-                                          0,       /* Overrides details. */
-                                          0,       /* First results. */
-                                          -1,      /* Max results. */
+          report_content = manage_report (report, report_format,
+                                          sort_order, sort_field,
+                                          result_hosts_only,
+                                          min_cvss_base, levels,
+                                          apply_overrides,
+                                          search_phrase, notes,
+                                          notes_details, overrides,
+                                          overrides_details,
+                                          first_result, max_results,
                                           &content_length,
                                           NULL,    /* Extension. */
                                           NULL);   /* Content type. */
@@ -6480,6 +6494,40 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
         break;
     }
   return -1;
+}
+
+/**
+ * @brief Escalate an event with preset report filtering.
+ *
+ * @param[in]  escalator   Escalator.
+ * @param[in]  task        Task.
+ * @param[in]  event       Event.
+ * @param[in]  event_data  Event data.
+ * @param[in]  method      Method from escalator.
+ * @param[in]  condition   Condition from escalator, which was met by event.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+escalate_1 (escalator_t escalator, task_t task, event_t event,
+            const void* event_data, escalator_method_t method,
+            escalator_condition_t condition)
+{
+  return escalate_2 (escalator, task, event, event_data, method, condition,
+                     1,       /* Ascending. */
+                     NULL,    /* Sort field. */
+                     0,       /* Result hosts only. */
+                     NULL,    /* Min CVSS base. */
+                     NULL,    /* Levels. */
+                     1,       /* Apply overrides. */
+                     NULL,    /* Search phrase. */
+                     1,       /* Notes. */
+                     0,       /* Notes details. */
+                     1,       /* Overrides. */
+                     0,       /* Overrides details. */
+                     0,       /* First results. */
+                     /* Max results. */
+                     (method == ESCALATOR_METHOD_EMAIL ? 1000 : -1));
 }
 
 /**

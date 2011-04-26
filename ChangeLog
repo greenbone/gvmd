@@ -1,5 +1,11 @@
 2011-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (escalate_2): New function.  Body from escalate_1, with
+	report filtering args.
+	(escalate_1): Call through to escalate_2.
+
+2011-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_report): Fork a child to do the upload.
 
 2011-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
