@@ -183,7 +183,8 @@ CREATE TABLE tasks (
 	config_location integer,
 	target_location integer,
 	schedule_location integer,
-	slave_location integer);
+	slave_location integer,
+	upload_result_count integer);
 
 CREATE TABLE task_files (
 	id integer PRIMARY KEY,

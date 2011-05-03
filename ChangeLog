@@ -1,5 +1,26 @@
 2011-05-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add report upload progress to GET_TASKS.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 45.
+
+	* src/manage_sql.c (create_tables): Add upload_result_count to tasks.
+	(migrate_44_to_45): New function.
+	(database_migrators): Add migrate_44_to_45.
+	(task_upload_progress): New function.
+	(create_report): Init task upload_result_count.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS set progress
+	to upload progress if there's an upload happening.
+
+	* doc/db_postgres.sql (tasks): Add upload_result_count.
+
+	* doc/db.png: Update from SQL.
+
+2011-05-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_send_report): Remove transaction from escalator
 	case, as caller does transaction.
 	(manage_restore): Correct escalator SQL, so that escalator data is

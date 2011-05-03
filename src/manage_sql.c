@@ -1052,7 +1052,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS targets_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER, escalator_location INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER, upload_result_count INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
 
   sql ("ANALYZE;");
@@ -4680,6 +4680,40 @@ migrate_43_to_44 ()
 }
 
 /**
+ * @brief Migrate the database from version 44 to version 45.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_44_to_45 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Require that the database is currently version 44. */
+
+  if (manage_db_version () != 44)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The tasks table got a upload_result_count column. */
+
+  sql ("ALTER TABLE tasks ADD column upload_result_count;");
+  sql ("UPDATE tasks SET upload_result_count = -1;");
+
+  /* Set the database version to 45. */
+
+  set_db_version (45);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -4728,6 +4762,7 @@ static migrator_t database_migrators[]
     {42, migrate_41_to_42},
     {43, migrate_42_to_43},
     {44, migrate_43_to_44},
+    {45, migrate_44_to_45},
     /* End marker. */
     {-1, NULL}};
 
@@ -8497,6 +8532,34 @@ task_current_report (task_t task)
 }
 
 /**
+ * @brief Return the upload progress of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Task upload progress, as a percentage, or -1 on error.
+ */
+int
+task_upload_progress (task_t task)
+{
+  report_t report;
+  report = task_running_report (task);
+  if (report)
+    {
+      int count;
+      if (report_scan_result_count (report, NULL, NULL, NULL, 0, &count))
+        return -1;
+      return sql_int (0, 0,
+                      "SELECT"
+                      " max (min (((%llu * 100) / upload_result_count), 100), -1)"
+                      " FROM tasks"
+                      " WHERE ROWID = %llu;",
+                      count,
+                      task);
+    }
+  return -1;
+}
+
+/**
  * @brief Return the most recent start time of a task.
  *
  * @param[in]  task  Task.
@@ -9471,6 +9534,9 @@ create_report (array_t *results, const char *task_name,
   /* Show that the upload has started. */
 
   set_task_run_status (task, TASK_STATUS_RUNNING);
+  sql ("UPDATE tasks SET upload_result_count = %llu WHERE ROWID = %llu;",
+       results->len,
+       task);
 
   /* Fork a child to import the results while the parent responds to the
    * client. */
