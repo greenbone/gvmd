@@ -13662,38 +13662,25 @@ manage_send_report (report_t report, report_format_t report_format,
   if (escalator_id)
     {
       escalator_t escalator = 0;
-      int ret;
       escalator_condition_t condition;
       escalator_method_t method;
 
-      sql ("BEGIN IMMEDIATE;");
-
       if (find_escalator (escalator_id, &escalator))
-        {
-          sql ("ROLLBACK;");
-          return -1;
-        }
+        return -1;
 
       if (escalator == 0)
-        {
-          sql ("ROLLBACK;");
-          return 1;
-        }
+        return 1;
 
       condition = escalator_condition (escalator);
       method = escalator_method (escalator);
 
-      ret = escalate_2 (escalator, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
-                        (void*) TASK_STATUS_DONE, method, condition,
-                        /* Report filtering. */
-                        sort_order, sort_field, result_hosts_only,
-                        min_cvss_base, levels, apply_overrides,
-                        search_phrase, notes, notes_details, overrides,
-                        overrides_details, first_result, max_results);
-
-      sql ("COMMIT;");
-
-      return ret;
+      return escalate_2 (escalator, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
+                         (void*) TASK_STATUS_DONE, method, condition,
+                         /* Report filtering. */
+                         sort_order, sort_field, result_hosts_only,
+                         min_cvss_base, levels, apply_overrides,
+                         search_phrase, notes, notes_details, overrides,
+                         overrides_details, first_result, max_results);
     }
 
   /* Print the report as XML to a file. */
@@ -26860,20 +26847,23 @@ manage_restore (const char *id)
       sql ("INSERT INTO escalator_condition_data"
            " (escalator, name, data)"
            " SELECT %llu, name, data"
-           " FROM escalator_condition_data_trash WHERE ROWID = %llu;",
-           escalator);
+           " FROM escalator_condition_data_trash WHERE escalator = %llu;",
+           escalator,
+           resource);
 
       sql ("INSERT INTO escalator_event_data"
            " (escalator, name, data)"
            " SELECT %llu, name, data"
-           " FROM escalator_event_data_trash WHERE ROWID = %llu;",
-           escalator);
+           " FROM escalator_event_data_trash WHERE escalator = %llu;",
+           escalator,
+           resource);
 
       sql ("INSERT INTO escalator_method_data"
            " (escalator, name, data)"
            " SELECT %llu, name, data"
-           " FROM escalator_method_data_trash WHERE ROWID = %llu;",
-           escalator);
+           " FROM escalator_method_data_trash WHERE escalator = %llu;",
+           escalator,
+           resource);
 
       /* Update the escalator in any trashcan tasks. */
       sql ("UPDATE task_escalators"
