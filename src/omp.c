@@ -9347,66 +9347,112 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        SEND_TO_CLIENT_OR_FAIL
-         ("<get_reports_response"
-          " status=\"" STATUS_OK "\""
-          " status_text=\"" STATUS_OK_TEXT "\">");
+        if (get_reports_data->escalator_id == NULL)
+          SEND_TO_CLIENT_OR_FAIL
+           ("<get_reports_response"
+            " status=\"" STATUS_OK "\""
+            " status_text=\"" STATUS_OK_TEXT "\">");
+
         init_report_iterator (&reports, 0, request_report);
         while (next_report (&reports, &report))
           {
             gchar *extension, *content_type;
+            int ret;
 
             content_type = report_format_content_type (report_format);
             extension = report_format_extension (report_format);
 
-            SENDF_TO_CLIENT_OR_FAIL
-             ("<report"
-              " id=\"%s\""
-              " format_id=\"%s\""
-              " extension=\"%s\""
-              " content_type=\"%s\">",
-              report_iterator_uuid (&reports),
-              get_reports_data->format_id,
-              extension,
-              content_type);
+            if (get_reports_data->escalator_id == NULL)
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<report"
+                " id=\"%s\""
+                " format_id=\"%s\""
+                " extension=\"%s\""
+                " content_type=\"%s\">",
+                report_iterator_uuid (&reports),
+                get_reports_data->format_id,
+                extension,
+                content_type);
 
             g_free (extension);
             g_free (content_type);
 
-            if (manage_send_report (report,
-                                    report_format,
-                                    get_reports_data->sort_order,
-                                    get_reports_data->sort_field,
-                                    get_reports_data->result_hosts_only,
-                                    get_reports_data->min_cvss_base,
-                                    get_reports_data->levels,
-                                    get_reports_data->apply_overrides,
-                                    get_reports_data->search_phrase,
-                                    get_reports_data->notes,
-                                    get_reports_data->notes_details,
-                                    get_reports_data->overrides,
-                                    get_reports_data->overrides_details,
-                                    get_reports_data->first_result,
-                                    get_reports_data->max_results,
-                                    /* Special case the XML report, bah. */
-                                    strcmp
-                                     (get_reports_data->format_id,
-                                      "d5da9f67-8551-4e51-807b-b6a873d70e34"),
-                                    send_to_client,
-                                    write_to_client,
-                                    write_to_client_data,
-                                    get_reports_data->escalator_id))
+            ret = manage_send_report (report,
+                                      report_format,
+                                      get_reports_data->sort_order,
+                                      get_reports_data->sort_field,
+                                      get_reports_data->result_hosts_only,
+                                      get_reports_data->min_cvss_base,
+                                      get_reports_data->levels,
+                                      get_reports_data->apply_overrides,
+                                      get_reports_data->search_phrase,
+                                      get_reports_data->notes,
+                                      get_reports_data->notes_details,
+                                      get_reports_data->overrides,
+                                      get_reports_data->overrides_details,
+                                      get_reports_data->first_result,
+                                      get_reports_data->max_results,
+                                      /* Special case the XML report, bah. */
+                                      strcmp
+                                       (get_reports_data->format_id,
+                                        "d5da9f67-8551-4e51-807b-b6a873d70e34"),
+                                      send_to_client,
+                                      write_to_client,
+                                      write_to_client_data,
+                                      get_reports_data->escalator_id);
+            if (ret)
               {
-                cleanup_iterator (&reports);
-                internal_error_send_to_client (error);
-                get_reports_data_reset (get_reports_data);
-                set_client_state (CLIENT_AUTHENTIC);
-                return;
+                if (get_reports_data->escalator_id)
+                  switch (ret)
+                    {
+                      case 0:
+                        break;
+                      case 1:
+                        if (send_find_error_to_client
+                             ("get_reports",
+                              "escalator",
+                              get_reports_data->escalator_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        internal_error_send_to_client (error);
+                        cleanup_iterator (&reports);
+                        get_reports_data_reset (get_reports_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        return;
+                        break;
+                      default:
+                      case -1:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("get_reports"));
+                        internal_error_send_to_client (error);
+                        cleanup_iterator (&reports);
+                        get_reports_data_reset (get_reports_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        return;
+                        break;
+                    }
+                else
+                  {
+                    internal_error_send_to_client (error);
+                    cleanup_iterator (&reports);
+                    get_reports_data_reset (get_reports_data);
+                    set_client_state (CLIENT_AUTHENTIC);
+                    return;
+                  }
               }
-            SEND_TO_CLIENT_OR_FAIL ("</report>");
+            if (get_reports_data->escalator_id == NULL)
+              SEND_TO_CLIENT_OR_FAIL ("</report>");
           }
         cleanup_iterator (&reports);
-        SEND_TO_CLIENT_OR_FAIL ("</get_reports_response>");
+
+        if (get_reports_data->escalator_id)
+          SEND_TO_CLIENT_OR_FAIL (XML_OK ("get_reports"));
+        else
+          SEND_TO_CLIENT_OR_FAIL ("</get_reports_response>");
 
         get_reports_data_reset (get_reports_data);
         set_client_state (CLIENT_AUTHENTIC);
