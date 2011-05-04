@@ -1,3 +1,13 @@
+2011-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (email): Put the To address in the sendmail command
+	instead of the From address.  Backport from trunk; initially committed in
+	r10875.
+
+2011-04-22  Stephan Kleine
+
+	* CMakeLists.txt: Fix formatting.
+
 2011-04-22  Stephan Kleine
 
 	* CMakeLists.txt: Fix installation with DESTDIR.

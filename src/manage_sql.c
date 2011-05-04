@@ -5356,11 +5356,11 @@ static int
 email (const char *to_address, const char *from_address, const char *subject,
        const char *body)
 {
-  int ret, content_fd, from_fd;
+  int ret, content_fd, to_fd;
   gchar *command, *content;
   GError *error = NULL;
   char content_file[] = "/tmp/openvasmd-content-XXXXXX";
-  char from_file[] = "/tmp/openvasmd-from-XXXXXX";
+  char to_file[] = "/tmp/openvasmd-to-XXXXXX";
 
   content_fd = mkstemp (content_file);
   if (content_fd == -1)
@@ -5393,28 +5393,28 @@ email (const char *to_address, const char *from_address, const char *subject,
       return -1;
     }
 
-  from_fd = mkstemp (from_file);
-  if (from_fd == -1)
+  to_fd = mkstemp (to_file);
+  if (to_fd == -1)
     {
       g_warning ("%s: mkstemp: %s\n", __FUNCTION__, strerror (errno));
       close (content_fd);
       return -1;
     }
 
-  g_file_set_contents (from_file, from_address, strlen (from_address), &error);
+  g_file_set_contents (to_file, to_address, strlen (to_address), &error);
   if (error)
     {
       g_warning ("%s", error->message);
       g_error_free (error);
       close (content_fd);
-      close (from_fd);
+      close (to_fd);
       return -1;
     }
 
   command = g_strdup_printf ("xargs -a %s -I XXX"
                              " /usr/sbin/sendmail XXX < %s"
                              " > /dev/null 2>&1",
-                             from_file,
+                             to_file,
                              content_file);
 
   tracef ("   command: %s\n", command);
@@ -5431,16 +5431,16 @@ email (const char *to_address, const char *from_address, const char *subject,
                  command);
       g_free (command);
       close (content_fd);
-      close (from_fd);
+      close (to_fd);
       unlink (content_file);
-      unlink (from_file);
+      unlink (to_file);
       return -1;
     }
   g_free (command);
   close (content_fd);
-  close (from_fd);
+  close (to_fd);
   unlink (content_file);
-  unlink (from_file);
+  unlink (to_file);
   return 0;
 }
 
