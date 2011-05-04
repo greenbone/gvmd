@@ -1,5 +1,10 @@
 2011-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (email): Put the To address in the sendmail command
+	instead of the From address.
+
+2011-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (send_to_sourcefire): Expect pkcs12 in base64.
 
 2011-05-03  Matthew Mundell <matthew.mundell@greenbone.net>
