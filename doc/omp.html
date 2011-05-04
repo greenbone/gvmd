@@ -3439,9 +3439,10 @@ create_escalator_method_data_name
         LSC credential.
       </p>
 <p>
-        If the command includes a password, then the manager creates a
-        password only credential, otherwise the manager creates a key-based
-        credential.
+        If the command includes a key, then the manager creates a key-based
+        credential from the key.  If the command includes a password, then
+        the manager creates a password only credential.  Otherwise the
+        manager autogenerates a key-based credential.
       </p>
 <h4>7.6.1 Structure</h4>
 <ul style="list-style: none">
@@ -3456,6 +3457,26 @@ create_escalator_method_data_name
               &lt;<b>comment</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A comment on the LSC credential.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>key</b>&gt;
+              ?<ul style="list-style: none">
+<li>
+              &lt;<b>phrase</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Key passphrase.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>private</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Private key.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>public</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Public key.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>login</b>&gt;
@@ -3493,6 +3514,7 @@ create_escalator_method_data_name
      {
        create_lsc_credential_name
        &amp; create_lsc_credential_comment?
+       &amp; create_lsc_credential_key?
        &amp; create_lsc_credential_login
        &amp; create_lsc_credential_password?
      }
@@ -3505,6 +3527,32 @@ create_lsc_credential_name
 
 create_lsc_credential_comment
  = element comment
+     {
+       text
+     }
+
+create_lsc_credential_key
+ = element key
+     {
+       create_lsc_credential_key_phrase
+       &amp; create_lsc_credential_key_private
+       &amp; create_lsc_credential_key_public
+     }
+
+create_lsc_credential_key_phrase
+ = element phrase
+     {
+       text
+     }
+
+create_lsc_credential_key_private
+ = element private
+     {
+       text
+     }
+
+create_lsc_credential_key_public
+ = element public
      {
        text
      }
@@ -8827,6 +8875,11 @@ get_preferences_response_preference_value
           ID of required report format.
           </li>
 <li>
+          @<b>escalator_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of escalator to pass generated report to.
+          </li>
+<li>
           @<b>first_result</b>
           (<a href="#type_integer">integer</a>)
           First result to get.
@@ -8912,6 +8965,7 @@ get_preferences_response_preference_value
      {
        attribute report_id { uuid }?
        &amp; attribute format_id { uuid }?
+       &amp; attribute escalator_id { uuid }?
        &amp; attribute first_result { integer }?
        &amp; attribute max_results { integer }?
        &amp; attribute sort_order { sort_order }?

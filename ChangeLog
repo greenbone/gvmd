@@ -1,5 +1,12 @@
 2011-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (get_reports): Add escalator_id attrib.
+	(create_lsc_credential): Add KEY.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2011-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (email): Put the To address in the sendmail command
 	instead of the From address.
 

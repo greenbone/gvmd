@@ -1266,6 +1266,7 @@ create_lsc_credential
      {
        create_lsc_credential_name
        & create_lsc_credential_comment?
+       & create_lsc_credential_key?
        & create_lsc_credential_login
        & create_lsc_credential_password?
      }
@@ -1280,6 +1281,35 @@ create_lsc_credential_name
 # A comment on the LSC credential.
 create_lsc_credential_comment
  = element comment
+     {
+       text
+     }
+
+create_lsc_credential_key
+ = element key
+     {
+       create_lsc_credential_key_phrase
+       & create_lsc_credential_key_private
+       & create_lsc_credential_key_public
+     }
+
+# Key passphrase.
+create_lsc_credential_key_phrase
+ = element phrase
+     {
+       text
+     }
+
+# Private key.
+create_lsc_credential_key_private
+ = element private
+     {
+       text
+     }
+
+# Public key.
+create_lsc_credential_key_public
+ = element public
      {
        text
      }
@@ -2127,6 +2157,8 @@ get_reports
        attribute report_id { uuid }?
        & # ID of required report format.
        attribute format_id { uuid }?
+       & # ID of escalator to pass generated report to.
+       attribute escalator_id { uuid }?
        & # First result to get.
        attribute first_result { integer }?
        & # Maximum number of results to get.

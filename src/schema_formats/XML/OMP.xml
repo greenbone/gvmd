@@ -1514,14 +1514,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         LSC credential.
       </p>
       <p>
-        If the command includes a password, then the manager creates a
-        password only credential, otherwise the manager creates a key-based
-        credential.
+        If the command includes a key, then the manager creates a key-based
+        credential from the key.  If the command includes a password, then
+        the manager creates a password only credential.  Otherwise the
+        manager autogenerates a key-based credential.
       </p>
     </description>
     <pattern>
       <e>name</e>
       <o><e>comment</e></o>
+      <o><e>key</e></o>
       <e>login</e>
       <o><e>password</e></o>
     </pattern>
@@ -1536,6 +1538,35 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>
         text
       </pattern>
+    </ele>
+    <ele>
+      <name>key</name>
+      <pattern>
+        <e>phrase</e>
+        <e>private</e>
+        <e>public</e>
+      </pattern>
+      <ele>
+        <name>phrase</name>
+        <summary>Key passphrase</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+      <ele>
+        <name>private</name>
+        <summary>Private key</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+      <ele>
+        <name>public</name>
+        <summary>Public key</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
     </ele>
     <ele>
       <name>login</name>
@@ -5347,6 +5378,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>format_id</name>
         <summary>ID of required report format</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>escalator_id</name>
+        <summary>ID of escalator to pass generated report to</summary>
+        <description>
+          <p>
+            In this case the response is empty, and simply indicates success
+            via the status code.
+          </p>
+        </description>
         <type>uuid</type>
       </attrib>
       <attrib>
