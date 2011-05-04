@@ -5949,27 +5949,27 @@ http_get (const char *url)
 /**
  * @brief Send a report to a Sourcefire Defense Center.
  *
- * @param[in]  ip        IP of center.
- * @param[in]  port      Port of center.
- * @param[in]  pkcs12    PKCS12 content.
- * @param[in]  report    Report in "Sourcefire" format.
+ * @param[in]  ip         IP of center.
+ * @param[in]  port       Port of center.
+ * @param[in]  pkcs12_64  PKCS12 content in base64.
+ * @param[in]  report     Report in "Sourcefire" format.
  *
  * @return 0 success, -1 error.
  */
 static int
-send_to_sourcefire (const char *ip, const char *port, const char *pkcs12,
+send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                     const char *report)
 {
   gchar *script, *script_dir;
-  gchar *report_file, *pkcs12_file;
+  gchar *report_file, *pkcs12_file, *pkcs12;
   char report_dir[] = "/tmp/openvasmd_escalate_XXXXXX";
   GError *error;
+  gsize pkcs12_len;
 
   if ((report == NULL) || (ip == NULL) || (port == NULL))
     return -1;
 
   tracef ("send to sourcefire: %s:%s", ip, port);
-  tracef ("pkcs12: %s", pkcs12);
   tracef ("report: %s", report);
 
   /* Setup files. */
@@ -5994,8 +5994,16 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12,
 
   pkcs12_file = g_strdup_printf ("%s/pkcs12", report_dir);
 
+  if (strlen (pkcs12_64))
+    pkcs12 = (gchar*) g_base64_decode (pkcs12_64, &pkcs12_len);
+  else
+    {
+      pkcs12 = g_strdup ("");
+      pkcs12_len = 0;
+    }
+
   error = NULL;
-  g_file_set_contents (pkcs12_file, pkcs12, strlen (pkcs12), &error);
+  g_file_set_contents (pkcs12_file, pkcs12, pkcs12_len, &error);
   if (error)
     {
       g_warning ("%s", error->message);
