@@ -1,5 +1,9 @@
 2011-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/escalator_methods/Sourcefire/escalate: Simplify the script call.
+
+2011-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (send_to_sourcefire): Add .csv suffix to report.
 
 	* src/escalator_methods/Sourcefire/escalate: Copy the connector script

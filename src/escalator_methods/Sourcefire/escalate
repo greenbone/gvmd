@@ -24,7 +24,4 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-REPORT_DIR=`dirname $4`
-cp -r * ${REPORT_DIR} \
-&& cd ${REPORT_DIR} \
-&& ./greenbone_sourcefire_connector -server=$1 -port=$2 -pkcs12=$3
+greenbone_sourcefire_connector -server=$1 -port=$2 -pkcs12=$3 $4
