@@ -5980,7 +5980,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
       return -1;
     }
 
-  report_file = g_strdup_printf ("%s/report", report_dir);
+  report_file = g_strdup_printf ("%s/report.csv", report_dir);
 
   error = NULL;
   g_file_set_contents (report_file, report, strlen (report), &error);

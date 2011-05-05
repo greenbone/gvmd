@@ -1,3 +1,10 @@
+2011-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (send_to_sourcefire): Add .csv suffix to report.
+
+	* src/escalator_methods/Sourcefire/escalate: Copy the connector script
+	to the report directory, and call it there.  Remove the csvfile param.
+
 2011-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (get_reports): Add escalator_id attrib.
