@@ -1,3 +1,8 @@
+2011-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_report): Insert results within a single
+	transaction.
+
 2011-05-05  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.

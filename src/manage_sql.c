@@ -9571,6 +9571,8 @@ create_report (array_t *results, const char *task_name,
 
   /* Add the results. */
 
+  sql ("BEGIN IMMEDIATE;");
+
   index = 0;
   while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
                                                                index++)))
@@ -9649,6 +9651,8 @@ create_report (array_t *results, const char *task_name,
         g_free (quoted_host);
         g_free (quoted_time);
       }
+
+  sql ("COMMIT;");
 
   current_scanner_task = task;
   current_report = report;
