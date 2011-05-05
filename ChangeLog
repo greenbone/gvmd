@@ -1,3 +1,11 @@
+2011-05-05  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 3.0+beta1 release.
+
+	* CMakeLists.txt: Updated version number.
+
+	* CHANGES: Updated.
+
 2011-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/escalator_methods/Sourcefire/escalate: Simplify the script call.

@@ -1,3 +1,31 @@
+openvas-manager 3.0+beta1 (2011-03-02)
+
+This is the first beta version of the upcoming 3.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release introduces a number of new features. For details, please refer to
+the list of changes below.
+
+Many thanks to everyone who has contributed to this release:
+Stephan, Kleine, Matthew Mundell, Michael Wiegand and Felix Wolfsteller.
+
+Main changes since 2.0 series:
+* New feature: Trashcan. It is now possible to place objects in a trashcan
+  instead of deleting them directly.
+* Support for Host Details reported by OpenVAS Scanner has been added.
+* Support for container task (imported reports) has been added.
+* Support for specifying an SSH port for Local Security Checks has been added.
+* Security: Enforces strict permissions on sensitive OpenVAS Manager files.
+* Security: Drop privileges before executing report format plugins if running with
+  elevated privileges.
+* Security: Ensures report formats are trusted before executing them.
+* Support for escalating result to a Sourcefire Defense Center has been added.
+* Support for using an SSH key pair for SSH authentication has been added.
+* The mail addresses supplied for an email escalator are now used in the correct
+  order.
+
+
 openvas-manager 2.0.2 (2011-03-02)
 
 This is the second maintenance release of the openvas-manager 2.0 module for the
