@@ -8558,7 +8558,7 @@ task_upload_progress (task_t task)
         return -1;
       return sql_int (0, 0,
                       "SELECT"
-                      " max (min (((%llu * 100) / upload_result_count), 100), -1)"
+                      " max (min (((%i * 100) / upload_result_count), 100), -1)"
                       " FROM tasks"
                       " WHERE ROWID = %llu;",
                       count,

@@ -1,5 +1,9 @@
 2011-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_upload_progress): Correct count format specifier.
+
+2011-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (get_report_formats): Add SIGNATURE.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.
