@@ -5652,7 +5652,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>predefined</e>
           <any><e>param</e></any>
           <or>
-            <any><e>file</e></any>
+            <g>
+              <any><e>file</e></any>
+              <e>signature</e>
+            </g>
             <g>
               <e>trust</e>
               <e>active</e>
@@ -5761,6 +5764,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </attrib>
             <t>base64</t>
           </pattern>
+        </ele>
+        <ele>
+          <name>signature</name>
+          <summary>The report format signature</summary>
+          <pattern>text</pattern>
         </ele>
         <ele>
           <name>trust</name>

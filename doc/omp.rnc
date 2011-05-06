@@ -4432,7 +4432,8 @@ get_report_formats_response_report_format
        & get_report_formats_response_report_format_global
        & get_report_formats_response_report_format_predefined
        & get_report_formats_response_report_format_param*
-       & ( get_report_formats_response_report_format_file*
+       & ( ( get_report_formats_response_report_format_file*
+           & get_report_formats_response_report_format_signature )
            | ( get_report_formats_response_report_format_trust
            & get_report_formats_response_report_format_active ) )
      }
@@ -4554,6 +4555,13 @@ get_report_formats_response_report_format_file
      {
        text # RNC limitation: base64
        & attribute name { text }
+     }
+
+# The report format signature.
+get_report_formats_response_report_format_signature
+ = element signature
+     {
+       text
      }
 
 # Whether signature verification succeeded.

@@ -9251,12 +9251,21 @@ get_reports_response_report
 <li>
 <i>One of</i><b></b><ul style="list-style: none">
 <li>
+<i>The group</i><b></b><ul style="list-style: none">
+<li>
               &lt;<b>file</b>&gt;
               *<div style="margin-left: 15px; display: inline;">One of the files used to generate the report.</div>
 <ul style="list-style: none"><li>
           @<b>name</b>
           (text)
           </li></ul>
+</li>
+<li>
+              &lt;<b>signature</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The report format signature.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
 <i>The group</i><b></b><ul style="list-style: none">
@@ -9322,7 +9331,8 @@ get_report_formats_response_report_format
        &amp; get_report_formats_response_report_format_global
        &amp; get_report_formats_response_report_format_predefined
        &amp; get_report_formats_response_report_format_param*
-       &amp; ( get_report_formats_response_report_format_file*
+       &amp; ( ( get_report_formats_response_report_format_file*
+           &amp; get_report_formats_response_report_format_signature )
            | ( get_report_formats_response_report_format_trust
            &amp; get_report_formats_response_report_format_active ) )
      }
@@ -9434,6 +9444,12 @@ get_report_formats_response_report_format_file
      {
        text # RNC limitation: base64
        &amp; attribute name { text }
+     }
+
+get_report_formats_response_report_format_signature
+ = element signature
+     {
+       text
      }
 
 get_report_formats_response_report_format_trust
