@@ -1,3 +1,8 @@
+2011-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_report): Revert single transaction, as this
+	causes problems on Debian 5.
+
 2011-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_upload_progress): Correct count format specifier.

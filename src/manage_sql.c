@@ -9571,7 +9571,10 @@ create_report (array_t *results, const char *task_name,
 
   /* Add the results. */
 
+  /* This is faster, but causes problems on Debian 5 (sqlite 3.5.9). */
+#if 0
   sql ("BEGIN IMMEDIATE;");
+#endif
 
   index = 0;
   while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
@@ -9652,7 +9655,9 @@ create_report (array_t *results, const char *task_name,
         g_free (quoted_time);
       }
 
+#if 0
   sql ("COMMIT;");
+#endif
 
   current_scanner_task = task;
   current_report = report;
