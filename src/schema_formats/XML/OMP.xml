@@ -9069,7 +9069,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </description>
     <pattern>
       <attrib>
-        <name>task_id</name>
+        <name>escalator_id</name>
         <type>uuid</type>
         <required>1</required>
       </attrib>

@@ -2841,7 +2841,7 @@ stop_task
 test_escalator
  = element test_escalator
      {
-       attribute task_id { uuid }
+       attribute escalator_id { uuid }
      }
 
 ## Command verify_agent
