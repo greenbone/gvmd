@@ -1,5 +1,11 @@
 2011-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (escalate_2): In ESCALATOR_METHOD_EMAIL if the
+	escalator is missing a "notice_report_format" method data, then use TXT.
+	This can happen for escalators that predate the notice_report_format.
+
+2011-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (test_escalator): Correct attrib name.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.

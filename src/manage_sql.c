@@ -6275,7 +6275,8 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
                   format_uuid = escalator_data (escalator,
                                                 "method",
                                                 "notice_report_format");
-                  if ((find_report_format (format_uuid, &report_format)
+                  if (((format_uuid == NULL)
+                       || find_report_format (format_uuid, &report_format)
                        || (report_format == 0))
                       /* Fallback to TXT. */
                       && (find_report_format
