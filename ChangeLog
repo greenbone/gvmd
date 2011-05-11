@@ -1,5 +1,9 @@
 2011-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_lsc_credential): Remove stray punctuation.
+
+2011-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_report, manage_send_report): Clear parent state
 	in child.
 
