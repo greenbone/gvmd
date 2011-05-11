@@ -1,3 +1,8 @@
+2011-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_report, manage_send_report): Clear parent state
+	in child.
+
 2011-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (escalate_2): In ESCALATOR_METHOD_EMAIL if the
