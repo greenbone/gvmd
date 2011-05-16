@@ -1,3 +1,8 @@
+2011-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_restore): Add owner clauses to name checks, as
+	other users may have resources with the same name.
+
 2011-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_lsc_credential): Remove stray punctuation.

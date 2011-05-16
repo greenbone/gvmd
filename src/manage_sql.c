@@ -26815,6 +26815,8 @@ manage_restore (const char *id)
 {
   resource_t resource = 0;
 
+  assert (current_credentials.uuid);
+
   sql ("BEGIN IMMEDIATE;");
 
   /* Agent. */
@@ -26830,8 +26832,11 @@ manage_restore (const char *id)
       if (sql_int (0, 0,
                    "SELECT count(*) FROM agents"
                    " WHERE name ="
-                   " (SELECT name FROM agents_trash WHERE ROWID = %llu);",
-                   resource))
+                   " (SELECT name FROM agents_trash WHERE ROWID = %llu)"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   resource,
+                   current_credentials.uuid))
         {
           sql ("ROLLBACK;");
           return 3;
@@ -26868,8 +26873,11 @@ manage_restore (const char *id)
       if (sql_int (0, 0,
                    "SELECT count(*) FROM configs"
                    " WHERE name ="
-                   " (SELECT name FROM configs_trash WHERE ROWID = %llu);",
-                   resource))
+                   " (SELECT name FROM configs_trash WHERE ROWID = %llu)"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   resource,
+                   current_credentials.uuid))
         {
           sql ("ROLLBACK;");
           return 3;
@@ -26923,8 +26931,11 @@ manage_restore (const char *id)
       if (sql_int (0, 0,
                    "SELECT count(*) FROM escalators"
                    " WHERE name ="
-                   " (SELECT name FROM escalators_trash WHERE ROWID = %llu);",
-                   resource))
+                   " (SELECT name FROM escalators_trash WHERE ROWID = %llu)"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   resource,
+                   current_credentials.uuid))
         {
           sql ("ROLLBACK;");
           return 3;
@@ -26995,8 +27006,11 @@ manage_restore (const char *id)
       if (sql_int (0, 0,
                    "SELECT count(*) FROM lsc_credentials"
                    " WHERE name ="
-                   " (SELECT name FROM lsc_credentials_trash WHERE ROWID = %llu);",
-                   resource))
+                   " (SELECT name FROM lsc_credentials_trash WHERE ROWID = %llu)"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   resource,
+                   current_credentials.uuid))
         {
           sql ("ROLLBACK;");
           return 3;
@@ -27051,8 +27065,11 @@ manage_restore (const char *id)
       if (sql_int (0, 0,
                    "SELECT count(*) FROM report_formats"
                    " WHERE name ="
-                   " (SELECT name FROM report_formats_trash WHERE ROWID = %llu);",
-                   resource))
+                   " (SELECT name FROM report_formats_trash WHERE ROWID = %llu)"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   resource,
+                   current_credentials.uuid))
         {
           sql ("ROLLBACK;");
           return 3;
@@ -27188,8 +27205,11 @@ manage_restore (const char *id)
       if (sql_int (0, 0,
                    "SELECT count(*) FROM schedules"
                    " WHERE name ="
-                   " (SELECT name FROM schedules_trash WHERE ROWID = %llu);",
-                   resource))
+                   " (SELECT name FROM schedules_trash WHERE ROWID = %llu)"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   resource,
+                   current_credentials.uuid))
         {
           sql ("ROLLBACK;");
           return 3;
@@ -27230,8 +27250,11 @@ manage_restore (const char *id)
       if (sql_int (0, 0,
                    "SELECT count(*) FROM slaves"
                    " WHERE name ="
-                   " (SELECT name FROM slaves_trash WHERE ROWID = %llu);",
-                   resource))
+                   " (SELECT name FROM slaves_trash WHERE ROWID = %llu)"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   resource,
+                   current_credentials.uuid))
         {
           sql ("ROLLBACK;");
           return 3;
@@ -27271,8 +27294,11 @@ manage_restore (const char *id)
       if (sql_int (0, 0,
                    "SELECT count(*) FROM targets"
                    " WHERE name ="
-                   " (SELECT name FROM targets_trash WHERE ROWID = %llu);",
-                   resource))
+                   " (SELECT name FROM targets_trash WHERE ROWID = %llu)"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   resource,
+                   current_credentials.uuid))
         {
           sql ("ROLLBACK;");
           return 3;
