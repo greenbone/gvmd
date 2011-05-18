@@ -1,5 +1,11 @@
 2011-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (omp_xml_handle_end_element): In CLIENT_GET_ESCALATORS
+	correct order of init_escalator_data_iterator args.  This was preventing
+	the event data from being sent to clients.
+
+2011-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Add full count as text, to preserve
 	compatibility with OMP 1.  Some of the report formats use this value.
 

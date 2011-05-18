@@ -14783,10 +14783,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            event_name (escalator_iterator_event
                                             (&escalators)));
                   init_escalator_data_iterator (&data,
-                                                get_escalators_data->trash,
                                                 escalator_iterator_escalator
                                                  (&escalators),
-
+                                                get_escalators_data->trash,
                                                 "event");
                   while (next (&data))
                     SENDF_TO_CLIENT_OR_FAIL ("<data>"
