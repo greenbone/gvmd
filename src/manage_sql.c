@@ -246,6 +246,9 @@ duplicate_target (target_t, const char *);
 int
 delete_task_lock (task_t, int);
 
+static gchar*
+clean_hosts (const char *);
+
 
 /* Variables. */
 
@@ -739,6 +742,35 @@ sql_hosts_contains (sqlite3_context *context, int argc, sqlite3_value** argv)
   g_free (stripped_host);
 
   sqlite3_result_int (context, 0);
+}
+
+/**
+ * @brief Clean a host list.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+static void
+sql_clean_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  const unsigned char *hosts;
+  gchar *clean;
+
+  assert (argc == 1);
+
+  hosts = sqlite3_value_text (argv[0]);
+  if (hosts == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get hosts argument", -1);
+      return;
+    }
+
+  clean = clean_hosts ((gchar*) hosts);
+  sqlite3_result_text (context, clean, -1, SQLITE_TRANSIENT);
+  g_free (clean);
 }
 
 /**
@@ -4714,6 +4746,40 @@ migrate_44_to_45 ()
 }
 
 /**
+ * @brief Migrate the database from version 44 to version 45.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_45_to_46 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Require that the database is currently version 45. */
+
+  if (manage_db_version () != 45)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* CREATE_TARGET now cleans the hosts string. */
+
+  sql ("UPDATE targets SET hosts = clean_hosts (hosts);");
+  sql ("UPDATE targets_trash SET hosts = clean_hosts (hosts);");
+
+  /* Set the database version to 46. */
+
+  set_db_version (46);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -4763,6 +4829,7 @@ static migrator_t database_migrators[]
     {43, migrate_42_to_43},
     {44, migrate_43_to_44},
     {45, migrate_44_to_45},
+    {46, migrate_45_to_46},
     /* End marker. */
     {-1, NULL}};
 
@@ -7121,6 +7188,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           != SQLITE_OK)
         {
           g_warning ("%s: failed to create host_contains", __FUNCTION__);
+          abort ();
+        }
+
+      if (sqlite3_create_function (task_db,
+                                   "clean_hosts",
+                                   1,               /* Number of args. */
+                                   SQLITE_UTF8,
+                                   NULL,            /* Callback data. */
+                                   sql_clean_hosts,
+                                   NULL,            /* xStep. */
+                                   NULL)            /* xFinal. */
+          != SQLITE_OK)
+        {
+          g_warning ("%s: failed to create clean_hosts", __FUNCTION__);
           abort ();
         }
 

@@ -1,5 +1,18 @@
 2011-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add database migrator from version 45 to new version 46, to ensure that
+	the target hosts fields are clean.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 46.
+
+	* src/manage_sql.c (sql_clean_hosts, migrate_45_to_46): New functions.
+	(database_migrators): Add migrate_45_to_46.
+	(init_manage_process): Add SQL function clean_hosts.
+
+	* doc/db.png: Update for version change.
+
+2011-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (trim_whitespace, clean_hosts): New functions.
 	(create_target): Clean the hosts string before quoting it.
 
