@@ -560,10 +560,12 @@ report_report_scan_run_status
        task_status
      }
 
+# Counts of results produced by scan.
 report_report_result_count
  = element result_count
      {
-       report_report_result_count_full
+       text
+       & report_report_result_count_full
        & report_report_result_count_filtered
        & report_report_result_count_debug
        & report_report_result_count_hole

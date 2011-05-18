@@ -13041,6 +13041,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
 
     PRINT (out,
              "<result_count>"
+             "%i"
              "<full>%i</full>"
              "<filtered>%i</filtered>"
              "<debug><full>%i</full><filtered>%i</filtered></debug>"
@@ -13053,6 +13054,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
              "<filtered>%i</filtered>"
              "</false_positive>"
              "</result_count>",
+             result_count,
              result_count,
              filtered_result_count,
              debugs,

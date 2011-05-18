@@ -1274,7 +1274,8 @@ command_definition_ele
 </li>
 <li>
               &lt;<b>result_count</b>&gt;
-              <ul style="list-style: none">
+              <div style="margin-left: 15px; display: inline;">Counts of results produced by scan.</div>
+<ul style="list-style: none">
 <li>
               &lt;<b>full</b>&gt;
               <div style="margin-left: 15px; display: inline;">Total number of results produced by scan.</div>
@@ -1690,7 +1691,8 @@ report_report_scan_run_status
 report_report_result_count
  = element result_count
      {
-       report_report_result_count_full
+       text
+       &amp; report_report_result_count_full
        &amp; report_report_result_count_filtered
        &amp; report_report_result_count_debug
        &amp; report_report_result_count_hole
