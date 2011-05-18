@@ -15642,6 +15642,76 @@ manage_max_hosts (const char *hosts)
 }
 
 /**
+ * @brief Trim leading and trailing space from a string.
+ *
+ * @param[in]  string  String.  May be modified.
+ *
+ * @return Either string or some address within string.
+ */
+static gchar *
+trim_whitespace (gchar *string)
+{
+  gchar *host, *end;
+
+  /* Trim leading and trailing space. */
+  host = string;
+  while ((*host == ' ') || (*host == '\t'))
+    host++;
+  end = host;
+  while (*end)
+    {
+      if ((*end == ' ') || (*end == '\t'))
+        {
+          *end = '\0';
+          break;
+        }
+      end++;
+    }
+  return host;
+}
+
+/**
+ * @brief Clean a hosts string.
+ *
+ * @param[in]  hosts  String describing hosts.
+ *
+ * @return Freshly allocated new hosts string, or NULL on error.
+ */
+static gchar*
+clean_hosts (const char *hosts)
+{
+  GString *clean;
+  gchar** split;
+  gchar** point;
+
+  split = g_strsplit (hosts, ",", 0);
+  point = split;
+
+  if ((point == NULL) || (*point == NULL))
+    {
+      g_strfreev (split);
+      return g_strdup ("");
+    }
+
+  clean = g_string_new (trim_whitespace (*point));
+
+  point += 1;
+  while (*point)
+    {
+      gchar *host;
+
+      host = trim_whitespace (*point);
+
+      if (*host)
+        g_string_append_printf (clean, ", %s", host);
+
+      point += 1;
+    }
+
+  return g_string_free (clean, FALSE);
+}
+
+/**
  * @brief Validate a single port.
  *
  * @param[in]   port      A port.
@@ -15854,6 +15924,7 @@ create_target (const char* name, const char* hosts, const char* comment,
   if (target_locator != NULL)
     {
       int max;
+      gchar *clean;
       GSList* hosts_list = resource_request_resource (target_locator,
                                                       RESOURCE_TYPE_TARGET,
                                                       username ? username : "",
@@ -15885,12 +15956,15 @@ create_target (const char* name, const char* hosts, const char* comment,
           sql ("ROLLBACK;");
           return 3;
         }
-      quoted_hosts = sql_nquote (import_hosts, strlen (import_hosts));
+      clean = clean_hosts (import_hosts);
       g_free (import_hosts);
+      quoted_hosts = sql_quote (clean);
+      g_free (clean);
     }
   else
     {
       int max;
+      gchar *clean;
 
       /* User provided hosts. */
 
@@ -15908,7 +15982,9 @@ create_target (const char* name, const char* hosts, const char* comment,
           return 3;
         }
 
-      quoted_hosts = sql_nquote (hosts, strlen (hosts));
+      clean = clean_hosts (hosts);
+      quoted_hosts = sql_quote (clean);
+      g_free (clean);
     }
 
   quoted_port_range = port_range

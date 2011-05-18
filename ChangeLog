@@ -1,5 +1,10 @@
 2011-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (trim_whitespace, clean_hosts): New functions.
+	(create_target): Clean the hosts string before quoting it.
+
+2011-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (omp_xml_handle_end_element): In CLIENT_GET_ESCALATORS
 	correct order of init_escalator_data_iterator args.  This was preventing
 	the event data from being sent to clients.
