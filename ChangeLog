@@ -1,3 +1,9 @@
+2011-05-19  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 3.0+beta2 release.
+
+	* CHANGES: Updated.
+
 2011-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add database migrator from version 45 to new version 46, to ensure that

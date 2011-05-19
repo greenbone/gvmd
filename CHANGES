@@ -1,3 +1,25 @@
+openvas-manager 3.0+beta2 (2011-05-19)
+
+This is the second beta version of the upcoming 3.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release resolves several minor issues discovered after the release of
+OpenVAS Manager 3.0+beta1. For details, please refer to the list of changes
+below.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell and Michael Wiegand.
+
+Main changes since 3.0+beta1:
+* An issue which caused the import of very large reports to fail under certain
+  circumstances has been fixed.
+* An issue which caused the date of the scan end to be missing from scans if
+  they were associated with an escalator created with an early Manager version
+  has been fixed.
+* The handling of long host lists has been improved.
+
+
 openvas-manager 3.0+beta1 (2011-03-02)
 
 This is the first beta version of the upcoming 3.0 release of the OpenVAS
