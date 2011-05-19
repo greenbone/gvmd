@@ -15723,14 +15723,14 @@ manage_max_hosts (const char *hosts)
 }
 
 /**
- * @brief Trim leading and trailing space from a string.
+ * @brief Trim leading and trailing space from a hosts string.
  *
  * @param[in]  string  String.  May be modified.
  *
  * @return Either string or some address within string.
  */
 static gchar *
-trim_whitespace (gchar *string)
+trim_hosts (gchar *string)
 {
   gchar *host, *end;
 
@@ -15774,14 +15774,14 @@ clean_hosts (const char *hosts)
       return g_strdup ("");
     }
 
-  clean = g_string_new (trim_whitespace (*point));
+  clean = g_string_new (trim_hosts (*point));
 
   point += 1;
   while (*point)
     {
       gchar *host;
 
-      host = trim_whitespace (*point);
+      host = trim_hosts (*point);
 
       if (*host)
         g_string_append_printf (clean, ", %s", host);
