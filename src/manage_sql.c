@@ -5850,20 +5850,25 @@ escalator_data (escalator_t escalator, const char *type, const char *name)
  * @param[in]  from_address  Address to send to.
  * @param[in]  subject       Subject of email.
  * @param[in]  body          Body of email.
+ * @param[in]  attachment    Attachment in line broken base64, or NULL.
+ * @param[in]  attachment_type  Attachment MIME type, or NULL.
+ * @param[in]  attachment_extension  Attachment file extension, or NULL.
  *
  * @return 0 success, -1 error.
  */
 static int
 email (const char *to_address, const char *from_address, const char *subject,
-       const char *body)
+       const char *body, const gchar *attachment, const char *attachment_type,
+       const char *attachment_extension)
 {
   int ret, content_fd, to_fd;
-  gchar *command, *content;
+  gchar *command;
   GError *error = NULL;
-  char content_file[] = "/tmp/openvasmd-content-XXXXXX";
-  char to_file[] = "/tmp/openvasmd-to-XXXXXX";
+  char content_file_name[] = "/tmp/openvasmd-content-XXXXXX";
+  char to_file_name[] = "/tmp/openvasmd-to-XXXXXX";
+  FILE *content_file;
 
-  content_fd = mkstemp (content_file);
+  content_fd = mkstemp (content_file_name);
   if (content_fd == -1)
     {
       g_warning ("%s: mkstemp: %s\n", __FUNCTION__, strerror (errno));
@@ -5873,41 +5878,133 @@ email (const char *to_address, const char *from_address, const char *subject,
   tracef ("   EMAIL to %s from %s subject: %s, body: %s",
           to_address, from_address, subject, body);
 
-  content = g_strdup_printf ("To: %s\n"
-                             "From: %s\n"
-                             "Subject: %s\n"
-                             "\n"
-                             "%s",
-                             to_address,
-                             from_address ? from_address
-                                          : "automated@openvas.org",
-                             subject,
-                             body);
-
-  g_file_set_contents (content_file, content, strlen (content), &error);
-  g_free (content);
-  if (error)
+  content_file = fdopen (content_fd, "w");
+  if (content_file == NULL)
     {
-      g_warning ("%s", error->message);
-      g_error_free (error);
+      g_warning ("%s: %s", __FUNCTION__, strerror (errno));
       close (content_fd);
       return -1;
     }
 
-  to_fd = mkstemp (to_file);
+  if (fprintf (content_file,
+               "To: %s\n"
+               "From: %s\n"
+               "Subject: %s\n"
+               "%s%s%s"
+               "\n"
+               "%s"
+               "%s",
+               to_address,
+               from_address ? from_address
+                            : "automated@openvas.org",
+               subject,
+               (attachment
+                 ? "MIME-Version: 1.0\n"
+                   "Content-Type: multipart/mixed;"
+                   " boundary=\""
+                 : ""),
+               /* @todo Future callers may give email containing this string. */
+               (attachment ? "=-=-=-=-=" : ""),
+               (attachment ? "\"\n" : ""),
+               (attachment ? "--=-=-=-=-=\n"
+                             "Content-Type: text/plain; charset=utf-8\n"
+                             "Content-Transfer-Encoding: 8bit\n"
+                             "Content-Disposition: inline\n"
+                             "\n"
+                           : ""),
+               body)
+      < 0)
+    {
+      g_warning ("%s: output error", __FUNCTION__);
+      fclose (content_file);
+      return -1;
+    }
+
+  if (attachment)
+    {
+      int len;
+
+      if (fprintf (content_file,
+                   "--=-=-=-=-=\n"
+                   "Content-Type: %s\n"
+                   "Content-Disposition: attachment;"
+                   " filename=\"openvas-report.%s\"\n"
+                   "Content-Transfer-Encoding: base64\n"
+                   "Content-Description: OpenVAS report\n\n",
+                   attachment_type,
+                   attachment_extension)
+          < 0)
+        {
+          g_warning ("%s: output error", __FUNCTION__);
+          fclose (content_file);
+          return -1;
+        }
+
+      len = strlen (attachment);
+      while (len)
+        if (len > 72)
+          {
+            if (fprintf (content_file,
+                         "%.*s\n",
+                         72,
+                         attachment)
+                < 0)
+              {
+                g_warning ("%s: output error", __FUNCTION__);
+                fclose (content_file);
+                return -1;
+              }
+            attachment += 72;
+            len -= 72;
+          }
+        else
+          {
+            if (fprintf (content_file,
+                         "%s\n",
+                         attachment)
+                < 0)
+              {
+                g_warning ("%s: output error", __FUNCTION__);
+                fclose (content_file);
+                return -1;
+              }
+            break;
+          }
+
+      if (fprintf (content_file,
+                   "--=-=-=-=-=--\n")
+          < 0)
+        {
+          g_warning ("%s: output error", __FUNCTION__);
+          fclose (content_file);
+          return -1;
+        }
+    }
+
+  while (fflush (content_file))
+    if (errno == EINTR)
+      continue;
+    else
+      {
+        g_warning ("%s", strerror (errno));
+        fclose (content_file);
+        return -1;
+      }
+
+  to_fd = mkstemp (to_file_name);
   if (to_fd == -1)
     {
       g_warning ("%s: mkstemp: %s\n", __FUNCTION__, strerror (errno));
-      close (content_fd);
+      fclose (content_file);
       return -1;
     }
 
-  g_file_set_contents (to_file, to_address, strlen (to_address), &error);
+  g_file_set_contents (to_file_name, to_address, strlen (to_address), &error);
   if (error)
     {
       g_warning ("%s", error->message);
       g_error_free (error);
-      close (content_fd);
+      fclose (content_file);
       close (to_fd);
       return -1;
     }
@@ -5915,8 +6012,8 @@ email (const char *to_address, const char *from_address, const char *subject,
   command = g_strdup_printf ("xargs -a %s -I XXX"
                              " /usr/sbin/sendmail XXX < %s"
                              " > /dev/null 2>&1",
-                             to_file,
-                             content_file);
+                             to_file_name,
+                             content_file_name);
 
   tracef ("   command: %s\n", command);
 
@@ -5931,17 +6028,17 @@ email (const char *to_address, const char *from_address, const char *subject,
                  WEXITSTATUS (ret),
                  command);
       g_free (command);
-      close (content_fd);
+      fclose (content_file);
       close (to_fd);
-      unlink (content_file);
-      unlink (to_file);
+      unlink (content_file_name);
+      unlink (to_file_name);
       return -1;
     }
   g_free (command);
-  close (content_fd);
+  fclose (content_file);
   close (to_fd);
-  unlink (content_file);
-  unlink (to_file);
+  unlink (content_file_name);
+  unlink (to_file_name);
   return 0;
 }
 
@@ -6220,6 +6317,31 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 #define MAX_CONTENT_LENGTH 2000
 
 /**
+ * @brief Format string for attached report escalator email.
+ */
+#define REPORT_ATTACH_FORMAT                                                  \
+ "Task '%s': %s\n"                                                            \
+ "\n"                                                                         \
+ "After the event %s,\n"                                                      \
+ "the following condition was met: %s\n"                                      \
+ "\n"                                                                         \
+ "This email escalation is configured to attach report format '%s'.\n"        \
+ "Full details and other report formats are available on the scan engine.\n"  \
+ "\n"                                                                         \
+ "%s%s%s"                                                                     \
+ "\n"                                                                         \
+ "\n"                                                                         \
+ "Note:\n"                                                                    \
+ "This email was sent to you as a configured security scan escalation.\n"     \
+ "Please contact your local system administrator if you think you\n"          \
+ "should not have received it.\n"
+
+/**
+ * @brief Maximum number of bytes of the report included in email escalations.
+ */
+#define MAX_ATTACH_LENGTH 1048576
+
+/**
  * @brief Format string for simple notice escalator email.
  */
 #define SIMPLE_NOTICE_FORMAT                                                  \
@@ -6301,6 +6423,11 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
               int ret;
               gchar *body, *subject;
               char *name, *notice, *from_address;
+              gchar *base64, *type, *extension;
+
+              base64 = NULL;
+              type = NULL;
+              extension = NULL;
 
               from_address = escalator_data (escalator,
                                              "method",
@@ -6315,7 +6442,7 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
                   report_format_t report_format = 0;
                   gsize content_length;
 
-                  /* Message with report. */
+                  /* Message with inlined report. */
 
                   if (report == 0)
                     switch (sql_int64 (&report, 0, 0,
@@ -6412,6 +6539,101 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
                   g_free (event_desc);
                   g_free (condition_desc);
                 }
+              else if (notice && strcmp (notice, "2") == 0)
+                {
+                  gchar *event_desc, *condition_desc, *report_content;
+                  char *format_uuid, *format_name;
+                  report_format_t report_format = 0;
+                  gsize content_length;
+
+                  /* Message with attached report. */
+
+                  if (report == 0)
+                    switch (sql_int64 (&report, 0, 0,
+                                       "SELECT max (ROWID) FROM reports"
+                                       " WHERE task = %llu",
+                                       task))
+                      {
+                        case 0:
+                          if (report)
+                            break;
+                        case 1:        /* Too few rows in result of query. */
+                        case -1:
+                          free (notice);
+                          free (name);
+                          free (to_address);
+                          free (from_address);
+                          return -1;
+                          break;
+                        default:       /* Programming error. */
+                          assert (0);
+                          return -1;
+                      }
+
+                  format_uuid = escalator_data (escalator,
+                                                "method",
+                                                "notice_attach_format");
+                  if (((format_uuid == NULL)
+                       || find_report_format (format_uuid, &report_format)
+                       || (report_format == 0))
+                      /* Fallback to TXT. */
+                      && (find_report_format
+                           ("19f6f1b3-7128-4433-888c-ccc764fe6ed5",
+                            &report_format)
+                          || (report_format == 0)))
+                    {
+                      g_free (format_uuid);
+                      free (notice);
+                      free (name);
+                      free (to_address);
+                      free (from_address);
+                      return -1;
+                    }
+                  g_free (format_uuid);
+                  format_name = report_format_name (report_format);
+
+                  event_desc = event_description (event, event_data, NULL);
+                  condition_desc = escalator_condition_description (condition,
+                                                                    escalator);
+                  subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
+                                             name ? name : "Internal Error",
+                                             event_desc);
+                  report_content = manage_report (report, report_format,
+                                                  sort_order, sort_field,
+                                                  result_hosts_only,
+                                                  min_cvss_base, levels,
+                                                  apply_overrides,
+                                                  search_phrase, notes,
+                                                  notes_details, overrides,
+                                                  overrides_details,
+                                                  first_result, max_results,
+                                                  &content_length,
+                                                  &extension,
+                                                  &type);
+                  if (content_length <= MAX_ATTACH_LENGTH)
+                    base64 = g_base64_encode ((guchar*) report_content,
+                                              content_length);
+                  g_free (report_content);
+                  body = g_strdup_printf (REPORT_ATTACH_FORMAT,
+                                          name,
+                                          event_desc,
+                                          event_desc,
+                                          condition_desc,
+                                          format_name,
+                                          (base64
+                                            ? ""
+                                            : "Note: The report exceeds the"
+                                              " maximum attachment length of "),
+                                          (base64
+                                            ? ""
+                                            : G_STRINGIFY (MAX_ATTACH_LENGTH)),
+                                          (base64
+                                            ? ""
+                                            : " bytes.\n"));
+                  free (format_name);
+                  g_free (event_desc);
+                  g_free (condition_desc);
+                }
               else
                 {
                   gchar *event_desc, *generic_desc, *condition_desc;
@@ -6434,7 +6656,9 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
                 }
               free (name);
               free (notice);
-              ret = email (to_address, from_address, subject, body);
+              ret = email (to_address, from_address, subject, body, base64,
+                           type, extension);
+              g_free (base64);
               free (to_address);
               free (from_address);
               g_free (subject);
