@@ -1,3 +1,11 @@
+2011-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (nvts_size, family_nvt_count, family_nvt_count): Count
+	over the "Credentials" family.
+	(make_nvt_from_nvti): Remove "Credentials" exclusion, because the NVTs
+	need to be in the db for the results they generate.
+	(init_family_iterator): Exclude the "Credentials" family.
+
 2011-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (email): Add support for a single attachment.

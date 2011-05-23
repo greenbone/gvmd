@@ -18811,7 +18811,8 @@ nvt_oid (const char *name)
 int
 nvts_size ()
 {
-  return sql_int (0, 0, "SELECT count(*) FROM nvts;");
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM nvts WHERE family != 'Credentials';");
 }
 
 /**
@@ -18911,13 +18912,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
     {
       sql ("BEGIN EXCLUSIVE;");
       sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
-    }
-
-  if (nvti_family (nvti) && (strcmp (nvti_family (nvti), "Credentials") == 0))
-    {
-      if (remove)
-        sql ("COMMIT;");
-      return 0;
     }
 
   quoted_version = sql_quote (nvti_version (nvti));
@@ -19229,7 +19223,9 @@ family_nvt_count (const char *family)
     {
       static int nvt_count = -1;
       if (nvt_count == -1)
-        nvt_count = sql_int (0, 0, "SELECT COUNT(*) FROM nvts;");
+        nvt_count = sql_int (0, 0,
+                             "SELECT COUNT(*) FROM nvts"
+                             " WHERE family != 'Credentials';");
       return nvt_count;
     }
 
@@ -19249,7 +19245,9 @@ family_nvt_count (const char *family)
 int
 family_count ()
 {
-  return sql_int (0, 0, "SELECT COUNT(distinct family) FROM nvts;");
+  return sql_int (0, 0,
+                  "SELECT COUNT(distinct family) FROM nvts"
+                  " WHERE family != 'Credentials';");
 }
 
 /**
@@ -19755,7 +19753,9 @@ init_family_iterator (iterator_t* iterator, int all, const char* selector,
   if (selector == NULL)
     {
       init_iterator (iterator,
-                     "SELECT distinct family FROM nvts ORDER BY family %s;",
+                     "SELECT distinct family FROM nvts"
+                     " WHERE family != 'Credentials'"
+                     " ORDER BY family %s;",
                      ascending ? "ASC" : "DESC");
       return;
     }
@@ -19766,6 +19766,7 @@ init_family_iterator (iterator_t* iterator, int all, const char* selector,
      * every NVT include. */
     init_iterator (iterator,
                    "SELECT distinct family FROM nvts"
+                   " WHERE family != 'Credentials'"
                    " EXCEPT"
                    " SELECT distinct family FROM nvt_selectors"
                    " WHERE type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
@@ -19785,6 +19786,7 @@ init_family_iterator (iterator_t* iterator, int all, const char* selector,
     init_iterator (iterator,
                    "SELECT distinct family FROM nvt_selectors"
                    " WHERE (type = 1 OR type = 2) AND name = '%s'"
+                   " AND family != 'Credentials'"
                    " ORDER BY family %s;",
                    quoted_selector,
                    ascending ? "ASC" : "DESC");
