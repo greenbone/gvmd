@@ -1,3 +1,15 @@
+2011-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Quiet compiler warnings.  Thanks to Stephan Kleine for original patch.
+	Backport from trunk.  Originally committed in r10991.
+
+	* src/manage_sql.c (manage_report, manage_send_report): Remove old
+	variable.
+	(months_between): Remove stray variable.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_MODIFY_TASK remove
+	variable "first" which is only used by an assertion.
+
 2011-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (email): Put the To address in the sendmail command

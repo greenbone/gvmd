@@ -10092,7 +10092,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             else
               {
-                int fail = 0, first = 1;
+                int fail = 0;
 
                 /** @todo It'd probably be better to allow only one
                  * modification at a time, that is, one parameter or one of
@@ -10115,8 +10115,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                "Task %s could not be modified",
                                modify_task_data->task_id);
                       }
-                    else
-                      first = 0;
                   }
 
                 if (fail == 0 && modify_task_data->name)
@@ -10133,8 +10131,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                "Task %s could not be modified",
                                modify_task_data->task_id);
                       }
-                    else
-                      first = 0;
                   }
 
                 if (fail == 0 && modify_task_data->comment)
@@ -10151,8 +10147,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                "Task %s could not be modified",
                                modify_task_data->task_id);
                       }
-                    else
-                      first = 0;
                   }
 
                 if (fail == 0 && modify_task_data->escalator_id)
@@ -10162,7 +10156,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (strcmp (modify_task_data->escalator_id, "0") == 0)
                       {
                         set_task_escalator (task, 0);
-                        first = 0;
                       }
                     else if ((fail = find_escalator
                                       (modify_task_data->escalator_id,
@@ -10186,7 +10179,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       {
                         set_task_escalator (task, escalator);
-                        first = 0;
                       }
                   }
 
@@ -10197,7 +10189,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (strcmp (modify_task_data->schedule_id, "0") == 0)
                       {
                         set_task_schedule (task, 0);
-                        first = 0;
                       }
                     else if ((fail = find_schedule
                                       (modify_task_data->schedule_id,
@@ -10221,7 +10212,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       {
                         set_task_schedule (task, schedule);
-                        first = 0;
                       }
                   }
 
@@ -10232,7 +10222,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (strcmp (modify_task_data->slave_id, "0") == 0)
                       {
                         set_task_slave (task, 0);
-                        first = 0;
                       }
                     else if ((fail = find_slave
                                       (modify_task_data->slave_id,
@@ -10256,13 +10245,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       {
                         set_task_slave (task, slave);
-                        first = 0;
                       }
                   }
 
                 if (fail == 0)
                   {
-                    assert (first == 0);
                     g_log ("event task", G_LOG_LEVEL_MESSAGE,
                            "Task %s has been modified",
                            modify_task_data->task_id);
