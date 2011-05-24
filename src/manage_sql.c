@@ -13639,12 +13639,10 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
   {
     iterator_t formats;
     const char *uuid_format;
-    char *uuid_report;
     gchar *script, *script_dir;
 
     /* Setup file names. */
 
-    uuid_report = report_uuid (report);
     init_report_format_iterator (&formats, report_format, 0, 1, NULL);
     if (next (&formats) == FALSE)
       {
@@ -14108,12 +14106,10 @@ manage_send_report (report_t report, report_format_t report_format,
   {
     iterator_t formats;
     const char *uuid_format;
-    char *uuid_report;
     gchar *script, *script_dir;
 
     /* Setup file names. */
 
-    uuid_report = report_uuid (report);
     init_report_format_iterator (&formats, report_format, 0, 1, NULL);
     if (next (&formats) == FALSE)
       {
@@ -23969,7 +23965,7 @@ months_between (time_t time1, time_t time2)
 {
   struct tm broken1, *broken2;
   int same_year, same_month, same_day, same_hour, same_minute, same_second;
-  int year1_less, month1_less, day1_less, hour1_less, minute1_less;
+  int month1_less, day1_less, hour1_less, minute1_less;
   int second1_less;
 
   assert (time1 < time2);
@@ -23984,7 +23980,6 @@ months_between (time_t time1, time_t time2)
   same_minute = (broken1.tm_min == broken2->tm_min);
   same_second = (broken1.tm_sec == broken2->tm_sec);
 
-  year1_less = (broken1.tm_year < broken2->tm_year);
   month1_less = (broken1.tm_mon < broken2->tm_mon);
   day1_less = (broken1.tm_mday < broken2->tm_mday);
   hour1_less = (broken1.tm_hour < broken2->tm_hour);
