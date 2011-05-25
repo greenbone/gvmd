@@ -14287,7 +14287,7 @@ manage_send_report (report_t report, report_format_t report_format,
 
                   g_free (command);
 
-                  while (wait (&status) < 0)
+                  while (waitpid (pid, &status, 0) < 0)
                     {
                       if (errno == ECHILD)
                         {

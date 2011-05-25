@@ -1,3 +1,8 @@
+2011-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_send_report): Wait on the child PID, just to be
+	sure.
+
 2011-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Quiet compiler warnings.  Thanks to Stephan Kleine for original patch.
