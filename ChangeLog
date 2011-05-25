@@ -1,5 +1,10 @@
 2011-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_report): Wait on the child PID, just to be
+	sure.
+
+2011-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_send_report): Wait on the child PID, just to be
 	sure.
 
