@@ -1,5 +1,10 @@
 2011-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_report, manage_send_report): Drop privileges
+	directly instead of with su via the shell.  Backport from trunk r10825.
+
+2011-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage_process): Check stat return in permission
 	check.  Backport from trunk r10804.
 

@@ -12169,9 +12169,21 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
 
       /* Call the script. */
 
+      command = g_strdup_printf ("/bin/sh %s %s > %s"
+                                 " 2> /dev/null",
+                                 script,
+                                 xml_file,
+                                 output_file);
+      g_free (script);
+
+      g_debug ("   command: %s\n", command);
+
       if (getuid () == 0)
         {
+          pid_t pid;
           struct passwd *nobody;
+
+          /* Run the command with lower privileges in a fork. */
 
           nobody = getpwnam ("nobody");
           if ((nobody == NULL)
@@ -12182,60 +12194,182 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
                          __FUNCTION__,
                          strerror (errno));
               g_free (previous_dir);
-              g_free (script);
+              g_free (output_file);
               g_free (xml_file);
               if (extension) g_free (*extension);
               if (content_type) g_free (*content_type);
               return NULL;
             }
+          g_free (xml_file);
 
-          command = g_strdup_printf ("/bin/sh -c \"su nobody"
-                                     " -c \\\"/bin/sh %s %s > %s"
-                                     " 2> /dev/null\\\""
-                                     " > /dev/null 2>&1\""
-                                     " > /dev/null 2>&1",
-                                     script,
-                                     xml_file,
-                                     output_file);
+          pid = fork ();
+          switch (pid)
+            {
+              case 0:
+                {
+                  /* Child.  Drop privileges, run command, exit. */
+
+                  if (setgid (nobody->pw_gid))
+                    {
+                      g_warning ("%s (child): setgid: %s\n",
+                                 __FUNCTION__,
+                                 strerror (errno));
+                      exit (EXIT_FAILURE);
+                    }
+                  if (setuid (nobody->pw_uid))
+                    {
+                      g_warning ("%s (child): setuid: %s\n",
+                                 __FUNCTION__,
+                                 strerror (errno));
+                      exit (EXIT_FAILURE);
+                    }
+
+                  /* RATS: ignore, command is defined above. */
+                  if (ret = system (command),
+                      /** @todo ret is always -1. */
+                      0 && ((ret) == -1
+                            || WEXITSTATUS (ret)))
+                    {
+                      g_warning ("%s (child):"
+                                 " system failed with ret %i, %i, %s\n",
+                                 __FUNCTION__,
+                                 ret,
+                                 WEXITSTATUS (ret),
+                                 command);
+                      exit (EXIT_FAILURE);
+                    }
+
+                  exit (EXIT_SUCCESS);
+                  break;
+                }
+
+              case -1:
+                /* Parent when error. */
+
+                g_warning ("%s: Failed to fork: %s\n",
+                           __FUNCTION__,
+                           strerror (errno));
+                if (chdir (previous_dir))
+                  g_warning ("%s: and chdir failed\n",
+                             __FUNCTION__);
+                g_free (previous_dir);
+                g_free (output_file);
+                g_free (command);
+                if (extension) g_free (*extension);
+                if (content_type) g_free (*content_type);
+                return NULL;
+                break;
+
+              default:
+                {
+                  int status;
+
+                  /* Parent on success.  Wait for child, and check result. */
+
+                  g_free (command);
+
+                  while (wait (&status) < 0)
+                    {
+                      if (errno == ECHILD)
+                        {
+                          g_warning ("%s: Failed to get child exit status",
+                                     __FUNCTION__);
+                          if (chdir (previous_dir))
+                            g_warning ("%s: and chdir failed\n",
+                                       __FUNCTION__);
+                          g_free (previous_dir);
+                          g_free (output_file);
+                          if (extension) g_free (*extension);
+                          if (content_type) g_free (*content_type);
+                          return NULL;
+                        }
+                      if (errno == EINTR)
+                        continue;
+                      g_warning ("%s: wait: %s",
+                                 __FUNCTION__,
+                                 strerror (errno));
+                      if (chdir (previous_dir))
+                        g_warning ("%s: and chdir failed\n",
+                                   __FUNCTION__);
+                      g_free (previous_dir);
+                      g_free (output_file);
+                      if (extension) g_free (*extension);
+                      if (content_type) g_free (*content_type);
+                      return NULL;
+                    }
+                  if (WIFEXITED (status))
+                    switch (WEXITSTATUS (status))
+                      {
+                        case EXIT_SUCCESS:
+                          break;
+                        case EXIT_FAILURE:
+                        default:
+                          g_warning ("%s: child failed, %s\n",
+                                     __FUNCTION__,
+                                     command);
+                          if (chdir (previous_dir))
+                            g_warning ("%s: and chdir failed\n",
+                                       __FUNCTION__);
+                          g_free (previous_dir);
+                          g_free (output_file);
+                          if (extension) g_free (*extension);
+                          if (content_type) g_free (*content_type);
+                          return NULL;
+                      }
+                  else
+                    {
+                      g_warning ("%s: child failed, %s\n",
+                                 __FUNCTION__,
+                                 command);
+                      if (chdir (previous_dir))
+                        g_warning ("%s: and chdir failed\n",
+                                   __FUNCTION__);
+                      g_free (previous_dir);
+                      g_free (output_file);
+                      if (extension) g_free (*extension);
+                      if (content_type) g_free (*content_type);
+                      return NULL;
+                    }
+
+                  /* Child succeeded, continue to process result. */
+
+                  break;
+                }
+            }
         }
       else
-        command = g_strdup_printf ("/bin/sh %s %s > %s"
-                                   " 2> /dev/null",
-                                   script,
-                                   xml_file,
-                                   output_file);
-      g_free (script);
-
-      g_debug ("   command: %s\n", command);
-
-      /* RATS: ignore, command is defined above. */
-      if (ret = system (command),
-          /** @todo ret is always -1. */
-          0 && ((ret) == -1
-                || WEXITSTATUS (ret)))
         {
-          g_warning ("%s: system failed with ret %i, %i, %s\n",
-                     __FUNCTION__,
-                     ret,
-                     WEXITSTATUS (ret),
-                     command);
-          if (chdir (previous_dir))
-            g_warning ("%s: and chdir failed\n",
-                       __FUNCTION__);
-          g_free (previous_dir);
+          /* Just run the command as the current user. */
+
+          /* RATS: ignore, command is defined above. */
+          if (ret = system (command),
+              /** @todo ret is always -1. */
+              0 && ((ret) == -1
+                    || WEXITSTATUS (ret)))
+            {
+              g_warning ("%s: system failed with ret %i, %i, %s\n",
+                         __FUNCTION__,
+                         ret,
+                         WEXITSTATUS (ret),
+                         command);
+              if (chdir (previous_dir))
+                g_warning ("%s: and chdir failed\n",
+                           __FUNCTION__);
+              g_free (previous_dir);
+              g_free (output_file);
+              g_free (command);
+              if (extension) g_free (*extension);
+              if (content_type) g_free (*content_type);
+              return NULL;
+            }
+
           g_free (command);
-          g_free (output_file);
-          if (extension) g_free (*extension);
-          if (content_type) g_free (*content_type);
-          return NULL;
         }
 
       {
         GError *get_error;
         gchar *output;
         gsize output_len;
-
-        g_free (command);
 
         /* Change back to the previous directory. */
 
@@ -12245,7 +12379,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
                        __FUNCTION__,
                        strerror (errno));
             g_free (previous_dir);
-            g_free (xml_file);
+            g_free (output_file);
             if (extension) g_free (*extension);
             if (content_type) g_free (*content_type);
             return NULL;
@@ -12453,9 +12587,21 @@ manage_send_report (report_t report, report_format_t report_format,
 
       /* Call the script. */
 
+      command = g_strdup_printf ("/bin/sh %s %s > %s"
+                                 " 2> /dev/null",
+                                 script,
+                                 xml_file,
+                                 output_file);
+      g_free (script);
+
+      g_debug ("   command: %s\n", command);
+
       if (getuid () == 0)
         {
+          pid_t pid;
           struct passwd *nobody;
+
+          /* Run the command with lower privileges in a fork. */
 
           nobody = getpwnam ("nobody");
           if ((nobody == NULL)
@@ -12466,56 +12612,170 @@ manage_send_report (report_t report, report_format_t report_format,
                          __FUNCTION__,
                          strerror (errno));
               g_free (previous_dir);
-              g_free (script);
               g_free (xml_file);
+              g_free (output_file);
               return -1;
             }
 
-          command = g_strdup_printf ("/bin/sh -c \"su nobody"
-                                     " -c \\\"/bin/sh %s %s > %s"
-                                     " 2> /dev/null\\\""
-                                     " > /dev/null 2>&1\""
-                                     " > /dev/null 2>&1",
-                                     script,
-                                     xml_file,
-                                     output_file);
+          g_free (xml_file);
+
+          pid = fork ();
+          switch (pid)
+            {
+              case 0:
+                {
+                  /* Child.  Drop privileges, run command, exit. */
+
+                  if (setgid (nobody->pw_gid))
+                    {
+                      g_warning ("%s (child): setgid: %s\n",
+                                 __FUNCTION__,
+                                 strerror (errno));
+                      exit (EXIT_FAILURE);
+                    }
+                  if (setuid (nobody->pw_uid))
+                    {
+                      g_warning ("%s (child): setuid: %s\n",
+                                 __FUNCTION__,
+                                 strerror (errno));
+                      exit (EXIT_FAILURE);
+                    }
+
+                  /* RATS: ignore, command is defined above. */
+                  if (ret = system (command),
+                      /** @todo ret is always -1. */
+                      0 && ((ret) == -1
+                            || WEXITSTATUS (ret)))
+                    {
+                      g_warning ("%s (child):"
+                                 " system failed with ret %i, %i, %s\n",
+                                 __FUNCTION__,
+                                 ret,
+                                 WEXITSTATUS (ret),
+                                 command);
+                      exit (EXIT_FAILURE);
+                    }
+
+                  exit (EXIT_SUCCESS);
+                  break;
+                }
+
+              case -1:
+                /* Parent when error. */
+
+                g_warning ("%s: Failed to fork: %s\n",
+                           __FUNCTION__,
+                           strerror (errno));
+                if (chdir (previous_dir))
+                  g_warning ("%s: and chdir failed\n",
+                             __FUNCTION__);
+                g_free (previous_dir);
+                g_free (output_file);
+                g_free (command);
+                return -1;
+                break;
+
+              default:
+                {
+                  int status;
+
+                  /* Parent on success.  Wait for child, and check result. */
+
+                  g_free (command);
+
+                  while (wait (&status) < 0)
+                    {
+                      if (errno == ECHILD)
+                        {
+                          g_warning ("%s: Failed to get child exit status",
+                                     __FUNCTION__);
+                          if (chdir (previous_dir))
+                            g_warning ("%s: and chdir failed\n",
+                                       __FUNCTION__);
+                          g_free (previous_dir);
+                          g_free (output_file);
+                          return -1;
+                        }
+                      if (errno == EINTR)
+                        continue;
+                      g_warning ("%s: wait: %s",
+                                 __FUNCTION__,
+                                 strerror (errno));
+                      if (chdir (previous_dir))
+                        g_warning ("%s: and chdir failed\n",
+                                   __FUNCTION__);
+                      g_free (previous_dir);
+                      g_free (output_file);
+                      return -1;
+                    }
+                  if (WIFEXITED (status))
+                    switch (WEXITSTATUS (status))
+                      {
+                        case EXIT_SUCCESS:
+                          break;
+                        case EXIT_FAILURE:
+                        default:
+                          g_warning ("%s: child failed, %s\n",
+                                     __FUNCTION__,
+                                     command);
+                          if (chdir (previous_dir))
+                            g_warning ("%s: and chdir failed\n",
+                                       __FUNCTION__);
+                          g_free (previous_dir);
+                          g_free (output_file);
+                          return -1;
+                      }
+                  else
+                    {
+                      g_warning ("%s: child failed, %s\n",
+                                 __FUNCTION__,
+                                 command);
+                      if (chdir (previous_dir))
+                        g_warning ("%s: and chdir failed\n",
+                                   __FUNCTION__);
+                      g_free (previous_dir);
+                      g_free (output_file);
+                      return -1;
+                    }
+
+                  /* Child succeeded, continue to process result. */
+
+                  break;
+                }
+            }
         }
       else
-        command = g_strdup_printf ("/bin/sh %s %s > %s"
-                                   " 2> /dev/null",
-                                   script,
-                                   xml_file,
-                                   output_file);
-      g_free (script);
-      g_free (xml_file);
-
-      g_debug ("   command: %s\n", command);
-
-      /* RATS: ignore, command is defined above. */
-      if (ret = system (command),
-          /** @todo ret is always -1. */
-          0 && ((ret) == -1
-                || WEXITSTATUS (ret)))
         {
-          g_warning ("%s: system failed with ret %i, %i, %s\n",
-                     __FUNCTION__,
-                     ret,
-                     WEXITSTATUS (ret),
-                     command);
-          if (chdir (previous_dir))
-            g_warning ("%s: and chdir failed\n",
-                       __FUNCTION__);
-          g_free (previous_dir);
+          /* Just run the command as the current user. */
+
+          g_free (xml_file);
+
+          /* RATS: ignore, command is defined above. */
+          if (ret = system (command),
+              /** @todo ret is always -1. */
+              0 && ((ret) == -1
+                    || WEXITSTATUS (ret)))
+            {
+              g_warning ("%s: system failed with ret %i, %i, %s\n",
+                         __FUNCTION__,
+                         ret,
+                         WEXITSTATUS (ret),
+                         command);
+              if (chdir (previous_dir))
+                g_warning ("%s: and chdir failed\n",
+                           __FUNCTION__);
+              g_free (previous_dir);
+              g_free (command);
+              g_free (output_file);
+              return -1;
+            }
+
           g_free (command);
-          g_free (output_file);
-          return -1;
         }
 
       {
         char chunk[MANAGE_SEND_REPORT_CHUNK_SIZE + 1];
         FILE *stream;
-
-        g_free (command);
 
         /* Change back to the previous directory. */
 
