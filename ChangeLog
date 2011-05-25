@@ -1,3 +1,8 @@
+2011-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage_process): Check stat return in permission
+	check.  Backport from trunk r10804.
+
 2011-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Quiet compiler warnings.  Thanks to Stephan Kleine for original patch.
