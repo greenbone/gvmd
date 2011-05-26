@@ -1,5 +1,25 @@
 2011-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add very basic delta reporting.
+
+	* src/manage_sql.c (compare_results_t): New type.
+	(compare_results, compare_and_buffer_results): New functions.
+	(print_report_xml): Add delta arg.  If given print delta results.  Update
+	callers.
+	(manage_send_report): Add delta_report arg.  Pass through to
+	print_report_xml.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (get_reports_data_t, get_reports_data_reset): Add
+	delta_report_id.
+	(omp_xml_handle_start_element): Parse delta_report_id.
+	(buffer_results_xml): Add delta arg.  Append to result if given.
+	(omp_xml_handle_end_element): In GET_REPORTS pass delta report to
+	manage_send_report.
+
+2011-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_report): Wait on the child PID, just to be
 	sure.
 

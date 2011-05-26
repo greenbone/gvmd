@@ -131,7 +131,7 @@
 
 /** @todo Exported for manage_sql.c. */
 void
-buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int);
+buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int, const char *);
 
 
 /* Helper functions. */
@@ -1741,6 +1741,7 @@ get_preferences_data_reset (get_preferences_data_t *data)
 typedef struct
 {
   int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
+  char *delta_report_id; ///< ID of report to compare single report to.
   char *format_id;       ///< ID of report format.
   char *escalator_id;    ///< ID of escalator.
   char *report_id;       ///< ID of single report to get.
@@ -1766,6 +1767,7 @@ typedef struct
 static void
 get_reports_data_reset (get_reports_data_t *data)
 {
+  free (data->delta_report_id);
   free (data->format_id);
   free (data->escalator_id);
   free (data->report_id);
@@ -4138,6 +4140,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "report_id",
                               &get_reports_data->report_id);
+
+            append_attribute (attribute_names, attribute_values,
+                              "delta_report_id",
+                              &get_reports_data->delta_report_id);
 
             append_attribute (attribute_names, attribute_values, "escalator_id",
                               &get_reports_data->escalator_id);
@@ -7901,7 +7907,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     0,  /* Notes. */
                                     0,  /* Note details. */
                                     0,  /* Overrides. */
-                                    0); /* Override details. */
+                                    0,  /* Override details. */
+                                    NULL);
               cleanup_iterator (&results);
 
               buffer_xml_append_printf (buffer, "</note>");
@@ -8042,7 +8049,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     0,  /* Notes. */
                                     0,  /* Note details. */
                                     0,  /* Overrides. */
-                                    0); /* Override details. */
+                                    0,  /* Override details. */
+                                    NULL);
               cleanup_iterator (&results);
 
               buffer_xml_append_printf (buffer, "</override>");
@@ -8135,11 +8143,13 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
  * @param[in]  include_notes_details  Whether to include details of notes.
  * @param[in]  include_overrides          Whether to include overrides.
  * @param[in]  include_overrides_details  Whether to include details of overrides.
+ * @param[in]  delta                  Delta state of result, or NULL.
  */
 void
 buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int include_notes, int include_notes_details,
-                    int include_overrides, int include_overrides_details)
+                    int include_overrides, int include_overrides_details,
+                    const char *delta)
 {
   const char *descr = result_iterator_descr (results);
   gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
@@ -8234,6 +8244,9 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
       g_string_append (buffer, "</overrides>");
     }
+
+  if (delta)
+    g_string_append_printf (buffer, "<delta>%s</delta>", delta);
 
   g_string_append (buffer, "</result>");
 }
@@ -9250,7 +9263,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        report_t request_report = 0, report;
+        report_t request_report = 0, delta_report = 0, report;
         report_format_t report_format;
         iterator_t results;
         float min_cvss_base;
@@ -9258,6 +9271,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         if (get_reports_data->report_id
             && find_report (get_reports_data->report_id, &request_report))
+          {
+            get_reports_data_reset (get_reports_data);
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
+          }
+
+        if (get_reports_data->delta_report_id
+            && strcmp (get_reports_data->delta_report_id, "0")
+            && find_report (get_reports_data->delta_report_id, &delta_report))
           {
             get_reports_data_reset (get_reports_data);
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
@@ -9298,6 +9321,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (send_find_error_to_client ("get_reports",
                                            "report",
                                            get_reports_data->report_id,
+                                           write_to_client,
+                                           write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            get_reports_data_reset (get_reports_data);
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
+          }
+
+        if (get_reports_data->delta_report_id
+            && strcmp (get_reports_data->delta_report_id, "0")
+            && delta_report == 0)
+          {
+            if (send_find_error_to_client ("get_reports",
+                                           "report",
+                                           get_reports_data->delta_report_id,
                                            write_to_client,
                                            write_to_client_data))
               {
@@ -9378,6 +9419,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             g_free (content_type);
 
             ret = manage_send_report (report,
+                                      delta_report,
                                       report_format,
                                       get_reports_data->sort_order,
                                       get_reports_data->sort_field,
@@ -9728,7 +9770,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_results_data->notes,
                                       get_results_data->notes_details,
                                       get_results_data->overrides,
-                                      get_results_data->overrides_details);
+                                      get_results_data->overrides_details,
+                                      NULL);
                   SEND_TO_CLIENT_OR_FAIL (buffer->str);
                   g_string_free (buffer, TRUE);
                 }

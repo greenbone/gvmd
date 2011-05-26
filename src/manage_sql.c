@@ -12997,6 +12997,115 @@ compare_port_threat (gconstpointer arg_one, gconstpointer arg_two)
   return host;
 }
 
+/** @todo Defined in omp.c! */
+void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int,
+                         const char *);
+
+/**
+ * @brief Comparison returns.
+ */
+typedef enum
+{
+  COMPARE_RESULTS_CHANGED,
+  COMPARE_RESULTS_ERROR,
+  COMPARE_RESULTS_GONE,
+  COMPARE_RESULTS_NEW,
+  COMPARE_RESULTS_SAME
+} compare_results_t;
+
+static compare_results_t
+compare_results (iterator_t *results, iterator_t *delta_results)
+{
+  const char *descr, *delta_descr, *nvt, *delta_nvt;
+
+  /* The result is identified by the NVT and the description. */
+
+  descr = result_iterator_descr (results);
+  delta_descr = result_iterator_descr (delta_results);
+
+  nvt = result_iterator_nvt_oid (results);
+  delta_nvt = result_iterator_nvt_oid (delta_results);
+
+  if ((strcmp (nvt, delta_nvt) == 0)
+      && (strcmp (descr, delta_descr) == 0))
+    {
+      const char *name, *delta_name;
+
+      name = result_iterator_nvt_name (results);
+      delta_name = result_iterator_nvt_name (delta_results);
+
+      if (((name && delta_name)
+           && strcmp (name, delta_name))
+          || strcmp (result_iterator_type (results),
+                     result_iterator_type (delta_results)))
+        return COMPARE_RESULTS_CHANGED;
+      return COMPARE_RESULTS_SAME;
+    }
+
+  return COMPARE_RESULTS_NEW;
+}
+
+static compare_results_t
+compare_and_buffer_results (GString *buffer, iterator_t *results,
+                            iterator_t *delta_results, task_t task, int notes,
+                            int notes_details, int overrides,
+                            int overrides_details)
+{
+  compare_results_t state;
+  state = compare_results (results, delta_results);
+  switch (state)
+    {
+      case COMPARE_RESULTS_CHANGED:
+        buffer_results_xml (buffer,
+                            results,
+                            task,
+                            notes,
+                            notes_details,
+                            overrides,
+                            overrides_details,
+                            "changed");
+        break;
+
+      case COMPARE_RESULTS_GONE:
+        buffer_results_xml (buffer,
+                            results,
+                            task,
+                            notes,
+                            notes_details,
+                            overrides,
+                            overrides_details,
+                            "gone");
+        break;
+
+      case COMPARE_RESULTS_NEW:
+        buffer_results_xml (buffer,
+                            delta_results,
+                            task,
+                            notes,
+                            notes_details,
+                            overrides,
+                            overrides_details,
+                            "new");
+        break;
+
+      case COMPARE_RESULTS_SAME:
+        buffer_results_xml (buffer,
+                            results,
+                            task,
+                            notes,
+                            notes_details,
+                            overrides,
+                            overrides_details,
+                            "same");
+        break;
+
+      default:
+        return COMPARE_RESULTS_ERROR;
+    }
+
+  return state;
+}
+
 /**
  * @brief Write to a file or close stream and exit.
  *
@@ -13014,9 +13123,6 @@ compare_port_threat (gconstpointer arg_one, gconstpointer arg_two)
         }                                                                    \
     }                                                                        \
   while (0)
-
-/** @todo Defined in omp.c! */
-void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int);
 
 #if 0
 void
@@ -13036,6 +13142,7 @@ dump (GArray *ports)
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
+ * @param[in]  delta       Report to compare with the report.
  * @param[in]  task        Task associated with report.
  * @param[in]  xml_file    File name.
  * @param[in]  sort_order  Whether to sort ascending or descending.
@@ -13062,7 +13169,7 @@ dump (GArray *ports)
  * @return 0 on success, -1 error.
  */
 static int
-print_report_xml (report_t report, task_t task, gchar* xml_file,
+print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   int sort_order, const char* sort_field, int result_hosts_only,
                   const char *min_cvss_base, report_format_t report_format,
                   const char *levels, int apply_overrides,
@@ -13074,7 +13181,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
   int result_count, filtered_result_count, run_status;
   array_t *result_hosts;
-  iterator_t results, params;
+  iterator_t results, delta_results, params;
 
   /** @todo Leaks on error in PRINT.  The process normally exits then anyway. */
 
@@ -13099,6 +13206,13 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
   uuid = report_uuid (report);
   PRINT (out, "<report id=\"%s\">", uuid);
   free (uuid);
+
+  if (delta)
+    {
+      uuid = report_uuid (delta);
+      PRINT (out, "<delta><report id=\"%s\"/></delta>", uuid);
+      free (uuid);
+    }
 
   PRINT (out, "<report_format>");
   init_report_format_param_iterator (&params, report_format, 0, 1, NULL);
@@ -13388,6 +13502,17 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
                         min_cvss_base,
                         apply_overrides);
 
+  if (delta)
+    init_result_iterator (&delta_results, delta, 0, NULL,
+                          first_result,
+                          max_results,
+                          sort_order,
+                          sort_field,
+                          levels,
+                          search_phrase,
+                          min_cvss_base,
+                          apply_overrides);
+
   PRINT (out,
            "<results"
            " start=\"%i\""
@@ -13400,22 +13525,119 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
   else
     /* Quiet erroneous compiler warning. */
     result_hosts = NULL;
-  while (next (&results))
+  if (delta)
     {
-      GString *buffer = g_string_new ("");
-      buffer_results_xml (buffer,
-                          &results,
-                          task,
-                          notes,
-                          notes_details,
-                          overrides,
-                          overrides_details);
-      PRINT (out, "%s", buffer->str);
-      g_string_free (buffer, TRUE);
-      if (result_hosts_only)
-        array_add_new_string (result_hosts,
-                              result_iterator_host (&results));
+      next (&results);
+      next (&delta_results);
+      while (1)
+        {
+          GString *buffer;
+          compare_results_t state;
+
+          if (results.done)
+            {
+              if (delta_results.done)
+                break;
+              /* Extra results in 'delta_results'. */
+              do
+                {
+                  buffer = g_string_new ("");
+                  buffer_results_xml (buffer,
+                                      &delta_results,
+                                      task,
+                                      notes,
+                                      notes_details,
+                                      overrides,
+                                      overrides_details,
+                                      "new");
+                  PRINT (out, "%s", buffer->str);
+                  g_string_free (buffer, TRUE);
+                  if (result_hosts_only)
+                    array_add_new_string (result_hosts,
+                                          result_iterator_host (&delta_results));
+                }
+              while (next (&delta_results));
+              break;
+            }
+
+          if (delta_results.done)
+            {
+              /* Extra results in 'results'. */
+              buffer = g_string_new ("");
+              buffer_results_xml (buffer,
+                                  &results,
+                                  task,
+                                  notes,
+                                  notes_details,
+                                  overrides,
+                                  overrides_details,
+                                  "gone");
+              PRINT (out, "%s", buffer->str);
+              g_string_free (buffer, TRUE);
+              if (result_hosts_only)
+                array_add_new_string (result_hosts,
+                                      result_iterator_host (&results));
+              break;
+            }
+
+          /* Compare the two results. */
+
+          buffer = g_string_new ("");
+          state = compare_and_buffer_results (buffer,
+                                              &results,
+                                              &delta_results,
+                                              task,
+                                              notes,
+                                              notes_details,
+                                              overrides,
+                                              overrides_details);
+          if (state == COMPARE_RESULTS_ERROR)
+            {
+              g_warning ("%s: compare_and_buffer_results failed\n",
+                         __FUNCTION__);
+              return -1;
+            }
+          PRINT (out, "%s", buffer->str);
+          g_string_free (buffer, TRUE);
+          if (result_hosts_only)
+            array_add_new_string (result_hosts,
+                                  result_iterator_host (&results)); // FIX
+
+          if (state == COMPARE_RESULTS_GONE)
+            /* "Used" just the 'results' result. */
+            next (&results);
+          else if ((state == COMPARE_RESULTS_SAME)
+                   || (state == COMPARE_RESULTS_CHANGED))
+            {
+              /* "Used" both results. */
+              next (&results);
+              next (&delta_results);
+            }
+          else if (state == COMPARE_RESULTS_NEW)
+            /* "Used" just the 'delta' result. */
+            next (&delta_results);
+          else
+            assert (0);
+        }
     }
+  else
+    while (next (&results))
+      {
+        GString *buffer = g_string_new ("");
+        buffer_results_xml (buffer,
+                            &results,
+                            task,
+                            notes,
+                            notes_details,
+                            overrides,
+                            overrides_details,
+                            NULL);
+        PRINT (out, "%s", buffer->str);
+        g_string_free (buffer, TRUE);
+        if (result_hosts_only)
+          array_add_new_string (result_hosts,
+                                result_iterator_host (&results));
+      }
   PRINT (out, "</results>");
   cleanup_iterator (&results);
 
@@ -13623,7 +13845,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
     }
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
-  if (print_report_xml (report, task, xml_file, sort_order, sort_field,
+  if (print_report_xml (report, 0, task, xml_file, sort_order, sort_field,
                         result_hosts_only, min_cvss_base, report_format,
                         levels, apply_overrides, search_phrase, notes,
                         notes_details, overrides, overrides_details,
@@ -14002,6 +14224,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
  * @brief Generate a report.
  *
  * @param[in]  report             Report.
+ * @param[in]  delta_report       Report to compare with.
  * @param[in]  report_format      Report format.
  * @param[in]  sort_order         Whether to sort ascending or descending.
  * @param[in]  sort_field         Field to sort on, or NULL for "type".
@@ -14033,7 +14256,8 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
  * @return 0 success, -1 error, 1 failed to find escalator.
  */
 int
-manage_send_report (report_t report, report_format_t report_format,
+manage_send_report (report_t report, report_t delta_report,
+                    report_format_t report_format,
                     int sort_order, const char* sort_field,
                     int result_hosts_only, const char *min_cvss_base,
                     const char *levels, int apply_overrides,
@@ -14090,10 +14314,10 @@ manage_send_report (report_t report, report_format_t report_format,
     }
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
-  if (print_report_xml (report, task, xml_file, sort_order, sort_field,
-                        result_hosts_only, min_cvss_base, report_format,
-                        levels, apply_overrides, search_phrase, notes,
-                        notes_details, overrides, overrides_details,
+  if (print_report_xml (report, delta_report, task, xml_file, sort_order,
+                        sort_field, result_hosts_only, min_cvss_base,
+                        report_format, levels, apply_overrides, search_phrase,
+                        notes, notes_details, overrides, overrides_details,
                         first_result, max_results))
     {
       g_free (xml_file);
