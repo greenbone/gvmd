@@ -1,3 +1,8 @@
+2011-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_send_report): Wait on the child PID, just to be
+	sure.  Backport from trunk r10996.
+
 2011-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_report, manage_send_report): Drop privileges
