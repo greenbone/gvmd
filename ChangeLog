@@ -1,4 +1,10 @@
-2011-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+2011-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (escalate_2): Correct doc.
+	(compare_results, compare_and_buffer_results): Add doc.
+	(create_lsc_credential): Doc all args.
+
+2011-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add very basic delta reporting.
 

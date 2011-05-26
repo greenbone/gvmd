@@ -6364,7 +6364,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
  *
  * @param[in]  escalator   Escalator.
  * @param[in]  task        Task.
- * @param[in]  task        Report.  0 for most recent report.
+ * @param[in]  report      Report.  0 for most recent report.
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
  * @param[in]  method      Method from escalator.
@@ -13013,6 +13013,14 @@ typedef enum
   COMPARE_RESULTS_SAME
 } compare_results_t;
 
+/**
+ * @brief Compare two results.
+ *
+ * @param[in]  results        Iterator containing first result.
+ * @param[in]  delta_results  Iterator containing second result.
+ *
+ * @return Result of comparison.
+ */
 static compare_results_t
 compare_results (iterator_t *results, iterator_t *delta_results)
 {
@@ -13045,6 +13053,20 @@ compare_results (iterator_t *results, iterator_t *delta_results)
   return COMPARE_RESULTS_NEW;
 }
 
+/**
+ * @brief Compare two results, writting associated XML to a buffer.
+ *
+ * @param[in]  buffer         Buffer.
+ * @param[in]  results        Iterator containing first result.
+ * @param[in]  delta_results  Iterator containing second result.
+ * @param[in]  task           Task associated with report.
+ * @param[in]  notes              Whether to include notes.
+ * @param[in]  notes_details      If notes, Whether to include details.
+ * @param[in]  overrides          Whether to include overrides.
+ * @param[in]  overrides_details  If overrides, Whether to include details.
+ *
+ * @return Result of comparison.
+ */
 static compare_results_t
 compare_and_buffer_results (GString *buffer, iterator_t *results,
                             iterator_t *delta_results, task_t task, int notes,
@@ -21298,6 +21320,10 @@ find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
  * @param[in]  given_password  Password for password-only credential, NULL to
  *                             generate credentials.
  * @param[out] lsc_credential  Created LSC credential.
+ * @param[out] key_private     Private key, or NULL.
+ * @param[out] key_public      Public key, or NULL.  Requires key_private.
+ *                             Takes preference over password only and generated
+ *                             credentials.
  *
  * @return 0 success, 1 LSC credential exists already, 2 name contains space,
  *         -1 error.
