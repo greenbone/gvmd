@@ -12268,7 +12268,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
 
                   g_free (command);
 
-                  while (wait (&status) < 0)
+                  while (waitpid (pid, &status, 0) < 0)
                     {
                       if (errno == ECHILD)
                         {
