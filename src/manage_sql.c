@@ -13014,17 +13014,168 @@ typedef enum
 } compare_results_t;
 
 /**
+ * @brief Return whether first result is greater according to sorting.
+ *
+ * @param[in]  results        Iterator containing first result.
+ * @param[in]  delta_results  Iterator containing second result.
+ * @param[in]  sort_order     Whether to sort ascending or descending.
+ * @param[in]  sort_field     Field to sort on, or NULL for "type".
+ *
+ * @return > 0 if greater, 0 if equal, < 0 if less than.
+ */
+static compare_results_t
+result_greater (iterator_t *results, iterator_t *delta_results, int sort_order,
+                const char* sort_field)
+{
+  const char *host, *delta_host, *port, *delta_port, *type, *delta_type;
+  int ret;
+
+  if (sort_field == NULL) sort_field = "type";
+
+  host = result_iterator_host (results);
+  delta_host = result_iterator_host (delta_results);
+
+  port = result_iterator_port (results);
+  delta_port = result_iterator_port (delta_results);
+
+  type = result_iterator_type (results);
+  delta_type = result_iterator_type (delta_results);
+
+  /*
+     The part of the SQL that determines the result iterator sorting.
+
+                                   ascending
+                                    ? ((strcmp (sort_field, "ROWID") == 0)
+                                        ? " ORDER BY results.ROWID"
+                                        : ((strcmp (sort_field, "port") == 0)
+                                            ? " ORDER BY host COLLATE collate_ip,"
+                                              " port,"
+                                              " new_type"
+                                              " COLLATE collate_message_type DESC"
+                                            : " ORDER BY host COLLATE collate_ip,"
+                                              " new_type COLLATE collate_message_type,"
+                                              " port"))
+                                    : ((strcmp (sort_field, "port") == 0)
+                                        ? " ORDER BY host COLLATE collate_ip,"
+                                          " port DESC,"
+                                          " new_type"
+                                          " COLLATE collate_message_type DESC"
+                                        : " ORDER BY host COLLATE collate_ip,"
+                                          " new_type"
+                                          " COLLATE collate_message_type DESC,"
+                                          " port")),
+  */
+
+  if (sort_order == 0)
+    {
+      /* Descending. */
+
+      if (strcmp (sort_field, "ROWID") == 0)
+        return result_iterator_result (results)
+                < result_iterator_result (delta_results);
+
+      ret = collate_ip (NULL, strlen (host), host, strlen (delta_host), delta_host);
+      if (ret)
+        return ret;
+
+      if (strcmp (sort_field, "port") == 0)
+        {
+          /* Sorting port first. */
+
+          ret = strcmp (port, delta_port);
+          if (ret)
+            return !ret;
+
+          ret = collate_message_type (NULL,
+                                      strlen (type), type,
+                                      strlen (delta_type), delta_type);
+          if (ret)
+            return !ret;
+
+          /** @todo Add full result sorting.  Check other fields. */
+
+          return 0;
+        }
+
+      /* Sorting threat first. */
+
+      ret = collate_message_type (NULL,
+                                  strlen (type), type,
+                                  strlen (delta_type), delta_type);
+      if (ret)
+        return !ret;
+
+      ret = strcmp (port, delta_port);
+      if (ret)
+        return ret;
+
+      /** @todo Add full result sorting.  Check other fields. */
+
+      return 0;
+    }
+
+  /* Ascending. */
+
+  if (strcmp (sort_field, "ROWID") == 0)
+    return result_iterator_result (results)
+            > result_iterator_result (delta_results);
+
+  ret = collate_ip (NULL, strlen (host), host, strlen (delta_host), delta_host);
+  if (ret)
+    return ret;
+
+  if (strcmp (sort_field, "port") == 0)
+    {
+      /* Sorting by port. */
+
+      ret = strcmp (port, delta_port);
+      if (ret)
+        return ret;
+
+      ret = collate_message_type (NULL,
+                                  strlen (type), type,
+                                  strlen (delta_type), delta_type);
+      if (ret)
+        return !ret;
+
+      /** @todo Add full result sorting.  Check other fields. */
+
+      return 0;
+    }
+
+  /* Sorting by threat. */
+
+  ret = collate_message_type (NULL,
+                              strlen (type), type,
+                              strlen (delta_type), delta_type);
+  if (ret)
+    return ret;
+
+  ret = strcmp (port, delta_port);
+  if (ret)
+    return ret;
+
+  /** @todo Add full result sorting.  Check other fields. */
+
+  return 0;
+}
+
+/**
  * @brief Compare two results.
  *
  * @param[in]  results        Iterator containing first result.
  * @param[in]  delta_results  Iterator containing second result.
+ * @param[in]  sort_order     Whether to sort ascending or descending.
+ * @param[in]  sort_field     Field to sort on, or NULL for "type".
  *
  * @return Result of comparison.
  */
 static compare_results_t
-compare_results (iterator_t *results, iterator_t *delta_results)
+compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
+                 const char* sort_field)
 {
-  const char *descr, *delta_descr, *nvt, *delta_nvt;
+  int ret;
+  const char *nvt, *delta_nvt, *descr, *delta_descr;
 
   /* The result is identified by the NVT and the description. */
 
@@ -13039,6 +13190,8 @@ compare_results (iterator_t *results, iterator_t *delta_results)
     {
       const char *name, *delta_name;
 
+      /* NVT and description are the same, so it is the same result. */
+
       name = result_iterator_nvt_name (results);
       delta_name = result_iterator_nvt_name (delta_results);
 
@@ -13046,15 +13199,26 @@ compare_results (iterator_t *results, iterator_t *delta_results)
            && strcmp (name, delta_name))
           || strcmp (result_iterator_type (results),
                      result_iterator_type (delta_results)))
+        /* Something else has changed. */
         return COMPARE_RESULTS_CHANGED;
+
+      /* Results are identical. */
       return COMPARE_RESULTS_SAME;
     }
 
-  return COMPARE_RESULTS_NEW;
+  ret = result_greater (results, delta_results, sort_order, sort_field);
+  if (ret < 0)
+    /* The delta result sorts higher, so it is new. */
+    return COMPARE_RESULTS_NEW;
+  if (ret > 0)
+    /* The 'results' result sorts higher, so it has gone. */
+    return COMPARE_RESULTS_GONE;
+  /** @todo Add full result sorting.  Return depends on nvt and descr order. */
+  return COMPARE_RESULTS_GONE;
 }
 
 /**
- * @brief Compare two results, writting associated XML to a buffer.
+ * @brief Compare two results, writing associated XML to a buffer.
  *
  * @param[in]  buffer         Buffer.
  * @param[in]  results        Iterator containing first result.
@@ -13064,6 +13228,8 @@ compare_results (iterator_t *results, iterator_t *delta_results)
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides          Whether to include overrides.
  * @param[in]  overrides_details  If overrides, Whether to include details.
+ * @param[in]  sort_order     Whether to sort ascending or descending.
+ * @param[in]  sort_field     Field to sort on, or NULL for "type".
  *
  * @return Result of comparison.
  */
@@ -13071,10 +13237,11 @@ static compare_results_t
 compare_and_buffer_results (GString *buffer, iterator_t *results,
                             iterator_t *delta_results, task_t task, int notes,
                             int notes_details, int overrides,
-                            int overrides_details)
+                            int overrides_details, int sort_order,
+                            const char* sort_field)
 {
   compare_results_t state;
-  state = compare_results (results, delta_results);
+  state = compare_results (results, delta_results, sort_order, sort_field);
   switch (state)
     {
       case COMPARE_RESULTS_CHANGED:
@@ -13514,6 +13681,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   /* Results. */
 
+  /**
+   * @todo For delta, specify the entire ordering in the init_result_iterator
+   *       SQL, so that the two sets are ordered the same way.
+   */
+
   init_result_iterator (&results, report, 0, NULL,
                         first_result,
                         max_results,
@@ -13549,16 +13721,20 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     result_hosts = NULL;
   if (delta)
     {
-      next (&results);
-      next (&delta_results);
+      gboolean done, delta_done;
+
+      /* Compare the results in the two iterators, which are sorted. */
+
+      done = !next (&results);
+      delta_done = !next (&delta_results);
       while (1)
         {
           GString *buffer;
           compare_results_t state;
 
-          if (results.done)
+          if (done)
             {
-              if (delta_results.done)
+              if (delta_done)
                 break;
               /* Extra results in 'delta_results'. */
               do
@@ -13582,23 +13758,27 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               break;
             }
 
-          if (delta_results.done)
+          if (delta_done)
             {
               /* Extra results in 'results'. */
-              buffer = g_string_new ("");
-              buffer_results_xml (buffer,
-                                  &results,
-                                  task,
-                                  notes,
-                                  notes_details,
-                                  overrides,
-                                  overrides_details,
-                                  "gone");
-              PRINT (out, "%s", buffer->str);
-              g_string_free (buffer, TRUE);
-              if (result_hosts_only)
-                array_add_new_string (result_hosts,
-                                      result_iterator_host (&results));
+              do
+                {
+                  buffer = g_string_new ("");
+                  buffer_results_xml (buffer,
+                                      &results,
+                                      task,
+                                      notes,
+                                      notes_details,
+                                      overrides,
+                                      overrides_details,
+                                      "gone");
+                  PRINT (out, "%s", buffer->str);
+                  g_string_free (buffer, TRUE);
+                  if (result_hosts_only)
+                    array_add_new_string (result_hosts,
+                                          result_iterator_host (&results));
+                }
+              while (next (&results));
               break;
             }
 
@@ -13612,7 +13792,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                               notes,
                                               notes_details,
                                               overrides,
-                                              overrides_details);
+                                              overrides_details,
+                                              sort_order,
+                                              sort_field);
           if (state == COMPARE_RESULTS_ERROR)
             {
               g_warning ("%s: compare_and_buffer_results failed\n",
@@ -13625,19 +13807,21 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             array_add_new_string (result_hosts,
                                   result_iterator_host (&results)); // FIX
 
+          /* Move on to the next. */
+
           if (state == COMPARE_RESULTS_GONE)
             /* "Used" just the 'results' result. */
-            next (&results);
+            done = !next (&results);
           else if ((state == COMPARE_RESULTS_SAME)
                    || (state == COMPARE_RESULTS_CHANGED))
             {
               /* "Used" both results. */
-              next (&results);
-              next (&delta_results);
+              done = !next (&results);
+              delta_done = !next (&delta_results);
             }
           else if (state == COMPARE_RESULTS_NEW)
-            /* "Used" just the 'delta' result. */
-            next (&delta_results);
+            /* "Used" just the 'delta_results' result. */
+            delta_done = !next (&delta_results);
           else
             assert (0);
         }

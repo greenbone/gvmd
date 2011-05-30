@@ -1,3 +1,14 @@
+2011-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (result_greater): New function.
+	(compare_results): Add sorting args.  Compare new and gone results
+	better.
+	(compare_and_buffer_results): Add sorting args.
+	(print_report_xml): In the delta case store the iteration state in
+	temporary variables, because the "done" field refers to the next
+	iteration.  Also print all the extra 'results' results, instead of just
+	the first.  Pass sort fields to compare_and_buffer_results.
+
 2011-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (escalate_2): Correct doc.
