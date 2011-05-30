@@ -1,5 +1,10 @@
 2011-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_report, manage_send_report): Clear parent state
+	in child.  Backport from trunk r10906.
+
+2011-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport trunk r10949.
 
 	* src/manage_sql.c (print_report_xml): Add full count as text, to preserve

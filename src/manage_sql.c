@@ -12211,6 +12211,11 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
                 {
                   /* Child.  Drop privileges, run command, exit. */
 
+                  /* Clear parent state, because these affect
+                   * cleanup_manage_process. */
+                  current_scanner_task = 0;
+                  current_report = 0;
+
                   if (setgid (nobody->pw_gid))
                     {
                       g_warning ("%s (child): setgid: %s\n",
@@ -12627,6 +12632,11 @@ manage_send_report (report_t report, report_format_t report_format,
               case 0:
                 {
                   /* Child.  Drop privileges, run command, exit. */
+
+                  /* Clear parent state, because these affect
+                   * cleanup_manage_process. */
+                  current_scanner_task = 0;
+                  current_report = 0;
 
                   if (setgid (nobody->pw_gid))
                     {
