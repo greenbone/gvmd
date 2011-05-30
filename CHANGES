@@ -1,3 +1,30 @@
+openvas-manager 2.0.4 (2011-05-30)
+
+This is the fourth maintenance release of the openvas-manager 2.0 module for the
+Open Vulnerability Assessment System release 4 (OpenVAS-4). The OpenVAS Manager
+is the central management service between the actual security scanner and
+various user clients.
+
+This release fixes a number of issues discovered after the release of
+openvas-manager 2.0.3.
+
+Many thanks to everyone who has contributed to this release:
+Stephan Kleine, Matthew Mundell and Michael Wiegand.
+
+Main changes since 2.0.3:
+* Compiler warnings from gcc 4.6 discovered by Stephan Kleine were addressed.
+* The mail addresses supplied for an email escalator are now used in the correct
+  order.
+* Privilege dropping is now done directly and not via the shell.
+* A bug which caused the Manager to fail to start when launched without a
+  database has been fixed.
+* A race condition which caused empty reports from the slave when running in
+  master-slave mode under certain conditions has been fixed.
+* A bug which caused the timestamp of the scan end not to be written to the
+  Manager database when running a task with an escalator under certain
+  conditions has been fixed.
+
+
 openvas-manager 2.0.3 (2011-04-15)
 
 This is the third maintenance release of the openvas-manager 2.0 module for the

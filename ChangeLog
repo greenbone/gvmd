@@ -1,3 +1,9 @@
+2011-05-30  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 2.0.4 release.
+
+	* CHANGES: Updated.
+
 2011-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_report, manage_send_report): Clear parent state
