@@ -1,3 +1,14 @@
+2011-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport trunk r10949.
+
+	* src/manage_sql.c (print_report_xml): Add full count as text, to preserve
+	compatibility with OMP 1.  Some of the report formats use this value.
+
+	* src/schema_formats/XML/OMP.xml (report): Add result_count text.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2011-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_report): Wait on the child PID, just to be

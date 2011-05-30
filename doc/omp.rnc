@@ -3838,10 +3838,12 @@ get_reports_response_report_report_scan_run_status
        task_status
      }
 
+# Counts of results produced by scan.
 get_reports_response_report_report_result_count
  = element result_count
      {
-       get_reports_response_report_report_result_count_full
+       text
+       & get_reports_response_report_report_result_count_full
        & get_reports_response_report_report_result_count_filtered
        & get_reports_response_report_report_result_count_debug
        & get_reports_response_report_report_result_count_hole
