@@ -13371,6 +13371,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   int result_count, filtered_result_count, run_status;
   array_t *result_hosts;
   iterator_t results, delta_results, params;
+  int debugs, holes, infos, logs, warnings, false_positives;
+  int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
 
   /** @todo Leaks on error in PRINT.  The process normally exits then anyway. */
 
@@ -13635,49 +13637,13 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     cleanup_iterator (&results);
   }
 
-  /* Result counts. */
+  /* Prepare result counts. */
 
-  {
-    int debugs, holes, infos, logs, warnings, false_positives;
-    int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
-
-    report_counts_id_filt (report, &debugs, &holes, &infos, &logs,
-                           &warnings, &false_positives,
-                           apply_overrides, NULL, min_cvss_base, search_phrase,
-                           &f_debugs, &f_holes, &f_infos, &f_logs, &f_warnings,
-                           &f_false_positives);
-
-    PRINT (out,
-             "<result_count>"
-             "%i"
-             "<full>%i</full>"
-             "<filtered>%i</filtered>"
-             "<debug><full>%i</full><filtered>%i</filtered></debug>"
-             "<hole><full>%i</full><filtered>%i</filtered></hole>"
-             "<info><full>%i</full><filtered>%i</filtered></info>"
-             "<log><full>%i</full><filtered>%i</filtered></log>"
-             "<warning><full>%i</full><filtered>%i</filtered></warning>"
-             "<false_positive>"
-             "<full>%i</full>"
-             "<filtered>%i</filtered>"
-             "</false_positive>"
-             "</result_count>",
-             result_count,
-             result_count,
-             filtered_result_count,
-             debugs,
-             (strchr (levels, 'd') ? f_debugs : 0),
-             holes,
-             (strchr (levels, 'h') ? f_holes : 0),
-             infos,
-             (strchr (levels, 'l') ? f_infos : 0),
-             logs,
-             (strchr (levels, 'g') ? f_logs : 0),
-             warnings,
-             (strchr (levels, 'm') ? f_warnings : 0),
-             false_positives,
-             (strchr (levels, 'f') ? f_false_positives : 0));
-  }
+  report_counts_id_filt (report, &debugs, &holes, &infos, &logs,
+                         &warnings, &false_positives,
+                         apply_overrides, NULL, min_cvss_base, search_phrase,
+                         &f_debugs, &f_holes, &f_infos, &f_logs, &f_warnings,
+                         &f_false_positives);
 
   /* Results. */
 
@@ -13739,6 +13705,38 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               /* Extra results in 'delta_results'. */
               do
                 {
+                  const char *type;
+
+                  /* Increase the result count. */
+                  type = result_iterator_type (&delta_results);
+                  result_count++;
+                  filtered_result_count++;
+                  if (strcmp (type, "Security Hole") == 0)
+                    {
+                      f_holes++;
+                      holes++;
+                    }
+                  else if (strcmp (type, "Security Warning") == 0)
+                    {
+                      f_warnings++;
+                      warnings++;
+                    }
+                  else if (strcmp (type, "Security Note") == 0)
+                    {
+                      f_infos++;
+                      infos++;
+                    }
+                  else if (strcmp (type, "Log Message") == 0)
+                    {
+                      f_logs++;
+                      logs++;
+                    }
+                  else if (strcmp (type, "False Positive") == 0)
+                    {
+                      f_false_positives++;
+                      false_positives++;
+                    }
+
                   buffer = g_string_new ("");
                   buffer_results_xml (buffer,
                                       &delta_results,
@@ -13820,8 +13818,42 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               delta_done = !next (&delta_results);
             }
           else if (state == COMPARE_RESULTS_NEW)
-            /* "Used" just the 'delta_results' result. */
-            delta_done = !next (&delta_results);
+            {
+              const char *type;
+
+              /* Increase the result count. */
+              type = result_iterator_type (&delta_results);
+              result_count++;
+              filtered_result_count++;
+              if (strcmp (type, "Security Hole") == 0)
+                {
+                  f_holes++;
+                  holes++;
+                }
+              else if (strcmp (type, "Security Warning") == 0)
+                {
+                  f_warnings++;
+                  warnings++;
+                }
+              else if (strcmp (type, "Security Note") == 0)
+                {
+                  f_infos++;
+                  infos++;
+                }
+              else if (strcmp (type, "Log Message") == 0)
+                {
+                  f_logs++;
+                  logs++;
+                }
+              else if (strcmp (type, "False Positive") == 0)
+                {
+                  f_false_positives++;
+                  false_positives++;
+                }
+
+              /* "Used" just the 'delta_results' result. */
+              delta_done = !next (&delta_results);
+            }
           else
             assert (0);
         }
@@ -13846,6 +13878,39 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       }
   PRINT (out, "</results>");
   cleanup_iterator (&results);
+
+  /* Print result counts. */
+
+  PRINT (out,
+           "<result_count>"
+           "%i"
+           "<full>%i</full>"
+           "<filtered>%i</filtered>"
+           "<debug><full>%i</full><filtered>%i</filtered></debug>"
+           "<hole><full>%i</full><filtered>%i</filtered></hole>"
+           "<info><full>%i</full><filtered>%i</filtered></info>"
+           "<log><full>%i</full><filtered>%i</filtered></log>"
+           "<warning><full>%i</full><filtered>%i</filtered></warning>"
+           "<false_positive>"
+           "<full>%i</full>"
+           "<filtered>%i</filtered>"
+           "</false_positive>"
+           "</result_count>",
+           result_count,
+           result_count,
+           filtered_result_count,
+           debugs,
+           (strchr (levels, 'd') ? f_debugs : 0),
+           holes,
+           (strchr (levels, 'h') ? f_holes : 0),
+           infos,
+           (strchr (levels, 'l') ? f_infos : 0),
+           logs,
+           (strchr (levels, 'g') ? f_logs : 0),
+           warnings,
+           (strchr (levels, 'm') ? f_warnings : 0),
+           false_positives,
+           (strchr (levels, 'f') ? f_false_positives : 0));
 
   if (result_hosts_only)
     {

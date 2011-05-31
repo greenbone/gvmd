@@ -1,3 +1,9 @@
+2011-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Move the result count printing to
+	follow the result printing.  Adjust the result counts for new results
+	during delta result printing.
+
 2011-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (result_greater): New function.
