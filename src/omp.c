@@ -1742,6 +1742,7 @@ typedef struct
 {
   int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
   char *delta_report_id; ///< ID of report to compare single report to.
+  char *delta_states;    ///< Delta states (Changed Gone New Same) to include.
   char *format_id;       ///< ID of report format.
   char *escalator_id;    ///< ID of escalator.
   char *report_id;       ///< ID of single report to get.
@@ -1768,6 +1769,7 @@ static void
 get_reports_data_reset (get_reports_data_t *data)
 {
   free (data->delta_report_id);
+  free (data->delta_states);
   free (data->format_id);
   free (data->escalator_id);
   free (data->report_id);
@@ -4182,6 +4184,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values, "levels",
                               &get_reports_data->levels);
+
+            append_attribute (attribute_names, attribute_values, "delta_states",
+                              &get_reports_data->delta_states);
 
             append_attribute (attribute_names, attribute_values,
                               "search_phrase",
@@ -9426,6 +9431,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->result_hosts_only,
                                       get_reports_data->min_cvss_base,
                                       get_reports_data->levels,
+                                      get_reports_data->delta_states,
                                       get_reports_data->apply_overrides,
                                       get_reports_data->search_phrase,
                                       get_reports_data->notes,

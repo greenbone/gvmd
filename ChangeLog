@@ -1,3 +1,18 @@
+2011-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add delta state filtering to delta reports.
+
+	* src/omp.c (get_reports_data_t, get_reports_data_reset): Add delta_states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add attrib
+	delta_states to GET_REPORT.
+
+	* src/manage_sql.c (compare_and_buffer_results): Add delta state args.
+	Only print result if state is selected.
+	(print_report_xml): Filter results according to new delta_states param.
+	Update callers.
+
+	* src/manage.h: Update header accordingly.
+
 2011-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml): Move the result count printing to
