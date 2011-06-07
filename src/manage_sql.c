@@ -9806,6 +9806,7 @@ create_current_report (task_t task, char **report_id, task_status_t status)
  * @brief Create a report from an array of results.
  *
  * @param[in]   results       Array of create_report_result_t pointers.
+ * @param[in]   task_id       UUID of container task, or NULL to create new one.
  * @param[in]   task_name     Name for container task.
  * @param[in]   task_comment  Comment for container task.
  * @param[in]   host_starts   Array of create_report_result_t pointers.  Host
@@ -9814,10 +9815,11 @@ create_current_report (task_t task, char **report_id, task_status_t status)
  *                            name in host, time in description.
  * @param[out]  report_id     Report ID.
  *
- * @return 0 success, -1 error, -2 failed to generate ID, -3 task_name is NULL.
+ * @return 0 success, -1 error, -2 failed to generate ID, -3 task_name is NULL,
+ *         -4 failed to find task, -5 task must be container.
  */
 int
-create_report (array_t *results, const char *task_name,
+create_report (array_t *results, const char *task_id, const char *task_name,
                const char *task_comment, array_t *host_ends,
                array_t *host_starts, char **report_id)
 {
@@ -9827,19 +9829,36 @@ create_report (array_t *results, const char *task_name,
   task_t task;
   pid_t pid;
 
-  if (task_name == NULL)
+  if (task_id == NULL && task_name == NULL)
     return -3;
+
+  /* Find or create the task. */
+
+  /** @todo This should really lock the task for the entire duration, because
+   *        someone could remove the task during the upload.   But will probably
+   *        cause problems on Debian 5 (sqlite 3.5.9), as below.
+   */
+
+  if (task_id)
+    {
+      if (find_task (task_id, &task))
+        return -1;
+
+      if (task == 0)
+        return -4;
+
+      if (task_target (task))
+        return -5;
+    }
+  else
+    task = make_task (g_strdup (task_name),
+                      0,
+                      task_comment ? g_strdup (task_comment) : NULL);
 
   /* Generate report UUID. */
 
   *report_id = openvas_uuid_make ();
   if (*report_id == NULL) return -2;
-
-  /* Create the task. */
-
-  task = make_task (g_strdup (task_name),
-                    0,
-                    task_comment ? g_strdup (task_comment) : NULL);
 
   /* Create the report. */
 

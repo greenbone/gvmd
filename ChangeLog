@@ -1,3 +1,16 @@
+2011-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add container task report imports.
+
+	* src/omp.c (create_report_data_t, create_report_data_reset): Add task_id.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add attrib
+	task_id to CREATE_REPORT.
+
+	* src/manage_sql.c (create_report): Add task_id arg, if given import into
+	this task.
+
+	* src/manage.h: Update header accordingly.
+
 2011-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add delta state filtering to delta reports.

@@ -934,6 +934,7 @@ typedef struct
   char *result_threat;            ///< Message type for current result.
   array_t *results;               ///< All results.
   char *task_comment;             ///< Comment for container task.
+  char *task_id;                  ///< ID of container task.
   char *task_name;                ///< Name for container task.
 } create_report_data_t;
 
@@ -973,6 +974,7 @@ create_report_data_reset (create_report_data_t *data)
       array_free (data->results);
     }
   free (data->task_comment);
+  free (data->task_id);
   free (data->task_name);
 
   memset (data, 0, sizeof (create_report_data_t));
@@ -6208,7 +6210,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         if (strcasecmp ("REPORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_REPORT);
         else if (strcasecmp ("TASK", element_name) == 0)
-          set_client_state (CLIENT_CREATE_REPORT_TASK);
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_report_data->task_id);
+            set_client_state (CLIENT_CREATE_REPORT_TASK);
+          }
         else
           {
             if (send_element_error_to_client ("create_report",
@@ -12089,6 +12095,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "CREATE_REPORT requires a REPORT element"));
           else switch (create_report
                         (create_report_data->results,
+                         create_report_data->task_id,
                          create_report_data->task_name,
                          create_report_data->task_comment,
                          create_report_data->host_starts,
@@ -12108,6 +12115,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "CREATE_REPORT TASK_NAME is required"));
                 g_log ("event report", G_LOG_LEVEL_MESSAGE,
                        "Report could not be created");
+                break;
+              case -4:
+                g_log ("event report", G_LOG_LEVEL_MESSAGE,
+                       "Report could not be created");
+                if (send_find_error_to_client
+                     ("create_report",
+                      "task",
+                      create_report_data->task_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case -5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_report",
+                                    "CREATE_REPORT TASK must be a container"));
+                g_log ("event report", G_LOG_LEVEL_MESSAGE,
+                       "Report could not be created");
+
                 break;
               default:
                 {
