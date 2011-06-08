@@ -13142,7 +13142,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
           tracef ("   delta: %s: port: %s VS %s (%i)",
                   __FUNCTION__, port, delta_port, ret);
           if (ret)
-            return !ret;
+            return -ret;
 
           ret = collate_message_type (NULL,
                                       strlen (type), type,
@@ -13150,7 +13150,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
           tracef ("   delta: %s: threat: %s VS %s (%i)",
                   __FUNCTION__, type, delta_type, ret);
           if (ret)
-            return !ret;
+            return -ret;
 
           ret = strcmp (nvt, delta_nvt);
           tracef ("   delta: %s: NVT: %s VS %s (%i)",
@@ -13173,7 +13173,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       tracef ("   delta: %s: threat: %s VS %s (%i)",
               __FUNCTION__, type, delta_type, ret);
       if (ret)
-        return !ret;
+        return -ret;
 
       ret = strcmp (port, delta_port);
       tracef ("   delta: %s: port: %s VS %s (%i)",
@@ -13218,7 +13218,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
                                   strlen (type), type,
                                   strlen (delta_type), delta_type);
       if (ret)
-        return !ret;
+        return -ret;
 
       ret = strcmp (nvt, delta_nvt);
       if (ret)

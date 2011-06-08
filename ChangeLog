@@ -1,5 +1,10 @@
 2011-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (result_cmp): Invert comparison returns with arithmetic
+	instead of logical negation, because the returns are arithmetic.
+
+2011-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): In the delta case add the host
 	to result_hosts according to the delta state of the result.
 
