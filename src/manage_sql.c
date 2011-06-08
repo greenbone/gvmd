@@ -13943,19 +13943,24 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             }
           PRINT (out, "%s", buffer->str);
           g_string_free (buffer, TRUE);
-          if (result_hosts_only)
-            array_add_new_string (result_hosts,
-                                  result_iterator_host (&results)); // FIX
 
           /* Move on to the next. */
 
           if (state == COMPARE_RESULTS_GONE)
-            /* "Used" just the 'results' result. */
-            done = !next (&results);
+            {
+              /* "Used" just the 'results' result. */
+              if (result_hosts_only)
+                array_add_new_string (result_hosts,
+                                      result_iterator_host (&results));
+              done = !next (&results);
+            }
           else if ((state == COMPARE_RESULTS_SAME)
                    || (state == COMPARE_RESULTS_CHANGED))
             {
               /* "Used" both results. */
+              if (result_hosts_only)
+                array_add_new_string (result_hosts,
+                                      result_iterator_host (&results));
               done = !next (&results);
               delta_done = !next (&delta_results);
             }
@@ -13994,6 +13999,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                 }
 
               /* "Used" just the 'delta_results' result. */
+              if (result_hosts_only)
+                array_add_new_string (result_hosts,
+                                      result_iterator_host (&delta_results));
               delta_done = !next (&delta_results);
             }
           else

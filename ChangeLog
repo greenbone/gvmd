@@ -1,5 +1,10 @@
 2011-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): In the delta case add the host
+	to result_hosts according to the delta state of the result.
+
+2011-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Improve the delta comparison.
 
 	* src/manage_sql.c (init_result_iterator): Add sorting by NVT so that
@@ -7,7 +12,7 @@
 	(result_greater): Remove.  Rename to result_cmp.
 	(result_cmp): New function.  Was result_greater.  Improve doc slightly.
 	Add descriptor and NVT to comparison.  Add tracing.
-	(compare_results): Add tracing.  Correct result_cmp return checks
+	(compare_results): Add tracing.  Correct result_cmp return checks.
 	(print_report_xml): Add delta tracing.
 
 2011-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
