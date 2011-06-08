@@ -10520,19 +10520,27 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                     ? " ORDER BY"
                                       " port,"
                                       " new_type"
-                                      " COLLATE collate_message_type DESC"
+                                      " COLLATE collate_message_type DESC,"
+                                      " nvt,"
+                                      " description"
                                     : " ORDER BY"
                                       " new_type COLLATE collate_message_type,"
-                                      " port")
+                                      " port,"
+                                      " nvt,"
+                                      " description")
                                 : ((strcmp (sort_field, "port") == 0)
                                     ? " ORDER BY"
                                       " port DESC,"
                                       " new_type"
-                                      " COLLATE collate_message_type DESC"
+                                      " COLLATE collate_message_type DESC,"
+                                      " nvt,"
+                                      " description"
                                     : " ORDER BY"
                                       " new_type"
                                       " COLLATE collate_message_type DESC,"
-                                      " port"),
+                                      " port,"
+                                      " nvt,"
+                                      " description"),
                                max_results,
                                first_result);
       else
@@ -10559,10 +10567,12 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                           " port,"
                                           " new_type"
                                           " COLLATE collate_message_type DESC,"
+                                          " nvt,"
                                           " description"
                                         : " ORDER BY host COLLATE collate_ip,"
                                           " new_type COLLATE collate_message_type,"
                                           " port,"
+                                          " nvt,"
                                           " description"))
                                 : ((strcmp (sort_field, "ROWID") == 0)
                                     ? " ORDER BY results.ROWID DESC"
@@ -10571,11 +10581,13 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                           " port DESC,"
                                           " new_type"
                                           " COLLATE collate_message_type DESC,"
+                                          " nvt,"
                                           " description"
                                         : " ORDER BY host COLLATE collate_ip,"
                                           " new_type"
                                           " COLLATE collate_message_type DESC,"
                                           " port,"
+                                          " nvt,"
                                           " description")),
                                max_results,
                                first_result);
@@ -13040,20 +13052,22 @@ typedef enum
 } compare_results_t;
 
 /**
- * @brief Return whether first result is greater according to sorting.
+ * @brief Return the sort order of two results.
  *
  * @param[in]  results        Iterator containing first result.
  * @param[in]  delta_results  Iterator containing second result.
  * @param[in]  sort_order     Whether to sort ascending or descending.
  * @param[in]  sort_field     Field to sort on, or NULL for "type".
  *
- * @return > 0 if greater, 0 if equal, < 0 if less than.
+ * @return < 0 if first comes before second, 0 if equal, > 0 if first comes
+ *         after second.
  */
 static compare_results_t
-result_greater (iterator_t *results, iterator_t *delta_results, int sort_order,
-                const char* sort_field)
+result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
+            const char* sort_field)
 {
   const char *host, *delta_host, *port, *delta_port, *type, *delta_type;
+  const char *nvt, *delta_nvt, *descr, *delta_descr;
   int ret;
 
   if (sort_field == NULL) sort_field = "type";
@@ -13067,6 +13081,12 @@ result_greater (iterator_t *results, iterator_t *delta_results, int sort_order,
   type = result_iterator_type (results);
   delta_type = result_iterator_type (delta_results);
 
+  descr = result_iterator_descr (results);
+  delta_descr = result_iterator_descr (delta_results);
+
+  nvt = result_iterator_nvt_oid (results);
+  delta_nvt = result_iterator_nvt_oid (delta_results);
+
   /*
      The part of the SQL that determines the result iterator sorting.
 
@@ -13077,30 +13097,38 @@ result_greater (iterator_t *results, iterator_t *delta_results, int sort_order,
                                             ? " ORDER BY host COLLATE collate_ip,"
                                               " port,"
                                               " new_type"
-                                              " COLLATE collate_message_type DESC"
+                                              " COLLATE collate_message_type DESC,"
+                                              " description"
                                             : " ORDER BY host COLLATE collate_ip,"
                                               " new_type COLLATE collate_message_type,"
-                                              " port"))
+                                              " port,"
+                                              " description"))
                                     : ((strcmp (sort_field, "port") == 0)
                                         ? " ORDER BY host COLLATE collate_ip,"
                                           " port DESC,"
                                           " new_type"
-                                          " COLLATE collate_message_type DESC"
+                                          " COLLATE collate_message_type DESC,"
+                                          " description"
                                         : " ORDER BY host COLLATE collate_ip,"
                                           " new_type"
                                           " COLLATE collate_message_type DESC,"
-                                          " port")),
+                                          " port,"
+                                          " description")),
   */
 
   if (sort_order == 0)
     {
       /* Descending. */
 
+      tracef ("   delta: %s: descending", __FUNCTION__);
+
       if (strcmp (sort_field, "ROWID") == 0)
         return result_iterator_result (results)
                 < result_iterator_result (delta_results);
 
       ret = collate_ip (NULL, strlen (host), host, strlen (delta_host), delta_host);
+      tracef ("   delta: %s: host: %s VS %s (%i)",
+              __FUNCTION__, host, delta_host, ret);
       if (ret)
         return ret;
 
@@ -13108,39 +13136,65 @@ result_greater (iterator_t *results, iterator_t *delta_results, int sort_order,
         {
           /* Sorting port first. */
 
+          tracef ("   delta: %s: port first", __FUNCTION__);
+
           ret = strcmp (port, delta_port);
+          tracef ("   delta: %s: port: %s VS %s (%i)",
+                  __FUNCTION__, port, delta_port, ret);
           if (ret)
             return !ret;
 
           ret = collate_message_type (NULL,
                                       strlen (type), type,
                                       strlen (delta_type), delta_type);
+          tracef ("   delta: %s: threat: %s VS %s (%i)",
+                  __FUNCTION__, type, delta_type, ret);
           if (ret)
             return !ret;
 
-          /** @todo Add full result sorting.  Check other fields. */
+          ret = strcmp (nvt, delta_nvt);
+          tracef ("   delta: %s: NVT: %s VS %s (%i)",
+                  __FUNCTION__, nvt, delta_nvt, ret);
+          if (ret)
+            return ret;
 
-          return 0;
+          tracef ("   delta: %s: descr: %s VS %s (%i)",
+                  __FUNCTION__, descr, delta_descr, strcmp (descr, delta_descr));
+          return strcmp (descr, delta_descr);
         }
 
       /* Sorting threat first. */
 
+      tracef ("   delta: %s: threat first", __FUNCTION__);
+
       ret = collate_message_type (NULL,
                                   strlen (type), type,
                                   strlen (delta_type), delta_type);
+      tracef ("   delta: %s: threat: %s VS %s (%i)",
+              __FUNCTION__, type, delta_type, ret);
       if (ret)
         return !ret;
 
       ret = strcmp (port, delta_port);
+      tracef ("   delta: %s: port: %s VS %s (%i)",
+              __FUNCTION__, port, delta_port, ret);
       if (ret)
         return ret;
 
-      /** @todo Add full result sorting.  Check other fields. */
+      ret = strcmp (nvt, delta_nvt);
+      tracef ("   delta: %s: NVT: %s VS %s (%i)",
+              __FUNCTION__, nvt, delta_nvt, ret);
+      if (ret)
+        return ret;
 
-      return 0;
+      tracef ("   delta: %s: descr: %s VS %s (%i)",
+              __FUNCTION__, descr, delta_descr, strcmp (descr, delta_descr));
+      return strcmp (descr, delta_descr);
     }
 
   /* Ascending. */
+
+  tracef ("   delta: %s: ascending", __FUNCTION__);
 
   if (strcmp (sort_field, "ROWID") == 0)
     return result_iterator_result (results)
@@ -13154,6 +13208,8 @@ result_greater (iterator_t *results, iterator_t *delta_results, int sort_order,
     {
       /* Sorting by port. */
 
+      tracef ("   delta: %s: port first", __FUNCTION__);
+
       ret = strcmp (port, delta_port);
       if (ret)
         return ret;
@@ -13164,12 +13220,16 @@ result_greater (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (ret)
         return !ret;
 
-      /** @todo Add full result sorting.  Check other fields. */
+      ret = strcmp (nvt, delta_nvt);
+      if (ret)
+        return ret;
 
-      return 0;
+      return strcmp (descr, delta_descr);
     }
 
   /* Sorting by threat. */
+
+  tracef ("   delta: %s: threat first", __FUNCTION__);
 
   ret = collate_message_type (NULL,
                               strlen (type), type,
@@ -13181,9 +13241,11 @@ result_greater (iterator_t *results, iterator_t *delta_results, int sort_order,
   if (ret)
     return ret;
 
-  /** @todo Add full result sorting.  Check other fields. */
+  ret = strcmp (nvt, delta_nvt);
+  if (ret)
+    return ret;
 
-  return 0;
+  return strcmp (descr, delta_descr);
 }
 
 /**
@@ -13211,12 +13273,16 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
   nvt = result_iterator_nvt_oid (results);
   delta_nvt = result_iterator_nvt_oid (delta_results);
 
+  tracef ("   delta: %s: %s VS %s", __FUNCTION__, nvt, delta_nvt);
+
   if ((strcmp (nvt, delta_nvt) == 0)
       && (strcmp (descr, delta_descr) == 0))
     {
       const char *name, *delta_name;
 
       /* NVT and description are the same, so it is the same result. */
+
+      tracef ("   delta: %s: same result", __FUNCTION__);
 
       name = result_iterator_nvt_name (results);
       delta_name = result_iterator_nvt_name (delta_results);
@@ -13232,12 +13298,12 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
       return COMPARE_RESULTS_SAME;
     }
 
-  ret = result_greater (results, delta_results, sort_order, sort_field);
-  if (ret < 0)
-    /* The delta result sorts higher, so it is new. */
-    return COMPARE_RESULTS_NEW;
+  ret = result_cmp (results, delta_results, sort_order, sort_field);
   if (ret > 0)
-    /* The 'results' result sorts higher, so it has gone. */
+    /* The delta result sorts first, so it is new. */
+    return COMPARE_RESULTS_NEW;
+  if (ret < 0)
+    /* The 'results' result sorts first, so it has gone. */
     return COMPARE_RESULTS_GONE;
   /** @todo Add full result sorting.  Return depends on nvt and descr order. */
   return COMPARE_RESULTS_GONE;
@@ -13754,6 +13820,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
       /* Compare the results in the two iterators, which are sorted. */
 
+      tracef ("   delta: %s: start", __FUNCTION__);
       done = !next (&results);
       delta_done = !next (&delta_results);
       while (1)
@@ -13801,6 +13868,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                         false_positives++;
                       }
 
+                    tracef ("   delta: %s: extra from report 2: %s",
+                            __FUNCTION__,
+                            result_iterator_nvt_oid (&delta_results));
                     buffer = g_string_new ("");
                     buffer_results_xml (buffer,
                                         &delta_results,
@@ -13826,6 +13896,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               if (gone)
                 do
                   {
+                    tracef ("   delta: %s: extra from report 1: %s",
+                            __FUNCTION__,
+                            result_iterator_nvt_oid (&results));
                     buffer = g_string_new ("");
                     buffer_results_xml (buffer,
                                         &results,
