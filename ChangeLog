@@ -1,3 +1,8 @@
+2011-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_result_iterator): Add sorting by description so
+	that delta selections are comparable.
+
 2011-06-08  Henri Doreau <henri.doreau@greenbone.net>
 
 	* src/manage_sql.c (setup_full_config_prefs): Added network_scan to

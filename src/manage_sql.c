@@ -10558,21 +10558,25 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                         ? " ORDER BY host COLLATE collate_ip,"
                                           " port,"
                                           " new_type"
-                                          " COLLATE collate_message_type DESC"
+                                          " COLLATE collate_message_type DESC,"
+                                          " description"
                                         : " ORDER BY host COLLATE collate_ip,"
                                           " new_type COLLATE collate_message_type,"
-                                          " port"))
+                                          " port,"
+                                          " description"))
                                 : ((strcmp (sort_field, "ROWID") == 0)
                                     ? " ORDER BY results.ROWID DESC"
                                     : ((strcmp (sort_field, "port") == 0)
                                         ? " ORDER BY host COLLATE collate_ip,"
                                           " port DESC,"
                                           " new_type"
-                                          " COLLATE collate_message_type DESC"
+                                          " COLLATE collate_message_type DESC,"
+                                          " description"
                                         : " ORDER BY host COLLATE collate_ip,"
                                           " new_type"
                                           " COLLATE collate_message_type DESC,"
-                                          " port")),
+                                          " port,"
+                                          " description")),
                                max_results,
                                first_result);
 
