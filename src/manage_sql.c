@@ -7555,6 +7555,9 @@ setup_full_config_prefs (config_t config, int safe_checks,
        " VALUES (%i, 'SERVER_PREFS', 'checks_read_timeout', '5');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'network_scan', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'non_simult_ports', '139, 445');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
