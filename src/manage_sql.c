@@ -13298,6 +13298,7 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
  * @param[in]  gone           Whether to include gone results.
  * @param[in]  new            Whether to include new results.
  * @param[in]  same           Whether to include same results.
+ * @param[in]  max_results    Value to decrement if result is buffered.
  *
  * @return Result of comparison.
  */
@@ -13307,7 +13308,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                             int notes_details, int overrides,
                             int overrides_details, int sort_order,
                             const char* sort_field, int changed, int gone,
-                            int new, int same)
+                            int new, int same, int *max_results)
 {
   compare_results_t state;
   state = compare_results (results, delta_results, sort_order, sort_field);
@@ -13315,50 +13316,62 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
     {
       case COMPARE_RESULTS_CHANGED:
         if (changed)
-          buffer_results_xml (buffer,
-                              results,
-                              task,
-                              notes,
-                              notes_details,
-                              overrides,
-                              overrides_details,
-                              "changed");
+          {
+            (*max_results)--;
+            buffer_results_xml (buffer,
+                                results,
+                                task,
+                                notes,
+                                notes_details,
+                                overrides,
+                                overrides_details,
+                                "changed");
+          }
         break;
 
       case COMPARE_RESULTS_GONE:
         if (gone)
-          buffer_results_xml (buffer,
-                              results,
-                              task,
-                              notes,
-                              notes_details,
-                              overrides,
-                              overrides_details,
-                              "gone");
+          {
+            (*max_results)--;
+            buffer_results_xml (buffer,
+                                results,
+                                task,
+                                notes,
+                                notes_details,
+                                overrides,
+                                overrides_details,
+                                "gone");
+          }
         break;
 
       case COMPARE_RESULTS_NEW:
         if (new)
-          buffer_results_xml (buffer,
-                              delta_results,
-                              task,
-                              notes,
-                              notes_details,
-                              overrides,
-                              overrides_details,
-                              "new");
+          {
+            (*max_results)--;
+            buffer_results_xml (buffer,
+                                delta_results,
+                                task,
+                                notes,
+                                notes_details,
+                                overrides,
+                                overrides_details,
+                                "new");
+          }
         break;
 
       case COMPARE_RESULTS_SAME:
         if (same)
-          buffer_results_xml (buffer,
-                              results,
-                              task,
-                              notes,
-                              notes_details,
-                              overrides,
-                              overrides_details,
-                              "same");
+          {
+            (*max_results)--;
+            buffer_results_xml (buffer,
+                                results,
+                                task,
+                                notes,
+                                notes_details,
+                                overrides,
+                                overrides_details,
+                                "same");
+          }
         break;
 
       default:
@@ -13742,23 +13755,30 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   /* Results. */
 
-  /**
-   * @todo For delta, specify the entire ordering in the init_result_iterator
-   *       SQL, so that the two sets are ordered the same way.
-   */
-
-  init_result_iterator (&results, report, 0, NULL,
-                        first_result,
-                        max_results,
-                        sort_order,
-                        sort_field,
-                        levels,
-                        search_phrase,
-                        min_cvss_base,
-                        apply_overrides);
-
   if (delta)
-    init_result_iterator (&delta_results, delta, 0, NULL,
+    {
+      init_result_iterator (&results, report, 0, NULL,
+                            first_result,
+                            -1,
+                            sort_order,
+                            sort_field,
+                            levels,
+                            search_phrase,
+                            min_cvss_base,
+                            apply_overrides);
+
+      init_result_iterator (&delta_results, delta, 0, NULL,
+                            first_result,
+                            -1,
+                            sort_order,
+                            sort_field,
+                            levels,
+                            search_phrase,
+                            min_cvss_base,
+                            apply_overrides);
+    }
+  else
+    init_result_iterator (&results, report, 0, NULL,
                           first_result,
                           max_results,
                           sort_order,
@@ -13799,6 +13819,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         {
           GString *buffer;
           compare_results_t state;
+
+          if (max_results == 0)
+            break;
 
           if (done)
             {
@@ -13857,6 +13880,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                     if (result_hosts_only)
                       array_add_new_string (result_hosts,
                                             result_iterator_host (&delta_results));
+                    max_results--;
+                    if (max_results == 0)
+                      break;
                   }
                 while (next (&delta_results));
               break;
@@ -13885,6 +13911,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                     if (result_hosts_only)
                       array_add_new_string (result_hosts,
                                             result_iterator_host (&results));
+                    max_results--;
+                    if (max_results == 0)
+                      break;
                   }
                 while (next (&results));
               break;
@@ -13906,7 +13935,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                               changed,
                                               gone,
                                               new,
-                                              same);
+                                              same,
+                                              &max_results);
           if (state == COMPARE_RESULTS_ERROR)
             {
               g_warning ("%s: compare_and_buffer_results failed\n",

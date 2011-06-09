@@ -1,5 +1,13 @@
 2011-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (compare_and_buffer_results): Add max_results arg,
+	decrement when buffering the result.
+	(print_report_xml): Remove done sorting todo.  Select all the results in
+	the delta case.  Limit to max_results results explicitly, while comparing.
+	This ensures there are always enough results to do the comparison.
+
+2011-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (result_cmp): Remove description comparisons.
 	(compare_results): Remove the changed/same comparison and make the
 	changed/same depend entirely on the description.  Now results are
