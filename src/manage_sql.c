@@ -13067,7 +13067,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
             const char* sort_field)
 {
   const char *host, *delta_host, *port, *delta_port, *type, *delta_type;
-  const char *nvt, *delta_nvt, *descr, *delta_descr;
+  const char *nvt, *delta_nvt;
   int ret;
 
   if (sort_field == NULL) sort_field = "type";
@@ -13080,9 +13080,6 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
 
   type = result_iterator_type (results);
   delta_type = result_iterator_type (delta_results);
-
-  descr = result_iterator_descr (results);
-  delta_descr = result_iterator_descr (delta_results);
 
   nvt = result_iterator_nvt_oid (results);
   delta_nvt = result_iterator_nvt_oid (delta_results);
@@ -13158,9 +13155,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
           if (ret)
             return ret;
 
-          tracef ("   delta: %s: descr: %s VS %s (%i)",
-                  __FUNCTION__, descr, delta_descr, strcmp (descr, delta_descr));
-          return strcmp (descr, delta_descr);
+          return 0;
         }
 
       /* Sorting threat first. */
@@ -13187,9 +13182,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (ret)
         return ret;
 
-      tracef ("   delta: %s: descr: %s VS %s (%i)",
-              __FUNCTION__, descr, delta_descr, strcmp (descr, delta_descr));
-      return strcmp (descr, delta_descr);
+      return 0;
     }
 
   /* Ascending. */
@@ -13224,7 +13217,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (ret)
         return ret;
 
-      return strcmp (descr, delta_descr);
+      return 0;
     }
 
   /* Sorting by threat. */
@@ -13245,7 +13238,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   if (ret)
     return ret;
 
-  return strcmp (descr, delta_descr);
+  return 0;
 }
 
 /**
@@ -13263,40 +13256,9 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
                  const char* sort_field)
 {
   int ret;
-  const char *nvt, *delta_nvt, *descr, *delta_descr;
+  const char *descr, *delta_descr;
 
-  /* The result is identified by the NVT and the description. */
-
-  descr = result_iterator_descr (results);
-  delta_descr = result_iterator_descr (delta_results);
-
-  nvt = result_iterator_nvt_oid (results);
-  delta_nvt = result_iterator_nvt_oid (delta_results);
-
-  tracef ("   delta: %s: %s VS %s", __FUNCTION__, nvt, delta_nvt);
-
-  if ((strcmp (nvt, delta_nvt) == 0)
-      && (strcmp (descr, delta_descr) == 0))
-    {
-      const char *name, *delta_name;
-
-      /* NVT and description are the same, so it is the same result. */
-
-      tracef ("   delta: %s: same result", __FUNCTION__);
-
-      name = result_iterator_nvt_name (results);
-      delta_name = result_iterator_nvt_name (delta_results);
-
-      if (((name && delta_name)
-           && strcmp (name, delta_name))
-          || strcmp (result_iterator_type (results),
-                     result_iterator_type (delta_results)))
-        /* Something else has changed. */
-        return COMPARE_RESULTS_CHANGED;
-
-      /* Results are identical. */
-      return COMPARE_RESULTS_SAME;
-    }
+  tracef ("   delta: %s", __FUNCTION__);
 
   ret = result_cmp (results, delta_results, sort_order, sort_field);
   if (ret > 0)
@@ -13305,8 +13267,18 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
   if (ret < 0)
     /* The 'results' result sorts first, so it has gone. */
     return COMPARE_RESULTS_GONE;
-  /** @todo Add full result sorting.  Return depends on nvt and descr order. */
-  return COMPARE_RESULTS_GONE;
+
+  descr = result_iterator_descr (results);
+  delta_descr = result_iterator_descr (delta_results);
+
+  tracef ("   delta: %s: descr: %s VS %s (%i)",
+          __FUNCTION__, descr, delta_descr, strcmp (descr, delta_descr));
+
+  ret = strcmp (descr, delta_descr);
+  if (ret)
+    return COMPARE_RESULTS_CHANGED;
+
+  return COMPARE_RESULTS_SAME;
 }
 
 /**

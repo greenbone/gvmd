@@ -1,3 +1,12 @@
+2011-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (result_cmp): Remove description comparisons.
+	(compare_results): Remove the changed/same comparison and make the
+	changed/same depend entirely on the description.  Now results are
+	identified only by their position in the selection, so some changed
+	results may appear to be new-gone pairs, however more results should
+	appear as changed when just the description changes.
+
 2011-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (result_cmp): Invert comparison returns with arithmetic
