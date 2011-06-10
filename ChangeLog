@@ -1,3 +1,10 @@
+2011-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (compare_and_buffer_results): Add first_results arg,
+	decrement and skip result if positive.
+	(print_report_xml): In the delta case, always get the first result in the
+	report, and skip output of results up to the requested first_result.
+
 2011-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (compare_and_buffer_results): Add max_results arg,

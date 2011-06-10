@@ -13299,6 +13299,7 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
  * @param[in]  new            Whether to include new results.
  * @param[in]  same           Whether to include same results.
  * @param[in]  max_results    Value to decrement if result is buffered.
+ * @param[in]  first_result   Skip result and decrement if positive.
  *
  * @return Result of comparison.
  */
@@ -13308,7 +13309,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                             int notes_details, int overrides,
                             int overrides_details, int sort_order,
                             const char* sort_field, int changed, int gone,
-                            int new, int same, int *max_results)
+                            int new, int same, int *max_results,
+                            int *first_result)
 {
   compare_results_t state;
   state = compare_results (results, delta_results, sort_order, sort_field);
@@ -13317,6 +13319,11 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
       case COMPARE_RESULTS_CHANGED:
         if (changed)
           {
+            if (*first_result)
+              {
+                (*first_result)--;
+                break;
+              }
             (*max_results)--;
             buffer_results_xml (buffer,
                                 results,
@@ -13332,6 +13339,11 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
       case COMPARE_RESULTS_GONE:
         if (gone)
           {
+            if (*first_result)
+              {
+                (*first_result)--;
+                break;
+              }
             (*max_results)--;
             buffer_results_xml (buffer,
                                 results,
@@ -13347,6 +13359,11 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
       case COMPARE_RESULTS_NEW:
         if (new)
           {
+            if (*first_result)
+              {
+                (*first_result)--;
+                break;
+              }
             (*max_results)--;
             buffer_results_xml (buffer,
                                 delta_results,
@@ -13362,6 +13379,11 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
       case COMPARE_RESULTS_SAME:
         if (same)
           {
+            if (*first_result)
+              {
+                (*first_result)--;
+                break;
+              }
             (*max_results)--;
             buffer_results_xml (buffer,
                                 results,
@@ -13758,7 +13780,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (delta)
     {
       init_result_iterator (&results, report, 0, NULL,
-                            first_result,
+                            0,
                             -1,
                             sort_order,
                             sort_field,
@@ -13768,7 +13790,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                             apply_overrides);
 
       init_result_iterator (&delta_results, delta, 0, NULL,
-                            first_result,
+                            0,
                             -1,
                             sort_order,
                             sort_field,
@@ -13832,6 +13854,16 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                 do
                   {
                     const char *type;
+
+                    tracef ("   delta: %s: extra from report 2: %s",
+                            __FUNCTION__,
+                            result_iterator_nvt_oid (&results));
+
+                    if (first_result)
+                      {
+                        first_result--;
+                        continue;
+                      }
 
                     /* Increase the result count. */
                     type = result_iterator_type (&delta_results);
@@ -13897,6 +13929,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                     tracef ("   delta: %s: extra from report 1: %s",
                             __FUNCTION__,
                             result_iterator_nvt_oid (&results));
+                    if (first_result)
+                      {
+                        first_result--;
+                        continue;
+                      }
                     buffer = g_string_new ("");
                     buffer_results_xml (buffer,
                                         &results,
@@ -13936,7 +13973,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                               gone,
                                               new,
                                               same,
-                                              &max_results);
+                                              &max_results,
+                                              &first_result);
           if (state == COMPARE_RESULTS_ERROR)
             {
               g_warning ("%s: compare_and_buffer_results failed\n",
