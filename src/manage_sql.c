@@ -13315,7 +13315,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
 {
   compare_results_t state;
   state = compare_results (results, delta_results, sort_order, sort_field);
-  *used = 1;
+  *used = 0;
   switch (state)
     {
       case COMPARE_RESULTS_CHANGED:
@@ -13325,9 +13325,9 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
               {
                 tracef ("   delta: skip");
                 (*first_result)--;
-                *used = 0;
                 break;
               }
+            *used = 1;
             (*max_results)--;
             buffer_results_xml (buffer,
                                 results,
@@ -13347,9 +13347,9 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
               {
                 tracef ("   delta: skip");
                 (*first_result)--;
-                *used = 0;
                 break;
               }
+            *used = 1;
             (*max_results)--;
             buffer_results_xml (buffer,
                                 results,
@@ -13369,9 +13369,9 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
               {
                 tracef ("   delta: skip");
                 (*first_result)--;
-                *used = 0;
                 break;
               }
+            *used = 1;
             (*max_results)--;
             buffer_results_xml (buffer,
                                 delta_results,
@@ -13391,9 +13391,9 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
               {
                 tracef ("   delta: skip");
                 (*first_result)--;
-                *used = 0;
                 break;
               }
+            *used = 1;
             (*max_results)--;
             buffer_results_xml (buffer,
                                 results,
@@ -13998,6 +13998,44 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           PRINT (out, "%s", buffer->str);
           g_string_free (buffer, TRUE);
 
+          if ((used == 0)
+              && ((state == COMPARE_RESULTS_GONE)
+                  || (state == COMPARE_RESULTS_SAME)
+                  || (state == COMPARE_RESULTS_CHANGED)))
+            {
+              const char *type;
+
+              /* Decrease the result count. */
+              type = result_iterator_type (&results);
+              result_count--;
+              filtered_result_count--;
+              if (strcmp (type, "Security Hole") == 0)
+                {
+                  f_holes--;
+                  holes--;
+                }
+              else if (strcmp (type, "Security Warning") == 0)
+                {
+                  f_warnings--;
+                  warnings--;
+                }
+              else if (strcmp (type, "Security Note") == 0)
+                {
+                  f_infos--;
+                  infos--;
+                }
+              else if (strcmp (type, "Log Message") == 0)
+                {
+                  f_logs--;
+                  logs--;
+                }
+              else if (strcmp (type, "False Positive") == 0)
+                {
+                  f_false_positives--;
+                  false_positives--;
+                }
+            }
+
           /* Move on to the next. */
 
           if (state == COMPARE_RESULTS_GONE)
@@ -14020,43 +14058,46 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             }
           else if (state == COMPARE_RESULTS_NEW)
             {
-              const char *type;
+              if (used)
+                {
+                  const char *type;
 
-              /* Increase the result count. */
-              // FIX only if actually output result
-              type = result_iterator_type (&delta_results);
-              result_count++;
-              filtered_result_count++;
-              if (strcmp (type, "Security Hole") == 0)
-                {
-                  f_holes++;
-                  holes++;
-                }
-              else if (strcmp (type, "Security Warning") == 0)
-                {
-                  f_warnings++;
-                  warnings++;
-                }
-              else if (strcmp (type, "Security Note") == 0)
-                {
-                  f_infos++;
-                  infos++;
-                }
-              else if (strcmp (type, "Log Message") == 0)
-                {
-                  f_logs++;
-                  logs++;
-                }
-              else if (strcmp (type, "False Positive") == 0)
-                {
-                  f_false_positives++;
-                  false_positives++;
-                }
+                  /* Increase the result count. */
+                  type = result_iterator_type (&delta_results);
+                  result_count++;
+                  filtered_result_count++;
+                  if (strcmp (type, "Security Hole") == 0)
+                    {
+                      f_holes++;
+                      holes++;
+                    }
+                  else if (strcmp (type, "Security Warning") == 0)
+                    {
+                      f_warnings++;
+                      warnings++;
+                    }
+                  else if (strcmp (type, "Security Note") == 0)
+                    {
+                      f_infos++;
+                      infos++;
+                    }
+                  else if (strcmp (type, "Log Message") == 0)
+                    {
+                      f_logs++;
+                      logs++;
+                    }
+                  else if (strcmp (type, "False Positive") == 0)
+                    {
+                      f_false_positives++;
+                      false_positives++;
+                    }
 
-              /* "Used" just the 'delta_results' result. */
-              if (used && result_hosts_only)
-                array_add_new_string (result_hosts,
-                                      result_iterator_host (&delta_results));
+                  /* "Used" just the 'delta_results' result. */
+                  if (result_hosts_only)
+                    array_add_new_string (result_hosts,
+                                          result_iterator_host
+                                           (&delta_results));
+                }
               delta_done = !next (&delta_results);
             }
           else
