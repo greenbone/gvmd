@@ -1,5 +1,12 @@
 2011-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (compare_and_buffer_results): Add used flag.  Set when
+	buffering result.
+	(print_report_xml): Only add the result_hosts_only host when the result
+	was actually printed.
+
+2011-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (compare_and_buffer_results): Add more tracing.
 	(print_report_xml): When printing the hosts, check the second report if
 	the host is missing from the first report.

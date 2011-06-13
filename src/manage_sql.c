@@ -13300,6 +13300,7 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
  * @param[in]  same           Whether to include same results.
  * @param[in]  max_results    Value to decrement if result is buffered.
  * @param[in]  first_result   Skip result and decrement if positive.
+ * @param[in]  used           0 if used, 1 if skipped.
  *
  * @return Result of comparison.
  */
@@ -13310,10 +13311,11 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                             int overrides_details, int sort_order,
                             const char* sort_field, int changed, int gone,
                             int new, int same, int *max_results,
-                            int *first_result)
+                            int *first_result, int *used)
 {
   compare_results_t state;
   state = compare_results (results, delta_results, sort_order, sort_field);
+  *used = 1;
   switch (state)
     {
       case COMPARE_RESULTS_CHANGED:
@@ -13323,6 +13325,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
               {
                 tracef ("   delta: skip");
                 (*first_result)--;
+                *used = 0;
                 break;
               }
             (*max_results)--;
@@ -13344,6 +13347,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
               {
                 tracef ("   delta: skip");
                 (*first_result)--;
+                *used = 0;
                 break;
               }
             (*max_results)--;
@@ -13365,6 +13369,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
               {
                 tracef ("   delta: skip");
                 (*first_result)--;
+                *used = 0;
                 break;
               }
             (*max_results)--;
@@ -13386,6 +13391,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
               {
                 tracef ("   delta: skip");
                 (*first_result)--;
+                *used = 0;
                 break;
               }
             (*max_results)--;
@@ -13845,6 +13851,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         {
           GString *buffer;
           compare_results_t state;
+          int used;
 
           if (max_results == 0)
             break;
@@ -13980,7 +13987,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                               new,
                                               same,
                                               &max_results,
-                                              &first_result);
+                                              &first_result,
+                                              &used);
           if (state == COMPARE_RESULTS_ERROR)
             {
               g_warning ("%s: compare_and_buffer_results failed\n",
@@ -13995,7 +14003,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           if (state == COMPARE_RESULTS_GONE)
             {
               /* "Used" just the 'results' result. */
-              if (result_hosts_only)
+              if (used && result_hosts_only)
                 array_add_new_string (result_hosts,
                                       result_iterator_host (&results));
               done = !next (&results);
@@ -14004,7 +14012,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                    || (state == COMPARE_RESULTS_CHANGED))
             {
               /* "Used" both results. */
-              if (result_hosts_only)
+              if (used && result_hosts_only)
                 array_add_new_string (result_hosts,
                                       result_iterator_host (&results));
               done = !next (&results);
@@ -14046,7 +14054,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                 }
 
               /* "Used" just the 'delta_results' result. */
-              if (result_hosts_only)
+              if (used && result_hosts_only)
                 array_add_new_string (result_hosts,
                                       result_iterator_host (&delta_results));
               delta_done = !next (&delta_results);
