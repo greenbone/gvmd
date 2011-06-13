@@ -13321,6 +13321,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
           {
             if (*first_result)
               {
+                tracef ("   delta: skip");
                 (*first_result)--;
                 break;
               }
@@ -13341,6 +13342,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
           {
             if (*first_result)
               {
+                tracef ("   delta: skip");
                 (*first_result)--;
                 break;
               }
@@ -13361,6 +13363,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
           {
             if (*first_result)
               {
+                tracef ("   delta: skip");
                 (*first_result)--;
                 break;
               }
@@ -13381,6 +13384,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
           {
             if (*first_result)
               {
+                tracef ("   delta: skip");
                 (*first_result)--;
                 break;
               }
@@ -13861,6 +13865,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
                     if (first_result)
                       {
+                        tracef ("   delta: skip");
                         first_result--;
                         continue;
                       }
@@ -13931,6 +13936,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                             result_iterator_nvt_oid (&results));
                     if (first_result)
                       {
+                        tracef ("   delta: skip");
                         first_result--;
                         continue;
                       }
@@ -14009,6 +14015,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               const char *type;
 
               /* Increase the result count. */
+              // FIX only if actually output result
               type = result_iterator_type (&delta_results);
               result_count++;
               filtered_result_count++;
@@ -14109,9 +14116,17 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       array_terminate (result_hosts);
       while ((host = g_ptr_array_index (result_hosts, index++)))
         {
+          gboolean present;
           iterator_t hosts;
           init_host_iterator (&hosts, report, host);
-          if (next (&hosts))
+          present = next (&hosts);
+          if (delta && (present == FALSE))
+            {
+              cleanup_iterator (&hosts);
+              init_host_iterator (&hosts, delta, host);
+              present = next (&hosts);
+            }
+          if (present)
             {
               iterator_t details;
 
