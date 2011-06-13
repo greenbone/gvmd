@@ -1,5 +1,13 @@
 2011-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (compare_and_buffer_results): Skip actual buffering
+	if buffer is NULL.
+	(print_report_xml): Skip full counts if delta.  Add count decreasing when
+	there are extra results in 'results'.  Iterate through the remaining
+	results after hitting the page max, to get the filtered counts right.
+
+2011-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (compare_and_buffer_results): Take into account the
 	filter arguments, when setting "used".
 	(print_report_xml): If the result was skipped, then adjust the result

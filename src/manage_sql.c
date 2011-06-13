@@ -13329,14 +13329,15 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
               }
             *used = 1;
             (*max_results)--;
-            buffer_results_xml (buffer,
-                                results,
-                                task,
-                                notes,
-                                notes_details,
-                                overrides,
-                                overrides_details,
-                                "changed");
+            if (buffer)
+              buffer_results_xml (buffer,
+                                  results,
+                                  task,
+                                  notes,
+                                  notes_details,
+                                  overrides,
+                                  overrides_details,
+                                  "changed");
           }
         break;
 
@@ -13351,14 +13352,15 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
               }
             *used = 1;
             (*max_results)--;
-            buffer_results_xml (buffer,
-                                results,
-                                task,
-                                notes,
-                                notes_details,
-                                overrides,
-                                overrides_details,
-                                "gone");
+            if (buffer)
+              buffer_results_xml (buffer,
+                                  results,
+                                  task,
+                                  notes,
+                                  notes_details,
+                                  overrides,
+                                  overrides_details,
+                                  "gone");
           }
         break;
 
@@ -13373,14 +13375,15 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
               }
             *used = 1;
             (*max_results)--;
-            buffer_results_xml (buffer,
-                                delta_results,
-                                task,
-                                notes,
-                                notes_details,
-                                overrides,
-                                overrides_details,
-                                "new");
+            if (buffer)
+              buffer_results_xml (buffer,
+                                  delta_results,
+                                  task,
+                                  notes,
+                                  notes_details,
+                                  overrides,
+                                  overrides_details,
+                                  "new");
           }
         break;
 
@@ -13395,14 +13398,15 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
               }
             *used = 1;
             (*max_results)--;
-            buffer_results_xml (buffer,
-                                results,
-                                task,
-                                notes,
-                                notes_details,
-                                overrides,
-                                overrides_details,
-                                "same");
+            if (buffer)
+              buffer_results_xml (buffer,
+                                  results,
+                                  task,
+                                  notes,
+                                  notes_details,
+                                  overrides,
+                                  overrides_details,
+                                  "same");
           }
         break;
 
@@ -13538,9 +13542,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   cleanup_iterator (&params);
   PRINT (out, "</report_format>");
 
-  report_scan_result_count (report, NULL, NULL, NULL,
-                            apply_overrides,
-                            &result_count);
+  if (delta == 0)
+    {
+      report_scan_result_count (report, NULL, NULL, NULL,
+                                apply_overrides,
+                                &result_count);
+    }
   report_scan_result_count (report,
                             levels,
                             search_phrase,
@@ -13879,32 +13886,26 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
                     /* Increase the result count. */
                     type = result_iterator_type (&delta_results);
-                    result_count++;
                     filtered_result_count++;
                     if (strcmp (type, "Security Hole") == 0)
                       {
                         f_holes++;
-                        holes++;
                       }
                     else if (strcmp (type, "Security Warning") == 0)
                       {
                         f_warnings++;
-                        warnings++;
                       }
                     else if (strcmp (type, "Security Note") == 0)
                       {
                         f_infos++;
-                        infos++;
                       }
                     else if (strcmp (type, "Log Message") == 0)
                       {
                         f_logs++;
-                        logs++;
                       }
                     else if (strcmp (type, "False Positive") == 0)
                       {
                         f_false_positives++;
-                        false_positives++;
                       }
 
                     tracef ("   delta: %s: extra from report 2: %s",
@@ -13929,6 +13930,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                       break;
                   }
                 while (next (&delta_results));
+              delta_done = TRUE;
               break;
             }
 
@@ -13966,6 +13968,37 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                       break;
                   }
                 while (next (&results));
+              else
+                do
+                  {
+                    const char *type;
+
+                    /* Decrease the result count. */
+                    type = result_iterator_type (&results);
+                    filtered_result_count--;
+                    if (strcmp (type, "Security Hole") == 0)
+                      {
+                        f_holes--;
+                      }
+                    else if (strcmp (type, "Security Warning") == 0)
+                      {
+                        f_warnings--;
+                      }
+                    else if (strcmp (type, "Security Note") == 0)
+                      {
+                        f_infos--;
+                      }
+                    else if (strcmp (type, "Log Message") == 0)
+                      {
+                        f_logs--;
+                      }
+                    else if (strcmp (type, "False Positive") == 0)
+                      {
+                        f_false_positives--;
+                      }
+                  }
+                while (next (&results));
+              done = TRUE;
               break;
             }
 
@@ -14007,32 +14040,26 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
               /* Decrease the result count. */
               type = result_iterator_type (&results);
-              result_count--;
               filtered_result_count--;
               if (strcmp (type, "Security Hole") == 0)
                 {
                   f_holes--;
-                  holes--;
                 }
               else if (strcmp (type, "Security Warning") == 0)
                 {
                   f_warnings--;
-                  warnings--;
                 }
               else if (strcmp (type, "Security Note") == 0)
                 {
                   f_infos--;
-                  infos--;
                 }
               else if (strcmp (type, "Log Message") == 0)
                 {
                   f_logs--;
-                  logs--;
                 }
               else if (strcmp (type, "False Positive") == 0)
                 {
                   f_false_positives--;
-                  false_positives--;
                 }
             }
 
@@ -14062,42 +14089,248 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                 {
                   const char *type;
 
+                  /* "Used" just the 'delta_results' result. */
+
                   /* Increase the result count. */
                   type = result_iterator_type (&delta_results);
-                  result_count++;
                   filtered_result_count++;
                   if (strcmp (type, "Security Hole") == 0)
                     {
                       f_holes++;
-                      holes++;
                     }
                   else if (strcmp (type, "Security Warning") == 0)
                     {
                       f_warnings++;
-                      warnings++;
                     }
                   else if (strcmp (type, "Security Note") == 0)
                     {
                       f_infos++;
-                      infos++;
                     }
                   else if (strcmp (type, "Log Message") == 0)
                     {
                       f_logs++;
-                      logs++;
                     }
                   else if (strcmp (type, "False Positive") == 0)
                     {
                       f_false_positives++;
-                      false_positives++;
                     }
 
-                  /* "Used" just the 'delta_results' result. */
                   if (result_hosts_only)
                     array_add_new_string (result_hosts,
                                           result_iterator_host
                                            (&delta_results));
                 }
+              delta_done = !next (&delta_results);
+            }
+          else
+            assert (0);
+        }
+
+      /* Compare remaining results, for the filtered report counts. */
+
+      tracef ("   delta: %s: counting rest", __FUNCTION__);
+      while (1)
+        {
+          compare_results_t state;
+          int used;
+
+          if (done)
+            {
+              if (delta_done)
+                break;
+              if (new)
+                /* Extra results in 'delta_results'. */
+                do
+                  {
+                    const char *type;
+
+                    tracef ("   delta: %s: extra from report 2: %s",
+                            __FUNCTION__,
+                            result_iterator_nvt_oid (&delta_results));
+
+                    /* Increase the result count. */
+                    type = result_iterator_type (&delta_results);
+                    filtered_result_count++;
+                    if (strcmp (type, "Security Hole") == 0)
+                      {
+                        f_holes++;
+                      }
+                    else if (strcmp (type, "Security Warning") == 0)
+                      {
+                        f_warnings++;
+                      }
+                    else if (strcmp (type, "Security Note") == 0)
+                      {
+                        f_infos++;
+                      }
+                    else if (strcmp (type, "Log Message") == 0)
+                      {
+                        f_logs++;
+                      }
+                    else if (strcmp (type, "False Positive") == 0)
+                      {
+                        f_false_positives++;
+                      }
+                  }
+                while (next (&delta_results));
+              break;
+            }
+
+          if (delta_done)
+            {
+              /* Extra results in 'results'. */
+              if (gone)
+                do
+                  {
+                    tracef ("   delta: %s: extra from report 1: %s",
+                            __FUNCTION__,
+                            result_iterator_nvt_oid (&results));
+
+                    /* It's in the count already. */
+                  }
+                while (next (&results));
+              else
+                do
+                  {
+                    const char *type;
+
+                    /* Decrease the result count. */
+                    type = result_iterator_type (&results);
+                    filtered_result_count--;
+                    if (strcmp (type, "Security Hole") == 0)
+                      {
+                        f_holes--;
+                      }
+                    else if (strcmp (type, "Security Warning") == 0)
+                      {
+                        f_warnings--;
+                      }
+                    else if (strcmp (type, "Security Note") == 0)
+                      {
+                        f_infos--;
+                      }
+                    else if (strcmp (type, "Log Message") == 0)
+                      {
+                        f_logs--;
+                      }
+                    else if (strcmp (type, "False Positive") == 0)
+                      {
+                        f_false_positives--;
+                      }
+                  }
+                while (next (&results));
+              break;
+            }
+
+          /* Compare the two results. */
+
+          state = compare_and_buffer_results (NULL,
+                                              &results,
+                                              &delta_results,
+                                              task,
+                                              notes,
+                                              notes_details,
+                                              overrides,
+                                              overrides_details,
+                                              sort_order,
+                                              sort_field,
+                                              changed,
+                                              gone,
+                                              new,
+                                              same,
+                                              &max_results,
+                                              &first_result,
+                                              &used);
+          if (state == COMPARE_RESULTS_ERROR)
+            {
+              g_warning ("%s: compare_and_buffer_results failed\n",
+                         __FUNCTION__);
+              return -1;
+            }
+
+          if (state == COMPARE_RESULTS_NEW)
+            {
+              if (used)
+                {
+                  const char *type;
+
+                  /* "Used" just the 'delta_results' result. */
+
+                  /* Increase the result count. */
+                  type = result_iterator_type (&delta_results);
+                  filtered_result_count++;
+                  if (strcmp (type, "Security Hole") == 0)
+                    {
+                      f_holes++;
+                    }
+                  else if (strcmp (type, "Security Warning") == 0)
+                    {
+                      f_warnings++;
+                    }
+                  else if (strcmp (type, "Security Note") == 0)
+                    {
+                      f_infos++;
+                    }
+                  else if (strcmp (type, "Log Message") == 0)
+                    {
+                      f_logs++;
+                    }
+                  else if (strcmp (type, "False Positive") == 0)
+                    {
+                      f_false_positives++;
+                    }
+                }
+            }
+          else if (used)
+            {
+              /* It's in the count already. */
+            }
+          else
+            {
+              const char *type;
+
+              /* Decrease the result count. */
+              type = result_iterator_type (&results);
+              filtered_result_count--;
+              if (strcmp (type, "Security Hole") == 0)
+                {
+                  f_holes--;
+                }
+              else if (strcmp (type, "Security Warning") == 0)
+                {
+                  f_warnings--;
+                }
+              else if (strcmp (type, "Security Note") == 0)
+                {
+                  f_infos--;
+                }
+              else if (strcmp (type, "Log Message") == 0)
+                {
+                  f_logs--;
+                }
+              else if (strcmp (type, "False Positive") == 0)
+                {
+                  f_false_positives--;
+                }
+            }
+
+          /* Move on to the next. */
+
+          if (state == COMPARE_RESULTS_GONE)
+            {
+              /* "Used" just the 'results' result. */
+              done = !next (&results);
+            }
+          else if ((state == COMPARE_RESULTS_SAME)
+                   || (state == COMPARE_RESULTS_CHANGED))
+            {
+              /* "Used" both results. */
+              done = !next (&results);
+              delta_done = !next (&delta_results);
+            }
+          else if (state == COMPARE_RESULTS_NEW)
+            {
+              /* "Used" just the 'delta_results' result. */
               delta_done = !next (&delta_results);
             }
           else
@@ -14127,36 +14360,57 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   /* Print result counts. */
 
-  PRINT (out,
-           "<result_count>"
-           "%i"
-           "<full>%i</full>"
-           "<filtered>%i</filtered>"
-           "<debug><full>%i</full><filtered>%i</filtered></debug>"
-           "<hole><full>%i</full><filtered>%i</filtered></hole>"
-           "<info><full>%i</full><filtered>%i</filtered></info>"
-           "<log><full>%i</full><filtered>%i</filtered></log>"
-           "<warning><full>%i</full><filtered>%i</filtered></warning>"
-           "<false_positive>"
-           "<full>%i</full>"
-           "<filtered>%i</filtered>"
-           "</false_positive>"
-           "</result_count>",
-           result_count,
-           result_count,
-           filtered_result_count,
-           debugs,
-           (strchr (levels, 'd') ? f_debugs : 0),
-           holes,
-           (strchr (levels, 'h') ? f_holes : 0),
-           infos,
-           (strchr (levels, 'l') ? f_infos : 0),
-           logs,
-           (strchr (levels, 'g') ? f_logs : 0),
-           warnings,
-           (strchr (levels, 'm') ? f_warnings : 0),
-           false_positives,
-           (strchr (levels, 'f') ? f_false_positives : 0));
+  if (delta)
+    PRINT (out,
+             "<result_count>"
+             "<filtered>%i</filtered>"
+             "<debug><filtered>%i</filtered></debug>"
+             "<hole><filtered>%i</filtered></hole>"
+             "<info><filtered>%i</filtered></info>"
+             "<log><filtered>%i</filtered></log>"
+             "<warning><filtered>%i</filtered></warning>"
+             "<false_positive>"
+             "<filtered>%i</filtered>"
+             "</false_positive>"
+             "</result_count>",
+             filtered_result_count,
+             (strchr (levels, 'd') ? f_debugs : 0),
+             (strchr (levels, 'h') ? f_holes : 0),
+             (strchr (levels, 'l') ? f_infos : 0),
+             (strchr (levels, 'g') ? f_logs : 0),
+             (strchr (levels, 'm') ? f_warnings : 0),
+             (strchr (levels, 'f') ? f_false_positives : 0));
+  else
+    PRINT (out,
+             "<result_count>"
+             "%i"
+             "<full>%i</full>"
+             "<filtered>%i</filtered>"
+             "<debug><full>%i</full><filtered>%i</filtered></debug>"
+             "<hole><full>%i</full><filtered>%i</filtered></hole>"
+             "<info><full>%i</full><filtered>%i</filtered></info>"
+             "<log><full>%i</full><filtered>%i</filtered></log>"
+             "<warning><full>%i</full><filtered>%i</filtered></warning>"
+             "<false_positive>"
+             "<full>%i</full>"
+             "<filtered>%i</filtered>"
+             "</false_positive>"
+             "</result_count>",
+             result_count,
+             result_count,
+             filtered_result_count,
+             debugs,
+             (strchr (levels, 'd') ? f_debugs : 0),
+             holes,
+             (strchr (levels, 'h') ? f_holes : 0),
+             infos,
+             (strchr (levels, 'l') ? f_infos : 0),
+             logs,
+             (strchr (levels, 'g') ? f_logs : 0),
+             warnings,
+             (strchr (levels, 'm') ? f_warnings : 0),
+             false_positives,
+             (strchr (levels, 'f') ? f_false_positives : 0));
 
   if (result_hosts_only)
     {
