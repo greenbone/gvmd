@@ -13450,6 +13450,102 @@ dump (GArray *ports)
 #endif
 
 /**
+ * @brief Add a port to a port tree.
+ *
+ * @param[in]  ports    The tree.
+ * @param[in]  results  Result iterator on result whose port to add.
+ */
+static void
+add_port (GTree *ports, iterator_t *results)
+{
+  const char *old_type, *type, *port, *host;
+  GTree *host_ports;
+
+  /* Ensure there's an inner tree for the host. */
+
+  host = result_iterator_host (results);
+  host_ports = g_tree_lookup (ports, host);
+  if (host_ports == NULL)
+    {
+      host_ports = g_tree_new_full ((GCompareDataFunc) strcmp, NULL, g_free,
+                                    g_free);
+      g_tree_insert (ports, g_strdup (host), host_ports);
+    }
+
+  /* Ensure the highest threat is recorded for the port in the inner tree. */
+
+  port = result_iterator_port (results);
+  type = result_iterator_type (results);
+  old_type = g_tree_lookup (host_ports, port);
+  tracef ("   delta: %s: adding %s threat %s on host %s", __FUNCTION__,
+          port, type, host);
+  if (old_type == NULL)
+    g_tree_insert (host_ports, g_strdup (port), g_strdup (type));
+  else if (collate_message_type (NULL,
+                                 strlen (type), type,
+                                 strlen (old_type), old_type)
+           > 0)
+    g_tree_replace (host_ports, g_strdup (port), g_strdup (type));
+}
+
+/**
+ * @brief Print delta host ports.
+ *
+ * @param[in]  key     Port.
+ * @param[in]  value   Threat.
+ * @param[in]  data    Host and stream.
+ */
+static gboolean
+print_host_port (gpointer key, gpointer value, gpointer data)
+{
+  gpointer *host_and_stream;
+  host_and_stream = (gpointer*) data;
+  tracef ("   delta: %s: host %s port %s", __FUNCTION__,
+          (gchar*) host_and_stream[0], (gchar*) key);
+  fprintf ((FILE*) host_and_stream[1],
+           "<port>"
+           "<host>%s</host>"
+           "%s"
+           "<threat>%s</threat>"
+           "</port>",
+           (gchar*) host_and_stream[0],
+           (gchar*) key,
+           manage_result_type_threat ((gchar*) value));
+  return FALSE;
+}
+
+/**
+ * @brief Print delta ports.
+ *
+ * @param[in]  key     Host.
+ * @param[in]  value   Port tree.
+ * @param[in]  stream  Stream.
+ */
+static gboolean
+print_host_ports (gpointer key, gpointer value, gpointer stream)
+{
+  gpointer host_and_stream[2];
+  host_and_stream[0] = key;
+  host_and_stream[1] = stream;
+  tracef ("   delta: %s: host %s", __FUNCTION__, (gchar*) key);
+  g_tree_foreach ((GTree*) value, print_host_port, host_and_stream);
+  return FALSE;
+}
+
+/**
+ * @brief Free delta host ports.
+ *
+ * @param[in]  ports  Ports.
+ * @param[in]  dummy  Dummy.
+ */
+static gboolean
+free_host_ports (GTree *host_ports, gpointer dummy)
+{
+  g_tree_destroy (host_ports);
+  return FALSE;
+}
+
+/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
@@ -13650,139 +13746,140 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   /* Port summary. */
 
-  {
-    gchar *last_port, *last_host;
-    GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
-
-    init_result_iterator
-     (&results, report, 0, NULL,
-      first_result,
-      max_results,
-      /* Sort by the requested field in the requested order, in case there is
-       * a first_result and/or max_results (these are applied after the
-       * sorting). */
-      sort_order,
-      sort_field,
-      levels,
-      search_phrase,
-      min_cvss_base,
-      apply_overrides);
-
-    /* Buffer the results, removing duplicates. */
-
-    last_port = NULL;
-    last_host = NULL;
-    while (next (&results))
-      {
-        const char *port = result_iterator_port (&results);
-        const char *host = result_iterator_host (&results);
-
-        if (last_port == NULL || strcmp (port, last_port)
-            || strcmp (host, last_host))
-          {
-            const char *type;
-            gchar *item;
-            int port_len, type_len;
-
-            g_free (last_port);
-            last_port = g_strdup (port);
-            g_free (last_host);
-            last_host = g_strdup (host);
-
-            type = result_iterator_type (&results);
-            port_len = strlen (port);
-            type_len = strlen (type);
-            item = g_malloc (port_len
-                              + type_len
-                              + strlen (host)
-                              + 3);
-            g_array_append_val (ports, item);
-            strcpy (item, port);
-            strcpy (item + port_len + 1, type);
-            strcpy (item + port_len + type_len + 2, host);
-          }
-
-      }
-    g_free (last_port);
-    g_free (last_host);
-
-    /* Handle sorting by threat and ROWID. */
-
-    if (sort_field == NULL || strcmp (sort_field, "port"))
-      {
-        int index, length;
-
-        /** @todo Sort by ROWID if was requested. */
-
-        /* Sort by port then threat. */
-
-        g_array_sort (ports, compare_port_threat);
-
-        /* Remove duplicates. */
-
-        last_port = NULL;
-        last_host = NULL;
-        for (index = 0, length = ports->len; index < length; index++)
-          {
-            char *port = g_array_index (ports, char*, index);
-            char *host = port + strlen (port) + 1;
-            host += strlen (host) + 1;
-            if (last_port
-                && (strcmp (port, last_port) == 0)
-                && (strcmp (host, last_host) == 0))
-              {
-                g_array_remove_index (ports, index);
-                length = ports->len;
-                index--;
-              }
-            else
-              {
-                last_port = port;
-                last_host = host;
-              }
-          }
-
-        /* Sort by threat. */
-
-        if (sort_order)
-          g_array_sort (ports, compare_message_types_asc);
-        else
-          g_array_sort (ports, compare_message_types_desc);
-      }
-
-    /* Write to file from the buffer. */
-
-    PRINT (out,
-             "<ports"
-             " start=\"%i\""
-             " max=\"%i\">",
-             /* Add 1 for 1 indexing. */
-             first_result + 1,
-             max_results);
+  if (delta == 0)
     {
-      gchar *item;
-      int index = 0;
+      gchar *last_port, *last_host;
+      GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
 
-      while ((item = g_array_index (ports, gchar*, index++)))
+      init_result_iterator
+       (&results, report, 0, NULL,
+        first_result,
+        max_results,
+        /* Sort by the requested field in the requested order, in case there is
+         * a first_result and/or max_results (these are applied after the
+         * sorting). */
+        sort_order,
+        sort_field,
+        levels,
+        search_phrase,
+        min_cvss_base,
+        apply_overrides);
+
+      /* Buffer the results, removing duplicates. */
+
+      last_port = NULL;
+      last_host = NULL;
+      while (next (&results))
         {
-          int port_len = strlen (item);
-          int type_len = strlen (item + port_len + 1);
-          PRINT (out,
-                   "<port>"
-                   "<host>%s</host>"
-                   "%s"
-                   "<threat>%s</threat>"
-                   "</port>",
-                   item + port_len + type_len + 2,
-                   item,
-                   manage_result_type_threat (item + port_len + 1));
-          g_free (item);
+          const char *port = result_iterator_port (&results);
+          const char *host = result_iterator_host (&results);
+
+          if (last_port == NULL || strcmp (port, last_port)
+              || strcmp (host, last_host))
+            {
+              const char *type;
+              gchar *item;
+              int port_len, type_len;
+
+              g_free (last_port);
+              last_port = g_strdup (port);
+              g_free (last_host);
+              last_host = g_strdup (host);
+
+              type = result_iterator_type (&results);
+              port_len = strlen (port);
+              type_len = strlen (type);
+              item = g_malloc (port_len
+                                + type_len
+                                + strlen (host)
+                                + 3);
+              g_array_append_val (ports, item);
+              strcpy (item, port);
+              strcpy (item + port_len + 1, type);
+              strcpy (item + port_len + type_len + 2, host);
+            }
+
         }
-      g_array_free (ports, TRUE);
+      g_free (last_port);
+      g_free (last_host);
+
+      /* Handle sorting by threat and ROWID. */
+
+      if (sort_field == NULL || strcmp (sort_field, "port"))
+        {
+          int index, length;
+
+          /** @todo Sort by ROWID if was requested. */
+
+          /* Sort by port then threat. */
+
+          g_array_sort (ports, compare_port_threat);
+
+          /* Remove duplicates. */
+
+          last_port = NULL;
+          last_host = NULL;
+          for (index = 0, length = ports->len; index < length; index++)
+            {
+              char *port = g_array_index (ports, char*, index);
+              char *host = port + strlen (port) + 1;
+              host += strlen (host) + 1;
+              if (last_port
+                  && (strcmp (port, last_port) == 0)
+                  && (strcmp (host, last_host) == 0))
+                {
+                  g_array_remove_index (ports, index);
+                  length = ports->len;
+                  index--;
+                }
+              else
+                {
+                  last_port = port;
+                  last_host = host;
+                }
+            }
+
+          /* Sort by threat. */
+
+          if (sort_order)
+            g_array_sort (ports, compare_message_types_asc);
+          else
+            g_array_sort (ports, compare_message_types_desc);
+        }
+
+      /* Write to file from the buffer. */
+
+      PRINT (out,
+               "<ports"
+               " start=\"%i\""
+               " max=\"%i\">",
+               /* Add 1 for 1 indexing. */
+               first_result + 1,
+               max_results);
+      {
+        gchar *item;
+        int index = 0;
+
+        while ((item = g_array_index (ports, gchar*, index++)))
+          {
+            int port_len = strlen (item);
+            int type_len = strlen (item + port_len + 1);
+            PRINT (out,
+                     "<port>"
+                     "<host>%s</host>"
+                     "%s"
+                     "<threat>%s</threat>"
+                     "</port>",
+                     item + port_len + type_len + 2,
+                     item,
+                     manage_result_type_threat (item + port_len + 1));
+            g_free (item);
+          }
+        g_array_free (ports, TRUE);
+      }
+      PRINT (out, "</ports>");
+      cleanup_iterator (&results);
     }
-    PRINT (out, "</ports>");
-    cleanup_iterator (&results);
-  }
 
   /* Prepare result counts. */
 
@@ -13843,11 +13940,17 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     {
       gboolean done, delta_done;
       int changed, gone, new, same;
+      /* A tree of host, tree pairs, where the inner tree is a sorted tree
+       * of port, threat pairs. */
+      GTree *ports;
 
       changed = (strchr (delta_states, 'c') != NULL);
       gone = (strchr (delta_states, 'g') != NULL);
       new = (strchr (delta_states, 'n') != NULL);
       same = (strchr (delta_states, 's') != NULL);
+
+      ports = g_tree_new_full ((GCompareDataFunc) strcmp, NULL, g_free,
+                               (GDestroyNotify) free_host_ports);
 
       /* Compare the results in the two iterators, which are sorted. */
 
@@ -13925,6 +14028,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                     if (result_hosts_only)
                       array_add_new_string (result_hosts,
                                             result_iterator_host (&delta_results));
+                    add_port (ports, &delta_results);
                     max_results--;
                     if (max_results == 0)
                       break;
@@ -13963,6 +14067,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                     if (result_hosts_only)
                       array_add_new_string (result_hosts,
                                             result_iterator_host (&results));
+                    add_port (ports, &results);
                     max_results--;
                     if (max_results == 0)
                       break;
@@ -14068,18 +14173,26 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           if (state == COMPARE_RESULTS_GONE)
             {
               /* "Used" just the 'results' result. */
-              if (used && result_hosts_only)
-                array_add_new_string (result_hosts,
-                                      result_iterator_host (&results));
+              if (used)
+                {
+                  if (result_hosts_only)
+                    array_add_new_string (result_hosts,
+                                          result_iterator_host (&results));
+                  add_port (ports, &results);
+                }
               done = !next (&results);
             }
           else if ((state == COMPARE_RESULTS_SAME)
                    || (state == COMPARE_RESULTS_CHANGED))
             {
               /* "Used" both results. */
-              if (used && result_hosts_only)
-                array_add_new_string (result_hosts,
-                                      result_iterator_host (&results));
+              if (used)
+                {
+                  if (result_hosts_only)
+                    array_add_new_string (result_hosts,
+                                          result_iterator_host (&results));
+                  add_port (ports, &results);
+                }
               done = !next (&results);
               delta_done = !next (&delta_results);
             }
@@ -14119,6 +14232,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                     array_add_new_string (result_hosts,
                                           result_iterator_host
                                            (&delta_results));
+
+                  add_port (ports, &delta_results);
                 }
               delta_done = !next (&delta_results);
             }
@@ -14336,26 +14451,42 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           else
             assert (0);
         }
+      PRINT (out, "</results>");
+
+      /* Write ports to file. */
+
+      PRINT (out,
+               "<ports"
+               " start=\"%i\""
+               " max=\"%i\">",
+               /* Add 1 for 1 indexing. */
+               first_result + 1,
+               max_results);
+      g_tree_foreach (ports, print_host_ports, out);
+      g_tree_destroy (ports);
+      PRINT (out, "</ports>");
     }
   else
-    while (next (&results))
-      {
-        GString *buffer = g_string_new ("");
-        buffer_results_xml (buffer,
-                            &results,
-                            task,
-                            notes,
-                            notes_details,
-                            overrides,
-                            overrides_details,
-                            NULL);
-        PRINT (out, "%s", buffer->str);
-        g_string_free (buffer, TRUE);
-        if (result_hosts_only)
-          array_add_new_string (result_hosts,
-                                result_iterator_host (&results));
-      }
-  PRINT (out, "</results>");
+    {
+      while (next (&results))
+        {
+          GString *buffer = g_string_new ("");
+          buffer_results_xml (buffer,
+                              &results,
+                              task,
+                              notes,
+                              notes_details,
+                              overrides,
+                              overrides_details,
+                              NULL);
+          PRINT (out, "%s", buffer->str);
+          g_string_free (buffer, TRUE);
+          if (result_hosts_only)
+            array_add_new_string (result_hosts,
+                                  result_iterator_host (&results));
+        }
+      PRINT (out, "</results>");
+    }
   cleanup_iterator (&results);
 
   /* Print result counts. */

@@ -1,3 +1,10 @@
+2011-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (add_port, print_host_port, print_host_ports)
+	(free_host_ports): New functions.
+	(print_report_xml): For the port list, separate the delta and normal
+	cases, accumulating the delta ports during the result comparisons.
+
 2011-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (compare_and_buffer_results): Skip actual buffering
