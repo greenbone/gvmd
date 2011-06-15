@@ -13588,6 +13588,8 @@ print_host_ports_desc (gpointer key, gpointer value, gpointer stream)
                manage_result_type_threat ((gchar*) port_threat[1]));
     }
 
+  array_free (ports);
+
   return FALSE;
 }
 
@@ -13673,6 +13675,8 @@ print_host_ports_by_type (gpointer key, gpointer value, gpointer stream,
                manage_result_type_threat ((gchar*) port_threat[1]));
       index++;
     }
+
+  array_free (ports);
 
   return FALSE;
 }

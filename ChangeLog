@@ -1,5 +1,10 @@
 2011-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_host_ports_desc, print_host_ports_by_type): Free
+	array afterwards.
+
+2011-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_host_ports_desc)
 	(print_host_ports_by_type_desc, print_host_ports_by_type_asc): New
 	functions.
