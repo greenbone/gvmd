@@ -1,3 +1,10 @@
+2011-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (array_add_port, compare_ports_threat)
+	(print_host_ports_by_type): New functions.
+	(print_report_xml): Ensure that the port list is sorted by the right
+	field.
+
 2011-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (add_port, print_host_port, print_host_ports)

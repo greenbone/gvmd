@@ -13533,6 +13533,86 @@ print_host_ports (gpointer key, gpointer value, gpointer stream)
 }
 
 /**
+ * @brief Add port to ports array.
+ *
+ * @param[in]  key     Port.
+ * @param[in]  value   Threat.
+ * @param[in]  ports   Ports array.
+ */
+static gboolean
+array_add_port (gpointer key, gpointer value, gpointer ports)
+{
+  gpointer *port_threat;
+  port_threat = g_malloc (2 * sizeof (gpointer));
+  port_threat[0] = key;
+  port_threat[1] = value;
+  array_add ((array_t*) ports, port_threat);
+  return FALSE;
+}
+
+/**
+ * @brief Add port to ports array.
+ *
+ * @param[in]  one  First.
+ * @param[in]  two  Second.
+ */
+static gint
+compare_ports_threat (gconstpointer one, gconstpointer two)
+{
+  gpointer *port_threat_one, *port_threat_two;
+  port_threat_one = *((gpointer**) one);
+  port_threat_two = *((gpointer**) two);
+  return collate_message_type (NULL,
+                               strlen (port_threat_one[1]), port_threat_one[1],
+                               strlen (port_threat_two[1]), port_threat_two[1]);
+}
+
+/**
+ * @brief Print delta ports, ordering by threat.
+ *
+ * @param[in]  key     Host.
+ * @param[in]  value   Port tree.
+ * @param[in]  stream  Stream.
+ */
+static gboolean
+print_host_ports_by_type (gpointer key, gpointer value, gpointer stream)
+{
+  guint index;
+  array_t *ports;
+
+  tracef ("   delta: %s: host %s", __FUNCTION__, (gchar*) key);
+
+  /* Convert tree to array. */
+
+  ports = make_array ();
+  g_tree_foreach ((GTree*) value, array_add_port, ports);
+
+  /* Sort the array. */
+
+  g_ptr_array_sort (ports, compare_ports_threat);
+
+  /* Print the sorted array. */
+
+  index = ports->len;
+  while (index--)
+    {
+      gpointer *port_threat;
+      port_threat = g_ptr_array_index (ports, index);
+      fprintf ((FILE*) stream,
+               "<port>"
+               "<host>%s</host>"
+               "%s"
+               "<threat>%s</threat>"
+               "</port>",
+               (gchar*) key,
+               (gchar*) port_threat[0],
+               manage_result_type_threat ((gchar*) port_threat[1]));
+    }
+
+  return FALSE;
+}
+
+/**
  * @brief Free delta host ports.
  *
  * @param[in]  ports  Ports.
@@ -14462,7 +14542,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                /* Add 1 for 1 indexing. */
                first_result + 1,
                max_results);
-      g_tree_foreach (ports, print_host_ports, out);
+      if (sort_field == NULL || strcmp (sort_field, "port"))
+        g_tree_foreach (ports, print_host_ports_by_type, out);
+      else
+        g_tree_foreach (ports, print_host_ports, out);
       g_tree_destroy (ports);
       PRINT (out, "</ports>");
     }
