@@ -13551,31 +13551,14 @@ array_add_port (gpointer key, gpointer value, gpointer ports)
 }
 
 /**
- * @brief Add port to ports array.
- *
- * @param[in]  one  First.
- * @param[in]  two  Second.
- */
-static gint
-compare_ports_threat (gconstpointer one, gconstpointer two)
-{
-  gpointer *port_threat_one, *port_threat_two;
-  port_threat_one = *((gpointer**) one);
-  port_threat_two = *((gpointer**) two);
-  return collate_message_type (NULL,
-                               strlen (port_threat_one[1]), port_threat_one[1],
-                               strlen (port_threat_two[1]), port_threat_two[1]);
-}
-
-/**
- * @brief Print delta ports, ordering by threat.
+ * @brief Print delta ports, in descending order.
  *
  * @param[in]  key     Host.
  * @param[in]  value   Port tree.
  * @param[in]  stream  Stream.
  */
 static gboolean
-print_host_ports_by_type (gpointer key, gpointer value, gpointer stream)
+print_host_ports_desc (gpointer key, gpointer value, gpointer stream)
 {
   guint index;
   array_t *ports;
@@ -13587,11 +13570,7 @@ print_host_ports_by_type (gpointer key, gpointer value, gpointer stream)
   ports = make_array ();
   g_tree_foreach ((GTree*) value, array_add_port, ports);
 
-  /* Sort the array. */
-
-  g_ptr_array_sort (ports, compare_ports_threat);
-
-  /* Print the sorted array. */
+  /* Print the array backwards. */
 
   index = ports->len;
   while (index--)
@@ -13610,6 +13589,118 @@ print_host_ports_by_type (gpointer key, gpointer value, gpointer stream)
     }
 
   return FALSE;
+}
+
+/**
+ * @brief Compare port threats, ascending.
+ *
+ * @param[in]  one  First.
+ * @param[in]  two  Second.
+ */
+static gint
+compare_ports_threat (gconstpointer one, gconstpointer two)
+{
+  gpointer *port_threat_one, *port_threat_two;
+  port_threat_one = *((gpointer**) one);
+  port_threat_two = *((gpointer**) two);
+  return collate_message_type (NULL,
+                               strlen (port_threat_one[1]), port_threat_one[1],
+                               strlen (port_threat_two[1]), port_threat_two[1]);
+}
+
+/**
+ * @brief Compare port threats, descending.
+ *
+ * @param[in]  one  First.
+ * @param[in]  two  Second.
+ */
+static gint
+compare_ports_threat_desc (gconstpointer one, gconstpointer two)
+{
+  gpointer *port_threat_one, *port_threat_two;
+  port_threat_one = *((gpointer**) one);
+  port_threat_two = *((gpointer**) two);
+  return - collate_message_type (NULL,
+                                 strlen (port_threat_one[1]), port_threat_one[1],
+                                 strlen (port_threat_two[1]), port_threat_two[1]);
+}
+
+/**
+ * @brief Print delta ports, ordering by threat.
+ *
+ * @param[in]  key        Host.
+ * @param[in]  value      Port tree.
+ * @param[in]  stream     Stream.
+ * @param[in]  ascending  Ascending or descending.
+ */
+static gboolean
+print_host_ports_by_type (gpointer key, gpointer value, gpointer stream,
+                          int ascending)
+{
+  guint index, len;
+  array_t *ports;
+
+  tracef ("   delta: %s: host %s", __FUNCTION__, (gchar*) key);
+
+  /* Convert tree to array. */
+
+  ports = make_array ();
+  g_tree_foreach ((GTree*) value, array_add_port, ports);
+
+  /* Sort the array. */
+
+  if (ascending)
+    g_ptr_array_sort (ports, compare_ports_threat);
+  else
+    g_ptr_array_sort (ports, compare_ports_threat_desc);
+
+  /* Print the sorted array. */
+
+  index = 0;
+  len = ports->len;
+  while (index < len)
+    {
+      gpointer *port_threat;
+      port_threat = g_ptr_array_index (ports, index);
+      fprintf ((FILE*) stream,
+               "<port>"
+               "<host>%s</host>"
+               "%s"
+               "<threat>%s</threat>"
+               "</port>",
+               (gchar*) key,
+               (gchar*) port_threat[0],
+               manage_result_type_threat ((gchar*) port_threat[1]));
+      index++;
+    }
+
+  return FALSE;
+}
+
+/**
+ * @brief Print delta ports, ordering by threat descending.
+ *
+ * @param[in]  key     Host.
+ * @param[in]  value   Port tree.
+ * @param[in]  stream  Stream.
+ */
+static gboolean
+print_host_ports_by_type_desc (gpointer key, gpointer value, gpointer stream)
+{
+  return print_host_ports_by_type (key, value, stream, 0);
+}
+
+/**
+ * @brief Print delta ports, ordering by threat ascending.
+ *
+ * @param[in]  key     Host.
+ * @param[in]  value   Port tree.
+ * @param[in]  stream  Stream.
+ */
+static gboolean
+print_host_ports_by_type_asc (gpointer key, gpointer value, gpointer stream)
+{
+  return print_host_ports_by_type (key, value, stream, 1);
 }
 
 /**
@@ -14543,9 +14634,16 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                first_result + 1,
                max_results);
       if (sort_field == NULL || strcmp (sort_field, "port"))
-        g_tree_foreach (ports, print_host_ports_by_type, out);
-      else
+        {
+          if (sort_order)
+            g_tree_foreach (ports, print_host_ports_by_type_asc, out);
+          else
+            g_tree_foreach (ports, print_host_ports_by_type_desc, out);
+        }
+      else if (sort_order)
         g_tree_foreach (ports, print_host_ports, out);
+      else
+        g_tree_foreach (ports, print_host_ports_desc, out);
       g_tree_destroy (ports);
       PRINT (out, "</ports>");
     }

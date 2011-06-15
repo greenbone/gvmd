@@ -1,5 +1,14 @@
 2011-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_host_ports_desc)
+	(print_host_ports_by_type_desc, print_host_ports_by_type_asc): New
+	functions.
+	(print_host_ports_by_type): Add ascending flag.
+	(print_report_xml): Ensure that the port list is sorted in the right
+	order.
+
+2011-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (array_add_port, compare_ports_threat)
 	(print_host_ports_by_type): New functions.
 	(print_report_xml): Ensure that the port list is sorted by the right
