@@ -13797,10 +13797,33 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (delta)
     {
       delta_states = delta_states ? delta_states : "cgns";
+      report_scan_run_status (delta, &run_status);
 
       uuid = report_uuid (delta);
-      PRINT (out, "<delta><report id=\"%s\"/></delta>", uuid);
-      free (uuid);
+      PRINT (out,
+             "<delta>"
+             "<report id=\"%s\">"
+             "<scan_run_status>%s</scan_run_status>",
+             uuid,
+             run_status_name (run_status
+                               ? run_status
+                               : TASK_STATUS_INTERNAL_ERROR));
+
+      start_time = scan_start_time (delta);
+      PRINT (out,
+             "<scan_start>%s</scan_start>",
+             start_time);
+      free (start_time);
+
+      end_time = scan_end_time (delta);
+      PRINT (out,
+             "<scan_end>%s</scan_end>",
+             end_time);
+      free (end_time);
+
+      PRINT (out,
+             "</report>"
+             "</delta>");
     }
 
   PRINT (out, "<report_format>");
