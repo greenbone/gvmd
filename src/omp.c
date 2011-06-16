@@ -131,7 +131,8 @@
 
 /** @todo Exported for manage_sql.c. */
 void
-buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int, const char *);
+buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int,
+                    const char *, iterator_t *);
 
 
 /* Helper functions. */
@@ -7919,6 +7920,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     0,  /* Note details. */
                                     0,  /* Overrides. */
                                     0,  /* Override details. */
+                                    NULL,
                                     NULL);
               cleanup_iterator (&results);
 
@@ -8061,6 +8063,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     0,  /* Note details. */
                                     0,  /* Overrides. */
                                     0,  /* Override details. */
+                                    NULL,
                                     NULL);
               cleanup_iterator (&results);
 
@@ -8154,13 +8157,15 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
  * @param[in]  include_notes_details  Whether to include details of notes.
  * @param[in]  include_overrides          Whether to include overrides.
  * @param[in]  include_overrides_details  Whether to include details of overrides.
- * @param[in]  delta                  Delta state of result, or NULL.
+ * @param[in]  delta_state            Delta state of result, or NULL.
+ * @param[in]  delta_results          Iterator for delta result to include, or
+ *                                    NULL.
  */
 void
 buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int include_notes, int include_notes_details,
                     int include_overrides, int include_overrides_details,
-                    const char *delta)
+                    const char *delta_state, iterator_t *delta_results)
 {
   const char *descr = result_iterator_descr (results);
   gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
@@ -8256,8 +8261,17 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       g_string_append (buffer, "</overrides>");
     }
 
-  if (delta)
-    g_string_append_printf (buffer, "<delta>%s</delta>", delta);
+  if (delta_state || delta_results)
+    {
+      g_string_append (buffer, "<delta>");
+      if (delta_state)
+        g_string_append_printf (buffer, "%s", delta_state);
+      if (delta_results)
+        buffer_results_xml (buffer, delta_results, task, include_notes,
+                            include_notes_details, include_overrides,
+                            include_overrides_details, delta_state, NULL);
+      g_string_append (buffer, "</delta>");
+    }
 
   g_string_append (buffer, "</result>");
 }
@@ -9783,6 +9797,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_results_data->notes_details,
                                       get_results_data->overrides,
                                       get_results_data->overrides_details,
+                                      NULL,
                                       NULL);
                   SEND_TO_CLIENT_OR_FAIL (buffer->str);
                   g_string_free (buffer, TRUE);

@@ -1,5 +1,13 @@
 2011-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (buffer_results_xml): Add delta_results arg.  If given print
+	delta RESULT inside DELTA.
+
+	* src/manage_sql.c (compare_and_buffer_results): Pass delta_results to
+	buffer_results_xml in "changed" case.
+
+2011-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Add run status and times to
 	REPORT/DELTA/REPORT.
 
