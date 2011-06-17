@@ -1,7 +1,13 @@
+2011-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (strdiff): New function.  Compare texts with the diff command.
+	(buffer_results_xml): Add a "diff" of the result descriptions when there's
+	a delta result.
+
 2011-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (buffer_results_xml): Add delta_results arg.  If given print
-	delta RESULT inside DELTA.
+	delta RESULT inside DELTA.  Update callers.
 
 	* src/manage_sql.c (compare_and_buffer_results): Pass delta_results to
 	buffer_results_xml in "changed" case.

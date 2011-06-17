@@ -8144,6 +8144,107 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
   free (oid);
 }
 
+/**
+ * @brief Compare two string with the "diff" command.
+ *
+ * @param[in]  buffer  Buffer into which to buffer results.
+ * @param[in]  one     First string.
+ * @param[in]  two     Second string.
+ *
+ * @return Output of "diff", or NULL on error.
+ */
+gchar *
+strdiff (const gchar *one, const gchar *two)
+{
+  gchar **cmd, *ret, *one_file, *two_file;
+  gint exit_status;
+  gchar *standard_out = NULL;
+  gchar *standard_err = NULL;
+  char dir[] = "/tmp/openvasmd-strdiff-XXXXXX";
+  GError *error = NULL;
+
+  if (mkdtemp (dir) == NULL)
+    return NULL;
+
+  one_file = g_build_filename (dir, "Report 1", NULL);
+
+  g_file_set_contents (one_file, one, strlen (one), &error);
+  if (error)
+    {
+      g_warning ("%s", error->message);
+      g_error_free (error);
+      file_utils_rmdir_rf (dir);
+      g_free (one_file);
+      return NULL;
+    }
+
+  two_file = g_build_filename (dir, "Report 2", NULL);
+
+  g_file_set_contents (two_file, two, strlen (two), &error);
+  if (error)
+    {
+      g_warning ("%s", error->message);
+      g_error_free (error);
+      file_utils_rmdir_rf (dir);
+      g_free (one_file);
+      g_free (two_file);
+      return NULL;
+    }
+
+  cmd = (gchar **) g_malloc (5 * sizeof (gchar *));
+
+  cmd[0] = g_strdup ("diff");
+  cmd[1] = g_strdup ("-u");
+  cmd[2] = g_strdup ("Report 1");
+  cmd[3] = g_strdup ("Report 2");
+  cmd[4] = NULL;
+  g_debug ("%s: Spawning in %s: %s \"%s\" \"%s\"\n",
+           __FUNCTION__, dir,
+           cmd[0], cmd[1], cmd[2]);
+  if ((g_spawn_sync (dir,
+                     cmd,
+                     NULL,                 /* Environment. */
+                     G_SPAWN_SEARCH_PATH,
+                     NULL,                 /* Setup func. */
+                     NULL,
+                     &standard_out,
+                     &standard_err,
+                     &exit_status,
+                     NULL) == FALSE)
+      || (WIFEXITED (exit_status) == 0)
+      || WEXITSTATUS (exit_status))
+    {
+      if (WEXITSTATUS (exit_status) == 1)
+        ret = standard_out;
+      else
+        {
+          g_debug ("%s: failed to run diff: %d (WIF %i, WEX %i)",
+                   __FUNCTION__,
+                   exit_status,
+                   WIFEXITED (exit_status),
+                   WEXITSTATUS (exit_status));
+          g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
+          g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+          ret = NULL;
+          g_free (standard_out);
+        }
+    }
+  else
+    ret = standard_out;
+
+  g_free (cmd[0]);
+  g_free (cmd[1]);
+  g_free (cmd[2]);
+  g_free (cmd[3]);
+  g_free (cmd);
+  g_free (standard_err);
+  g_free (one_file);
+  g_free (two_file);
+  file_utils_rmdir_rf (dir);
+
+  return ret;
+}
+
 /** @todo Exported for manage_sql.c. */
 /**
  * @brief Buffer XML for some results.
@@ -8267,9 +8368,30 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       if (delta_state)
         g_string_append_printf (buffer, "%s", delta_state);
       if (delta_results)
-        buffer_results_xml (buffer, delta_results, task, include_notes,
-                            include_notes_details, include_overrides,
-                            include_overrides_details, delta_state, NULL);
+        {
+          gchar *diff;
+          buffer_results_xml (buffer, delta_results, task, include_notes,
+                              include_notes_details, include_overrides,
+                              include_overrides_details, delta_state, NULL);
+          diff = strdiff (result_iterator_descr (results),
+                          result_iterator_descr (delta_results));
+          if (diff)
+            {
+              gchar **split, *diff_xml;
+              /* Remove the leading filename lines. */
+              split = g_strsplit ((gchar*) diff, "\n", 3);
+              if (split[0] && split[1] && split[2])
+                diff_xml = g_markup_escape_text (split[2], strlen (split[2]));
+              else
+                diff_xml = g_markup_escape_text (diff, strlen (diff));
+              g_strfreev (split);
+              g_string_append_printf (buffer, "<diff>%s</diff>", diff_xml);
+              g_free (diff_xml);
+              g_free (diff);
+            }
+          else
+            g_string_append (buffer, "<diff>Error creating diff.</diff>");
+        }
       g_string_append (buffer, "</delta>");
     }
 
