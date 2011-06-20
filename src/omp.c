@@ -8317,8 +8317,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   free (uuid);
 
-  if (descr) g_free (nl_descr);
-
   if (include_notes)
     {
       g_string_append (buffer, "<notes>");
@@ -8371,12 +8369,17 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         g_string_append_printf (buffer, "%s", delta_state);
       if (delta_results)
         {
-          gchar *diff;
+          gchar *diff, *delta_nl_descr;
+          const char *delta_descr;
           buffer_results_xml (buffer, delta_results, task, include_notes,
                               include_notes_details, include_overrides,
                               include_overrides_details, delta_state, NULL);
-          diff = strdiff (result_iterator_descr (results),
-                          result_iterator_descr (delta_results));
+          delta_descr = result_iterator_descr (delta_results);
+          delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
+                                       : NULL;
+          diff = strdiff (descr ? nl_descr : "",
+                          delta_descr ? delta_nl_descr : "");
+          g_free (delta_nl_descr);
           if (diff)
             {
               gchar **split, *diff_xml;
@@ -8396,6 +8399,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         }
       g_string_append (buffer, "</delta>");
     }
+
+  if (descr) g_free (nl_descr);
 
   g_string_append (buffer, "</result>");
 }

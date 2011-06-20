@@ -1,5 +1,9 @@
 2011-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (buffer_results_xml): Convert delta description newlines too.
+
+2011-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Include scan start and end times in report import.
 
 	* src/omp.c (create_report_data_t, create_report_data_reset): Add
