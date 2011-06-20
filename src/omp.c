@@ -8158,7 +8158,7 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
 gchar *
 strdiff (const gchar *one, const gchar *two)
 {
-  gchar **cmd, *ret, *one_file, *two_file;
+  gchar **cmd, *ret, *one_file, *two_file, *old_lc_all, *old_language;
   gint exit_status;
   gchar *standard_out = NULL;
   gchar *standard_err = NULL;
@@ -8190,6 +8190,20 @@ strdiff (const gchar *one, const gchar *two)
       file_utils_rmdir_rf (dir);
       g_free (one_file);
       g_free (two_file);
+      return NULL;
+    }
+
+  old_lc_all = getenv ("LC_ALL") ? g_strdup (getenv ("LC_ALL")) : NULL;
+  if (setenv ("LC_ALL", "C", 1) == -1)
+    {
+      g_warning ("%s: failed to set LC_ALL\n", __FUNCTION__);
+      return NULL;
+    }
+
+  old_language = getenv ("LANGUAGE") ? g_strdup (getenv ("LANGUAGE")) : NULL;
+  if (setenv ("LANGUAGE", "C", 1) == -1)
+    {
+      g_warning ("%s: failed to set LANGUAGE\n", __FUNCTION__);
       return NULL;
     }
 
@@ -8234,6 +8248,19 @@ strdiff (const gchar *one, const gchar *two)
   else
     ret = standard_out;
 
+  if (old_lc_all && (setenv ("LC_ALL", old_lc_all, 1) == -1))
+    {
+      g_warning ("%s: failed to reset LC_ALL\n", __FUNCTION__);
+      ret = NULL;
+    }
+  else if (old_language && (setenv ("LANGUAGE", old_language, 1) == -1))
+    {
+      g_warning ("%s: failed to reset LANGUAGE\n", __FUNCTION__);
+      ret = NULL;
+    }
+
+  g_free (old_lc_all);
+  g_free (old_language);
   g_free (cmd[0]);
   g_free (cmd[1]);
   g_free (cmd[2]);

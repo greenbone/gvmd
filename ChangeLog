@@ -1,5 +1,10 @@
 2011-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (strdiff): Set LANGUAGE and LC_ALL to C around diff
+	call, so that missing line break messages are in English.
+
+2011-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (buffer_results_xml): Convert delta description newlines too.
 
 2011-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
