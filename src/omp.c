@@ -934,6 +934,8 @@ typedef struct
   char *result_subnet;            ///< Subnet for current result.
   char *result_threat;            ///< Message type for current result.
   array_t *results;               ///< All results.
+  char *scan_end;                 ///< End time for a scan.
+  char *scan_start;               ///< Start time for a scan.
   char *task_comment;             ///< Comment for container task.
   char *task_id;                  ///< ID of container task.
   char *task_name;                ///< Name for container task.
@@ -974,6 +976,8 @@ create_report_data_reset (create_report_data_t *data)
         }
       array_free (data->results);
     }
+  free (data->scan_end);
+  free (data->scan_start);
   free (data->task_comment);
   free (data->task_id);
   free (data->task_name);
@@ -6300,12 +6304,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("SCAN_END", element_name) == 0)
           {
-            omp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_SCAN_END);
           }
         else if (strcasecmp ("SCAN_START", element_name) == 0)
           {
-            omp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_SCAN_START);
           }
         else if (strcasecmp ("SORT", element_name) == 0)
@@ -12235,6 +12237,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          create_report_data->task_id,
                          create_report_data->task_name,
                          create_report_data->task_comment,
+                         create_report_data->scan_start,
+                         create_report_data->scan_end,
                          create_report_data->host_starts,
                          create_report_data->host_ends,
                          &uuid))
@@ -12380,12 +12384,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_REPORT_RR_SCAN_END:
         assert (strcasecmp ("SCAN_END", element_name) == 0);
-        omp_parser->read_over = 0;
         set_client_state (CLIENT_CREATE_REPORT_RR);
         break;
       case CLIENT_CREATE_REPORT_RR_SCAN_START:
         assert (strcasecmp ("SCAN_START", element_name) == 0);
-        omp_parser->read_over = 0;
+        /* Tue Mar 22 20:28:05 2011 */
         set_client_state (CLIENT_CREATE_REPORT_RR);
         break;
       case CLIENT_CREATE_REPORT_RR_SORT:
@@ -16931,6 +16934,17 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_REPORT_RR_HOST_START_HOST:
         openvas_append_text (&create_report_data->host_start_host,
+                             text,
+                             text_len);
+        break;
+
+      case CLIENT_CREATE_REPORT_RR_SCAN_END:
+        openvas_append_text (&create_report_data->scan_end,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_REPORT_RR_SCAN_START:
+        openvas_append_text (&create_report_data->scan_start,
                              text,
                              text_len);
         break;

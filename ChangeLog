@@ -1,3 +1,18 @@
+2011-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Include scan start and end times in report import.
+
+	* src/omp.c (create_report_data_t, create_report_data_reset): Add
+	scan_start and scan_end.
+	(omp_xml_handle_start_element): Pass scan start and end times to
+	create_report.
+	(omp_xml_handle_text): Read scan start and end.
+
+	* src/manage_sql.c (create_report): Add scan_start and scan_end args.  Set
+	times on report.
+
+	* src/manage.h: Update header accordingly.
+
 2011-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (strdiff): New function.  Compare texts with the diff command.

@@ -9812,6 +9812,8 @@ create_current_report (task_t task, char **report_id, task_status_t status)
  * @param[in]   task_id       UUID of container task, or NULL to create new one.
  * @param[in]   task_name     Name for container task.
  * @param[in]   task_comment  Comment for container task.
+ * @param[in]   scan_start    Scan start time text.
+ * @param[in]   scan_end      Scan end time text.
  * @param[in]   host_starts   Array of create_report_result_t pointers.  Host
  *                            name in host, time in description.
  * @param[in]   host_ends     Array of create_report_result_t pointers.  Host
@@ -9823,7 +9825,8 @@ create_current_report (task_t task, char **report_id, task_status_t status)
  */
 int
 create_report (array_t *results, const char *task_id, const char *task_name,
-               const char *task_comment, array_t *host_ends,
+               const char *task_comment, const char *scan_start,
+               const char *scan_end, array_t *host_ends,
                array_t *host_starts, char **report_id)
 {
   int index;
@@ -9866,6 +9869,24 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   /* Create the report. */
 
   report = make_report (task, *report_id, TASK_STATUS_RUNNING);
+
+  if (scan_start)
+    {
+      gchar *quoted_start;
+      quoted_start = sql_quote (scan_start);
+      sql ("UPDATE reports SET start_time = '%s' WHERE ROWID = %llu;",
+           quoted_start,
+           report);
+    }
+
+  if (scan_end)
+    {
+      gchar *quoted_end;
+      quoted_end = sql_quote (scan_end);
+      sql ("UPDATE reports SET end_time = '%s' WHERE ROWID = %llu;",
+           quoted_end,
+           report);
+    }
 
   /* Show that the upload has started. */
 
