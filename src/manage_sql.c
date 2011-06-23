@@ -10619,11 +10619,62 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       g_free (new_type_sql);
     }
   else if (result)
-    sql = g_strdup_printf ("SELECT ROWID, subnet, host, port, nvt,"
-                           " type, type, description"
-                           " FROM results"
-                           " WHERE ROWID = %llu;",
-                           result);
+    {
+      gchar *new_type_sql;
+
+      if (override)
+        {
+          gchar *ov;
+
+          assert (current_credentials.uuid);
+
+          ov = g_strdup_printf
+                ("SELECT overrides.new_threat"
+                 " FROM overrides"
+                 " WHERE overrides.nvt = results.nvt"
+                 " AND ((overrides.owner IS NULL)"
+                 " OR (overrides.owner ="
+                 " (SELECT ROWID FROM users"
+                 "  WHERE users.uuid = '%s')))"
+                 " AND (overrides.task ="
+                 "      (SELECT reports.task FROM reports, report_results"
+                 "       WHERE report_results.result = results.ROWID"
+                 "       AND report_results.report = reports.ROWID)"
+                 "      OR overrides.task = 0)"
+                 " AND (overrides.result = results.ROWID"
+                 "      OR overrides.result = 0)"
+                 " AND (overrides.hosts is NULL"
+                 "      OR overrides.hosts = \"\""
+                 "      OR hosts_contains (overrides.hosts, results.host))"
+                 " AND (overrides.port is NULL"
+                 "      OR overrides.port = \"\""
+                 "      OR overrides.port = results.port)"
+                 " AND (overrides.threat is NULL"
+                 "      OR overrides.threat = \"\""
+                 "      OR overrides.threat = results.type)"
+                 " ORDER BY overrides.result DESC, overrides.task DESC,"
+                 " overrides.port DESC, overrides.threat"
+                 " COLLATE collate_message_type ASC",
+                 current_credentials.uuid);
+
+          new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
+                                          " THEN type ELSE (%s) END)",
+                                          ov, ov);
+
+          g_free (ov);
+        }
+      else
+        new_type_sql = g_strdup ("type");
+
+      sql = g_strdup_printf ("SELECT ROWID, subnet, host, port, nvt,"
+                             " type, %s, description"
+                             " FROM results"
+                             " WHERE ROWID = %llu;",
+                             new_type_sql,
+                             result);
+
+      g_free (new_type_sql);
+    }
   else
     sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
                            " type, type, description"

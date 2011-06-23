@@ -1,3 +1,8 @@
+2011-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_result_iterator): Apply overrides in the result
+	only case, if requested.
+
 2011-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (strdiff): Set LANGUAGE and LC_ALL to C around diff
