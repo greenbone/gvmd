@@ -9987,21 +9987,33 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   index = 0;
   while ((end = (create_report_result_t*) g_ptr_array_index (host_ends,
                                                              index++)))
-    if (end->host && end->description)
+    if (end->host)
       {
-        gchar *quoted_host, *quoted_time;
+        gchar *quoted_host;
 
         quoted_host = sql_quote (end->host);
-        quoted_time = sql_quote (end->description);
 
-        sql ("UPDATE report_hosts SET end_time = '%s'"
-             " WHERE report = %llu AND host = '%s';",
-             quoted_time,
-             report,
-             quoted_host);
+        if (end->description)
+          {
+            gchar *quoted_time;
+
+            quoted_time = sql_quote (end->description);
+
+            sql ("UPDATE report_hosts SET end_time = '%s'"
+                 " WHERE report = %llu AND host = '%s';",
+                 quoted_time,
+                 report,
+                 quoted_host);
+
+            g_free (quoted_time);
+          }
+        else
+          sql ("UPDATE report_hosts SET end_time = NULL"
+               " WHERE report = %llu AND host = '%s';",
+               report,
+               quoted_host);
 
         g_free (quoted_host);
-        g_free (quoted_time);
       }
 
 #if 0

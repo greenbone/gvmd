@@ -12353,7 +12353,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             create_report_result_t *result;
 
             assert (create_report_data->host_ends);
-            assert (create_report_data->host_end);
             assert (create_report_data->host_end_host);
 
             result = g_malloc (sizeof (create_report_result_t));

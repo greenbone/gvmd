@@ -1,3 +1,11 @@
+2011-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_report): Allow NULL host end times, as this
+	can happen, for example if the task is stopped.
+
+	* src/omp.c (omp_xml_handle_end_element): Remove host end assertion from
+	CLIENT_CREATE_REPORT_RR_HOST_END case.
+
 2011-06-24  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
