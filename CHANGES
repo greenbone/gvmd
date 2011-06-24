@@ -1,3 +1,27 @@
+openvas-manager 3.0+beta3 (2011-06-24)
+
+This is the third beta version of the upcoming 3.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release resolves several minor issues discovered after the release of
+OpenVAS Manager 3.0+beta2 and adds support for delta reports. For details,
+please refer to the list of changes below.
+
+Many thanks to everyone who has contributed to this release:
+Henri Doreau, Stephan Kleine, Matthew Mundell and Michael Wiegand.
+
+Main changes since 3.0+beta2:
+* Support for delta reports has been added.
+* An issue which caused meta data for NVTs in the "Credentials" family to be not
+  present in the database has been fixed.
+* A number of compiler warnings discovered by Stephan Kleine have been
+  addressed.
+* A race condition which caused empty reports from the slave when running in
+  master-slave mode under certain conditions has been fixed.
+* Scan start and end times are now set for imported reports.
+
+
 openvas-manager 3.0+beta2 (2011-05-19)
 
 This is the second beta version of the upcoming 3.0 release of the OpenVAS
