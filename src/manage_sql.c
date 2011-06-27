@@ -13121,7 +13121,7 @@ compare_port_threat (gconstpointer arg_one, gconstpointer arg_two)
 
 /** @todo Defined in omp.c! */
 void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int,
-                         const char *, iterator_t *);
+                         const char *, iterator_t *, int);
 
 /**
  * @brief Comparison returns.
@@ -13422,7 +13422,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   overrides,
                                   overrides_details,
                                   "changed",
-                                  delta_results);
+                                  delta_results,
+                                  1);
           }
         break;
 
@@ -13446,7 +13447,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   overrides,
                                   overrides_details,
                                   "gone",
-                                  NULL);
+                                  delta_results,
+                                  0);
           }
         break;
 
@@ -13470,7 +13472,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   overrides,
                                   overrides_details,
                                   "new",
-                                  NULL);
+                                  delta_results,
+                                  0);
           }
         break;
 
@@ -13494,7 +13497,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   overrides,
                                   overrides_details,
                                   "same",
-                                  NULL);
+                                  delta_results,
+                                  0);
           }
         break;
 
@@ -14309,7 +14313,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                         overrides,
                                         overrides_details,
                                         "new",
-                                        NULL);
+                                        NULL,
+                                        0);
                     PRINT (out, "%s", buffer->str);
                     g_string_free (buffer, TRUE);
                     if (result_hosts_only)
@@ -14349,7 +14354,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                         overrides,
                                         overrides_details,
                                         "gone",
-                                        NULL);
+                                        NULL,
+                                        0);
                     PRINT (out, "%s", buffer->str);
                     g_string_free (buffer, TRUE);
                     if (result_hosts_only)
@@ -14777,7 +14783,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                               overrides,
                               overrides_details,
                               NULL,
-                              NULL);
+                              NULL,
+                              0);
           PRINT (out, "%s", buffer->str);
           g_string_free (buffer, TRUE);
           if (result_hosts_only)

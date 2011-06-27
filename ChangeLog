@@ -1,3 +1,17 @@
+2011-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add report 2 result notes and overrides to GET_RESULTS delta case.
+
+	* src/manage_sql.c (compare_and_buffer_results): Always pass the delta
+	results to buffer_results_xml, letting the new changed arg indicate a
+	changed result.
+	(print_report_xml): Update buffer_results_xml calls.
+
+	* src/omp.c (buffer_result_notes_xml, buffer_result_overrides_xml): New
+	functions.
+	(buffer_results_xml): Add changed arg.  Include delta DIFF when arg set.
+	Print delta notes and overrides too, if requested.  Update callers.
+
 2011-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_report): Allow NULL host end times, as this
