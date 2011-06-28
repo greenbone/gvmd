@@ -31,6 +31,8 @@
  * management library.
  */
 
+#define _GNU_SOURCE
+
 #include "manage_sql.h"
 #include "lsc_user.h"
 #include "tracef.h"
@@ -11760,8 +11762,12 @@ report_counts_match (iterator_t *results, const char *search_phrase,
 {
   if (search_phrase)
     {
-      if (strstr ((const char*) sqlite3_column_text (results->stmt, 5),
-                  search_phrase))
+      if (strcasestr ((const char*) sqlite3_column_text (results->stmt, 5),
+                      search_phrase)
+          || strcasestr ((const char*) sqlite3_column_text (results->stmt, 4),
+                         search_phrase)
+          || strcasestr ((const char*) sqlite3_column_text (results->stmt, 1),
+                         search_phrase))
         {
           if (min_cvss_base && sqlite3_column_int (results->stmt, 1))
             {

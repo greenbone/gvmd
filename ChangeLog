@@ -1,3 +1,10 @@
+2011-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (_GNU_SOURCE): New define.  For strcasestr.
+	(report_counts_match): Check the search string case sensitively, as done
+	by the iterator which generates the results.  Also search for the string
+	in the port and NVT.
+
 2011-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add report 2 result notes and overrides to GET_RESULTS delta case.
