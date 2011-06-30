@@ -939,6 +939,7 @@ typedef struct
   char *task_comment;             ///< Comment for container task.
   char *task_id;                  ///< ID of container task.
   char *task_name;                ///< Name for container task.
+  int wrapper;                    ///< Whether there was a wrapper REPORT.
 } create_report_data_t;
 
 /**
@@ -6213,7 +6214,25 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_REPORT:
         if (strcasecmp ("REPORT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_REPORT_REPORT);
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values, "format_id",
+                                &attribute))
+              {
+                /* Assume this is the wrapper REPORT. */
+                create_report_data->wrapper = 1;
+                set_client_state (CLIENT_CREATE_REPORT_REPORT);
+              }
+            else
+              {
+                /* Assume the report is immediately inside the CREATE_REPORT. */
+                create_report_data->wrapper = 0;
+                create_report_data->host_ends = make_array ();
+                create_report_data->host_starts = make_array ();
+                create_report_data->results = make_array ();
+                set_client_state (CLIENT_CREATE_REPORT_RR);
+              }
+          }
         else if (strcasecmp ("TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -12384,7 +12403,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_REPORT_RR:
         assert (strcasecmp ("REPORT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_REPORT);
+        if (create_report_data->wrapper)
+          set_client_state (CLIENT_CREATE_REPORT_REPORT);
+        else
+          set_client_state (CLIENT_CREATE_REPORT);
         break;
       case CLIENT_CREATE_REPORT_RR_FILTERS:
         assert (strcasecmp ("FILTERS", element_name) == 0);

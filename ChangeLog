@@ -1,3 +1,12 @@
+2011-06-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_report_data_t): Add field "wrapper".
+	(omp_xml_handle_start_element): In CLIENT_CREATE_REPORT if REPORT contains
+	a format_id attribute then treat it as the usual wrapper report, otherwise
+	treat it as the embedded report that should be in the wrapper.
+	(omp_xml_handle_end_element): In CLIENT_CREATE_REPORT_RR set the state
+	depending on the wrapper flag.
+
 2011-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (_GNU_SOURCE): New define.  For strcasestr.
