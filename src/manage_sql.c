@@ -6316,7 +6316,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 /**
  * @brief Maximum number of bytes of the report included in email escalations.
  */
-#define MAX_CONTENT_LENGTH 2000
+#define MAX_CONTENT_LENGTH 20000
 
 /**
  * @brief Format string for attached report escalator email.

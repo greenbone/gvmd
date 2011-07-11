@@ -1,3 +1,8 @@
+2011-07-11  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_sql.c: Change value of MAX_CONTENT_LENGTH from 2000 to
+	20000.
+
 2011-06-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_report_data_t): Add field "wrapper".
