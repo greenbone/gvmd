@@ -1,3 +1,7 @@
+2011-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_result_iterator): Add CVSS to sorting.
+
 2011-07-11  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/manage_sql.c: Change value of MAX_CONTENT_LENGTH from 2000 to

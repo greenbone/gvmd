@@ -10534,7 +10534,11 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
 
       if (host)
         sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
-                               " nvt, type, %s AS new_type, results.description"
+                               " nvt, type, %s AS new_type,"
+                               " results.description,"
+                               " (SELECT cvss_base FROM nvts"
+                               "  WHERE nvts.oid = results.nvt)"
+                               " AS cvss_base"
                                " FROM results, report_results"
                                " WHERE report_results.report = %llu"
                                "%s"
@@ -10556,11 +10560,13 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                       " port,"
                                       " new_type"
                                       " COLLATE collate_message_type DESC,"
+                                      " (CAST (cvss_base AS REAL)) DESC,"
                                       " nvt,"
                                       " description"
                                     : " ORDER BY"
                                       " new_type COLLATE collate_message_type,"
                                       " port,"
+                                      " (CAST (cvss_base AS REAL)) DESC,"
                                       " nvt,"
                                       " description")
                                 : ((strcmp (sort_field, "port") == 0)
@@ -10568,19 +10574,25 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                       " port DESC,"
                                       " new_type"
                                       " COLLATE collate_message_type DESC,"
+                                      " (CAST (cvss_base AS REAL)) DESC,"
                                       " nvt,"
                                       " description"
                                     : " ORDER BY"
                                       " new_type"
                                       " COLLATE collate_message_type DESC,"
                                       " port,"
+                                      " (CAST (cvss_base AS REAL)) DESC,"
                                       " nvt,"
                                       " description"),
                                max_results,
                                first_result);
       else
         sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
-                               " nvt, type, %s AS new_type, results.description"
+                               " nvt, type, %s AS new_type,"
+                               " results.description,"
+                               " (SELECT cvss_base FROM nvts"
+                               "  WHERE nvts.oid = results.nvt)"
+                               " AS cvss_base"
                                " FROM results, report_results"
                                " WHERE report_results.report = %llu"
                                "%s"
@@ -10602,11 +10614,13 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                           " port,"
                                           " new_type"
                                           " COLLATE collate_message_type DESC,"
+                                          " (CAST (cvss_base AS REAL)) DESC,"
                                           " nvt,"
                                           " description"
                                         : " ORDER BY host COLLATE collate_ip,"
                                           " new_type COLLATE collate_message_type,"
                                           " port,"
+                                          " (CAST (cvss_base AS REAL)) DESC,"
                                           " nvt,"
                                           " description"))
                                 : ((strcmp (sort_field, "ROWID") == 0)
@@ -10616,12 +10630,14 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                           " port DESC,"
                                           " new_type"
                                           " COLLATE collate_message_type DESC,"
+                                          " (CAST (cvss_base AS REAL)) DESC,"
                                           " nvt,"
                                           " description"
                                         : " ORDER BY host COLLATE collate_ip,"
                                           " new_type"
                                           " COLLATE collate_message_type DESC,"
                                           " port,"
+                                          " (CAST (cvss_base AS REAL)) DESC,"
                                           " nvt,"
                                           " description")),
                                max_results,
