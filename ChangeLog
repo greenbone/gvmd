@@ -1,4 +1,10 @@
-2011-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
+2011-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* doc/db_postgres.sql (task_preferences): New table.
+
+	* doc/db.png: Update from SQL.
+
+2011-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move scan performance parameters max_checks and max_hosts from configs
 	to tasks.  Hence increase database version to 47.  Add database migration

@@ -198,6 +198,11 @@ CREATE TABLE task_escalators (
 	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
 	escalator_location integer);
 
+CREATE TABLE task_preferences (
+	task integer PRIMARY KEY REFERENCES tasks (id) ON DELETE RESTRICT,
+	name text PRIMARY KEY,
+	value text);
+
 CREATE TABLE results (
 	id integer PRIMARY KEY,
 	uuid text UNIQUE NOT NULL,
