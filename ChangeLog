@@ -1,5 +1,38 @@
 2011-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move scan performance parameters max_checks and max_hosts from configs
+	to tasks.  Hence increase database version to 47.  Add database migration
+	from version 46 to 47.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 47.
+
+	* src/manage_sql.c (create_tables): Add table task_preferences.
+	(migrate_46_to_47): New function.
+	(database_migrators): Add migrate_46_to_47.
+	(request_delete_task_uuid, delete_task, delete_trash_tasks): Remove task
+	preferences too.
+	(init_otp_pref_iterator, init_nvt_preference_iterator): Skip performance
+	prefs.
+	(init_task_preference_iterator, task_preference_iterator_name)
+	(task_preference_iterator_value, task_preference_iterator_task_value)
+	(task_preference_value, set_task_preferences): New functions.
+	(name_value_t): New type.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/manage.c (send_task_preferences): New function.
+	(run_task): Send task preferences.
+
+	* src/omp.c (name_value_t): New type.
+	(create_task_data_t, create_task_data_reset, modify_task_data_t)
+	(modify_task_data_reset): Add preferences.
+	(client_state_t): Add preference states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add preference setting to MODIFY_TASK and
+	CREATE_TASK.  Send task preferences in GET_TASKS.
+
+2011-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_result_iterator): Add CVSS to sorting.
 
 2011-07-11  Michael Wiegand <michael.wiegand@greenbone.net>

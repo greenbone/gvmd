@@ -1190,6 +1190,24 @@ nvt_preference_iterator_nvt (iterator_t*);
 int
 nvt_preference_count (const char *);
 
+void
+init_task_preference_iterator (iterator_t*);
+
+const char*
+task_preference_iterator_name (iterator_t*);
+
+const char*
+task_preference_iterator_value (iterator_t*);
+
+char*
+task_preference_iterator_task_value (iterator_t*, task_t);
+
+char*
+task_preference_value (task_t, const char *);
+
+void
+set_task_preferences (task_t, array_t *);
+
 
 /* LSC credentials. */
 

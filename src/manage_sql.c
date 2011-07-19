@@ -1086,6 +1086,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS targets_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER, escalator_location INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS task_preferences (id INTEGER PRIMARY KEY, task INTEGER, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER, upload_result_count INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
 
@@ -4782,6 +4783,48 @@ migrate_45_to_46 ()
 }
 
 /**
+ * @brief Migrate the database from version 44 to version 46.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_46_to_47 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Require that the database is currently version 46. */
+
+  if (manage_db_version () != 46)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Performance prefs move from config to task. */
+
+  /* Ensure that the table exists. */
+  sql ("CREATE TABLE IF NOT EXISTS task_preferences"
+       " (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
+
+  sql ("INSERT INTO task_preferences (task, name, value)"
+       " SELECT tasks.ROWID, config_preferences.name, config_preferences.value"
+       " FROM tasks, config_preferences"
+       " WHERE tasks.config = config_preferences.config"
+       " AND (config_preferences.name = 'max_checks'"
+       "      OR config_preferences.name = 'max_hosts')");
+
+  /* Set the database version to 47. */
+
+  set_db_version (47);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -4832,6 +4875,7 @@ static migrator_t database_migrators[]
     {44, migrate_43_to_44},
     {45, migrate_44_to_45},
     {46, migrate_45_to_46},
+    {47, migrate_46_to_47},
     /* End marker. */
     {-1, NULL}};
 
@@ -16585,6 +16629,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
       sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
       sql ("DELETE FROM task_escalators WHERE task = %llu;", task);
       sql ("DELETE FROM task_files WHERE task = %llu;", task);
+      sql ("DELETE FROM task_preferences WHERE task = %llu;", task);
       sql ("COMMIT;");
       return 0;
     }
@@ -16666,6 +16711,7 @@ delete_task (task_t task, int ultimate)
       sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
       sql ("DELETE FROM task_escalators WHERE task = %llu;", task);
       sql ("DELETE FROM task_files WHERE task = %llu;", task);
+      sql ("DELETE FROM task_preferences WHERE task = %llu;", task);
     }
   else
     sql ("UPDATE tasks SET hidden = 2 WHERE ROWID = %llu;", task);
@@ -16742,6 +16788,7 @@ delete_trash_tasks ()
       sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
       sql ("DELETE FROM task_escalators WHERE task = %llu;", task);
       sql ("DELETE FROM task_files WHERE task = %llu;", task);
+      sql ("DELETE FROM task_preferences WHERE task = %llu;", task);
     }
   cleanup_iterator (&tasks);
 
@@ -19700,6 +19747,8 @@ init_otp_pref_iterator (iterator_t* iterator,
                  " WHERE config_preferences.config = %llu"
                  " AND config_preferences.type = '%s'"
                  " AND config_preferences.name = nvt_preferences.name"
+                 " AND config_preferences.name != 'max_checks'"
+                 " AND config_preferences.name != 'max_hosts'"
                  " UNION"
                  " SELECT nvt_preferences.name, nvt_preferences.value"
                  " FROM nvt_preferences"
@@ -22309,7 +22358,10 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                      " AND name != 'nasl_no_signature_check'"
                      " AND name != 'network_targets'"
                      " AND name != 'ntp_save_sessions'"
-                     " AND name NOT LIKE 'server_info_%'"
+                     " AND name NOT LIKE 'server_info_%%'"
+                     /* Task preferences. */
+                     " AND name != 'max_checks'"
+                     " AND name != 'max_hosts'"
                      " ORDER BY name ASC",
                      quoted_name);
       g_free (quoted_name);
@@ -22322,7 +22374,10 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                    " AND name != 'nasl_no_signature_check'"
                    " AND name != 'network_targets'"
                    " AND name != 'ntp_save_sessions'"
-                   " AND name NOT LIKE 'server_info_%'"
+                   " AND name NOT LIKE 'server_info_%%'"
+                   /* Task preferences. */
+                   " AND name != 'max_checks'"
+                   " AND name != 'max_hosts'"
                    " ORDER BY name ASC");
 }
 
@@ -22478,6 +22533,178 @@ nvt_preference_count (const char *name)
                      quoted_name);
   g_free (quoted_name);
   return ret;
+}
+
+/**
+ * @brief Initialise a task preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+void
+init_task_preference_iterator (iterator_t* iterator)
+{
+  init_iterator (iterator,
+                 "SELECT name, value FROM nvt_preferences"
+                 " WHERE (name = 'max_checks'"
+                 "        OR name = 'max_hosts')"
+                 " ORDER BY name ASC");
+}
+
+/**
+ * @brief Get the name from an task preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (task_preference_iterator_name, 0);
+
+/**
+ * @brief Get the value from an task preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (task_preference_iterator_value, 1);
+
+/**
+ * @brief Get the task value from a task preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  task      Task.
+ *
+ * @return Freshly allocated task value.
+ */
+char*
+task_preference_iterator_task_value (iterator_t* iterator, task_t task)
+{
+  gchar *quoted_name, *value;
+  const char *ret;
+  if (iterator->done) return NULL;
+
+  quoted_name = sql_quote ((const char *) sqlite3_column_text (iterator->stmt, 0));
+  value = sql_string (0, 0,
+                      "SELECT value FROM task_preferences"
+                      " WHERE task = %llu"
+                      " AND name = '%s';",
+                      task,
+                      quoted_name);
+  g_free (quoted_name);
+  if (value) return value;
+
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  if (ret) return g_strdup (ret);
+  return NULL;
+}
+
+/**
+ * @brief Get the value of a task preference.
+ *
+ * @param[in]  task  Task.
+ * @param[in]  name  Preference name.
+ *
+ * @return Freshly allocated task preference value or NULL if pref missing.
+ */
+char*
+task_preference_value (task_t task, const char *name)
+{
+  gchar *quoted_name, *value;
+
+  quoted_name = sql_quote (name);
+  value = sql_string (0, 0,
+                      "SELECT value FROM task_preferences"
+                      " WHERE task = %llu"
+                      " AND name = '%s';",
+                      task,
+                      quoted_name);
+  if (value)
+    {
+      g_free (quoted_name);
+      return value;
+    }
+
+  value = sql_string (0, 0,
+                      "SELECT value FROM nvt_preferences"
+                      " WHERE name = '%s';",
+                      quoted_name);
+  if (value)
+    {
+      g_free (quoted_name);
+      return value;
+    }
+
+  return NULL;
+}
+
+/**
+ * @brief Name value pair.
+ */
+typedef struct
+{
+  gchar *name;    ///< Name.
+  gchar *value;   ///< Param value.
+} name_value_t;
+
+/**
+ * @brief Set the preferences of a task.
+ *
+ * Only the given preferences are affected.  A NULL value means to remove
+ * the preference (reverts to using scanner value).
+ *
+ * @param[in]  task         Task.
+ * @param[in]  preferences  Preferences.
+ */
+void
+set_task_preferences (task_t task, array_t *preferences)
+{
+  if (preferences)
+    {
+      guint index;
+      for (index = 0; index < preferences->len; index++)
+        {
+          name_value_t *pair;
+          pair = (name_value_t*) g_ptr_array_index (preferences, index);
+          if (pair && pair->name)
+            {
+              gchar *quoted_name;
+              quoted_name = sql_quote (pair->name);
+              if (pair->value)
+                {
+                  gchar *quoted_value;
+                  quoted_value = sql_quote (pair->value);
+                  sql ("BEGIN IMMEDIATE;");
+                  if (sql_int (0, 0,
+                               "SELECT COUNT(*) FROM task_preferences"
+                               " WHERE task = %llu AND name = '%s';",
+                               task,
+                               quoted_name))
+                    sql ("UPDATE task_preferences"
+                         " SET value = '%s'"
+                         " WHERE task = %llu AND name = '%s';",
+                         quoted_value,
+                         task,
+                         quoted_name);
+                  else
+                    sql ("INSERT INTO task_preferences"
+                         " (task, name, value)"
+                         " VALUES"
+                         " (%llu, '%s', '%s');",
+                         task,
+                         quoted_name,
+                         quoted_value);
+                  sql ("COMMIT;");
+                  g_free (quoted_value);
+                }
+              else
+                sql ("DELETE FROM task_preferences WHERE name = '%s';",
+                     quoted_name);
+              g_free (quoted_name);
+            }
+        }
+    }
 }
 
 

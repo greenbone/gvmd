@@ -1170,12 +1170,23 @@ create_target_data_reset (create_target_data_t *data)
 }
 
 /**
+ * @brief Name value pair.
+ */
+typedef struct
+{
+  gchar *name;    ///< Name.
+  gchar *value;   ///< Param value.
+} name_value_t;
+
+/**
  * @brief Command data for the create_task command.
  */
 typedef struct
 {
   char *config_id;      ///< ID of task config.
   char *escalator_id;   ///< ID of task escalator.
+  name_value_t *preference;  ///< Current preference.
+  array_t *preferences; ///< Preferences.
   char *schedule_id;    ///< ID of task schedule.
   char *slave_id;       ///< ID of task slave.
   char *target_id;      ///< ID of task target.
@@ -1192,6 +1203,21 @@ create_task_data_reset (create_task_data_t *data)
 {
   free (data->config_id);
   free (data->escalator_id);
+  if (data->preferences)
+    {
+      guint index = data->preferences->len;
+      while (index--)
+        {
+          name_value_t *pair;
+          pair = (name_value_t*) g_ptr_array_index (data->preferences, index);
+          if (pair)
+            {
+              g_free (pair->name);
+              g_free (pair->value);
+            }
+        }
+    }
+  array_free (data->preferences);
   free (data->schedule_id);
   free (data->slave_id);
   free (data->target_id);
@@ -2140,6 +2166,8 @@ typedef struct
   char *file;          ///< File to attach to task.
   char *file_name;     ///< Name of file to attach to task.
   char *name;          ///< New name for task.
+  name_value_t *preference;  ///< Current preference.
+  array_t *preferences;   ///< Preferences.
   char *rcfile;        ///< New definition for task, as an RC file.
   char *schedule_id;   ///< ID of new schedule for task.
   char *slave_id;      ///< ID of new slave for task.
@@ -2160,6 +2188,21 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->file);
   free (data->file_name);
   free (data->name);
+  if (data->preferences)
+    {
+      guint index = data->preferences->len;
+      while (index--)
+        {
+          name_value_t *pair;
+          pair = (name_value_t*) g_ptr_array_index (data->preferences, index);
+          if (pair)
+            {
+              g_free (pair->name);
+              g_free (pair->value);
+            }
+        }
+    }
+  array_free (data->preferences);
   free (data->rcfile);
   free (data->schedule_id);
   free (data->slave_id);
@@ -3129,6 +3172,10 @@ typedef enum
   CLIENT_CREATE_TASK_CONFIG,
   CLIENT_CREATE_TASK_ESCALATOR,
   CLIENT_CREATE_TASK_NAME,
+  CLIENT_CREATE_TASK_PREFERENCES,
+  CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE,
+  CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME,
+  CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE,
   CLIENT_CREATE_TASK_RCFILE,
   CLIENT_CREATE_TASK_SCHEDULE,
   CLIENT_CREATE_TASK_SLAVE,
@@ -3220,6 +3267,10 @@ typedef enum
   CLIENT_MODIFY_TASK_ESCALATOR,
   CLIENT_MODIFY_TASK_FILE,
   CLIENT_MODIFY_TASK_NAME,
+  CLIENT_MODIFY_TASK_PREFERENCES,
+  CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE,
+  CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME,
+  CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE,
   CLIENT_MODIFY_TASK_RCFILE,
   CLIENT_MODIFY_TASK_SCHEDULE,
   CLIENT_MODIFY_TASK_SLAVE,
@@ -5609,6 +5660,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_NAME);
+        else if (strcasecmp ("PREFERENCES", element_name) == 0)
+          {
+            modify_task_data->preferences = make_array ();
+            set_client_state (CLIENT_MODIFY_TASK_PREFERENCES);
+          }
         else if (strcasecmp ("RCFILE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_RCFILE);
         else if (strcasecmp ("SCHEDULE", element_name) == 0)
@@ -5635,6 +5691,54 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               openvas_append_string (&modify_task_data->action, "update");
             set_client_state (CLIENT_MODIFY_TASK_FILE);
           }
+        else
+          {
+            if (send_element_error_to_client ("modify_task", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_MODIFY_TASK_PREFERENCES:
+        if (strcasecmp ("PREFERENCE", element_name) == 0)
+          {
+            assert (modify_task_data->preference == NULL);
+            modify_task_data->preference = g_malloc (sizeof (name_value_t));
+            modify_task_data->preference->name = NULL;
+            modify_task_data->preference->value = NULL;
+            set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE);
+          }
+        else
+          {
+            if (send_element_error_to_client ("modify_task", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE:
+        if (strcasecmp ("SCANNER_NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME);
+        else if (strcasecmp ("VALUE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE);
         else
           {
             if (send_element_error_to_client ("modify_task", element_name,
@@ -7084,6 +7188,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               add_task_description_line (create_task_data->task, "", 0);
             set_client_state (CLIENT_CREATE_TASK_RCFILE);
           }
+        else if (strcasecmp ("PREFERENCES", element_name) == 0)
+          {
+            create_task_data->preferences = make_array ();
+            set_client_state (CLIENT_CREATE_TASK_PREFERENCES);
+          }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_NAME);
         else if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7118,6 +7227,54 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &create_task_data->target_id);
             set_client_state (CLIENT_CREATE_TASK_TARGET);
           }
+        else
+          {
+            if (send_element_error_to_client ("create_task", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_TASK_PREFERENCES:
+        if (strcasecmp ("PREFERENCE", element_name) == 0)
+          {
+            assert (create_task_data->preference == NULL);
+            create_task_data->preference = g_malloc (sizeof (name_value_t));
+            create_task_data->preference->name = NULL;
+            create_task_data->preference->value = NULL;
+            set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE);
+          }
+        else
+          {
+            if (send_element_error_to_client ("create_task", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE:
+        if (strcasecmp ("SCANNER_NAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME);
+        else if (strcasecmp ("VALUE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE);
         else
           {
             if (send_element_error_to_client ("create_task", element_name,
@@ -11288,6 +11445,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
 
+                if (fail == 0 && modify_task_data->preferences)
+                  set_task_preferences (task,
+                                        modify_task_data->preferences);
+
                 if (fail == 0)
                   {
                     g_log ("event task", G_LOG_LEVEL_MESSAGE,
@@ -11316,6 +11477,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
         break;
+      case CLIENT_MODIFY_TASK_PREFERENCES:
+        assert (strcasecmp ("PREFERENCES", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_TASK);
+        break;
       case CLIENT_MODIFY_TASK_RCFILE:
         assert (strcasecmp ("RCFILE", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
@@ -11331,6 +11496,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_TASK_FILE:
         assert (strcasecmp ("FILE", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
+        break;
+
+      case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE:
+        assert (strcasecmp ("PREFERENCE", element_name) == 0);
+        array_add (modify_task_data->preferences,
+                   modify_task_data->preference);
+        modify_task_data->preference = NULL;
+        set_client_state (CLIENT_MODIFY_TASK_PREFERENCES);
+        break;
+      case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME:
+        assert (strcasecmp ("SCANNER_NAME", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE);
+        break;
+      case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE:
+        assert (strcasecmp ("VALUE", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE);
         break;
 
       case CLIENT_CREATE_AGENT:
@@ -13663,6 +13844,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_task_config (create_task_data->task, config);
               set_task_slave (create_task_data->task, slave);
               set_task_target (create_task_data->task, target);
+              if (create_task_data->preferences)
+                set_task_preferences (create_task_data->task,
+                                      create_task_data->preferences);
 
               /* Generate the rcfile in the task. */
 
@@ -13706,6 +13890,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_TASK);
         break;
+      case CLIENT_CREATE_TASK_PREFERENCES:
+        assert (strcasecmp ("PREFERENCES", element_name) == 0);
+        set_client_state (CLIENT_CREATE_TASK);
+        break;
       case CLIENT_CREATE_TASK_RCFILE:
         assert (strcasecmp ("RCFILE", element_name) == 0);
         if (create_task_data->task)
@@ -13745,6 +13933,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TASK_SLAVE:
         assert (strcasecmp ("SLAVE", element_name) == 0);
         set_client_state (CLIENT_CREATE_TASK);
+        break;
+
+      case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE:
+        assert (strcasecmp ("PREFERENCE", element_name) == 0);
+        array_add (create_task_data->preferences,
+                   create_task_data->preference);
+        create_task_data->preference = NULL;
+        set_client_state (CLIENT_CREATE_TASK_PREFERENCES);
+        break;
+      case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME:
+        assert (strcasecmp ("SCANNER_NAME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE);
+        break;
+      case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE:
+        assert (strcasecmp ("VALUE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE);
         break;
 
       case CLIENT_EMPTY_TRASHCAN:
@@ -16153,7 +16357,37 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          get_tasks_data->apply_overrides,
                                          write_to_client,
                                          write_to_client_data);
-                    SEND_TO_CLIENT_OR_FAIL ("</task>");
+
+                    {
+                      gchar *max_checks, *max_hosts;
+
+                      max_checks = task_preference_value (task, "max_checks");
+                      max_hosts = task_preference_value (task, "max_hosts");
+
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<preferences>"
+                        "<preference>"
+                        "<name>"
+                        "Maximum concurrently executed NVTs per host"
+                        "</name>"
+                        "<scanner_name>max_checks</scanner_name>"
+                        "<value>%s</value>"
+                        "</preference>"
+                        "<preference>"
+                        "<name>"
+                        "Maximum concurrently scanned hosts"
+                        "</name>"
+                        "<scanner_name>max_hosts</scanner_name>"
+                        "<value>%s</value>"
+                        "</preference>"
+                        "</preferences>"
+                        "</task>",
+                        max_checks ? max_checks : "4",
+                        max_hosts ? max_hosts : "20");
+
+                      g_free (max_checks);
+                      g_free (max_hosts);
+                    }
                   }
                 else
                   {
@@ -16510,8 +16744,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             "<next_time>%s</next_time>"
                                             "<trash>%i</trash>"
                                             "</schedule>"
-                                            "%s%s%s"
-                                            "</task>",
+                                            "%s%s%s",
                                             tsk_uuid,
                                             name,
                                             comment,
@@ -16574,6 +16807,37 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         return;
                       }
                     g_free (line);
+
+                    {
+                      gchar *max_checks, *max_hosts;
+
+                      max_checks = task_preference_value (task, "max_checks");
+                      max_hosts = task_preference_value (task, "max_hosts");
+
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<preferences>"
+                        "<preference>"
+                        "<name>"
+                        "Maximum concurrently executed NVTs per host"
+                        "</name>"
+                        "<scanner_name>max_checks</scanner_name>"
+                        "<value>%s</value>"
+                        "</preference>"
+                        "<preference>"
+                        "<name>"
+                        "Maximum concurrently scanned hosts"
+                        "</name>"
+                        "<scanner_name>max_hosts</scanner_name>"
+                        "<value>%s</value>"
+                        "</preference>"
+                        "</preferences>"
+                        "</task>",
+                        max_checks ? max_checks : "4",
+                        max_hosts ? max_hosts : "20");
+
+                      g_free (max_checks);
+                      g_free (max_hosts);
+                    }
                   }
               cleanup_iterator (&tasks);
               SEND_TO_CLIENT_OR_FAIL ("</get_tasks_response>");
@@ -16823,6 +17087,17 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_FILE:
         openvas_append_text (&modify_task_data->file, text, text_len);
+        break;
+
+      case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME:
+        openvas_append_text (&modify_task_data->preference->name,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE:
+        openvas_append_text (&modify_task_data->preference->value,
+                             text,
+                             text_len);
         break;
 
       case CLIENT_CREATE_AGENT_COMMENT:
@@ -17272,6 +17547,17 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         add_task_description_line (create_task_data->task,
                                    text,
                                    text_len);
+        break;
+
+      case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME:
+        openvas_append_text (&create_task_data->preference->name,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE:
+        openvas_append_text (&create_task_data->preference->value,
+                             text,
+                             text_len);
         break;
 
       case CLIENT_MODIFY_NOTE_HOSTS:

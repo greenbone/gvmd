@@ -747,6 +747,39 @@ send_config_preferences (config_t config, const char* section_name,
   return 0;
 }
 
+/**
+ * @brief Send task preferences to the scanner.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+send_task_preferences (task_t task)
+{
+  gchar *value;
+
+  value = task_preference_value (task, "max_checks");
+  if (sendf_to_server ("max_checks <|> %s\n",
+                       value ? value : "4"))
+    {
+      g_free (value);
+      return -1;
+    }
+  g_free (value);
+
+  value = task_preference_value (task, "max_hosts");
+  if (sendf_to_server ("max_hosts <|> %s\n",
+                       value ? value : "20"))
+    {
+      g_free (value);
+      return -1;
+    }
+  g_free (value);
+
+  return 0;
+}
+
 #if 0
 /**
  * @brief Send the rules (CLIENTSIDE_USERRULES) from a config to the scanner.
@@ -1995,9 +2028,17 @@ run_task (task_t task, char **report_id, int from)
       return -10;
     }
 
-  /* Send the scanner preferences. */
+  /* Send the scanner and task preferences. */
 
   if (send_config_preferences (config, "SERVER_PREFS", NULL, NULL))
+    {
+      free (hosts);
+      set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
+      return -10;
+    }
+
+  if (send_task_preferences (task))
     {
       free (hosts);
       set_task_run_status (task, run_status);
