@@ -1,3 +1,25 @@
+openvas-manager 3.0+beta4 (2011-07-21)
+
+This is the fourth beta version of the upcoming 3.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release resolves a minor issue discovered after the release of OpenVAS
+Manager 3.0+beta3 and adds support for sorting results by CVSS. For details,
+please refer to the list of changes below.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell and Michael Wiegand.
+
+Main changes since 3.0+beta3:
+* A bug which caused the filter result count to be calculated incorrectly when
+  searching for text phrases has been fixed.
+* Support for sorting results by CVSS score has been added.
+* Support for importing results sent through the XML escalator has been added.
+* The max_host and max_checks scan performance parameters have been moved from
+  scan configs to tasks.
+
+
 openvas-manager 3.0+beta3 (2011-06-24)
 
 This is the third beta version of the upcoming 3.0 release of the OpenVAS
