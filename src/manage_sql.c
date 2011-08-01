@@ -71,11 +71,6 @@
 typedef long long int resource_t;
 
 /**
- * @brief A report host.
- */
-typedef long long int report_host_t;
-
-/**
  * @brief Database ROWID of 'Full and fast' config.
  */
 #define CONFIG_ID_FULL_AND_FAST 1
@@ -6549,6 +6544,7 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
                                                   notes_details, overrides,
                                                   overrides_details,
                                                   first_result, max_results,
+                                                  NULL, /* Type. */
                                                   &content_length,
                                                   NULL,    /* Extension. */
                                                   NULL);   /* Content type. */
@@ -6653,6 +6649,7 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
                                                   notes_details, overrides,
                                                   overrides_details,
                                                   first_result, max_results,
+                                                  NULL, /* Type. */
                                                   &content_length,
                                                   &extension,
                                                   &type);
@@ -6821,6 +6818,7 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
                                           notes_details, overrides,
                                           overrides_details,
                                           first_result, max_results,
+                                          NULL, /* Type. */
                                           &content_length,
                                           NULL,    /* Extension. */
                                           NULL);   /* Content type. */
@@ -10977,27 +10975,68 @@ DEF_ACCESS (descr, 7);
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  report    Report whose hosts the iterator loops over.
- *                       All hosts if NULL.
  * @param[in]  host      Single host to iterate over.  All hosts if NULL.
+ * @param[in]  report_host  Single report host to iterate over.  All if 0.
  */
 void
-init_host_iterator (iterator_t* iterator, report_t report, const char *host)
+init_host_iterator (iterator_t* iterator, report_t report, const char *host,
+                    report_host_t report_host)
 {
-  gchar* sql;
-
-  assert (report);
-
-  sql = g_strdup_printf ("SELECT ROWID, host, start_time, end_time,"
-                         " attack_state, current_port, max_port"
-                         " FROM report_hosts WHERE report = %llu"
-                         "%s%s%s"
-                         " ORDER BY host COLLATE collate_ip;",
-                         report,
-                         host ? " AND host = '" : "",
-                         host ? host : "",
-                         host ? "'" : "");
-  init_iterator (iterator, sql);
-  g_free (sql);
+  if (report)
+    {
+      if (report_host)
+        init_iterator (iterator,
+                       "SELECT ROWID, host, start_time, end_time,"
+                       " attack_state, current_port, max_port, report,"
+                       " (SELECT uuid FROM reports WHERE ROWID = report)"
+                       " FROM report_hosts WHERE ROWID = %llu"
+                       " AND report = %llu"
+                       "%s%s%s"
+                       " ORDER BY host COLLATE collate_ip;",
+                       report_host,
+                       report,
+                       host ? " AND host = '" : "",
+                       host ? host : "",
+                       host ? "'" : "");
+      else
+        init_iterator (iterator,
+                       "SELECT ROWID, host, start_time, end_time,"
+                       " attack_state, current_port, max_port, report,"
+                       " (SELECT uuid FROM reports WHERE ROWID = report)"
+                       " FROM report_hosts WHERE report = %llu"
+                       "%s%s%s"
+                       " ORDER BY host COLLATE collate_ip;",
+                       report,
+                       host ? " AND host = '" : "",
+                       host ? host : "",
+                       host ? "'" : "");
+    }
+  else
+    {
+      if (report_host)
+        init_iterator (iterator,
+                       "SELECT ROWID, host, start_time, end_time,"
+                       " attack_state, current_port, max_port, report,"
+                       " (SELECT uuid FROM reports WHERE ROWID = report)"
+                       " FROM report_hosts WHERE ROWID = %llu"
+                       "%s%s%s"
+                       " ORDER BY host COLLATE collate_ip;",
+                       report_host,
+                       host ? " AND host = '" : "",
+                       host ? host : "",
+                       host ? "'" : "");
+      else
+        init_iterator (iterator,
+                       "SELECT ROWID, host, start_time, end_time,"
+                       " attack_state, current_port, max_port, report,"
+                       " (SELECT uuid FROM reports WHERE ROWID = report)"
+                       " FROM report_hosts"
+                       "%s%s%s"
+                       " ORDER BY host COLLATE collate_ip;",
+                       host ? " WHERE host = '" : "",
+                       host ? host : "",
+                       host ? "'" : "");
+    }
 }
 
 #define DEF_ACCESS(name, col) \
@@ -11097,6 +11136,30 @@ host_iterator_max_port (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the report from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The report of the host.
+ */
+static report_host_t
+host_iterator_report (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (report_host_t) sqlite3_column_int64 (iterator->stmt, 7);
+}
+
+/**
+ * @brief Get the report UUID from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The UUID of the report of the host.  Caller must use only before
+ *         calling cleanup_iterator.
+ */
+DEF_ACCESS (host_iterator_report_uuid, 8);
+
+/**
  * @brief Return whether a host has results on a report.
  *
  * @param[in]  report  Report.
@@ -11186,6 +11249,28 @@ DEF_ACCESS (report_host_details_iterator_source_name, 4);
  *         only before calling cleanup_iterator.
  */
 DEF_ACCESS (report_host_details_iterator_source_desc, 5);
+
+/**
+ * @brief Initialise a host inventory iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+static void
+init_inventory_iterator (iterator_t* iterator)
+{
+  init_iterator (iterator,
+                 "SELECT DISTINCT host FROM report_hosts"
+                 " ORDER BY host COLLATE collate_ip;");
+}
+
+/**
+ * @brief Get the IP from a inventory iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Host IP.
+ */
+DEF_ACCESS (inventory_iterator_ip, 0);
 
 /**
  * @brief Set the end time of a task.
@@ -13879,6 +13964,58 @@ free_host_ports (GTree *host_ports, gpointer dummy)
 }
 
 /**
+ * @brief Free delta host ports.
+ *
+ * @param[in]  host         Host.
+ * @param[in]  report_host  Report host.
+ */
+static gboolean
+host_last_report_host (const char *host, report_host_t *report_host)
+{
+  gchar *quoted_host;
+  quoted_host = sql_quote (host);
+  switch (sql_int64 (report_host, 0, 0,
+                     "SELECT ROWID FROM report_hosts WHERE host = '%s'"
+                     " ORDER BY ROWID DESC LIMIT 1;",
+                     host))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *report_host = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_host);
+  return FALSE;
+}
+
+/**
+ * @brief Count host reports.
+ *
+ * @param[in]  host  Host.
+ *
+ * @return Report count.
+ */
+static int
+host_report_count (const char *host)
+{
+  int count;
+  gchar *quoted_host;
+  quoted_host = sql_quote (host);
+  count = sql_int (0, 0,
+                   "SELECT count (*) FROM report_hosts WHERE host = '%s';",
+                   quoted_host);
+  g_free (quoted_host);
+  return count;
+}
+
+/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
@@ -13908,6 +14045,7 @@ free_host_ports (GTree *host_ports, gpointer dummy)
  * @param[in]  first_result       The result to start from.  The results are 0
  *                                indexed.
  * @param[in]  max_results        The maximum number of results returned.
+ * @param[in]  type               Type of report, NULL or "inventory".
  *
  * @return 0 on success, -1 error.
  */
@@ -13918,7 +14056,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   const char *levels, const char *delta_states,
                   int apply_overrides, const char *search_phrase, int notes,
                   int notes_details, int overrides, int overrides_details,
-                  int first_result, int max_results)
+                  int first_result, int max_results, const char *type)
 {
   FILE *out;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
@@ -13929,6 +14067,16 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
 
   /** @todo Leaks on error in PRINT.  The process normally exits then anyway. */
+
+  if (strcmp (type, "scan") == 0)
+    {
+      type = NULL;
+      if (report == 0)
+        {
+          assert (0);
+          return -1;
+        }
+    }
 
   out = fopen (xml_file, "w");
 
@@ -13948,9 +14096,14 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       return -1;
     }
 
-  uuid = report_uuid (report);
-  PRINT (out, "<report id=\"%s\">", uuid);
-  free (uuid);
+  if (report)
+    {
+      uuid = report_uuid (report);
+      PRINT (out, "<report id=\"%s\">", uuid);
+      free (uuid);
+    }
+  else
+    PRINT (out, "<report>");
 
   if (delta)
     {
@@ -13994,19 +14147,22 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   cleanup_iterator (&params);
   PRINT (out, "</report_format>");
 
-  if (delta == 0)
+  if (report)
     {
-      report_scan_result_count (report, NULL, NULL, NULL,
+      if (delta == 0)
+        {
+          report_scan_result_count (report, NULL, NULL, NULL,
+                                    apply_overrides,
+                                    &result_count);
+        }
+      report_scan_result_count (report,
+                                levels,
+                                search_phrase,
+                                min_cvss_base,
                                 apply_overrides,
-                                &result_count);
+                                &filtered_result_count);
+      report_scan_run_status (report, &run_status);
     }
-  report_scan_result_count (report,
-                            levels,
-                            search_phrase,
-                            min_cvss_base,
-                            apply_overrides,
-                            &filtered_result_count);
-  report_scan_run_status (report, &run_status);
   PRINT
    (out,
     "<sort><field>%s<order>%s</order></field></sort>"
@@ -14058,13 +14214,15 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              strchr (delta_states, 's') != NULL);
     }
 
-  PRINT
-   (out,
-    "</filters>"
-    "<scan_run_status>%s</scan_run_status>",
-    run_status_name (run_status
-                      ? run_status
-                      : TASK_STATUS_INTERNAL_ERROR));
+  PRINT (out, "</filters>");
+
+  if (report)
+    PRINT
+     (out,
+      "<scan_run_status>%s</scan_run_status>",
+      run_status_name (run_status
+                        ? run_status
+                        : TASK_STATUS_INTERNAL_ERROR));
 
   if (task && tsk_uuid)
     {
@@ -14092,6 +14250,148 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              task_target_in_trash (task));
       free (tsk_name);
       free (tsk_uuid);
+    }
+
+  if (type && (strcmp (type, "inventory") == 0))
+    {
+      iterator_t hosts;
+      init_inventory_iterator (&hosts);
+      while (next (&hosts))
+        {
+          iterator_t report_hosts;
+          report_host_t report_host;
+          const char *ip;
+
+          ip = inventory_iterator_ip (&hosts);
+
+          if (host_last_report_host (ip, &report_host))
+            {
+              cleanup_iterator (&hosts);
+              return -1;
+            }
+
+          if (report_host)
+            {
+              init_host_iterator (&report_hosts, 0, NULL, report_host);
+              if (next (&report_hosts))
+                {
+                  iterator_t details;
+                  report_t report;
+                  int holes, infos, logs, warnings, false_positives;
+
+                  PRINT (out,
+                         "<host>"
+                         "<ip>%s</ip>"
+                         "<start>%s</start>"
+                         "<end>%s</end>",
+                         ip,
+                         host_iterator_start_time (&report_hosts),
+                         host_iterator_end_time (&report_hosts));
+
+                  PRINT (out,
+                         "<detail>"
+                         "<name>report/@id</name>"
+                         "<value>%s</value>"
+                         "<source>"
+                         "<type></type>"
+                         "<name>openvasmd</name>"
+                         "<description>UUID of latest report</description>"
+                         "</source>"
+                         "</detail>",
+                         host_iterator_report_uuid (&report_hosts));
+
+                  PRINT (out,
+                         "<detail>"
+                         "<name>report_count</name>"
+                         "<value>%i</value>"
+                         "<source>"
+                         "<type></type>"
+                         "<name>openvasmd</name>"
+                         "<description>Number of reports</description>"
+                         "</source>"
+                         "</detail>",
+                         host_report_count (ip));
+
+                  report = host_iterator_report (&report_hosts);
+
+                  report_counts_id (report, NULL, &holes, &infos, &logs,
+                                    &warnings, &false_positives, 0,
+                                    NULL);
+
+                  PRINT (out,
+                         "<detail>"
+                         "<name>report/result_count/high</name>"
+                         "<value>%i</value>"
+                         "<source>"
+                         "<type></type>"
+                         "<name>openvasmd</name>"
+                         "<description>Number of highs</description>"
+                         "</source>"
+                         "</detail>",
+                         holes);
+
+                  PRINT (out,
+                         "<detail>"
+                         "<name>report/result_count/medium</name>"
+                         "<value>%i</value>"
+                         "<source>"
+                         "<type></type>"
+                         "<name>openvasmd</name>"
+                         "<description>Number of highs</description>"
+                         "</source>"
+                         "</detail>",
+                         warnings);
+
+                  PRINT (out,
+                         "<detail>"
+                         "<name>report/result_count/low</name>"
+                         "<value>%i</value>"
+                         "<source>"
+                         "<type></type>"
+                         "<name>openvasmd</name>"
+                         "<description>Number of highs</description>"
+                         "</source>"
+                         "</detail>",
+                         infos);
+
+                  init_report_host_details_iterator
+                   (&details, report_host);
+                  while (next (&details))
+                    PRINT (out,
+                           "<detail>"
+                           "<name>%s</name>"
+                           "<value>%s</value>"
+                           "<source>"
+                           "<type>%s</type>"
+                           "<name>%s</name>"
+                           "<description>%s</description>"
+                           "</source>"
+                           "</detail>",
+                           report_host_details_iterator_name (&details),
+                           report_host_details_iterator_value (&details),
+                           report_host_details_iterator_source_type (&details),
+                           report_host_details_iterator_source_name (&details),
+                           report_host_details_iterator_source_desc (&details));
+                  cleanup_iterator (&details);
+                }
+            }
+
+          PRINT (out,
+                 "</host>");
+        }
+      cleanup_iterator (&hosts);
+
+      PRINT (out, "</report>");
+
+      if (fclose (out))
+        {
+          g_warning ("%s: fclose failed: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return -1;
+        }
+
+      return 0;
     }
 
   start_time = scan_start_time (report);
@@ -14924,12 +15224,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         {
           gboolean present;
           iterator_t hosts;
-          init_host_iterator (&hosts, report, host);
+          init_host_iterator (&hosts, report, host, 0);
           present = next (&hosts);
           if (delta && (present == FALSE))
             {
               cleanup_iterator (&hosts);
-              init_host_iterator (&hosts, delta, host);
+              init_host_iterator (&hosts, delta, host, 0);
               present = next (&hosts);
             }
           if (present)
@@ -14992,7 +15292,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   else
     {
       iterator_t hosts;
-      init_host_iterator (&hosts, report, NULL);
+      init_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
         {
           iterator_t details;
@@ -15038,7 +15338,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         }
       cleanup_iterator (&hosts);
 
-      init_host_iterator (&hosts, report, NULL);
+      init_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
         PRINT (out,
                  "<host_end><host>%s</host>%s</host_end>",
@@ -15091,6 +15391,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  * @param[in]  first_result       The result to start from.  The results are 0
  *                                indexed.
  * @param[in]  max_results        The maximum number of results returned.
+ * @param[in]  type               Type of report: NULL or "inventory".
  * @param[out] output_length      NULL or location for length of return.
  * @param[out] extension          NULL or location for report format extension.
  * @param[out] content_type       NULL or location for report format content
@@ -15104,8 +15405,8 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
                const char *min_cvss_base, const char *levels,
                int apply_overrides, const char *search_phrase, int notes,
                int notes_details, int overrides, int overrides_details,
-               int first_result, int max_results, gsize *output_length,
-               gchar **extension, gchar **content_type)
+               int first_result, int max_results, const char *type,
+               gsize *output_length, gchar **extension, gchar **content_type)
 {
   task_t task;
   gchar *xml_file;
@@ -15131,7 +15432,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
                         result_hosts_only, min_cvss_base, report_format,
                         levels, NULL, apply_overrides, search_phrase, notes,
                         notes_details, overrides, overrides_details,
-                        first_result, max_results))
+                        first_result, max_results, type))
     {
       g_free (xml_file);
       return NULL;
@@ -15537,6 +15838,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
  * @param[in]  escalator_id       ID of escalator to escalate report with,
  *                                instead of getting report.  NULL to get
  *                                report.
+ * @param[in]  type               Type of report: NULL or "inventory".
  *
  * @return 0 success, -1 error, 1 failed to find escalator.
  */
@@ -15552,13 +15854,17 @@ manage_send_report (report_t report, report_t delta_report,
                     int base64,
                     gboolean (*send) (const char *, int (*) (void*), void*),
                     int (*send_data_1) (void*), void *send_data_2,
-                    const char *escalator_id)
+                    const char *escalator_id, const char *type)
 {
   task_t task;
   gchar *xml_file;
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
 
-  if (report_task (report, &task))
+  // FIX same changes in manage_send?
+
+  if (type && (strcmp (type, "inventory") == 0))
+    task = 0;
+  else if (report_task (report, &task))
     return -1;
 
   /* Escalate instead, if requested. */
@@ -15604,7 +15910,7 @@ manage_send_report (report_t report, report_t delta_report,
                         sort_field, result_hosts_only, min_cvss_base,
                         report_format, levels, delta_states, apply_overrides,
                         search_phrase, notes, notes_details, overrides,
-                        overrides_details, first_result, max_results))
+                        overrides_details, first_result, max_results, type))
     {
       g_free (xml_file);
       return -1;

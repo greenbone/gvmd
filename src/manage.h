@@ -164,6 +164,7 @@ typedef long long int target_t;
 typedef long long int task_t;
 typedef long long int result_t;
 typedef long long int report_t;
+typedef long long int report_host_t;
 typedef long long int report_format_t;
 typedef long long int report_format_param_t;
 typedef long long int note_t;
@@ -770,7 +771,7 @@ const char*
 result_iterator_descr (iterator_t*);
 
 void
-init_host_iterator (iterator_t*, report_t, const char *);
+init_host_iterator (iterator_t*, report_t, const char *, report_host_t);
 
 const char*
 host_iterator_host (iterator_t*);
@@ -802,14 +803,14 @@ trim_partial_report (report_t);
 gchar *
 manage_report (report_t, report_format_t, int, const char*, int, const char *,
                const char *, int, const char *, int, int, int, int, int, int,
-               gsize *, gchar **, gchar **);
+               const char *, gsize *, gchar **, gchar **);
 
 int
 manage_send_report (report_t, report_t, report_format_t, int, const char*, int,
                     const char *, const char *, const char *, int,
                     const char *, int, int, int, int, int, int, int,
                     gboolean (*) (const char *, int (*) (void*), void*),
-                    int (*) (void*), void *, const char *);
+                    int (*) (void*), void *, const char *, const char *);
 
 
 /* RC's. */

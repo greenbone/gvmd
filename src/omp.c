@@ -1792,6 +1792,7 @@ typedef struct
   int overrides;         ///< Boolean.  Whether to include associated overrides.
   int overrides_details; ///< Boolean.  Whether to include details of above.
   int result_hosts_only; ///< Boolean.  Whether to include only resulted hosts.
+  char *type;            ///< Type of report.
 } get_reports_data_t;
 
 /**
@@ -1811,6 +1812,7 @@ get_reports_data_reset (get_reports_data_t *data)
   free (data->levels);
   free (data->search_phrase);
   free (data->min_cvss_base);
+  free (data->type);
 
   memset (data, 0, sizeof (get_reports_data_t));
 }
@@ -4287,9 +4289,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               get_reports_data->result_hosts_only = 1;
 
-            append_attribute (attribute_names, attribute_values,
-                              "min_cvss_base",
-                              &get_reports_data->min_cvss_base);
+            if (find_attribute (attribute_names, attribute_values,
+                                "type", &attribute))
+              openvas_append_string (&get_reports_data->type, attribute);
+            else
+              get_reports_data->type = g_strdup ("scan");
 
             set_client_state (CLIENT_GET_REPORTS);
           }
@@ -9676,7 +9680,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         float min_cvss_base;
         iterator_t reports;
 
-        if (get_reports_data->report_id
+        // FIX check if report only when type is "scan"
+
+        if ((strcmp (get_reports_data->type, "scan") == 0)
+            && get_reports_data->report_id
             && find_report (get_reports_data->report_id, &request_report))
           {
             get_reports_data_reset (get_reports_data);
@@ -9723,7 +9730,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        if (get_reports_data->report_id && request_report == 0)
+        if ((strcmp (get_reports_data->type, "scan") == 0)
+            && get_reports_data->report_id
+            && request_report == 0)
           {
             if (send_find_error_to_client ("get_reports",
                                            "report",
@@ -9739,7 +9748,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        if (get_reports_data->delta_report_id
+        if ((strcmp (get_reports_data->type, "scan") == 0)
+            && get_reports_data->delta_report_id
             && strcmp (get_reports_data->delta_report_id, "0")
             && delta_report == 0)
           {
@@ -9757,7 +9767,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        if (get_reports_data->min_cvss_base
+        if ((strcmp (get_reports_data->type, "scan") == 0)
+            && get_reports_data->min_cvss_base
             && strlen (get_reports_data->min_cvss_base)
             && (sscanf (get_reports_data->min_cvss_base,
                         "%f",
@@ -9801,6 +9812,75 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             " status=\"" STATUS_OK "\""
             " status_text=\"" STATUS_OK_TEXT "\">");
 
+        if (strcmp (get_reports_data->type, "inventory") == 0)
+          {
+            gchar *extension, *content_type;
+            int ret;
+
+            /* A host inventory report. */
+
+            content_type = report_format_content_type (report_format);
+            extension = report_format_extension (report_format);
+
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<report"
+              " type=\"inventory\""
+              " format_id=\"%s\""
+              " extension=\"%s\""
+              " content_type=\"%s\">",
+              get_reports_data->format_id,
+              extension,
+              content_type);
+
+            g_free (extension);
+            g_free (content_type);
+
+            ret = manage_send_report (0,
+                                      0,
+                                      report_format,
+                                      get_reports_data->sort_order,
+                                      get_reports_data->sort_field,
+                                      get_reports_data->result_hosts_only,
+                                      NULL,
+                                      get_reports_data->levels,
+                                      get_reports_data->delta_states,
+                                      get_reports_data->apply_overrides,
+                                      get_reports_data->search_phrase,
+                                      get_reports_data->notes,
+                                      get_reports_data->notes_details,
+                                      get_reports_data->overrides,
+                                      get_reports_data->overrides_details,
+                                      get_reports_data->first_result,
+                                      get_reports_data->max_results,
+                                      /* Special case the XML report, bah. */
+                                      strcmp
+                                       (get_reports_data->format_id,
+                                        "d5da9f67-8551-4e51-807b-b6a873d70e34"),
+                                      send_to_client,
+                                      write_to_client,
+                                      write_to_client_data,
+                                      get_reports_data->escalator_id,
+                                      "inventory");
+
+            if (ret)
+              {
+                internal_error_send_to_client (error);
+                cleanup_iterator (&reports);
+                get_reports_data_reset (get_reports_data);
+                set_client_state (CLIENT_AUTHENTIC);
+                return;
+              }
+
+            SEND_TO_CLIENT_OR_FAIL ("</report>"
+                                    "</get_reports_response>");
+
+            get_reports_data_reset (get_reports_data);
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
+          }
+
+        /* The usual scan report. */
+
         init_report_iterator (&reports, 0, request_report);
         while (next_report (&reports, &report))
           {
@@ -9813,6 +9893,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (get_reports_data->escalator_id == NULL)
               SENDF_TO_CLIENT_OR_FAIL
                ("<report"
+                " type=\"scan\""
                 " id=\"%s\""
                 " format_id=\"%s\""
                 " extension=\"%s\""
@@ -9849,7 +9930,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       send_to_client,
                                       write_to_client,
                                       write_to_client_data,
-                                      get_reports_data->escalator_id);
+                                      get_reports_data->escalator_id,
+                                      get_reports_data->type);
             if (ret)
               {
                 if (get_reports_data->escalator_id)
@@ -16167,7 +16249,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         iterator_t hosts;
                         GString *string = g_string_new ("");
 
-                        init_host_iterator (&hosts, running_report, NULL);
+                        init_host_iterator (&hosts, running_report, NULL, 0);
                         while (next (&hosts))
                           {
                             unsigned int max_port, current_port;
@@ -16617,7 +16699,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         iterator_t hosts;
                         GString *string = g_string_new ("");
 
-                        init_host_iterator (&hosts, running_report, NULL);
+                        init_host_iterator (&hosts, running_report, NULL, 0);
                         while (next (&hosts))
                           {
                             unsigned int max_port, current_port;

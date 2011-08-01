@@ -1,3 +1,26 @@
+2011-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add a basic host inventory, as a new type of GET_REPORT report.
+
+	* src/manage_sql.c (report_host_t): Remove.  To manage.h.
+	(init_host_iterator): Add report_host arg, to iterate over single
+	report_host.  Update callers.
+	(host_iterator_report, host_iterator_report_uuid, init_inventory_iterator)
+	(inventory_iterator_ip, host_last_report_host, host_report_count): New
+	functions.
+	(print_report_xml): Add type arg for type of report.  Include entire host
+	inventory when type is inventory, using existing OMP entities.
+	(manage_report, manage_send_report): Add type arg.
+
+	* src/manage.h: Update headers accordingly.
+	(report_host_t): New type.  From manage_sql.c.
+
+	* src/manage.c (send_user_rules): Update init_host_iterator callers.
+
+	* src/omp.c (get_reports_data_t, get_reports_data_reset): Add type.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add type to
+	GET_REPORT.  Add case for "inventory" type.
+
 2011-07-21  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
