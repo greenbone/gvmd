@@ -14266,6 +14266,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
           ip = inventory_iterator_ip (&hosts);
 
+          /** @todo Example task should really use an IP. */
+          if (strcmp (ip, "localhost") == 0)
+            continue;
+
           if (host_last_report_host (ip, &report_host))
             {
               cleanup_iterator (&hosts);
