@@ -10468,8 +10468,10 @@ where_search_phrase (const char* search_phrase)
       phrase_sql = g_string_new ("");
       g_string_append_printf (phrase_sql,
                               " AND (port LIKE '%%%%%s%%%%'"
+                              " OR host LIKE '%%%%%s%%%%'"
                               " OR nvt LIKE '%%%%%s%%%%'"
                               " OR description LIKE '%%%%%s%%%%')",
+                              quoted_search_phrase,
                               quoted_search_phrase,
                               quoted_search_phrase,
                               quoted_search_phrase);
