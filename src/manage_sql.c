@@ -14316,7 +14316,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
                   report_counts_id (report, NULL, &holes, &infos, &logs,
                                     &warnings, &false_positives, 0,
-                                    NULL);
+                                    ip);
 
                   PRINT (out,
                          "<detail>"

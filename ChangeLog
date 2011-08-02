@@ -1,3 +1,7 @@
+2011-08-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Count inventory results by host.
+
 2011-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add a basic host inventory, as a new type of GET_REPORT report.
