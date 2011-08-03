@@ -4744,7 +4744,7 @@ migrate_44_to_45 ()
 }
 
 /**
- * @brief Migrate the database from version 44 to version 45.
+ * @brief Migrate the database from version 45 to version 46.
  *
  * @return 0 success, -1 error.
  */
@@ -4778,7 +4778,7 @@ migrate_45_to_46 ()
 }
 
 /**
- * @brief Migrate the database from version 44 to version 46.
+ * @brief Migrate the database from version 46 to version 47.
  *
  * @return 0 success, -1 error.
  */
@@ -4813,6 +4813,44 @@ migrate_46_to_47 ()
   /* Set the database version to 47. */
 
   set_db_version (47);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 47 to version 48.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_47_to_48 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Require that the database is currently version 47. */
+
+  if (manage_db_version () != 47)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Scanner "app" host detail changed name to "App". */
+
+  /* Ensure that the table exists. */
+  sql ("CREATE TABLE IF NOT EXISTS report_host_details"
+       " (id INTEGER PRIMARY KEY, report_host INTEGER, source_type,"
+       "  source_name, source_description, name, value);");
+
+  sql ("UPDATE report_host_details SET name = 'App' WHERE name = 'app';");
+
+  /* Set the database version to 48. */
+
+  set_db_version (48);
 
   sql ("COMMIT;");
 
@@ -4871,6 +4909,7 @@ static migrator_t database_migrators[]
     {45, migrate_44_to_45},
     {46, migrate_45_to_46},
     {47, migrate_46_to_47},
+    {48, migrate_47_to_48},
     /* End marker. */
     {-1, NULL}};
 

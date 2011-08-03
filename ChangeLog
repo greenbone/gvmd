@@ -1,3 +1,15 @@
+2011-08-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add database migrator, from version 47 to 48, in order to change "app"
+	host details to "App".
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 48.
+
+	* src/manage_sql.c (migrate_47_to_48): New function.
+	(database_migrators): Add migrate_47_to_48.
+
+	* doc/db.png: Update for version change.
+
 2011-08-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml): Skip the example task host in the
