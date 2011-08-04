@@ -1,5 +1,12 @@
 2011-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_inventory_iterator): Add levels arg.
+	(filtered_host_count): New function.
+	(print_report_xml): Pass levels to init_inventory_iterator.  Do filtered
+	count with filtered_host_count.
+
+2011-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_inventory_iterator): Add first_result and
 	max_results args.
 	(host_count): New template.

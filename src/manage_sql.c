@@ -11298,16 +11298,51 @@ DEF_ACCESS (report_host_details_iterator_source_desc, 5);
  * @param[in]  first_result  The host to start from.  The hosts are 0
  *                           indexed.
  * @param[in]  max_results   The maximum number of hosts returned.
+ * @param[in]  levels         String describing threat levels (message types)
+ *                            to include in hosts (for example, "hml" for
+ *                            High, Medium and Low).  All levels if NULL.
  */
 static void
 init_inventory_iterator (iterator_t* iterator, int first_result,
-                         int max_results)
+                         int max_results, const char *levels)
 {
-  init_iterator (iterator,
-                 "SELECT DISTINCT host FROM report_hosts"
-                 " ORDER BY host COLLATE collate_ip"
-                 " LIMIT %i OFFSET %i;",
-                 max_results, first_result);
+  if (levels && strlen (levels))
+    {
+      GString *levels_sql;
+
+      levels_sql = where_levels_type (levels);
+
+      init_iterator (iterator,
+                     "SELECT host AS outer_host FROM"
+                     " (SELECT DISTINCT host from report_hosts"
+                     "  ORDER BY ROWID DESC)"
+                     " WHERE"
+                     " (SELECT count (*) FROM results, report_results"
+                     "  WHERE results.host = outer_host"
+                     "  %s"
+                     "  AND results.ROWID = report_results.result"
+                     "  AND report_results.report"
+                     "  = (SELECT report FROM report_hosts WHERE ROWID ="
+                     "     (SELECT ROWID from report_hosts"
+                     "      WHERE report_hosts.host = outer_host"
+                     "      ORDER BY report_hosts.ROWID DESC)))"
+                     " > 0"
+                     " ORDER BY outer_host COLLATE collate_ip"
+                     " LIMIT %i OFFSET %i;",
+                     levels_sql ? levels_sql->str : "",
+                     max_results,
+                     first_result);
+
+      if (levels_sql)
+        g_string_free (levels_sql, TRUE);
+    }
+  else
+    init_iterator (iterator,
+                   "SELECT DISTINCT host FROM report_hosts"
+                   " WHERE report_hosts.report"
+                   " ORDER BY host COLLATE collate_ip"
+                   " LIMIT %i OFFSET %i;",
+                   max_results, first_result);
 }
 
 /**
@@ -14062,7 +14097,6 @@ host_report_count (const char *host)
   return count;
 }
 
-
 /**
  * @brief Count hosts.
  *
@@ -14074,6 +14108,51 @@ host_count ()
   return sql_int (0, 0,
                   "SELECT count (DISTINCT host) FROM report_hosts"
                   " WHERE host != 'localhost';");
+}
+
+/**
+ * @brief Count hosts with filtering.
+ *
+ * @param  levels  Levels.
+ *
+ * @return Host count.
+ */
+static int
+filtered_host_count (const char *levels)
+{
+  if (levels && strlen (levels))
+    {
+      int ret;
+      GString *levels_sql;
+
+      levels_sql = where_levels_type (levels);
+
+      ret = sql_int (0, 0,
+                     "SELECT count (outer_host) FROM"
+                     " (SELECT DISTINCT host AS outer_host from report_hosts"
+                     "  WHERE outer_host != 'localhost'"
+                     "  ORDER BY ROWID DESC)"
+                     " WHERE"
+                     " (SELECT count (*) FROM results, report_results"
+                     "  WHERE results.host = outer_host"
+                     "  %s"
+                     "  AND results.ROWID = report_results.result"
+                     "  AND report_results.report"
+                     "  = (SELECT report FROM report_hosts WHERE ROWID ="
+                     "     (SELECT ROWID from report_hosts"
+                     "      WHERE report_hosts.host = outer_host"
+                     "      ORDER BY report_hosts.ROWID DESC)))"
+                     " > 0"
+                     " ORDER BY outer_host COLLATE collate_ip;",
+                     levels_sql ? levels_sql->str : "");
+
+      if (levels_sql)
+        g_string_free (levels_sql, TRUE);
+
+      return ret;
+    }
+
+  return host_count ();
 }
 
 /**
@@ -14316,14 +14395,14 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (type && (strcmp (type, "inventory") == 0))
     {
       iterator_t hosts;
-      init_inventory_iterator (&hosts, first_result, max_results);
+      init_inventory_iterator (&hosts, first_result, max_results, levels);
       PRINT (out,
              "<host_count>"
              "<full>%i</full>"
              "<filtered>%i</filtered>"
              "</host_count>",
              host_count (),
-             host_count ());
+             filtered_host_count (levels));
       PRINT (out,
              "<hosts start=\"%i\" max=\"%i\"/>",
              /* Add 1 for 1 indexing. */
