@@ -11295,13 +11295,19 @@ DEF_ACCESS (report_host_details_iterator_source_desc, 5);
  * @brief Initialise a host inventory iterator.
  *
  * @param[in]  iterator  Iterator.
+ * @param[in]  first_result  The host to start from.  The hosts are 0
+ *                           indexed.
+ * @param[in]  max_results   The maximum number of hosts returned.
  */
 static void
-init_inventory_iterator (iterator_t* iterator)
+init_inventory_iterator (iterator_t* iterator, int first_result,
+                         int max_results)
 {
   init_iterator (iterator,
                  "SELECT DISTINCT host FROM report_hosts"
-                 " ORDER BY host COLLATE collate_ip;");
+                 " ORDER BY host COLLATE collate_ip"
+                 " LIMIT %i OFFSET %i;",
+                 max_results, first_result);
 }
 
 /**
@@ -14056,6 +14062,20 @@ host_report_count (const char *host)
   return count;
 }
 
+
+/**
+ * @brief Count hosts.
+ *
+ * @return Host count.
+ */
+static int
+host_count ()
+{
+  return sql_int (0, 0,
+                  "SELECT count (DISTINCT host) FROM report_hosts"
+                  " WHERE host != 'localhost';");
+}
+
 /**
  * @brief Print the XML for a report to a file.
  *
@@ -14296,7 +14316,20 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (type && (strcmp (type, "inventory") == 0))
     {
       iterator_t hosts;
-      init_inventory_iterator (&hosts);
+      init_inventory_iterator (&hosts, first_result, max_results);
+      PRINT (out,
+             "<host_count>"
+             "<full>%i</full>"
+             "<filtered>%i</filtered>"
+             "</host_count>",
+             host_count (),
+             host_count ());
+      PRINT (out,
+             "<hosts start=\"%i\" max=\"%i\"/>",
+             /* Add 1 for 1 indexing. */
+             first_result + 1,
+             max_results);
+
       while (next (&hosts))
         {
           iterator_t report_hosts;

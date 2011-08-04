@@ -1,3 +1,11 @@
+2011-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_inventory_iterator): Add first_result and
+	max_results args.
+	(host_count): New template.
+	(print_report_xml): Add HOST_COUNT and HOSTS to REPORT.  Pass first and
+	max to init_inventory_iterator.
+
 2011-08-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add database migrator, from version 47 to 48, in order to change "app"
