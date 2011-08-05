@@ -11301,10 +11301,13 @@ DEF_ACCESS (report_host_details_iterator_source_desc, 5);
  * @param[in]  levels         String describing threat levels (message types)
  *                            to include in hosts (for example, "hml" for
  *                            High, Medium and Low).  All levels if NULL.
+ * @param[in]   search_phrase  Phrase that host IPs must include.  All
+ *                             hosts if NULL or "".
  */
 static void
 init_inventory_iterator (iterator_t* iterator, int first_result,
-                         int max_results, const char *levels)
+                         int max_results, const char *levels,
+                         const char *search_phrase)
 {
   if (levels && strlen (levels))
     {
@@ -11317,6 +11320,7 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
                      " (SELECT DISTINCT host from report_hosts"
                      "  ORDER BY ROWID DESC)"
                      " WHERE"
+                     "%s%s%s"
                      " (SELECT count (*) FROM results, report_results"
                      "  WHERE results.host = outer_host"
                      "  %s"
@@ -11329,12 +11333,28 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
                      " > 0"
                      " ORDER BY outer_host COLLATE collate_ip"
                      " LIMIT %i OFFSET %i;",
+                     search_phrase ? " outer_host LIKE '%" : "",
+                     search_phrase ? search_phrase : "",
+                     search_phrase ? "%' AND" : "",
                      levels_sql ? levels_sql->str : "",
                      max_results,
                      first_result);
 
       if (levels_sql)
         g_string_free (levels_sql, TRUE);
+    }
+  else if (search_phrase && strlen (search_phrase))
+    {
+      init_iterator (iterator,
+                     "SELECT host AS outer_host FROM"
+                     " (SELECT DISTINCT host from report_hosts"
+                     "  ORDER BY ROWID DESC)"
+                     " WHERE outer_host LIKE '%%%s%%'"
+                     " ORDER BY outer_host COLLATE collate_ip"
+                     " LIMIT %i OFFSET %i;",
+                     search_phrase,
+                     max_results,
+                     first_result);
     }
   else
     init_iterator (iterator,
@@ -14113,12 +14133,14 @@ host_count ()
 /**
  * @brief Count hosts with filtering.
  *
- * @param  levels  Levels.
+ * @param[in]  levels         Levels.
+ * @param[in]  search_phrase  Phrase that host IPs must include.  All hosts
+ *                            if NULL or "".
  *
  * @return Host count.
  */
 static int
-filtered_host_count (const char *levels)
+filtered_host_count (const char *levels, const char *search_phrase)
 {
   if (levels && strlen (levels))
     {
@@ -14133,6 +14155,7 @@ filtered_host_count (const char *levels)
                      "  WHERE outer_host != 'localhost'"
                      "  ORDER BY ROWID DESC)"
                      " WHERE"
+                     "%s%s%s"
                      " (SELECT count (*) FROM results, report_results"
                      "  WHERE results.host = outer_host"
                      "  %s"
@@ -14144,12 +14167,24 @@ filtered_host_count (const char *levels)
                      "      ORDER BY report_hosts.ROWID DESC)))"
                      " > 0"
                      " ORDER BY outer_host COLLATE collate_ip;",
+                     search_phrase ? " outer_host LIKE '%" : "",
+                     search_phrase ? search_phrase : "",
+                     search_phrase ? "%' AND" : "",
                      levels_sql ? levels_sql->str : "");
 
       if (levels_sql)
         g_string_free (levels_sql, TRUE);
 
       return ret;
+    }
+  else if (search_phrase && strlen (search_phrase))
+    {
+      return sql_int (0, 0,
+                      "SELECT count (outer_host) FROM"
+                      " (SELECT DISTINCT host AS outer_host from report_hosts"
+                      "  ORDER BY ROWID DESC)"
+                      " WHERE outer_host LIKE '%%%s%%';",
+                      search_phrase);
     }
 
   return host_count ();
@@ -14395,14 +14430,15 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (type && (strcmp (type, "inventory") == 0))
     {
       iterator_t hosts;
-      init_inventory_iterator (&hosts, first_result, max_results, levels);
+      init_inventory_iterator (&hosts, first_result, max_results, levels,
+                               search_phrase);
       PRINT (out,
              "<host_count>"
              "<full>%i</full>"
              "<filtered>%i</filtered>"
              "</host_count>",
              host_count (),
-             filtered_host_count (levels));
+             filtered_host_count (levels, search_phrase));
       PRINT (out,
              "<hosts start=\"%i\" max=\"%i\"/>",
              /* Add 1 for 1 indexing. */
