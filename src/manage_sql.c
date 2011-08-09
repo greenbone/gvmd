@@ -1059,6 +1059,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_host_details (id INTEGER PRIMARY KEY, report_host INTEGER, source_type, source_name, source_description, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
+  sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_host ON report_hosts (host);");
   sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_report ON report_hosts (report);");
   sql ("CREATE TABLE IF NOT EXISTS report_format_param_options (id INTEGER PRIMARY KEY, report_format_param, value);");
   sql ("CREATE TABLE IF NOT EXISTS report_format_param_options_trash (id INTEGER PRIMARY KEY, report_format_param, value);");
@@ -11315,30 +11316,52 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
 
       levels_sql = where_levels_type (levels);
 
-      init_iterator (iterator,
-                     "SELECT host AS outer_host FROM"
-                     " (SELECT DISTINCT host from report_hosts"
-                     "  ORDER BY ROWID DESC)"
-                     " WHERE"
-                     "%s%s%s"
-                     " (SELECT count (*) FROM results, report_results"
-                     "  WHERE results.host = outer_host"
-                     "  %s"
-                     "  AND results.ROWID = report_results.result"
-                     "  AND report_results.report"
-                     "  = (SELECT report FROM report_hosts WHERE ROWID ="
-                     "     (SELECT ROWID from report_hosts"
-                     "      WHERE report_hosts.host = outer_host"
-                     "      ORDER BY report_hosts.ROWID DESC)))"
-                     " > 0"
-                     " ORDER BY outer_host COLLATE collate_ip"
-                     " LIMIT %i OFFSET %i;",
-                     search_phrase ? " outer_host LIKE '%" : "",
-                     search_phrase ? search_phrase : "",
-                     search_phrase ? "%' AND" : "",
-                     levels_sql ? levels_sql->str : "",
-                     max_results,
-                     first_result);
+      if (search_phrase)
+        init_iterator (iterator,
+                       "SELECT host"
+                       " FROM report_hosts"
+                       " GROUP BY host"
+                       " HAVING"
+                       /* Search IP. */
+                       " (host LIKE '%%%s%%%'"
+                       /* Search hostname. */
+                       "  OR EXISTS"
+                       "  (SELECT * FROM report_host_details"
+                       "   WHERE report_hosts.ROWID = report_host"
+                       "   AND name = 'hostname'"
+                       "   AND source_type = 'nvt'"
+                       "   AND value LIKE '%%%s%%')) AND"
+                       /* Levels. */
+                       " EXISTS"
+                       " (SELECT results.ROWID FROM results, report_results"
+                       "  WHERE results.host = report_hosts.host"
+                       "  %s"
+                       "  AND results.ROWID = report_results.result"
+                       "  AND report_results.report = report_hosts.report)"
+                       " ORDER BY host COLLATE collate_ip"
+                       " LIMIT %i OFFSET %i;",
+                       search_phrase,
+                       search_phrase,
+                       levels_sql ? levels_sql->str : "",
+                       max_results,
+                       first_result);
+      else
+        init_iterator (iterator,
+                       "SELECT host"
+                       " FROM report_hosts"
+                       " GROUP BY host"
+                       " HAVING"
+                       " EXISTS"
+                       " (SELECT results.ROWID FROM results, report_results"
+                       "  WHERE results.host = report_hosts.host"
+                       "  %s"
+                       "  AND results.ROWID = report_results.result"
+                       "  AND report_results.report = report_hosts.report)"
+                       " ORDER BY host COLLATE collate_ip"
+                       " LIMIT %i OFFSET %i;",
+                       levels_sql ? levels_sql->str : "",
+                       max_results,
+                       first_result);
 
       if (levels_sql)
         g_string_free (levels_sql, TRUE);
@@ -11346,12 +11369,19 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
   else if (search_phrase && strlen (search_phrase))
     {
       init_iterator (iterator,
-                     "SELECT host AS outer_host FROM"
-                     " (SELECT DISTINCT host from report_hosts"
-                     "  ORDER BY ROWID DESC)"
-                     " WHERE outer_host LIKE '%%%s%%'"
-                     " ORDER BY outer_host COLLATE collate_ip"
+                     "SELECT host"
+                     " FROM report_hosts"
+                     " GROUP BY host"
+                     " HAVING host LIKE '%%%s%%'"
+                     " OR EXISTS"
+                     " (SELECT * FROM report_host_details"
+                     "  WHERE report_hosts.ROWID = report_host"
+                     "  AND name = 'hostname'"
+                     "  AND source_type = 'nvt'"
+                     "  AND value LIKE '%%%s%%')"
+                     " ORDER BY host COLLATE collate_ip"
                      " LIMIT %i OFFSET %i;",
+                     search_phrase,
                      search_phrase,
                      max_results,
                      first_result);
@@ -14149,28 +14179,48 @@ filtered_host_count (const char *levels, const char *search_phrase)
 
       levels_sql = where_levels_type (levels);
 
-      ret = sql_int (0, 0,
-                     "SELECT count (outer_host) FROM"
-                     " (SELECT DISTINCT host AS outer_host from report_hosts"
-                     "  WHERE outer_host != 'localhost'"
-                     "  ORDER BY ROWID DESC)"
-                     " WHERE"
-                     "%s%s%s"
-                     " (SELECT count (*) FROM results, report_results"
-                     "  WHERE results.host = outer_host"
-                     "  %s"
-                     "  AND results.ROWID = report_results.result"
-                     "  AND report_results.report"
-                     "  = (SELECT report FROM report_hosts WHERE ROWID ="
-                     "     (SELECT ROWID from report_hosts"
-                     "      WHERE report_hosts.host = outer_host"
-                     "      ORDER BY report_hosts.ROWID DESC)))"
-                     " > 0"
-                     " ORDER BY outer_host COLLATE collate_ip;",
-                     search_phrase ? " outer_host LIKE '%" : "",
-                     search_phrase ? search_phrase : "",
-                     search_phrase ? "%' AND" : "",
-                     levels_sql ? levels_sql->str : "");
+      if (search_phrase)
+        ret = sql_int (0, 0,
+                       "SELECT count(*) FROM"
+                       " (SELECT host"
+                       "  FROM report_hosts"
+                       "  WHERE host != 'localhost'"
+                       "  GROUP BY host"
+                       "  HAVING"
+                       /* Search IP. */
+                       "  (host LIKE '%%%s%%%'"
+                       /* Search hostname. */
+                       "   OR EXISTS"
+                       "   (SELECT * FROM report_host_details"
+                       "    WHERE report_hosts.ROWID = report_host"
+                       "    AND name = 'hostname'"
+                       "    AND source_type = 'nvt'"
+                       "    AND value LIKE '%%%s%%')) AND"
+                       /* Levels. */
+                       "  EXISTS"
+                       "  (SELECT results.ROWID FROM results, report_results"
+                       "   WHERE results.host = report_hosts.host"
+                       "   %s"
+                       "   AND results.ROWID = report_results.result"
+                       "   AND report_results.report = report_hosts.report));",
+                       search_phrase,
+                       search_phrase,
+                       levels_sql ? levels_sql->str : "");
+      else
+        ret = sql_int (0, 0,
+                       "SELECT count(*) FROM"
+                       " (SELECT host"
+                       "  FROM report_hosts"
+                       "  WHERE host != 'localhost'"
+                       "  GROUP BY host"
+                       "  HAVING"
+                       "  EXISTS"
+                       "  (SELECT results.ROWID FROM results, report_results"
+                       "   WHERE results.host = report_hosts.host"
+                       "   %s"
+                       "   AND results.ROWID = report_results.result"
+                       "   AND report_results.report = report_hosts.report));",
+                       levels_sql ? levels_sql->str : "");
 
       if (levels_sql)
         g_string_free (levels_sql, TRUE);
@@ -14180,10 +14230,20 @@ filtered_host_count (const char *levels, const char *search_phrase)
   else if (search_phrase && strlen (search_phrase))
     {
       return sql_int (0, 0,
-                      "SELECT count (outer_host) FROM"
-                      " (SELECT DISTINCT host AS outer_host from report_hosts"
-                      "  ORDER BY ROWID DESC)"
-                      " WHERE outer_host LIKE '%%%s%%';",
+                      "SELECT count(*) FROM"
+                      " (SELECT host"
+                      "  FROM report_hosts"
+                      "  WHERE host != 'localhost'"
+                      "  GROUP BY host"
+                      "  HAVING host LIKE '%%%s%%'"
+                      "  OR EXISTS"
+                      "  (SELECT * FROM report_host_details"
+                      "   WHERE report_hosts.ROWID = report_host"
+                      "   AND name = 'hostname'"
+                      "   AND source_type = 'nvt'"
+                      "   AND value LIKE '%%%s%%')"
+                      "  ORDER BY host COLLATE collate_ip);",
+                      search_phrase,
                       search_phrase);
     }
 

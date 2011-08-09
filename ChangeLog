@@ -1,3 +1,9 @@
+2011-08-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_tables): Add index report_hosts_by_host.
+	(init_inventory_iterator, filtered_host_count): Add hostname to text
+	phrase filtering.
+
 2011-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_inventory_iterator, filtered_host_count): Add
