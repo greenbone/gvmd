@@ -11316,7 +11316,7 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
 
       levels_sql = where_levels_type (levels);
 
-      if (search_phrase)
+      if (search_phrase && strlen (search_phrase))
         init_iterator (iterator,
                        "SELECT host"
                        " FROM report_hosts"
@@ -14183,7 +14183,7 @@ filtered_host_count (const char *levels, const char *search_phrase)
 
       levels_sql = where_levels_type (levels);
 
-      if (search_phrase)
+      if (search_phrase && strlen (search_phrase))
         ret = sql_int (0, 0,
                        "SELECT count(*) FROM"
                        " (SELECT host"
