@@ -1,5 +1,12 @@
 2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_inventory_iterator, filtered_host_count)
+	(host_last_report_host): Only consider results of tasks owned by the user
+	making the request.  Remove hacks to exclude example task, as it has an
+	null user.
+
+2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Switch the host of the example result to an IP.  Hence increase
 	database version to 49.  Add database migration from version 48 to 49.
 	In the migrator also ensure that the result has the right UUID.

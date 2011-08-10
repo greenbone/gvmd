@@ -11355,6 +11355,8 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
                          int max_results, const char *levels,
                          const char *search_phrase)
 {
+  assert (current_credentials.uuid);
+
   if (levels && strlen (levels))
     {
       GString *levels_sql;
@@ -11365,10 +11367,14 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
         init_iterator (iterator,
                        "SELECT host"
                        " FROM report_hosts"
-                       " WHERE (SELECT tasks.hidden FROM tasks, reports"
-                       "        WHERE reports.task = tasks.ROWID"
-                       "        AND reports.ROWID = report_hosts.report)"
-                       "       = 0"
+                       " WHERE (SELECT reports.owner FROM reports"
+                       "        WHERE reports.ROWID = report_hosts.report)"
+                       "       = (SELECT ROWID FROM users"
+                       "          WHERE users.uuid = '%s')"
+                       " AND (SELECT tasks.hidden FROM tasks, reports"
+                       "      WHERE reports.task = tasks.ROWID"
+                       "      AND reports.ROWID = report_hosts.report)"
+                       "     = 0"
                        " AND (SELECT reports.scan_run_status FROM reports"
                        "      WHERE reports.ROWID = report_hosts.report)"
                        "     = %u"
@@ -11394,6 +11400,7 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
                        "  AND report_results.report = report_hosts.report)"
                        " ORDER BY host COLLATE collate_ip"
                        " LIMIT %i OFFSET %i;",
+                       current_credentials.uuid,
                        TASK_STATUS_DONE,
                        search_phrase,
                        search_phrase,
@@ -11404,10 +11411,14 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
         init_iterator (iterator,
                        "SELECT host"
                        " FROM report_hosts"
-                       " WHERE (SELECT tasks.hidden FROM tasks, reports"
-                       "        WHERE reports.task = tasks.ROWID"
-                       "        AND reports.ROWID = report_hosts.report)"
-                       "       = 0"
+                       " WHERE (SELECT reports.owner FROM reports"
+                       "        WHERE reports.ROWID = report_hosts.report)"
+                       "       = (SELECT ROWID FROM users"
+                       "          WHERE users.uuid = '%s')"
+                       " AND (SELECT tasks.hidden FROM tasks, reports"
+                       "      WHERE reports.task = tasks.ROWID"
+                       "      AND reports.ROWID = report_hosts.report)"
+                       "     = 0"
                        " AND (SELECT reports.scan_run_status FROM reports"
                        "      WHERE reports.ROWID = report_hosts.report)"
                        "     = %u"
@@ -11421,6 +11432,7 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
                        "  AND report_results.report = report_hosts.report)"
                        " ORDER BY host COLLATE collate_ip"
                        " LIMIT %i OFFSET %i;",
+                       current_credentials.uuid,
                        TASK_STATUS_DONE,
                        levels_sql ? levels_sql->str : "",
                        max_results,
@@ -11434,10 +11446,14 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
       init_iterator (iterator,
                      "SELECT host"
                      " FROM report_hosts"
-                     " WHERE (SELECT tasks.hidden FROM tasks, reports"
-                     "        WHERE reports.task = tasks.ROWID"
-                     "        AND reports.ROWID = report_hosts.report)"
-                     "       = 0"
+                     " WHERE (SELECT reports.owner FROM reports"
+                     "        WHERE reports.ROWID = report_hosts.report)"
+                     "       = (SELECT ROWID FROM users"
+                     "          WHERE users.uuid = '%s')"
+                     " AND (SELECT tasks.hidden FROM tasks, reports"
+                     "      WHERE reports.task = tasks.ROWID"
+                     "      AND reports.ROWID = report_hosts.report)"
+                     "     = 0"
                      " AND (SELECT reports.scan_run_status FROM reports"
                      "      WHERE reports.ROWID = report_hosts.report)"
                      "     = %u"
@@ -11453,6 +11469,7 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
                      "  AND value LIKE '%%%s%%')"
                      " ORDER BY host COLLATE collate_ip"
                      " LIMIT %i OFFSET %i;",
+                     current_credentials.uuid,
                      TASK_STATUS_DONE,
                      search_phrase,
                      search_phrase,
@@ -11462,7 +11479,10 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
   else
     init_iterator (iterator,
                    "SELECT DISTINCT host FROM report_hosts"
-                   " WHERE report_hosts.report"
+                   " WHERE (SELECT reports.owner FROM reports"
+                   "        WHERE reports.ROWID = report_hosts.report)"
+                   "       = (SELECT ROWID FROM users"
+                   "          WHERE users.uuid = '%s')"
                    " AND (SELECT tasks.hidden FROM tasks, reports"
                    "      WHERE reports.task = tasks.ROWID"
                    "      AND reports.ROWID = report_hosts.report)"
@@ -11472,6 +11492,7 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
                    "     = %u"
                    " ORDER BY host COLLATE collate_ip"
                    " LIMIT %i OFFSET %i;",
+                   current_credentials.uuid,
                    TASK_STATUS_DONE,
                    max_results,
                    first_result);
@@ -14187,9 +14208,16 @@ static gboolean
 host_last_report_host (const char *host, report_host_t *report_host)
 {
   gchar *quoted_host;
+
+  assert (current_credentials.uuid);
+
   quoted_host = sql_quote (host);
   switch (sql_int64 (report_host, 0, 0,
                      "SELECT ROWID FROM report_hosts WHERE host = '%s'"
+                     " AND (SELECT reports.owner FROM reports"
+                     "      WHERE reports.ROWID = report_hosts.report)"
+                     "     = (SELECT ROWID FROM users"
+                     "        WHERE users.uuid = '%s')"
                      " AND (SELECT tasks.hidden FROM tasks, reports"
                      "      WHERE reports.task = tasks.ROWID"
                      "      AND reports.ROWID = report_hosts.report)"
@@ -14199,6 +14227,7 @@ host_last_report_host (const char *host, report_host_t *report_host)
                      "     = %u"
                      " ORDER BY ROWID DESC LIMIT 1;",
                      host,
+                     current_credentials.uuid,
                      TASK_STATUS_DONE))
     {
       case 0:
@@ -14262,6 +14291,8 @@ host_count ()
 static int
 filtered_host_count (const char *levels, const char *search_phrase)
 {
+  assert (current_credentials.uuid);
+
   if (levels && strlen (levels))
     {
       int ret;
@@ -14274,7 +14305,10 @@ filtered_host_count (const char *levels, const char *search_phrase)
                        "SELECT count(*) FROM"
                        " (SELECT host"
                        "  FROM report_hosts"
-                       "  WHERE host != 'localhost'"
+                       "  WHERE (SELECT reports.owner FROM reports"
+                       "         WHERE reports.ROWID = report_hosts.report)"
+                       "        = (SELECT ROWID FROM users"
+                       "           WHERE users.uuid = '%s')"
                        "  AND (SELECT tasks.hidden FROM tasks, reports"
                        "       WHERE reports.task = tasks.ROWID"
                        "       AND reports.ROWID = report_hosts.report)"
@@ -14302,6 +14336,7 @@ filtered_host_count (const char *levels, const char *search_phrase)
                        "   %s"
                        "   AND results.ROWID = report_results.result"
                        "   AND report_results.report = report_hosts.report));",
+                       current_credentials.uuid,
                        TASK_STATUS_DONE,
                        search_phrase,
                        search_phrase,
@@ -14311,7 +14346,10 @@ filtered_host_count (const char *levels, const char *search_phrase)
                        "SELECT count(*) FROM"
                        " (SELECT host"
                        "  FROM report_hosts"
-                       "  WHERE host != 'localhost'"
+                       "  WHERE (SELECT reports.owner FROM reports"
+                       "         WHERE reports.ROWID = report_hosts.report)"
+                       "        = (SELECT ROWID FROM users"
+                       "           WHERE users.uuid = '%s')"
                        "  AND (SELECT tasks.hidden FROM tasks, reports"
                        "       WHERE reports.task = tasks.ROWID"
                        "       AND reports.ROWID = report_hosts.report)"
@@ -14327,6 +14365,7 @@ filtered_host_count (const char *levels, const char *search_phrase)
                        "   %s"
                        "   AND results.ROWID = report_results.result"
                        "   AND report_results.report = report_hosts.report));",
+                       current_credentials.uuid,
                        TASK_STATUS_DONE,
                        levels_sql ? levels_sql->str : "");
 
@@ -14341,7 +14380,10 @@ filtered_host_count (const char *levels, const char *search_phrase)
                       "SELECT count(*) FROM"
                       " (SELECT host"
                       "  FROM report_hosts"
-                      "  WHERE host != 'localhost'"
+                      "  WHERE (SELECT reports.owner FROM reports"
+                      "         WHERE reports.ROWID = report_hosts.report)"
+                      "        = (SELECT ROWID FROM users"
+                      "           WHERE users.uuid = '%s')"
                       "  AND (SELECT tasks.hidden FROM tasks, reports"
                       "       WHERE reports.task = tasks.ROWID"
                       "       AND reports.ROWID = report_hosts.report)"
@@ -14360,6 +14402,7 @@ filtered_host_count (const char *levels, const char *search_phrase)
                       "   AND source_type = 'nvt'"
                       "   AND value LIKE '%%%s%%')"
                       "  ORDER BY host COLLATE collate_ip);",
+                      current_credentials.uuid,
                       TASK_STATUS_DONE,
                       search_phrase,
                       search_phrase);
@@ -14368,7 +14411,10 @@ filtered_host_count (const char *levels, const char *search_phrase)
   return sql_int (0, 0,
                   "SELECT count(*) FROM"
                   " (SELECT DISTINCT host FROM report_hosts"
-                  "  WHERE report_hosts.report"
+                  "  WHERE (SELECT reports.owner FROM reports"
+                  "         WHERE reports.ROWID = report_hosts.report)"
+                  "        = (SELECT ROWID FROM users"
+                  "           WHERE users.uuid = '%s')"
                   "  AND (SELECT tasks.hidden FROM tasks, reports"
                   "       WHERE reports.task = tasks.ROWID"
                   "       AND reports.ROWID = report_hosts.report)"
@@ -14376,6 +14422,7 @@ filtered_host_count (const char *levels, const char *search_phrase)
                   "  AND (SELECT reports.scan_run_status FROM reports"
                   "       WHERE reports.ROWID = report_hosts.report)"
                   "      = %u);",
+                  current_credentials.uuid,
                   TASK_STATUS_DONE);
 }
 
@@ -14641,10 +14688,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           const char *ip;
 
           ip = inventory_iterator_ip (&hosts);
-
-          /** @todo Example task should really use an IP. */
-          if (strcmp (ip, "localhost") == 0)
-            continue;
 
           if (host_last_report_host (ip, &report_host))
             {
