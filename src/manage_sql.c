@@ -14320,7 +14320,18 @@ filtered_host_count (const char *levels, const char *search_phrase)
                       search_phrase);
     }
 
-  return host_count ();
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM"
+                  " (SELECT DISTINCT host FROM report_hosts"
+                  "  WHERE report_hosts.report"
+                  "  AND (SELECT tasks.hidden FROM tasks, reports"
+                  "       WHERE reports.task = tasks.ROWID"
+                  "       AND reports.ROWID = report_hosts.report)"
+                  "      = 0"
+                  "  AND (SELECT reports.scan_run_status FROM reports"
+                  "       WHERE reports.ROWID = report_hosts.report)"
+                  "      = %u);",
+                  TASK_STATUS_DONE);
 }
 
 /**

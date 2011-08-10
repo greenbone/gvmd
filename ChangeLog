@@ -1,5 +1,10 @@
 2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filtered_host_count): Add the finished report
+	and trashcan checks to the "all hosts" case.
+
+2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_inventory_iterator, filtered_host_count)
 	(host_last_report_host): Only consider finished scans.
 
