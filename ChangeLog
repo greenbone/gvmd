@@ -1,5 +1,20 @@
 2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Switch the host of the example result to an IP.  Hence increase
+	database version to 49.  Add database migration from version 48 to 49.
+	In the migrator also ensure that the result has the right UUID.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 49.
+
+	* src/manage_sql.c (migrate_48_to_49): New function.
+	(database_migrators): Add migrate_48_to_49.
+	(init_manage): Replace "localhost" with "127.0.0.1" in example result and
+	result_host.
+
+	* doc/db.png: Update for version change.
+
+2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (filtered_host_count): Add the finished report
 	and trashcan checks to the "all hosts" case.
 

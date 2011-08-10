@@ -4859,6 +4859,50 @@ migrate_47_to_48 ()
 }
 
 /**
+ * @brief Migrate the database from version 48 to version 49.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_48_to_49 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Require that the database is currently version 48. */
+
+  if (manage_db_version () != 48)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* If the example task was created before version 14 then the 13 to 14
+   * migrator would have given the example result an arbitrary UUID instead
+   * of the predefined one.
+   *
+   * Also, the host of the example result has now changed to an IP. */
+
+  sql ("UPDATE results SET uuid = 'cb291ec0-1b0d-11df-8aa1-002264764cea'"
+       " WHERE host = 'localhost';");
+
+  sql ("UPDATE results SET host = '127.0.0.1'"
+       " WHERE uuid = 'cb291ec0-1b0d-11df-8aa1-002264764cea';");
+
+  sql ("UPDATE report_hosts SET host = '127.0.0.1'"
+       " WHERE host = 'localhost';");
+
+  /* Set the database version to 49. */
+
+  set_db_version (49);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -4911,6 +4955,7 @@ static migrator_t database_migrators[]
     {46, migrate_45_to_46},
     {47, migrate_46_to_47},
     {48, migrate_47_to_48},
+    {49, migrate_48_to_49},
     /* End marker. */
     {-1, NULL}};
 
@@ -8065,7 +8110,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
           sql ("INSERT into results (uuid, task, subnet, host, port, nvt, type,"
                " description)"
                " VALUES ('cb291ec0-1b0d-11df-8aa1-002264764cea', %llu, '',"
-               " 'localhost', 'telnet (23/tcp)',"
+               " '127.0.0.1', 'telnet (23/tcp)',"
                " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note',"
                " 'A telnet server seems to be running on this port');",
                task);
@@ -8073,7 +8118,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
           sql ("INSERT into report_results (report, result) VALUES (%llu, %llu)",
                report, result);
           sql ("INSERT into report_hosts (report, host, start_time, end_time)"
-               " VALUES (%llu, 'localhost', 'Tue Aug 25 21:48:26 2009',"
+               " VALUES (%llu, '127.0.0.1', 'Tue Aug 25 21:48:26 2009',"
                " 'Tue Aug 25 21:52:15 2009')",
                report);
         }
