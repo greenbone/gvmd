@@ -11352,8 +11352,8 @@ DEF_ACCESS (report_host_details_iterator_source_desc, 5);
  */
 static void
 init_asset_iterator (iterator_t* iterator, int first_result,
-                         int max_results, const char *levels,
-                         const char *search_phrase)
+                     int max_results, const char *levels,
+                     const char *search_phrase)
 {
   assert (current_credentials.uuid);
 
@@ -14667,7 +14667,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     {
       iterator_t hosts;
       init_asset_iterator (&hosts, first_result, max_results, levels,
-                               search_phrase);
+                           search_phrase);
       PRINT (out,
              "<host_count>"
              "<full>%i</full>"

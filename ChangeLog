@@ -1,5 +1,10 @@
 2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_asset_iterator, print_report_xml): Cleanup
+	indenting after rename.
+
+2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Use "assets" in naming instead of "inventory".
 
 	* src/manage_sql.c (init_inventory_iterator)
