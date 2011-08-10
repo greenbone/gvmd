@@ -11338,7 +11338,7 @@ DEF_ACCESS (report_host_details_iterator_source_name, 4);
 DEF_ACCESS (report_host_details_iterator_source_desc, 5);
 
 /**
- * @brief Initialise a host inventory iterator.
+ * @brief Initialise an asset iterator.
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  first_result  The host to start from.  The hosts are 0
@@ -11351,7 +11351,7 @@ DEF_ACCESS (report_host_details_iterator_source_desc, 5);
  *                             hosts if NULL or "".
  */
 static void
-init_inventory_iterator (iterator_t* iterator, int first_result,
+init_asset_iterator (iterator_t* iterator, int first_result,
                          int max_results, const char *levels,
                          const char *search_phrase)
 {
@@ -11499,13 +11499,13 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
 }
 
 /**
- * @brief Get the IP from a inventory iterator.
+ * @brief Get the IP from a asset iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Host IP.
  */
-DEF_ACCESS (inventory_iterator_ip, 0);
+DEF_ACCESS (asset_iterator_ip, 0);
 
 /**
  * @brief Set the end time of a task.
@@ -14456,7 +14456,7 @@ filtered_host_count (const char *levels, const char *search_phrase)
  * @param[in]  first_result       The result to start from.  The results are 0
  *                                indexed.
  * @param[in]  max_results        The maximum number of results returned.
- * @param[in]  type               Type of report, NULL or "inventory".
+ * @param[in]  type               Type of report, NULL or "assets".
  *
  * @return 0 on success, -1 error.
  */
@@ -14663,10 +14663,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       free (tsk_uuid);
     }
 
-  if (type && (strcmp (type, "inventory") == 0))
+  if (type && (strcmp (type, "assets") == 0))
     {
       iterator_t hosts;
-      init_inventory_iterator (&hosts, first_result, max_results, levels,
+      init_asset_iterator (&hosts, first_result, max_results, levels,
                                search_phrase);
       PRINT (out,
              "<host_count>"
@@ -14687,7 +14687,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           report_host_t report_host;
           const char *ip;
 
-          ip = inventory_iterator_ip (&hosts);
+          ip = asset_iterator_ip (&hosts);
 
           if (host_last_report_host (ip, &report_host))
             {
@@ -15816,7 +15816,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  * @param[in]  first_result       The result to start from.  The results are 0
  *                                indexed.
  * @param[in]  max_results        The maximum number of results returned.
- * @param[in]  type               Type of report: NULL or "inventory".
+ * @param[in]  type               Type of report: NULL or "assets".
  * @param[out] output_length      NULL or location for length of return.
  * @param[out] extension          NULL or location for report format extension.
  * @param[out] content_type       NULL or location for report format content
@@ -16263,7 +16263,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
  * @param[in]  escalator_id       ID of escalator to escalate report with,
  *                                instead of getting report.  NULL to get
  *                                report.
- * @param[in]  type               Type of report: NULL or "inventory".
+ * @param[in]  type               Type of report: NULL or "assets".
  *
  * @return 0 success, -1 error, 1 failed to find escalator.
  */
@@ -16287,7 +16287,7 @@ manage_send_report (report_t report, report_t delta_report,
 
   // FIX same changes in manage_send?
 
-  if (type && (strcmp (type, "inventory") == 0))
+  if (type && (strcmp (type, "assets") == 0))
     task = 0;
   else if (report_task (report, &task))
     return -1;
@@ -30213,7 +30213,7 @@ manage_empty_trashcan ()
 }
 
 
-/* Host inventory. */
+/* Assets. */
 
 /**
  * @brief Add a host detail to a report host.

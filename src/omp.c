@@ -9812,19 +9812,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             " status=\"" STATUS_OK "\""
             " status_text=\"" STATUS_OK_TEXT "\">");
 
-        if (strcmp (get_reports_data->type, "inventory") == 0)
+        if (strcmp (get_reports_data->type, "assets") == 0)
           {
             gchar *extension, *content_type;
             int ret;
 
-            /* A host inventory report. */
+            /* An asset report. */
 
             content_type = report_format_content_type (report_format);
             extension = report_format_extension (report_format);
 
             SENDF_TO_CLIENT_OR_FAIL
              ("<report"
-              " type=\"inventory\""
+              " type=\"assets\""
               " format_id=\"%s\""
               " extension=\"%s\""
               " content_type=\"%s\">",
@@ -9860,7 +9860,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       write_to_client,
                                       write_to_client_data,
                                       get_reports_data->escalator_id,
-                                      "inventory");
+                                      "assets");
 
             if (ret)
               {

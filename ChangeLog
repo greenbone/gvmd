@@ -1,8 +1,22 @@
 2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Use "assets" in naming instead of "inventory".
+
+	* src/manage_sql.c (init_inventory_iterator)
+	(inventory_iterator_ip): Rename.  Update callers.
+	(init_asset_iterator, asset_iterator_ip): New functions.  Renamed
+	from "inventory".
+	(print_report_xml, manage_send_report): Rename "inventory" report type to
+	"assets".
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS rename
+	"inventory" report type to "assets".
+
+2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_inventory_iterator, filtered_host_count)
 	(host_last_report_host): Only consider results of tasks owned by the user
-	making the request.  Remove hacks to exclude example task, as it has an
+	making the request.  Remove hacks to exclude example task, as it has a
 	null user.
 
 2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
