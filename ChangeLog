@@ -1,5 +1,10 @@
 2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_inventory_iterator, filtered_host_count)
+	(host_last_report_host): Skip reports on tasks that are in the trashcan.
+
+2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_inventory_iterator, filtered_host_count): Add
 	missing search_phrase length checks.
 

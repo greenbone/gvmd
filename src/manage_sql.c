@@ -11320,6 +11320,10 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
         init_iterator (iterator,
                        "SELECT host"
                        " FROM report_hosts"
+                       " WHERE (SELECT tasks.hidden FROM tasks, reports"
+                       "        WHERE reports.task = tasks.ROWID"
+                       "        AND reports.ROWID = report_hosts.report)"
+                       "       = 0"
                        " GROUP BY host"
                        " HAVING"
                        /* Search IP. */
@@ -11351,6 +11355,10 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
         init_iterator (iterator,
                        "SELECT host"
                        " FROM report_hosts"
+                       " WHERE (SELECT tasks.hidden FROM tasks, reports"
+                       "        WHERE reports.task = tasks.ROWID"
+                       "        AND reports.ROWID = report_hosts.report)"
+                       "       = 0"
                        " GROUP BY host"
                        " HAVING"
                        " EXISTS"
@@ -11373,6 +11381,10 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
       init_iterator (iterator,
                      "SELECT host"
                      " FROM report_hosts"
+                     " WHERE (SELECT tasks.hidden FROM tasks, reports"
+                     "        WHERE reports.task = tasks.ROWID"
+                     "        AND reports.ROWID = report_hosts.report)"
+                     "       = 0"
                      " GROUP BY host"
                      " HAVING host LIKE '%%%s%%'"
                      " OR EXISTS"
@@ -11394,6 +11406,10 @@ init_inventory_iterator (iterator_t* iterator, int first_result,
     init_iterator (iterator,
                    "SELECT DISTINCT host FROM report_hosts"
                    " WHERE report_hosts.report"
+                   " AND (SELECT tasks.hidden FROM tasks, reports"
+                   "      WHERE reports.task = tasks.ROWID"
+                   "      AND reports.ROWID = report_hosts.report)"
+                   "     = 0"
                    " ORDER BY host COLLATE collate_ip"
                    " LIMIT %i OFFSET %i;",
                    max_results, first_result);
@@ -14112,6 +14128,10 @@ host_last_report_host (const char *host, report_host_t *report_host)
   quoted_host = sql_quote (host);
   switch (sql_int64 (report_host, 0, 0,
                      "SELECT ROWID FROM report_hosts WHERE host = '%s'"
+                     " AND (SELECT tasks.hidden FROM tasks, reports"
+                     "      WHERE reports.task = tasks.ROWID"
+                     "      AND reports.ROWID = report_hosts.report)"
+                     "     = 0"
                      " ORDER BY ROWID DESC LIMIT 1;",
                      host))
     {
@@ -14189,6 +14209,10 @@ filtered_host_count (const char *levels, const char *search_phrase)
                        " (SELECT host"
                        "  FROM report_hosts"
                        "  WHERE host != 'localhost'"
+                       "  AND (SELECT tasks.hidden FROM tasks, reports"
+                       "       WHERE reports.task = tasks.ROWID"
+                       "       AND reports.ROWID = report_hosts.report)"
+                       "      = 0"
                        "  GROUP BY host"
                        "  HAVING"
                        /* Search IP. */
@@ -14218,6 +14242,10 @@ filtered_host_count (const char *levels, const char *search_phrase)
                        " (SELECT host"
                        "  FROM report_hosts"
                        "  WHERE host != 'localhost'"
+                       "  AND (SELECT tasks.hidden FROM tasks, reports"
+                       "       WHERE reports.task = tasks.ROWID"
+                       "       AND reports.ROWID = report_hosts.report)"
+                       "      = 0"
                        "  GROUP BY host"
                        "  HAVING"
                        "  EXISTS"
@@ -14240,6 +14268,10 @@ filtered_host_count (const char *levels, const char *search_phrase)
                       " (SELECT host"
                       "  FROM report_hosts"
                       "  WHERE host != 'localhost'"
+                      "  AND (SELECT tasks.hidden FROM tasks, reports"
+                      "       WHERE reports.task = tasks.ROWID"
+                      "       AND reports.ROWID = report_hosts.report)"
+                      "      = 0"
                       "  GROUP BY host"
                       "  HAVING host LIKE '%%%s%%'"
                       "  OR EXISTS"
