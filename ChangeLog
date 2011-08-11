@@ -1,5 +1,11 @@
 2011-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (end_char): New function.
+	(manage_max_hosts): Check last char instead of char following hyphen to
+	see if a host is a hostname.
+
+2011-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add an error response to CREATE_REPORT for asset reports.  Parse over
 	new asset report elements so that the Manager reaches the error.  Add type
 	to GET_REPORTS XML REPORT to identify the asset report.

@@ -17951,6 +17951,29 @@ strbchr (char *start, char *point, char ch)
 }
 
 /**
+ * @brief Return last char of a string.
+ *
+ * @param[in]  string  String.
+ *
+ * @return Last char in string.
+ */
+static char
+end_char (const char *string)
+{
+  char last;
+  assert (string);
+  last = '\0';
+  while (1)
+    if (*string == '\0')
+      return last;
+    else
+      {
+        last = *string;
+        string++;
+      }
+}
+
+/**
  * @brief Return number of hosts described by a hosts string.
  *
  * @param[in]  hosts  String describing hosts.
@@ -18043,7 +18066,7 @@ manage_max_hosts (const char *hosts)
       else if (hyphen)
         {
           hyphen++;
-          if (*hyphen && isalpha (*hyphen))
+          if (*hyphen && isalpha (end_char (hyphen)))
             /* A hostname. */
             count++;
           else if (*hyphen)
