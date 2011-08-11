@@ -9680,7 +9680,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         float min_cvss_base;
         iterator_t reports;
 
-        // FIX check if report only when type is "scan"
+        /** @todo Some checks only required when type is "scan". */
+
+        if (strcmp (get_reports_data->type, "scan")
+            && strcmp (get_reports_data->type, "assets"))
+          {
+            get_reports_data_reset (get_reports_data);
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_reports",
+                                "GET_REPORTS type must be scan or assets"));
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
+          }
 
         if ((strcmp (get_reports_data->type, "scan") == 0)
             && get_reports_data->report_id

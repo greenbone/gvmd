@@ -1,3 +1,13 @@
+2011-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS add check
+	on type.
+
+	* src/manage_sql.c (filtered_host_count): Add "scan" to doc.
+	(print_report_xml): Add NULL check.
+	(manage_report): Require type to be NULL or "scan".
+	(manage_send_report): Add full type check.
+
 2011-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_asset_iterator, print_report_xml): Cleanup

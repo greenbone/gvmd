@@ -14456,7 +14456,7 @@ filtered_host_count (const char *levels, const char *search_phrase)
  * @param[in]  first_result       The result to start from.  The results are 0
  *                                indexed.
  * @param[in]  max_results        The maximum number of results returned.
- * @param[in]  type               Type of report, NULL or "assets".
+ * @param[in]  type               Type of report, NULL, "scan" or "assets".
  *
  * @return 0 on success, -1 error.
  */
@@ -14479,7 +14479,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   /** @todo Leaks on error in PRINT.  The process normally exits then anyway. */
 
-  if (strcmp (type, "scan") == 0)
+  if ((type == NULL) || (strcmp (type, "scan") == 0))
     {
       type = NULL;
       if (report == 0)
@@ -15816,7 +15816,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  * @param[in]  first_result       The result to start from.  The results are 0
  *                                indexed.
  * @param[in]  max_results        The maximum number of results returned.
- * @param[in]  type               Type of report: NULL or "assets".
+ * @param[in]  type               Type of report: NULL or "scan".
  * @param[out] output_length      NULL or location for length of return.
  * @param[out] extension          NULL or location for report format extension.
  * @param[out] content_type       NULL or location for report format content
@@ -15836,6 +15836,9 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
   task_t task;
   gchar *xml_file;
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+
+  if (type && strcmp (type, "scan"))
+    return NULL;
 
   /* Print the report as XML to a file. */
 
@@ -16263,7 +16266,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
  * @param[in]  escalator_id       ID of escalator to escalate report with,
  *                                instead of getting report.  NULL to get
  *                                report.
- * @param[in]  type               Type of report: NULL or "assets".
+ * @param[in]  type               Type of report: NULL, "scan" or "assets".
  *
  * @return 0 success, -1 error, 1 failed to find escalator.
  */
@@ -16285,10 +16288,10 @@ manage_send_report (report_t report, report_t delta_report,
   gchar *xml_file;
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
 
-  // FIX same changes in manage_send?
-
   if (type && (strcmp (type, "assets") == 0))
     task = 0;
+  else if (type && (strcmp (type, "scan")))
+    return -1;
   else if (report_task (report, &task))
     return -1;
 
