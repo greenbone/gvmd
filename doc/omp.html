@@ -4787,6 +4787,23 @@ create_target_port_range
           </li></ul>
 </li>
 <li>
+              &lt;<b>preferences</b>&gt;
+              ?<ul style="list-style: none"><li>
+              &lt;<b>preference</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>scanner_name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Compact name of preference, from scanner.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>rcfile</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">An openvasrc style file defining the task.</div>
 <ul style="list-style: none"></ul>
@@ -4822,6 +4839,7 @@ create_target_port_range
        &amp; create_task_escalator?
        &amp; create_task_schedule?
        &amp; create_task_slave?
+       &amp; create_task_preferences?
        &amp; create_task_rcfile?
      }
 
@@ -4865,6 +4883,31 @@ create_task_slave
  = element slave
      {
        attribute id { uuid }
+     }
+
+create_task_preferences
+ = element preferences
+     {
+       create_task_preferences_preference*
+     }
+
+create_task_preferences_preference
+ = element preference
+     {
+       create_task_preferences_preference_scanner_name
+       &amp; create_task_preferences_preference_value
+     }
+
+create_task_preferences_preference_scanner_name
+ = element scanner_name
+     {
+       text
+     }
+
+create_task_preferences_preference_value
+ = element value
+     {
+       text
      }
 
 create_task_rcfile
@@ -11567,6 +11610,28 @@ get_targets_response_target_tasks_task_name
 </ul>
 </li></ul>
 </li>
+<li>
+              &lt;<b>preferences</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>preference</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Full name of preference, suitable for end users.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>scanner_name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Compact name of preference, from scanner.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -11647,6 +11712,7 @@ get_tasks_response_task
        &amp; get_tasks_response_task_second_last_report?
        &amp; get_tasks_response_task_rcfile?
        &amp; get_tasks_response_task_reports*
+       &amp; get_tasks_response_task_preferences
      }
 
 get_tasks_response_task_name
@@ -12057,6 +12123,38 @@ get_tasks_response_task_reports_report_result_count_hole
  = element hole
      {
        integer
+     }
+
+get_tasks_response_task_preferences
+ = element preferences
+     {
+       get_tasks_response_task_preferences_preference*
+     }
+
+get_tasks_response_task_preferences_preference
+ = element preference
+     {
+       get_tasks_response_task_preferences_preference_name
+       &amp; get_tasks_response_task_preferences_preference_scanner_name
+       &amp; get_tasks_response_task_preferences_preference_value
+     }
+
+get_tasks_response_task_preferences_preference_name
+ = element name
+     {
+       text
+     }
+
+get_tasks_response_task_preferences_preference_scanner_name
+ = element scanner_name
+     {
+       text
+     }
+
+get_tasks_response_task_preferences_preference_value
+ = element value
+     {
+       text
      }
 </pre></div>
 </div>
@@ -13660,6 +13758,23 @@ modify_report_format_param_value
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>preferences</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>preference</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>scanner_name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Compact name of preference, from scanner.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>rcfile</b>&gt;
               <div style="margin-left: 15px; display: inline;">An openvasrc style file describing the task.</div>
 <ul style="list-style: none"></ul>
@@ -13720,6 +13835,7 @@ modify_report_format_param_value
        &amp; ( modify_task_comment
            | modify_task_escalator
            | modify_task_name
+           | modify_task_preferences
            | modify_task_rcfile
            | modify_task_schedule
            | modify_task_slave
@@ -13742,6 +13858,31 @@ modify_task_name
  = element name
      {
        name
+     }
+
+modify_task_preferences
+ = element preferences
+     {
+       modify_task_preferences_preference*
+     }
+
+modify_task_preferences_preference
+ = element preference
+     {
+       modify_task_preferences_preference_scanner_name
+       &amp; modify_task_preferences_preference_value
+     }
+
+modify_task_preferences_preference_scanner_name
+ = element scanner_name
+     {
+       text
+     }
+
+modify_task_preferences_preference_value
+ = element value
+     {
+       text
      }
 
 modify_task_rcfile

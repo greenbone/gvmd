@@ -2458,6 +2458,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>escalator</e></o>
       <o><e>schedule</e></o>
       <o><e>slave</e></o>
+      <o><e>preferences</e></o>
       <o><e>rcfile</e></o>
     </pattern>
     <ele>
@@ -2526,6 +2527,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
       </pattern>
+    </ele>
+    <ele>
+      <name>preferences</name>
+      <pattern>
+        <any><e>preference</e></any>
+      </pattern>
+      <ele>
+        <name>preference</name>
+        <pattern>
+          <e>scanner_name</e>
+          <e>value</e>
+        </pattern>
+        <ele>
+          <name>scanner_name</name>
+          <summary>Compact name of preference, from scanner</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
     </ele>
     <ele>
       <name>rcfile</name>
@@ -7139,6 +7162,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <o><e>second_last_report</e></o>
           <o><e>rcfile</e></o>
           <any><e>reports</e></any>
+          <e>preferences</e>
         </pattern>
         <ele>
           <name>name</name>
@@ -7526,6 +7550,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <name>hole</name>
                 <pattern><t>integer</t></pattern>
               </ele>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>preferences</name>
+          <pattern>
+            <any><e>preference</e></any>
+          </pattern>
+          <ele>
+            <name>preference</name>
+            <pattern>
+              <e>name</e>
+              <e>scanner_name</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Full name of preference, suitable for end users</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>scanner_name</name>
+              <summary>Compact name of preference, from scanner</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <pattern>text</pattern>
             </ele>
           </ele>
         </ele>
@@ -8751,6 +8803,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>comment</e>
         <e>escalator</e>
         <e>name</e>
+        <e>preferences</e>
         <e>rcfile</e>
         <e>schedule</e>
         <e>slave</e>
@@ -8779,6 +8832,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>name</name>
       <summary>The name of the task</summary>
       <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>preferences</name>
+      <pattern>
+        <any><e>preference</e></any>
+      </pattern>
+      <ele>
+        <name>preference</name>
+        <pattern>
+          <e>scanner_name</e>
+          <e>value</e>
+        </pattern>
+        <ele>
+          <name>scanner_name</name>
+          <summary>Compact name of preference, from scanner</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
     </ele>
     <ele>
       <name>rcfile</name>

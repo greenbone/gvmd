@@ -1,5 +1,12 @@
 2011-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (create_task, modify_task)
+	(get_tasks): Add preferences.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2011-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (end_char): New function.
 	(manage_max_hosts): Check last char instead of char following hyphen to
 	see if a host is a hostname.

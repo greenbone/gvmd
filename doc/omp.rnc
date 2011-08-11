@@ -1806,6 +1806,7 @@ create_task
        & create_task_escalator?
        & create_task_schedule?
        & create_task_slave?
+       & create_task_preferences?
        & create_task_rcfile?
      }
 
@@ -1856,6 +1857,32 @@ create_task_slave
  = element slave
      {
        attribute id { uuid }
+     }
+
+create_task_preferences
+ = element preferences
+     {
+       create_task_preferences_preference*
+     }
+
+create_task_preferences_preference
+ = element preference
+     {
+       create_task_preferences_preference_scanner_name
+       & create_task_preferences_preference_value
+     }
+
+# Compact name of preference, from scanner.
+create_task_preferences_preference_scanner_name
+ = element scanner_name
+     {
+       text
+     }
+
+create_task_preferences_preference_value
+ = element value
+     {
+       text
      }
 
 # An openvasrc style file defining the task.
@@ -2745,6 +2772,7 @@ modify_task
        & ( modify_task_comment
            | modify_task_escalator
            | modify_task_name
+           | modify_task_preferences
            | modify_task_rcfile
            | modify_task_schedule
            | modify_task_slave
@@ -2770,6 +2798,32 @@ modify_task_name
  = element name
      {
        name
+     }
+
+modify_task_preferences
+ = element preferences
+     {
+       modify_task_preferences_preference*
+     }
+
+modify_task_preferences_preference
+ = element preference
+     {
+       modify_task_preferences_preference_scanner_name
+       & modify_task_preferences_preference_value
+     }
+
+# Compact name of preference, from scanner.
+modify_task_preferences_preference_scanner_name
+ = element scanner_name
+     {
+       text
+     }
+
+modify_task_preferences_preference_value
+ = element value
+     {
+       text
      }
 
 # An openvasrc style file describing the task.
@@ -5295,6 +5349,7 @@ get_tasks_response_task
        & get_tasks_response_task_second_last_report?
        & get_tasks_response_task_rcfile?
        & get_tasks_response_task_reports*
+       & get_tasks_response_task_preferences
      }
 
 # The name of the task.
@@ -5732,6 +5787,40 @@ get_tasks_response_task_reports_report_result_count_hole
  = element hole
      {
        integer
+     }
+
+get_tasks_response_task_preferences
+ = element preferences
+     {
+       get_tasks_response_task_preferences_preference*
+     }
+
+get_tasks_response_task_preferences_preference
+ = element preference
+     {
+       get_tasks_response_task_preferences_preference_name
+       & get_tasks_response_task_preferences_preference_scanner_name
+       & get_tasks_response_task_preferences_preference_value
+     }
+
+# Full name of preference, suitable for end users.
+get_tasks_response_task_preferences_preference_name
+ = element name
+     {
+       text
+     }
+
+# Compact name of preference, from scanner.
+get_tasks_response_task_preferences_preference_scanner_name
+ = element scanner_name
+     {
+       text
+     }
+
+get_tasks_response_task_preferences_preference_value
+ = element value
+     {
+       text
      }
 
 ## Response to get_version
