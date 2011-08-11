@@ -14477,7 +14477,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   int debugs, holes, infos, logs, warnings, false_positives;
   int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
   int orig_f_debugs, orig_f_holes, orig_f_infos, orig_f_logs;
-  int orig_f_warnings, orig_f_false_positives;
+  int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
 
   /** @todo Leaks on error in PRINT.  The process normally exits then anyway. */
 
@@ -15033,6 +15033,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       orig_f_logs = f_logs;
       orig_f_warnings = f_warnings;
       orig_f_false_positives = f_false_positives;
+      orig_filtered_result_count = filtered_result_count;
 
       changed = (strchr (delta_states, 'c') != NULL);
       gone = (strchr (delta_states, 'g') != NULL);
@@ -15611,7 +15612,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              "<filtered>%i</filtered>"
              "</false_positive>"
              "</result_count>",
-             filtered_result_count,
+             orig_filtered_result_count,
              (strchr (levels, 'd') ? orig_f_debugs : 0),
              (strchr (levels, 'h') ? orig_f_holes : 0),
              (strchr (levels, 'l') ? orig_f_infos : 0),
