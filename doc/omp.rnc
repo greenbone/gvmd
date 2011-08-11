@@ -458,10 +458,12 @@ report_report
            & report_report_filters
            & report_report_scan_run_status
            & report_report_result_count
+           & report_report_host_count?
            & report_report_task
            & report_report_ports
            & report_report_results
-           & report_report_host
+           & report_report_hosts?
+           & report_report_host*
            & report_report_scan_start
            & report_report_host_start*
            & report_report_host_end*
@@ -698,6 +700,28 @@ report_report_result_count_warning_filtered
        integer
      }
 
+# Counts of hosts in the results.
+report_report_host_count
+ = element host_count
+     {
+       report_report_host_count_full
+       & report_report_host_count_filtered
+     }
+
+# Total number of hosts.
+report_report_host_count_full
+ = element full
+     {
+       integer
+     }
+
+# Number of hosts after filtering.
+report_report_host_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
 report_report_task
  = element task
      {
@@ -835,6 +859,13 @@ report_report_results_result_description
  = element description
      {
        text
+     }
+
+report_report_hosts
+ = element hosts
+     {
+       attribute start { integer }
+       & attribute max { integer }
      }
 
 report_report_host
@@ -2157,6 +2188,8 @@ get_reports
      {
        # ID of single report to get.
        attribute report_id { uuid }?
+       & # Type of report to get.
+       attribute type { xsd:token { pattern = "scan|assets" } }?
        & # ID of required report format.
        attribute format_id { uuid }?
        & # ID of escalator to pass generated report to.

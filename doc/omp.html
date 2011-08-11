@@ -1369,6 +1369,22 @@ command_definition_ele
 </ul>
 </li>
 <li>
+              &lt;<b>host_count</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Counts of hosts in the results.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>full</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Total number of hosts.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of hosts after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>task</b>&gt;
               <ul style="list-style: none">
 <li>
@@ -1491,8 +1507,21 @@ command_definition_ele
 </ul>
 </li>
 <li>
+              &lt;<b>hosts</b>&gt;
+              ?<ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_integer">integer</a>)
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_integer">integer</a>)
+          </li>
+</ul>
+</li>
+<li>
               &lt;<b>host</b>&gt;
-              <ul style="list-style: none">
+              *<ul style="list-style: none">
 <li>
               &lt;<b>ip</b>&gt;
               <div style="margin-left: 15px; display: inline;">IP of the host.</div>
@@ -1598,10 +1627,12 @@ report_report
            &amp; report_report_filters
            &amp; report_report_scan_run_status
            &amp; report_report_result_count
+           &amp; report_report_host_count?
            &amp; report_report_task
            &amp; report_report_ports
            &amp; report_report_results
-           &amp; report_report_host
+           &amp; report_report_hosts?
+           &amp; report_report_host*
            &amp; report_report_scan_start
            &amp; report_report_host_start*
            &amp; report_report_host_end*
@@ -1808,6 +1839,25 @@ report_report_result_count_warning_filtered
        integer
      }
 
+report_report_host_count
+ = element host_count
+     {
+       report_report_host_count_full
+       &amp; report_report_host_count_filtered
+     }
+
+report_report_host_count_full
+ = element full
+     {
+       integer
+     }
+
+report_report_host_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
 report_report_task
  = element task
      {
@@ -1938,6 +1988,13 @@ report_report_results_result_description
  = element description
      {
        text
+     }
+
+report_report_hosts
+ = element hosts
+     {
+       attribute start { integer }
+       &amp; attribute max { integer }
      }
 
 report_report_host
@@ -8872,6 +8929,11 @@ get_preferences_response_preference_value
           ID of single report to get.
           </li>
 <li>
+          @<b>type</b>
+          ("scan" or "assets")
+          Type of report to get.
+          </li>
+<li>
           @<b>format_id</b>
           (<a href="#type_uuid">uuid</a>)
           ID of required report format.
@@ -8966,6 +9028,7 @@ get_preferences_response_preference_value
  = element get_reports
      {
        attribute report_id { uuid }?
+       &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
        &amp; attribute format_id { uuid }?
        &amp; attribute escalator_id { uuid }?
        &amp; attribute first_result { integer }?

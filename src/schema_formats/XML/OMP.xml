@@ -406,10 +406,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>filters</e>
             <e>scan_run_status</e>
             <e>result_count</e>
+            <o><e>host_count</e></o>
             <e>task</e>
             <e>ports</e>
             <e>results</e>
-            <e>host</e>
+            <o><e>hosts</e></o>
+            <any><e>host</e></any>
             <e>scan_start</e>
             <any><e>host_start</e></any>
             <any><e>host_end</e></any>
@@ -653,6 +655,29 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
       </ele>
       <ele>
+        <name>host_count</name>
+        <summary>Counts of hosts in the results</summary>
+        <description>
+          <p>
+            This is only present in the "assets" report.
+          </p>
+        </description>
+        <pattern>
+          <e>full</e>
+          <e>filtered</e>
+        </pattern>
+        <ele>
+          <name>full</name>
+          <summary>Total number of hosts</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of hosts after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+      <ele>
         <name>task</name>
         <pattern>
           <attrib>
@@ -798,6 +823,31 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <pattern>text</pattern>
           </ele>
         </ele>
+      </ele>
+      <ele>
+        <name>hosts</name>
+        <description>
+          <p>
+            Analogous to the results element, but for hosts.  However to keep
+            backward compatibility the host elements are siblings of this
+            element, instead of children.
+          </p>
+          <p>
+            This is only present in the "assets" report.
+          </p>
+        </description>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
       </ele>
       <ele>
         <name>host</name>
@@ -5382,6 +5432,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>report_id</name>
         <summary>ID of single report to get</summary>
         <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>type</name>
+        <summary>Type of report to get</summary>
+        <type>
+          <alts>
+            <alt>scan</alt>
+            <alt>assets</alt>
+          </alts>
+        </type>
       </attrib>
       <attrib>
         <name>format_id</name>
