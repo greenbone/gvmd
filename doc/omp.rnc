@@ -447,6 +447,7 @@ report
        & attribute format_id { uuid }
        & attribute extension { text }
        & attribute content_type { text }
+       & attribute type { xsd:token { pattern = "scan|assets" } }?
        & report_report
      }
 
@@ -454,6 +455,7 @@ report_report
  = element report
      {
        attribute id { uuid }
+       & attribute type { xsd:token { pattern = "scan|assets" } }?
        & ( report_report_sort
            & report_report_filters
            & report_report_scan_run_status
@@ -1534,6 +1536,7 @@ create_report_report
        & attribute format_id { uuid }
        & attribute extension { text }
        & attribute content_type { text }
+       & attribute type { xsd:token { pattern = "scan|assets" } }?
        & report_report
      }
 
@@ -4442,6 +4445,7 @@ get_reports_response_report
        & attribute format_id { uuid }
        & attribute extension { text }
        & attribute content_type { text }
+       & attribute type { xsd:token { pattern = "scan|assets" } }?
        & report_report
      }
 

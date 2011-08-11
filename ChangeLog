@@ -1,5 +1,24 @@
 2011-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add an error response to CREATE_REPORT for asset reports.  Parse over
+	new asset report elements so that the Manager reaches the error.  Add type
+	to GET_REPORTS XML REPORT to identify the asset report.
+
+	* src/omp.c (create_report_data_t, create_report_data_reset): Add type
+	field.
+	(client_state_t): Add asset states for CREATE_REPORT.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Parse type for
+	CREATE_REPORT.  Parse over HOST_COUNT and HOSTS in CREATE_REPORT.  Ensure
+	that CREATE_REPORT type is scan.
+
+	* src/manage_sql.c (print_report_xml): Add type to asset report.
+
+	* src/schema_formats/XML/OMP.xml (report): Add type attribs.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2011-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Update with Asset changes.
 
 	* src/schema_formats/XML/OMP.xml (report): Add host_count and hosts.  Add

@@ -389,6 +389,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>text</type>
         <required>1</required>
       </attrib>
+      <attrib>
+        <name>type</name>
+        <type>
+          <alts>
+            <alt>scan</alt>
+            <alt>assets</alt>
+          </alts>
+        </type>
+      </attrib>
       <t>base64</t>
       <e>report</e>
     </pattern>
@@ -399,6 +408,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>id</name>
           <type>uuid</type>
           <required>1</required>
+        </attrib>
+        <attrib>
+          <name>type</name>
+          <type>
+            <alts>
+              <alt>scan</alt>
+              <alt>assets</alt>
+            </alts>
+          </type>
         </attrib>
         <o>
           <g>

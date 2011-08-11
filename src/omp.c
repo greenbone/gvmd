@@ -939,6 +939,7 @@ typedef struct
   char *task_comment;             ///< Comment for container task.
   char *task_id;                  ///< ID of container task.
   char *task_name;                ///< Name for container task.
+  char *type;                     ///< Type of report.
   int wrapper;                    ///< Whether there was a wrapper REPORT.
 } create_report_data_t;
 
@@ -982,6 +983,7 @@ create_report_data_reset (create_report_data_t *data)
   free (data->task_comment);
   free (data->task_id);
   free (data->task_name);
+  free (data->type);
 
   memset (data, 0, sizeof (create_report_data_t));
 }
@@ -3082,10 +3084,12 @@ typedef enum
   CLIENT_CREATE_REPORT_RR,
   CLIENT_CREATE_REPORT_RR_FILTERS,
   CLIENT_CREATE_REPORT_RR_HOST,
+  CLIENT_CREATE_REPORT_RR_HOST_COUNT,
   CLIENT_CREATE_REPORT_RR_HOST_END,
   CLIENT_CREATE_REPORT_RR_HOST_END_HOST,
   CLIENT_CREATE_REPORT_RR_HOST_START,
   CLIENT_CREATE_REPORT_RR_HOST_START_HOST,
+  CLIENT_CREATE_REPORT_RR_HOSTS,
   CLIENT_CREATE_REPORT_RR_PORTS,
   CLIENT_CREATE_REPORT_RR_REPORT_FORMAT,
   CLIENT_CREATE_REPORT_RR_RESULTS,
@@ -6324,6 +6328,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         if (strcasecmp ("REPORT", element_name) == 0)
           {
             const gchar* attribute;
+
+            append_attribute (attribute_names, attribute_values,
+                              "type", &create_report_data->type);
+
             if (find_attribute (attribute_names, attribute_values, "format_id",
                                 &attribute))
               {
@@ -6402,10 +6410,20 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             omp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_HOST);
           }
+        else if (strcasecmp ("HOST_COUNT", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_HOST_COUNT);
+          }
         else if (strcasecmp ("HOST_END", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_HOST_END);
         else if (strcasecmp ("HOST_START", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_HOST_START);
+        else if (strcasecmp ("HOSTS", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_HOSTS);
+          }
         else if (strcasecmp ("PORTS", element_name) == 0)
           {
             omp_parser->read_over = 1;
@@ -12608,6 +12626,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_report",
                                 "CREATE_REPORT requires a REPORT element"));
+          else if (create_report_data->type
+                   && strcmp (create_report_data->type, "scan"))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_report",
+                                "CREATE_REPORT type must be 'scan'"));
           else switch (create_report
                         (create_report_data->results,
                          create_report_data->task_id,
@@ -12692,6 +12715,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         omp_parser->read_over = 0;
         set_client_state (CLIENT_CREATE_REPORT_RR);
         break;
+      case CLIENT_CREATE_REPORT_RR_HOST_COUNT:
+        assert (strcasecmp ("HOST_COUNT", element_name) == 0);
+        omp_parser->read_over = 0;
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
       case CLIENT_CREATE_REPORT_RR_HOST_END:
         assert (strcasecmp ("HOST_END", element_name) == 0);
 
@@ -12739,6 +12767,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         else
           openvas_free_string_var (&create_report_data->host_start);
 
+        set_client_state (CLIENT_CREATE_REPORT_RR);
+        break;
+      case CLIENT_CREATE_REPORT_RR_HOSTS:
+        assert (strcasecmp ("HOSTS", element_name) == 0);
+        omp_parser->read_over = 0;
         set_client_state (CLIENT_CREATE_REPORT_RR);
         break;
       case CLIENT_CREATE_REPORT_RR_PORTS:

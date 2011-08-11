@@ -1205,11 +1205,19 @@ command_definition_ele
           (text)
           </li>
 <li>
+          @<b>type</b>
+          ("scan" or "assets")
+          </li>
+<li>
               &lt;<b>report</b>&gt;
               <ul style="list-style: none">
 <li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+          @<b>type</b>
+          ("scan" or "assets")
           </li>
 <li>
 <i>The group</i><b>?</b><ul style="list-style: none">
@@ -1616,6 +1624,7 @@ command_definition_ele
        &amp; attribute format_id { uuid }
        &amp; attribute extension { text }
        &amp; attribute content_type { text }
+       &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
        &amp; report_report
      }
 
@@ -1623,6 +1632,7 @@ report_report
  = element report
      {
        attribute id { uuid }
+       &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
        &amp; ( report_report_sort
            &amp; report_report_filters
            &amp; report_report_scan_run_status
@@ -4048,6 +4058,7 @@ create_report_report
        &amp; attribute format_id { uuid }
        &amp; attribute extension { text }
        &amp; attribute content_type { text }
+       &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
        &amp; report_report
      }
 </pre></div>
@@ -9061,6 +9072,7 @@ get_reports_response_report
        &amp; attribute format_id { uuid }
        &amp; attribute extension { text }
        &amp; attribute content_type { text }
+       &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
        &amp; report_report
      }
 </pre></div>

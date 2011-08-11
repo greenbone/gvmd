@@ -14514,7 +14514,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       free (uuid);
     }
   else
-    PRINT (out, "<report>");
+    PRINT (out, "<report type=\"assets\">");
 
   if (delta)
     {
