@@ -14476,6 +14476,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   iterator_t results, delta_results, params;
   int debugs, holes, infos, logs, warnings, false_positives;
   int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
+  int orig_f_debugs, orig_f_holes, orig_f_infos, orig_f_logs;
+  int orig_f_warnings, orig_f_false_positives;
 
   /** @todo Leaks on error in PRINT.  The process normally exits then anyway. */
 
@@ -15024,6 +15026,13 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       /* A tree of host, tree pairs, where the inner tree is a sorted tree
        * of port, threat pairs. */
       GTree *ports;
+
+      orig_f_debugs = f_debugs;
+      orig_f_holes = f_holes;
+      orig_f_infos = f_infos;
+      orig_f_logs = f_logs;
+      orig_f_warnings = f_warnings;
+      orig_f_false_positives = f_false_positives;
 
       changed = (strchr (delta_states, 'c') != NULL);
       gone = (strchr (delta_states, 'g') != NULL);
@@ -15589,6 +15598,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   /* Print result counts. */
 
   if (delta)
+    /** @todo The f_debugs, etc. vars are setup to give the page count. */
     PRINT (out,
              "<result_count>"
              "<filtered>%i</filtered>"
@@ -15602,12 +15612,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              "</false_positive>"
              "</result_count>",
              filtered_result_count,
-             (strchr (levels, 'd') ? f_debugs : 0),
-             (strchr (levels, 'h') ? f_holes : 0),
-             (strchr (levels, 'l') ? f_infos : 0),
-             (strchr (levels, 'g') ? f_logs : 0),
-             (strchr (levels, 'm') ? f_warnings : 0),
-             (strchr (levels, 'f') ? f_false_positives : 0));
+             (strchr (levels, 'd') ? orig_f_debugs : 0),
+             (strchr (levels, 'h') ? orig_f_holes : 0),
+             (strchr (levels, 'l') ? orig_f_infos : 0),
+             (strchr (levels, 'g') ? orig_f_logs : 0),
+             (strchr (levels, 'm') ? orig_f_warnings : 0),
+             (strchr (levels, 'f') ? orig_f_false_positives : 0));
   else
     PRINT (out,
              "<result_count>"

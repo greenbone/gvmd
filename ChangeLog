@@ -1,5 +1,10 @@
 2011-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): In the delta case send the total
+	count of filtered results, instead of the page count.
+
+2011-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (create_task, modify_task)
 	(get_tasks): Add preferences.
 
