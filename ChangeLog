@@ -1,5 +1,16 @@
 2011-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Adjust the delta filtered counts during the comparison, as is done for
+	the page results.
+
+	* src/manage_sql.c (compare_and_buffer_results): Add would_use argument
+	to indicate if full filtered report would have used the result.
+	(print_report_xml): Adjust orig_f_* counts alongside the f_* counts.
+	In the counting after reaching max_results, adjust the orig_f_* counts
+	instead of the f_* counts.
+
+2011-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): In the delta case for the grand
 	total also send the total count of filtered results, instead of the page
 	count.

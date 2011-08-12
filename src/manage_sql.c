@@ -13771,6 +13771,7 @@ compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
  * @param[in]  max_results    Value to decrement if result is buffered.
  * @param[in]  first_result   Skip result and decrement if positive.
  * @param[in]  used           0 if used, 1 if skipped.
+ * @param[in]  would_use      0 if would use (first_result aside), 1 if skipped.
  *
  * @return Result of comparison.
  */
@@ -13781,16 +13782,18 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                             int overrides_details, int sort_order,
                             const char* sort_field, int changed, int gone,
                             int new, int same, int *max_results,
-                            int *first_result, int *used)
+                            int *first_result, int *used, int *would_use)
 {
   compare_results_t state;
   state = compare_results (results, delta_results, sort_order, sort_field);
   *used = 0;
+  *would_use = 0;
   switch (state)
     {
       case COMPARE_RESULTS_CHANGED:
         if (changed)
           {
+            *would_use = 1;
             if (*first_result)
               {
                 tracef ("   delta: skip");
@@ -13816,6 +13819,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
       case COMPARE_RESULTS_GONE:
         if (gone)
           {
+            *would_use = 1;
             if (*first_result)
               {
                 tracef ("   delta: skip");
@@ -13841,6 +13845,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
       case COMPARE_RESULTS_NEW:
         if (new)
           {
+            *would_use = 1;
             if (*first_result)
               {
                 tracef ("   delta: skip");
@@ -13866,6 +13871,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
       case COMPARE_RESULTS_SAME:
         if (same)
           {
+            *would_use = 1;
             if (*first_result)
               {
                 tracef ("   delta: skip");
@@ -15052,7 +15058,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         {
           GString *buffer;
           compare_results_t state;
-          int used;
+          int used, would_use;
 
           if (max_results == 0)
             break;
@@ -15080,25 +15086,31 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
                     /* Increase the result count. */
                     type = result_iterator_type (&delta_results);
+                    orig_filtered_result_count++;
                     filtered_result_count++;
                     if (strcmp (type, "Security Hole") == 0)
                       {
+                        orig_f_holes++;
                         f_holes++;
                       }
                     else if (strcmp (type, "Security Warning") == 0)
                       {
+                        orig_f_warnings++;
                         f_warnings++;
                       }
                     else if (strcmp (type, "Security Note") == 0)
                       {
+                        orig_f_infos++;
                         f_infos++;
                       }
                     else if (strcmp (type, "Log Message") == 0)
                       {
+                        orig_f_logs++;
                         f_logs++;
                       }
                     else if (strcmp (type, "False Positive") == 0)
                       {
+                        orig_f_false_positives++;
                         f_false_positives++;
                       }
 
@@ -15175,25 +15187,31 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
                     /* Decrease the result count. */
                     type = result_iterator_type (&results);
+                    orig_filtered_result_count--;
                     filtered_result_count--;
                     if (strcmp (type, "Security Hole") == 0)
                       {
+                        orig_f_holes--;
                         f_holes--;
                       }
                     else if (strcmp (type, "Security Warning") == 0)
                       {
+                        orig_f_warnings--;
                         f_warnings--;
                       }
                     else if (strcmp (type, "Security Note") == 0)
                       {
+                        orig_f_infos--;
                         f_infos--;
                       }
                     else if (strcmp (type, "Log Message") == 0)
                       {
+                        orig_f_logs--;
                         f_logs--;
                       }
                     else if (strcmp (type, "False Positive") == 0)
                       {
+                        orig_f_false_positives--;
                         f_false_positives--;
                       }
                   }
@@ -15221,7 +15239,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                               same,
                                               &max_results,
                                               &first_result,
-                                              &used);
+                                              &used,
+                                              &would_use);
           if (state == COMPARE_RESULTS_ERROR)
             {
               g_warning ("%s: compare_and_buffer_results failed\n",
@@ -15263,6 +15282,38 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                 }
             }
 
+          if ((would_use == 0)
+              && ((state == COMPARE_RESULTS_GONE)
+                  || (state == COMPARE_RESULTS_SAME)
+                  || (state == COMPARE_RESULTS_CHANGED)))
+            {
+              const char *type;
+
+              /* Decrease the result count. */
+              type = result_iterator_type (&results);
+              orig_filtered_result_count--;
+              if (strcmp (type, "Security Hole") == 0)
+                {
+                  orig_f_holes--;
+                }
+              else if (strcmp (type, "Security Warning") == 0)
+                {
+                  orig_f_warnings--;
+                }
+              else if (strcmp (type, "Security Note") == 0)
+                {
+                  orig_f_infos--;
+                }
+              else if (strcmp (type, "Log Message") == 0)
+                {
+                  orig_f_logs--;
+                }
+              else if (strcmp (type, "False Positive") == 0)
+                {
+                  orig_f_false_positives--;
+                }
+            }
+
           /* Move on to the next. */
 
           if (state == COMPARE_RESULTS_GONE)
@@ -15293,6 +15344,38 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             }
           else if (state == COMPARE_RESULTS_NEW)
             {
+              if (would_use)
+                {
+                  const char *type;
+
+                  /* Would have "used" just the 'delta_results' result, on
+                   * an earlier page. */
+
+                  /* Increase the result count. */
+                  type = result_iterator_type (&delta_results);
+                  orig_filtered_result_count++;
+                  if (strcmp (type, "Security Hole") == 0)
+                    {
+                      orig_f_holes++;
+                    }
+                  else if (strcmp (type, "Security Warning") == 0)
+                    {
+                      orig_f_warnings++;
+                    }
+                  else if (strcmp (type, "Security Note") == 0)
+                    {
+                      orig_f_infos++;
+                    }
+                  else if (strcmp (type, "Log Message") == 0)
+                    {
+                      orig_f_logs++;
+                    }
+                  else if (strcmp (type, "False Positive") == 0)
+                    {
+                      orig_f_false_positives++;
+                    }
+                }
+
               if (used)
                 {
                   const char *type;
@@ -15342,7 +15425,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       while (1)
         {
           compare_results_t state;
-          int used;
+          int used, would_use;
 
           if (done)
             {
@@ -15360,26 +15443,26 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
                     /* Increase the result count. */
                     type = result_iterator_type (&delta_results);
-                    filtered_result_count++;
+                    orig_filtered_result_count++;
                     if (strcmp (type, "Security Hole") == 0)
                       {
-                        f_holes++;
+                        orig_f_holes++;
                       }
                     else if (strcmp (type, "Security Warning") == 0)
                       {
-                        f_warnings++;
+                        orig_f_warnings++;
                       }
                     else if (strcmp (type, "Security Note") == 0)
                       {
-                        f_infos++;
+                        orig_f_infos++;
                       }
                     else if (strcmp (type, "Log Message") == 0)
                       {
-                        f_logs++;
+                        orig_f_logs++;
                       }
                     else if (strcmp (type, "False Positive") == 0)
                       {
-                        f_false_positives++;
+                        orig_f_false_positives++;
                       }
                   }
                 while (next (&delta_results));
@@ -15406,26 +15489,26 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
                     /* Decrease the result count. */
                     type = result_iterator_type (&results);
-                    filtered_result_count--;
+                    orig_filtered_result_count--;
                     if (strcmp (type, "Security Hole") == 0)
                       {
-                        f_holes--;
+                        orig_f_holes--;
                       }
                     else if (strcmp (type, "Security Warning") == 0)
                       {
-                        f_warnings--;
+                        orig_f_warnings--;
                       }
                     else if (strcmp (type, "Security Note") == 0)
                       {
-                        f_infos--;
+                        orig_f_infos--;
                       }
                     else if (strcmp (type, "Log Message") == 0)
                       {
-                        f_logs--;
+                        orig_f_logs--;
                       }
                     else if (strcmp (type, "False Positive") == 0)
                       {
-                        f_false_positives--;
+                        orig_f_false_positives--;
                       }
                   }
                 while (next (&results));
@@ -15450,7 +15533,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                               same,
                                               &max_results,
                                               &first_result,
-                                              &used);
+                                              &used,
+                                              &would_use);
           if (state == COMPARE_RESULTS_ERROR)
             {
               g_warning ("%s: compare_and_buffer_results failed\n",
@@ -15468,26 +15552,26 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
                   /* Increase the result count. */
                   type = result_iterator_type (&delta_results);
-                  filtered_result_count++;
+                  orig_filtered_result_count++;
                   if (strcmp (type, "Security Hole") == 0)
                     {
-                      f_holes++;
+                      orig_f_holes++;
                     }
                   else if (strcmp (type, "Security Warning") == 0)
                     {
-                      f_warnings++;
+                      orig_f_warnings++;
                     }
                   else if (strcmp (type, "Security Note") == 0)
                     {
-                      f_infos++;
+                      orig_f_infos++;
                     }
                   else if (strcmp (type, "Log Message") == 0)
                     {
-                      f_logs++;
+                      orig_f_logs++;
                     }
                   else if (strcmp (type, "False Positive") == 0)
                     {
-                      f_false_positives++;
+                      orig_f_false_positives++;
                     }
                 }
             }
@@ -15501,26 +15585,26 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
               /* Decrease the result count. */
               type = result_iterator_type (&results);
-              filtered_result_count--;
+              orig_filtered_result_count--;
               if (strcmp (type, "Security Hole") == 0)
                 {
-                  f_holes--;
+                  orig_f_holes--;
                 }
               else if (strcmp (type, "Security Warning") == 0)
                 {
-                  f_warnings--;
+                  orig_f_warnings--;
                 }
               else if (strcmp (type, "Security Note") == 0)
                 {
-                  f_infos--;
+                  orig_f_infos--;
                 }
               else if (strcmp (type, "Log Message") == 0)
                 {
-                  f_logs--;
+                  orig_f_logs--;
                 }
               else if (strcmp (type, "False Positive") == 0)
                 {
-                  f_false_positives--;
+                  orig_f_false_positives--;
                 }
             }
 
