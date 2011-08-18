@@ -1082,7 +1082,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS targets_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER, escalator_location INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS task_preferences (id INTEGER PRIMARY KEY, task INTEGER, name UNIQUE, value);");
+  sql ("CREATE TABLE IF NOT EXISTS task_preferences (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER, upload_result_count INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
 
@@ -4903,6 +4903,58 @@ migrate_48_to_49 ()
 }
 
 /**
+ * @brief Migrate the database from version 49 to version 50.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_49_to_50 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 49. */
+
+  if (manage_db_version () != 49)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The UNIQUE constraint in task_preferences was removed. */
+
+  /* Move the table away. */
+
+  sql ("ALTER TABLE task_preferences RENAME TO task_preferences_49;");
+
+  /* Create the table in the new format. */
+
+  sql ("CREATE TABLE IF NOT EXISTS task_preferences"
+       " (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
+
+  /* Copy the data into the new table. */
+
+  sql ("INSERT into task_preferences"
+       " (id, task, name, value)"
+       " SELECT"
+       "  id, task, name, value"
+       " FROM task_preferences_49;");
+
+  /* Drop the old tables. */
+
+  sql ("DROP TABLE task_preferences_49;");
+
+  /* Set the database version to 50. */
+
+  set_db_version (50);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -4956,6 +5008,7 @@ static migrator_t database_migrators[]
     {47, migrate_46_to_47},
     {48, migrate_47_to_48},
     {49, migrate_48_to_49},
+    {50, migrate_49_to_50},
     /* End marker. */
     {-1, NULL}};
 

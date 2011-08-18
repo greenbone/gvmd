@@ -1,3 +1,18 @@
+2011-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Drop the UNIQUE constraint in task_preferences.  The task name pair is
+	what should be unique.  This was segfaulting Manager on the second task
+	create.  Hence increase database version to 50.  Add database migration
+	from version 49 to 50.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 50.
+
+	* src/manage_sql.c (create_tables): Remove UNIQUE from task_preferences.
+	(migrate_49_to_50): New function.
+	(database_migrators): Add migrate_49_to_50.
+
+	* doc/db.png: Update for version change.
+
 2011-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Adjust the delta filtered counts during the comparison, as is done for
