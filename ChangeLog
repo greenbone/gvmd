@@ -1,3 +1,28 @@
+2011-09-01  Henri Doreau <henri.doreau@greenbone.net>
+
+	Created a `tools' directory with files required for SCAP data
+	management and synchronization.
+
+	* tools/cpe_update.xsl (new): Helper script which generates SQL
+	statements to update the SCAP database from CPE entries.
+
+	* tools/cpe_youngerthan.xsl (new): Helper script which filters CPE
+	entries younger than a given date.
+
+	* tools/cve_update.xsl (new): Helper script which generates SQL
+	statements to update the SCAP database from CVE entries.
+
+	* tools/cve_youngerthan.xsl (new): Helper script which filters CVE
+	entries younger than a given date.
+
+	* tools/db_init.sql (new): SCAP database initialization script.
+
+	* tools/greenbone-scapdata-sync (new): SCAP data synchronization
+	script for GSF.
+
+	* tools/openvas-scapdata-sync (new): SCAP data synchronization script
+	for the OpenVAS feed.
+
 2011-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Drop the UNIQUE constraint in task_preferences.  The task name pair is

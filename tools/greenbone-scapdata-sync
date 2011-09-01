@@ -1,0 +1,269 @@
+#!/bin/bash
+#
+# greenbone-scap-sync
+# This script synchronizes an OpenVAS installation with the Greenbone SCAP
+# data directory.
+#
+# Authors:
+# Henri Doreau <henri.doreau@greenbone.net>
+#
+# Copyright:
+# Copyright (C) 2011 Greenbone Networks GmbH
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2,
+# or, at your option, any later version as published by the Free
+# Software Foundation
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# If you modify this script, please prefix the version
+# with some characters in order to make it newer than
+# any follow-up version to prevent that your version
+# will be overwritten.
+VERSION=20110901
+
+# SETTINGS
+# ========
+# RSYNC_DELETE controls whether files which are not part of the repository will
+# be removed from the local directory after synchronization. The default value
+# for this setting is "--delete", which means that files which are not part of
+# feed will be deleted.
+RSYNC_DELETE="--delete"
+
+# PORT controls the outgoing TCP port for updates. If PAT/Port-Translation is
+# not used, this should be "24". For some application layer firewalls or gates
+# the value 22 (Standard SSH) is useful. Only change if you know what you are
+# doing.
+
+PORT=24
+
+# LOGDIR and LOGFILE specify the location of the greenbone-scapdata-sync logfile.
+# The default value for LOGDIR is  "/var/log/", the default value for
+# LOGFILE is "greenbone-scapdata-sync.log". Please make sure this script has
+# sufficient right to access the logfile.
+LOGDIR="/var/log/"
+LOGFILE="greenbone-scapdata-sync.log"
+
+[ -r /etc/openvas/greenbone-scapdata-sync.conf ] && . /etc/openvas/greenbone-scapdata-sync.conf
+
+BASE_SYNC_DIR="/var/lib/openvas"
+SCAP_DIR="$BASE_SYNC_DIR/scap-data"
+
+SCAP_RES="/usr/share/openvas/scap"
+
+SCAP_DB="$SCAP_DIR/scap.db"
+
+ACCESSKEY="/etc/openvas/gsf-access-key"
+
+while test $# -gt 0; do
+ case "$1" in
+        --version)
+                echo $VERSION
+                exit 0
+                ;;
+ esac
+ shift
+done
+
+if [[ ! -w $LOGDIR ]]
+then
+  NOLOG=1
+  echo
+  echo "== greenbone-scapdata-sync $VERSION ================================================"
+  echo "Warning: The logfile directory"
+  echo "  ($LOGDIR)"
+  echo "does not exist or is not writeable. Please make sure this directory exists and"
+  echo "is writable."
+  echo "Please be aware that logging is not possible during this script run!"
+  echo "==============================================================================="
+  echo
+fi
+
+log_write(){
+  if (( $NOLOG ))
+  then
+    echo "LOG: [`date -R`] $1"
+  else
+    echo "[`date -R`] $1" >> $LOGDIR$LOGFILE
+  fi
+}
+
+RSYNC=`command -v rsync`
+if [[ -z $RSYNC ]]
+then
+  echo
+  echo "== greenbone-scapdata-sync $VERSION ================================================"
+  echo "Could not find tools necessary for synchronization."
+  echo "Please make sure that the tool"
+  echo "  rsync"
+  echo "is installed and available in your PATH variable."
+  echo "If you are still not able to continue, please contact Greenbone Support at"
+  echo "support@greenbone.net and include the error messages displayed above (if any)"
+  echo "and your customer ID."
+  echo "==============================================================================="
+  echo
+  log_write "rsync not found, aborting synchronization."
+  logger "Software Update: rsync not found, aborting synchronization."
+  exit 1
+fi
+
+SQLITE=`command -v sqlite3`
+if [[ -z $SQLITE ]]
+then
+  echo
+  echo "== greenbone-scapdata-sync $VERSION ================================================"
+  echo "Could not find tools necessary for synchronization."
+  echo "Please make sure that the tool"
+  echo "  sqlite3"
+  echo "is installed and available in your PATH variable."
+  echo "If you are still not able to continue, please contact Greenbone Support at"
+  echo "support@greenbone.net and include the error messages displayed above (if any)"
+  echo "and your customer ID."
+  echo "==============================================================================="
+  echo
+  log_write "sqlite3 not found, aborting synchronization."
+  logger "Software Update: sqlite3 not found, aborting synchronization."
+  exit 1
+fi
+
+if [ -z $BASE_SYNC_DIR ]
+then
+  echo
+  echo "BASE_SYNC_DIR ($BASE_SYNC_DIR) not found!"
+  echo
+  exit 1
+fi
+
+update_scap_db() {
+  if [ ! -f $SCAP_DB ]
+  then
+    log_write "(Re-)initializing SCAP database."
+    sqlite3 $SCAP_DB < $SCAP_RES/db_init.sql
+    touch $SCAP_DIR/*.xml
+    REFDATE=0
+  else
+    REFDATE=`stat -c "%y" $SCAP_DB | cut -d " " -f 1 | tr -d "-"`
+  fi
+
+  DB_LASTMOD=`stat -c "%Y" $SCAP_DB`
+
+  CPE_BASE="$SCAP_DIR/official-cpe-dictionary_v2.2.xml"
+  if [ -e $CPE_BASE ]
+  then
+    if [ `stat -c "%Y" $CPE_BASE` -ge $DB_LASTMOD ]
+    then
+      log_write "Updating CPEs"
+      xsltproc --stringparam refdate $REFDATE $SCAP_RES/cpe_youngerthan.xsl $CPE_BASE | xsltproc $SCAP_RES/cpe_update.xsl - | sqlite3 $SCAP_DB
+    else
+      log_write "Skipping CPEs, file is older than last revision (this is not an error)."
+    fi
+  fi
+
+  for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
+  do
+    if [ `stat -c "%Y" $cvefile` -ge $DB_LASTMOD ]
+    then
+      log_write "Updating $cvefile"
+      xsltproc --stringparam refdate $REFDATE $SCAP_RES/cve_youngerthan.xsl $cvefile | xsltproc $SCAP_RES/cve_update.xsl - | sqlite3 $SCAP_DB
+    else
+      log_write "Skipping $cvefile, file is older than last revision (this is not an error)."
+    fi
+  done
+}
+
+sync_scapdata(){
+  if [[ -e $ACCESSKEY ]]
+  then
+    echo "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone SCAP data Repository ..."
+    notsynced=1
+    retried=0
+
+    mkdir -p "$BASE_SYNC_DIR"
+    read feeduser < $ACCESSKEY
+    read -d "@" custid < $ACCESSKEY
+    if [[ -z $feeduser || -z $custid ]]
+    then
+      echo "== greenbone-scapdata-sync $VERSION ================================================"
+      echo "Synchronization was not possible because credential information could not"
+      echo "be read from your access key."
+      echo "Please make sure that the key located at"
+      echo "  $sysconfdir/openvas/gsf-access-key"
+      echo "is intact and in a valid format."
+      echo "If you are still not able to continue, please contact Greenbone Support at"
+      echo "support@greenbone.net and include the error messages displayed above (if any)"
+      echo "and your customer ID."
+      echo "==============================================================================="
+      log_write "Could not determine credentials, aborting synchronization."
+      logger "Software Update: Could not determine credentials, aborting synchronization."
+      exit 1
+    fi
+    while (($notsynced))
+    do
+      # --protocol=29 is a workaround for a known bug in rsync 3.0.3
+      if [[ -e /admin/ezcli.state ]]
+      then
+        gsmproxy=`grep proxy_feed /admin/ezcli.state | sed -e 's/^.*\/\///' -e 's/:/ /' -e 's/[\t ]*$//'`
+        PORT=`grep ^syncport /admin/ezcli.state | sed -e "s/^syncport\t//g"`
+      fi
+      if [[ $gsmproxy == "proxy_feed" || -z $gsmproxy ]]
+      then
+        rsync -e "ssh -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
+      else
+        rsync -e "ssh -o \"ProxyCommand corkscrew $gsmproxy %h %p\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
+      fi
+      if (( $? )) ; then
+        echo
+        echo "== greenbone-scapdata-sync $VERSION ================================================"
+        echo "The synchronization with the repository failed. This may indicate a serious issue"
+        echo "with either your infrastructure or the repository itself."
+        echo "Your local SCAP data repository may be damaged now. Please resolve any connection"
+        echo "issues and try again."
+        echo "If you suspect an issue with the Greenbone SCAP data Repository, please contact"
+        echo "Greenbone support at support@greenbone.net and include the error messages"
+        echo "displayed above (if any) and your customer ID ($custid)."
+        echo "==============================================================================="
+        echo
+        log_write "rsync failed, aborting synchronization."
+	logger "Software Update:  failed, aborting synchronization."
+        exit 1
+      fi
+      notsynced=0
+    done
+    echo "Synchronization with the Greenbone SCAP data Repository successful."
+    log_write "Synchronization with the Greenbone SCAP data Repository successful."
+    logger "Software Update: Synchronization with the Greenbone SCAP data Repository successful."
+    echo
+
+    update_scap_db
+  else
+    echo
+    echo "== greenbone-scapdata-sync $VERSION ================================================"
+    echo "Could not find gsf-access-key."
+    echo
+    echo "This access key can be obtained from Greenbone Networks GmbH,"
+    echo "see http://greenbone.net/solutions/gbn_feed.html for details."
+    echo
+    echo "Please make sure the personal access key you obtained from"
+    echo "Greenbone is placed in the following directory:"
+    echo $ACCESSKEY
+    echo "Please make also sure that the filename is gsf-access-key."
+    echo "If you are still not able to synchronize, please contact Greenbone Support at"
+    echo "support@greenbone.net and include the error messages displayed above (if any)"
+    echo "and your customer ID."
+    echo "==============================================================================="
+    echo
+    log_write "gsf-access-key not found, aborting synchronization."
+    logger "Software Update: gsf-access-key not found, aborting synchronization."
+    exit 1
+  fi
+}
+
+sync_scapdata

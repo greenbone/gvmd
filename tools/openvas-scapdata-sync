@@ -1,0 +1,292 @@
+#!/bin/sh
+#
+# OpenVAS
+# $Id$
+# Description: Synchronize with SCAP data feed.
+#
+# Authors:
+# Henri Doreau <henri.doreau@greenbone.net>
+#
+# Copyright:
+# Copyright (C) 2011 Greenbone Networks GmbH
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2,
+# or, at your option, any later version as published by the Free
+# Software Foundation
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# configure SCAP_DIR where we will sync SCAP data
+if [ -z "$SCAP_DIR" ]; then
+  OPENVASSD=`which openvassd`
+  if [ -z "$OPENVASSD" ] ; then
+    echo "[e] Error: openvassd is not in the path, could not determine SCAP directory."
+    exit 1
+  else
+    # get the parent directory of the plugins
+    SCAP_DIR=`openvassd -s | awk -F" = " '/^plugins_folder/ { print $2 }' | sed -s 's/\(^.*\)plugins/\1/'`
+    # suffix it with "scap-data" which is our target (destination) directory
+    SCAP_DIR="$SCAP_DIR/scap-data"
+  fi
+fi
+
+# Script and feed information which will be made available to user through
+# command line options and automated tools.
+SCRIPT_NAME="openvas-scapdata-sync"
+VERSION=@OPENVASSD_VERSION@
+RESTRICTED=0
+
+
+# The URL of the plugin feed
+if [ -z "$OV_RSYNC_FEED" ]; then
+  OV_RSYNC_FEED=rsync://feed.openvas.org:/scap-data
+  # An alternative syntax which might work if the above doesn't:
+  # OV_RSYNC_FEED=rsync@feed.openvas.org::scap-data
+fi
+
+if [ -z "$OV_HTTP_FEED" ]; then
+  OV_HTTP_FEED=http://www.openvas.org/openvas-scap-data-current.tar.bz2
+fi
+
+if [ -z "$TMPDIR" ]; then
+  SYNC_TMP_DIR=/tmp
+  # If we have mktemp, create a temporary dir (safer)
+  if [ -n "`which mktemp`" ]; then
+    SYNC_TMP_DIR=`mktemp -t -d openvas-scap-data-sync.XXXXXXXXXX` || { echo "ERROR: Cannot create temporary directory for file download" >&2; exit 1 ; }
+    trap "rm -rf $SYNC_TMP_DIR" EXIT HUP INT TRAP TERM
+  fi
+else
+  SYNC_TMP_DIR="$TMPDIR"
+fi
+
+do_help () {
+  echo "$0: Sync SCAP data using different protocols"
+  echo " --rsync		sync with rsync (default)"
+  echo " --wget		sync with wget"
+  echo " --curl		sync with curl"
+  echo " --check		just checksum check"
+  echo "OpenVAS administrator functions:"
+  echo " --selftest	perform self-test"
+  echo " --identify	display information"
+  echo " --version	display version"
+  echo " --dst-dir <dir>	SCAP destination directory"
+  echo ""
+  echo "Environment variables:"
+  echo "SCAP_DIR		where to extract plugins (absolute path)"
+  echo "OV_RSYNC_FEED	URL of rsync feed"
+  echo "OV_HTTP_FEED	URL of http feed"
+  echo "TMPDIR		temporary directory used to download the files"
+  echo "Note that you can use standard ones as well (e.g. http_proxy) for wget/curl"
+  echo ""
+  exit 0
+}
+
+CMD_RSYNC=`which rsync`
+CMD_WGET=`which wget`
+CMD_CURL=`which curl`
+CMD_SQLITE=`which sqlite3`
+TMP_SCAP="$SYNC_TMP_DIR/openvas-feed-`date +%F`-$$.tar.bz2"
+
+chk_system_tools () {
+  echo "[i] Searching for required system tools (look for warnings/errors)..."
+
+  if [ -z "$CMD_RSYNC" ]; then
+    echo "[w] Warning: RSYNC not found";
+  fi
+
+  if [ -z "$CMD_WGET" ]; then
+    echo "[w] Warning: wget not found";
+  fi
+
+  if [ -z "$CMD_CURL" ]; then
+    echo "[w] Warning: curl not found";
+  fi
+
+  if [ -z "$CMD_SQLITE" ]; then
+    echo "[e] Error: sqlite3 not found (required)";
+    exit 1
+  fi
+
+  if [ -z "$CMD_RSYNC" -a -z "$CMD_WGET" -a -z "$CMD_CURL" ]; then
+    SELFTEST_FAIL=1
+  fi
+
+  echo "[i] If you did not get any warnings, that means you have all tools required"
+}
+
+do_rsync () {
+  if [ -z "$CMD_RSYNC" ]; then
+    echo "[w] rsync not found!"
+  else
+    echo "[i] Using rsync: $CMD_RSYNC"
+    echo "[i] Configured SCAP data rsync feed: $OV_RSYNC_FEED"
+    mkdir -p "$SCAP_DIR"
+    eval "$CMD_RSYNC -ltvrP \"$OV_RSYNC_FEED\" \"$SCAP_DIR\""
+    if [ $? -ne 0 ] ; then
+      echo "Error: rsync failed. Your SCAP data might be broken now."
+      exit 1
+    fi
+  fi
+}
+
+do_wget () {
+  if [ -z "$CMD_WGET" ]; then
+    echo "[w] GNU wget not found!"
+  else
+    echo "[i] Using GNU wget: $CMD_WGET"
+    echo "[i] Configured SCAP http feed: $OV_HTTP_FEED"
+    echo "[i] Downloading to: $TMP_SCAP"
+    mkdir -p "$SCAP_DIR" \
+    && wget "$OV_HTTP_FEED" -O $TMP_SCAP \
+    && cd "$SCAP_DIR" \
+    && tar xvjf $TMP_SCAP \
+    && rm -f $TMP_SCAP \
+    && echo "[i] Download complete"
+  fi
+}
+
+do_curl () {
+  if [ -z "$CMD_CURL" ]; then
+    echo "[w] curl not found!"
+  else
+    echo "[i] Using curl: $CMD_CURL"
+    echo "[i] Configured SCAP http feed: $OV_HTTP_FEED"
+    echo "[i] Downloading to: $TMP_SCAP"
+    mkdir -p "$SCAP_DIR" \
+    && curl "$OV_HTTP_FEED" -o $TMP_SCAP \
+    && cd "$SCAP_DIR" \
+    && tar xvjf $TMP_SCAP \
+    && rm -f $TMP_SCAP \
+    && echo "[i] Download complete"
+  fi
+}
+
+do_self_test () {
+  chk_system_tools
+}
+
+show_intro () {
+  echo "[i] This script synchronizes a SCAP data directory with the OpenVAS one."
+  echo "[i] SCAP dir: $SCAP_DIR"
+}
+
+do_sync () {
+  if [ -z "$CMD_RSYNC" ] ; then
+    if [ -z "$CMD_WGET" ]; then
+      echo "[w] GNU wget not found!"
+      if [ -z "$CMD_CURL" ]; then
+        echo "[w] curl not found!"
+        echo -n "[e] no utility available in PATH environment variable to download plugins"
+        exit 1
+      else
+        echo "[i] Will use curl"
+        do_curl
+      fi
+    else
+      echo "[i] Will use wget"
+      do_wget
+    fi
+  else
+    echo "[i] Will use rsync"
+    do_rsync
+  fi
+}
+
+update_sec_db () {
+
+  SEC_DB="$SCAP_DIR/scap.db"
+  CPEBASE="$SCAP_DIR/official-cpe-dictionary_v2.2.xml"
+
+  if [ ! -f $SEC_DB ]
+  then
+    echo "[i] (Re-)initializing database"
+    sqlite3 $SEC_DB < db_init.sql
+    touch $SCAP_DIR/*.xml
+    REFDATE=0
+  else
+    REFDATE=`stat -c "%y" $SEC_DB | cut -d " " -f 1 | tr -d "-"`
+  fi
+
+  DB_LASTMOD=`stat -c "%Y" $SEC_DB`
+
+  if [ `stat -c "%Y" $CPEBASE` -ge $DB_LASTMOD ]
+  then
+    echo "[i] Updating CPEs"
+    xsltproc --stringparam refdate $REFDATE cpe_youngerthan.xsl $CPEBASE | xsltproc cpe_update.xsl - | sqlite3 $SEC_DB
+  else
+    echo "[i] Skipping CPEs, file is older than last revision"
+  fi
+
+  for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
+  do
+    if [ `stat -c "%Y" $cvefile` -ge $DB_LASTMOD ]
+    then
+      echo "[i] Updating $cvefile"
+      xsltproc --stringparam refdate $REFDATE cve_youngerthan.xsl $cvefile | xsltproc cve_update.xsl - | sqlite3 $SEC_DB
+    else
+      echo "[i] Skipping $cvefile, file is older than last revision"
+    fi
+  done
+}
+
+if [ -n "$1" ]; then
+  while test $# -gt 0; do
+    case "$1" in
+      --help)
+        do_help
+        exit 0
+        ;;
+      --rsync)
+        do_rsync
+        exit 0
+        ;;
+      --wget)
+        do_wget
+        exit 0
+        ;;
+      --curl)
+        do_curl
+        exit 0
+        ;;
+      --check)
+        exit 0
+        ;;
+      --version)
+        echo $VERSION
+        exit 0
+        ;;
+      --identify)
+        echo "SCAPSYNC|$SCRIPT_NAME|$VERSION|$FEED_NAME|$RESTRICTED|SCAPSYNC"
+        exit 0
+        ;;
+      --selftest)
+        SELFTEST_FAIL=0
+        do_self_test
+        exit $SELFTEST_FAIL
+        ;;
+      --feedversion)
+        do_feedversion
+        exit 0
+        ;;
+      --nvt-dir)
+        SCAP_DIR="$2"
+        shift
+        ;;
+    esac
+    shift
+  done
+fi
+
+show_intro
+do_sync
+update_sec_db
+
+exit 0
