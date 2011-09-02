@@ -232,7 +232,7 @@ TODOS: Solve Whitespace/Indentation problem of this file.
       <xsl:when test="contains($string, '\') or contains($string, '$')">
         <xsl:variable name="before_backslash" select="substring-before($string, '\')"/>
         <xsl:variable name="before_dollar" select="substring-before($string, '$')"/>
-        <xsl:variable name="strlen_before_backslash" select="string-length($before_dollar)"/>
+        <xsl:variable name="strlen_before_backslash" select="string-length($before_backslash)"/>
         <xsl:variable name="strlen_before_dollar" select="string-length($before_dollar)"/>
         <xsl:choose>
           <xsl:when test="$strlen_before_dollar &gt; 0 and $strlen_before_backslash &gt; 0">
@@ -334,7 +334,7 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     <xsl:variable name="string_replace7">
       <xsl:call-template name="latex-prepend-backslash">
         <xsl:with-param name="string" select="$string_replace6"/>
-        <xsl:with-param name="character">{</xsl:with-param>
+        <xsl:with-param name="character">}</xsl:with-param>
       </xsl:call-template>
     </xsl:variable>
     <xsl:value-of select="$string_replace7"/>

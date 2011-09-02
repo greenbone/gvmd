@@ -1,3 +1,10 @@
+2011-09-02  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/report_formats/LaTeX/latex.xsl: Correct two typos in the
+	escaping functions which could cause the output to be mangled in case
+	a $ or {} was contained in strings the escape_text template was called
+	upon. Patch suggested by Andre Heinecke.
+
 2011-09-01  Henri Doreau <henri.doreau@greenbone.net>
 
 	Created a `tools' directory with files required for SCAP data
