@@ -98,6 +98,7 @@ set (CPACK_SOURCE_IGNORE_FILES
 "Doxyfile$"
 "Doxyfile_full$"
 "VERSION$"
+"tools/openvas-scapdata-sync$"
 )
 
 include (CPack)
@@ -146,11 +147,12 @@ endif (NOT INCLUDEDIR)
 #  set (SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/etc")
 #endif (NOT SYSCONFDIR)
 
-set (OPENVAS_DATA_DIR    "${DATADIR}/openvas")
-set (OPENVAS_STATE_DIR   "${LOCALSTATEDIR}/lib/openvas")
-set (OPENVAS_LOG_DIR     "${LOCALSTATEDIR}/log/openvas")
-set (OPENVAS_PID_DIR     "${LOCALSTATEDIR}/run")
-set (OPENVAS_SYSCONF_DIR "${SYSCONFDIR}/openvas")
+set (OPENVAS_DATA_DIR     "${DATADIR}/openvas")
+set (OPENVAS_STATE_DIR    "${LOCALSTATEDIR}/lib/openvas")
+set (OPENVAS_LOG_DIR      "${LOCALSTATEDIR}/log/openvas")
+set (OPENVAS_PID_DIR      "${LOCALSTATEDIR}/run")
+set (OPENVAS_SYSCONF_DIR  "${SYSCONFDIR}/openvas")
+set (OPENVAS_SCAP_RES_DIR "${OPENVAS_DATA_DIR}/scap")
 
 set (OPENVAS_LIB_INSTALL_DIR     "${LIBDIR}")
 set (OPENVAS_HEADER_INSTALL_DIR  "${INCLUDEDIR}")
@@ -237,6 +239,7 @@ configure_file (doc/Doxyfile.in doc/Doxyfile)
 configure_file (doc/Doxyfile_full.in doc/Doxyfile_full)
 configure_file (VERSION.in VERSION)
 configure_file (src/openvasmd_log_conf.cmake_in src/openvasmd_log.conf)
+configure_file (tools/openvas-scapdata-sync.in tools/openvas-scapdata-sync @ONLY)
 
 ## Program
 
@@ -320,5 +323,16 @@ install (FILES src/schema_formats/XML/generate
 install (FILES src/escalator_methods/Sourcefire/escalate
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_escalator_methods/cd1f5a34-6bdc-11e0-9827-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
+install (FILES tools/db_init.sql tools/cpe_update.xsl
+         tools/cpe_youngerthan.xsl tools/cve_update.xsl
+         tools/cve_youngerthan.xsl
+         DESTINATION ${OPENVAS_SCAP_RES_DIR}
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
+install (FILES tools/greenbone-scapdata-sync tools/openvas-scapdata-sync
+         DESTINATION ${SBINDIR}
+         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 ## End

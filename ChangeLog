@@ -1,3 +1,13 @@
+2011-09-05  Henri Doreau <henri.doreau@greenbone.net>
+
+	Generate the openvas-scapdata-sync script at compile time, with the
+	correct prefix and destination directories.
+
+	* CMakeLists.txt: Updated to generate the sync script.
+
+	* tools/openvas-scapdata-sync.in: (formerly openvas-scapdata-sync).
+	Read helper scripts from the correct directory.
+
 2011-09-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl: Correct two typos in the

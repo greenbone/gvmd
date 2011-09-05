@@ -32,7 +32,7 @@ if [ -z "$SCAP_DIR" ]; then
     exit 1
   else
     # get the parent directory of the plugins
-    SCAP_DIR=`openvassd -s | awk -F" = " '/^plugins_folder/ { print $2 }' | sed -s 's/\(^.*\)plugins/\1/'`
+    SCAP_DIR=`openvassd -s | awk -F" = " '/^plugins_folder/ { print $2 }' | sed -s 's/\(^.*\)\/plugins/\1/'`
     # suffix it with "scap-data" which is our target (destination) directory
     SCAP_DIR="$SCAP_DIR/scap-data"
   fi
@@ -41,7 +41,8 @@ fi
 # Script and feed information which will be made available to user through
 # command line options and automated tools.
 SCRIPT_NAME="openvas-scapdata-sync"
-VERSION=@OPENVASSD_VERSION@
+VERSION=@OPENVASMD_VERSION@
+RES_DIR=@OPENVAS_SCAP_RES_DIR@
 RESTRICTED=0
 
 
@@ -208,7 +209,7 @@ update_sec_db () {
   if [ ! -f $SEC_DB ]
   then
     echo "[i] (Re-)initializing database"
-    sqlite3 $SEC_DB < db_init.sql
+    sqlite3 $SEC_DB < $RES_DIR/db_init.sql
     touch $SCAP_DIR/*.xml
     REFDATE=0
   else
@@ -220,7 +221,7 @@ update_sec_db () {
   if [ `stat -c "%Y" $CPEBASE` -ge $DB_LASTMOD ]
   then
     echo "[i] Updating CPEs"
-    xsltproc --stringparam refdate $REFDATE cpe_youngerthan.xsl $CPEBASE | xsltproc cpe_update.xsl - | sqlite3 $SEC_DB
+    xsltproc --stringparam refdate $REFDATE $RES_DIR/cpe_youngerthan.xsl $CPEBASE | xsltproc $RES_DIR/cpe_update.xsl - | sqlite3 $SEC_DB
   else
     echo "[i] Skipping CPEs, file is older than last revision"
   fi
@@ -230,7 +231,7 @@ update_sec_db () {
     if [ `stat -c "%Y" $cvefile` -ge $DB_LASTMOD ]
     then
       echo "[i] Updating $cvefile"
-      xsltproc --stringparam refdate $REFDATE cve_youngerthan.xsl $cvefile | xsltproc cve_update.xsl - | sqlite3 $SEC_DB
+      xsltproc --stringparam refdate $REFDATE $RES_DIR/cve_youngerthan.xsl $cvefile | xsltproc $RES_DIR/cve_update.xsl - | sqlite3 $SEC_DB
     else
       echo "[i] Skipping $cvefile, file is older than last revision"
     fi
