@@ -14258,20 +14258,28 @@ free_host_ports (GTree *host_ports, gpointer dummy)
 }
 
 /**
- * @brief Free delta host ports.
+ * @brief Get N'th last report_host given a host.
+ *
+ * The last report_host is at position 1, the second last at position 2, and
+ * so on.
  *
  * @param[in]  host         Host.
  * @param[in]  report_host  Report host.
+ * @param[in]  position     Position from end.
  */
 static gboolean
-host_last_report_host (const char *host, report_host_t *report_host)
+host_nthlast_report_host (const char *host, report_host_t *report_host,
+                          int position)
 {
   gchar *quoted_host;
 
   assert (current_credentials.uuid);
 
+  if (position == 0)
+    position = 1;
+
   quoted_host = sql_quote (host);
-  switch (sql_int64 (report_host, 0, 0,
+  switch (sql_int64 (report_host, 0, position - 1,
                      "SELECT ROWID FROM report_hosts WHERE host = '%s'"
                      " AND (SELECT reports.owner FROM reports"
                      "      WHERE reports.ROWID = report_hosts.report)"
@@ -14284,10 +14292,11 @@ host_last_report_host (const char *host, report_host_t *report_host)
                      " AND (SELECT reports.scan_run_status FROM reports"
                      "      WHERE reports.ROWID = report_hosts.report)"
                      "     = %u"
-                     " ORDER BY ROWID DESC LIMIT 1;",
-                     host,
+                     " ORDER BY ROWID DESC LIMIT %i;",
+                     quoted_host,
                      current_credentials.uuid,
-                     TASK_STATUS_DONE))
+                     TASK_STATUS_DONE,
+                     position))
     {
       case 0:
         break;
@@ -14516,6 +14525,9 @@ filtered_host_count (const char *levels, const char *search_phrase)
  *                                indexed.
  * @param[in]  max_results        The maximum number of results returned.
  * @param[in]  type               Type of report, NULL, "scan" or "assets".
+ * @param[in]  host               Host or NULL, when type "assets".
+ * @param[in]  pos                Position of report from end, when type
+ *                                "assets".
  *
  * @return 0 on success, -1 error.
  */
@@ -14526,7 +14538,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   const char *levels, const char *delta_states,
                   int apply_overrides, const char *search_phrase, int notes,
                   int notes_details, int overrides, int overrides_details,
-                  int first_result, int max_results, const char *type)
+                  int first_result, int max_results, const char *type,
+                  const char *host, int pos)
 {
   FILE *out;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
@@ -14727,32 +14740,46 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (type && (strcmp (type, "assets") == 0))
     {
       iterator_t hosts;
-      init_asset_iterator (&hosts, first_result, max_results, levels,
-                           search_phrase);
-      PRINT (out,
-             "<host_count>"
-             "<full>%i</full>"
-             "<filtered>%i</filtered>"
-             "</host_count>",
-             host_count (),
-             filtered_host_count (levels, search_phrase));
-      PRINT (out,
-             "<hosts start=\"%i\" max=\"%i\"/>",
-             /* Add 1 for 1 indexing. */
-             first_result + 1,
-             max_results);
 
-      while (next (&hosts))
+      if (host)
+        {
+          PRINT (out,
+                 "<host_count>"
+                 "<full>1</full>"
+                 "<filtered>1</filtered>"
+                 "</host_count>"
+                 "<hosts start=\"1\" max=\"1\"/>");
+        }
+      else
+        {
+          init_asset_iterator (&hosts, first_result, max_results, levels,
+                               search_phrase);
+          PRINT (out,
+                 "<host_count>"
+                 "<full>%i</full>"
+                 "<filtered>%i</filtered>"
+                 "</host_count>",
+                 host_count (),
+                 filtered_host_count (levels, search_phrase));
+          PRINT (out,
+                 "<hosts start=\"%i\" max=\"%i\"/>",
+                 /* Add 1 for 1 indexing. */
+                 first_result + 1,
+                 max_results);
+        }
+
+      while (host || next (&hosts))
         {
           iterator_t report_hosts;
           report_host_t report_host;
           const char *ip;
 
-          ip = asset_iterator_ip (&hosts);
+          ip = host ? host : asset_iterator_ip (&hosts);
 
-          if (host_last_report_host (ip, &report_host))
+          if (host_nthlast_report_host (ip, &report_host, pos))
             {
-              cleanup_iterator (&hosts);
+              if (host == NULL)
+                cleanup_iterator (&hosts);
               return -1;
             }
 
@@ -14781,7 +14808,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                          "<source>"
                          "<type></type>"
                          "<name>openvasmd</name>"
-                         "<description>UUID of latest report</description>"
+                         "<description>UUID of current report</description>"
                          "</source>"
                          "</detail>",
                          host_iterator_report_uuid (&report_hosts));
@@ -14859,13 +14886,29 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                            report_host_details_iterator_source_name (&details),
                            report_host_details_iterator_source_desc (&details));
                   cleanup_iterator (&details);
+
+                  PRINT (out,
+                         "<detail>"
+                         "<name>report/pos</name>"
+                         "<value>%i</value>"
+                         "<source>"
+                         "<type></type>"
+                         "<name>openvasmd</name>"
+                         "<description>Position of report from end</description>"
+                         "</source>"
+                         "</detail>",
+                         pos);
                 }
+
+              PRINT (out,
+                     "</host>");
             }
 
-          PRINT (out,
-                 "</host>");
+          if (host)
+            break;
         }
-      cleanup_iterator (&hosts);
+      if (host == NULL)
+        cleanup_iterator (&hosts);
 
       PRINT (out, "</report>");
 
@@ -16008,7 +16051,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
                         result_hosts_only, min_cvss_base, report_format,
                         levels, NULL, apply_overrides, search_phrase, notes,
                         notes_details, overrides, overrides_details,
-                        first_result, max_results, type))
+                        first_result, max_results, type, NULL, 0))
     {
       g_free (xml_file);
       return NULL;
@@ -16415,6 +16458,9 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
  *                                instead of getting report.  NULL to get
  *                                report.
  * @param[in]  type               Type of report: NULL, "scan" or "assets".
+ * @param[in]  host               Host or NULL, when type "assets".
+ * @param[in]  pos                Position of report from end, when host.  1 for
+ *                                last.
  *
  * @return 0 success, -1 error, 1 failed to find escalator.
  */
@@ -16430,7 +16476,8 @@ manage_send_report (report_t report, report_t delta_report,
                     int base64,
                     gboolean (*send) (const char *, int (*) (void*), void*),
                     int (*send_data_1) (void*), void *send_data_2,
-                    const char *escalator_id, const char *type)
+                    const char *escalator_id, const char *type,
+                    const char *host, int pos)
 {
   task_t task;
   gchar *xml_file;
@@ -16486,7 +16533,8 @@ manage_send_report (report_t report, report_t delta_report,
                         sort_field, result_hosts_only, min_cvss_base,
                         report_format, levels, delta_states, apply_overrides,
                         search_phrase, notes, notes_details, overrides,
-                        overrides_details, first_result, max_results, type))
+                        overrides_details, first_result, max_results, type,
+                        host, pos))
     {
       g_free (xml_file);
       return -1;

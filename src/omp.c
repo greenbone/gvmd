@@ -1795,6 +1795,8 @@ typedef struct
   int overrides_details; ///< Boolean.  Whether to include details of above.
   int result_hosts_only; ///< Boolean.  Whether to include only resulted hosts.
   char *type;            ///< Type of report.
+  char *host;            ///< Host for asset report.
+  char *pos;             ///< Position of report from end.
 } get_reports_data_t;
 
 /**
@@ -1815,6 +1817,8 @@ get_reports_data_reset (get_reports_data_t *data)
   free (data->search_phrase);
   free (data->min_cvss_base);
   free (data->type);
+  free (data->host);
+  free (data->pos);
 
   memset (data, 0, sizeof (get_reports_data_t));
 }
@@ -4298,6 +4302,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               openvas_append_string (&get_reports_data->type, attribute);
             else
               get_reports_data->type = g_strdup ("scan");
+
+            append_attribute (attribute_names,
+                              attribute_values,
+                              "host",
+                              &get_reports_data->host);
+
+            append_attribute (attribute_names,
+                              attribute_values,
+                              "pos",
+                              &get_reports_data->pos);
 
             set_client_state (CLIENT_GET_REPORTS);
           }
@@ -9844,7 +9858,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (strcmp (get_reports_data->type, "assets") == 0)
           {
             gchar *extension, *content_type;
-            int ret;
+            int ret, pos;
 
             /* An asset report. */
 
@@ -9864,6 +9878,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             g_free (extension);
             g_free (content_type);
 
+            pos = get_reports_data->pos ? atoi (get_reports_data->pos) : 1;
             ret = manage_send_report (0,
                                       0,
                                       report_format,
@@ -9889,7 +9904,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       write_to_client,
                                       write_to_client_data,
                                       get_reports_data->escalator_id,
-                                      "assets");
+                                      "assets",
+                                      get_reports_data->host,
+                                      pos);
 
             if (ret)
               {
@@ -9960,7 +9977,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       write_to_client,
                                       write_to_client_data,
                                       get_reports_data->escalator_id,
-                                      get_reports_data->type);
+                                      get_reports_data->type,
+                                      NULL,
+                                      0);
             if (ret)
               {
                 if (get_reports_data->escalator_id)

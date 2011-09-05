@@ -1,3 +1,21 @@
+2011-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add host and pos args to GET_REPORTS.
+
+	* src/manage_sql.c (host_last_report_host): Remove for rename.
+	(host_nthlast_report_host): New function.  Was host_last_report_host.
+	Add pos arg.
+	(print_report_xml): Add host and pos host args, for getting single host
+	and for specifying which report to use.  Update callers.
+	(manage_send_report): Add host and pos host args.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (get_reports_data_t, get_reports_data_reset): Add host and
+	pos.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add host and
+	pos to GET_REPORTS.
+
 2011-09-05  Henri Doreau <henri.doreau@greenbone.net>
 
 	Generate the openvas-scapdata-sync script at compile time, with the
