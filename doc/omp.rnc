@@ -2246,6 +2246,10 @@ get_reports
        attribute override_details { boolean }?
        & # Whether to include only those hosts that have results.
        attribute result_hosts_only { boolean }?
+       & # For type "assets", single host to retrieve.
+       attribute host { text }?
+       & # For type "assets", position of report used, from end.
+       attribute pos { integer }?
      }
 
 ## Command get_report_formats

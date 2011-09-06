@@ -5558,6 +5558,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Whether to include only those hosts that have results</summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>host</name>
+        <summary>For type "assets", single host to retrieve</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>pos</name>
+        <summary>For type "assets", position of report used, from end</summary>
+        <type>integer</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>

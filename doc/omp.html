@@ -9055,6 +9055,16 @@ get_preferences_response_preference_value
           (<a href="#type_boolean">boolean</a>)
           Whether to include only those hosts that have results.
           </li>
+<li>
+          @<b>host</b>
+          (text)
+          For type "assets", single host to retrieve.
+          </li>
+<li>
+          @<b>pos</b>
+          (<a href="#type_integer">integer</a>)
+          For type "assets", position of report used, from end.
+          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -9097,6 +9107,8 @@ get_preferences_response_preference_value
        &amp; attribute overrides { boolean }?
        &amp; attribute override_details { boolean }?
        &amp; attribute result_hosts_only { boolean }?
+       &amp; attribute host { text }?
+       &amp; attribute pos { integer }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_reports_response
