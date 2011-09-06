@@ -14326,10 +14326,24 @@ host_report_count (const char *host)
 {
   int count;
   gchar *quoted_host;
+  assert (current_credentials.uuid);
   quoted_host = sql_quote (host);
   count = sql_int (0, 0,
-                   "SELECT count (*) FROM report_hosts WHERE host = '%s';",
-                   quoted_host);
+                   "SELECT count (*) FROM report_hosts WHERE host = '%s'"
+                   "  AND (SELECT reports.owner FROM reports"
+                   "       WHERE reports.ROWID = report_hosts.report)"
+                   "      = (SELECT ROWID FROM users"
+                   "         WHERE users.uuid = '%s')"
+                   "  AND (SELECT tasks.hidden FROM tasks, reports"
+                   "       WHERE reports.task = tasks.ROWID"
+                   "       AND reports.ROWID = report_hosts.report)"
+                   "      = 0"
+                   "  AND (SELECT reports.scan_run_status FROM reports"
+                   "       WHERE reports.ROWID = report_hosts.report)"
+                   "      = %u;",
+                   quoted_host,
+                   current_credentials.uuid,
+                   TASK_STATUS_DONE);
   g_free (quoted_host);
   return count;
 }
