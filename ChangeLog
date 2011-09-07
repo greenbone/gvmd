@@ -1,3 +1,15 @@
+2011-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_set_config_name, manage_set_config_comment)
+	(manage_set_config_name_comment): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (modify_config_data_t, modify_config_data_reset)
+	(client_state_t): Add comment and name.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add NAME and COMMENT to MODIFY_CONFIG.
+
 2011-09-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (host_report_count): Count only visible finished

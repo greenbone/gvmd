@@ -20941,6 +20941,89 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
 }
 
 /**
+ * @brief Set the comment of a config.
+ *
+ * @param[in]  config   Config.
+ * @param[in]  comment  New comment.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_set_config_comment (config_t config, const char* comment)
+{
+  gchar *quoted_comment;
+  quoted_comment = sql_quote (comment);
+  sql ("UPDATE configs SET comment = '%s' WHERE ROWID = %llu;",
+       quoted_comment, config);
+  g_free (quoted_comment);
+  return 0;
+}
+
+/**
+ * @brief Set the name of a config.
+ *
+ * @param[in]  config  Config.
+ * @param[in]  name    New name.
+ *
+ * @return 0 success, 1 config with new name exists already, -1 error.
+ */
+int
+manage_set_config_name (config_t config, const char* name)
+{
+  gchar *quoted_name;
+  sql ("BEGIN IMMEDIATE;");
+  quoted_name = sql_quote (name);
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM configs"
+               " WHERE name = '%s' AND ROWID != %llu;",
+               quoted_name,
+               config))
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+  sql ("UPDATE configs SET name = '%s' WHERE ROWID = %llu;",
+       quoted_name, config);
+  g_free (quoted_name);
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
+ * @brief Set the name of a config.
+ *
+ * @param[in]  config   Config.
+ * @param[in]  name     New name.
+ * @param[in]  comment  New comment.
+ *
+ * @return 0 success, 1 config with new name exists already, -1 error.
+ */
+int
+manage_set_config_name_comment (config_t config, const char* name,
+                                const char* comment)
+{
+  gchar *quoted_name, *quoted_comment;
+  sql ("BEGIN IMMEDIATE;");
+  quoted_name = sql_quote (name);
+  quoted_comment = sql_quote (comment);
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM configs"
+               " WHERE name = '%s' AND ROWID != %llu;",
+               quoted_name,
+               config))
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+  sql ("UPDATE configs SET name = '%s', comment = '%s' WHERE ROWID = %llu;",
+       quoted_name, quoted_comment, config);
+  g_free (quoted_name);
+  g_free (quoted_comment);
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
  * @brief Set the NVT's selected for a single family of a config.
  *
  * @param[in]  config         Config.

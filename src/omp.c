@@ -1986,6 +1986,7 @@ get_targets_data_reset (get_targets_data_t *data)
  */
 typedef struct
 {
+  char *comment;                       ///< New comment for config.
   char *config_id;                     ///< ID of config to modify.
   array_t *families_growing_empty; ///< New family selection: growing, empty.
   array_t *families_growing_all;   ///< New family selection: growing, all NVTs.
@@ -1997,6 +1998,7 @@ typedef struct
   char *family_selection_family_name;  ///< FAMILY_SELECTION/FAMILY family name.
   int family_selection_growing;        ///< Whether families in selection grow.
   char *family_selection_growing_text; ///< Text version of above.
+  char *name;                          ///< New name for config.
   array_t *nvt_selection;              ///< OID array. New NVT set for config.
   char *nvt_selection_family;          ///< Family of NVT selection.
   char *nvt_selection_nvt_oid;         ///< OID during NVT_selection/NVT.
@@ -2062,6 +2064,7 @@ help_data_reset (help_data_t *data)
 static void
 modify_config_data_reset (modify_config_data_t *data)
 {
+  free (data->comment);
   free (data->config_id);
   array_free (data->families_growing_empty);
   array_free (data->families_growing_all);
@@ -2070,6 +2073,7 @@ modify_config_data_reset (modify_config_data_t *data)
   free (data->family_selection_family_growing_text);
   free (data->family_selection_family_name);
   free (data->family_selection_growing_text);
+  free (data->name);
   array_free (data->nvt_selection);
   free (data->nvt_selection_family);
   free (data->nvt_selection_nvt_oid);
@@ -3244,6 +3248,8 @@ typedef enum
   CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME,
   CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE,
   CLIENT_MODIFY_CONFIG,
+  CLIENT_MODIFY_CONFIG_COMMENT,
+  CLIENT_MODIFY_CONFIG_NAME,
   CLIENT_MODIFY_CONFIG_PREFERENCE,
   CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
   CLIENT_MODIFY_CONFIG_PREFERENCE_NVT,
@@ -5385,7 +5391,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_CONFIG:
-        if (strcasecmp ("FAMILY_SELECTION", element_name) == 0)
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_free_string_var (&modify_config_data->comment);
+            openvas_append_string (&modify_config_data->comment, "");
+            set_client_state (CLIENT_MODIFY_CONFIG_COMMENT);
+          }
+        else if (strcasecmp ("FAMILY_SELECTION", element_name) == 0)
           {
             modify_config_data->families_growing_all = make_array ();
             modify_config_data->families_static_all = make_array ();
@@ -5394,6 +5406,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             modify_config_data->family_selection_growing = 0;
             set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
           }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_CONFIG_NAME);
         else if (strcasecmp ("NVT_SELECTION", element_name) == 0)
           {
             modify_config_data->nvt_selection = make_array ();
@@ -10942,6 +10956,61 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
             }
+          else if (modify_config_data->name && modify_config_data->comment)
+            switch (manage_set_config_name_comment (config,
+                                                    modify_config_data->name,
+                                                    modify_config_data->comment))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_config",
+                                      "MODIFY_CONFIG name must be unique"));
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("modify_config"));
+                  break;
+              }
+          else if (modify_config_data->name)
+            switch (manage_set_config_name (config, modify_config_data->name))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_config",
+                                      "MODIFY_CONFIG name must be unique"));
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("modify_config"));
+                  break;
+              }
+          else if (modify_config_data->comment)
+            switch (manage_set_config_comment (config,
+                                               modify_config_data->comment))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("modify_config"));
+                  break;
+              }
           else if (modify_config_data->preference_name == NULL
                    || strlen (modify_config_data->preference_name) == 0)
             SEND_TO_CLIENT_OR_FAIL
@@ -10977,6 +11046,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         modify_config_data_reset (modify_config_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
+      case CLIENT_MODIFY_CONFIG_COMMENT:
+        assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_CONFIG);
+        break;
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
         assert (strcasecmp ("FAMILY_SELECTION", element_name) == 0);
         assert (modify_config_data->families_growing_all);
@@ -10985,6 +11058,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         array_terminate (modify_config_data->families_growing_all);
         array_terminate (modify_config_data->families_static_all);
         array_terminate (modify_config_data->families_growing_empty);
+        set_client_state (CLIENT_MODIFY_CONFIG);
+        break;
+      case CLIENT_MODIFY_CONFIG_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_MODIFY_CONFIG);
         break;
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
@@ -17178,6 +17255,16 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                              text_len);
         break;
 
+      case CLIENT_MODIFY_CONFIG_COMMENT:
+        openvas_append_text (&modify_config_data->comment,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_MODIFY_CONFIG_NAME:
+        openvas_append_text (&modify_config_data->name,
+                             text,
+                             text_len);
+        break;
       case CLIENT_MODIFY_CONFIG_PREFERENCE_NAME:
         openvas_append_text (&modify_config_data->preference_name,
                              text,
