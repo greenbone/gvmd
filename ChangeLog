@@ -1,5 +1,11 @@
 2011-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (scap_loaded): New variable.
+	(init_manage_process): Set scap_loaded when SCAP db present.
+	(print_report_xml): Only send SCAP data when db present.
+
+2011-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (cvss_threat): New function.
 	(init_manage_process): Attach SCAP database.
 	(DEF_ACCESS): New macro.

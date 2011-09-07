@@ -264,6 +264,11 @@ nvtis_t* nvti_cache = NULL;
  */
 gchar* task_db_name = NULL;
 
+/**
+ * @brief Whether the SCAP database was present.
+ */
+static int scap_loaded = 0;
+
 
 /* SQL helpers. */
 
@@ -7552,8 +7557,6 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 #endif /* not S_SPLINT_S */
 
-  /* Attach the SCAP database. */
-
   if (update_nvt_cache)
     {
       if (update_nvt_cache == -2)
@@ -7566,10 +7569,31 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
   else
     {
-      /* Define functions for SQL. */
+      struct stat state;
+      int err;
 
-      sql ("ATTACH database '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
-           " AS scap;");
+      /* Attach the SCAP database. */
+
+      err = stat (OPENVAS_STATE_DIR "/scap-data/scap.db", &state);
+      if (err)
+        switch (errno)
+          {
+            case ENOENT:
+              break;
+            default:
+              g_warning ("%s: failed to stat SCAP database: %s\n",
+                         __FUNCTION__,
+                         strerror (errno));
+              abort ();
+          }
+      else
+        {
+          sql ("ATTACH database '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
+               " AS scap;");
+          scap_loaded = 1;
+        }
+
+      /* Define functions for SQL. */
 
       if (sqlite3_create_collation (task_db,
                                     "collate_message_type",
@@ -14982,9 +15006,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                              report_host_details_iterator_source_name (&details),
                              report_host_details_iterator_source_desc (&details));
 
-                      if (strcmp (report_host_details_iterator_name (&details),
-                                  "App")
-                          == 0)
+                      if (scap_loaded
+                          && (strcmp (report_host_details_iterator_name
+                                       (&details),
+                                      "App")
+                              == 0))
                         {
                           iterator_t prognosis;
                           int cvss;
