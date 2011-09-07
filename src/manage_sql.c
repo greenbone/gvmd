@@ -836,6 +836,25 @@ sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
 /* General helpers. */
 
 /**
+ * @brief Get the threat of a CVSS.
+ *
+ * @param  cvss  Rounded down CVSS.
+ *
+ * @return Static threat name.
+ */
+static const char *
+cvss_threat (int cvss)
+{
+  if (cvss < 0 || cvss > 10)
+    return "";
+  if (cvss < 3)
+    return "Low";
+  if (cvss < 6)
+    return "Medium";
+  return "High";
+}
+
+/**
  * @brief Test whether a string equal to a given string exists in an array.
  *
  * @param[in]  array   Array of gchar* pointers.
@@ -7533,6 +7552,8 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 #endif /* not S_SPLINT_S */
 
+  /* Attach the SCAP database. */
+
   if (update_nvt_cache)
     {
       if (update_nvt_cache == -2)
@@ -7546,6 +7567,9 @@ init_manage_process (int update_nvt_cache, const gchar *database)
   else
     {
       /* Define functions for SQL. */
+
+      sql ("ATTACH database '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
+           " AS scap;");
 
       if (sqlite3_create_collation (task_db,
                                     "collate_message_type",
@@ -9927,6 +9951,58 @@ result_uuid (result_t result, char ** id)
 }
 
 
+/* Prognostics. */
+
+#define DEF_ACCESS(name, col) \
+const char* \
+name (iterator_t* iterator) \
+{ \
+  const char *ret; \
+  if (iterator->done) return NULL; \
+  ret = (const char*) sqlite3_column_text (iterator->stmt, col); \
+  return ret; \
+}
+
+/**
+ * @brief Initialise a prognosis iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  cpe       CPE.
+ */
+void
+init_prognosis_iterator (iterator_t *iterator, const char *cpe)
+{
+  gchar *quoted_cpe;
+  quoted_cpe = sql_quote (cpe);
+  init_iterator (iterator,
+                 "SELECT cves.cve, cves.cvss"
+                 " FROM scap.cves, scap.cpes, scap.affected_products"
+                 " WHERE cpes.name='%s'"
+                 " AND cpes.id=affected_products.cpe"
+                 " AND cves.id=affected_products.cve"
+                 " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
+                 quoted_cpe);
+  g_free (quoted_cpe);
+}
+
+DEF_ACCESS (prognosis_iterator_cve, 0);
+DEF_ACCESS (prognosis_iterator_cvss, 1);
+
+/**
+ * @brief Get the CVSS from a result iterator as an integer.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return CVSS.
+ */
+int
+prognosis_iterator_cvss_int (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (int) sqlite3_column_int64 (iterator->stmt, 1);
+}
+
+
 /* Reports. */
 
 /**
@@ -10305,6 +10381,8 @@ init_report_iterator (iterator_t* iterator, task_t task, report_t report)
  *         cleanup_iterator.
  */
 #endif
+
+#undef DEF_ACCESS
 
 /**
  * @brief Generate accessor for an SQL iterator.
@@ -14884,21 +14962,73 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   init_report_host_details_iterator
                    (&details, report_host);
                   while (next (&details))
-                    PRINT (out,
-                           "<detail>"
-                           "<name>%s</name>"
-                           "<value>%s</value>"
-                           "<source>"
-                           "<type>%s</type>"
-                           "<name>%s</name>"
-                           "<description>%s</description>"
-                           "</source>"
-                           "</detail>",
-                           report_host_details_iterator_name (&details),
-                           report_host_details_iterator_value (&details),
-                           report_host_details_iterator_source_type (&details),
-                           report_host_details_iterator_source_name (&details),
-                           report_host_details_iterator_source_desc (&details));
+                    {
+                      const char *value;
+                      value = report_host_details_iterator_value (&details);
+
+                      PRINT (out,
+                             "<detail>"
+                             "<name>%s</name>"
+                             "<value>%s</value>"
+                             "<source>"
+                             "<type>%s</type>"
+                             "<name>%s</name>"
+                             "<description>%s</description>"
+                             "</source>"
+                             "</detail>",
+                             report_host_details_iterator_name (&details),
+                             value,
+                             report_host_details_iterator_source_type (&details),
+                             report_host_details_iterator_source_name (&details),
+                             report_host_details_iterator_source_desc (&details));
+
+                      if (strcmp (report_host_details_iterator_name (&details),
+                                  "App")
+                          == 0)
+                        {
+                          iterator_t prognosis;
+                          int cvss;
+                          int first;
+
+                          first = 1;
+                          cvss = -1;
+                          init_prognosis_iterator (&prognosis, value);
+                          while (next (&prognosis))
+                            {
+                              if (first)
+                                {
+                                  cvss = prognosis_iterator_cvss_int
+                                          (&prognosis);
+                                  first = 0;
+                                }
+
+                              PRINT (out,
+                                     "<detail>"
+                                     "<name>%s/CVE</name>"
+                                     "<value>%s</value>"
+                                     "</detail>"
+                                     "<detail>"
+                                     "<name>%s/%s/CVSS</name>"
+                                     "<value>%s</value>"
+                                     "</detail>",
+                                     value,
+                                     prognosis_iterator_cve (&prognosis),
+                                     value,
+                                     prognosis_iterator_cve (&prognosis),
+                                     prognosis_iterator_cvss (&prognosis));
+                            }
+                          if (cvss >= 0)
+                            PRINT (out,
+                                   "<detail>"
+                                   "<name>%s/threat</name>"
+                                   "<value>%s</value>"
+                                   "</detail>",
+                                   value,
+                                   cvss_threat (cvss));
+                          cleanup_iterator (&prognosis);
+                        }
+                    }
+
                   cleanup_iterator (&details);
 
                   PRINT (out,

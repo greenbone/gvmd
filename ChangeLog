@@ -1,5 +1,14 @@
 2011-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (cvss_threat): New function.
+	(init_manage_process): Attach SCAP database.
+	(DEF_ACCESS): New macro.
+	(init_prognosis_iterator, prognosis_iterator_cve)
+	(prognosis_iterator_cvss, prognosis_iterator_cvss_int): New functions.
+	(print_report_xml): Include SCAP info for each App.
+
+2011-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_set_config_name, manage_set_config_comment)
 	(manage_set_config_name_comment): New functions.
 
