@@ -14987,6 +14987,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                    (&details, report_host);
                   while (next (&details))
                     {
+                      int highest_cvss;
                       const char *value;
                       value = report_host_details_iterator_value (&details);
 
@@ -15006,6 +15007,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                              report_host_details_iterator_source_name (&details),
                              report_host_details_iterator_source_desc (&details));
 
+                      highest_cvss = -1;
                       if (scap_loaded
                           && (strcmp (report_host_details_iterator_name
                                        (&details),
@@ -15025,6 +15027,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                 {
                                   cvss = prognosis_iterator_cvss_int
                                           (&prognosis);
+                                  if (cvss > highest_cvss)
+                                    highest_cvss = cvss;
                                   first = 0;
                                 }
 
@@ -15053,6 +15057,13 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                    cvss_threat (cvss));
                           cleanup_iterator (&prognosis);
                         }
+                      if (highest_cvss >= 0)
+                        PRINT (out,
+                               "<detail>"
+                               "<name>prognosis</name>"
+                               "<value>%s</value>"
+                               "</detail>",
+                               cvss_threat (highest_cvss));
                     }
 
                   cleanup_iterator (&details);
