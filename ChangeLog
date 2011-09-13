@@ -1,5 +1,10 @@
 2011-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage_process): Uppercase SQL keyword.
+	(cleanup_manage_process): DETACH scap.
+
+2011-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Reluctantly init run_status.
 
 2011-09-13  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -7588,7 +7588,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           }
       else
         {
-          sql ("ATTACH database '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
+          sql ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
                " AS scap;");
           scap_loaded = 1;
         }
@@ -8460,6 +8460,8 @@ cleanup_manage_process (gboolean cleanup)
     {
       if (cleanup && current_scanner_task)
         set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
+      if (scap_loaded)
+        sql ("DETACH DATABASE scap;");
       sqlite3_close (task_db);
       task_db = NULL;
     }
