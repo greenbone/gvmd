@@ -97,8 +97,8 @@ Please note that the target directory in the commands above might have
 to be prefixed with the prefix you have set earlier.
 
 
-Creating a administrator user for OpenVAS
------------------------------------------
+Creating an administrator user for OpenVAS
+------------------------------------------
 
 You can create a administrator user in two ways, either
 via the OpenVAS Administrator command line tool "openvasad":
