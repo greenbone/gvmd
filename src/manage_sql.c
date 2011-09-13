@@ -14669,6 +14669,14 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   /** @todo Leaks on error in PRINT.  The process normally exits then anyway. */
 
+  /* run_status is set by report_scan_run_status when either of "delta" and
+   * "report" are true.  run_status is only used by run_status_name, only when
+   * either of "delta" and "report" are true, and only after a
+   * report_scan_run_status call.  Still GCC 4.4.5 (Debian 4.4.5-8) gives a
+   * "may be used uninitialized" warning, so init it here to quiet the
+   * warning. */
+  run_status = TASK_STATUS_INTERNAL_ERROR;
+
   if ((type == NULL) || (strcmp (type, "scan") == 0))
     {
       type = NULL;
