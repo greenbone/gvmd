@@ -376,7 +376,8 @@ sql (char* sql, ...)
   while (1)
     {
       ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
+        continue;
       g_free (formatted);
       if (ret == SQLITE_OK)
         {
@@ -404,7 +405,12 @@ sql (char* sql, ...)
       if (ret == SQLITE_DONE) break;
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
         {
-          if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
+          if (ret == SQLITE_ERROR)
+            {
+              ret = sqlite3_reset (stmt);
+              if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
+                continue;
+            }
           g_warning ("%s: sqlite3_step failed: %s\n",
                      __FUNCTION__,
                      sqlite3_errmsg (task_db));
@@ -8460,8 +8466,6 @@ cleanup_manage_process (gboolean cleanup)
     {
       if (cleanup && current_scanner_task)
         set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
-      if (scap_loaded)
-        sql ("DETACH DATABASE scap;");
       sqlite3_close (task_db);
       task_db = NULL;
     }

@@ -1,5 +1,12 @@
 2011-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (sql): Check for SQLITE_LOCKED after sqlite3_prepare.
+	After sqlite3_step check if the reset return is BUSY or LOCKED.
+	(cleanup_manage_process): Remove DETACH scap.  Seems to result in blocking
+	failures in error cases when run in sigabrt.
+
+2011-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage_process): Uppercase SQL keyword.
 	(cleanup_manage_process): DETACH scap.
 
