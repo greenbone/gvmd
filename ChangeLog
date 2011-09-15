@@ -1,5 +1,9 @@
 2011-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml):
+
+2011-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add single host prognostic reports.
 
 	* src/manage_sql.c (init_prognosis_iterator): Add description and CPE

@@ -15428,86 +15428,21 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   init_report_host_details_iterator
                    (&details, report_host);
                   while (next (&details))
-                    {
-                      int highest_cvss;
-                      const char *value;
-                      value = report_host_details_iterator_value (&details);
-
-                      PRINT (out,
-                             "<detail>"
-                             "<name>%s</name>"
-                             "<value>%s</value>"
-                             "<source>"
-                             "<type>%s</type>"
-                             "<name>%s</name>"
-                             "<description>%s</description>"
-                             "</source>"
-                             "</detail>",
-                             report_host_details_iterator_name (&details),
-                             value,
-                             report_host_details_iterator_source_type (&details),
-                             report_host_details_iterator_source_name (&details),
-                             report_host_details_iterator_source_desc (&details));
-
-                      highest_cvss = -1;
-                      if (scap_loaded
-                          && (strcmp (report_host_details_iterator_name
-                                       (&details),
-                                      "App")
-                              == 0))
-                        {
-                          iterator_t prognosis;
-                          int cvss;
-                          int first;
-
-                          first = 1;
-                          cvss = -1;
-                          init_prognosis_iterator (&prognosis, value);
-                          while (next (&prognosis))
-                            {
-                              if (first)
-                                {
-                                  cvss = prognosis_iterator_cvss_int
-                                          (&prognosis);
-                                  if (cvss > highest_cvss)
-                                    highest_cvss = cvss;
-                                  first = 0;
-                                }
-
-                              PRINT (out,
-                                     "<detail>"
-                                     "<name>%s/CVE</name>"
-                                     "<value>%s</value>"
-                                     "</detail>"
-                                     "<detail>"
-                                     "<name>%s/%s/CVSS</name>"
-                                     "<value>%s</value>"
-                                     "</detail>",
-                                     value,
-                                     prognosis_iterator_cve (&prognosis),
-                                     value,
-                                     prognosis_iterator_cve (&prognosis),
-                                     prognosis_iterator_cvss (&prognosis));
-                            }
-                          if (cvss >= 0)
-                            PRINT (out,
-                                   "<detail>"
-                                   "<name>%s/threat</name>"
-                                   "<value>%s</value>"
-                                   "</detail>",
-                                   value,
-                                   cvss_threat (cvss));
-                          cleanup_iterator (&prognosis);
-                        }
-                      if (highest_cvss >= 0)
-                        PRINT (out,
-                               "<detail>"
-                               "<name>prognosis</name>"
-                               "<value>%s</value>"
-                               "</detail>",
-                               cvss_threat (highest_cvss));
-                    }
-
+                    PRINT (out,
+                           "<detail>"
+                           "<name>%s</name>"
+                           "<value>%s</value>"
+                           "<source>"
+                           "<type>%s</type>"
+                           "<name>%s</name>"
+                           "<description>%s</description>"
+                           "</source>"
+                           "</detail>",
+                           report_host_details_iterator_name (&details),
+                           report_host_details_iterator_value (&details),
+                           report_host_details_iterator_source_type (&details),
+                           report_host_details_iterator_source_name (&details),
+                           report_host_details_iterator_source_desc (&details));
                   cleanup_iterator (&details);
 
                   PRINT (out,
