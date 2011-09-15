@@ -10005,7 +10005,7 @@ init_prognosis_iterator (iterator_t *iterator, const char *cpe)
   gchar *quoted_cpe;
   quoted_cpe = sql_quote (cpe);
   init_iterator (iterator,
-                 "SELECT cves.cve, cves.cvss"
+                 "SELECT cves.cve, cves.cvss, cves.description, cpes.name"
                  " FROM scap.cves, scap.cpes, scap.affected_products"
                  " WHERE cpes.name='%s'"
                  " AND cpes.id=affected_products.cpe"
@@ -10017,6 +10017,8 @@ init_prognosis_iterator (iterator_t *iterator, const char *cpe)
 
 DEF_ACCESS (prognosis_iterator_cve, 0);
 DEF_ACCESS (prognosis_iterator_cvss, 1);
+DEF_ACCESS (prognosis_iterator_description, 2);
+DEF_ACCESS (prognosis_iterator_cpe, 3);
 
 /**
  * @brief Get the CVSS from a result iterator as an integer.
@@ -10030,6 +10032,170 @@ prognosis_iterator_cvss_int (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return (int) sqlite3_column_int64 (iterator->stmt, 1);
+}
+
+/**
+ * @brief Return SQL WHERE for restricting a SELECT to a search phrase.
+ *
+ * @param[in]  search_phrase  Phrase that results must include.  All results if
+ *                            NULL or "".
+ *
+ * @return WHERE clause for search phrase if one is required, else NULL.
+ */
+static GString *
+prognosis_where_search_phrase (const char* search_phrase)
+{
+  if (search_phrase)
+    {
+      GString *phrase_sql;
+      gchar *quoted_search_phrase;
+
+      if (strlen (search_phrase) == 0)
+        return NULL;
+
+      quoted_search_phrase = sql_quote (search_phrase);
+      phrase_sql = g_string_new ("");
+      g_string_append_printf (phrase_sql,
+                              " AND (cves.description LIKE '%%%%%s%%%%'"
+                              " OR cves.cve LIKE '%%%%%s%%%%'"
+                              " OR cpes.name LIKE '%%%%%s%%%%')",
+                              quoted_search_phrase,
+                              quoted_search_phrase,
+                              quoted_search_phrase);
+      g_free (quoted_search_phrase);
+
+      return phrase_sql;
+    }
+  return NULL;
+}
+
+/**
+ * @brief Return SQL WHERE for restricting a SELECT to levels.
+ *
+ * @param[in]  levels  String describing threat levels (message types)
+ *                     to include in report (for example, "hmlgd" for
+ *                     High, Medium, Low, loG and Debug).  All levels if
+ *                     NULL.
+ *
+ * @return WHERE clause for levels if one is required, else NULL.
+ */
+static const char *
+prognosis_where_levels (const char* levels)
+{
+  char *high, *medium, *low;
+
+  if (levels == NULL || strlen (levels) == 0)
+    return "";
+
+  high = strchr (levels, 'h');
+  medium = strchr (levels, 'm');
+  low = strchr (levels, 'l');
+
+  if (high && medium && low)
+    return "";
+
+  if (high && medium)
+    return " AND cves.cvss >= 3";
+
+  if (high && low)
+    return " AND (cves.cvss >= 6 OR cves.cvss < 3)";
+
+  if (medium && low)
+    return " AND cves.cvss < 6";
+
+  if (high)
+    return " AND cves.cvss >= 6";
+
+  if (medium)
+    return " AND cves.cvss < 6 AND cves.cvss >= 3";
+
+  if (low)
+    return " AND cves.cvss < 3";
+
+  return "";
+}
+
+/**
+ * @brief Return SQL WHERE for restricting a SELECT to a minimum CVSS base.
+ *
+ * @param[in]  min_cvss_base  Minimum value for CVSS.
+ *
+ * @return WHERE clause if one is required, else NULL.
+ */
+static GString *
+prognosis_where_cvss_base (const char* min_cvss_base)
+{
+  if (min_cvss_base)
+    {
+      GString *cvss_sql;
+      gchar *quoted_min_cvss_base;
+
+      if (strlen (min_cvss_base) == 0)
+        return NULL;
+
+      quoted_min_cvss_base = sql_quote (min_cvss_base);
+      cvss_sql = g_string_new ("");
+      g_string_append_printf (cvss_sql,
+                              " AND CAST (cves.cvss AS REAL)"
+                              " >= CAST ('%s' AS REAL)",
+                              quoted_min_cvss_base);
+      g_free (quoted_min_cvss_base);
+
+      return cvss_sql;
+    }
+  return NULL;
+}
+
+/**
+ * @brief Initialise a report host prognosis iterator.
+ *
+ * @param[in]  iterator     Iterator.
+ * @param[in]  report_host  Report host whose prognosis the iterator loops over.
+ *                          All report_hosts if NULL.
+ * @param[in]  first_result   The result to start from.  The results are 0
+ *                            indexed.
+ * @param[in]  max_results    The maximum number of results returned.
+ * @param[in]  levels         String describing threat levels (message types)
+ *                            to include in count (for example, "hmlgd" for
+ *                            High, Medium, Low, loG and Debug).  All levels if
+ *                            NULL.
+ * @param[in]  search_phrase  Phrase that results must include.  All results
+ * @param[in]  min_cvss_base  Minimum value for CVSS.  All results if NULL.
+ */
+static void
+init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
+                              int first_result, int max_results,
+                              const char *levels, const char *search_phrase,
+                              const char *min_cvss_base)
+{
+  GString *phrase_sql, *cvss_sql;
+
+  if (levels == NULL) levels = "hmlgdf";
+
+  phrase_sql = prognosis_where_search_phrase (search_phrase);
+  cvss_sql = prognosis_where_cvss_base (min_cvss_base);
+
+  init_iterator (iterator,
+                 "SELECT cves.cve, cves.cvss, cves.description, cpes.name"
+                 " FROM scap.cves, scap.cpes, scap.affected_products,"
+                 "      report_host_details"
+                 " WHERE report_host_details.report_host = %llu"
+                 " AND cpes.name = report_host_details.value"
+                 " AND report_host_details.name = 'App'"
+                 " AND cpes.id=affected_products.cpe"
+                 " AND cves.id=affected_products.cve"
+                 "%s%s%s"
+                 " ORDER BY CAST (cves.cvss AS INTEGER) DESC"
+                 " LIMIT %i OFFSET %i;",
+                 report_host,
+                 phrase_sql ? phrase_sql->str : "",
+                 prognosis_where_levels (levels),
+                 cvss_sql ? cvss_sql->str : "",
+                 max_results,
+                 first_result);
+
+  if (phrase_sql) g_string_free (phrase_sql, TRUE);
+  if (cvss_sql) g_string_free (cvss_sql, TRUE);
 }
 
 
@@ -14718,7 +14884,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       free (uuid);
     }
   else
-    PRINT (out, "<report type=\"assets\">");
+    PRINT (out, "<report type=\"%s\">", type);
 
   if (delta)
     {
@@ -14815,6 +14981,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (delta)
     {
       PRINT (out,
+             "<host><ip>%s</ip></host>"
              "<delta>"
              "%s"
              "<changed>%i</changed>"
@@ -14822,12 +14989,17 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              "<new>%i</new>"
              "<same>%i</same>"
              "</delta>",
+             host ? host : "",
              delta_states,
              strchr (delta_states, 'c') != NULL,
              strchr (delta_states, 'g') != NULL,
              strchr (delta_states, 'n') != NULL,
              strchr (delta_states, 's') != NULL);
     }
+  else if (type && (strcmp (type, "prognostic") == 0))
+    PRINT (out,
+           "<host><ip>%s</ip></host>",
+           host ? host : "");
 
   PRINT (out, "</filters>");
 
@@ -15104,6 +15276,363 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         }
       if (host == NULL)
         cleanup_iterator (&hosts);
+
+      PRINT (out, "</report>");
+
+      if (fclose (out))
+        {
+          g_warning ("%s: fclose failed: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return -1;
+        }
+
+      return 0;
+    }
+
+  if (type && (strcmp (type, "prognostic") == 0))
+    {
+      iterator_t hosts;
+
+      if (host)
+        {
+          PRINT (out,
+                 "<host_count>"
+                 "<full>1</full>"
+                 "<filtered>1</filtered>"
+                 "</host_count>"
+                 "<hosts start=\"1\" max=\"1\"/>");
+        }
+      else
+        {
+          abort ();
+#if 0
+          init_asset_iterator (&hosts, host_first_result, host_max_results,
+                               host_levels, host_search_phrase);
+          PRINT (out,
+                 "<host_count>"
+                 "<full>%i</full>"
+                 "<filtered>%i</filtered>"
+                 "</host_count>",
+                 host_count (),
+                 filtered_host_count (host_levels, host_search_phrase));
+          PRINT (out,
+                 "<hosts start=\"%i\" max=\"%i\"/>",
+                 /* Add 1 for 1 indexing. */
+                 host_first_result + 1,
+                 host_max_results);
+#endif
+        }
+
+      result_count = holes = warnings = infos = logs = 0;
+      filtered_result_count = f_holes = f_warnings = f_infos = f_logs = 0;
+      while (host || next (&hosts))
+        {
+          iterator_t report_hosts;
+          report_host_t report_host;
+          const char *ip;
+
+          ip = host ? host : asset_iterator_ip (&hosts);
+
+          if (host_nthlast_report_host (ip, &report_host, pos))
+            {
+              if (host == NULL)
+                cleanup_iterator (&hosts);
+              return -1;
+            }
+
+          if (report_host)
+            {
+              init_host_iterator (&report_hosts, 0, NULL, report_host);
+              if (next (&report_hosts))
+                {
+                  iterator_t details;
+                  report_t report;
+                  int h_holes, h_infos, h_logs, h_warnings, h_false_positives;
+
+                  PRINT (out,
+                         "<host>"
+                         "<ip>%s</ip>"
+                         "<start>%s</start>"
+                         "<end>%s</end>",
+                         ip,
+                         host_iterator_start_time (&report_hosts),
+                         host_iterator_end_time (&report_hosts));
+
+                  PRINT (out,
+                         "<detail>"
+                         "<name>report/@id</name>"
+                         "<value>%s</value>"
+                         "<source>"
+                         "<type></type>"
+                         "<name>openvasmd</name>"
+                         "<description>UUID of current report</description>"
+                         "</source>"
+                         "</detail>",
+                         host_iterator_report_uuid (&report_hosts));
+
+                  PRINT (out,
+                         "<detail>"
+                         "<name>report_count</name>"
+                         "<value>%i</value>"
+                         "<source>"
+                         "<type></type>"
+                         "<name>openvasmd</name>"
+                         "<description>Number of reports</description>"
+                         "</source>"
+                         "</detail>",
+                         host_report_count (ip));
+
+                  report = host_iterator_report (&report_hosts);
+
+                  report_counts_id (report, NULL, &h_holes, &h_infos, &h_logs,
+                                    &h_warnings, &h_false_positives, 0,
+                                    ip);
+
+                  PRINT (out,
+                         "<detail>"
+                         "<name>report/result_count/high</name>"
+                         "<value>%i</value>"
+                         "<source>"
+                         "<type></type>"
+                         "<name>openvasmd</name>"
+                         "<description>Number of highs</description>"
+                         "</source>"
+                         "</detail>",
+                         h_holes);
+
+                  PRINT (out,
+                         "<detail>"
+                         "<name>report/result_count/medium</name>"
+                         "<value>%i</value>"
+                         "<source>"
+                         "<type></type>"
+                         "<name>openvasmd</name>"
+                         "<description>Number of highs</description>"
+                         "</source>"
+                         "</detail>",
+                         h_warnings);
+
+                  PRINT (out,
+                         "<detail>"
+                         "<name>report/result_count/low</name>"
+                         "<value>%i</value>"
+                         "<source>"
+                         "<type></type>"
+                         "<name>openvasmd</name>"
+                         "<description>Number of highs</description>"
+                         "</source>"
+                         "</detail>",
+                         h_infos);
+
+                  init_report_host_details_iterator
+                   (&details, report_host);
+                  while (next (&details))
+                    {
+                      int highest_cvss;
+                      const char *value;
+                      value = report_host_details_iterator_value (&details);
+
+                      PRINT (out,
+                             "<detail>"
+                             "<name>%s</name>"
+                             "<value>%s</value>"
+                             "<source>"
+                             "<type>%s</type>"
+                             "<name>%s</name>"
+                             "<description>%s</description>"
+                             "</source>"
+                             "</detail>",
+                             report_host_details_iterator_name (&details),
+                             value,
+                             report_host_details_iterator_source_type (&details),
+                             report_host_details_iterator_source_name (&details),
+                             report_host_details_iterator_source_desc (&details));
+
+                      highest_cvss = -1;
+                      if (scap_loaded
+                          && (strcmp (report_host_details_iterator_name
+                                       (&details),
+                                      "App")
+                              == 0))
+                        {
+                          iterator_t prognosis;
+                          int cvss;
+                          int first;
+
+                          first = 1;
+                          cvss = -1;
+                          init_prognosis_iterator (&prognosis, value);
+                          while (next (&prognosis))
+                            {
+                              if (first)
+                                {
+                                  cvss = prognosis_iterator_cvss_int
+                                          (&prognosis);
+                                  if (cvss > highest_cvss)
+                                    highest_cvss = cvss;
+                                  first = 0;
+                                }
+
+                              PRINT (out,
+                                     "<detail>"
+                                     "<name>%s/CVE</name>"
+                                     "<value>%s</value>"
+                                     "</detail>"
+                                     "<detail>"
+                                     "<name>%s/%s/CVSS</name>"
+                                     "<value>%s</value>"
+                                     "</detail>",
+                                     value,
+                                     prognosis_iterator_cve (&prognosis),
+                                     value,
+                                     prognosis_iterator_cve (&prognosis),
+                                     prognosis_iterator_cvss (&prognosis));
+                            }
+                          if (cvss >= 0)
+                            PRINT (out,
+                                   "<detail>"
+                                   "<name>%s/threat</name>"
+                                   "<value>%s</value>"
+                                   "</detail>",
+                                   value,
+                                   cvss_threat (cvss));
+                          cleanup_iterator (&prognosis);
+                        }
+                      if (highest_cvss >= 0)
+                        PRINT (out,
+                               "<detail>"
+                               "<name>prognosis</name>"
+                               "<value>%s</value>"
+                               "</detail>",
+                               cvss_threat (highest_cvss));
+                    }
+
+                  cleanup_iterator (&details);
+
+                  PRINT (out,
+                         "<detail>"
+                         "<name>report/pos</name>"
+                         "<value>%i</value>"
+                         "<source>"
+                         "<type></type>"
+                         "<name>openvasmd</name>"
+                         "<description>Position of report from end</description>"
+                         "</source>"
+                         "</detail>",
+                         pos);
+                }
+
+              PRINT (out,
+                     "</host>");
+            }
+
+          if (report_host)
+            {
+              PRINT (out,
+                     "<results start=\"%i\" max=\"%i\">",
+                     /* Add 1 for 1 indexing. */
+                     first_result + 1,
+                     max_results);
+
+              init_host_iterator (&report_hosts, 0, NULL, report_host);
+              if (next (&report_hosts))
+                {
+                  iterator_t prognosis;
+                  report_t report;
+
+                  report = host_iterator_report (&report_hosts);
+
+                  init_host_prognosis_iterator (&prognosis, report_host,
+                                                first_result, max_results,
+                                                levels, search_phrase,
+                                                min_cvss_base);
+                  while (next (&prognosis))
+                    {
+                      const char *threat;
+
+                      threat = cvss_threat (prognosis_iterator_cvss_int
+                                             (&prognosis));
+
+                      PRINT (out,
+                             "<result>"
+                             "<subnet/>"
+                             "<host>%s</host>"
+                             "<port>0</port>"
+                             "<nvt oid=\"0\">"
+                             "<name/>"
+                             "</nvt>"
+                             "<threat>%s</threat>"
+                             "<description>"
+                             "The host carries CPE %s which is known"
+                             " to be vulnerable, according to CVE %s.\n"
+                             "\n"
+                             "%s"
+                             "</description>"
+                             "<cve id='%s'>"
+                             "<cvss_base>%s</cvss_base>"
+                             "<cpe id='%s'/>"
+                             "</cve>"
+                             "</result>",
+                             ip,
+                             threat,
+                             prognosis_iterator_cpe (&prognosis),
+                             prognosis_iterator_cve (&prognosis),
+                             prognosis_iterator_description
+                              (&prognosis),
+                             prognosis_iterator_cve (&prognosis),
+                             prognosis_iterator_cvss (&prognosis),
+                             prognosis_iterator_cpe (&prognosis));
+
+                      if (strcmp (threat, "High") == 0)
+                        f_holes++;
+                      else if (strcmp (threat, "Medium") == 0)
+                        f_warnings++;
+                      else if (strcmp (threat, "Low") == 0)
+                        f_infos++;
+                      else if (strcmp (threat, "Log") == 0)
+                        f_logs++;
+                      filtered_result_count++;
+                    }
+                  cleanup_iterator (&prognosis);
+                }
+
+              PRINT (out,
+                     "</results>");
+            }
+
+          if (host)
+            break;
+        }
+      if (host == NULL)
+        cleanup_iterator (&hosts);
+
+      PRINT (out,
+             "<result_count>"
+             "%i"
+             "<full>%i</full>"
+             "<filtered>%i</filtered>"
+             "<debug><full>0</full><filtered>0</filtered></debug>"
+             "<hole><full>%i</full><filtered>%i</filtered></hole>"
+             "<info><full>%i</full><filtered>%i</filtered></info>"
+             "<log><full>%i</full><filtered>%i</filtered></log>"
+             "<warning><full>%i</full><filtered>%i</filtered></warning>"
+             "<false_positive>"
+             "<full>0</full>"
+             "<filtered>0</filtered>"
+             "</false_positive>"
+             "</result_count>",
+             result_count,
+             result_count,
+             filtered_result_count,
+             holes,
+             (strchr (levels, 'h') ? f_holes : 0),
+             infos,
+             (strchr (levels, 'l') ? f_infos : 0),
+             logs,
+             (strchr (levels, 'g') ? f_logs : 0),
+             warnings,
+             (strchr (levels, 'm') ? f_warnings : 0));
 
       PRINT (out, "</report>");
 
@@ -16679,6 +17208,8 @@ manage_send_report (report_t report, report_t delta_report,
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
 
   if (type && (strcmp (type, "assets") == 0))
+    task = 0;
+  else if (type && (strcmp (type, "prognostic") == 0))
     task = 0;
   else if (type && (strcmp (type, "scan")))
     return -1;

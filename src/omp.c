@@ -4297,6 +4297,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               get_results_data->apply_overrides = 0;
 
+            append_attribute (attribute_names, attribute_values,
+                              "min_cvss_base",
+                              &get_reports_data->min_cvss_base);
+
             if (find_attribute (attribute_names, attribute_values,
                                 "result_hosts_only", &attribute))
               get_reports_data->result_hosts_only = strcmp (attribute, "0");
@@ -9729,12 +9733,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         /** @todo Some checks only required when type is "scan". */
 
         if (strcmp (get_reports_data->type, "scan")
-            && strcmp (get_reports_data->type, "assets"))
+            && strcmp (get_reports_data->type, "assets")
+            && strcmp (get_reports_data->type, "prognostic"))
           {
             get_reports_data_reset (get_reports_data);
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_reports",
-                                "GET_REPORTS type must be scan or assets"));
+                                "GET_REPORTS type must be scan, assets or"
+                                " prognostic"));
             set_client_state (CLIENT_AUTHENTIC);
             break;
           }
@@ -9824,7 +9830,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        if ((strcmp (get_reports_data->type, "scan") == 0)
+        if (((strcmp (get_reports_data->type, "scan") == 0)
+             || (strcmp (get_reports_data->type, "prognostic") == 0))
             && get_reports_data->min_cvss_base
             && strlen (get_reports_data->min_cvss_base)
             && (sscanf (get_reports_data->min_cvss_base,
@@ -9919,6 +9926,76 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       write_to_client_data,
                                       get_reports_data->escalator_id,
                                       "assets",
+                                      get_reports_data->host,
+                                      pos);
+
+            if (ret)
+              {
+                internal_error_send_to_client (error);
+                cleanup_iterator (&reports);
+                get_reports_data_reset (get_reports_data);
+                set_client_state (CLIENT_AUTHENTIC);
+                return;
+              }
+
+            SEND_TO_CLIENT_OR_FAIL ("</report>"
+                                    "</get_reports_response>");
+
+            get_reports_data_reset (get_reports_data);
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
+          }
+
+        if (strcmp (get_reports_data->type, "prognostic") == 0)
+          {
+            gchar *extension, *content_type;
+            int ret, pos;
+
+            /* A prognostic report. */
+
+            content_type = report_format_content_type (report_format);
+            extension = report_format_extension (report_format);
+
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<report"
+              " type=\"prognostic\""
+              " format_id=\"%s\""
+              " extension=\"%s\""
+              " content_type=\"%s\">",
+              get_reports_data->format_id,
+              extension,
+              content_type);
+
+            g_free (extension);
+            g_free (content_type);
+
+            pos = get_reports_data->pos ? atoi (get_reports_data->pos) : 1;
+            ret = manage_send_report (0,
+                                      0,
+                                      report_format,
+                                      get_reports_data->sort_order,
+                                      get_reports_data->sort_field,
+                                      get_reports_data->result_hosts_only,
+                                      get_reports_data->min_cvss_base,
+                                      get_reports_data->levels,
+                                      get_reports_data->delta_states,
+                                      get_reports_data->apply_overrides,
+                                      get_reports_data->search_phrase,
+                                      get_reports_data->notes,
+                                      get_reports_data->notes_details,
+                                      get_reports_data->overrides,
+                                      get_reports_data->overrides_details,
+                                      get_reports_data->first_result,
+                                      get_reports_data->max_results,
+                                      /* Special case the XML report, bah. */
+                                      strcmp
+                                       (get_reports_data->format_id,
+                                        "d5da9f67-8551-4e51-807b-b6a873d70e34"),
+                                      send_to_client,
+                                      write_to_client,
+                                      write_to_client_data,
+                                      get_reports_data->escalator_id,
+                                      "prognostic",
                                       get_reports_data->host,
                                       pos);
 

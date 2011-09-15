@@ -1,3 +1,18 @@
+2011-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add single host prognostic reports.
+
+	* src/manage_sql.c (init_prognosis_iterator): Add description and CPE
+	name.
+	(prognosis_iterator_description, prognosis_iterator_cpe)
+	(prognosis_where_search_phrase, prognosis_where_levels)
+	(prognosis_where_cvss_base, init_host_prognosis_iterator): New functions.
+	(print_report_xml, manage_send_report): Add type "prognosis".
+
+	* src/omp.c (omp_xml_handle_start_element): Add missing min_cvss_base
+	attrib for GET_REPORT.
+	(omp_xml_handle_end_element): Add prognostic type to GET_REPORT.
+
 2011-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (sql): Check for SQLITE_LOCKED after sqlite3_prepare.
