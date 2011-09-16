@@ -14816,6 +14816,15 @@ filtered_host_count (const char *levels, const char *search_phrase)
  * @param[in]  host               Host or NULL, when type "assets".
  * @param[in]  pos                Position of report from end, when type
  *                                "assets".
+ * @param[in]  host_search_phrase  Phrase that results must include.  All results
+ *                                 if NULL or "".  For hosts.
+ * @param[in]  host_levels         String describing threat levels (message types)
+ *                                 to include in count (for example, "hmlgd" for
+ *                                 High, Medium, Low, loG and Debug).  All levels if
+ *                                 NULL.
+ * @param[in]  host_first_result   The host result to start from.  The results
+ *                                 are 0 indexed.
+ * @param[in]  host_max_results    The host maximum number of results returned.
  *
  * @return 0 on success, -1 error.
  */
@@ -14827,7 +14836,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   int apply_overrides, const char *search_phrase, int notes,
                   int notes_details, int overrides, int overrides_details,
                   int first_result, int max_results, const char *type,
-                  const char *host, int pos)
+                  const char *host, int pos, const char *host_search_phrase,
+                  const char *host_levels, int host_first_result,
+                  int host_max_results)
 {
   FILE *out;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
@@ -15305,8 +15316,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         }
       else
         {
-          abort ();
-#if 0
+          host_levels = host_levels ? host_levels : "hmlgd";
+
           init_asset_iterator (&hosts, host_first_result, host_max_results,
                                host_levels, host_search_phrase);
           PRINT (out,
@@ -15321,7 +15332,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                  /* Add 1 for 1 indexing. */
                  host_first_result + 1,
                  host_max_results);
-#endif
         }
 
       result_count = holes = warnings = infos = logs = 0;
@@ -16710,7 +16720,8 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
                         result_hosts_only, min_cvss_base, report_format,
                         levels, NULL, apply_overrides, search_phrase, notes,
                         notes_details, overrides, overrides_details,
-                        first_result, max_results, type, NULL, 0))
+                        first_result, max_results, type, NULL, 0, NULL, NULL,
+                        0, 0))
     {
       g_free (xml_file);
       return NULL;
@@ -17120,6 +17131,15 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
  * @param[in]  host               Host or NULL, when type "assets".
  * @param[in]  pos                Position of report from end, when host.  1 for
  *                                last.
+ * @param[in]  host_search_phrase  Phrase that results must include.  All results
+ *                                 if NULL or "".  For hosts.
+ * @param[in]  host_levels         String describing threat levels (message types)
+ *                                 to include in count (for example, "hmlgd" for
+ *                                 High, Medium, Low, loG and Debug).  All levels if
+ *                                 NULL.
+ * @param[in]  host_first_result   The host result to start from.  The results
+ *                                 are 0 indexed.
+ * @param[in]  host_max_results    The host maximum number of results returned.
  *
  * @return 0 success, -1 error, 1 failed to find escalator.
  */
@@ -17136,7 +17156,9 @@ manage_send_report (report_t report, report_t delta_report,
                     gboolean (*send) (const char *, int (*) (void*), void*),
                     int (*send_data_1) (void*), void *send_data_2,
                     const char *escalator_id, const char *type,
-                    const char *host, int pos)
+                    const char *host, int pos, const char *host_search_phrase,
+                    const char *host_levels, int host_first_result,
+                    int host_max_results)
 {
   task_t task;
   gchar *xml_file;
@@ -17195,7 +17217,8 @@ manage_send_report (report_t report, report_t delta_report,
                         report_format, levels, delta_states, apply_overrides,
                         search_phrase, notes, notes_details, overrides,
                         overrides_details, first_result, max_results, type,
-                        host, pos))
+                        host, pos, host_search_phrase, host_levels,
+                        host_first_result, host_max_results))
     {
       g_free (xml_file);
       return -1;

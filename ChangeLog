@@ -1,6 +1,21 @@
 2011-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (print_report_xml):
+	Add host filters to GET_REPORT for prognostic case.
+
+	* src/manage_sql.c (print_report_xml): Add host filters for prognostic
+	report.  Enable multi-host prognostic case.  Update caller.
+	(manage_send_report): Add host filters for prognostic report.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (get_reports_data_t, get_reports_data_reset)
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add host
+	filters to GET_REPORT.
+
+2011-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Remove SCAP details from prognostic
+	report.
 
 2011-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
 

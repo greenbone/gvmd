@@ -1784,10 +1784,14 @@ typedef struct
   char *report_id;       ///< ID of single report to get.
   int first_result;      ///< Skip over results before this result number.
   int max_results;       ///< Maximum number of results return.
+  int host_first_result; ///< Skip over results before this result number.
+  int host_max_results;  ///< Maximum number of results return.
   char *sort_field;      ///< Field to sort results on.
   int sort_order;        ///< Result sort order: 0 descending, else ascending.
   char *levels;          ///< Letter encoded threat level filter.
+  char *host_levels;     ///< Letter encoded threat level filter, for hosts.
   char *search_phrase;   ///< Search phrase result filter.
+  char *host_search_phrase;  ///< Search phrase result filter.
   char *min_cvss_base;   ///< Minimum CVSS base filter.
   int notes;             ///< Boolean.  Whether to include associated notes.
   int notes_details;     ///< Boolean.  Whether to include details of above.
@@ -1814,7 +1818,9 @@ get_reports_data_reset (get_reports_data_t *data)
   free (data->report_id);
   free (data->sort_field);
   free (data->levels);
+  free (data->host_levels);
   free (data->search_phrase);
+  free (data->host_search_phrase);
   free (data->min_cvss_base);
   free (data->type);
   free (data->host);
@@ -4236,10 +4242,23 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_reports_data->first_result = 0;
 
             if (find_attribute (attribute_names, attribute_values,
+                                "host_first_result", &attribute))
+              /* Subtract 1 to switch from 1 to 0 indexing. */
+              get_reports_data->host_first_result = atoi (attribute) - 1;
+            else
+              get_reports_data->host_first_result = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
                                 "max_results", &attribute))
               get_reports_data->max_results = atoi (attribute);
             else
               get_reports_data->max_results = -1;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "host_max_results", &attribute))
+              get_reports_data->host_max_results = atoi (attribute);
+            else
+              get_reports_data->host_max_results = -1;
 
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_reports_data->sort_field);
@@ -4259,6 +4278,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values, "levels",
                               &get_reports_data->levels);
+
+            append_attribute (attribute_names, attribute_values, "host_levels",
+                              &get_reports_data->host_levels);
 
             append_attribute (attribute_names, attribute_values, "delta_states",
                               &get_reports_data->delta_states);
@@ -9927,7 +9949,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->escalator_id,
                                       "assets",
                                       get_reports_data->host,
-                                      pos);
+                                      pos,
+                                      NULL, NULL, 0, 0);
 
             if (ret)
               {
@@ -9997,7 +10020,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->escalator_id,
                                       "prognostic",
                                       get_reports_data->host,
-                                      pos);
+                                      pos,
+                                      get_reports_data->host_search_phrase,
+                                      get_reports_data->host_levels,
+                                      get_reports_data->host_first_result,
+                                      get_reports_data->host_max_results);
 
             if (ret)
               {
@@ -10069,8 +10096,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       write_to_client_data,
                                       get_reports_data->escalator_id,
                                       get_reports_data->type,
-                                      NULL,
-                                      0);
+                                      NULL, 0, NULL, NULL, 0, 0);
             if (ret)
               {
                 if (get_reports_data->escalator_id)
