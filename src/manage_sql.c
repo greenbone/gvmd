@@ -15050,6 +15050,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       free (tsk_uuid);
     }
 
+  /** @todo Rename to "hosts" because there will be other types of assets. */
   if (type && (strcmp (type, "assets") == 0))
     {
       iterator_t hosts;

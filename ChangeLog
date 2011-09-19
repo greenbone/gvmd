@@ -1,3 +1,7 @@
+2011-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Add renaming TODO.
+
 2011-09-19  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* CMakeLists.txt: Add -D_FILE_OFFSET_BITS=64 to the default flags to
