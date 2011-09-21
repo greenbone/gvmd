@@ -1,5 +1,12 @@
 2011-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (create_task_data_t, create_task_data_reset): Add observers.
+	(client_state_t): Add CLIENT_CREATE_TASK_OBSERVERS.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add OBSERVERS to CREATE_TASK.
+
+2011-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add task observers.
 
 	* src/omp.c (get_configs_data_t, get_configs_data_reset)

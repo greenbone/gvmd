@@ -1187,6 +1187,7 @@ typedef struct
 {
   char *config_id;      ///< ID of task config.
   char *escalator_id;   ///< ID of task escalator.
+  char *observers;      ///< Space separated names of observer users.
   name_value_t *preference;  ///< Current preference.
   array_t *preferences; ///< Preferences.
   char *schedule_id;    ///< ID of task schedule.
@@ -1205,6 +1206,7 @@ create_task_data_reset (create_task_data_t *data)
 {
   free (data->config_id);
   free (data->escalator_id);
+  free (data->observers);
   if (data->preferences)
     {
       guint index = data->preferences->len;
@@ -3204,6 +3206,7 @@ typedef enum
   CLIENT_CREATE_TASK_CONFIG,
   CLIENT_CREATE_TASK_ESCALATOR,
   CLIENT_CREATE_TASK_NAME,
+  CLIENT_CREATE_TASK_OBSERVERS,
   CLIENT_CREATE_TASK_PREFERENCES,
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE,
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME,
@@ -7314,6 +7317,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &create_task_data->escalator_id);
             set_client_state (CLIENT_CREATE_TASK_ESCALATOR);
           }
+        else if (strcasecmp ("OBSERVERS", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TASK_OBSERVERS);
         else if (strcasecmp ("SCHEDULE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -14070,6 +14075,36 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_task_schedule (create_task_data->task, schedule);
             }
 
+          /* Set any observers. */
+
+          if (create_task_data->observers)
+            {
+              int fail;
+              fail = set_task_observers (create_task_data->task,
+                                         create_task_data->observers);
+              switch (fail)
+                {
+                  case 0:
+                    break;
+                  case 1:
+                  case 2:
+                    SEND_TO_CLIENT_OR_FAIL
+                      (XML_ERROR_SYNTAX ("create_task",
+                                         "User name error in observers"));
+                    break;
+                  case -1:
+                  default:
+                    SEND_TO_CLIENT_OR_FAIL
+                      (XML_INTERNAL_ERROR ("create_task"));
+                }
+              if (fail)
+                {
+                  create_task_data_reset (create_task_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+            }
+
           /* Check for name. */
 
           name = task_name (create_task_data->task);
@@ -14278,6 +14313,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_TASK_NAME:
         assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_TASK);
+        break;
+      case CLIENT_CREATE_TASK_OBSERVERS:
+        assert (strcasecmp ("OBSERVERS", element_name) == 0);
         set_client_state (CLIENT_CREATE_TASK);
         break;
       case CLIENT_CREATE_TASK_PREFERENCES:
@@ -17971,6 +18010,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_TASK_NAME:
         append_to_task_name (create_task_data->task, text, text_len);
+        break;
+      case CLIENT_CREATE_TASK_OBSERVERS:
+        openvas_append_text (&create_task_data->observers, text, text_len);
         break;
       case CLIENT_CREATE_TASK_RCFILE:
         /* Append the text to the task description. */
