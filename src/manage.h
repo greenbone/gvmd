@@ -328,7 +328,7 @@ unsigned int
 trash_task_count ();
 
 void
-init_task_iterator (iterator_t*, task_t, int, int, const char*);
+init_task_iterator (iterator_t*, task_t, int, int, const char*, const char *);
 
 task_t
 task_iterator_task (iterator_t*);
@@ -502,6 +502,9 @@ save_tasks ();
 gboolean
 find_task (const char* id, task_t*);
 
+gboolean
+find_task_for_actions (const char*, task_t*, const char *);
+
 void
 reset_task (task_t);
 
@@ -509,6 +512,12 @@ int
 set_task_parameter (task_t,
                     /*@null@*/ const char*,
                     /*@null@*/ /*@only@*/ char*);
+
+char*
+task_observers (task_t);
+
+int
+set_task_observers (task_t, const gchar *);
 
 int
 request_delete_task_uuid (const char *, int);
@@ -602,6 +611,19 @@ gboolean
 next (iterator_t*);
 
 
+/* Access control. */
+
+/**
+ * @brief Actions.
+ */
+typedef enum
+{
+  MANAGE_ACTION_GET = 1,
+  MANAGE_ACTION_MODIFY = 2,
+  MANAGE_ACTION_USE = 3
+} action_t;
+
+
 /* Results. */
 
 gboolean
@@ -621,6 +643,9 @@ manage_result_type_threat (const char*);
 
 gboolean
 find_report (const char*, report_t*);
+
+gboolean
+find_report_for_actions (const char*, report_t*, const char *);
 
 result_t
 make_result (task_t, const char*, const char*, const char*, const char*,
@@ -833,6 +858,9 @@ manage_max_hosts (const char *);
 gboolean
 find_target (const char*, target_t*);
 
+gboolean
+find_target_for_actions (const char*, target_t*, const char *);
+
 int
 create_target (const char*, const char*, const char*, const char*,
                lsc_credential_t, const char*, lsc_credential_t, const char*,
@@ -842,7 +870,10 @@ int
 delete_target (const char*, int);
 
 void
-init_target_iterator (iterator_t*, target_t, int, int, const char*);
+init_user_target_iterator (iterator_t*, target_t, int, int, const char*);
+
+void
+init_target_iterator (iterator_t*, target_t, int, int, const char*, const char*);
 
 target_t
 target_iterator_target (iterator_t*);
@@ -957,6 +988,9 @@ int
 delete_config (const char*, int);
 
 gboolean
+find_config_for_actions (const char*, config_t*, const char*);
+
+gboolean
 find_config (const char*, config_t*);
 
 int
@@ -966,7 +1000,11 @@ char *
 config_nvt_timeout (config_t, const char *);
 
 void
-init_config_iterator (iterator_t*, config_t, int, int, const char*);
+init_user_config_iterator (iterator_t*, config_t, int, int, const char*);
+
+void
+init_config_iterator (iterator_t*, config_t, int, int, const char*,
+                      const char*);
 
 config_t
 config_iterator_config (iterator_t*);
@@ -1225,6 +1263,9 @@ set_task_preferences (task_t, array_t *);
 gboolean
 find_lsc_credential (const char*, lsc_credential_t*);
 
+gboolean
+find_lsc_credential_for_actions (const char*, lsc_credential_t*, const char *);
+
 int
 create_lsc_credential (const char*, const char*, const char*, const char*,
                        const char*, const char*, lsc_credential_t*);
@@ -1248,8 +1289,12 @@ void
 set_lsc_credential_password (lsc_credential_t, const char *);
 
 void
+init_user_lsc_credential_iterator (iterator_t*, lsc_credential_t, int, int,
+                                   const char*);
+
+void
 init_lsc_credential_iterator (iterator_t*, lsc_credential_t, int, int,
-                              const char*);
+                              const char*, const char*);
 
 lsc_credential_t
 lsc_credential_iterator_lsc_credential (iterator_t*);

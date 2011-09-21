@@ -1520,6 +1520,7 @@ get_agents_data_reset (get_agents_data_t *data)
  */
 typedef struct
 {
+  char *actions;         ///< Actions.
   int export;            ///< Boolean.  Whether to format for create_config.
   int families;          ///< Boolean.  Whether to include config families.
   char *config_id;       ///< ID of single config to iterate over.
@@ -1537,6 +1538,7 @@ typedef struct
 static void
 get_configs_data_reset (get_configs_data_t *data)
 {
+  free (data->actions);
   free (data->config_id);
   free (data->sort_field);
 
@@ -1594,6 +1596,7 @@ get_escalators_data_reset (get_escalators_data_t *data)
  */
 typedef struct
 {
+  char *actions;           ///< Actions.
   char *format;            ///< Format requested: "key", "deb", ....
   char *lsc_credential_id; ///< Single LSC credential to iterate over.
   char *sort_field;        ///< Field to sort results on.
@@ -1609,6 +1612,7 @@ typedef struct
 static void
 get_lsc_credentials_data_reset (get_lsc_credentials_data_t *data)
 {
+  free (data->actions);
   free (data->format);
   free (data->lsc_credential_id);
   free (data->sort_field);
@@ -1650,6 +1654,7 @@ get_notes_data_reset (get_notes_data_t *data)
  */
 typedef struct
 {
+  char *actions;         ///< Actions.
   char *config_id;       ///< ID of config to which to limit NVT selection.
   int details;           ///< Boolean.  Whether to include full NVT details.
   char *family;          ///< Name of family to which to limit NVT selection.
@@ -1669,6 +1674,7 @@ typedef struct
 static void
 get_nvts_data_reset (get_nvts_data_t *data)
 {
+  free (data->actions);
   free (data->config_id);
   free (data->family);
   free (data->nvt_oid);
@@ -1966,6 +1972,7 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
  */
 typedef struct
 {
+  char *actions;       ///< Actions.
   char *sort_field;    ///< Field to sort results on.
   int sort_order;      ///< Result sort order: 0 descending, else ascending.
   char *target_id;     ///< ID of single target to get.
@@ -1981,6 +1988,7 @@ typedef struct
 static void
 get_targets_data_reset (get_targets_data_t *data)
 {
+  free (data->actions);
   free (data->target_id);
   free (data->sort_field);
 
@@ -2018,6 +2026,7 @@ typedef struct
  */
 typedef struct
 {
+  char *actions;         ///< Actions.
   int apply_overrides;   ///< Boolean.  Whether to apply overrides.
   int details;           ///< Boolean.  Whether to include task details.
   char *task_id;         ///< ID of single task to get.
@@ -2035,6 +2044,7 @@ typedef struct
 static void
 get_tasks_data_reset (get_tasks_data_t *data)
 {
+  free (data->actions);
   free (data->task_id);
   free (data->sort_field);
 
@@ -2184,6 +2194,7 @@ typedef struct
   char *file;          ///< File to attach to task.
   char *file_name;     ///< Name of file to attach to task.
   char *name;          ///< New name for task.
+  char *observers;     ///< Space separated list of observer user names.
   name_value_t *preference;  ///< Current preference.
   array_t *preferences;   ///< Preferences.
   char *rcfile;        ///< New definition for task, as an RC file.
@@ -2206,6 +2217,7 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->file);
   free (data->file_name);
   free (data->name);
+  free (data->observers);
   if (data->preferences)
     {
       guint index = data->preferences->len;
@@ -3289,6 +3301,7 @@ typedef enum
   CLIENT_MODIFY_TASK_ESCALATOR,
   CLIENT_MODIFY_TASK_FILE,
   CLIENT_MODIFY_TASK_NAME,
+  CLIENT_MODIFY_TASK_OBSERVERS,
   CLIENT_MODIFY_TASK_PREFERENCES,
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE,
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME,
@@ -4001,6 +4014,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "config_id",
                               &get_configs_data->config_id);
+            append_attribute (attribute_names, attribute_values, "actions",
+                              &get_configs_data->actions);
             if (find_attribute (attribute_names, attribute_values,
                                 "families", &attribute))
               get_configs_data->families = atoi (attribute);
@@ -4063,6 +4078,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values,
                               "lsc_credential_id",
                               &get_lsc_credentials_data->lsc_credential_id);
+            append_attribute (attribute_names, attribute_values, "actions",
+                              &get_lsc_credentials_data->actions);
             append_attribute (attribute_names, attribute_values, "format",
                               &get_lsc_credentials_data->format);
             if (find_attribute (attribute_names, attribute_values,
@@ -4125,6 +4142,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_NVTS", element_name) == 0)
           {
             const gchar* attribute;
+            append_attribute (attribute_names, attribute_values, "actions",
+                              &get_nvts_data->actions);
             append_attribute (attribute_names, attribute_values, "nvt_oid",
                               &get_nvts_data->nvt_oid);
             append_attribute (attribute_names, attribute_values, "config_id",
@@ -4507,6 +4526,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "target_id",
                               &get_targets_data->target_id);
+            append_attribute (attribute_names, attribute_values, "actions",
+                              &get_targets_data->actions);
             if (find_attribute (attribute_names, attribute_values,
                                 "tasks", &attribute))
               get_targets_data->tasks = strcmp (attribute, "0");
@@ -4532,6 +4553,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values, "task_id",
                               &get_tasks_data->task_id);
+
+            append_attribute (attribute_names, attribute_values, "actions",
+                              &get_tasks_data->actions);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "rcfile", &attribute))
@@ -5722,6 +5746,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_NAME);
+        else if (strcasecmp ("OBSERVERS", element_name) == 0)
+          {
+            openvas_append_string (&modify_task_data->observers, "");
+            set_client_state (CLIENT_MODIFY_TASK_OBSERVERS);
+          }
         else if (strcasecmp ("PREFERENCES", element_name) == 0)
           {
             modify_task_data->preferences = make_array ();
@@ -9251,8 +9280,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                 }
               else if (get_nvts_data->config_id
-                       && find_config (get_nvts_data->config_id,
-                                       &config))
+                       && find_config_for_actions (get_nvts_data->config_id,
+                                                   &config,
+                                                   get_nvts_data->actions))
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("get_nvts"));
               else if (get_nvts_data->config_id && (config == 0))
@@ -9769,7 +9799,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         if ((strcmp (get_reports_data->type, "scan") == 0)
             && get_reports_data->report_id
-            && find_report (get_reports_data->report_id, &request_report))
+            && find_report_for_actions (get_reports_data->report_id,
+                                        &request_report,
+                                        "g"))
           {
             get_reports_data_reset (get_reports_data);
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
@@ -9779,7 +9811,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         if (get_reports_data->delta_report_id
             && strcmp (get_reports_data->delta_report_id, "0")
-            && find_report (get_reports_data->delta_report_id, &delta_report))
+            && find_report_for_actions (get_reports_data->delta_report_id,
+                                        &delta_report,
+                                        "g"))
           {
             get_reports_data_reset (get_reports_data);
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
@@ -11656,6 +11690,33 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
 
+                if (fail == 0 && modify_task_data->observers)
+                  {
+                    fail = set_task_observers (task,
+                                               modify_task_data->observers);
+                    switch (fail)
+                      {
+                        case 0:
+                          break;
+                        case 1:
+                        case 2:
+                          SEND_TO_CLIENT_OR_FAIL
+                            (XML_ERROR_SYNTAX ("modify_task",
+                                               "User name error"));
+                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                                 "Task %s could not be modified",
+                                 modify_task_data->task_id);
+                          break;
+                        case -1:
+                        default:
+                          SEND_TO_CLIENT_OR_FAIL
+                            (XML_INTERNAL_ERROR ("modify_task"));
+                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                                 "Task %s could not be modified",
+                                 modify_task_data->task_id);
+                      }
+                  }
+
                 if (fail == 0 && modify_task_data->escalator_id)
                   {
                     escalator_t escalator = 0;
@@ -11785,6 +11846,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_NAME:
         assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_TASK);
+        break;
+      case CLIENT_MODIFY_TASK_OBSERVERS:
+        assert (strcasecmp ("OBSERVERS", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
         break;
       case CLIENT_MODIFY_TASK_PREFERENCES:
@@ -15297,7 +15362,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
 
           if (get_configs_data->config_id
-              && find_config (get_configs_data->config_id, &request_config))
+              && find_config_for_actions (get_configs_data->config_id,
+                                          &request_config,
+                                          get_configs_data->actions))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_configs"));
           else if (get_configs_data->config_id && (request_config == 0))
             {
@@ -15328,7 +15395,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     request_config,
                                     get_configs_data->trash,
                                     get_configs_data->sort_order,
-                                    get_configs_data->sort_field);
+                                    get_configs_data->sort_field,
+                                    get_configs_data->actions);
               while (next (&configs))
                 {
                   int config_nvts_growing, config_families_growing;
@@ -15533,8 +15601,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SENDF_TO_CLIENT_OR_FAIL ("</config>");
                 }
+              cleanup_iterator (&configs);
             }
-          cleanup_iterator (&configs);
           get_configs_data_reset (get_configs_data);
           SEND_TO_CLIENT_OR_FAIL ("</get_configs_response>");
           set_client_state (CLIENT_AUTHENTIC);
@@ -15731,9 +15799,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "GET_LSC_CREDENTIALS format attribute should"
                                 " be \"key\", \"rpm\", \"deb\" or \"exe\"."));
           else if (get_lsc_credentials_data->lsc_credential_id
-                   && find_lsc_credential
+                   && find_lsc_credential_for_actions
                        (get_lsc_credentials_data->lsc_credential_id,
-                        &lsc_credential))
+                        &lsc_credential,
+                        get_lsc_credentials_data->actions))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_lsc_credentials"));
           else if (get_lsc_credentials_data->lsc_credential_id
                    && (lsc_credential == 0))
@@ -15758,7 +15827,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             lsc_credential,
                                             get_lsc_credentials_data->trash,
                                             get_lsc_credentials_data->sort_order,
-                                            get_lsc_credentials_data->sort_field);
+                                            get_lsc_credentials_data->sort_field,
+                                            get_lsc_credentials_data->actions);
               while (next (&credentials))
                 {
                   switch (format)
@@ -16099,7 +16169,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_target",
                                 "GET_TARGETS tasks given with trash"));
           else if (get_targets_data->target_id
-              && find_target (get_targets_data->target_id, &target))
+                   && find_target_for_actions (get_targets_data->target_id,
+                                               &target,
+                                               get_targets_data->actions))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_targets"));
           else if (get_targets_data->target_id && target == 0)
             {
@@ -16124,7 +16196,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     target,
                                     get_targets_data->trash,
                                     get_targets_data->sort_order,
-                                    get_targets_data->sort_field);
+                                    get_targets_data->sort_field,
+                                    get_targets_data->actions);
               while (next (&targets))
                 {
                   char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
@@ -16244,7 +16317,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_task",
                                 "GET_TASKS details given with trash"));
           else if (get_tasks_data->task_id
-              && find_task (get_tasks_data->task_id, &task))
+                   && find_task_for_actions (get_tasks_data->task_id,
+                                             &task,
+                                             get_tasks_data->actions))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_tasks"));
           else if (get_tasks_data->task_id && task == 0)
             {
@@ -16296,7 +16371,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   task,
                                   get_tasks_data->trash,
                                   get_tasks_data->sort_order,
-                                  get_tasks_data->sort_field);
+                                  get_tasks_data->sort_field,
+                                  get_tasks_data->actions);
               while (next (&tasks))
                 if (get_tasks_data->details)
                   {
@@ -16312,7 +16388,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     char *task_slave_uuid, *task_slave_name;
                     char *task_schedule_uuid, *task_schedule_name, *comment;
                     gchar *first_report_id, *first_report;
-                    char* description;
+                    char *description, *owner, *observers;
                     gchar *description64, *last_report_id, *last_report;
                     gchar *second_last_report_id, *second_last_report;
                     report_t running_report;
@@ -16573,6 +16649,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     name = task_name (task);
                     comment = task_comment (task);
+                    owner = task_owner_name (task);
+                    observers = task_observers (task);
                     escalator = task_escalator_name (task);
                     escalator_uuid = task_escalator_uuid (task);
                     config = task_config_name (task);
@@ -16597,6 +16675,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 ("<task id=\"%s\">"
                                  "<name>%s</name>"
                                  "<comment>%s</comment>"
+                                 "<owner><name>%s</name></owner>"
+                                 "<observers>%s</observers>"
                                  "<config id=\"%s\">"
                                  "<name>%s</name>"
                                  "</config>"
@@ -16624,6 +16704,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  task_iterator_uuid (&tasks),
                                  name,
                                  comment,
+                                 owner,
+                                 observers,
                                  config_uuid ? config_uuid : "",
                                  config ? config : "",
                                  escalator_uuid ? escalator_uuid : "",
@@ -16661,6 +16743,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (response);
                     g_free (name);
                     g_free (comment);
+                    g_free (owner);
+                    g_free (observers);
                     g_free (description64);
                     free (task_schedule_uuid);
                     free (task_schedule_name);
@@ -16724,6 +16808,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     gchar *line, *progress_xml;
                     char *name = task_name (index);
                     char *comment = task_comment (index);
+                    char *observers = task_observers (index);
+                    char *owner = task_owner_name (index);
                     target_t target;
                     slave_t slave;
                     char *tsk_uuid, *config, *config_uuid;
@@ -17041,6 +17127,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             " id=\"%s\">"
                                             "<name>%s</name>"
                                             "<comment>%s</comment>"
+                                            "<owner><name>%s</name></owner>"
+                                            "<observers>%s</observers>"
                                             "<config id=\"%s\">"
                                             "<name>%s</name>"
                                             "<trash>%i</trash>"
@@ -17073,6 +17161,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             tsk_uuid,
                                             name,
                                             comment,
+                                            owner,
+                                            observers,
                                             config_uuid ? config_uuid : "",
                                             config ? config : "",
                                             task_config_in_trash (index),
@@ -17115,6 +17205,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (second_last_report);
                     free (name);
                     free (comment);
+                    free (owner);
+                    free (observers);
                     g_free (description64);
                     free (tsk_uuid);
                     free (task_schedule_uuid);
@@ -17416,6 +17508,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_NAME:
         openvas_append_text (&modify_task_data->name, text, text_len);
+        break;
+      case CLIENT_MODIFY_TASK_OBSERVERS:
+        openvas_append_text (&modify_task_data->observers, text, text_len);
         break;
       case CLIENT_MODIFY_TASK_RCFILE:
         openvas_append_text (&modify_task_data->rcfile, text, text_len);

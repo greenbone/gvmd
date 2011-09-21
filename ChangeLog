@@ -1,5 +1,43 @@
 2011-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add task observers.
+
+	* src/omp.c (get_configs_data_t, get_configs_data_reset)
+	(get_lsc_credentials_data_t, get_lsc_credentials_data_reset)
+	(get_nvts_data_t, get_nvts_data_reset, get_targets_data_t)
+	(get_targets_data_reset, get_tasks_data_t, get_tasks_data_reset): Add
+	actions.
+	(modify_task_data_t, modify_task_data_reset): Add observers.
+	(client_state_t): Add CLIENT_MODIFY_TASK_OBSERVERS.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add OBSERVERS to MODIFY_TASK and GET_TASK.  Move
+	CLIENT_GET_CONFIGS cleanup_iterator into right position.  Add actions flag
+	to GET_TASKS, GET_TARGETS, GET_CONFIGS and GET_LSC_CREDENTIALS.
+
+	* src/manage_sql.c (user_t): New type.
+	(parse_actions, user_has_access_uuid): New functions.
+	(create_tables): Add table task_users.
+	(DEF_ACCESS): Move up in file.
+	(init_task_user_iterator, task_user_iterator_task)
+	(task_user_iterator_user, task_user_iterator_actions)
+	(task_user_iterator_name, init_user_task_iterator, task_observers)
+	(find_user, set_task_observers, find_task_for_actions)
+	(find_report_for_actions, find_target_for_actions)
+	(init_user_target_iterator, find_config_for_actions)
+	(init_user_config_iterator, find_lsc_credential_for_actions)
+	(init_user_lsc_credential_iterator): New functions.
+	(init_task_iterator, init_task_iterator, init_config_iterator)
+	(init_lsc_credential_iterator): Add actions arg to include other
+	users' tasks to which user has given access.  Update callers.
+	(report_counts): Count GET accessible tasks.
+
+	* src/manage.h: Update headers appropriately.
+	(action_t): New type.
+
+	* src/manage.c: Update iterator init callers.
+
+2011-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Add renaming TODO.
 
 2011-09-19  Michael Wiegand <michael.wiegand@greenbone.net>

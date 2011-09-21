@@ -71,6 +71,11 @@
 typedef long long int resource_t;
 
 /**
+ * @brief A user.
+ */
+typedef long long int user_t;
+
+/**
  * @brief Database ROWID of 'Full and fast' config.
  */
 #define CONFIG_ID_FULL_AND_FAST 1
@@ -911,6 +916,145 @@ user_owns_uuid (const char *resource, const char *uuid)
 }
 
 /**
+ * @brief Parse an action specifier.
+ *
+ * @param[in]  actions_string  Specifier.
+ *
+ * @return Actions.
+ */
+static int
+parse_actions (const char *actions_string)
+{
+  int actions;
+  actions = 0;
+  if (strchr (actions_string, 'g'))
+    actions |= MANAGE_ACTION_GET;
+  if (strchr (actions_string, 'm'))
+    actions |= MANAGE_ACTION_MODIFY;
+  if (strchr (actions_string, 'u'))
+    actions |= MANAGE_ACTION_USE;
+  return actions;
+}
+
+/**
+ * @brief Test whether a user may access a resource for a set of actions.
+ *
+ * @param[in]  resource  Type of resource, for example "task".
+ * @param[in]  uuid      UUID of resource.
+ * @param[in]  actions_string   Actions.
+ *
+ * @return 1 if user may access resource, else 0.
+ */
+static int
+user_has_access_uuid (const char *resource, const char *uuid,
+                      const char *actions_string)
+{
+  int ret, actions;
+
+  assert (current_credentials.uuid);
+
+  ret = user_owns_uuid (resource, uuid);
+  if (ret)
+    return ret;
+
+  if (actions_string == NULL || strlen (actions_string) == 0)
+    return 0;
+
+  actions = parse_actions (actions_string);
+
+  if (actions == 0)
+    return 0;
+
+  if (strcmp (resource, "report") == 0)
+    return sql_int (0, 0,
+                    "SELECT count(*) FROM tasks"
+                    " WHERE ROWID = (SELECT task FROM %ss WHERE uuid = '%s')"
+                    " AND"
+                    " ((owner IS NULL) OR (owner ="
+                    "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s'))"
+                    "  OR ROWID IN"
+                    "     (SELECT task FROM task_users WHERE user ="
+                    "      (SELECT ROWID FROM users"
+                    "       WHERE users.uuid = '%s')"
+                    "      AND actions & %u = %u));",
+                    resource,
+                    uuid,
+                    current_credentials.uuid,
+                    current_credentials.uuid,
+                    actions,
+                    actions);
+
+  if (strcmp (resource, "lsc_credential") == 0)
+    return sql_int (0, 0,
+                    "SELECT count(*) FROM tasks, targets"
+                    " WHERE tasks.target = targets.ROWID"
+                    " AND (targets.lsc_credential ="
+                    "      (SELECT %ss.ROWID FROM %ss WHERE uuid = '%s')"
+                    "      OR"
+                    "      targets.smb_lsc_credential ="
+                    "      (SELECT %ss.ROWID FROM %ss WHERE uuid = '%s'))"
+                    " AND"
+                    " ((tasks.owner IS NULL) OR (tasks.owner ="
+                    "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s'))"
+                    "  OR tasks.ROWID IN"
+                    "     (SELECT task FROM task_users WHERE user ="
+                    "      (SELECT users.ROWID FROM users"
+                    "       WHERE users.uuid = '%s')"
+                    "      AND actions & %u = %u));",
+                    resource,
+                    resource,
+                    uuid,
+                    resource,
+                    resource,
+                    uuid,
+                    current_credentials.uuid,
+                    current_credentials.uuid,
+                    actions,
+                    actions);
+
+  if (strcmp (resource, "task"))
+    return sql_int (0, 0,
+                    "SELECT count(*) FROM tasks"
+                    " WHERE %s = (SELECT ROWID FROM %ss WHERE uuid = '%s')"
+                    " AND"
+                    " ((owner IS NULL) OR (owner ="
+                    "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s'))"
+                    "  OR ROWID IN"
+                    "     (SELECT task FROM task_users WHERE user ="
+                    "      (SELECT ROWID FROM users"
+                    "       WHERE users.uuid = '%s')"
+                    "      AND actions & %u = %u));",
+                    resource,
+                    resource,
+                    uuid,
+                    current_credentials.uuid,
+                    current_credentials.uuid,
+                    actions,
+                    actions);
+
+  ret = sql_int (0, 0,
+                 "SELECT count(*) FROM %ss"
+                 " WHERE uuid = '%s'"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s'))"
+                 " OR ROWID IN"
+                 " (SELECT %s FROM %s_users WHERE user ="
+                 "  (SELECT ROWID FROM users"
+                 "   WHERE users.uuid = '%s')"
+                 "  AND actions & %u = %u));",
+                 resource,
+                 uuid,
+                 current_credentials.uuid,
+                 resource,
+                 resource,
+                 current_credentials.uuid,
+                 actions,
+                 actions);
+
+  return ret;
+}
+
+/**
  * @brief Test whether a user owns a resource.
  *
  * @param[in]  resource  Type of resource, for example "task".
@@ -1114,6 +1258,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER, escalator_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_preferences (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER, upload_result_count INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS task_users (id INTEGER PRIMARY KEY, task INTEGER, user INTEGER, actions INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
 
   sql ("ANALYZE;");
@@ -5358,6 +5503,88 @@ collate_ip (void* data,
 }
 
 
+/* Access control. */
+
+/** @brief Define an iterator row accessor function.
+ *
+ * @param[in]  name  Name of function.
+ * @param[in]  col   Column number to access.
+  */
+#define DEF_ACCESS(name, col) \
+const char* \
+name (iterator_t* iterator) \
+{ \
+  const char *ret; \
+  if (iterator->done) return NULL; \
+  ret = (const char*) sqlite3_column_text (iterator->stmt, col); \
+  return ret; \
+}
+
+/**
+ * @brief Initialise an escalator data iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  task      Task.
+ * @param[in]  action    Action.
+ */
+void
+init_task_user_iterator (iterator_t *iterator, task_t task, action_t action)
+{
+  init_iterator (iterator,
+                 "SELECT task_users.ROWID, task, user, actions,"
+                 " (SELECT name FROM users WHERE users.ROWID = task_users.user)"
+                 " FROM task_users"
+                 " WHERE task = %llu AND actions & %u = %u;",
+                 task,
+                 action,
+                 action);
+}
+
+/**
+ * @brief Return the task from a task user iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Task of the iterator or NULL if iteration is complete.
+ */
+task_t
+task_user_iterator_task (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int64 (iterator->stmt, 1);
+}
+
+/**
+ * @brief Return the user from a user user iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return User of the iterator or NULL if iteration is complete.
+ */
+user_t
+task_user_iterator_user (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int64 (iterator->stmt, 2);
+}
+
+/**
+ * @brief Return the actions from a actions user iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Actions of the iterator or NULL if iteration is complete.
+ */
+int
+task_user_iterator_actions (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int64 (iterator->stmt, 3);
+}
+
+DEF_ACCESS (task_user_iterator_name, 4);
+
+
 /* Events and Escalators. */
 
 /**
@@ -7363,10 +7590,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
 }
 
 /**
- * @brief Initialise a task iterator.
- *
- * If there is a current user select that user's tasks, otherwise select
- * all tasks.
+ * @brief Initialise a task iterator, limited to current user's tasks.
  *
  * @param[in]  iterator    Task iterator.
  * @param[in]  task        Task to limit iteration to.  0 for all.
@@ -7375,37 +7599,120 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
+init_user_task_iterator (iterator_t* iterator,
+                         task_t task,
+                         int trash,
+                         int ascending,
+                         const char *sort_field)
+{
+  assert (current_credentials.uuid);
+
+  if (task)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, run_status FROM tasks"
+                   /* Include NULL so everyone can see the example task. */
+                   " WHERE ((owner IS NULL) OR owner ="
+                   " (SELECT ROWID FROM users"
+                   "  WHERE users.uuid = '%s'))"
+                   " AND ROWID = %llu"
+                   "%s"
+                   " ORDER BY %s %s;",
+                   current_credentials.uuid,
+                   task,
+                   trash ? " AND hidden = 2" : " AND hidden < 2",
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+  else
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, run_status FROM tasks WHERE owner ="
+                   " (SELECT ROWID FROM users"
+                   "  WHERE users.uuid = '%s')"
+                   "%s"
+                   " ORDER BY %s %s;",
+                   current_credentials.uuid,
+                   trash ? " AND hidden = 2" : " AND hidden < 2",
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+}
+
+/**
+ * @brief Initialise a task iterator.
+ *
+ * If there is a current user select that user's tasks and any tasks that user
+ * is observing (according to actions_string), otherwise select all tasks.
+ *
+ * @param[in]  iterator    Task iterator.
+ * @param[in]  task        Task to limit iteration to.  0 for all.
+ * @param[in]  trash       Whether to iterate over trashcan tasks.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ * @param[in]  actions_string   Actions.
+ */
+void
 init_task_iterator (iterator_t* iterator,
                     task_t task,
                     int trash,
                     int ascending,
-                    const char *sort_field)
+                    const char *sort_field,
+                    const char *actions_string)
 {
   if (current_credentials.uuid)
     {
+      int actions;
+
+      if (actions_string == NULL || strlen (actions_string) == 0)
+        {
+          init_user_task_iterator (iterator, task, trash, ascending, sort_field);
+          return;
+        }
+
+      actions = parse_actions (actions_string);
+
+      if (actions == 0)
+        {
+          init_user_task_iterator (iterator, task, trash, ascending, sort_field);
+          return;
+        }
+
       if (task)
         init_iterator (iterator,
                        "SELECT ROWID, uuid, run_status FROM tasks"
                        /* Include NULL so everyone can see the example task. */
                        " WHERE ((owner IS NULL) OR owner ="
                        " (SELECT ROWID FROM users"
-                       "  WHERE users.uuid = '%s'))"
+                       "  WHERE users.uuid = '%s')"
+                       " OR ROWID IN"
+                       " (SELECT task FROM task_users WHERE user ="
+                       "  (SELECT ROWID FROM users"
+                       "   WHERE users.uuid = '%s')"
+                       "  AND actions & %u = %u))"
                        " AND ROWID = %llu"
                        "%s"
                        " ORDER BY %s %s;",
                        current_credentials.uuid,
+                       current_credentials.uuid,
+                       actions,
+                       actions,
                        task,
                        trash ? " AND hidden = 2" : " AND hidden < 2",
                        sort_field ? sort_field : "ROWID",
                        ascending ? "ASC" : "DESC");
       else
         init_iterator (iterator,
-                       "SELECT ROWID, uuid, run_status FROM tasks WHERE owner ="
+                       "SELECT ROWID, uuid, run_status FROM tasks WHERE (owner ="
                        " (SELECT ROWID FROM users"
                        "  WHERE users.uuid = '%s')"
+                       " OR ROWID IN"
+                       " (SELECT task FROM task_users WHERE user ="
+                       "  (SELECT ROWID FROM users"
+                       "   WHERE users.uuid = '%s')"
+                       "  AND actions & %u = %u))"
                        "%s"
                        " ORDER BY %s %s;",
                        current_credentials.uuid,
+                       current_credentials.uuid,
+                       actions,
+                       actions,
                        trash ? " AND hidden = 2" : " AND hidden < 2",
                        sort_field ? sort_field : "ROWID",
                        ascending ? "ASC" : "DESC");
@@ -8381,7 +8688,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       /* Set requested, paused and running tasks to stopped. */
 
       assert (current_credentials.uuid == NULL);
-      init_task_iterator (&tasks, 0, 0, 1, NULL);
+      init_task_iterator (&tasks, 0, 0, 1, NULL, NULL);
       while (next (&tasks))
         {
           switch (task_iterator_run_status (&tasks))
@@ -8690,6 +8997,35 @@ task_comment (task_t task)
   return sql_string (0, 0,
                      "SELECT comment FROM tasks WHERE ROWID = %llu;",
                      task);
+}
+
+/**
+ * @brief Return the observers of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Observers of task.
+ */
+char*
+task_observers (task_t task)
+{
+  iterator_t users;
+  GString *observers;
+
+  observers = g_string_new ("");
+
+  init_task_user_iterator (&users, task, MANAGE_ACTION_GET);
+  if (next (&users))
+    {
+      g_string_append (observers, task_user_iterator_name (&users));
+      while (next (&users))
+        g_string_append_printf (observers,
+                                " %s",
+                                task_user_iterator_name (&users));
+    }
+  cleanup_iterator (&users);
+
+  return observers->str;
 }
 
 /**
@@ -9732,6 +10068,161 @@ set_task_schedule_next_time (task_t task, time_t time)
 }
 
 /**
+ * @brief Find a user given an identifier.
+ *
+ * @param[in]   uuid  A user identifier.
+ * @param[out]  user  User return, 0 if succesfully failed to find user.
+ *
+ * @return FALSE on success (including if failed to find user), TRUE on error.
+ */
+static gboolean
+find_user (const char* name, user_t *user)
+{
+  gchar *quoted_name;
+  quoted_name = sql_quote (name);
+  switch (sql_int64 (user, 0, 0,
+                     "SELECT ROWID FROM users WHERE name = '%s'",
+                     quoted_name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *user = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_name);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_name);
+  return FALSE;
+}
+
+/**
+ * @brief Set the observers of a task.
+ *
+ * @param[in]  task       Task.
+ * @param[in]  observers  Observers.
+ *
+ * @return 0 success, -1 error, 1 user name validation failed, 2 failed to find
+ *         user.
+ */
+int
+set_task_observers (task_t task, const gchar *observers)
+{
+  gchar **split, **point;
+  GList *added;
+
+  assert (current_credentials.username);
+
+  added = NULL;
+  split = g_strsplit (observers, " ", 0);
+
+  sql ("BEGIN IMMEDIATE;");
+
+  sql ("DELETE FROM task_users WHERE task = %llu;", task);
+
+  point = split;
+  while (*point)
+    {
+      user_t user;
+      gchar *name;
+
+      name = *point;
+
+      g_strstrip (name);
+
+      if ((strcmp (name, current_credentials.username) == 0)
+          || g_list_find_custom (added, name, (GCompareFunc) strcmp))
+        {
+          point++;
+          continue;
+        }
+
+      added = g_list_prepend (added, name);
+
+      if (openvas_user_exists (name) == 0)
+        {
+          g_list_free (added);
+          g_strfreev (split);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+
+      if (find_user (name, &user))
+        {
+          g_list_free (added);
+          g_strfreev (split);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (user == 0)
+        {
+          gchar *uuid;
+
+          /** @todo Similar to validate_user in openvas-administrator. */
+          if (g_regex_match_simple ("^[[:alnum:]-_]+$", name, 0, 0) == 0)
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              sql ("ROLLBACK;");
+              return 1;
+            }
+
+          uuid = openvas_user_uuid (name);
+
+          if (uuid == NULL)
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              sql ("ROLLBACK;");
+              return -1;
+            }
+
+          if (sql_int (0, 0,
+                       "SELECT count(*) FROM users WHERE uuid = '%s';",
+                       uuid)
+              == 0)
+            {
+              gchar *quoted_name;
+              quoted_name = sql_quote (name);
+              sql ("INSERT INTO users (uuid, name) VALUES ('%s', '%s');",
+                   uuid,
+                   quoted_name);
+              g_free (quoted_name);
+
+              user = sqlite3_last_insert_rowid (task_db);
+            }
+          else
+            {
+              /* user_find should have found it. */
+              assert (0);
+              g_list_free (added);
+              g_strfreev (split);
+              sql ("ROLLBACK;");
+              return -1;
+            }
+        }
+
+      sql ("INSERT INTO task_users (task, user, actions)"
+           " VALUES (%llu, %llu, %llu)",
+           task, user, (unsigned long long int) MANAGE_ACTION_GET);
+
+      point++;
+    }
+
+  g_list_free (added);
+  g_strfreev (split);
+  sql ("COMMIT;");
+  return 0;
+}
+
+
+/**
  * @brief Generate rcfile in task from config and target.
  *
  * @param[in]  task  The task.
@@ -9982,16 +10473,6 @@ result_uuid (result_t result, char ** id)
 
 
 /* Prognostics. */
-
-#define DEF_ACCESS(name, col) \
-const char* \
-name (iterator_t* iterator) \
-{ \
-  const char *ret; \
-  if (iterator->done) return NULL; \
-  ret = (const char*) sqlite3_column_text (iterator->stmt, col); \
-  return ret; \
-}
 
 /**
  * @brief Initialise a prognosis iterator.
@@ -12905,7 +13386,8 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
                int* logs, int* warnings, int* false_positives, int override)
 {
   report_t report;
-  if (find_report (report_id, &report)) return -1;
+  if (find_report_for_actions (report_id, &report, "g"))
+    return -1;
   return report_counts_id (report, debugs, holes, infos, logs, warnings,
                            false_positives, override, NULL);
 }
@@ -18386,7 +18868,7 @@ delete_trash_tasks ()
 {
   iterator_t tasks;
 
-  init_task_iterator (&tasks, 0, 1, 1, NULL);
+  init_user_task_iterator (&tasks, 0, 1, 1, NULL);
   while (next (&tasks))
     {
       task_t task;
@@ -18520,6 +19002,43 @@ find_task (const char* uuid, task_t* task)
 }
 
 /**
+ * @brief Find a task for an action, given an identifier.
+ *
+ * @param[in]   uuid     A task identifier.
+ * @param[out]  task     Task return, 0 if succesfully failed to find task.
+ * @param[in]   actions  Actions.
+ *
+ * @return FALSE on success (including if failed to find task), TRUE on error.
+ */
+gboolean
+find_task_for_actions (const char* uuid, task_t* task, const char *actions)
+{
+  if (user_has_access_uuid ("task", uuid, actions) == 0)
+    {
+      *task = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (task, 0, 0,
+                     "SELECT ROWID FROM tasks WHERE uuid = '%s'"
+                     " AND hidden != 2;",
+                     uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *task = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+
+  return FALSE;
+}
+
+/**
  * @brief Find a task in the trashcan, given an identifier.
  *
  * @param[in]   uuid  A task identifier.
@@ -18567,6 +19086,43 @@ gboolean
 find_report (const char* uuid, report_t* report)
 {
   if (user_owns_uuid ("report", uuid) == 0)
+    {
+      *report = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (report, 0, 0,
+                     "SELECT ROWID FROM reports WHERE uuid = '%s';",
+                     uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *report = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+
+  return FALSE;
+}
+
+/**
+ * @brief Find a report given an identifier.
+ *
+ * @param[in]   uuid     A report identifier.
+ * @param[out]  report   Report return, 0 if succesfully failed to find report.
+ * @param[in]   actions  Actions.
+ *
+ * @return FALSE on success (including if failed to find report), TRUE on error.
+ */
+gboolean
+find_report_for_actions (const char* uuid, report_t* report,
+                         const char *actions)
+{
+  if (user_has_access_uuid ("report", uuid, actions) == 0)
     {
       *report = 0;
       return FALSE;
@@ -18757,6 +19313,47 @@ find_target (const char* uuid, target_t* target)
 {
   gchar *quoted_uuid = sql_quote (uuid);
   if (user_owns_uuid ("target", quoted_uuid) == 0)
+    {
+      g_free (quoted_uuid);
+      *target = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (target, 0, 0,
+                     "SELECT ROWID FROM targets WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *target = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
+ * @brief Find a target for a set of actions, given a UUID.
+ *
+ * @param[in]   uuid     UUID of target.
+ * @param[out]  target   Target return, 0 if succesfully failed to find target.
+ * @param[in]   actions  Actions.
+ *
+ * @return FALSE on success (including if failed to find target), TRUE on error.
+ */
+gboolean
+find_target_for_actions (const char* uuid, target_t* target,
+                         const char *actions)
+{
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_has_access_uuid ("target", quoted_uuid, actions) == 0)
     {
       g_free (quoted_uuid);
       *target = 0;
@@ -19581,7 +20178,7 @@ delete_target (const char *target_id, int ultimate)
 }
 
 /**
- * @brief Initialise a target iterator.
+ * @brief Initialise a target iterator, limited to the current user's targets.
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  target      Target to limit iteration to.  0 for all.
@@ -19590,8 +20187,8 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_target_iterator (iterator_t* iterator, target_t target, int trash,
-                      int ascending, const char* sort_field)
+init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
+                           int ascending, const char* sort_field)
 {
   assert (current_credentials.uuid);
 
@@ -19623,6 +20220,97 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
                    trash ? "smb_location" : "0",
                    trash ? "_trash" : "",
                    current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+}
+
+/**
+ * @brief Initialise a target iterator, including observed targets.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  target      Target to limit iteration to.  0 for all.
+ * @param[in]  trash       Whether to iterate over trashcan targets.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ * @param[in]  actions_string   Actions.
+ */
+void
+init_target_iterator (iterator_t* iterator, target_t target, int trash,
+                      int ascending, const char* sort_field,
+                      const char *actions_string)
+{
+  int actions;
+
+  assert (current_credentials.uuid);
+
+  if (actions_string == NULL || strlen (actions_string) == 0)
+    {
+      init_user_target_iterator (iterator, target, trash, ascending,
+                                 sort_field);
+      return;
+    }
+
+  actions = parse_actions (actions_string);
+
+  if (actions == 0)
+    {
+      init_user_target_iterator (iterator, target, trash, ascending,
+                                 sort_field);
+      return;
+    }
+
+  if (target)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
+                   " ssh_port, smb_lsc_credential, port_range, %s, %s"
+                   " FROM targets%s"
+                   " WHERE ROWID = %llu"
+                   " AND"
+                   " ((owner IS NULL) OR (owner ="
+                   "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                   "  OR"
+                   "  (SELECT tasks.ROWID FROM tasks"
+                   "   WHERE target = targets.ROWID)"
+                   "  IN"
+                   "  (SELECT task FROM task_users WHERE user ="
+                   "   (SELECT ROWID FROM users"
+                   "    WHERE users.uuid = '%s')"
+                   "   AND actions & %u = %u))"
+                   " ORDER BY %s %s;",
+                   trash ? "ssh_location" : "0",
+                   trash ? "smb_location" : "0",
+                   trash ? "_trash" : "",
+                   target,
+                   current_credentials.uuid,
+                   current_credentials.uuid,
+                   actions,
+                   actions,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+  else
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
+                   " ssh_port, smb_lsc_credential, port_range, %s, %s"
+                   " FROM targets%s"
+                   " WHERE"
+                   " ((owner IS NULL) OR (owner ="
+                   "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                   "  OR"
+                   "  (SELECT tasks.ROWID FROM tasks"
+                   "   WHERE target = targets.ROWID)"
+                   "  IN"
+                   "  (SELECT task FROM task_users WHERE user ="
+                   "   (SELECT ROWID FROM users"
+                   "    WHERE users.uuid = '%s')"
+                   "   AND actions & %u = %u))"
+                   " ORDER BY %s %s;",
+                   trash ? "ssh_location" : "0",
+                   trash ? "smb_location" : "0",
+                   trash ? "_trash" : "",
+                   current_credentials.uuid,
+                   current_credentials.uuid,
+                   actions,
+                   actions,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
 }
@@ -20069,6 +20757,46 @@ find_config (const char* uuid, config_t* config)
 {
   gchar *quoted_uuid = sql_quote (uuid);
   if (user_owns_uuid ("config", quoted_uuid) == 0)
+    {
+      g_free (quoted_uuid);
+      *config = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (config, 0, 0,
+                     "SELECT ROWID FROM configs WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *config = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
+ * @brief Find a config for a set of actions, given a UUID.
+ *
+ * @param[in]   uuid     Config UUID.
+ * @param[out]  config   Config return, 0 if succesfully failed to find config.
+ * @param[in]   actions  Actions.
+ *
+ * @return FALSE on success (including if failed to find config), TRUE on error.
+ */
+gboolean
+find_config_for_actions (const char* uuid, config_t* config,
+                         const char *actions)
+{
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_has_access_uuid ("config", quoted_uuid, actions) == 0)
     {
       g_free (quoted_uuid);
       *config = 0;
@@ -21093,7 +21821,7 @@ delete_config (const char *config_id, int ultimate)
 #define CONFIG_ITERATOR_FIELDS "ROWID, uuid, name, nvt_selector, comment, families_growing, nvts_growing"
 
 /**
- * @brief Initialise a config iterator.
+ * @brief Initialise a config iterator, limited to user's configs.
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  config      Config.  0 for all.
@@ -21102,9 +21830,8 @@ delete_config (const char *config_id, int ultimate)
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_config_iterator (iterator_t* iterator, config_t config, int trash,
-                      int ascending, const char* sort_field)
-
+init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
+                           int ascending, const char* sort_field)
 {
   gchar *sql;
 
@@ -21132,6 +21859,92 @@ init_config_iterator (iterator_t* iterator, config_t config, int trash,
                            " ORDER BY %s %s;",
                            trash ? "_trash" : "",
                            current_credentials.uuid,
+                           sort_field ? sort_field : "ROWID",
+                           ascending ? "ASC" : "DESC");
+  init_iterator (iterator, sql);
+  g_free (sql);
+}
+
+/**
+ * @brief Initialise a config iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  config      Config.  0 for all.
+ * @param[in]  trash       Whether to iterate over trashcan configs.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ * @param[in]  actions_string  Actions.
+ */
+void
+init_config_iterator (iterator_t* iterator, config_t config, int trash,
+                      int ascending, const char* sort_field,
+                      const char *actions_string)
+{
+  gchar *sql;
+  int actions;
+
+  assert (current_credentials.uuid);
+
+  if (actions_string == NULL || strlen (actions_string) == 0)
+    {
+      init_user_config_iterator (iterator, config, trash, ascending,
+                                 sort_field);
+      return;
+    }
+
+  actions = parse_actions (actions_string);
+
+  if (actions == 0)
+    {
+      init_user_config_iterator (iterator, config, trash, ascending,
+                                 sort_field);
+      return;
+    }
+
+  if (config)
+    sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_FIELDS
+                           " FROM configs%s"
+                           " WHERE ROWID = %llu"
+                           " AND"
+                           " ((owner IS NULL) OR (owner ="
+                           "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                           "  OR"
+                           "  (SELECT tasks.ROWID FROM tasks"
+                           "   WHERE config = configs.ROWID)"
+                           "  IN"
+                           "  (SELECT task FROM task_users WHERE user ="
+                           "   (SELECT ROWID FROM users"
+                           "    WHERE users.uuid = '%s')"
+                           "   AND actions & %u = %u))"
+                           " ORDER BY %s %s;",
+                           trash ? "_trash" : "",
+                           config,
+                           current_credentials.uuid,
+                           current_credentials.uuid,
+                           actions,
+                           actions,
+                           sort_field ? sort_field : "ROWID",
+                           ascending ? "ASC" : "DESC");
+  else
+    sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_FIELDS
+                           " FROM configs%s"
+                           " WHERE"
+                           " ((owner IS NULL) OR (owner ="
+                           "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                           "  OR"
+                           "  (SELECT tasks.ROWID FROM tasks"
+                           "   WHERE config = config.ROWID)"
+                           "  IN"
+                           "  (SELECT task FROM task_users WHERE user ="
+                           "   (SELECT ROWID FROM users"
+                           "    WHERE users.uuid = '%s')"
+                           "   AND actions & %u = %u))"
+                           " ORDER BY %s %s;",
+                           trash ? "_trash" : "",
+                           current_credentials.uuid,
+                           current_credentials.uuid,
+                           actions,
+                           actions,
                            sort_field ? sort_field : "ROWID",
                            ascending ? "ASC" : "DESC");
   init_iterator (iterator, sql);
@@ -22529,7 +23342,7 @@ update_config_caches (config_t config)
 {
   iterator_t configs;
 
-  init_config_iterator (&configs, config, 0, 1, NULL);
+  init_user_config_iterator (&configs, config, 0, 1, NULL);
   while (next (&configs))
     update_config_cache (&configs);
   cleanup_iterator (&configs);
@@ -24473,6 +25286,50 @@ find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
 }
 
 /**
+ * @brief Find an LSC credential given a UUID.
+ *
+ * @param[in]   uuid            UUID of LSC credential.
+ * @param[out]  lsc_credential  LSC credential return, 0 if succesfully failed
+ *                              to find credential.
+ * @param[in]   actions_string  Actions.
+ *
+ * @return FALSE on success (including if failed to find LSC credential),
+ *         TRUE on error.
+ */
+gboolean
+find_lsc_credential_for_actions (const char* uuid,
+                                 lsc_credential_t* lsc_credential,
+                                 const char *actions)
+{
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_has_access_uuid ("lsc_credential", quoted_uuid, actions) == 0)
+    {
+      g_free (quoted_uuid);
+      *lsc_credential = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (lsc_credential, 0, 0,
+                     "SELECT ROWID FROM lsc_credentials WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *lsc_credential = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
  * @brief Length of password generated in create_lsc_credential.
  */
 #define PASSWORD_LENGTH 10
@@ -24864,7 +25721,7 @@ lsc_credential_packaged (lsc_credential_t lsc_credential)
 }
 
 /**
- * @brief Initialise an LSC Credential iterator.
+ * @brief Initialise an LSC Credential iterator, limiting to user's credentials.
  *
  * @param[in]  iterator        Iterator.
  * @param[in]  lsc_credential  Single LSC credential to iterate, 0 for all.
@@ -24873,9 +25730,9 @@ lsc_credential_packaged (lsc_credential_t lsc_credential)
  * @param[in]  sort_field      Field to sort on, or NULL for "ROWID".
  */
 void
-init_lsc_credential_iterator (iterator_t* iterator,
-                              lsc_credential_t lsc_credential, int trash,
-                              int ascending, const char* sort_field)
+init_user_lsc_credential_iterator (iterator_t* iterator,
+                                   lsc_credential_t lsc_credential, int trash,
+                                   int ascending, const char* sort_field)
 {
   assert (current_credentials.uuid);
 
@@ -24919,6 +25776,120 @@ init_lsc_credential_iterator (iterator_t* iterator,
                    trash ? "_trash" : "",
                    trash ? "_trash" : "",
                    current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+}
+
+/**
+ * @brief Initialise an LSC Credential iterator, limiting to user's credentials.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  lsc_credential  Single LSC credential to iterate, 0 for all.
+ * @param[in]  trash           Whether to iterate over trashcan credentials.
+ * @param[in]  ascending       Whether to sort ascending or descending.
+ * @param[in]  sort_field      Field to sort on, or NULL for "ROWID".
+ * @param[in]  actions_string  Actions.
+ */
+void
+init_lsc_credential_iterator (iterator_t* iterator,
+                              lsc_credential_t lsc_credential, int trash,
+                              int ascending, const char* sort_field,
+                              const char *actions_string)
+{
+  int actions;
+
+  assert (current_credentials.uuid);
+
+  if (actions_string == NULL || strlen (actions_string) == 0)
+    {
+      init_user_lsc_credential_iterator (iterator, lsc_credential, trash,
+                                         ascending, sort_field);
+      return;
+    }
+
+  actions = parse_actions (actions_string);
+
+  if (actions == 0)
+    {
+      init_user_lsc_credential_iterator (iterator, lsc_credential, trash,
+                                         ascending, sort_field);
+      return;
+    }
+
+  if (lsc_credential)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, login, password, comment,"
+                   " public_key, private_key, rpm, deb, exe,"
+                   " (SELECT count(*) > 0 FROM targets%s"
+                   "  WHERE lsc_credential = lsc_credentials%s.ROWID)"
+                   " + (SELECT count(*) > 0 FROM targets%s"
+                   "    WHERE smb_lsc_credential = lsc_credentials%s.ROWID)"
+                   " FROM lsc_credentials%s"
+                   " WHERE ROWID = %llu"
+                   " AND"
+                   " ((owner IS NULL) OR (owner ="
+                   "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                   "  OR"
+                   "  (SELECT tasks.ROWID FROM tasks"
+                   "   WHERE tasks.target ="
+                   "   (SELECT ROWID FROM targets"
+                   "    WHERE lsc_credential = lsc_credentials%s.ROWID"
+                   "    OR smb_lsc_credential = lsc_credentials%s.ROWID))"
+                   "  IN"
+                   "  (SELECT task FROM task_users WHERE user ="
+                   "   (SELECT ROWID FROM users"
+                   "    WHERE users.uuid = '%s')"
+                   "   AND actions & %u = %u))"
+                   " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   lsc_credential,
+                   current_credentials.uuid,
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   current_credentials.uuid,
+                   actions,
+                   actions,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+  else
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, login, password, comment,"
+                   " public_key, private_key, rpm, deb, exe,"
+                   " (SELECT count(*) > 0 FROM targets%s"
+                   "  WHERE lsc_credential = lsc_credentials%s.ROWID)"
+                   " + (SELECT count(*) > 0 FROM targets%s"
+                   "    WHERE smb_lsc_credential = lsc_credentials%s.ROWID)"
+                   " FROM lsc_credentials%s"
+                   " WHERE"
+                   " ((owner IS NULL) OR (owner ="
+                   "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                   "  OR"
+                   "  (SELECT tasks.ROWID FROM tasks"
+                   "   WHERE target ="
+                   "   (SELECT ROWID FROM targets"
+                   "    WHERE lsc_credential = lsc_credentials%s.ROWID"
+                   "    OR smb_lsc_credential = lsc_credentials%s.ROWID))"
+                   "  IN"
+                   "  (SELECT task FROM task_users WHERE user ="
+                   "   (SELECT ROWID FROM users"
+                   "    WHERE users.uuid = '%s')"
+                   "   AND actions & %u = %u))"
+                   " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   current_credentials.uuid,
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
+                   current_credentials.uuid,
+                   actions,
+                   actions,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
 }
