@@ -4108,15 +4108,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <get_info_response status="200" status_text="OK">
           <cpe-item xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xmlns:meta="http://scap.nist.gov/schema/cpe-dictionary-metadata/0.2"
-            xmlns:scap-core="http://scap.nist.gov/schema/scap-core/0.3"
-            xmlns:ns6="http://scap.nist.gov/schema/scap-core/0.1"
-            xmlns:config="http://scap.nist.gov/schema/configuration/0.1"
-            xmlns="http://cpe.mitre.org/dictionary/2.0"
-            name="cpe:/o:linux:kernel:2.6.0">
+                    xmlns:meta="http://scap.nist.gov/schema/cpe-dictionary-metadata/0.2"
+                    xmlns:scap-core="http://scap.nist.gov/schema/scap-core/0.3"
+                    xmlns:ns6="http://scap.nist.gov/schema/scap-core/0.1"
+                    xmlns:config="http://scap.nist.gov/schema/configuration/0.1"
+                    xmlns="http://cpe.mitre.org/dictionary/2.0"
+                    name="cpe:/o:linux:kernel:2.6.0">
             <title xml:lang="en-US">Linux Kernel 2.6.0</title>
             <meta:item-metadata modification-date="2008-11-18T17:32:39.543"
-              status="DRAFT" nvd-id="91585"></meta:item-metadata>
+                                status="DRAFT" nvd-id="91585">
+            </meta:item-metadata>
           </cpe-item>
         </get_info_response>
       </response>
