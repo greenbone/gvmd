@@ -146,6 +146,8 @@ response
 
 ### Data Types
 
+# A specifier of actions: get, modify, use..
+actions = xsd:token { pattern = "[gmu]{1,3}" }
 # Base64 encoded data.
 base64 = xsd:base64Binary
 # A true or false value.
@@ -162,6 +164,8 @@ integer = xsd:integer
 levels = xsd:token { pattern = "h?m?l?g?d?" }
 # A name.
 name = xsd:string
+# A space separated list of users.
+user_list = text
 # An Object Identifier (OID).
 oid = xsd:token { pattern = "[0-9\.]{1,80}" }
 # A string describing an order for sorting.
@@ -1806,6 +1810,7 @@ create_task
        & create_task_escalator?
        & create_task_schedule?
        & create_task_slave?
+       & create_task_observers?
        & create_task_preferences?
        & create_task_rcfile?
      }
@@ -1857,6 +1862,13 @@ create_task_slave
  = element slave
      {
        attribute id { uuid }
+     }
+
+# Users allowed to observe this task.
+create_task_observers
+ = element observers
+     {
+       user_list
      }
 
 create_task_preferences
@@ -2065,6 +2077,8 @@ get_configs
      {
        # ID of single config to get.
        attribute config_id { uuid }?
+       & # Actions filter for configs of observed tasks.
+       attribute actions { actions }?
        & # Whether to get the trashcan configs instead.
        attribute trash { boolean }?
        & attribute export { boolean }?
@@ -2109,6 +2123,8 @@ get_lsc_credentials
      {
        # ID of single LSC credential to get.
        attribute lsc_credential_id { uuid }?
+       & # Actions filter for LSC credentials of observed tasks.
+       attribute actions { actions }?
        & # Whether to get the trashcan LSC credentials instead.
        attribute trash { boolean }?
        & attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
@@ -2142,6 +2158,8 @@ get_nvts
      {
        # Single NVT to get.
        attribute nvt_oid { oid }
+       & # Actions filter for NVTs of configs observed tasks.
+       attribute actions { actions }?
        & # Whether to include full details.
        attribute details { boolean }?
        & # Whether to include preference.
@@ -2364,6 +2382,8 @@ get_targets
      {
        # ID of single target to get.
        attribute target_id { uuid }?
+       & # Actions filter for targets of observed tasks.
+       attribute actions { actions }?
        & # Whether to get the trashcan targets instead.
        attribute trash { boolean }?
        & # Whether to include list of tasks that use the target.
@@ -2381,6 +2401,8 @@ get_tasks
      {
        # ID of single task to get.
        attribute task_id { uuid }?
+       & # Actions filter for tasks of observed tasks.
+       attribute actions { actions }?
        & # Whether to get the trashcan tasks instead.
        attribute trash { boolean }?
        & # Whether to include full task details.
@@ -2776,6 +2798,7 @@ modify_task
        & ( modify_task_comment
            | modify_task_escalator
            | modify_task_name
+           | modify_task_observers
            | modify_task_preferences
            | modify_task_rcfile
            | modify_task_schedule
@@ -2802,6 +2825,13 @@ modify_task_name
  = element name
      {
        name
+     }
+
+# Users allowed to observe this task.
+modify_task_observers
+ = element observers
+     {
+       user_list
      }
 
 modify_task_preferences
@@ -5344,6 +5374,7 @@ get_tasks_response_task
        & get_tasks_response_task_config
        & get_tasks_response_task_target
        & get_tasks_response_task_escalator
+       & get_tasks_response_task_observers
        & get_tasks_response_task_schedule
        & get_tasks_response_task_slave
        & get_tasks_response_task_report_count
@@ -5466,6 +5497,13 @@ get_tasks_response_task_escalator_trash
  = element trash
      {
        boolean
+     }
+
+# Users allowed to observe this task.
+get_tasks_response_task_observers
+ = element observers
+     {
+       user_list
      }
 
 # When the task will run.

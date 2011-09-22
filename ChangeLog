@@ -1,5 +1,13 @@
 2011-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (actions, user_list): New types.
+	(create_task, modify_task, get_configs, get_lsc_credentials, get_nvts)
+	(get_targets, get_tasks): Add actions param and OBSERVERS.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2011-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (create_task_data_t, create_task_data_reset): Add observers.
 	(client_state_t): Add CLIENT_CREATE_TASK_OBSERVERS.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element)
@@ -19,7 +27,7 @@
 	(omp_xml_handle_start_element, omp_xml_handle_end_element)
 	(omp_xml_handle_text): Add OBSERVERS to MODIFY_TASK and GET_TASK.  Move
 	CLIENT_GET_CONFIGS cleanup_iterator into right position.  Add actions flag
-	to GET_TASKS, GET_TARGETS, GET_CONFIGS and GET_LSC_CREDENTIALS.
+	to GET_TASKS, GET_TARGETS, GET_CONFIGS, GET_LSC_CREDENTIALS and GET_NVTS.
 
 	* src/manage_sql.c (user_t): New type.
 	(parse_actions, user_has_access_uuid): New functions.

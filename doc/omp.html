@@ -22,6 +22,10 @@
 <h2 id="type_summary">1 Summary of Data Types</h2>
 <table id="index">
 <tr id="index">
+<td id="index"><a href="#type_actions">actions</a></td>
+<td id="index"><div style="margin-left: 15px;">A specifier of actions: get, modify, use..</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#type_base64">base64</a></td>
 <td id="index"><div style="margin-left: 15px;">Base64 encoded data.</div></td>
 </tr>
@@ -52,6 +56,10 @@
 <tr id="index">
 <td id="index"><a href="#type_name">name</a></td>
 <td id="index"><div style="margin-left: 15px;">A name.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#type_user_list">user_list</a></td>
+<td id="index"><div style="margin-left: 15px;">A space separated list of users.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#type_oid">oid</a></td>
@@ -539,16 +547,25 @@ response
 </pre></div>
 <h2 id="type_details">5 Data Type Details</h2>
 <div>
-<div><h3 id="type_base64">5.1
+<div><h3 id="type_actions">5.1
+        Data Type <tt>actions</tt>
+</h3></div>
+<p>In short: A specifier of actions: get, modify, use..</p>
+<h4>5.1.1 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>actions = xsd:token { pattern = "[gmu]{1,3}" }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_base64">5.2
         Data Type <tt>base64</tt>
 </h3></div>
 <p>In short: Base64 encoded data.</p>
-<h4>5.1.1 RNC</h4>
+<h4>5.2.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>base64 = xsd:base64Binary
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_boolean">5.2
+<div><h3 id="type_boolean">5.3
         Data Type <tt>boolean</tt>
 </h3></div>
 <p>In short: A true or false value.</p>
@@ -556,12 +573,12 @@ response
       Zero is false, anything else is true.  As a result, the empty string is
       considered true.
     </p>
-<h4>5.2.1 RNC</h4>
+<h4>5.3.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>boolean = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_boolean_atoi">5.3
+<div><h3 id="type_boolean_atoi">5.4
         Data Type <tt>boolean_atoi</tt>
 </h3></div>
 <p>In short: A true or false value, after conversion to an integer.</p>
@@ -570,51 +587,51 @@ response
       an integer, as by the C `atoi' routine.  This means that an empty string
       is considered false.
     </p>
-<h4>5.3.1 RNC</h4>
+<h4>5.4.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>boolean_atoi = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_ctime">5.4
+<div><h3 id="type_ctime">5.5
         Data Type <tt>ctime</tt>
 </h3></div>
 <p>In short: A date and time, in the C `ctime' format.</p>
 <p>
       An example string in this format is "Wed Jun 30 21:49:08 1993\n".
     </p>
-<h4>5.4.1 RNC</h4>
+<h4>5.5.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>ctime = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_type_name">5.5
+<div><h3 id="type_type_name">5.6
         Data Type <tt>type_name</tt>
 </h3></div>
 <p>In short: A name of a data type.</p>
-<h4>5.5.1 RNC</h4>
+<h4>5.6.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>type_name = xsd:string - xsd:whitespace
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_integer">5.6
+<div><h3 id="type_integer">5.7
         Data Type <tt>integer</tt>
 </h3></div>
 <p>In short: An integer.</p>
-<h4>5.6.1 RNC</h4>
+<h4>5.7.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>integer = xsd:integer
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_levels">5.7
+<div><h3 id="type_levels">5.8
         Data Type <tt>levels</tt>
 </h3></div>
 <p>In short: A string that may include the characters h, m, l, g and d.</p>
-<h4>5.7.1 RNC</h4>
+<h4>5.8.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>levels = xsd:token { pattern = "h?m?l?g?d?" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_name">5.8
+<div><h3 id="type_name">5.9
         Data Type <tt>name</tt>
 </h3></div>
 <p>In short: A name.</p>
@@ -622,21 +639,30 @@ response
       Typically this is the name of one of the manager resources, like a
       task or target.
     </p>
-<h4>5.8.1 RNC</h4>
+<h4>5.9.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>name = xsd:string
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_oid">5.9
+<div><h3 id="type_user_list">5.10
+        Data Type <tt>user_list</tt>
+</h3></div>
+<p>In short: A space separated list of users.</p>
+<h4>5.10.1 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>user_list = text
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_oid">5.11
         Data Type <tt>oid</tt>
 </h3></div>
 <p>In short: An Object Identifier (OID).</p>
-<h4>5.9.1 RNC</h4>
+<h4>5.11.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>oid = xsd:token { pattern = "[0-9\.]{1,80}" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_sort_order">5.10
+<div><h3 id="type_sort_order">5.12
         Data Type <tt>sort_order</tt>
 </h3></div>
 <p>In short: A string describing an order for sorting.</p>
@@ -644,71 +670,71 @@ response
       The string "descending" denotes descending order, anything else means
       ascending.
     </p>
-<h4>5.10.1 RNC</h4>
+<h4>5.12.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>sort_order = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_status">5.11
+<div><h3 id="type_status">5.13
         Data Type <tt>status</tt>
 </h3></div>
 <p>In short: The success or failure status of a command.</p>
-<h4>5.11.1 RNC</h4>
+<h4>5.13.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>status = xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_task_status">5.12
+<div><h3 id="type_task_status">5.14
         Data Type <tt>task_status</tt>
 </h3></div>
 <p>In short: A task run status.</p>
-<h4>5.12.1 RNC</h4>
+<h4>5.14.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>task_status = xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|Paused|Requ↵
 ested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_task_trend">5.13
+<div><h3 id="type_task_trend">5.15
         Data Type <tt>task_trend</tt>
 </h3></div>
 <p>In short: The trend of results for a task.</p>
-<h4>5.13.1 RNC</h4>
+<h4>5.15.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>task_trend = xsd:token { pattern = "up|down|more|less|same" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_threat">5.14
+<div><h3 id="type_threat">5.16
         Data Type <tt>threat</tt>
 </h3></div>
 <p>In short: A threat level.</p>
-<h4>5.14.1 RNC</h4>
+<h4>5.16.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>threat = xsd:token { pattern = "High|Medium|Low|Log|Debug" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_time_unit">5.15
+<div><h3 id="type_time_unit">5.17
         Data Type <tt>time_unit</tt>
 </h3></div>
 <p>In short: A unit of time.</p>
-<h4>5.15.1 RNC</h4>
+<h4>5.17.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>time_unit = xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_uuid">5.16
+<div><h3 id="type_uuid">5.18
         Data Type <tt>uuid</tt>
 </h3></div>
 <p>In short: A Universally Unique Identifier (UUID).</p>
-<h4>5.16.1 RNC</h4>
+<h4>5.18.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_uuid_or_empty">5.17
+<div><h3 id="type_uuid_or_empty">5.19
         Data Type <tt>uuid_or_empty</tt>
 </h3></div>
 <p>In short: A Universally Unique Identifier (UUID), or the empty string.</p>
-<h4>5.17.1 RNC</h4>
+<h4>5.19.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>uuid_or_empty = xsd:token { pattern = "[0-9abcdefABCDEF\-]{0,40}" }
 </pre></div>
 </div>
@@ -4787,6 +4813,11 @@ create_target_port_range
           </li></ul>
 </li>
 <li>
+              &lt;<b>observers</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Users allowed to observe this task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>preferences</b>&gt;
               ?<ul style="list-style: none"><li>
               &lt;<b>preference</b>&gt;
@@ -4839,6 +4870,7 @@ create_target_port_range
        &amp; create_task_escalator?
        &amp; create_task_schedule?
        &amp; create_task_slave?
+       &amp; create_task_observers?
        &amp; create_task_preferences?
        &amp; create_task_rcfile?
      }
@@ -4883,6 +4915,12 @@ create_task_slave
  = element slave
      {
        attribute id { uuid }
+     }
+
+create_task_observers
+ = element observers
+     {
+       user_list
      }
 
 create_task_preferences
@@ -6043,6 +6081,11 @@ get_agents_response_agent_package_filename
           ID of single config to get.
           </li>
 <li>
+          @<b>actions</b>
+          (<a href="#type_actions">actions</a>)
+          Actions filter for configs of observed tasks.
+          </li>
+<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan configs instead.
@@ -6227,6 +6270,7 @@ get_agents_response_agent_package_filename
  = element get_configs
      {
        attribute config_id { uuid }?
+       &amp; attribute actions { actions }?
        &amp; attribute trash { boolean }?
        &amp; attribute export { boolean }?
        &amp; attribute families { boolean }?
@@ -6939,6 +6983,11 @@ get_escalators_response_escalator_method_data_name
           ID of single LSC credential to get.
           </li>
 <li>
+          @<b>actions</b>
+          (<a href="#type_actions">actions</a>)
+          Actions filter for LSC credentials of observed tasks.
+          </li>
+<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan LSC credentials instead.
@@ -7039,6 +7088,7 @@ get_escalators_response_escalator_method_data_name
  = element get_lsc_credentials
      {
        attribute lsc_credential_id { uuid }?
+       &amp; attribute actions { actions }?
        &amp; attribute trash { boolean }?
        &amp; attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
        &amp; attribute sort_order { sort_order }?
@@ -7678,6 +7728,11 @@ get_notes_response_note_result_description
           Single NVT to get.
           </li>
 <li>
+          @<b>actions</b>
+          (<a href="#type_actions">actions</a>)
+          Actions filter for NVTs of configs observed tasks.
+          </li>
+<li>
           @<b>details</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to include full details.
@@ -7851,6 +7906,7 @@ get_notes_response_note_result_description
  = element get_nvts
      {
        attribute nvt_oid { oid }
+       &amp; attribute actions { actions }?
        &amp; attribute details { boolean }?
        &amp; attribute preferences { boolean }?
        &amp; attribute preference_count { boolean }?
@@ -10904,6 +10960,11 @@ get_target_locators_response_target_locator_name
           ID of single target to get.
           </li>
 <li>
+          @<b>actions</b>
+          (<a href="#type_actions">actions</a>)
+          Actions filter for targets of observed tasks.
+          </li>
+<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan targets instead.
@@ -11038,6 +11099,7 @@ get_target_locators_response_target_locator_name
  = element get_targets
      {
        attribute target_id { uuid }?
+       &amp; attribute actions { actions }?
        &amp; attribute trash { boolean }?
        &amp; attribute tasks { boolean }?
        &amp; attribute sort_order { sort_order }?
@@ -11245,6 +11307,11 @@ get_targets_response_target_tasks_task_name
           ID of single task to get.
           </li>
 <li>
+          @<b>actions</b>
+          (<a href="#type_actions">actions</a>)
+          Actions filter for tasks of observed tasks.
+          </li>
+<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan tasks instead.
@@ -11391,6 +11458,11 @@ get_targets_response_target_tasks_task_name
 <ul style="list-style: none"></ul>
 </li>
 </ul>
+</li>
+<li>
+              &lt;<b>observers</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Users allowed to observe this task.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>schedule</b>&gt;
@@ -11655,6 +11727,7 @@ get_targets_response_target_tasks_task_name
  = element get_tasks
      {
        attribute task_id { uuid }?
+       &amp; attribute actions { actions }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
        &amp; attribute rcfile { boolean }?
@@ -11715,6 +11788,7 @@ get_tasks_response_task
        &amp; get_tasks_response_task_config
        &amp; get_tasks_response_task_target
        &amp; get_tasks_response_task_escalator
+       &amp; get_tasks_response_task_observers
        &amp; get_tasks_response_task_schedule
        &amp; get_tasks_response_task_slave
        &amp; get_tasks_response_task_report_count
@@ -11823,6 +11897,12 @@ get_tasks_response_task_escalator_trash
  = element trash
      {
        boolean
+     }
+
+get_tasks_response_task_observers
+ = element observers
+     {
+       user_list
      }
 
 get_tasks_response_task_schedule
@@ -13770,6 +13850,11 @@ modify_report_format_param_value
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>observers</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Users allowed to observe this task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>preferences</b>&gt;
               <ul style="list-style: none"><li>
               &lt;<b>preference</b>&gt;
@@ -13847,6 +13932,7 @@ modify_report_format_param_value
        &amp; ( modify_task_comment
            | modify_task_escalator
            | modify_task_name
+           | modify_task_observers
            | modify_task_preferences
            | modify_task_rcfile
            | modify_task_schedule
@@ -13870,6 +13956,12 @@ modify_task_name
  = element name
      {
        name
+     }
+
+modify_task_observers
+ = element observers
+     {
+       user_list
      }
 
 modify_task_preferences

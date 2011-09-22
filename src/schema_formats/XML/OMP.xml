@@ -63,6 +63,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <summary>The "management" protocol of the Open Vulnerability Assessment System</summary>
   <version>2.0</version>
   <type>
+    <name>actions</name>
+    <summary>A specifier of actions: get, modify, use.</summary>
+    <pattern>xsd:token { pattern = "[gmu]{1,3}" }</pattern>
+  </type>
+  <type>
     <name>base64</name>
     <summary>Base64 encoded data</summary>
     <pattern>xsd:base64Binary</pattern>
@@ -117,6 +122,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       task or target.
     </description>
     <pattern>xsd:string</pattern>
+  </type>
+  <type>
+    <name>user_list</name>
+    <summary>A space separated list of users</summary>
+    <pattern>text</pattern>
   </type>
   <type>
     <name>oid</name>
@@ -2458,6 +2468,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>escalator</e></o>
       <o><e>schedule</e></o>
       <o><e>slave</e></o>
+      <o><e>observers</e></o>
       <o><e>preferences</e></o>
       <o><e>rcfile</e></o>
     </pattern>
@@ -2527,6 +2538,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
       </pattern>
+    </ele>
+    <ele>
+      <name>observers</name>
+      <summary>Users allowed to observe this task</summary>
+      <pattern><t>user_list</t></pattern>
     </ele>
     <ele>
       <name>preferences</name>
@@ -3438,6 +3454,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>actions</name>
+        <summary>Actions filter for configs of observed tasks</summary>
+        <type>actions</type>
+      </attrib>
+      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan configs instead</summary>
         <type>boolean</type>
@@ -4060,6 +4081,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>actions</name>
+        <summary>Actions filter for LSC credentials of observed tasks</summary>
+        <type>actions</type>
+      </attrib>
+      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan LSC credentials instead</summary>
         <type>boolean</type>
@@ -4600,6 +4626,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Single NVT to get</summary>
         <type>oid</type>
         <required>1</required>
+      </attrib>
+      <attrib>
+        <name>actions</name>
+        <summary>Actions filter for NVTs of configs observed tasks</summary>
+        <type>actions</type>
       </attrib>
       <attrib>
         <name>details</name>
@@ -6839,6 +6870,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>actions</name>
+        <summary>Actions filter for targets of observed tasks</summary>
+        <type>actions</type>
+      </attrib>
+      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan targets instead</summary>
         <type>boolean</type>
@@ -7074,6 +7110,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>actions</name>
+        <summary>Actions filter for tasks of observed tasks</summary>
+        <type>actions</type>
+      </attrib>
+      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan tasks instead</summary>
         <type>boolean</type>
@@ -7163,6 +7204,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>config</e>
           <e>target</e>
           <e>escalator</e>
+          <e>observers</e>
           <e>schedule</e>
           <e>slave</e>
           <e>report_count</e>
@@ -7277,6 +7319,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Whether the escalator is in the trashcan</summary>
             <pattern><t>boolean</t></pattern>
           </ele>
+        </ele>
+        <ele>
+          <name>observers</name>
+          <summary>Users allowed to observe this task</summary>
+          <pattern><t>user_list</t></pattern>
         </ele>
         <ele>
           <name>schedule</name>
@@ -8813,6 +8860,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>comment</e>
         <e>escalator</e>
         <e>name</e>
+        <e>observers</e>
         <e>preferences</e>
         <e>rcfile</e>
         <e>schedule</e>
@@ -8842,6 +8890,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>name</name>
       <summary>The name of the task</summary>
       <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>observers</name>
+      <summary>Users allowed to observe this task</summary>
+      <pattern><t>user_list</t></pattern>
     </ele>
     <ele>
       <name>preferences</name>
