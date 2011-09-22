@@ -17370,7 +17370,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           manage_read_info (get_info_data->type, get_info_data->name, &result);
           if (result)
             {
-              SEND_TO_CLIENT_OR_FAIL ("<get_info_response>"
+              SEND_TO_CLIENT_OR_FAIL ("<get_info_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               SEND_TO_CLIENT_OR_FAIL (result ? result : "");

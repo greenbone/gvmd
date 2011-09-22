@@ -1,3 +1,8 @@
+2011-09-22  Henri Doreau <henri.doreau@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Removed a bogus ">" in
+	get_info_responses.
+
 2011-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* ChangeLog: Correct dates.
