@@ -40,6 +40,7 @@ command
     | get_configs
     | get_dependencies
     | get_escalators
+    | get_info
     | get_lsc_credentials
     | get_notes
     | get_nvts
@@ -57,7 +58,6 @@ command
     | get_targets
     | get_tasks
     | get_version
-    | get_info
     | help
     | modify_config
     | modify_lsc_credential
@@ -109,6 +109,7 @@ response
     | get_configs_response
     | get_dependencies_response
     | get_escalators_response
+    | get_info_response
     | get_lsc_credentials_response
     | get_notes_response
     | get_nvts_response
@@ -126,7 +127,6 @@ response
     | get_targets_response
     | get_tasks_response
     | get_version_response
-    | get_info_response
     | help_response
     | modify_config_response
     | modify_lsc_credential_response
@@ -1069,6 +1069,7 @@ commands
            | get_configs
            | get_dependencies
            | get_escalators
+           | get_info
            | get_lsc_credentials
            | get_notes
            | get_nvts
@@ -1085,7 +1086,6 @@ commands
            | get_targets
            | get_tasks
            | get_version
-           | get_info
            | help
            | modify_config
            | modify_lsc_credential
@@ -2117,6 +2117,19 @@ get_escalators
        & attribute sort_field { text }?
      }
 
+## Command get_info
+##
+## Get raw information for a given item.
+
+get_info
+ = element get_info
+     {
+       # Type of the requested information.
+       attribute type { text }
+       & # Name or identifier of the requested information.
+       attribute name { text }
+     }
+
 ## Command get_lsc_credentials
 ##
 ## Get all LSC credentials.
@@ -2426,19 +2439,6 @@ get_version
  = element get_version
      {
        ""
-     }
-
-## Command get_info
-##
-## Get raw information for a given item.
-
-get_info
- = element get_info
-     {
-       # Type of the requested information.
-       attribute type { text }
-       & # Name or identifier of the requested information.
-       attribute name { text }
      }
 
 ## Command help
@@ -3052,6 +3052,7 @@ commands_response
            | get_configs_response
            | get_dependencies_response
            | get_escalators_response
+           | get_info_response
            | get_lsc_credentials_response
            | get_notes_response
            | get_nvts_response
@@ -3068,7 +3069,6 @@ commands_response
            | get_targets_response
            | get_tasks_response
            | get_version_response
-           | get_info_response
            | help_response
            | modify_config_response
            | modify_lsc_credential_response
@@ -3770,6 +3770,16 @@ get_escalators_response_escalator_method_data_name
  = element name
      {
        text
+     }
+
+## Response to get_info
+
+get_info_response
+ = element get_info_response
+     {
+       text
+       & attribute status { status }
+       & attribute status_text { text }
      }
 
 ## Response to get_lsc_credentials
@@ -5896,16 +5906,6 @@ get_version_response_version
  = element version
      {
        text
-     }
-
-## Response to get_info
-
-get_info_response
- = element get_info_response
-     {
-       text
-       & attribute status { status }
-       & attribute status_text { text }
      }
 
 ## Response to help

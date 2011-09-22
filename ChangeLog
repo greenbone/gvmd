@@ -1,5 +1,12 @@
 2011-09-22  Henri Doreau <henri.doreau@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (get_info): Relocated get_info
+	documentation to honor alphabetical sorting. Rewrapped lines.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2011-09-22  Henri Doreau <henri.doreau@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (get_info): Document new operation.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.
