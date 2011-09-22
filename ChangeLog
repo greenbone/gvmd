@@ -1,5 +1,9 @@
 2011-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db.png: Really update from SQL.
+
+2011-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In all CREATE commands, if user
 	is observer respond with an error.
 
