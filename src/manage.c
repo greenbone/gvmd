@@ -69,6 +69,30 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+
+/**
+ * @brief CPE selection stylesheet location.
+ */
+#define CPE_GETBYNAME_XSL SCAP_RES_DIR "/cpe_getbyname.xsl"
+
+/**
+ * @brief CVE selection stylesheet location.
+ */
+#define CVE_GETBYNAME_XSL SCAP_RES_DIR "/cve_getbyname.xsl"
+
+/**
+ * @brief CPE dictionary location.
+ */
+#define CPE_DICT_FILENAME SCAP_RES_DIR "/official-cpe-dictionary_v2.2.xml"
+
+/**
+ * @brief CVE data files location format string.
+ *
+ * %d should be the year expressed as YYYY.
+ */
+#define CVE_FILENAME_FMT SCAP_RES_DIR "/nvdcve-2.0-%d.xml"
+
+
 /**
  * @brief Information about the scanner.
  */
@@ -3894,3 +3918,177 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
   openvas_server_close (socket, session);
   return -1;
 }
+
+/**
+ * @brief Return the path to the CPE dictionary.
+ *
+ * @return A dynamically allocated string (to be g_free'd) containing the
+ *         path to the desired file.
+ */
+static char *
+get_cpe_filename ()
+{
+  return g_strdup (CPE_DICT_FILENAME);
+}
+
+/**
+ * @brief Compute the filename where a given CVE can be found.
+ *
+ * @param[in] item_id   Full CVE identifier ("CVE-YYYY-ZZZZ").
+ *
+ * @return A dynamically allocated string (to be g_free'd) containing the
+ *         path to the desired file or NULL on error.
+ */
+static char *
+get_cve_filename (char *item_id)
+{
+  int year;
+
+  if (sscanf (item_id, "%*3s-%d-%*d", &year) == 1)
+    {
+      /* CVEs before 2002 are stored in the 2002 file. */
+      if (year <= 2002)
+        year = 2002;
+      return g_strdup_printf (CVE_FILENAME_FMT, year);
+    }
+  return NULL;
+}
+
+/**
+ * @brief Run xsltproc in an external process.
+ *
+ * @param[in] stylesheet    XSL stylesheet to use.
+ * @param[in] xmlfile       XML file to process.
+ * @param[in] param_names   NULL terminated array of stringparam names (can
+ *                          be NULL).
+ * @param[in] param_values  NULL terminated array of stringparam values (can
+ *                          be NULL).
+ *
+ * @return A dynamically allocated (to be g_free'd) string containing the
+ *         result of the operation of NULL on failure.
+ */
+static gchar *
+xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names, gchar **param_values)
+{
+  int i, param_idx;
+  gchar **cmd, *cmd_full;
+  gint exit_status;
+  gboolean success;
+  gchar *standard_out = NULL, *standard_err = NULL;
+
+  param_idx = 0;
+  if (param_names && param_values)
+    while (param_names[param_idx] && param_values[param_idx])
+      param_idx++;
+
+  cmd = (gchar **)g_malloc ((4 + param_idx * 3) * sizeof (gchar *));
+
+  i = 0;
+  cmd[i++] = "xsltproc";
+  if (param_idx)
+    {
+      int j;
+
+      for (j = 0; j < param_idx; j++)
+        {
+          cmd[i++] = "--stringparam";
+          cmd[i++] = param_names[j];
+          cmd[i++] = param_values[j];
+        }
+    }
+  cmd[i++] = stylesheet;
+  cmd[i++] = xmlfile;
+  cmd[i] = NULL;
+
+
+  /* DEBUG: display the final command line. */
+  cmd_full = g_strjoinv (" ", cmd);
+  g_debug ("%s: Spawning in parent dir: %s\n",
+           __FUNCTION__, cmd_full);
+  g_free (cmd_full);
+  /* --- */
+
+  if ((g_spawn_sync (NULL,
+                     cmd,
+                     NULL,                  /* Environment. */
+                     G_SPAWN_SEARCH_PATH,
+                     NULL,                  /* Setup function. */
+                     NULL,
+                     &standard_out,
+                     &standard_err,
+                     &exit_status,
+                     NULL)
+       == FALSE)
+      || (WIFEXITED (exit_status) == 0)
+      || WEXITSTATUS (exit_status))
+    {
+      g_debug ("%s: failed to transform the xml: %d (WIF %i, WEX %i)",
+               __FUNCTION__,
+               exit_status,
+               WIFEXITED (exit_status),
+               WEXITSTATUS (exit_status));
+      g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+      g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
+      success = FALSE;
+    }
+  else if (strlen (standard_out) == 0)
+    success = FALSE; /* execution succeeded but nothing was found */
+  else
+    success = TRUE; /* execution succeeded and we have a result */
+
+  /* Cleanup. */
+  g_free (cmd);
+  g_free (standard_err);
+
+  if (success)
+    return standard_out;
+
+  g_free (standard_out);
+  return NULL;
+}
+
+/**
+ * @brief Read raw information.
+ *
+ * @param[in]   type    Type of the requested information.
+ * @param[in]   name    Name or identifier of the requested information.
+ * @param[out]  result  Pointer to the read information location. Will point
+ *                      to NULL on error.
+ *
+ * @return 1 success, -1 error.
+ */
+int
+manage_read_info (gchar *type, gchar *name, gchar **result)
+{
+  gchar *fname;
+  gchar *pnames[2] = { "refname", NULL };
+  gchar *pvalues[2] = { name, NULL };
+
+  assert (result != NULL);
+  *result = NULL;
+
+  if (g_strcasecmp ("CPE", type) == 0)
+    {
+      fname = get_cpe_filename ();
+      if (fname)
+        {
+          *result = xsl_transform (CPE_GETBYNAME_XSL, fname, pnames, pvalues);
+          g_free (fname);
+        }
+    }
+  else if (g_strcasecmp ("CVE", type) == 0)
+    {
+      fname = get_cve_filename (name);
+      if (fname)
+        {
+          *result = xsl_transform (CVE_GETBYNAME_XSL, fname, pnames, pvalues);
+          g_free (fname);
+        }
+    }
+
+  if (*result == NULL)
+    return -1;
+
+  return 1;
+}
+

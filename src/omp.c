@@ -420,6 +420,7 @@ static char* help_text = "\n"
 "    GET_TARGETS            Get all targets.\n"
 "    GET_TASKS              Get all tasks.\n"
 "    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
+"    GET_INFO               Get raw information for a given item.\n"
 "    HELP                   Get this help text.\n"
 "    MODIFY_CONFIG          Update an existing config.\n"
 "    MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.\n"
@@ -2054,6 +2055,29 @@ get_tasks_data_reset (get_tasks_data_t *data)
 }
 
 /**
+ * @brief Command data for the get_info command.
+ */
+typedef struct
+{
+  char *type;         ///< Requested information type.
+  char *name;         ///< Requested information identifier.
+} get_info_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_info_data_reset (get_info_data_t *data)
+{
+  free (data->type);
+  free (data->name);
+
+  memset (data, 0, sizeof (get_info_data_t));
+}
+
+/**
  * @brief Command data for the help command.
  */
 typedef struct
@@ -2576,6 +2600,7 @@ typedef union
   get_system_reports_data_t get_system_reports;       ///< get_system_reports
   get_targets_data_t get_targets;                     ///< get_targets
   get_tasks_data_t get_tasks;                         ///< get_tasks
+  get_info_data_t get_info;                           ///< get_info
   help_data_t help;                                   ///< help
   modify_config_data_t modify_config;                 ///< modify_config
   modify_lsc_credential_data_t modify_lsc_credential; ///< modify_lsc_credential
@@ -2868,6 +2893,12 @@ get_targets_data_t *get_targets_data
  */
 get_tasks_data_t *get_tasks_data
  = &(command_data.get_tasks);
+
+/**
+ * @brief Parser callback data for GET_INFO.
+ */
+get_info_data_t *get_info_data
+ = &(command_data.get_info);
 
 /**
  * @brief Parser callback data for HELP.
@@ -3253,6 +3284,7 @@ typedef enum
   CLIENT_GET_TASKS,
   CLIENT_GET_VERSION,
   CLIENT_GET_VERSION_AUTHENTIC,
+  CLIENT_GET_INFO,
   CLIENT_HELP,
   CLIENT_MODIFY_LSC_CREDENTIAL,
   CLIENT_MODIFY_LSC_CREDENTIAL_NAME,
@@ -4595,6 +4627,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_TASKS);
           }
+        else if (strcasecmp ("GET_INFO", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "type",
+                              &get_info_data->type);
+            append_attribute (attribute_names, attribute_values, "name",
+                              &get_info_data->name);
+            set_client_state (CLIENT_GET_INFO);
+          }
         else if (strcasecmp ("GET_VERSION", element_name) == 0)
           set_client_state (CLIENT_GET_VERSION_AUTHENTIC);
         else if (strcasecmp ("HELP", element_name) == 0)
@@ -5424,6 +5464,23 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      G_MARKUP_ERROR,
                      G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                      "Error");
+        break;
+      
+      case CLIENT_GET_INFO:
+          {
+            if (send_element_error_to_client ("get_info", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
         break;
 
       case CLIENT_HELP:
@@ -17303,6 +17360,39 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         get_tasks_data_reset (get_tasks_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
+      
+      case CLIENT_GET_INFO:
+        {
+          gchar *result;
+
+          result = NULL;
+
+          manage_read_info (get_info_data->type, get_info_data->name, &result);
+          if (result)
+            {
+              SEND_TO_CLIENT_OR_FAIL ("<get_info_response>"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              SEND_TO_CLIENT_OR_FAIL (result ? result : "");
+              SEND_TO_CLIENT_OR_FAIL ("</get_info_response>");
+
+              g_free (result);
+            }
+          else
+            {
+              if (send_find_error_to_client ("get_info", "name",
+                                             get_info_data->name,
+                                             write_to_client,
+                                             write_to_client_data))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          get_info_data_reset (get_info_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
 
       case CLIENT_VERIFY_AGENT:
         assert (strcasecmp ("VERIFY_AGENT", element_name) == 0);

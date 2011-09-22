@@ -1953,4 +1953,10 @@ manage_empty_trashcan ();
 void
 parse_tags (const char *, gchar **, gchar **, gchar **);
 
+
+/* SCAP files parsing. */
+
+int
+manage_read_info (gchar *, gchar *, gchar **);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_H */
