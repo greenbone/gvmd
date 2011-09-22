@@ -203,6 +203,12 @@ CREATE TABLE task_preferences (
 	name text PRIMARY KEY,
 	value text);
 
+CREATE TABLE task_users (
+	id integer PRIMARY KEY,
+	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+	user integer REFERENCES users (id) ON DELETE RESTRICT,
+	actions integer);
+
 CREATE TABLE results (
 	id integer PRIMARY KEY,
 	uuid text UNIQUE NOT NULL,
