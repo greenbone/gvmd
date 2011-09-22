@@ -1,5 +1,6 @@
 /* 
  * OpenVAS
+ * $Id$
  * Description: SCAP database initialization script
  *
  * Authors:
