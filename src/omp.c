@@ -113,6 +113,7 @@
 #include <openvas/base/nvti.h>
 #include <openvas/base/openvas_string.h>
 #include <openvas/misc/nvt_categories.h>
+#include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/resource_request.h>
 
@@ -11958,7 +11959,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("CREATE_AGENT", element_name) == 0);
           assert (create_agent_data->name != NULL);
 
-          if (strlen (create_agent_data->name) == 0)
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_agent",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (strlen (create_agent_data->name) == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_agent",
@@ -12051,7 +12058,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           /* For now the import element, GET_CONFIGS_RESPONSE, overrides
            * any other elements. */
-          if (import_config_data->import)
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_config",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (import_config_data->import)
             {
               char *name;
               array_terminate (import_config_data->nvt_selectors);
@@ -12391,7 +12405,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           array_terminate (create_escalator_data->event_data);
           array_terminate (create_escalator_data->method_data);
 
-          if (strlen (create_escalator_data->name) == 0)
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_escalator",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (strlen (create_escalator_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_escalator",
                                 "CREATE_ESCALATOR requires NAME element which"
@@ -12592,7 +12612,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (create_lsc_credential_data->name != NULL);
           assert (create_lsc_credential_data->login != NULL);
 
-          if (strlen (create_lsc_credential_data->name) == 0)
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_lsc_credential",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (strlen (create_lsc_credential_data->name) == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_lsc_credential",
@@ -12699,7 +12725,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_NOTE", element_name) == 0);
 
-          if (create_note_data->nvt_oid == NULL)
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_note",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (create_note_data->nvt_oid == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
                                 "CREATE_NOTE requires an NVT entity"));
@@ -12818,7 +12850,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_OVERRIDE", element_name) == 0);
 
-          if (create_override_data->nvt_oid == NULL)
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_override",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (create_override_data->nvt_oid == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "CREATE_OVERRIDE requires an NVT entity"));
@@ -12948,7 +12986,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           array_terminate (create_report_data->host_ends);
           array_terminate (create_report_data->host_starts);
 
-          if (create_report_data->results == NULL)
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_report",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (create_report_data->results == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_report",
                                 "CREATE_REPORT requires a REPORT element"));
@@ -13267,7 +13311,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           /* For now the import element, GET_REPORT_FORMATS_RESPONSE, overrides
            * any other elements. */
-          if (create_report_format_data->import)
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_report_format",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (create_report_format_data->import)
             {
               array_terminate (create_report_format_data->files);
               array_terminate (create_report_format_data->params);
@@ -13570,7 +13621,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_SCHEDULE", element_name) == 0);
 
-          if (create_schedule_data->name == NULL)
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_schedule",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (create_schedule_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
                                 "CREATE_SCHEDULE requires a NAME entity"));
@@ -13711,7 +13768,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_SLAVE", element_name) == 0);
 
-          if (create_slave_data->host == NULL)
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_slave",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (create_slave_data->host == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_slave",
                                 "CREATE_SLAVE requires a HOST"));
@@ -13822,7 +13885,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (create_target_data->target_locator
                   || create_target_data->hosts != NULL);
 
-          if (strlen (create_target_data->name) == 0)
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_target",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (strlen (create_target_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
                                 "CREATE_TARGET name must be at"
@@ -14017,6 +14086,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
            * task. */
           /** @todo Any fail cases of the CLIENT_CREATE_TASK_* states must do
            *        so too. */
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              request_delete_task (&create_task_data->task);
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_task",
+                                  "CREATE is forbidden for observer users"));
+              create_task_data_reset (create_task_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
 
           /* Get the task ID. */
 

@@ -1,5 +1,10 @@
 2011-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In all CREATE commands, if user
+	is observer respond with an error.
+
+2011-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql (task_users): New table.
 
 	* doc/db.png: Update from SQL.
