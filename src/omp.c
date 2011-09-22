@@ -17373,7 +17373,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL ("<get_info_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
-              SEND_TO_CLIENT_OR_FAIL (result ? result : "");
+              SEND_TO_CLIENT_OR_FAIL (result);
               SEND_TO_CLIENT_OR_FAIL ("</get_info_response>");
 
               g_free (result);
