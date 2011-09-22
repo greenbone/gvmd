@@ -7,11 +7,11 @@
 	Add new get_info command and support to retrieve CPE and CVE details
 	through OMP.
 
-	* src/omp.c (get_info_data_t, get_info_data_reset, command_data_t,
-	omp_xml_handle_start_element, omp_xml_handle_end_element): Add get_info command.
+	* src/omp.c (get_info_data_t, get_info_data_reset, command_data_t)
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add get_info command.
 
-	* src/manage.c (get_cpe_filename, get_cve_filename, xsl_transform,
-	manage_read_info): New functions.
+	* src/manage.c (get_cpe_filename, get_cve_filename, xsl_transform)
+	(manage_read_info): New functions.
 
 	* src/manage.h: Update header accordingly.
 
