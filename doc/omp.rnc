@@ -57,6 +57,7 @@ command
     | get_targets
     | get_tasks
     | get_version
+    | get_info
     | help
     | modify_config
     | modify_lsc_credential
@@ -125,6 +126,7 @@ response
     | get_targets_response
     | get_tasks_response
     | get_version_response
+    | get_info_response
     | help_response
     | modify_config_response
     | modify_lsc_credential_response
@@ -1083,6 +1085,7 @@ commands
            | get_targets
            | get_tasks
            | get_version
+           | get_info
            | help
            | modify_config
            | modify_lsc_credential
@@ -2425,6 +2428,19 @@ get_version
        ""
      }
 
+## Command get_info
+##
+## Get raw information for a given item.
+
+get_info
+ = element get_info
+     {
+       # Type of the requested information.
+       attribute type { text }
+       & # Name or identifier of the requested information.
+       attribute name { text }
+     }
+
 ## Command help
 ##
 ## Get the help text.
@@ -3052,6 +3068,7 @@ commands_response
            | get_targets_response
            | get_tasks_response
            | get_version_response
+           | get_info_response
            | help_response
            | modify_config_response
            | modify_lsc_credential_response
@@ -5879,6 +5896,16 @@ get_version_response_version
  = element version
      {
        text
+     }
+
+## Response to get_info
+
+get_info_response
+ = element get_info_response
+     {
+       text
+       & attribute status { status }
+       & attribute status_text { text }
      }
 
 ## Response to help
