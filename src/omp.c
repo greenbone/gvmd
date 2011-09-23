@@ -5466,7 +5466,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                      "Error");
         break;
-      
+
       case CLIENT_GET_INFO:
           {
             if (send_element_error_to_client ("get_info", element_name,
@@ -16881,7 +16881,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  name,
                                  comment,
                                  owner,
-                                 observers,
+                                 strcmp (owner, current_credentials.username)
+                                   ? observers
+                                   : "",
                                  config_uuid ? config_uuid : "",
                                  config ? config : "",
                                  escalator_uuid ? escalator_uuid : "",
@@ -17338,7 +17340,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             name,
                                             comment,
                                             owner,
-                                            observers,
+                                            strcmp
+                                              (owner,
+                                               current_credentials.username)
+                                              ? ""
+                                              : observers,
                                             config_uuid ? config_uuid : "",
                                             config ? config : "",
                                             task_config_in_trash (index),
@@ -17440,7 +17446,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         get_tasks_data_reset (get_tasks_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-      
+
       case CLIENT_GET_INFO:
         {
           gchar *result;
