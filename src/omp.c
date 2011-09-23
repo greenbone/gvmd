@@ -16882,8 +16882,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  comment,
                                  owner,
                                  strcmp (owner, current_credentials.username)
-                                   ? observers
-                                   : "",
+                                   ? ""
+                                   : observers,
                                  config_uuid ? config_uuid : "",
                                  config ? config : "",
                                  escalator_uuid ? escalator_uuid : "",

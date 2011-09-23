@@ -1,5 +1,9 @@
 2011-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Correct last commit.
+
+2011-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Only send observers when the
 	user owns the task.
 
