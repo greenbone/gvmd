@@ -83,14 +83,14 @@
 /**
  * @brief CPE dictionary location.
  */
-#define CPE_DICT_FILENAME SCAP_RES_DIR "/official-cpe-dictionary_v2.2.xml"
+#define CPE_DICT_FILENAME SCAP_DATA_DIR "/official-cpe-dictionary_v2.2.xml"
 
 /**
  * @brief CVE data files location format string.
  *
  * %d should be the year expressed as YYYY.
  */
-#define CVE_FILENAME_FMT SCAP_RES_DIR "/nvdcve-2.0-%d.xml"
+#define CVE_FILENAME_FMT SCAP_DATA_DIR "/nvdcve-2.0-%d.xml"
 
 
 /**
