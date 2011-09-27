@@ -863,9 +863,9 @@ cvss_threat (int cvss)
 {
   if (cvss < 0 || cvss > 10)
     return "";
-  if (cvss < 3)
+  if (cvss < 2)
     return "Low";
-  if (cvss < 6)
+  if (cvss < 5)
     return "Medium";
   return "High";
 }
@@ -10576,22 +10576,22 @@ prognosis_where_levels (const char* levels)
     return "";
 
   if (high && medium)
-    return " AND cves.cvss >= 3";
+    return " AND cves.cvss >= 2";
 
   if (high && low)
-    return " AND (cves.cvss >= 6 OR cves.cvss < 3)";
+    return " AND (cves.cvss >= 5 OR cves.cvss < 2)";
 
   if (medium && low)
-    return " AND cves.cvss < 6";
+    return " AND cves.cvss < 5";
 
   if (high)
-    return " AND cves.cvss >= 6";
+    return " AND cves.cvss >= 5";
 
   if (medium)
-    return " AND cves.cvss < 6 AND cves.cvss >= 3";
+    return " AND cves.cvss < 5 AND cves.cvss >= 2";
 
   if (low)
-    return " AND cves.cvss < 3";
+    return " AND cves.cvss < 2";
 
   return "";
 }

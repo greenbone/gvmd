@@ -1,5 +1,10 @@
 2011-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (cvss_threat, prognosis_where_levels): Use the CVSS
+	threat mapping from CR 42.
+
+2011-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (result_iterator_nvt_cvss_base_double): New function.
 	(result_cmp): Include CVSS base in comparison, as this was recently added
 	to the init_result_iterator sorting.
