@@ -11863,6 +11863,20 @@ DEF_ACCESS (type, 6);
  */
 DEF_ACCESS (descr, 7);
 
+/**
+ * @brief Get the CVSS base from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return CVSS base of result NVT.
+ */
+double
+result_iterator_nvt_cvss_base_double (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return sqlite3_column_double (iterator->stmt, 8);
+}
+
 #undef DEF_ACCESS
 
 /**
@@ -14348,6 +14362,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   const char *host, *delta_host, *port, *delta_port, *type, *delta_type;
   const char *nvt, *delta_nvt;
   int ret;
+  double cvss, delta_cvss;
 
   if (sort_field == NULL) sort_field = "type";
 
@@ -14359,6 +14374,9 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
 
   type = result_iterator_type (results);
   delta_type = result_iterator_type (delta_results);
+
+  cvss = result_iterator_nvt_cvss_base_double (results);
+  delta_cvss = result_iterator_nvt_cvss_base_double (delta_results);
 
   nvt = result_iterator_nvt_oid (results);
   delta_nvt = result_iterator_nvt_oid (delta_results);
@@ -14374,21 +14392,29 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
                                               " port,"
                                               " new_type"
                                               " COLLATE collate_message_type DESC,"
+                                              " (CAST (cvss_base AS REAL)) DESC,"
+                                              " nvt,"
                                               " description"
                                             : " ORDER BY host COLLATE collate_ip,"
                                               " new_type COLLATE collate_message_type,"
                                               " port,"
+                                              " (CAST (cvss_base AS REAL)) DESC,"
+                                              " nvt,"
                                               " description"))
                                     : ((strcmp (sort_field, "port") == 0)
                                         ? " ORDER BY host COLLATE collate_ip,"
                                           " port DESC,"
                                           " new_type"
                                           " COLLATE collate_message_type DESC,"
+                                          " (CAST (cvss_base AS REAL)) DESC,"
+                                          " nvt,"
                                           " description"
                                         : " ORDER BY host COLLATE collate_ip,"
                                           " new_type"
                                           " COLLATE collate_message_type DESC,"
                                           " port,"
+                                          " (CAST (cvss_base AS REAL)) DESC,"
+                                          " nvt,"
                                           " description")),
   */
 
@@ -14428,6 +14454,18 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
           if (ret)
             return -ret;
 
+          tracef ("   delta: %s: cvss: %e VS %e",
+                  __FUNCTION__, cvss, delta_cvss);
+          if (cvss >= 0 && delta_cvss >= 0)
+            {
+              tracef ("   delta: %s: (NVTs: %s AND %s)",
+                      __FUNCTION__, nvt, delta_nvt);
+              if (cvss > delta_cvss)
+                return -1;
+              if (cvss < delta_cvss)
+                return 1;
+            }
+
           ret = strcmp (nvt, delta_nvt);
           tracef ("   delta: %s: NVT: %s VS %s (%i)",
                   __FUNCTION__, nvt, delta_nvt, ret);
@@ -14454,6 +14492,18 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
               __FUNCTION__, port, delta_port, ret);
       if (ret)
         return ret;
+
+      tracef ("   delta: %s: cvss: %e VS %e",
+              __FUNCTION__, cvss, delta_cvss);
+      if (cvss >= 0 && delta_cvss >= 0)
+        {
+          tracef ("   delta: %s: (NVTs: %s AND %s)",
+                  __FUNCTION__, nvt, delta_nvt);
+          if (cvss > delta_cvss)
+            return -1;
+          if (cvss < delta_cvss)
+            return 1;
+        }
 
       ret = strcmp (nvt, delta_nvt);
       tracef ("   delta: %s: NVT: %s VS %s (%i)",
@@ -14486,6 +14536,18 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (ret)
         return ret;
 
+      tracef ("   delta: %s: cvss: %e VS %e",
+              __FUNCTION__, cvss, delta_cvss);
+      if (cvss >= 0 && delta_cvss >= 0)
+        {
+          tracef ("   delta: %s: (NVTs: %s AND %s)",
+                  __FUNCTION__, nvt, delta_nvt);
+          if (cvss > delta_cvss)
+            return -1;
+          if (cvss < delta_cvss)
+            return 1;
+        }
+
       ret = collate_message_type (NULL,
                                   strlen (type), type,
                                   strlen (delta_type), delta_type);
@@ -14493,6 +14555,8 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
         return -ret;
 
       ret = strcmp (nvt, delta_nvt);
+      tracef ("   delta: %s: NVT: %s VS %s (%i)",
+              __FUNCTION__, nvt, delta_nvt, ret);
       if (ret)
         return ret;
 
@@ -14513,7 +14577,21 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   if (ret)
     return ret;
 
+  tracef ("   delta: %s: cvss: %e VS %e",
+          __FUNCTION__, cvss, delta_cvss);
+  if (cvss >= 0 && delta_cvss >= 0)
+    {
+      tracef ("   delta: %s: (NVTs: %s AND %s)",
+              __FUNCTION__, nvt, delta_nvt);
+      if (cvss > delta_cvss)
+        return -1;
+      if (cvss < delta_cvss)
+        return 1;
+    }
+
   ret = strcmp (nvt, delta_nvt);
+  tracef ("   delta: %s: NVT: %s VS %s (%i)",
+          __FUNCTION__, nvt, delta_nvt, ret);
   if (ret)
     return ret;
 
