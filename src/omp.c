@@ -8948,7 +8948,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else
                 {
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("authenticate"));
+                  SENDF_TO_CLIENT_OR_FAIL ("<authenticate_response"
+                                           " status=\"" STATUS_OK "\""
+                                           " status_text=\"" STATUS_OK_TEXT "\">"
+                                           "<role>%s</role>"
+                                           "<timezone>%s</timezone>"
+                                           "</authenticate_response>",
+                                           current_credentials.role
+                                             ? current_credentials.role
+                                             : "",
+                                           current_credentials.timezone
+                                             ? current_credentials.timezone
+                                             : "");
                   set_client_state (CLIENT_AUTHENTIC);
                 }
               break;

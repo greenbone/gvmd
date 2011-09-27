@@ -1259,7 +1259,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS task_preferences (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER, upload_result_count INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_users (id INTEGER PRIMARY KEY, task INTEGER, user INTEGER, actions INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
+  sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password, timezone);");
 
   sql ("ANALYZE;");
 }
@@ -5130,6 +5130,40 @@ migrate_49_to_50 ()
 }
 
 /**
+ * @brief Migrate the database from version 50 to version 51.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_50_to_51 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 50. */
+
+  if (manage_db_version () != 50)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The user table got a timezone column. */
+
+  sql ("ALTER TABLE users ADD column timezone;");
+  sql ("UPDATE users SET timezone = NULL;");
+
+  /* Set the database version to 51. */
+
+  set_db_version (51);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -5184,6 +5218,7 @@ static migrator_t database_migrators[]
     {48, migrate_47_to_48},
     {49, migrate_48_to_49},
     {50, migrate_49_to_50},
+    {51, migrate_50_to_51},
     /* End marker. */
     {-1, NULL}};
 
@@ -8836,6 +8871,13 @@ authenticate (credentials_t* credentials)
         {
           gchar* quoted_name;
 
+          credentials->role
+            = g_strdup (openvas_is_user_admin (credentials->username)
+                         ? "Admin"
+                         : (openvas_is_user_observer (credentials->username)
+                             ? "Observer"
+                             : "User"));
+
           /* Ensure the user exists in the database.  SELECT then INSERT
            * instead of using "INSERT OR REPLACE", so that the ROWID stays
            * the same. */
@@ -8843,13 +8885,21 @@ authenticate (credentials_t* credentials)
           if (sql_int (0, 0,
                        "SELECT count(*) FROM users WHERE uuid = '%s';",
                        credentials->uuid))
-            return 0;
+            {
+              credentials->timezone = sql_string (0, 0,
+                                                  "SELECT timezone FROM users"
+                                                  " WHERE uuid = '%s';",
+                                                  credentials->uuid);
+              return 0;
+            }
 
           quoted_name = sql_quote (credentials->username);
-          sql ("INSERT INTO users (uuid, name) VALUES ('%s', '%s');",
+          sql ("INSERT INTO users (uuid, name, timezone)"
+               " VALUES ('%s', '%s', NULL);",
                credentials->uuid,
                quoted_name);
           g_free (quoted_name);
+          credentials->timezone = NULL;
           return 0;
         }
       return fail;

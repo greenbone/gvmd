@@ -93,7 +93,8 @@ CREATE TABLE users (
 	id integer PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     name text NOT NULL,
-	password text);
+	password text,
+	timezone text);
 
 CREATE TABLE nvt_selectors (
 	id integer PRIMARY KEY,
