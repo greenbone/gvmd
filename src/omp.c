@@ -429,6 +429,7 @@ static char* help_text = "\n"
 "    MODIFY_OVERRIDE        Modify an existing override.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
 "    MODIFY_REPORT_FORMAT   Modify an existing report format.\n"
+"    MODIFY_SETTING         Modify an existing setting.\n"
 "    MODIFY_TASK            Update an existing task.\n"
 "    PAUSE_TASK             Pause a running task.\n"
 "    RESTORE                Restore a resource.\n"
@@ -2211,6 +2212,29 @@ modify_report_format_data_reset (modify_report_format_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_setting command.
+ */
+typedef struct
+{
+  char *name;           ///< Name.
+  char *value;          ///< Value.
+} modify_setting_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_setting_data_reset (modify_setting_data_t *data)
+{
+  free (data->name);
+  free (data->value);
+
+  memset (data, 0, sizeof (modify_setting_data_t));
+}
+
+/**
  * @brief Command data for the modify_task command.
  */
 typedef struct
@@ -2607,6 +2631,7 @@ typedef union
   modify_lsc_credential_data_t modify_lsc_credential; ///< modify_lsc_credential
   modify_report_data_t modify_report;                 ///< modify_report
   modify_report_format_data_t modify_report_format;   ///< modify_report_format
+  modify_setting_data_t modify_setting;               ///< modify_setting
   modify_task_data_t modify_task;                     ///< modify_task
   pause_task_data_t pause_task;                       ///< pause_task
   restore_data_t restore;                             ///< restore
@@ -2948,6 +2973,12 @@ modify_report_data_t *modify_report_data
  */
 modify_report_format_data_t *modify_report_format_data
  = &(command_data.modify_report_format);
+
+/**
+ * @brief Parser callback data for MODIFY_SETTING.
+ */
+modify_setting_data_t *modify_setting_data
+ = &(command_data.modify_setting);
 
 /**
  * @brief Parser callback data for MODIFY_TASK.
@@ -3332,6 +3363,9 @@ typedef enum
   CLIENT_MODIFY_OVERRIDE_TASK,
   CLIENT_MODIFY_OVERRIDE_TEXT,
   CLIENT_MODIFY_OVERRIDE_THREAT,
+  CLIENT_MODIFY_SETTING,
+  CLIENT_MODIFY_SETTING_NAME,
+  CLIENT_MODIFY_SETTING_VALUE,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_COMMENT,
   CLIENT_MODIFY_TASK_ESCALATOR,
@@ -4682,6 +4716,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_report_format_data->report_format_id);
             set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
           }
+        else if (strcasecmp ("MODIFY_SETTING", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_SETTING);
+          }
         else if (strcasecmp ("MODIFY_TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "task_id",
@@ -5791,6 +5829,29 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      G_MARKUP_ERROR,
                      G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                      "Error");
+        break;
+
+      case CLIENT_MODIFY_SETTING:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SETTING_NAME);
+        else if (strcasecmp ("VALUE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SETTING_VALUE);
+        else
+          {
+            if (send_element_error_to_client ("modify_setting",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
         break;
 
       case CLIENT_MODIFY_TASK:
@@ -11621,6 +11682,47 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE:
         assert (strcasecmp ("VALUE", element_name) == 0);
         set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM);
+        break;
+
+      case CLIENT_MODIFY_SETTING:
+        {
+          if ((modify_setting_data->name == NULL)
+              || (modify_setting_data->value == NULL))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_setting",
+                                "MODIFY_SETTING requires a NAME and VALUE"));
+          else switch (manage_set_setting (modify_setting_data->name,
+                                           modify_setting_data->value))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_setting"));
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_setting",
+                                    "NAME must be Timezone"));
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_setting",
+                                    "Value validation failed"));
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("modify_setting"));
+                break;
+            }
+        }
+        modify_setting_data_reset (modify_setting_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      case CLIENT_MODIFY_SETTING_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_SETTING);
+        break;
+      case CLIENT_MODIFY_SETTING_VALUE:
+        assert (strcasecmp ("VALUE", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_SETTING);
         break;
 
       case CLIENT_MODIFY_TASK:
@@ -17725,6 +17827,17 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE:
         openvas_append_text (&modify_report_format_data->param_value,
+                             text,
+                             text_len);
+        break;
+
+      case CLIENT_MODIFY_SETTING_NAME:
+        openvas_append_text (&modify_setting_data->name,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_MODIFY_SETTING_VALUE:
+        openvas_append_text (&modify_setting_data->value,
                              text,
                              text_len);
         break;

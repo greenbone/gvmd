@@ -32384,4 +32384,41 @@ manage_report_host_detail (report_t report, const char *host, const char *xml)
   return 0;
 }
 
+
+/* Settings. */
+
+/**
+ * @brief Set the value of a setting.
+ *
+ * @param[in]  name   Setting name.
+ * @param[in]  value  New setting value, base64 encoded.
+ *
+ * @return 0 success, 1 name must be Timezone.
+ */
+int
+manage_set_setting (const gchar *name, const gchar *value_64)
+{
+  assert (current_credentials.uuid);
+
+  if (strcmp (name, "Timezone") == 0)
+    {
+      gsize value_size;
+      gchar *quoted_timezone, *value;
+      if (value_64 && strlen (value_64))
+        value = (gchar*) g_base64_decode (value_64, &value_size);
+      else
+        {
+          value = g_strdup ("");
+          value_size = 0;
+        }
+      quoted_timezone = sql_quote (value);
+      sql ("UPDATE users SET timezone = '%s' WHERE uuid = '%s';",
+           quoted_timezone,
+           current_credentials.uuid);
+      g_free (quoted_timezone);
+      return 0;
+    }
+  return 1;
+}
+
 #undef DEF_ACCESS

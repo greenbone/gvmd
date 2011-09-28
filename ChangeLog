@@ -1,3 +1,19 @@
+2011-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP MODIFY_SETTING.
+
+	* src/manage_sql.c (set_setting): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (help_text, command_data_t, client_state_t): Add
+	MODIFY_SETTING.
+	(modify_setting_data_t): New type.
+	(modify_setting_data_reset): New function.
+	(modify_setting_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add MODIFY_SETTING handling.
+
 2011-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add support for storing the user's timezone in the db.  Hence increase

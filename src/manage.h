@@ -1939,7 +1939,7 @@ int
 manage_schema (gchar *, gchar **, gsize *, gchar **, gchar **);
 
 
-/* Schema. */
+/* Trashcan. */
 
 int
 manage_restore (const char *);
@@ -1954,9 +1954,15 @@ void
 parse_tags (const char *, gchar **, gchar **, gchar **);
 
 
-/* SCAP files parsing. */
+/* SCAP file parsing. */
 
 int
 manage_read_info (gchar *, gchar *, gchar **);
+
+
+/* SCAP file parsing. */
+
+int
+manage_set_setting (const gchar *, const gchar *);
 
 #endif /* not OPENVAS_MANAGER_MANAGE_H */
