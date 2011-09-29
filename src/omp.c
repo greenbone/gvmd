@@ -9019,6 +9019,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                ? current_credentials.timezone
                                : "UTC";
 
+#if 0
                   if (setenv ("TZ", timezone, 1) == -1)
                     {
                       free_credentials (&current_credentials);
@@ -9028,6 +9029,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       break;
                     }
                   tzset ();
+#endif
 
                   SENDF_TO_CLIENT_OR_FAIL
                    ("<authenticate_response"
