@@ -5835,7 +5835,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_SETTING_NAME);
         else if (strcasecmp ("VALUE", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_SETTING_VALUE);
+          {
+            openvas_append_string (&modify_setting_data->value, "");
+            set_client_state (CLIENT_MODIFY_SETTING_VALUE);
+          }
         else
           {
             if (send_element_error_to_client ("modify_setting",

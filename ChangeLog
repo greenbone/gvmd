@@ -1,3 +1,8 @@
+2011-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_start_element): Init value in MODIFY_SETTING,
+	in case the value is empty.
+
 2011-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OMP MODIFY_SETTING.
