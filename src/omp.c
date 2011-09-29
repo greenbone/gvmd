@@ -9012,6 +9012,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else
                 {
+                  const char *timezone;
+
+                  timezone = (current_credentials.timezone
+                              && strlen (current_credentials.timezone))
+                               ? current_credentials.timezone
+                               : "UTC";
+
+                  if (setenv ("TZ", timezone, 1) == -1)
+                    {
+                      free_credentials (&current_credentials);
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("authenticate"));
+                      set_client_state (CLIENT_TOP);
+                      break;
+                    }
+                  tzset ();
+
                   SENDF_TO_CLIENT_OR_FAIL
                    ("<authenticate_response"
                     " status=\"" STATUS_OK "\""
@@ -9022,10 +9039,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     current_credentials.role
                       ? current_credentials.role
                       : "",
-                    (current_credentials.timezone
-                      && strlen (current_credentials.timezone))
-                      ? current_credentials.timezone
-                      : "UTC");
+                    timezone);
+
                   set_client_state (CLIENT_AUTHENTIC);
                 }
               break;
