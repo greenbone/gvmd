@@ -87,6 +87,9 @@ manage_db_supported_version ();
 int
 manage_db_version ();
 
+gboolean
+manage_migrate_needs_timezone (GSList *, const gchar *);
+
 int
 manage_migrate (GSList*, const gchar*);
 

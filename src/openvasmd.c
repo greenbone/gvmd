@@ -1085,7 +1085,10 @@ main (int argc, char** argv)
 
   /* Switch to UTC for scheduling. */
 
-  if (setenv ("TZ", "utc 0", 1) == -1)
+  if (migrate_database
+      && manage_migrate_needs_timezone (log_config, database))
+    infof ("%s: leaving TZ as is, for migrator\n", __FUNCTION__);
+  else if (setenv ("TZ", "utc 0", 1) == -1)
     {
       g_critical ("%s: failed to set timezone\n", __FUNCTION__);
       exit (EXIT_FAILURE);

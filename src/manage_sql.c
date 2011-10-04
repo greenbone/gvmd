@@ -848,6 +848,44 @@ sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
   g_free (candidate_name);
 }
 
+/**
+ * @brief Return string from ctime with newline replaces with terminator.
+ *
+ * @param[in]  time  Time.
+ *
+ * @return Return from ctime applied to time, with newline stripped off.
+ */
+static char*
+ctime_strip_newline (time_t *time)
+{
+  char* ret = ctime (time);
+  if (ret && strlen (ret) > 0)
+    ret[strlen (ret) - 1] = '\0';
+  return ret;
+}
+
+/**
+ * @brief Convert an epoch time into ctime format.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+static void
+sql_ctime (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  gchar *text_time;
+  time_t epoch_time;
+
+  assert (argc == 1);
+
+  epoch_time = sqlite3_value_int (argv[0]);
+  text_time = ctime_strip_newline (&epoch_time);
+  sqlite3_result_text (context, text_time, -1, SQLITE_TRANSIENT);
+}
+
 
 /* General helpers. */
 
@@ -1192,6 +1230,66 @@ find_trash (const char *type, const char *uuid, resource_t *resource)
 
   g_free (quoted_uuid);
   return FALSE;
+}
+
+/**
+ * @brief Convert an OTP time into seconds since epoch.
+ *
+ * @param[in]  text_time  Time as text in ctime format.
+ *
+ * @return Time since epoch.
+ */
+static int
+parse_otp_time (const char *text_time)
+{
+  int epoch_time;
+  struct tm tm;
+  gchar *tz;
+
+  /* Scanner sends UTC in ctime format: "Wed Jun 30 21:49:08 1993". */
+
+  /* Store current TZ. */
+  tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+  if (setenv ("TZ", "UTC", 1) == -1)
+    {
+      g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
+      setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
+
+  if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
+    {
+      g_warning ("%s: Failed to parse time", __FUNCTION__);
+      setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
+  epoch_time = mktime (&tm);
+  if (epoch_time == -1)
+    {
+      g_warning ("%s: Failed to make time", __FUNCTION__);
+      setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
+
+  /* Revert to stored TZ. */
+  if (tz)
+    {
+      if (setenv ("TZ", tz, 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+          g_free (tz);
+          return 0;
+        }
+    }
+  else
+    unsetenv ("TZ");
+
+  g_free (tz);
+  return epoch_time;
 }
 
 
@@ -5164,6 +5262,133 @@ migrate_50_to_51 ()
 }
 
 /**
+ * @brief Check whether the migration needs the real timezone.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ *
+ * @return TRUE if yes, else FALSE.
+ */
+gboolean
+manage_migrate_needs_timezone (GSList *log_config, const gchar *database)
+{
+  int db_version;
+  g_log_set_handler (G_LOG_DOMAIN,
+                     ALL_LOG_LEVELS,
+                     (GLogFunc) openvas_log_func,
+                     log_config);
+  init_manage_process (0, database);
+  db_version = manage_db_version ();
+  cleanup_manage_process (TRUE);
+  return db_version < 52;
+}
+
+/**
+ * @brief Convert a UTC text time to an integer time since the Epoch.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+static void
+migrate_51_to_52_sql_convert (sqlite3_context *context, int argc,
+                              sqlite3_value** argv)
+{
+  const unsigned char *text_time;
+  int epoch_time;
+  struct tm tm;
+
+  assert (argc == 1);
+
+  text_time = sqlite3_value_text (argv[0]);
+  if (text_time)
+    {
+      /* Scanner uses ctime: "Wed Jun 30 21:49:08 1993".
+       *
+       * The dates being converted are in the timezone that the Scanner was using.
+       *
+       * As a special case for this migrator, openvasmd.c uses the timezone
+       * from the environment, instead of forcing UTC.  This allows the user
+       * to set the timezone to be the same as the Scanner timezone, so
+       * that these dates are converted from the Scanner timezone.  Even if
+       * the user just leaves the timezone as is, it is likely to be the same
+       * timezone she/he is running the Scanner under.
+       */
+      if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
+        {
+          sqlite3_result_error (context, "Failed to parse time", -1);
+          return;
+        }
+      epoch_time = mktime (&tm);
+      if (epoch_time == -1)
+        {
+          sqlite3_result_error (context, "Failed to make time", -1);
+          return;
+        }
+    }
+  else
+    epoch_time = 0;
+  sqlite3_result_int (context, epoch_time);
+}
+
+/**
+ * @brief Migrate the database from version 51 to version 52.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_51_to_52 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 51. */
+
+  if (manage_db_version () != 51)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Add an SQL helper. */
+
+  if (sqlite3_create_function (task_db,
+                               "convert",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               migrate_51_to_52_sql_convert,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create convert", __FUNCTION__);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The user table got a timezone column. */
+
+  sql ("UPDATE report_hosts SET start_time = convert (start_time);");
+  sql ("UPDATE report_hosts SET end_time = convert (end_time);");
+  sql ("UPDATE reports SET start_time = convert (start_time);");
+  sql ("UPDATE reports SET end_time = convert (end_time);");
+  sql ("UPDATE tasks SET start_time = convert (start_time);");
+  sql ("UPDATE tasks SET end_time = convert (end_time);");
+
+  /* Set the database version to 52. */
+
+  set_db_version (52);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -5219,6 +5444,7 @@ static migrator_t database_migrators[]
     {49, migrate_48_to_49},
     {50, migrate_49_to_50},
     {51, migrate_50_to_51},
+    {52, migrate_51_to_52},
     /* End marker. */
     {-1, NULL}};
 
@@ -8008,6 +8234,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
         }
 
       if (sqlite3_create_function (task_db,
+                                   "ctime",
+                                   1,               /* Number of args. */
+                                   SQLITE_UTF8,
+                                   NULL,            /* Callback data. */
+                                   sql_ctime,
+                                   NULL,            /* xStep. */
+                                   NULL)            /* xFinal. */
+          != SQLITE_OK)
+        {
+          g_warning ("%s: failed to create ctime", __FUNCTION__);
+          abort ();
+        }
+
+      if (sqlite3_create_function (task_db,
                                    "uniquify",
                                    3,               /* Number of args. */
                                    SQLITE_UTF8,
@@ -8521,7 +8761,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " run_status, start_time, end_time, config, target, slave)"
            " VALUES ('" MANAGE_EXAMPLE_TASK_UUID "', NULL, 'Example task',"
            " 1, 'This is an example task for the help pages.', %u,"
-           " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009',"
+           " 1251236905, 1251237136,"
            " (SELECT ROWID FROM configs WHERE name = 'Full and fast'),"
            " (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
            " 0);",
@@ -8551,7 +8791,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
                " slave_task_uuid)"
                " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', NULL, 1, %llu,"
                " 'This is an example report for the help pages.',"
-               " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009',"
+               " 1251236905, 1251237136,"
                " %u, 0, '');",
                task,
                TASK_STATUS_DONE);
@@ -8567,8 +8807,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
           sql ("INSERT into report_results (report, result) VALUES (%llu, %llu)",
                report, result);
           sql ("INSERT into report_hosts (report, host, start_time, end_time)"
-               " VALUES (%llu, '127.0.0.1', 'Tue Aug 25 21:48:26 2009',"
-               " 'Tue Aug 25 21:52:15 2009')",
+               " VALUES (%llu, '127.0.0.1', 1251236906, 1251237135)",
                report);
         }
 
@@ -9509,7 +9748,8 @@ char*
 task_start_time (task_t task)
 {
   return sql_string (0, 0,
-                     "SELECT start_time FROM tasks WHERE ROWID = %llu;",
+                     "SELECT ctime (start_time)"
+                     " FROM tasks WHERE ROWID = %llu;",
                      task);
 }
 
@@ -9522,9 +9762,8 @@ task_start_time (task_t task)
 void
 set_task_start_time (task_t task, char* time)
 {
-  sql ("UPDATE tasks SET start_time = '%.*s' WHERE ROWID = %llu;",
-       strlen (time),
-       time,
+  sql ("UPDATE tasks SET start_time = %i WHERE ROWID = %llu;",
+       parse_otp_time (time),
        task);
   free (time);
 }
@@ -10857,19 +11096,15 @@ create_report (array_t *results, const char *task_id, const char *task_name,
 
   if (scan_start)
     {
-      gchar *quoted_start;
-      quoted_start = sql_quote (scan_start);
-      sql ("UPDATE reports SET start_time = '%s' WHERE ROWID = %llu;",
-           quoted_start,
+      sql ("UPDATE reports SET start_time = %i WHERE ROWID = %llu;",
+           parse_otp_time (scan_start),
            report);
     }
 
   if (scan_end)
     {
-      gchar *quoted_end;
-      quoted_end = sql_quote (scan_end);
       sql ("UPDATE reports SET end_time = '%s' WHERE ROWID = %llu;",
-           quoted_end,
+           parse_otp_time (scan_end),
            report);
     }
 
@@ -10915,19 +11150,17 @@ create_report (array_t *results, const char *task_id, const char *task_name,
                                                                index++)))
     if (start->host && start->description)
       {
-        gchar *quoted_host, *quoted_time;
+        gchar *quoted_host;
 
         quoted_host = sql_quote (start->host);
-        quoted_time = sql_quote (start->description);
 
         sql ("INSERT INTO report_hosts (report, host, start_time)"
-             " VALUES (%llu, '%s', '%s');",
+             " VALUES (%llu, '%s', %i);",
              report,
              quoted_host,
-             quoted_time);
+             parse_otp_time (start->description));
 
         g_free (quoted_host);
-        g_free (quoted_time);
       }
 
   index = 0;
@@ -11945,8 +12178,9 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
     {
       if (report_host)
         init_iterator (iterator,
-                       "SELECT ROWID, host, start_time, end_time,"
-                       " attack_state, current_port, max_port, report,"
+                       "SELECT ROWID, host, ctime (start_time),"
+                       " ctime (end_time), attack_state, current_port,"
+                       " max_port, report,"
                        " (SELECT uuid FROM reports WHERE ROWID = report)"
                        " FROM report_hosts WHERE ROWID = %llu"
                        " AND report = %llu"
@@ -11959,8 +12193,9 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
                        host ? "'" : "");
       else
         init_iterator (iterator,
-                       "SELECT ROWID, host, start_time, end_time,"
-                       " attack_state, current_port, max_port, report,"
+                       "SELECT ROWID, host, ctime (start_time),"
+                       " ctime (end_time), attack_state, current_port,"
+                       " max_port, report,"
                        " (SELECT uuid FROM reports WHERE ROWID = report)"
                        " FROM report_hosts WHERE report = %llu"
                        "%s%s%s"
@@ -11974,8 +12209,9 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
     {
       if (report_host)
         init_iterator (iterator,
-                       "SELECT ROWID, host, start_time, end_time,"
-                       " attack_state, current_port, max_port, report,"
+                       "SELECT ROWID, host, ctime (start_time),"
+                       " ctime (end_time), attack_state, current_port,"
+                       " max_port, report,"
                        " (SELECT uuid FROM reports WHERE ROWID = report)"
                        " FROM report_hosts WHERE ROWID = %llu"
                        "%s%s%s"
@@ -11986,8 +12222,9 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
                        host ? "'" : "");
       else
         init_iterator (iterator,
-                       "SELECT ROWID, host, start_time, end_time,"
-                       " attack_state, current_port, max_port, report,"
+                       "SELECT ROWID, host, ctime (start_time),"
+                       " ctime (end_time), attack_state, current_port,"
+                       " max_port, report,"
                        " (SELECT uuid FROM reports WHERE ROWID = report)"
                        " FROM report_hosts"
                        "%s%s%s"
@@ -12412,7 +12649,8 @@ char*
 scan_start_time (report_t report)
 {
   char *time = sql_string (0, 0,
-                           "SELECT start_time FROM reports WHERE ROWID = %llu;",
+                           "SELECT ctime (start_time)"
+                           " FROM reports WHERE ROWID = %llu;",
                            report);
   return time ? time : g_strdup ("");
 }
@@ -12426,8 +12664,9 @@ scan_start_time (report_t report)
 void
 set_scan_start_time (report_t report, const char* timestamp)
 {
-  sql ("UPDATE reports SET start_time = '%s' WHERE ROWID = %llu;",
-       timestamp, report);
+  sql ("UPDATE reports SET start_time = %i WHERE ROWID = %llu;",
+       parse_otp_time (timestamp),
+       report);
 }
 
 /**
@@ -12441,7 +12680,8 @@ char*
 scan_end_time (report_t report)
 {
   char *time = sql_string (0, 0,
-                           "SELECT end_time FROM reports WHERE ROWID = %llu;",
+                           "SELECT ctime (end_time)"
+                           " FROM reports WHERE ROWID = %llu;",
                            report);
   return time ? time : g_strdup ("");
 }
@@ -12456,8 +12696,8 @@ void
 set_scan_end_time (report_t report, const char* timestamp)
 {
   if (timestamp)
-    sql ("UPDATE reports SET end_time = '%s' WHERE ROWID = %llu;",
-         timestamp, report);
+    sql ("UPDATE reports SET end_time = %i WHERE ROWID = %llu;",
+         parse_otp_time (timestamp), report);
   else
     sql ("UPDATE reports SET end_time = NULL WHERE ROWID = %llu;",
          report);
@@ -12478,13 +12718,13 @@ set_scan_host_end_time (report_t report, const char* host,
                "SELECT COUNT(*) FROM report_hosts"
                " WHERE report = %llu AND host = '%s';",
                report, host))
-    sql ("UPDATE report_hosts SET end_time = '%s'"
+    sql ("UPDATE report_hosts SET end_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         timestamp, report, host);
+         parse_otp_time (timestamp), report, host);
   else
     sql ("INSERT into report_hosts (report, host, end_time)"
-         " VALUES (%llu, '%s', '%s');",
-         report, host, timestamp);
+         " VALUES (%llu, '%s', %i);",
+         report, host, parse_otp_time (timestamp));
 }
 
 /**
@@ -12502,13 +12742,13 @@ set_scan_host_start_time (report_t report, const char* host,
                "SELECT COUNT(*) FROM report_hosts"
                " WHERE report = %llu AND host = '%s';",
                report, host))
-    sql ("UPDATE report_hosts SET start_time = '%s'"
+    sql ("UPDATE report_hosts SET start_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         timestamp, report, host);
+         parse_otp_time (timestamp), report, host);
   else
     sql ("INSERT into report_hosts (report, host, start_time)"
-         " VALUES (%llu, '%s', '%s');",
-         report, host, timestamp);
+         " VALUES (%llu, '%s', %i);",
+         report, host, parse_otp_time (timestamp));
 }
 
 /**
@@ -19283,8 +19523,8 @@ void
 reset_task (task_t task)
 {
   sql ("UPDATE tasks SET"
-       " start_time = '',"
-       " end_time = ''"
+       " start_time = 0,"
+       " end_time = 0"
        " WHERE ROWID = %llu;",
        task);
 }

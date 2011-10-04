@@ -1,3 +1,38 @@
+2011-10-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Migrate the textual times in the db to seconds since the epoch.  Hence
+	increase database version to 52.  Add database migration from version 51
+	to 52.
+
+	The migrator assumes that the times in the database are in the current
+	timezone.  This allows the sysadmin to set TZ to whatever the Scanner has
+	been using.
+
+	From here on the Manager expects the Scanner to send time in UTC, so the
+	sysadmin must either explicity arrange this, or use the upcoming
+	Scanner revision which forces UTC.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 52.
+
+	* src/manage_sql.c (ctime_strip_newline, sql_ctime, parse_otp_time)
+	(manage_migrate_needs_timezone, migrate_51_to_52_sql_convert)
+	(migrate_51_to_52): New functions.
+	(database_migrators): Add migrate_51_to_52.
+	(init_manage_process): Create SQL ctime function.
+	(init_manage): Use epoch times in SQL.
+	(task_start_time, set_task_start_time, create_report, init_host_iterator)
+	(scan_start_time, set_scan_start_time, scan_end_time, set_scan_end_time)
+	(set_scan_host_end_time, set_scan_host_start_time, reset_task): Switch to
+	epoch times in db.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Enable use of user's timezone.
+
+	* src/openvasmd.c (main): Skip setting TZ if required by migrator.
+
+	* doc/db.png: Update for version change.
+
 2011-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Turn off last change because
