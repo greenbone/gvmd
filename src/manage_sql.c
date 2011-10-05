@@ -882,8 +882,13 @@ sql_ctime (sqlite3_context *context, int argc, sqlite3_value** argv)
   assert (argc == 1);
 
   epoch_time = sqlite3_value_int (argv[0]);
-  text_time = ctime_strip_newline (&epoch_time);
-  sqlite3_result_text (context, text_time, -1, SQLITE_TRANSIENT);
+  if (epoch_time == 0)
+    sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
+  else
+    {
+      text_time = ctime_strip_newline (&epoch_time);
+      sqlite3_result_text (context, text_time, -1, SQLITE_TRANSIENT);
+    }
 }
 
 

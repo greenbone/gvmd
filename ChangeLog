@@ -1,5 +1,10 @@
 2011-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (sql_ctime): Return empty string if epoch_time is 0, as
+	0 is the initial state.
+
+2011-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (migrate_51_to_52_sql_convert): Cater for empty times.
 
 2011-10-05  Henri Doreau <henri.doreau@greenbone.net>
