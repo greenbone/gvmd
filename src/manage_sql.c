@@ -32643,7 +32643,7 @@ manage_report_host_detail (report_t report, const char *host, const char *xml)
  * @param[in]  name   Setting name.
  * @param[in]  value  New setting value, base64 encoded.
  *
- * @return 0 success, 1 name must be Timezone.
+ * @return 0 success, 1 name must be Timezone, -1 on error.
  */
 int
 manage_set_setting (const gchar *name, const gchar *value_64)
@@ -32667,6 +32667,23 @@ manage_set_setting (const gchar *name, const gchar *value_64)
            current_credentials.uuid);
       g_free (quoted_timezone);
       return 0;
+    }
+  else if (strcmp (name, "Password") == 0)
+    {
+      gsize value_size;
+      gchar *value;
+
+      assert (current_credentials.username);
+
+      if (value_64 && strlen (value_64))
+        value = (gchar*) g_base64_decode (value_64, &value_size);
+      else
+        {
+          value = g_strdup ("");
+          value_size = 0;
+        }
+      return openvas_user_modify (current_credentials.username, value,
+                                  NULL, NULL, 0, OPENVAS_USERS_DIR);
     }
   return 1;
 }

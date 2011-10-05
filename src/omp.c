@@ -11742,7 +11742,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_setting",
-                                    "NAME must be Timezone"));
+                                    "NAME must be Timezone or Password"));
                 break;
               case 2:
                 SEND_TO_CLIENT_OR_FAIL

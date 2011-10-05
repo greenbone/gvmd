@@ -1,3 +1,10 @@
+2011-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_set_setting): Add Password case.
+
+	* src/omp.c (omp_xml_handle_end_element): Add Password to
+	CLIENT_MODIFY_SETTING message.
+
 2011-10-05  Henri Doreau <henri.doreau@greenbone.net>
 
 	* src/omp.c (get_nvti_xml): New function, from a refactoring of
