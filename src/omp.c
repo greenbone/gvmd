@@ -7930,7 +7930,7 @@ send_dependency (gpointer key, gpointer value, gpointer data)
 }
 
 /**
- * @brief Define a code snippet for send_nvt.
+ * @brief Define a code snippet for get_nvti_xml.
  *
  * @param  x  Prefix for names in snippet.
  */
@@ -7941,22 +7941,19 @@ send_dependency (gpointer key, gpointer value, gpointer data)
                           : g_strdup ("");
 
 /**
- * @brief Send XML for an NVT.
- *
- * The caller must send the closing NVT tag.
+ * @brief Create and return XML description for an NVT.
  *
  * @param[in]  nvts        The NVT.
  * @param[in]  details     If true, detailed XML, else simple XML.
  * @param[in]  pref_count  Preference count.  Used if details is true.
  * @param[in]  timeout     Timeout.  Used if details is true.
- * @param[in]  write_to_client       Function to write to client.
- * @param[in]  write_to_client_data  Argument to \p write_to_client.
+ * @param[in]  close_tag   Wether to close the NVT tag or not.
  *
- * @return TRUE if out of space in to_client buffer, else FALSE.
+ * @return A dynamically allocated string containing the XML description.
  */
-static gboolean
-send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout,
-          int (*write_to_client) (void*), void* write_to_client_data)
+gchar *
+get_nvti_xml (iterator_t *nvts, int details, int pref_count,
+              const char *timeout, int close_tag)
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
@@ -7999,7 +7996,7 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout,
                              "<algorithm>md5</algorithm>"
                              /** @todo Implement checksum. */
                              "2397586ea5cd3a69f953836f7be9ef7b"
-                             "</checksum>",
+                             "</checksum>%s",
                              oid,
                              name_text,
                              category_name (nvt_iterator_category (nvts)),
@@ -8020,7 +8017,8 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout,
                              nvt_iterator_sign_key_ids (nvts),
                              tag_text,
                              pref_count,
-                             timeout ? timeout : "");
+                             timeout ? timeout : "",
+                             close_tag ? "</nvt>" : "");
       g_free (copyright_text);
       g_free (description_text);
       g_free (summary_text);
@@ -8040,6 +8038,30 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout,
                            oid,
                            name_text);
   g_free (name_text);
+  return msg;
+}
+
+/**
+ * @brief Send XML for an NVT.
+ *
+ * The caller must send the closing NVT tag.
+ *
+ * @param[in]  nvts        The NVT.
+ * @param[in]  details     If true, detailed XML, else simple XML.
+ * @param[in]  pref_count  Preference count.  Used if details is true.
+ * @param[in]  timeout     Timeout.  Used if details is true.
+ * @param[in]  write_to_client       Function to write to client.
+ * @param[in]  write_to_client_data  Argument to \p write_to_client.
+ *
+ * @return TRUE if out of space in to_client buffer, else FALSE.
+ */
+static gboolean
+send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout,
+          int (*write_to_client) (void*), void* write_to_client_data)
+{
+  gchar *msg;
+
+  msg = get_nvti_xml (nvts, details, pref_count, timeout, 0);
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
       g_free (msg);

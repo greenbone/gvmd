@@ -99,6 +99,11 @@
 scanner_t scanner = { NULL, NULL, NULL, NULL, 0 };
 
 
+
+/* Prototype (function defined in omp.c) */
+gchar * get_nvti_xml (iterator_t *, int, int, const char *, int);
+
+
 /* Threats. */
 
 /**
@@ -4084,6 +4089,21 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
           *result = xsl_transform (CVE_GETBYNAME_XSL, fname, pnames, pvalues);
           g_free (fname);
         }
+    }
+  else if (g_strcasecmp ("NVT", type) == 0)
+    {
+      iterator_t nvts;
+      nvt_t nvt;
+
+      if (!find_nvt (name, &nvt) && nvt)
+        {
+          init_nvt_iterator (&nvts, nvt, 0, NULL, 0, NULL);
+
+          if (next (&nvts))
+            *result = get_nvti_xml (&nvts, 1, 0, NULL, 1);
+
+        cleanup_iterator (&nvts);
+      }
     }
 
   if (*result == NULL)

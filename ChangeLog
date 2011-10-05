@@ -1,3 +1,11 @@
+2011-10-05  Henri Doreau <henri.doreau@greenbone.net>
+
+	* src/omp.c (get_nvti_xml): New function, from a refactoring of
+	send_nvt().
+	(send_nvt): Refactored to export the XML generation part.
+
+	* src/manage.c (manage_read_info): Handle NVT details.
+
 2011-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (sql_ctime): Return empty string if epoch_time is 0, as
