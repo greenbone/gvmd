@@ -5316,17 +5316,22 @@ migrate_51_to_52_sql_convert (sqlite3_context *context, int argc,
        * the user just leaves the timezone as is, it is likely to be the same
        * timezone she/he is running the Scanner under.
        */
-      if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
+      if (text_time && (strlen ((char*) text_time) > 0))
         {
-          sqlite3_result_error (context, "Failed to parse time", -1);
-          return;
+          if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
+            {
+              sqlite3_result_error (context, "Failed to parse time", -1);
+              return;
+            }
+          epoch_time = mktime (&tm);
+          if (epoch_time == -1)
+            {
+              sqlite3_result_error (context, "Failed to make time", -1);
+              return;
+            }
         }
-      epoch_time = mktime (&tm);
-      if (epoch_time == -1)
-        {
-          sqlite3_result_error (context, "Failed to make time", -1);
-          return;
-        }
+      else
+        epoch_time = 0;
     }
   else
     epoch_time = 0;

@@ -1,3 +1,7 @@
+2011-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (migrate_51_to_52_sql_convert): Cater for empty times.
+
 2011-10-05  Henri Doreau <henri.doreau@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (get_nvts): Fix typos.
