@@ -1,3 +1,9 @@
+2011-10-05  Henri Doreau <henri.doreau@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (get_nvts): Fix typos.
+
+	* doc/omp.html: Update from source.
+
 2011-10-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Migrate the textual times in the db to seconds since the epoch.  Hence

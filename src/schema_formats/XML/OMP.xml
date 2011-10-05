@@ -4900,7 +4900,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>Services</name>
             <category>Services</category>
             <copyright>GNU GPL v2</copyright>
-            <description>This script attepts to detects with service is running on which port.</description>
+            <description>This script attempts to detect which service is running on which port.</description>
             <summary>Find what is listening on which port</summary>
             <family>Service detection</family>
             <version>$Revision: 1852 $</version>
