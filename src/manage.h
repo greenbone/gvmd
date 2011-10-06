@@ -1242,6 +1242,9 @@ nvt_preference_iterator_nvt (iterator_t*);
 int
 nvt_preference_count (const char *);
 
+gchar*
+get_nvti_xml (iterator_t*, int, int, const char*, int);
+
 void
 init_task_preference_iterator (iterator_t*);
 

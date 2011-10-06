@@ -112,7 +112,6 @@
 #include <openvas/base/certificate.h>
 #include <openvas/base/nvti.h>
 #include <openvas/base/openvas_string.h>
-#include <openvas/misc/nvt_categories.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/resource_request.h>
@@ -150,24 +149,6 @@ is_uuid (const char *uuid)
 {
   while (*uuid) if (isxdigit (*uuid) || (*uuid == '-')) uuid++; else return 0;
   return 1;
-}
-
-/**
- * @brief Return the name of a category.
- *
- * @param  category  The number of the category.
- *
- * @return The name of the category.
- */
-static const char*
-category_name (int category)
-{
-  static const char *categories[] = { ACT_STRING_LIST_ALL };
-  if (category >= ACT_FIRST && category <= ACT_END)
-    {
-      return categories[category];
-    }
-  return categories[ACT_UNKNOWN];
 }
 
 /** @todo Duplicated from lsc_user.c. */
@@ -7927,118 +7908,6 @@ send_dependency (gpointer key, gpointer value, gpointer data)
 
   g_free (msg);
   return FALSE;
-}
-
-/**
- * @brief Define a code snippet for get_nvti_xml.
- *
- * @param  x  Prefix for names in snippet.
- */
-#define DEF(x)                                                    \
-      const char* x = nvt_iterator_ ## x (nvts);                  \
-      gchar* x ## _text = x                                       \
-                          ? g_markup_escape_text (x, -1)          \
-                          : g_strdup ("");
-
-/**
- * @brief Create and return XML description for an NVT.
- *
- * @param[in]  nvts        The NVT.
- * @param[in]  details     If true, detailed XML, else simple XML.
- * @param[in]  pref_count  Preference count.  Used if details is true.
- * @param[in]  timeout     Timeout.  Used if details is true.
- * @param[in]  close_tag   Wether to close the NVT tag or not.
- *
- * @return A dynamically allocated string containing the XML description.
- */
-gchar *
-get_nvti_xml (iterator_t *nvts, int details, int pref_count,
-              const char *timeout, int close_tag)
-{
-  const char* oid = nvt_iterator_oid (nvts);
-  const char* name = nvt_iterator_name (nvts);
-  gchar* msg;
-
-  gchar* name_text = g_markup_escape_text (name, strlen (name));
-  if (details)
-    {
-
-#ifndef S_SPLINT_S
-      DEF (copyright);
-      DEF (description);
-      DEF (summary);
-      DEF (family);
-      DEF (version);
-      DEF (tag);
-#endif /* not S_SPLINT_S */
-
-#undef DEF
-
-      msg = g_strdup_printf ("<nvt"
-                             " oid=\"%s\">"
-                             "<name>%s</name>"
-                             "<category>%s</category>"
-                             "<copyright>%s</copyright>"
-                             "<description>%s</description>"
-                             "<summary>%s</summary>"
-                             "<family>%s</family>"
-                             "<version>%s</version>"
-                             "<cvss_base>%s</cvss_base>"
-                             "<risk_factor>%s</risk_factor>"
-                             "<cve_id>%s</cve_id>"
-                             "<bugtraq_id>%s</bugtraq_id>"
-                             "<xrefs>%s</xrefs>"
-                             "<fingerprints>%s</fingerprints>"
-                             "<tags>%s</tags>"
-                             "<preference_count>%i</preference_count>"
-                             "<timeout>%s</timeout>"
-                             "<checksum>"
-                             "<algorithm>md5</algorithm>"
-                             /** @todo Implement checksum. */
-                             "2397586ea5cd3a69f953836f7be9ef7b"
-                             "</checksum>%s",
-                             oid,
-                             name_text,
-                             category_name (nvt_iterator_category (nvts)),
-                             copyright_text,
-                             description_text,
-                             summary_text,
-                             family_text,
-                             version_text,
-                             nvt_iterator_cvss_base (nvts)
-                              ? nvt_iterator_cvss_base (nvts)
-                              : "",
-                             nvt_iterator_risk_factor (nvts)
-                              ? nvt_iterator_risk_factor (nvts)
-                              : "",
-                             nvt_iterator_cve (nvts),
-                             nvt_iterator_bid (nvts),
-                             nvt_iterator_xref (nvts),
-                             nvt_iterator_sign_key_ids (nvts),
-                             tag_text,
-                             pref_count,
-                             timeout ? timeout : "",
-                             close_tag ? "</nvt>" : "");
-      g_free (copyright_text);
-      g_free (description_text);
-      g_free (summary_text);
-      g_free (family_text);
-      g_free (version_text);
-      g_free (tag_text);
-    }
-  else
-    msg = g_strdup_printf ("<nvt"
-                           " oid=\"%s\">"
-                           "<name>%s</name>"
-                           "<checksum>"
-                           "<algorithm>md5</algorithm>"
-                            /** @todo Implement checksum. */
-                           "2397586ea5cd3a69f953836f7be9ef7b"
-                           "</checksum>",
-                           oid,
-                           name_text);
-  g_free (name_text);
-  return msg;
 }
 
 /**
