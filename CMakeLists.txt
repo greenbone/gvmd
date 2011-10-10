@@ -175,7 +175,7 @@ message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 ## list and throw an error, otherwise long install-cmake-install-cmake cycles
 ## might occur.
 
-pkg_check_modules (LIBOPENVAS REQUIRED libopenvas>=4.0.0)
+pkg_check_modules (LIBOPENVAS REQUIRED libopenvas>=5.0.0)
 pkg_check_modules (GNUTLS REQUIRED gnutls)
 pkg_check_modules (GLIB REQUIRED glib-2.0)
 pkg_check_modules (SQLITE3 REQUIRED sqlite3)

@@ -1,3 +1,31 @@
+openvas-manager 3.0+beta5 (2011-10-10)
+
+This is the fifth beta version of the upcoming 3.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release adds support for a number of new features, including asset
+management, direct use of SCAP data, prognostic scans, task observers and
+individual time zones for users. It also improves support for large database
+files on 32-bit platforms.
+
+NOTE: The Manager now expects the OpenVAS Scanner to send timestamps based on
+the UTC time zone. Care must be take to use UTC for the Scanner or upgrade to
+OpenVAS Scanner >= 3.3+beta2, which enforces the use of UTC internally.
+
+Many thanks to everyone who has contributed to this release:
+Henri Doreau, Matthew Mundell and Michael Wiegand.
+
+Main changes since 3.0+beta4:
+* Support for asset management been added.
+* Support for using SCAP data directly has been added.
+* A support script for retrieving SCAP data has been added.
+* Support for prognostic scans has been added.
+* Support for large database files on 32-bit platforms has been improved.
+* Support for task observers has been added.
+* Support for individual time zones for users has been added.
+
+
 openvas-manager 3.0+beta4 (2011-07-21)
 
 This is the fourth beta version of the upcoming 3.0 release of the OpenVAS

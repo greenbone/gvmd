@@ -1,3 +1,13 @@
+2011-10-10  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 3.0+beta5 release.
+
+	* CHANGES: Updated.
+
+	* CMakeLists.txt: Update openvas-libraries dependency.
+
+	* INSTALL: Document updated openvas-libraries dependency.
+
 2011-10-06  Henri Doreau <henri.doreau@greenbone.net>
 
 	* src/omp.c (get_nvti_xml, category_name): Move functions to manage.c.
