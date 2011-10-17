@@ -27788,16 +27788,15 @@ init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s"
-                   " ORDER BY %s %s;",
+                   "%s;",
                    note,
                    current_credentials.uuid,
-                   result_clause ? result_clause : "",
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
+                   result_clause ? result_clause : "");
   else if (nvt)
     init_iterator (iterator,
-                   "SELECT DISTINCT " NOTE_COLUMNS
+                   "SELECT DISTINCT " NOTE_COLUMNS ","
+                   " (SELECT name FROM NVTS WHERE oid = notes.nvt)"
+                   " AS notes_nvt_name"
                    " FROM notes%s"
                    " WHERE (notes.nvt ="
                    " (SELECT oid FROM nvts WHERE nvts.ROWID = %llu))"
@@ -27813,7 +27812,9 @@ init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT DISTINCT " NOTE_COLUMNS
+                   "SELECT DISTINCT " NOTE_COLUMNS ","
+                   " (SELECT name FROM NVTS WHERE oid = notes.nvt)"
+                   " AS notes_nvt_name"
                    " FROM notes%s"
                    " WHERE ((notes.owner IS NULL) OR (notes.owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
