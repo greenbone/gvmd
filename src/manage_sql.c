@@ -11113,7 +11113,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
 
   if (scan_end)
     {
-      sql ("UPDATE reports SET end_time = '%s' WHERE ROWID = %llu;",
+      sql ("UPDATE reports SET end_time = %i WHERE ROWID = %llu;",
            parse_otp_time (scan_end),
            report);
     }
