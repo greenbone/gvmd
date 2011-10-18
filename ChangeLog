@@ -1,5 +1,15 @@
 2011-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (set_task_schedule): Stop task if it is paused, when
+	changing schedule.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new set_task_schedule
+	return.
+
+2011-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_override_iterator): Remove ORDER BY from single
 	override case.  Add NVT name column to ordering cases.
 

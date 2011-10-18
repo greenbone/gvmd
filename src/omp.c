@@ -11864,9 +11864,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           }
                         fail = 1;
                       }
-                    else
+                    else if (set_task_schedule (task, schedule))
                       {
-                        set_task_schedule (task, schedule);
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("modify_task"));
+                        fail = 1;
                       }
                   }
 

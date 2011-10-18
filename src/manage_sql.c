@@ -10062,18 +10062,43 @@ set_task_escalator (task_t task, escalator_t escalator)
 /**
  * @brief Set the schedule of a task.
  *
+ * Stop the task if it is paused.
+ *
  * @param[in]  task      Task.
  * @param[in]  schedule  Schedule.
+ *
+ * @return 0 success, -1 error.
  */
-void
+int
 set_task_schedule (task_t task, schedule_t schedule)
 {
+  task_status_t run_status;
+
+  run_status = task_run_status (task);
+  if (schedule != task_schedule (task)
+      && (run_status == TASK_STATUS_PAUSE_REQUESTED
+          || run_status == TASK_STATUS_PAUSE_WAITING
+          || run_status == TASK_STATUS_PAUSED))
+    switch (stop_task (task))
+      {
+        case 0:    /* Stopped. */
+        case 1:    /* Stop requested. */
+          break;
+        default:   /* Programming error. */
+          assert (0);
+        case -1:   /* Error. */
+          return -1;
+          break;
+      }
+
   sql ("UPDATE tasks SET schedule = %llu, schedule_next_time = "
        " (SELECT schedules.first_time FROM schedules WHERE ROWID = %llu)"
        " WHERE ROWID = %llu;",
        schedule,
        schedule,
        task);
+
+  return 0;
 }
 
 /**

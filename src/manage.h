@@ -444,7 +444,7 @@ add_task_escalator (task_t, escalator_t);
 void
 set_task_escalator (task_t, escalator_t);
 
-void
+int
 set_task_schedule (task_t, schedule_t);
 
 unsigned int
