@@ -28289,16 +28289,15 @@ init_override_iterator (iterator_t* iterator, override_t override, nvt_t nvt,
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s"
-                   " ORDER BY %s %s;",
+                   "%s;",
                    override,
                    current_credentials.uuid,
-                   result_clause ? result_clause : "",
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
+                   result_clause ? result_clause : "");
   else if (nvt)
     init_iterator (iterator,
-                   "SELECT DISTINCT " OVERRIDE_COLUMNS
+                   "SELECT DISTINCT " OVERRIDE_COLUMNS ","
+                   " (SELECT name FROM nvts WHERE oid = overrides.nvt)"
+                   " AS overrides_nvt_name"
                    " FROM overrides%s"
                    " WHERE (overrides.nvt ="
                    " (SELECT oid FROM nvts WHERE nvts.ROWID = %llu))"
@@ -28314,7 +28313,9 @@ init_override_iterator (iterator_t* iterator, override_t override, nvt_t nvt,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT DISTINCT " OVERRIDE_COLUMNS
+                   "SELECT DISTINCT " OVERRIDE_COLUMNS ","
+                   " (SELECT name FROM nvts WHERE oid = overrides.nvt)"
+                   " AS overrides_nvt_name"
                    " FROM overrides%s"
                    " WHERE ((overrides.owner IS NULL) OR (overrides.owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"

@@ -1,3 +1,8 @@
+2011-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_override_iterator): Remove ORDER BY from single
+	override case.  Add NVT name column to ordering cases.
+
 2011-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_report): Use correct format specifier for end
