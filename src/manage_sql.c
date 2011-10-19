@@ -14317,6 +14317,10 @@ delete_report (report_t report)
                  status,
                  task);
           }
+        else
+          sql ("UPDATE tasks SET run_status = %u WHERE ROWID = %llu;",
+               TASK_STATUS_NEW,
+               task);
         break;
       case 1:        /* Too few rows in result of query. */
         break;

@@ -1,3 +1,8 @@
+2011-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (delete_report): Set task status to New if it was the
+	last report.
+
 2011-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (set_task_schedule): Stop task if it is paused, when
