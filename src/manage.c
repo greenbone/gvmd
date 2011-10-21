@@ -4221,7 +4221,32 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
           cve = xsl_transform (CVE_GETBYNAME_XSL, fname, pnames, pvalues);
           g_free (fname);
           if (cve)
-            *result = g_strdup_printf ("<cve>%s</cve>", cve);
+            {
+              iterator_t nvts;
+              GString *xml;
+
+              xml = g_string_new ("");
+
+              g_string_append_printf (xml,
+                                      "<cve>"
+                                      "%s"
+                                      "<nvts>",
+                                      cve);
+              init_cve_nvt_iterator (&nvts, name, 1, NULL);
+              while (next (&nvts))
+                g_string_append_printf (xml,
+                                        "<nvt oid=\"%s\">"
+                                        "<name>%s</name>"
+                                        "</nvt>",
+                                        nvt_iterator_oid (&nvts),
+                                        nvt_iterator_name (&nvts));
+              cleanup_iterator (&nvts);
+              g_string_append (xml,
+                               "</nvts>"
+                               "</cve>");
+
+              *result = g_string_free (xml, FALSE);
+            }
           g_free (cve);
         }
     }

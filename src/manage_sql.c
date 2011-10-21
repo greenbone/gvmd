@@ -23431,6 +23431,11 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   return sqlite3_last_insert_rowid (task_db);
 }
 
+#define NVT_ITERATOR_COLUMNS                       \
+  "oid, version, name, summary, description,"      \
+  " copyright, cve, bid, xref, tag, sign_key_ids," \
+  " category, family, cvss_base, risk_factor"
+
 /**
  * @brief Initialise an NVT iterator.
  *
@@ -23452,9 +23457,7 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
   if (nvt)
     {
       gchar* sql;
-      sql = g_strdup_printf ("SELECT oid, version, name, summary, description,"
-                             " copyright, cve, bid, xref, tag, sign_key_ids,"
-                             " category, family, cvss_base, risk_factor"
+      sql = g_strdup_printf ("SELECT " NVT_ITERATOR_COLUMNS
                              " FROM nvts WHERE ROWID = %llu;",
                              nvt);
       init_iterator (iterator, sql);
@@ -23472,18 +23475,14 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
         }
       else
         init_iterator (iterator,
-                       "SELECT oid, version, name, summary, description,"
-                       " copyright, cve, bid, xref, tag, sign_key_ids,"
-                       " category, family, cvss_base, risk_factor"
+                       "SELECT " NVT_ITERATOR_COLUMNS
                        " FROM nvts LIMIT 0;");
     }
   else if (family)
     {
       gchar *quoted_family = sql_quote (family);
       init_iterator (iterator,
-                     "SELECT oid, version, name, summary, description,"
-                     " copyright, cve, bid, xref, tag, sign_key_ids,"
-                     " category, family, cvss_base, risk_factor"
+                     "SELECT " NVT_ITERATOR_COLUMNS
                      " FROM nvts"
                      " WHERE family = '%s'"
                      " ORDER BY %s %s;",
@@ -23494,13 +23493,33 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
     }
   else
     init_iterator (iterator,
-                   "SELECT oid, version, name, summary, description,"
-                   " copyright, cve, bid, xref, tag, sign_key_ids,"
-                   " category, family, cvss_base, risk_factor"
+                   "SELECT " NVT_ITERATOR_COLUMNS
                    " FROM nvts"
                    " ORDER BY %s %s;",
                    sort_field ? sort_field : "name",
                    ascending ? "ASC" : "DESC");
+}
+
+/**
+ * @brief Initialise an NVT iterator, for NVTs of a certain CVE.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  cve         CVE name.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ */
+void
+init_cve_nvt_iterator (iterator_t* iterator, const char *cve, int ascending,
+                       const char* sort_field)
+{
+  init_iterator (iterator,
+                 "SELECT " NVT_ITERATOR_COLUMNS
+                 " FROM nvts"
+                 " WHERE cve LIKE '%%%s%%'"
+                 " ORDER BY %s %s;",
+                 cve ? cve : "",
+                 sort_field ? sort_field : "name",
+                 ascending ? "ASC" : "DESC");
 }
 
 /**

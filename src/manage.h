@@ -1108,6 +1108,9 @@ void
 init_nvt_iterator (iterator_t*, nvt_t, config_t, const char*, int,
                    const char*);
 
+void
+init_cve_nvt_iterator (iterator_t*, const char *, int, const char*);
+
 const char*
 nvt_iterator_oid (iterator_t*);
 

@@ -1,5 +1,17 @@
 2011-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add NVTs use the CVE to GET_INFO CVE.
+
+	* src/manage.c (manage_read_info): Add NVTs to CVE.
+
+	* src/manage_sql.c (NVT_ITERATOR_COLUMNS): New define.
+	(init_nvt_iterator): Use NVT_ITERATOR_COLUMNS.
+	(init_cve_nvt_iterator): New function.
+
+	* src/manage.h: Add header accordingly.
+
+2011-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (manage_read_info): Wrap SCAP CVE and CPE elements in CVE
 	and CPE tags.
 
