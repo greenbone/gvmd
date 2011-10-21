@@ -1,3 +1,12 @@
+2011-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (manage_read_info): Wrap SCAP CVE and CPE elements in CVE
+	and CPE tags.
+
+	* src/schema_formats/XML/OMP.xml (get_info): Update example to match.
+
+	* doc/omp.html: Update from source.
+
 2011-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_report): Set task status to New if it was the

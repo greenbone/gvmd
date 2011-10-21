@@ -4204,8 +4204,12 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
       fname = get_cpe_filename ();
       if (fname)
         {
-          *result = xsl_transform (CPE_GETBYNAME_XSL, fname, pnames, pvalues);
+          gchar *cpe;
+          cpe = xsl_transform (CPE_GETBYNAME_XSL, fname, pnames, pvalues);
           g_free (fname);
+          if (cpe)
+            *result = g_strdup_printf ("<cpe>%s</cpe>", cpe);
+          g_free (cpe);
         }
     }
   else if (g_strcasecmp ("CVE", type) == 0)
@@ -4213,8 +4217,12 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
       fname = get_cve_filename (name);
       if (fname)
         {
-          *result = xsl_transform (CVE_GETBYNAME_XSL, fname, pnames, pvalues);
+          gchar *cve;
+          cve = xsl_transform (CVE_GETBYNAME_XSL, fname, pnames, pvalues);
           g_free (fname);
+          if (cve)
+            *result = g_strdup_printf ("<cve>%s</cve>", cve);
+          g_free (cve);
         }
     }
   else if (g_strcasecmp ("NVT", type) == 0)
@@ -4229,8 +4237,8 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
           if (next (&nvts))
             *result = get_nvti_xml (&nvts, 1, 0, NULL, 1);
 
-        cleanup_iterator (&nvts);
-      }
+          cleanup_iterator (&nvts);
+        }
     }
 
   if (*result == NULL)
@@ -4238,4 +4246,3 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
 
   return 1;
 }
-
