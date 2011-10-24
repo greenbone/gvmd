@@ -1,5 +1,13 @@
 2011-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In the brief version, merge the
+	false positives count variables into a single variable in a broader scope,
+	as is done with the other counts.  Do the same for all the counts of
+	second last report case of the brief version.  This ensures that these
+	variables are always initialised.
+
+2011-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add to GET_INFO CPE a list of CVEs to which the CPE is vulnerable.
 
 	* src/manage.c (manage_read_info): Add CVEs to CPE.

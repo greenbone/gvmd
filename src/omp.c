@@ -17063,6 +17063,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     schedule_t schedule;
                     time_t next_time;
                     int debugs, holes, infos, logs, warnings;
+                    int false_positives;
 
                     /** @todo Buffer entire response so respond with error.
                      *
@@ -17084,7 +17085,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     first_report_id = task_first_report_id (index);
                     if (first_report_id)
                       {
-                        int false_positives;
                         gchar *timestamp;
 
                         if (report_counts (first_report_id,
@@ -17132,7 +17132,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     last_report_id = task_last_report_id (index);
                     if (last_report_id)
                       {
-                        int false_positives;
                         gchar *timestamp;
 
                         if (((first_report_id == NULL)
@@ -17201,8 +17200,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     second_last_report_id = task_second_last_report_id (index);
                     if (second_last_report_id)
                       {
-                        int debugs, holes, infos, logs, warnings;
-                        int false_positives;
                         gchar *timestamp;
 
                         if (((first_report_id == NULL)
