@@ -4208,7 +4208,46 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
           cpe = xsl_transform (CPE_GETBYNAME_XSL, fname, pnames, pvalues);
           g_free (fname);
           if (cpe)
-            *result = g_strdup_printf ("<cpe>%s</cpe>", cpe);
+            {
+              iterator_t cves;
+              GString *xml;
+
+              xml = g_string_new ("");
+
+              g_string_append_printf (xml,
+                                      "<cpe>"
+                                      "%s"
+                                      "<cves>",
+                                      cpe);
+              init_cpe_cve_iterator (&cves, name, 0, NULL);
+              while (next (&cves))
+                g_string_append_printf (xml,
+                                        "<cve>"
+                                        "<entry"
+                                        " xmlns:cpe-lang=\"http://cpe.mitre.org/language/2.0\""
+                                        " xmlns:vuln=\"http://scap.nist.gov/schema/vulnerability/0.4\""
+                                        " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
+                                        " xmlns:patch=\"http://scap.nist.gov/schema/patch/0.1\""
+                                        " xmlns:scap-core=\"http://scap.nist.gov/schema/scap-core/0.1\""
+                                        " xmlns:cvss=\"http://scap.nist.gov/schema/cvss-v2/0.2\""
+                                        " xmlns=\"http://scap.nist.gov/schema/feed/vulnerability/2.0\""
+                                        " id=\"%s\">"
+                                        "<vuln:cvss>"
+                                        "<cvss:base_metrics>"
+                                        "<cvss:score>%s</cvss:score>"
+                                        "</cvss:base_metrics>"
+                                        "</vuln:cvss>"
+                                        "</entry>"
+                                        "</cve>",
+                                        cve_iterator_name (&cves),
+                                        cve_iterator_cvss (&cves));
+              cleanup_iterator (&cves);
+              g_string_append (xml,
+                               "</cves>"
+                               "</cpe>");
+
+              *result = g_string_free (xml, FALSE);
+            }
           g_free (cpe);
         }
     }

@@ -32738,4 +32738,54 @@ manage_set_setting (const gchar *name, const gchar *value_64)
   return 1;
 }
 
+
+/* SCAP. */
+
+/**
+ * @brief Initialise an CVE iterator, for CVEs reported for a certain CPE.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  cpe         CPE.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ */
+void
+init_cpe_cve_iterator (iterator_t *iterator, const char *cve, int ascending,
+                       const char *sort_field)
+{
+  gchar *quoted_cpe;
+  assert (cve);
+  quoted_cpe = sql_quote (cve);
+  init_iterator (iterator,
+                 "SELECT ROWID, cve, cvss FROM cves WHERE ROWID IN"
+                 " (SELECT cve FROM affected_products"
+                 "  WHERE cpe ="
+                 "  (SELECT ROWID FROM cpes WHERE name = '%s'))"
+                 " ORDER BY %s %s;",
+                 quoted_cpe,
+                 sort_field ? sort_field : "cvss DESC, cve",
+                 ascending ? "ASC" : "DESC");
+  g_free (quoted_cpe);
+}
+
+/**
+ * @brief Get the name from a CVE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the CVE, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (cve_iterator_name, 1);
+
+/**
+ * @brief Get the CVSS from a CVE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The CVSS of the CVE, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (cve_iterator_cvss, 2);
+
 #undef DEF_ACCESS

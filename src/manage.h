@@ -1963,13 +1963,22 @@ void
 parse_tags (const char *, gchar **, gchar **, gchar **);
 
 
-/* SCAP file parsing. */
+/* SCAP. */
 
 int
 manage_read_info (gchar *, gchar *, gchar **);
 
+void
+init_cpe_cve_iterator (iterator_t *, const char *, int, const char *);
+
+const char*
+cve_iterator_name (iterator_t*);
+
+const char*
+cve_iterator_cvss (iterator_t*);
+
 
-/* SCAP file parsing. */
+/* Settings. */
 
 int
 manage_set_setting (const gchar *, const gchar *);

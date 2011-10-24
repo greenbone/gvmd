@@ -1,6 +1,17 @@
+2011-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add to GET_INFO CPE a list of CVEs to which the CPE is vulnerable.
+
+	* src/manage.c (manage_read_info): Add CVEs to CPE.
+
+	* src/manage_sql.c (init_cpe_cve_iterator, cve_iterator_name)
+	(cve_iterator_cvss): New function.
+
+	* src/manage.h: Add headers accordingly.
+
 2011-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Add NVTs use the CVE to GET_INFO CVE.
+	Add NVTs that address the CVE to GET_INFO CVE.
 
 	* src/manage.c (manage_read_info): Add NVTs to CVE.
 
