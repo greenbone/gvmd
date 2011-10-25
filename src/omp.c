@@ -17124,7 +17124,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                         warnings,
                                                         false_positives);
                         g_free (timestamp);
-                        g_free (first_report_id);
                       }
                     else
                       first_report = g_strdup ("");
@@ -17135,7 +17134,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         gchar *timestamp;
 
                         if (((first_report_id == NULL)
-                             || (last_report_id != first_report_id))
+                             || (strcmp (last_report_id, first_report_id)))
                             && (report_counts
                                  (last_report_id,
                                   &debugs, &holes, &infos, &logs,
@@ -17203,7 +17202,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         gchar *timestamp;
 
                         if (((first_report_id == NULL)
-                             || (second_last_report_id != first_report_id))
+                             || (strcmp (second_last_report_id, first_report_id)))
                             && report_counts (second_last_report_id,
                                               &debugs, &holes, &infos, &logs,
                                               &warnings, &false_positives,
@@ -17243,6 +17242,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                     else
                       second_last_report = g_strdup ("");
+
+                    g_free (first_report_id);
 
                     running_report = task_current_report (index);
                     if ((target == 0)
