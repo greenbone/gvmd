@@ -1,6 +1,14 @@
 2011-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In the brief version of
+	GET_REPORTS, move the second last report generation to precede the last
+	report.  This allows the counts from the first report to be reused
+	correctly.  Also include the second last report in the reuse check of
+	the last report.
+
+2011-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In the brief version of
 	GET_REPORTS, move the first_report_id free to follow the last use, and
 	compare the report IDs with strcmp because they're strings.
 

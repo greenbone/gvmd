@@ -17128,74 +17128,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       first_report = g_strdup ("");
 
-                    last_report_id = task_last_report_id (index);
-                    if (last_report_id)
-                      {
-                        gchar *timestamp;
-
-                        if (((first_report_id == NULL)
-                             || (strcmp (last_report_id, first_report_id)))
-                            && (report_counts
-                                 (last_report_id,
-                                  &debugs, &holes, &infos, &logs,
-                                  &warnings, &false_positives,
-                                  get_tasks_data->apply_overrides)))
-                          /** @todo Either fail better or abort at SQL level. */
-                          abort ();
-
-                        if (report_timestamp (last_report_id, &timestamp))
-                          abort ();
-
-                        last_report = g_strdup_printf ("<last_report>"
-                                                       "<report id=\"%s\">"
-                                                       "<timestamp>%s</timestamp>"
-                                                       "<result_count>"
-                                                       "<debug>%i</debug>"
-                                                       "<hole>%i</hole>"
-                                                       "<info>%i</info>"
-                                                       "<log>%i</log>"
-                                                       "<warning>%i</warning>"
-                                                       "<false_positive>"
-                                                       "%i"
-                                                       "</false_positive>"
-                                                       "</result_count>"
-                                                       "</report>"
-                                                       "</last_report>",
-                                                       last_report_id,
-                                                       timestamp,
-                                                       debugs,
-                                                       holes,
-                                                       infos,
-                                                       logs,
-                                                       warnings,
-                                                       false_positives);
-                        g_free (timestamp);
-                        g_free (last_report_id);
-                      }
-                    else
-                      last_report = g_strdup ("");
-
-                    if (get_tasks_data->rcfile)
-                      {
-                        description = task_description (index);
-                        if (description && strlen (description))
-                          {
-                            gchar *d64;
-                            d64 = g_base64_encode ((guchar*) description,
-                                                   strlen (description));
-                            description64 = g_strdup_printf ("<rcfile>"
-                                                             "%s"
-                                                             "</rcfile>",
-                                                             d64);
-                            g_free (d64);
-                          }
-                        else
-                          description64 = g_strdup ("<rcfile></rcfile>");
-                        free (description);
-                      }
-                    else
-                      description64 = g_strdup ("");
-
                     second_last_report_id = task_second_last_report_id (index);
                     if (second_last_report_id)
                       {
@@ -17238,12 +17170,83 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                warnings,
                                                false_positives);
                         g_free (timestamp);
-                        g_free (second_last_report_id);
                       }
                     else
                       second_last_report = g_strdup ("");
 
+                    last_report_id = task_last_report_id (index);
+                    if (last_report_id)
+                      {
+                        gchar *timestamp;
+
+                        if (((first_report_id == NULL)
+                             || (second_last_report_id == NULL)
+                             || (strcmp (last_report_id, first_report_id)
+                                 && strcmp (last_report_id,
+                                            second_last_report_id)))
+                            && (report_counts
+                                 (last_report_id,
+                                  &debugs, &holes, &infos, &logs,
+                                  &warnings, &false_positives,
+                                  get_tasks_data->apply_overrides)))
+                          /** @todo Either fail better or abort at SQL level. */
+                          abort ();
+
+                        if (report_timestamp (last_report_id, &timestamp))
+                          abort ();
+
+                        last_report = g_strdup_printf ("<last_report>"
+                                                       "<report id=\"%s\">"
+                                                       "<timestamp>%s</timestamp>"
+                                                       "<result_count>"
+                                                       "<debug>%i</debug>"
+                                                       "<hole>%i</hole>"
+                                                       "<info>%i</info>"
+                                                       "<log>%i</log>"
+                                                       "<warning>%i</warning>"
+                                                       "<false_positive>"
+                                                       "%i"
+                                                       "</false_positive>"
+                                                       "</result_count>"
+                                                       "</report>"
+                                                       "</last_report>",
+                                                       last_report_id,
+                                                       timestamp,
+                                                       debugs,
+                                                       holes,
+                                                       infos,
+                                                       logs,
+                                                       warnings,
+                                                       false_positives);
+                        g_free (timestamp);
+                        g_free (last_report_id);
+                      }
+                    else
+                      last_report = g_strdup ("");
+
                     g_free (first_report_id);
+                    g_free (second_last_report_id);
+
+                    if (get_tasks_data->rcfile)
+                      {
+                        description = task_description (index);
+                        if (description && strlen (description))
+                          {
+                            gchar *d64;
+                            d64 = g_base64_encode ((guchar*) description,
+                                                   strlen (description));
+                            description64 = g_strdup_printf ("<rcfile>"
+                                                             "%s"
+                                                             "</rcfile>",
+                                                             d64);
+                            g_free (d64);
+                          }
+                        else
+                          description64 = g_strdup ("<rcfile></rcfile>");
+                        free (description);
+                      }
+                    else
+                      description64 = g_strdup ("");
 
                     running_report = task_current_report (index);
                     if ((target == 0)
