@@ -16939,8 +16939,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  task_iterator_uuid (&tasks),
                                  name,
                                  comment,
-                                 owner,
-                                 strcmp (owner, current_credentials.username)
+                                 owner ? owner : "",
+                                 ((owner == NULL)
+                                  || (strcmp (owner, current_credentials.username)))
                                    ? ""
                                    : observers,
                                  config_uuid ? config_uuid : "",
