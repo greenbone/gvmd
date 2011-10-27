@@ -1,5 +1,11 @@
 2011-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (PRINT_XML): New macro.
+	(print_report_xml): Use PRINT_XML to output strings that already have the
+	XML tags in them.
+
+2011-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (PRINT): Print to a string first, for XML escaping.
 
 2011-10-26  Matthew Mundell <matthew.mundell@greenbone.net>

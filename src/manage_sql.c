@@ -15139,6 +15139,23 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
     }                                                                        \
   while (0)
 
+/**
+ * @brief Write XML to a file or close stream and return.
+ *
+ * @param[in]   stream  Stream to write to.
+ * @param[in]   xml     XML.
+ */
+#define PRINT_XML(stream, xml)                                               \
+  do                                                                         \
+    {                                                                        \
+      if (fprintf (stream, "%s", xml) < 0)                                   \
+        {                                                                    \
+          fclose (stream);                                                   \
+          return -1;                                                         \
+        }                                                                    \
+    }                                                                        \
+  while (0)
+
 #if 0
 void
 dump (GArray *ports)
@@ -16787,7 +16804,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                         "new",
                                         NULL,
                                         0);
-                    PRINT (out, "%s", buffer->str);
+                    PRINT_XML (out, buffer->str);
                     g_string_free (buffer, TRUE);
                     if (result_hosts_only)
                       array_add_new_string (result_hosts,
@@ -16828,7 +16845,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                         "gone",
                                         NULL,
                                         0);
-                    PRINT (out, "%s", buffer->str);
+                    PRINT_XML (out, buffer->str);
                     g_string_free (buffer, TRUE);
                     if (result_hosts_only)
                       array_add_new_string (result_hosts,
@@ -16906,7 +16923,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                          __FUNCTION__);
               return -1;
             }
-          PRINT (out, "%s", buffer->str);
+          PRINT_XML (out, buffer->str);
           g_string_free (buffer, TRUE);
 
           if ((used == 0)
@@ -17329,7 +17346,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                               NULL,
                               NULL,
                               0);
-          PRINT (out, "%s", buffer->str);
+          PRINT_XML (out, buffer->str);
           g_string_free (buffer, TRUE);
           if (result_hosts_only)
             array_add_new_string (result_hosts,
