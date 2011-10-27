@@ -15127,11 +15127,15 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
 #define PRINT(stream, format, args...)                                       \
   do                                                                         \
     {                                                                        \
-      if (fprintf (stream, format , ## args) < 0)                            \
+      gchar *msg;                                                            \
+      msg = g_markup_printf_escaped (format, ## args);                       \
+      if (fprintf (stream, "%s", msg) < 0)                                   \
         {                                                                    \
+          g_free (msg);                                                      \
           fclose (stream);                                                   \
           return -1;                                                         \
         }                                                                    \
+      g_free (msg);                                                          \
     }                                                                        \
   while (0)
 

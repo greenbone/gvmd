@@ -1,3 +1,7 @@
+2011-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (PRINT): Print to a string first, for XML escaping.
+
 2011-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS add NULL checks on
