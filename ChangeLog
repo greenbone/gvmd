@@ -1,5 +1,10 @@
 2011-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): Neaten prognostic result wording
+	slightly.
+
+2011-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (prognostic_report_result_count): New function.
 	(print_report_xml): Count the filtered results with separately, in order
 	to count all the filtered results.
