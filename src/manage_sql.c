@@ -11003,6 +11003,86 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
   if (cvss_sql) g_string_free (cvss_sql, TRUE);
 }
 
+/**
+ * @brief Count all filtered results for a prognostic report.
+ *
+ * @param[in]   report_host    Report host for which to count.
+ * @param[in]   search_phrase  Phrase that results must include.  All results
+ * @param[in]   min_cvss_base  Minimum value for CVSS.  All results if NULL.
+ * @param[out]  all            Number of messages.
+ * @param[out]  holes          Number of hole messages.
+ * @param[out]  infos          Number of info messages.
+ * @param[out]  logs           Number of log messages.
+ * @param[out]  warnings       Number of warning messages.
+ */
+static void
+prognostic_report_result_count (report_host_t report_host,
+                                const char *search_phrase,
+                                const char *min_cvss_base, int *all,
+                                int *holes, int *infos, int *logs,
+                                int *warnings)
+{
+  GString *phrase_sql, *cvss_sql;
+
+  phrase_sql = prognosis_where_search_phrase (search_phrase);
+  cvss_sql = prognosis_where_cvss_base (min_cvss_base);
+
+  *holes = sql_int (0, 0,
+                    "SELECT count (*)"
+                    " FROM scap.cves, scap.cpes, scap.affected_products,"
+                    "      report_host_details"
+                    " WHERE report_host_details.report_host = %llu"
+                    " AND cpes.name = report_host_details.value"
+                    " AND report_host_details.name = 'App'"
+                    " AND cpes.id=affected_products.cpe"
+                    " AND cves.id=affected_products.cve"
+                    "%s%s%s"
+                    " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
+                    report_host,
+                    phrase_sql ? phrase_sql->str : "",
+                    prognosis_where_levels ("h"),
+                    cvss_sql ? cvss_sql->str : "");
+
+  *warnings = sql_int (0, 0,
+                       "SELECT count (*)"
+                       " FROM scap.cves, scap.cpes, scap.affected_products,"
+                       "      report_host_details"
+                       " WHERE report_host_details.report_host = %llu"
+                       " AND cpes.name = report_host_details.value"
+                       " AND report_host_details.name = 'App'"
+                       " AND cpes.id=affected_products.cpe"
+                       " AND cves.id=affected_products.cve"
+                       "%s%s%s"
+                       " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
+                       report_host,
+                       phrase_sql ? phrase_sql->str : "",
+                       prognosis_where_levels ("m"),
+                       cvss_sql ? cvss_sql->str : "");
+
+  *infos = sql_int (0, 0,
+                    "SELECT count (*)"
+                    " FROM scap.cves, scap.cpes, scap.affected_products,"
+                    "      report_host_details"
+                    " WHERE report_host_details.report_host = %llu"
+                    " AND cpes.name = report_host_details.value"
+                    " AND report_host_details.name = 'App'"
+                    " AND cpes.id=affected_products.cpe"
+                    " AND cves.id=affected_products.cve"
+                    "%s%s%s"
+                    " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
+                    report_host,
+                    phrase_sql ? phrase_sql->str : "",
+                    prognosis_where_levels ("l"),
+                    cvss_sql ? cvss_sql->str : "");
+
+  *logs = 0;
+
+  *all = *holes + *warnings + *infos;
+
+  if (phrase_sql) g_string_free (phrase_sql, TRUE);
+  if (cvss_sql) g_string_free (cvss_sql, TRUE);
+}
+
 
 /* Reports. */
 
@@ -16247,6 +16327,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
       result_count = holes = warnings = infos = logs = 0;
       filtered_result_count = f_holes = f_warnings = f_infos = f_logs = 0;
+
       while (host || next (&hosts))
         {
           iterator_t report_hosts;
@@ -16264,6 +16345,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
           if (report_host)
             {
+              prognostic_report_result_count (report_host, search_phrase,
+                                              min_cvss_base,
+                                              &filtered_result_count, &f_holes,
+                                              &f_infos, &f_logs, &f_warnings);
+
               init_host_iterator (&report_hosts, 0, NULL, report_host);
               if (next (&report_hosts))
                 {
@@ -16439,16 +16525,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                              prognosis_iterator_cve (&prognosis),
                              prognosis_iterator_cvss (&prognosis),
                              prognosis_iterator_cpe (&prognosis));
-
-                      if (strcmp (threat, "High") == 0)
-                        f_holes++;
-                      else if (strcmp (threat, "Medium") == 0)
-                        f_warnings++;
-                      else if (strcmp (threat, "Low") == 0)
-                        f_infos++;
-                      else if (strcmp (threat, "Log") == 0)
-                        f_logs++;
-                      filtered_result_count++;
                     }
                   cleanup_iterator (&prognosis);
                 }
@@ -16482,13 +16558,13 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              result_count,
              filtered_result_count,
              holes,
-             (strchr (levels, 'h') ? f_holes : 0),
+             f_holes,
              infos,
-             (strchr (levels, 'l') ? f_infos : 0),
+             f_infos,
              logs,
-             (strchr (levels, 'g') ? f_logs : 0),
+             f_logs,
              warnings,
-             (strchr (levels, 'm') ? f_warnings : 0));
+             f_warnings);
 
       PRINT (out, "</report>");
 

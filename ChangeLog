@@ -1,3 +1,9 @@
+2011-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (prognostic_report_result_count): New function.
+	(print_report_xml): Count the filtered results with separately, in order
+	to count all the filtered results.
+
 2011-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (PRINT_XML): New macro.
