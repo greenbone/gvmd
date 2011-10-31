@@ -11009,11 +11009,11 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
  * @param[in]   report_host    Report host for which to count.
  * @param[in]   search_phrase  Phrase that results must include.  All results
  * @param[in]   min_cvss_base  Minimum value for CVSS.  All results if NULL.
- * @param[out]  all            Number of messages.
- * @param[out]  holes          Number of hole messages.
- * @param[out]  infos          Number of info messages.
- * @param[out]  logs           Number of log messages.
- * @param[out]  warnings       Number of warning messages.
+ * @param[out]  all            Number of messages to increment.
+ * @param[out]  holes          Number of hole messages to increment.
+ * @param[out]  infos          Number of info messages to increment.
+ * @param[out]  logs           Number of log messages to increment.
+ * @param[out]  warnings       Number of warning messages to increment.
  */
 static void
 prognostic_report_result_count (report_host_t report_host,
@@ -11023,61 +11023,64 @@ prognostic_report_result_count (report_host_t report_host,
                                 int *warnings)
 {
   GString *phrase_sql, *cvss_sql;
+  int host_holes, host_warnings, host_infos;
 
   phrase_sql = prognosis_where_search_phrase (search_phrase);
   cvss_sql = prognosis_where_cvss_base (min_cvss_base);
 
-  *holes = sql_int (0, 0,
-                    "SELECT count (*)"
-                    " FROM scap.cves, scap.cpes, scap.affected_products,"
-                    "      report_host_details"
-                    " WHERE report_host_details.report_host = %llu"
-                    " AND cpes.name = report_host_details.value"
-                    " AND report_host_details.name = 'App'"
-                    " AND cpes.id=affected_products.cpe"
-                    " AND cves.id=affected_products.cve"
-                    "%s%s%s"
-                    " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
-                    report_host,
-                    phrase_sql ? phrase_sql->str : "",
-                    prognosis_where_levels ("h"),
-                    cvss_sql ? cvss_sql->str : "");
+  host_holes = sql_int (0, 0,
+                        "SELECT count (*)"
+                        " FROM scap.cves, scap.cpes, scap.affected_products,"
+                        "      report_host_details"
+                        " WHERE report_host_details.report_host = %llu"
+                        " AND cpes.name = report_host_details.value"
+                        " AND report_host_details.name = 'App'"
+                        " AND cpes.id=affected_products.cpe"
+                        " AND cves.id=affected_products.cve"
+                        "%s%s%s"
+                        " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
+                        report_host,
+                        phrase_sql ? phrase_sql->str : "",
+                        prognosis_where_levels ("h"),
+                        cvss_sql ? cvss_sql->str : "");
 
-  *warnings = sql_int (0, 0,
-                       "SELECT count (*)"
-                       " FROM scap.cves, scap.cpes, scap.affected_products,"
-                       "      report_host_details"
-                       " WHERE report_host_details.report_host = %llu"
-                       " AND cpes.name = report_host_details.value"
-                       " AND report_host_details.name = 'App'"
-                       " AND cpes.id=affected_products.cpe"
-                       " AND cves.id=affected_products.cve"
-                       "%s%s%s"
-                       " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
-                       report_host,
-                       phrase_sql ? phrase_sql->str : "",
-                       prognosis_where_levels ("m"),
-                       cvss_sql ? cvss_sql->str : "");
+  host_warnings = sql_int (0, 0,
+                           "SELECT count (*)"
+                           " FROM scap.cves, scap.cpes, scap.affected_products,"
+                           "      report_host_details"
+                           " WHERE report_host_details.report_host = %llu"
+                           " AND cpes.name = report_host_details.value"
+                           " AND report_host_details.name = 'App'"
+                           " AND cpes.id=affected_products.cpe"
+                           " AND cves.id=affected_products.cve"
+                           "%s%s%s"
+                           " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
+                           report_host,
+                           phrase_sql ? phrase_sql->str : "",
+                           prognosis_where_levels ("m"),
+                           cvss_sql ? cvss_sql->str : "");
 
-  *infos = sql_int (0, 0,
-                    "SELECT count (*)"
-                    " FROM scap.cves, scap.cpes, scap.affected_products,"
-                    "      report_host_details"
-                    " WHERE report_host_details.report_host = %llu"
-                    " AND cpes.name = report_host_details.value"
-                    " AND report_host_details.name = 'App'"
-                    " AND cpes.id=affected_products.cpe"
-                    " AND cves.id=affected_products.cve"
-                    "%s%s%s"
-                    " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
-                    report_host,
-                    phrase_sql ? phrase_sql->str : "",
-                    prognosis_where_levels ("l"),
-                    cvss_sql ? cvss_sql->str : "");
+  host_infos = sql_int (0, 0,
+                        "SELECT count (*)"
+                        " FROM scap.cves, scap.cpes, scap.affected_products,"
+                        "      report_host_details"
+                        " WHERE report_host_details.report_host = %llu"
+                        " AND cpes.name = report_host_details.value"
+                        " AND report_host_details.name = 'App'"
+                        " AND cpes.id=affected_products.cpe"
+                        " AND cves.id=affected_products.cve"
+                        "%s%s%s"
+                        " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
+                        report_host,
+                        phrase_sql ? phrase_sql->str : "",
+                        prognosis_where_levels ("l"),
+                        cvss_sql ? cvss_sql->str : "");
 
-  *logs = 0;
+  *all += host_holes + host_warnings + host_infos;
 
-  *all = *holes + *warnings + *infos;
+  *holes += host_holes;
+  *warnings += host_warnings;
+  *infos += host_infos;
 
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
   if (cvss_sql) g_string_free (cvss_sql, TRUE);
@@ -16345,11 +16348,22 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
           if (report_host)
             {
+              int filtered;
+              filtered = 0;
               prognostic_report_result_count (report_host, search_phrase,
                                               min_cvss_base,
-                                              &filtered_result_count, &f_holes,
-                                              &f_infos, &f_logs, &f_warnings);
+                                              &filtered, &f_holes,
+                                              &f_infos, &f_logs,
+                                              &f_warnings);
+              if (filtered)
+                filtered_result_count += filtered;
+              else
+                /* Skip this host. */
+                report_host = 0;
+            }
 
+          if (report_host)
+            {
               init_host_iterator (&report_hosts, 0, NULL, report_host);
               if (next (&report_hosts))
                 {

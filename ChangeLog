@@ -1,3 +1,9 @@
+2011-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (prognostic_report_result_count): Increment the return
+	counts instead of setting them.
+	(print_report_xml): Skip prognostic hosts that have 0 results.
+
 2011-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml): Neaten prognostic result wording
