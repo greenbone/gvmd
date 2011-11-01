@@ -16394,17 +16394,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                 report_host = 0;
             }
 
-          if (report_host && max_results)
-            {
-              // FIX only if host has results.
-              /* Buffer IP and report_host. */
-              buffer_host_t *buffer_host;
-              buffer_host = (buffer_host_t*) g_malloc (sizeof (buffer_host_t));
-              buffer_host->report_host = report_host;
-              buffer_host->ip = g_strdup (ip);
-              array_add (buffer, buffer_host);
-            }
-
           if (report_host)
             {
               init_host_iterator (&report_hosts, 0, NULL, report_host);
@@ -16412,7 +16401,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                 {
                   iterator_t prognosis;
                   report_t report;
+                  int buffered;
 
+                  buffered = 0;
                   report = host_iterator_report (&report_hosts);
 
                   init_host_prognosis_iterator (&prognosis, report_host,
@@ -16435,6 +16426,17 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
                        if (max_results == 0)
                          continue;
+
+                       if (buffered == 0 && report_host && max_results)
+                         {
+                           /* Buffer IP and report_host. */
+                           buffer_host_t *buffer_host;
+                           buffer_host = (buffer_host_t*) g_malloc (sizeof (buffer_host_t));
+                           buffer_host->report_host = report_host;
+                           buffer_host->ip = g_strdup (ip);
+                           array_add (buffer, buffer_host);
+                           buffered = 1;
+                         }
 
                       PRINT (out,
                              "<result>"

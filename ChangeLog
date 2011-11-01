@@ -1,5 +1,10 @@
 2011-11-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): Buffer the host only if it has
+	results on the current page.
+
+2011-11-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (struct buffer_host): New structure.
 	(buffer_host_t): New type.
 	(free_buffer): New function.
