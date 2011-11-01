@@ -16507,8 +16507,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                  "<filtered>%i</filtered>"
                  "</host_count>",
                  host_count (),
-                 // FIX just count in buffer
-                 filtered_host_count (host_levels, host_search_phrase));
+                 buffer->len);
           PRINT (out,
                  "<hosts start=\"%i\" max=\"%i\"/>",
                  /* Add 1 for 1 indexing. */

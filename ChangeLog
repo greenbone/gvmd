@@ -1,5 +1,11 @@
 2011-11-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): In the prognostic case, use the
+	host buffer length instead of filtered_host_count, because the host buffer
+	accounts for first_result and max_results.
+
+2011-11-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): In the prognostic case, calculate
 	the filtered total from the other totals, to include the level filtering.
 	Only skip the host if result_hosts_only is set.  Move the host buffering
