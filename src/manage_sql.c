@@ -16387,9 +16387,13 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                               &filtered, &f_holes,
                                               &f_infos, &f_logs,
                                               &f_warnings);
+              filtered = (strchr (levels, 'h') ? f_holes : 0)
+                          + (strchr (levels, 'l') ? f_infos : 0)
+                          + (strchr (levels, 'g') ? f_logs : 0)
+                          + (strchr (levels, 'm') ? f_warnings : 0);
               if (filtered)
                 filtered_result_count += filtered;
-              else
+              else if (result_hosts_only)
                 /* Skip this host. */
                 report_host = 0;
             }
@@ -16427,51 +16431,52 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                        if (max_results == 0)
                          continue;
 
-                       if (buffered == 0 && report_host && max_results)
-                         {
-                           /* Buffer IP and report_host. */
-                           buffer_host_t *buffer_host;
-                           buffer_host = (buffer_host_t*) g_malloc (sizeof (buffer_host_t));
-                           buffer_host->report_host = report_host;
-                           buffer_host->ip = g_strdup (ip);
-                           array_add (buffer, buffer_host);
-                           buffered = 1;
-                         }
+                       buffered = 1;
 
-                      PRINT (out,
-                             "<result>"
-                             "<subnet/>"
-                             "<host>%s</host>"
-                             "<port>0</port>"
-                             "<nvt oid=\"0\">"
-                             "<name/>"
-                             "</nvt>"
-                             "<threat>%s</threat>"
-                             "<description>"
-                             "The host carries the product: %s\n"
-                             "It is vulnerable according to: %s.\n"
-                             "\n"
-                             "%s"
-                             "</description>"
-                             "<cve id='%s'>"
-                             "<cvss_base>%s</cvss_base>"
-                             "<cpe id='%s'/>"
-                             "</cve>"
-                             "</result>",
-                             ip,
-                             threat,
-                             prognosis_iterator_cpe (&prognosis),
-                             prognosis_iterator_cve (&prognosis),
-                             prognosis_iterator_description
-                              (&prognosis),
-                             prognosis_iterator_cve (&prognosis),
-                             prognosis_iterator_cvss (&prognosis),
-                             prognosis_iterator_cpe (&prognosis));
+                       PRINT (out,
+                              "<result>"
+                              "<subnet/>"
+                              "<host>%s</host>"
+                              "<port>0</port>"
+                              "<nvt oid=\"0\">"
+                              "<name/>"
+                              "</nvt>"
+                              "<threat>%s</threat>"
+                              "<description>"
+                              "The host carries the product: %s\n"
+                              "It is vulnerable according to: %s.\n"
+                              "\n"
+                              "%s"
+                              "</description>"
+                              "<cve id='%s'>"
+                              "<cvss_base>%s</cvss_base>"
+                              "<cpe id='%s'/>"
+                              "</cve>"
+                              "</result>",
+                              ip,
+                              threat,
+                              prognosis_iterator_cpe (&prognosis),
+                              prognosis_iterator_cve (&prognosis),
+                              prognosis_iterator_description
+                               (&prognosis),
+                              prognosis_iterator_cve (&prognosis),
+                              prognosis_iterator_cvss (&prognosis),
+                              prognosis_iterator_cpe (&prognosis));
 
                        max_results--;
-                    }
+                     }
+                   if (buffered || (result_hosts_only == 0))
+                     {
+                       /* Buffer IP and report_host. */
+                       buffer_host_t *buffer_host;
+                       buffer_host = (buffer_host_t*) g_malloc (sizeof (buffer_host_t));
+                       buffer_host->report_host = report_host;
+                       buffer_host->ip = g_strdup (ip);
+                       array_add (buffer, buffer_host);
+                     }
                   cleanup_iterator (&prognosis);
                 }
+              cleanup_iterator (&report_hosts);
             }
 
           if (host)
@@ -16502,6 +16507,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                  "<filtered>%i</filtered>"
                  "</host_count>",
                  host_count (),
+                 // FIX just count in buffer
                  filtered_host_count (host_levels, host_search_phrase));
           PRINT (out,
                  "<hosts start=\"%i\" max=\"%i\"/>",

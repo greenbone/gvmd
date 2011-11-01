@@ -1,5 +1,13 @@
 2011-11-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): In the prognostic case, calculate
+	the filtered total from the other totals, to include the level filtering.
+	Only skip the host if result_hosts_only is set.  Move the host buffering
+	out of the result loop, and add a result_hosts_only check there too.  Add
+	missing iterator cleanup.
+
+2011-11-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Buffer the host only if it has
 	results on the current page.
 
