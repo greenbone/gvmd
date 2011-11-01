@@ -15776,6 +15776,44 @@ filtered_host_count (const char *levels, const char *search_phrase)
 }
 
 /**
+ * @brief Buffer host.
+ */
+struct buffer_host
+{
+  gchar *ip;                  ///< IP of host.
+  report_host_t report_host;  ///< Report host of host.
+};
+
+/**
+ * @brief Buffer host type.
+ */
+typedef struct buffer_host buffer_host_t;
+
+/**
+ * @brief Free print_report_xml prognostic host buffer.
+ *
+ * @param[in]  buffer  The buffer.
+ */
+static void
+free_buffer (array_t *buffer)
+{
+  guint index;
+  /* Free the buffer. */
+  index = buffer->len;
+  while (index--)
+    {
+      buffer_host_t *buffer_host;
+      buffer_host = (buffer_host_t*) g_ptr_array_index (buffer, index);
+      if (buffer_host)
+        {
+          g_free (buffer_host->ip);
+          g_free (buffer_host);
+        }
+    }
+  g_ptr_array_free (buffer, TRUE);
+}
+
+/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
@@ -16297,39 +16335,32 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   if (type && (strcmp (type, "prognostic") == 0))
     {
+      array_t *buffer;
+      buffer_host_t *buffer_host;
+      int index, skip;
       iterator_t hosts;
 
-      if (host)
-        {
-          PRINT (out,
-                 "<host_count>"
-                 "<full>1</full>"
-                 "<filtered>1</filtered>"
-                 "</host_count>"
-                 "<hosts start=\"1\" max=\"1\"/>");
-        }
-      else
+      buffer = make_array ();
+
+      if (host == NULL)
         {
           host_levels = host_levels ? host_levels : "hmlgd";
 
           init_asset_iterator (&hosts, host_first_result, host_max_results,
                                host_levels, host_search_phrase);
-          PRINT (out,
-                 "<host_count>"
-                 "<full>%i</full>"
-                 "<filtered>%i</filtered>"
-                 "</host_count>",
-                 host_count (),
-                 filtered_host_count (host_levels, host_search_phrase));
-          PRINT (out,
-                 "<hosts start=\"%i\" max=\"%i\"/>",
-                 /* Add 1 for 1 indexing. */
-                 host_first_result + 1,
-                 host_max_results);
         }
 
       result_count = holes = warnings = infos = logs = 0;
       filtered_result_count = f_holes = f_warnings = f_infos = f_logs = 0;
+      skip = 0;
+
+      /* Output the results, buffering the associated hosts. */
+
+      PRINT (out,
+             "<results start=\"%i\" max=\"%i\">",
+             /* Add 1 for 1 indexing. */
+             first_result + 1,
+             max_results);
 
       while (host || next (&hosts))
         {
@@ -16343,6 +16374,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             {
               if (host == NULL)
                 cleanup_iterator (&hosts);
+              free_buffer (buffer);
               return -1;
             }
 
@@ -16362,135 +16394,19 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                 report_host = 0;
             }
 
-          if (report_host)
+          if (report_host && max_results)
             {
-              init_host_iterator (&report_hosts, 0, NULL, report_host);
-              if (next (&report_hosts))
-                {
-                  iterator_t details;
-                  report_t report;
-                  int h_holes, h_infos, h_logs, h_warnings, h_false_positives;
-
-                  PRINT (out,
-                         "<host>"
-                         "<ip>%s</ip>"
-                         "<start>%s</start>"
-                         "<end>%s</end>",
-                         ip,
-                         host_iterator_start_time (&report_hosts),
-                         host_iterator_end_time (&report_hosts));
-
-                  PRINT (out,
-                         "<detail>"
-                         "<name>report/@id</name>"
-                         "<value>%s</value>"
-                         "<source>"
-                         "<type></type>"
-                         "<name>openvasmd</name>"
-                         "<description>UUID of current report</description>"
-                         "</source>"
-                         "</detail>",
-                         host_iterator_report_uuid (&report_hosts));
-
-                  PRINT (out,
-                         "<detail>"
-                         "<name>report_count</name>"
-                         "<value>%i</value>"
-                         "<source>"
-                         "<type></type>"
-                         "<name>openvasmd</name>"
-                         "<description>Number of reports</description>"
-                         "</source>"
-                         "</detail>",
-                         host_report_count (ip));
-
-                  report = host_iterator_report (&report_hosts);
-
-                  report_counts_id (report, NULL, &h_holes, &h_infos, &h_logs,
-                                    &h_warnings, &h_false_positives, 0,
-                                    ip);
-
-                  PRINT (out,
-                         "<detail>"
-                         "<name>report/result_count/high</name>"
-                         "<value>%i</value>"
-                         "<source>"
-                         "<type></type>"
-                         "<name>openvasmd</name>"
-                         "<description>Number of highs</description>"
-                         "</source>"
-                         "</detail>",
-                         h_holes);
-
-                  PRINT (out,
-                         "<detail>"
-                         "<name>report/result_count/medium</name>"
-                         "<value>%i</value>"
-                         "<source>"
-                         "<type></type>"
-                         "<name>openvasmd</name>"
-                         "<description>Number of highs</description>"
-                         "</source>"
-                         "</detail>",
-                         h_warnings);
-
-                  PRINT (out,
-                         "<detail>"
-                         "<name>report/result_count/low</name>"
-                         "<value>%i</value>"
-                         "<source>"
-                         "<type></type>"
-                         "<name>openvasmd</name>"
-                         "<description>Number of highs</description>"
-                         "</source>"
-                         "</detail>",
-                         h_infos);
-
-                  init_report_host_details_iterator
-                   (&details, report_host);
-                  while (next (&details))
-                    PRINT (out,
-                           "<detail>"
-                           "<name>%s</name>"
-                           "<value>%s</value>"
-                           "<source>"
-                           "<type>%s</type>"
-                           "<name>%s</name>"
-                           "<description>%s</description>"
-                           "</source>"
-                           "</detail>",
-                           report_host_details_iterator_name (&details),
-                           report_host_details_iterator_value (&details),
-                           report_host_details_iterator_source_type (&details),
-                           report_host_details_iterator_source_name (&details),
-                           report_host_details_iterator_source_desc (&details));
-                  cleanup_iterator (&details);
-
-                  PRINT (out,
-                         "<detail>"
-                         "<name>report/pos</name>"
-                         "<value>%i</value>"
-                         "<source>"
-                         "<type></type>"
-                         "<name>openvasmd</name>"
-                         "<description>Position of report from end</description>"
-                         "</source>"
-                         "</detail>",
-                         pos);
-                }
-
-              PRINT (out,
-                     "</host>");
+              // FIX only if host has results.
+              /* Buffer IP and report_host. */
+              buffer_host_t *buffer_host;
+              buffer_host = (buffer_host_t*) g_malloc (sizeof (buffer_host_t));
+              buffer_host->report_host = report_host;
+              buffer_host->ip = g_strdup (ip);
+              array_add (buffer, buffer_host);
             }
 
           if (report_host)
             {
-              PRINT (out,
-                     "<results start=\"%i\" max=\"%i\">",
-                     /* Add 1 for 1 indexing. */
-                     first_result + 1,
-                     max_results);
-
               init_host_iterator (&report_hosts, 0, NULL, report_host);
               if (next (&report_hosts))
                 {
@@ -16500,7 +16416,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   report = host_iterator_report (&report_hosts);
 
                   init_host_prognosis_iterator (&prognosis, report_host,
-                                                first_result, max_results,
+                                                0, -1,
                                                 levels, search_phrase,
                                                 min_cvss_base);
                   while (next (&prognosis))
@@ -16509,6 +16425,16 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
                       threat = cvss_threat (prognosis_iterator_cvss_int
                                              (&prognosis));
+
+                      if (skip < first_result)
+                        {
+                          /* Skip result. */
+                          skip++;
+                          continue;
+                        }
+
+                       if (max_results == 0)
+                         continue;
 
                       PRINT (out,
                              "<result>"
@@ -16539,12 +16465,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                              prognosis_iterator_cve (&prognosis),
                              prognosis_iterator_cvss (&prognosis),
                              prognosis_iterator_cpe (&prognosis));
+
+                       max_results--;
                     }
                   cleanup_iterator (&prognosis);
                 }
-
-              PRINT (out,
-                     "</results>");
             }
 
           if (host)
@@ -16552,6 +16477,162 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         }
       if (host == NULL)
         cleanup_iterator (&hosts);
+
+      PRINT (out,
+             "</results>");
+
+      /* Output buffered hosts. */
+
+      if (host)
+        {
+          PRINT (out,
+                 "<host_count>"
+                 "<full>1</full>"
+                 "<filtered>1</filtered>"
+                 "</host_count>"
+                 "<hosts start=\"1\" max=\"1\"/>");
+        }
+      else
+        {
+          PRINT (out,
+                 "<host_count>"
+                 "<full>%i</full>"
+                 "<filtered>%i</filtered>"
+                 "</host_count>",
+                 host_count (),
+                 filtered_host_count (host_levels, host_search_phrase));
+          PRINT (out,
+                 "<hosts start=\"%i\" max=\"%i\"/>",
+                 /* Add 1 for 1 indexing. */
+                 host_first_result + 1,
+                 host_max_results);
+        }
+
+      array_terminate (buffer);
+      index = 0;
+      while ((buffer_host = g_ptr_array_index (buffer, index++)))
+        {
+          iterator_t report_hosts;
+          init_host_iterator (&report_hosts, 0, NULL, buffer_host->report_host);
+          if (next (&report_hosts))
+            {
+              iterator_t details;
+              report_t report;
+              int h_holes, h_infos, h_logs, h_warnings, h_false_positives;
+
+              PRINT (out,
+                     "<host>"
+                     "<ip>%s</ip>"
+                     "<start>%s</start>"
+                     "<end>%s</end>",
+                     buffer_host->ip,
+                     host_iterator_start_time (&report_hosts),
+                     host_iterator_end_time (&report_hosts));
+
+              PRINT (out,
+                     "<detail>"
+                     "<name>report/@id</name>"
+                     "<value>%s</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>UUID of current report</description>"
+                     "</source>"
+                     "</detail>",
+                     host_iterator_report_uuid (&report_hosts));
+
+              PRINT (out,
+                     "<detail>"
+                     "<name>report_count</name>"
+                     "<value>%i</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>Number of reports</description>"
+                     "</source>"
+                     "</detail>",
+                     host_report_count (buffer_host->ip));
+
+              report = host_iterator_report (&report_hosts);
+
+              report_counts_id (report, NULL, &h_holes, &h_infos, &h_logs,
+                                &h_warnings, &h_false_positives, 0,
+                                buffer_host->ip);
+
+              PRINT (out,
+                     "<detail>"
+                     "<name>report/result_count/high</name>"
+                     "<value>%i</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>Number of highs</description>"
+                     "</source>"
+                     "</detail>",
+                     h_holes);
+
+              PRINT (out,
+                     "<detail>"
+                     "<name>report/result_count/medium</name>"
+                     "<value>%i</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>Number of highs</description>"
+                     "</source>"
+                     "</detail>",
+                     h_warnings);
+
+              PRINT (out,
+                     "<detail>"
+                     "<name>report/result_count/low</name>"
+                     "<value>%i</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>Number of highs</description>"
+                     "</source>"
+                     "</detail>",
+                     h_infos);
+
+              init_report_host_details_iterator
+               (&details, buffer_host->report_host);
+              while (next (&details))
+                PRINT (out,
+                       "<detail>"
+                       "<name>%s</name>"
+                       "<value>%s</value>"
+                       "<source>"
+                       "<type>%s</type>"
+                       "<name>%s</name>"
+                       "<description>%s</description>"
+                       "</source>"
+                       "</detail>",
+                       report_host_details_iterator_name (&details),
+                       report_host_details_iterator_value (&details),
+                       report_host_details_iterator_source_type (&details),
+                       report_host_details_iterator_source_name (&details),
+                       report_host_details_iterator_source_desc (&details));
+              cleanup_iterator (&details);
+
+              PRINT (out,
+                     "<detail>"
+                     "<name>report/pos</name>"
+                     "<value>%i</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>Position of report from end</description>"
+                     "</source>"
+                     "</detail>",
+                     pos);
+
+              PRINT (out,
+                     "</host>");
+            }
+        }
+
+      free_buffer (buffer);
 
       PRINT (out,
              "<result_count>"
@@ -16570,15 +16651,18 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              "</result_count>",
              result_count,
              result_count,
-             filtered_result_count,
+             (strchr (levels, 'h') ? f_holes : 0)
+              + (strchr (levels, 'l') ? f_infos : 0)
+              + (strchr (levels, 'g') ? f_logs : 0)
+              + (strchr (levels, 'm') ? f_warnings : 0),
              holes,
-             f_holes,
+             (strchr (levels, 'h') ? f_holes : 0),
              infos,
-             f_infos,
+             (strchr (levels, 'l') ? f_infos : 0),
              logs,
-             f_logs,
+             (strchr (levels, 'g') ? f_logs : 0),
              warnings,
-             f_warnings);
+             (strchr (levels, 'm') ? f_warnings : 0));
 
       PRINT (out, "</report>");
 

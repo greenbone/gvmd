@@ -1,3 +1,15 @@
+2011-11-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (struct buffer_host): New structure.
+	(buffer_host_t): New type.
+	(free_buffer): New function.
+	(print_report_xml): In the prognostic case, buffer the hosts and print
+	them after the results, so that all results occur in the one RESULTS
+	and all hosts occur in one HOSTS.  Also do the first and max filtering by
+	hand instead of passing them to the result iterator, because that only
+	works for single hosts.  And count the filtered_result_count by hand too,
+	otherwise it includes all threat levels.
+
 2011-11-01  Henri Doreau <henri.doreau@greenbone.net>
 
 	* tools/cpe_getbyname.xsl: Return an empty item if nothing was found.
