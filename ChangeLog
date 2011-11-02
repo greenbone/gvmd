@@ -1,3 +1,8 @@
+2011-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Correct detail descriptions in
+	assets case.
+
 2011-11-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml): In the prognostic case, use the

@@ -16195,7 +16195,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                          "<source>"
                          "<type></type>"
                          "<name>openvasmd</name>"
-                         "<description>Number of highs</description>"
+                         "<description>Number of mediums</description>"
                          "</source>"
                          "</detail>",
                          warnings);
@@ -16207,7 +16207,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                          "<source>"
                          "<type></type>"
                          "<name>openvasmd</name>"
-                         "<description>Number of highs</description>"
+                         "<description>Number of lows</description>"
                          "</source>"
                          "</detail>",
                          infos);
@@ -16585,7 +16585,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                      "<source>"
                      "<type></type>"
                      "<name>openvasmd</name>"
-                     "<description>Number of highs</description>"
+                     "<description>Number of mediums</description>"
                      "</source>"
                      "</detail>",
                      h_warnings);
@@ -16597,7 +16597,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                      "<source>"
                      "<type></type>"
                      "<name>openvasmd</name>"
-                     "<description>Number of highs</description>"
+                     "<description>Number of lows</description>"
                      "</source>"
                      "</detail>",
                      h_infos);
