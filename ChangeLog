@@ -1,5 +1,10 @@
 2011-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (cvss_threat, prognosis_where_levels): Match CVSS
+	threat boundaries to update of CR 42.
+
+2011-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Correct detail descriptions in
 	assets case.
 
