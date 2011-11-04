@@ -1,3 +1,8 @@
+2011-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (buffer_notes_xml, buffer_overrides_xml): Copy ctime return to
+	preserve it across multiple calls.
+
 2011-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (cvss_threat, prognosis_where_levels): Match CVSS

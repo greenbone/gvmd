@@ -8158,6 +8158,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
         {
           char *name_task;
           time_t creation_time, mod_time;
+          gchar *creation, *mod;
           int trash_task;
 
           if (uuid_task)
@@ -8172,7 +8173,9 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             }
 
           creation_time = note_iterator_creation_time (notes);
+          creation = g_strdup (ctime_strip_newline (&creation_time));
           mod_time = note_iterator_modification_time (notes);
+          mod = g_strdup (ctime_strip_newline (&mod_time));
 
           buffer_xml_append_printf
            (buffer,
@@ -8189,8 +8192,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             note_iterator_uuid (notes),
             note_iterator_nvt_oid (notes),
             note_iterator_nvt_name (notes),
-            ctime_strip_newline (&creation_time),
-            ctime_strip_newline (&mod_time),
+            creation,
+            mod,
             note_iterator_text (notes),
             note_iterator_hosts (notes)
              ? note_iterator_hosts (notes) : "",
@@ -8205,6 +8208,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
              || (note_iterator_result (notes) && (uuid_result == NULL))));
 
           free (name_task);
+          g_free (creation);
+          g_free (mod);
 
           if (include_result && note_iterator_result (notes))
             {
@@ -8300,6 +8305,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
         {
           char *name_task;
           time_t creation_time, mod_time;
+          gchar *creation, *mod;
           int trash_task;
 
           if (uuid_task)
@@ -8314,7 +8320,9 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             }
 
           creation_time = override_iterator_creation_time (overrides);
+          creation = g_strdup (ctime_strip_newline (&creation_time));
           mod_time = override_iterator_modification_time (overrides);
+          mod = g_strdup (ctime_strip_newline (&mod_time));
 
           buffer_xml_append_printf
            (buffer,
@@ -8332,8 +8340,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             override_iterator_uuid (overrides),
             override_iterator_nvt_oid (overrides),
             override_iterator_nvt_name (overrides),
-            ctime_strip_newline (&creation_time),
-            ctime_strip_newline (&mod_time),
+            creation,
+            mod,
             override_iterator_text (overrides),
             override_iterator_hosts (overrides)
              ? override_iterator_hosts (overrides) : "",
@@ -8349,6 +8357,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
              || (override_iterator_result (overrides) && (uuid_result == NULL))));
 
           free (name_task);
+          g_free (creation);
+          g_free (mod);
 
           if (include_result && override_iterator_result (overrides))
             {
