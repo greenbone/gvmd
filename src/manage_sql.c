@@ -891,6 +891,22 @@ sql_ctime (sqlite3_context *context, int argc, sqlite3_value** argv)
     }
 }
 
+/**
+ * @brief Get the current time as an epoch integer.
+ *
+ * This is a callback for a scalar SQL function of zero arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+static void
+sql_now (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  assert (argc == 0);
+  sqlite3_result_int (context, time (NULL));
+}
+
 
 /* General helpers. */
 
@@ -1333,7 +1349,7 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_oid ON nvts (oid);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_name ON nvts (name);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
-  sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS report_host_details (id INTEGER PRIMARY KEY, report_host INTEGER, source_type, source_name, source_description, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_host ON report_hosts (host);");
@@ -5399,6 +5415,40 @@ migrate_51_to_52 ()
 }
 
 /**
+ * @brief Migrate the database from version 52 to version 53.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_52_to_53 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 52. */
+
+  if (manage_db_version () != 52)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The overrides table got a end_time column. */
+
+  sql ("ALTER TABLE overrides ADD column end_time;");
+  sql ("UPDATE overrides SET end_time = 0;");
+
+  /* Set the database version to 53. */
+
+  set_db_version (53);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -5455,6 +5505,7 @@ static migrator_t database_migrators[]
     {50, migrate_49_to_50},
     {51, migrate_50_to_51},
     {52, migrate_51_to_52},
+    {53, migrate_52_to_53},
     /* End marker. */
     {-1, NULL}};
 
@@ -8270,6 +8321,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           g_warning ("%s: failed to create uniquify", __FUNCTION__);
           abort ();
         }
+
+      if (sqlite3_create_function (task_db,
+                                   "now",
+                                   0,               /* Number of args. */
+                                   SQLITE_UTF8,
+                                   NULL,            /* Callback data. */
+                                   sql_now,
+                                   NULL,            /* xStep. */
+                                   NULL)            /* xFinal. */
+          != SQLITE_OK)
+        {
+          g_warning ("%s: failed to create now", __FUNCTION__);
+          abort ();
+        }
     }
 }
 
@@ -10125,6 +10190,8 @@ task_threat_level (task_t task)
          " OR (overrides.owner ="
          " (SELECT ROWID FROM users"
          "  WHERE users.uuid = '%s')))"
+         " AND ((overrides.end_time = 0)"
+         "      OR (overrides.end_time >= now ()))"
          " AND (overrides.task ="
          "      (SELECT reports.task FROM reports"
          "       WHERE report_results.report = reports.ROWID)"
@@ -10233,6 +10300,8 @@ task_previous_threat_level (task_t task)
          " OR (overrides.owner ="
          " (SELECT ROWID FROM users"
          "  WHERE users.uuid = '%s')))"
+         " AND ((overrides.end_time = 0)"
+         "      OR (overrides.end_time >= now ()))"
          " AND (overrides.task ="
          "      (SELECT reports.task FROM reports"
          "       WHERE report_results.report = reports.ROWID)"
@@ -11841,6 +11910,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  " OR (overrides.owner ="
                  " (SELECT ROWID FROM users"
                  "  WHERE users.uuid = '%s')))"
+                 " AND ((overrides.end_time = 0)"
+                 "      OR (overrides.end_time >= now ()))"
                  " AND (overrides.task ="
                  "      (SELECT reports.task FROM reports"
                  "       WHERE report_results.report = reports.ROWID)"
@@ -12004,6 +12075,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  " OR (overrides.owner ="
                  " (SELECT ROWID FROM users"
                  "  WHERE users.uuid = '%s')))"
+                 " AND ((overrides.end_time = 0)"
+                 "      OR (overrides.end_time >= now ()))"
                  " AND (overrides.task ="
                  "      (SELECT reports.task FROM reports, report_results"
                  "       WHERE report_results.result = results.ROWID"
@@ -12974,6 +13047,8 @@ report_scan_result_count (report_t report, const char* levels,
              " OR (overrides.owner ="
              " (SELECT ROWID FROM users"
              "  WHERE users.uuid = '%s')))"
+             " AND ((overrides.end_time = 0)"
+             "      OR (overrides.end_time >= now ()))"
              " AND (overrides.task ="
              "      (SELECT reports.task FROM reports"
              "       WHERE report_results.report = reports.ROWID)"
@@ -13041,10 +13116,12 @@ report_count (report_t report, const char *type, int override, const char *host)
       && sql_int (0, 0,
                   "SELECT count(*)"
                   " FROM overrides"
-                  " WHERE (overrides.owner IS NULL)"
-                  " OR (overrides.owner ="
-                  " (SELECT ROWID FROM users"
-                  "  WHERE users.uuid = '%s'))",
+                  " WHERE ((overrides.owner IS NULL)"
+                  "        OR (overrides.owner ="
+                  "            (SELECT ROWID FROM users"
+                  "             WHERE users.uuid = '%s')))"
+                  " AND ((overrides.end_time = 0)"
+                  "      OR (overrides.end_time >= now ()))",
                   current_credentials.uuid))
     {
       int count;
@@ -13060,7 +13137,9 @@ report_count (report_t report, const char *type, int override, const char *host)
       select = g_strdup_printf ("SELECT 1 FROM overrides"
                                 " WHERE (overrides.nvt = $nvt)"
                                 " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                                " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+                                " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                                " AND ((overrides.end_time = 0)"
+                                "      OR (overrides.end_time >= now ()))",
                                 current_credentials.uuid);
       while (1)
         {
@@ -13098,6 +13177,8 @@ report_count (report_t report, const char *type, int override, const char *host)
                  " OR (overrides.owner ="
                  " (SELECT users.ROWID FROM users"
                  "  WHERE users.uuid = '%s')))"
+                 " AND ((overrides.end_time = 0)"
+                 "      OR (overrides.end_time >= now ()))"
                  " AND (overrides.task = 0"
                  "      OR overrides.task = %llu)"
                  " AND (overrides.result = 0"
@@ -13443,10 +13524,12 @@ report_count_filtered (report_t report, const char *type, int override,
       && sql_int (0, 0,
                   "SELECT count(*)"
                   " FROM overrides"
-                  " WHERE (overrides.owner IS NULL)"
-                  " OR (overrides.owner ="
-                  " (SELECT ROWID FROM users"
-                  "  WHERE users.uuid = '%s'))",
+                  " WHERE ((overrides.owner IS NULL)"
+                  "        OR (overrides.owner ="
+                  "            (SELECT ROWID FROM users"
+                  "             WHERE users.uuid = '%s'))"
+                  " AND ((overrides.end_time = 0)"
+                  "      OR (overrides.end_time >= now ()))",
                   current_credentials.uuid))
     {
       int count;
@@ -13462,7 +13545,9 @@ report_count_filtered (report_t report, const char *type, int override,
       select = g_strdup_printf ("SELECT 1 FROM overrides"
                                 " WHERE (overrides.nvt = $nvt)"
                                 " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                                " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+                                " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                                " AND ((overrides.end_time = 0)"
+                                "      OR (overrides.end_time >= now ()))",
                                 current_credentials.uuid);
       while (1)
         {
@@ -13500,6 +13585,8 @@ report_count_filtered (report_t report, const char *type, int override,
                  " OR (overrides.owner ="
                  " (SELECT users.ROWID FROM users"
                  "  WHERE users.uuid = '%s')))"
+                 " AND ((overrides.end_time = 0)"
+                 "      OR (overrides.end_time >= now ()))"
                  " AND (overrides.task = 0"
                  "      OR overrides.task = %llu)"
                  " AND (overrides.result = 0"
@@ -13865,10 +13952,12 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
           && sql_int (0, 0,
                       "SELECT count(*)"
                       " FROM overrides"
-                      " WHERE (overrides.owner IS NULL)"
-                      " OR (overrides.owner ="
-                      " (SELECT ROWID FROM users"
-                      "  WHERE users.uuid = '%s'))",
+                      " WHERE ((overrides.owner IS NULL)"
+                      "        OR (overrides.owner ="
+                      "            (SELECT ROWID FROM users"
+                      "             WHERE users.uuid = '%s')))"
+                      " AND ((overrides.end_time = 0)"
+                      "      OR (overrides.end_time >= now ()))",
                       current_credentials.uuid))
         {
           iterator_t results;
@@ -13883,7 +13972,9 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
           select = g_strdup_printf ("SELECT 1 FROM overrides"
                                     " WHERE (overrides.nvt = $nvt)"
                                     " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+                                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                                    " AND ((overrides.end_time = 0)"
+                                    "      OR (overrides.end_time >= now ()))",
                                     current_credentials.uuid);
           while (1)
             {
@@ -13921,6 +14012,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                      " OR (overrides.owner ="
                      " (SELECT users.ROWID FROM users"
                      "  WHERE users.uuid = '%s')))"
+                     " AND ((overrides.end_time = 0)"
+                     "      OR (overrides.end_time >= now ()))"
                      " AND (overrides.task = 0"
                      "      OR overrides.task = %llu)"
                      " AND (overrides.result = 0"
@@ -28460,7 +28553,9 @@ modify_override (override_t override, const char* text, const char* hosts,
                          " overrides.modification_time, overrides.text,"       \
                          " overrides.hosts, overrides.port, overrides.threat," \
                          " overrides.new_threat, overrides.task,"              \
-                         " overrides.result"
+                         " overrides.result, overrides.end_time,"              \
+                         " (overrides.end_time = 0)"                           \
+                         "  OR (overrides.end_time >= now ())"
 
 /**
  * @brief Initialise an override iterator.
@@ -28723,6 +28818,39 @@ override_iterator_result (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return (result_t) sqlite3_column_int64 (iterator->stmt, 11);
+}
+
+/**
+ * @brief Get the end time from an override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Time until which override applies.  0 for always.  1 means the
+ *         override has been explicitly turned off.
+ */
+time_t
+override_iterator_end_time (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 12);
+  return ret;
+}
+
+/**
+ * @brief Get the active status from an override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if active, else 0.
+ */
+int
+override_iterator_active (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = sqlite3_column_int (iterator->stmt, 13);
+  return ret;
 }
 
 /**

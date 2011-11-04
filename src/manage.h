@@ -1534,6 +1534,12 @@ override_iterator_task (iterator_t*);
 result_t
 override_iterator_result (iterator_t*);
 
+time_t
+override_iterator_end_time (iterator_t*);
+
+int
+override_iterator_active (iterator_t*);
+
 const char*
 override_iterator_nvt_name (iterator_t *);
 

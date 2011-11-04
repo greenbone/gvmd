@@ -397,7 +397,8 @@ CREATE TABLE overrides (
 	port text,
 	threat text,
 	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
-	result integer REFERENCES results (id) ON DELETE RESTRICT);
+	result integer REFERENCES results (id) ON DELETE RESTRICT,
+	end_time integer);
 
 CREATE TABLE schedules (
 	id integer PRIMARY KEY,

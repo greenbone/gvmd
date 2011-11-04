@@ -1,5 +1,29 @@
 2011-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add override end times.  Hence increase database version to 53.  Add
+	database migration from version 52 to 53.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 53.
+
+	* src/manage_sql.c (sql_now, migrate_52_to_53): New functions.
+	(create_tables): Add end_time to overrides.
+	(database_migrators): Add migrate_52_to_53.
+	(init_manage_process): Create SQL now function.
+	(task_threat_level, task_previous_threat_level, init_result_iterator)
+	(report_scan_result_count, report_count, report_count_filtered)
+	(report_counts_id_filt, modify_override): Add end_time to override check.
+	(override_iterator_end_time, override_iterator_active): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (buffer_overrides_xml): Add ACTIVE and END_TIME.
+
+	* doc/db_postgres.sql (overrides): Add column end_time.
+
+	* doc/db.png: Update from source.
+
+2011-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (buffer_notes_xml, buffer_overrides_xml): Copy ctime return to
 	preserve it across multiple calls.
 

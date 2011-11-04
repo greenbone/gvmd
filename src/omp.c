@@ -8281,6 +8281,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     "<nvt oid=\"%s\">"
                                     "<name>%s</name>"
                                     "</nvt>"
+                                    "<active>%i</active>"
                                     "<text excerpt=\"%i\">%s</text>"
                                     "<threat>%s</threat>"
                                     "<new_threat>%s</new_threat>"
@@ -8289,6 +8290,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     override_iterator_uuid (overrides),
                                     override_iterator_nvt_oid (overrides),
                                     override_iterator_nvt_name (overrides),
+                                    override_iterator_active (overrides),
                                     strlen (excerpt) < strlen (text),
                                     excerpt,
                                     override_iterator_threat (overrides)
@@ -8307,6 +8309,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
           time_t creation_time, mod_time;
           gchar *creation, *mod;
           int trash_task;
+          time_t end_time;
 
           if (uuid_task)
             {
@@ -8323,6 +8326,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
           creation = g_strdup (ctime_strip_newline (&creation_time));
           mod_time = override_iterator_modification_time (overrides);
           mod = g_strdup (ctime_strip_newline (&mod_time));
+          end_time = override_iterator_end_time (overrides);
 
           buffer_xml_append_printf
            (buffer,
@@ -8330,6 +8334,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             "<nvt oid=\"%s\"><name>%s</name></nvt>"
             "<creation_time>%s</creation_time>"
             "<modification_time>%s</modification_time>"
+            "<active>%i</active>"
+            "<end_time>%s</end_time>"
             "<text>%s</text>"
             "<hosts>%s</hosts>"
             "<port>%s</port>"
@@ -8342,6 +8348,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             override_iterator_nvt_name (overrides),
             creation,
             mod,
+            override_iterator_active (overrides),
+            end_time ? ctime_strip_newline (&end_time) : "",
             override_iterator_text (overrides),
             override_iterator_hosts (overrides)
              ? override_iterator_hosts (overrides) : "",
