@@ -15469,7 +15469,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_agents",
                                 "GET_AGENTS format attribute should"
-                                " be \"installer\", \"howto_install\" or \"howto_use\"."));
+                                " be 'installer', 'howto_install' or 'howto_use'."));
           else if (get_agents_data->agent_id
                    && find_agent (get_agents_data->agent_id, &agent))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_agents"));
@@ -16050,7 +16050,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_lsc_credentials",
                                 "GET_LSC_CREDENTIALS format attribute should"
-                                " be \"key\", \"rpm\", \"deb\" or \"exe\"."));
+                                " be 'key', 'rpm', 'deb' or 'exe'."));
           else if (get_lsc_credentials_data->lsc_credential_id
                    && find_lsc_credential_for_actions
                        (get_lsc_credentials_data->lsc_credential_id,

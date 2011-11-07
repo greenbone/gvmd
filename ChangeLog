@@ -1,3 +1,8 @@
+2011-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Quote in attributes with single
+	quotes because double quotes breaks the syntax.
+
 2011-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add override end times.  Hence increase database version to 53.  Add
