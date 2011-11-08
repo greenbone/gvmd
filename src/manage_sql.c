@@ -28363,6 +28363,7 @@ find_override (const char* uuid, override_t* override)
 /**
  * @brief Create an override.
  *
+ * @param[in]  active      NULL or -1 on, 0 off, n on for n days.
  * @param[in]  nvt         OID of overrided NVT.
  * @param[in]  text        Override text.
  * @param[in]  hosts       Hosts to apply override to, NULL for any host.
@@ -28376,9 +28377,10 @@ find_override (const char* uuid, override_t* override)
  * @return 0 success, -1 error.
  */
 int
-create_override (const char* nvt, const char* text, const char* hosts,
-                 const char* port, const char* threat, const char* new_threat,
-                 task_t task, result_t result, override_t* override)
+create_override (const char* active, const char* nvt, const char* text,
+                 const char* hosts, const char* port, const char* threat,
+                 const char* new_threat, task_t task, result_t result,
+                 override_t* override)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
   gchar *quoted_new_threat;
@@ -28410,10 +28412,10 @@ create_override (const char* nvt, const char* text, const char* hosts,
 
   sql ("INSERT INTO overrides"
        " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-       "  port, threat, new_threat, task, result)"
+       "  port, threat, new_threat, task, result, end_time)"
        " VALUES"
        " (make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "  '%s', %i, %i, %s, %s, %s,  %s, %s, %llu, %llu);",
+       "  '%s', %i, %i, %s, %s, %s,  %s, %s, %llu, %llu, %i);",
        current_credentials.uuid,
        nvt,
        time (NULL),
@@ -28424,7 +28426,12 @@ create_override (const char* nvt, const char* text, const char* hosts,
        quoted_threat,
        quoted_new_threat,
        task,
-       result);
+       result,
+       (active == NULL || (strcmp (active, "-1") == 0))
+         ? 0
+         : (strcmp (active, "0")
+             ? (time (NULL) + (atoi (active) * 60 * 60 * 24))
+             : 1));
 
   g_free (quoted_text);
   g_free (quoted_hosts);
@@ -28473,6 +28480,8 @@ delete_override (override_t override)
  * @brief Modify an override.
  *
  * @param[in]  override    Override.
+ * @param[in]  active      NULL or -2 leave as is, -1 on, 0 off, n on for n
+ *                         days.
  * @param[in]  text        Override text.
  * @param[in]  hosts       Hosts to apply override to, NULL for any host.
  * @param[in]  port        Port to apply override to, NULL for any port.
@@ -28481,12 +28490,12 @@ delete_override (override_t override)
  * @param[in]  task        Task to apply override to, 0 for any task.
  * @param[in]  result      Result to apply override to, 0 for any result.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, 1 syntax error in active.
  */
 int
-modify_override (override_t override, const char* text, const char* hosts,
-                 const char* port, const char* threat, const char* new_threat,
-                 task_t task, result_t result)
+modify_override (override_t override, const char *active, const char* text,
+                 const char* hosts, const char* port, const char* threat,
+                 const char* new_threat, task_t task, result_t result)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
   gchar *quoted_new_threat;
@@ -28516,25 +28525,62 @@ modify_override (override_t override, const char* text, const char* hosts,
   quoted_new_threat = sql_insert ((new_threat && strlen (new_threat))
                                     ? threat_message_type (new_threat) : NULL);
 
-  sql ("UPDATE overrides SET"
-       " modification_time = %i,"
-       " text = %s,"
-       " hosts = %s,"
-       " port = %s,"
-       " threat = %s,"
-       " new_threat = %s,"
-       " task = %llu,"
-       " result = %llu"
-       " WHERE ROWID = %llu;",
-       time (NULL),
-       quoted_text,
-       quoted_hosts,
-       quoted_port,
-       quoted_threat,
-       quoted_new_threat,
-       task,
-       result,
-       override);
+  if ((active == NULL) || (strcmp (active, "-2") == 0))
+    sql ("UPDATE overrides SET"
+         " modification_time = %i,"
+         " text = %s,"
+         " hosts = %s,"
+         " port = %s,"
+         " threat = %s,"
+         " new_threat = %s,"
+         " task = %llu,"
+         " result = %llu"
+         " WHERE ROWID = %llu;",
+         time (NULL),
+         quoted_text,
+         quoted_hosts,
+         quoted_port,
+         quoted_threat,
+         quoted_new_threat,
+         task,
+         result,
+         override);
+  else
+    {
+      const char *point;
+      point = active;
+      if (strcmp (point, "-1"))
+        {
+          while (*point && isdigit (*point)) point++;
+          if (*point)
+            return 1;
+        }
+      sql ("UPDATE overrides SET"
+           " end_time = %i,"
+           " modification_time = %i,"
+           " text = %s,"
+           " hosts = %s,"
+           " port = %s,"
+           " threat = %s,"
+           " new_threat = %s,"
+           " task = %llu,"
+           " result = %llu"
+           " WHERE ROWID = %llu;",
+           (strcmp (active, "-1")
+             ? (strcmp (active, "0")
+                 ? (time (NULL) + atoi (active) * 60 * 60 * 24)
+                 : 1)
+             : 0),
+           time (NULL),
+           quoted_text,
+           quoted_hosts,
+           quoted_port,
+           quoted_threat,
+           quoted_new_threat,
+           task,
+           result,
+           override);
+    }
 
   g_free (quoted_text);
   g_free (quoted_hosts);

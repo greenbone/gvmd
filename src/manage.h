@@ -1484,8 +1484,9 @@ gboolean
 find_override (const char*, override_t*);
 
 int
-create_override (const char*, const char*, const char*, const char*, const char*,
-                 const char*, task_t, result_t, override_t*);
+create_override (const char*, const char*, const char*, const char*,
+                 const char*, const char*, const char*, task_t, result_t,
+                 override_t*);
 
 int
 override_uuid (override_t, char **);
@@ -1495,7 +1496,7 @@ delete_override (override_t);
 
 int
 modify_override (override_t, const char*, const char*, const char*, const char*,
-                 const char*, task_t, result_t);
+                 const char*, const char*, task_t, result_t);
 
 void
 init_override_iterator (iterator_t*, override_t, nvt_t, result_t, task_t, int,

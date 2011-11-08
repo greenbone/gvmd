@@ -870,6 +870,7 @@ create_note_data_reset (create_note_data_t *data)
  */
 typedef struct
 {
+  char *active;       ///< Whether the override is active.
   char *hosts;        ///< Hosts to which to limit override.
   char *new_threat;   ///< New threat value of overridden results.
   char *nvt_oid;      ///< NVT to which to limit override.
@@ -888,6 +889,7 @@ typedef struct
 static void
 create_override_data_reset (create_override_data_t *data)
 {
+  free (data->active);
   free (data->hosts);
   free (data->new_threat);
   free (data->nvt_oid);
@@ -2313,6 +2315,7 @@ modify_note_data_reset (modify_note_data_t *data)
  */
 typedef struct
 {
+  char *active;       ///< Whether the override is active.
   char *hosts;        ///< Hosts to which to limit override.
   char *new_threat;   ///< New threat value of overridden results.
   char *nvt_oid;      ///< NVT to which to limit override.
@@ -2332,6 +2335,7 @@ typedef struct
 static void
 modify_override_data_reset (modify_override_data_t *data)
 {
+  free (data->active);
   free (data->hosts);
   free (data->new_threat);
   free (data->nvt_oid);
@@ -3142,6 +3146,7 @@ typedef enum
   CLIENT_CREATE_NOTE_TEXT,
   CLIENT_CREATE_NOTE_THREAT,
   CLIENT_CREATE_OVERRIDE,
+  CLIENT_CREATE_OVERRIDE_ACTIVE,
   CLIENT_CREATE_OVERRIDE_HOSTS,
   CLIENT_CREATE_OVERRIDE_NEW_THREAT,
   CLIENT_CREATE_OVERRIDE_NVT,
@@ -3337,6 +3342,7 @@ typedef enum
   CLIENT_MODIFY_NOTE_TEXT,
   CLIENT_MODIFY_NOTE_THREAT,
   CLIENT_MODIFY_OVERRIDE,
+  CLIENT_MODIFY_OVERRIDE_ACTIVE,
   CLIENT_MODIFY_OVERRIDE_HOSTS,
   CLIENT_MODIFY_OVERRIDE_NEW_THREAT,
   CLIENT_MODIFY_OVERRIDE_PORT,
@@ -7219,7 +7225,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_OVERRIDE:
-        if (strcasecmp ("HOSTS", element_name) == 0)
+        if (strcasecmp ("ACTIVE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_OVERRIDE_ACTIVE);
+        else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE_HOSTS);
         else if (strcasecmp ("NEW_THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE_NEW_THREAT);
@@ -7571,7 +7579,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_OVERRIDE:
-        if (strcasecmp ("HOSTS", element_name) == 0)
+        if (strcasecmp ("ACTIVE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_OVERRIDE_ACTIVE);
+        else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_MODIFY_OVERRIDE_HOSTS);
         else if (strcasecmp ("NEW_THREAT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_OVERRIDE_NEW_THREAT);
@@ -8349,7 +8359,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             creation,
             mod,
             override_iterator_active (overrides),
-            end_time ? ctime_strip_newline (&end_time) : "",
+            end_time > 1 ? ctime_strip_newline (&end_time) : "",
             override_iterator_text (overrides),
             override_iterator_hosts (overrides)
              ? override_iterator_hosts (overrides) : "",
@@ -12954,7 +12964,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
-          else switch (create_override (create_override_data->nvt_oid,
+          else switch (create_override (create_override_data->active,
+                                        create_override_data->nvt_oid,
                                         create_override_data->text,
                                         create_override_data->hosts,
                                         create_override_data->port,
@@ -12987,6 +12998,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      case CLIENT_CREATE_OVERRIDE_ACTIVE:
+        assert (strcasecmp ("ACTIVE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_OVERRIDE);
+        break;
       case CLIENT_CREATE_OVERRIDE_HOSTS:
         assert (strcasecmp ("HOSTS", element_name) == 0);
         set_client_state (CLIENT_CREATE_OVERRIDE);
@@ -14749,6 +14764,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else switch (modify_override (override,
+                                        modify_override_data->active,
                                         modify_override_data->text,
                                         modify_override_data->hosts,
                                         modify_override_data->port,
@@ -14759,6 +14775,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_override"));
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "ACTIVE must be an integer >= -2"));
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -14774,6 +14795,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      case CLIENT_MODIFY_OVERRIDE_ACTIVE:
+        assert (strcasecmp ("ACTIVE", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_OVERRIDE);
+        break;
       case CLIENT_MODIFY_OVERRIDE_HOSTS:
         assert (strcasecmp ("HOSTS", element_name) == 0);
         set_client_state (CLIENT_MODIFY_OVERRIDE);
@@ -17982,6 +18007,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         openvas_append_text (&create_note_data->threat, text, text_len);
         break;
 
+      case CLIENT_CREATE_OVERRIDE_ACTIVE:
+        openvas_append_text (&create_override_data->active, text, text_len);
+        break;
       case CLIENT_CREATE_OVERRIDE_HOSTS:
         openvas_append_text (&create_override_data->hosts, text, text_len);
         break;
@@ -18278,6 +18306,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         openvas_append_text (&modify_note_data->threat, text, text_len);
         break;
 
+      case CLIENT_MODIFY_OVERRIDE_ACTIVE:
+        openvas_append_text (&modify_override_data->active, text, text_len);
+        break;
       case CLIENT_MODIFY_OVERRIDE_HOSTS:
         openvas_append_text (&modify_override_data->hosts, text, text_len);
         break;

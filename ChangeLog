@@ -1,5 +1,21 @@
 2011-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Include override active state in MODIFY_OVERRIDE and CREATE_OVERRIDE.
+
+	* src/manage.c (create_override, modify_override): Add active argument.
+	Set end_time accordingly.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (create_note_data_reset, create_override_data_reset)
+	(modify_override_data_t, modify_override_data_reset, client_state_t): Add
+	active.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add ACTIVE to CREATE_OVERRIDE and MODIFY_OVERRIDE.
+	(buffer_overrides_xml): Only generate the end time when there is one.
+
+2011-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (manage_scap_update_time): Format time like SCAP times.
 
 2011-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
