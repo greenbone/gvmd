@@ -4220,7 +4220,11 @@ manage_scap_update_time ()
 
   memset (&update_time, 0, sizeof (struct tm));
   if (strptime (content, "%Y%m%d%H%M", &update_time))
-    return asctime (&update_time);
+    {
+      static char time_string[100];
+      strftime (time_string, 99, "%FT%T.000%z", &update_time);
+      return time_string;
+    }
   return "";
 }
 

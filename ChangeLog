@@ -1,6 +1,10 @@
 2011-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/omp.c (SCAP_TIMESTAMP_FILENAME): New define.
+	* src/manage.c (manage_scap_update_time): Format time like SCAP times.
+
+2011-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (SCAP_TIMESTAMP_FILENAME): New define.
 	(manage_scap_update_time): New function.
 	(manage_read_info): Send SCAP update time with CVE and CPE.
 
