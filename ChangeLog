@@ -1,3 +1,9 @@
+2011-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (SCAP_TIMESTAMP_FILENAME): New define.
+	(manage_scap_update_time): New function.
+	(manage_read_info): Send SCAP update time with CVE and CPE.
+
 2011-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Quote in attributes with single

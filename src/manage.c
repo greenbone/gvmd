@@ -36,6 +36,9 @@
  * running the tasks.
  */
 
+/* time.h in glibc2 needs this for strptime. */
+#define _XOPEN_SOURCE
+
 #include "manage.h"
 #include "manage_sql.h"
 #include "ovas-mngr-comm.h"
@@ -52,6 +55,7 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <openvas/base/openvas_string.h>
@@ -93,6 +97,10 @@
  */
 #define CVE_FILENAME_FMT SCAP_DATA_DIR "/nvdcve-2.0-%d.xml"
 
+/**
+ * @brief SCAP timestamp location.
+ */
+#define SCAP_TIMESTAMP_FILENAME SCAP_DATA_DIR "/timestamp"
 
 /**
  * @brief Information about the scanner.
@@ -4180,6 +4188,43 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 }
 
 /**
+ * @brief GET SCAP update time, as a string.
+ *
+ * @return Last update time as a static string, or "" on error.
+ */
+char *
+manage_scap_update_time ()
+{
+  gchar *content;
+  GError *error;
+  gsize content_size;
+  struct tm update_time;
+
+  /* Read in the contents. */
+
+  error = NULL;
+  if (g_file_get_contents (SCAP_TIMESTAMP_FILENAME,
+                           &content,
+                           &content_size,
+                           &error)
+      == FALSE)
+    {
+      if (error)
+        {
+          g_debug ("%s: failed to read %s: %s",
+                   __FUNCTION__, SCAP_TIMESTAMP_FILENAME, error->message);
+          g_error_free (error);
+        }
+      return "";
+    }
+
+  memset (&update_time, 0, sizeof (struct tm));
+  if (strptime (content, "%Y%m%d%H%M", &update_time))
+    return asctime (&update_time);
+  return "";
+}
+
+/**
  * @brief Read raw information.
  *
  * @param[in]   type    Type of the requested information.
@@ -4216,8 +4261,10 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
 
               g_string_append_printf (xml,
                                       "<cpe>"
+                                      "<update_time>%s</update_time>"
                                       "%s"
                                       "<cves>",
+                                      manage_scap_update_time (),
                                       cpe);
               init_cpe_cve_iterator (&cves, name, 0, NULL);
               while (next (&cves))
@@ -4268,8 +4315,10 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
 
               g_string_append_printf (xml,
                                       "<cve>"
+                                      "<update_time>%s</update_time>"
                                       "%s"
                                       "<nvts>",
+                                      manage_scap_update_time (),
                                       cve);
               init_cve_nvt_iterator (&nvts, name, 1, NULL);
               while (next (&nvts))
