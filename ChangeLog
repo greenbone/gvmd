@@ -1,3 +1,7 @@
+2011-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_tables): Add index results_by_host.
+
 2011-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Include override active state in MODIFY_OVERRIDE and CREATE_OVERRIDE.
