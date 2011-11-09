@@ -3916,7 +3916,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               "agent_id", &delete_agent_data->agent_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "ultimate", &attribute))
-              delete_agent_data->ultimate = strcmp (attribute, "ultimate");
+              delete_agent_data->ultimate = strcmp (attribute, "0");
             else
               delete_agent_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_AGENT);
@@ -3928,7 +3928,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               "config_id", &delete_config_data->config_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "ultimate", &attribute))
-              delete_config_data->ultimate = strcmp (attribute, "ultimate");
+              delete_config_data->ultimate = strcmp (attribute, "0");
             else
               delete_config_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_CONFIG);
@@ -3941,7 +3941,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &delete_escalator_data->escalator_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "ultimate", &attribute))
-              delete_escalator_data->ultimate = strcmp (attribute, "ultimate");
+              delete_escalator_data->ultimate = strcmp (attribute, "0");
             else
               delete_escalator_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_ESCALATOR);
@@ -3955,7 +3955,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_attribute (attribute_names, attribute_values,
                                 "ultimate", &attribute))
               delete_lsc_credential_data->ultimate
-               = strcmp (attribute, "ultimate");
+               = strcmp (attribute, "0");
             else
               delete_lsc_credential_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_LSC_CREDENTIAL);
@@ -3986,7 +3986,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_attribute (attribute_names, attribute_values,
                                 "ultimate", &attribute))
               delete_report_format_data->ultimate = strcmp (attribute,
-                                                            "ultimate");
+                                                            "0");
             else
               delete_report_format_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_REPORT_FORMAT);
@@ -3998,7 +3998,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &delete_schedule_data->schedule_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "ultimate", &attribute))
-              delete_schedule_data->ultimate = strcmp (attribute, "ultimate");
+              delete_schedule_data->ultimate = strcmp (attribute, "0");
             else
               delete_schedule_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_SCHEDULE);
@@ -4010,7 +4010,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &delete_slave_data->slave_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "ultimate", &attribute))
-              delete_slave_data->ultimate = strcmp (attribute, "ultimate");
+              delete_slave_data->ultimate = strcmp (attribute, "0");
             else
               delete_slave_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_SLAVE);
@@ -4022,7 +4022,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &delete_target_data->target_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "ultimate", &attribute))
-              delete_target_data->ultimate = strcmp (attribute, "ultimate");
+              delete_target_data->ultimate = strcmp (attribute, "0");
             else
               delete_target_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_TARGET);
@@ -4034,7 +4034,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &delete_task_data->task_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "ultimate", &attribute))
-              delete_task_data->ultimate = strcmp (attribute, "ultimate");
+              delete_task_data->ultimate = strcmp (attribute, "0");
             else
               delete_task_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_TASK);

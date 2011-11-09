@@ -1,5 +1,11 @@
 2011-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_start_element): Compare ultimate flag with "0"
+	instead of "ultimate".  This is the intended behaviour, clients would only
+	have been affected if they passed "0" explicitly.
+
+2011-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_tables): Add index results_by_host.
 
 2011-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
