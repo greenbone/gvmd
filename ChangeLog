@@ -1,3 +1,8 @@
+2011-11-10  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* CMakeLists.txt: Adjust source locations in install command to enable
+	installation from an out-of-source build.
+
 2011-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_start_element): Compare ultimate flag with "0"
