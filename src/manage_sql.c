@@ -5397,7 +5397,7 @@ migrate_51_to_52 ()
 
   /* Update the database. */
 
-  /* The user table got a timezone column. */
+  /* Date storage switched from text format to seconds since the epoch. */
 
   sql ("UPDATE report_hosts SET start_time = convert (start_time);");
   sql ("UPDATE report_hosts SET end_time = convert (end_time);");
