@@ -49,7 +49,7 @@ PORT=24
 # The default value for LOGDIR is  "/var/log/", the default value for
 # LOGFILE is "greenbone-scapdata-sync.log". Please make sure this script has
 # sufficient right to access the logfile.
-LOGDIR="/var/log/"
+LOGDIR="/var/log/openvas/"
 LOGFILE="greenbone-scapdata-sync.log"
 
 [ -r /etc/openvas/greenbone-scapdata-sync.conf ] && . /etc/openvas/greenbone-scapdata-sync.conf

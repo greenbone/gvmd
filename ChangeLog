@@ -1,3 +1,7 @@
+2011-11-14  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/greenbone-scapdata-sync: Fix location of log file.
+
 2011-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (migrate_51_to_52): Update comment from previous migrator.
