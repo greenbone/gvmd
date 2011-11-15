@@ -1,3 +1,11 @@
+2011-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (init_asset_iterator, filtered_host_count): Add
+	apply_overrides arg.
+	(print_report_xml): Pass apply_overrides flag through to iterator
+	initialisers and counting functions, in the assets and prognostic
+	case.
+
 2011-11-14  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Fix location of log file.

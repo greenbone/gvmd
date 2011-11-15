@@ -12648,21 +12648,69 @@ DEF_ACCESS (report_host_details_iterator_source_desc, 5);
  * @param[in]  levels         String describing threat levels (message types)
  *                            to include in hosts (for example, "hml" for
  *                            High, Medium and Low).  All levels if NULL.
- * @param[in]   search_phrase  Phrase that host IPs must include.  All
- *                             hosts if NULL or "".
+ * @param[in]  search_phrase  Phrase that host IPs must include.  All
+ *                            hosts if NULL or "".
+ * @param[in]  apply_overrides  Whether to apply overrides.
  */
 static void
 init_asset_iterator (iterator_t* iterator, int first_result,
                      int max_results, const char *levels,
-                     const char *search_phrase)
+                     const char *search_phrase, int apply_overrides)
 {
   assert (current_credentials.uuid);
 
   if (levels && strlen (levels))
     {
       GString *levels_sql;
+      gchar *new_type_sql;
 
-      levels_sql = where_levels_type (levels);
+      if (apply_overrides)
+        {
+          gchar *ov;
+
+          assert (current_credentials.uuid);
+
+          ov = g_strdup_printf
+                ("SELECT overrides.new_threat"
+                 " FROM overrides"
+                 " WHERE overrides.nvt = results.nvt"
+                 " AND ((overrides.owner IS NULL)"
+                 " OR (overrides.owner ="
+                 " (SELECT ROWID FROM users"
+                 "  WHERE users.uuid = '%s')))"
+                 " AND ((overrides.end_time = 0)"
+                 "      OR (overrides.end_time >= now ()))"
+                 " AND (overrides.task ="
+                 "      (SELECT reports.task FROM reports, report_results"
+                 "       WHERE report_results.result = results.ROWID"
+                 "       AND report_results.report = reports.ROWID)"
+                 "      OR overrides.task = 0)"
+                 " AND (overrides.result = results.ROWID"
+                 "      OR overrides.result = 0)"
+                 " AND (overrides.hosts is NULL"
+                 "      OR overrides.hosts = \"\""
+                 "      OR hosts_contains (overrides.hosts, results.host))"
+                 " AND (overrides.port is NULL"
+                 "      OR overrides.port = \"\""
+                 "      OR overrides.port = results.port)"
+                 " AND (overrides.threat is NULL"
+                 "      OR overrides.threat = \"\""
+                 "      OR overrides.threat = results.type)"
+                 " ORDER BY overrides.result DESC, overrides.task DESC,"
+                 " overrides.port DESC, overrides.threat"
+                 " COLLATE collate_message_type ASC",
+                 current_credentials.uuid);
+
+          new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
+                                          " THEN type ELSE (%s) END)",
+                                          ov, ov);
+
+          g_free (ov);
+        }
+      else
+        new_type_sql = g_strdup ("type");
+
+      levels_sql = where_levels (levels);
 
       if (search_phrase && strlen (search_phrase))
         init_iterator (iterator,
@@ -12694,7 +12742,8 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        "   AND value LIKE '%%%s%%')) AND"
                        /* Levels. */
                        " EXISTS"
-                       " (SELECT results.ROWID FROM results, report_results"
+                       " (SELECT results.ROWID, %s AS new_type"
+                       "  FROM results, report_results"
                        "  WHERE results.host = report_hosts.host"
                        "  %s"
                        "  AND results.ROWID = report_results.result"
@@ -12705,6 +12754,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        TASK_STATUS_DONE,
                        search_phrase,
                        search_phrase,
+                       new_type_sql,
                        levels_sql ? levels_sql->str : "",
                        max_results,
                        first_result);
@@ -12726,7 +12776,8 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        " GROUP BY host"
                        " HAVING"
                        " EXISTS"
-                       " (SELECT results.ROWID FROM results, report_results"
+                       " (SELECT results.ROWID, %s AS new_type"
+                       "  FROM results, report_results"
                        "  WHERE results.host = report_hosts.host"
                        "  %s"
                        "  AND results.ROWID = report_results.result"
@@ -12735,12 +12786,14 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        " LIMIT %i OFFSET %i;",
                        current_credentials.uuid,
                        TASK_STATUS_DONE,
+                       new_type_sql,
                        levels_sql ? levels_sql->str : "",
                        max_results,
                        first_result);
 
       if (levels_sql)
         g_string_free (levels_sql, TRUE);
+      g_free (new_type_sql);
     }
   else if (search_phrase && strlen (search_phrase))
     {
@@ -15728,11 +15781,13 @@ host_count ()
  * @param[in]  levels         Levels.
  * @param[in]  search_phrase  Phrase that host IPs must include.  All hosts
  *                            if NULL or "".
+ * @param[in]  apply_overrides  Whether to apply overrides.
  *
  * @return Host count.
  */
 static int
-filtered_host_count (const char *levels, const char *search_phrase)
+filtered_host_count (const char *levels, const char *search_phrase,
+                     int apply_overrides)
 {
   assert (current_credentials.uuid);
 
@@ -15740,8 +15795,55 @@ filtered_host_count (const char *levels, const char *search_phrase)
     {
       int ret;
       GString *levels_sql;
+      gchar *new_type_sql;
 
-      levels_sql = where_levels_type (levels);
+      if (apply_overrides)
+        {
+          gchar *ov;
+
+          assert (current_credentials.uuid);
+
+          ov = g_strdup_printf
+                ("SELECT overrides.new_threat"
+                 " FROM overrides"
+                 " WHERE overrides.nvt = results.nvt"
+                 " AND ((overrides.owner IS NULL)"
+                 " OR (overrides.owner ="
+                 " (SELECT ROWID FROM users"
+                 "  WHERE users.uuid = '%s')))"
+                 " AND ((overrides.end_time = 0)"
+                 "      OR (overrides.end_time >= now ()))"
+                 " AND (overrides.task ="
+                 "      (SELECT reports.task FROM reports, report_results"
+                 "       WHERE report_results.result = results.ROWID"
+                 "       AND report_results.report = reports.ROWID)"
+                 "      OR overrides.task = 0)"
+                 " AND (overrides.result = results.ROWID"
+                 "      OR overrides.result = 0)"
+                 " AND (overrides.hosts is NULL"
+                 "      OR overrides.hosts = \"\""
+                 "      OR hosts_contains (overrides.hosts, results.host))"
+                 " AND (overrides.port is NULL"
+                 "      OR overrides.port = \"\""
+                 "      OR overrides.port = results.port)"
+                 " AND (overrides.threat is NULL"
+                 "      OR overrides.threat = \"\""
+                 "      OR overrides.threat = results.type)"
+                 " ORDER BY overrides.result DESC, overrides.task DESC,"
+                 " overrides.port DESC, overrides.threat"
+                 " COLLATE collate_message_type ASC",
+                 current_credentials.uuid);
+
+          new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
+                                          " THEN type ELSE (%s) END)",
+                                          ov, ov);
+
+          g_free (ov);
+        }
+      else
+        new_type_sql = g_strdup ("type");
+
+      levels_sql = where_levels (levels);
 
       if (search_phrase && strlen (search_phrase))
         ret = sql_int (0, 0,
@@ -15774,7 +15876,8 @@ filtered_host_count (const char *levels, const char *search_phrase)
                        "    AND value LIKE '%%%s%%')) AND"
                        /* Levels. */
                        "  EXISTS"
-                       "  (SELECT results.ROWID FROM results, report_results"
+                       "  (SELECT results.ROWID, %s AS new_type"
+                       "   FROM results, report_results"
                        "   WHERE results.host = report_hosts.host"
                        "   %s"
                        "   AND results.ROWID = report_results.result"
@@ -15783,6 +15886,7 @@ filtered_host_count (const char *levels, const char *search_phrase)
                        TASK_STATUS_DONE,
                        search_phrase,
                        search_phrase,
+                       new_type_sql,
                        levels_sql ? levels_sql->str : "");
       else
         ret = sql_int (0, 0,
@@ -15803,17 +15907,20 @@ filtered_host_count (const char *levels, const char *search_phrase)
                        "  GROUP BY host"
                        "  HAVING"
                        "  EXISTS"
-                       "  (SELECT results.ROWID FROM results, report_results"
+                       "  (SELECT results.ROWID, %s AS new_type"
+                       "   FROM results, report_results"
                        "   WHERE results.host = report_hosts.host"
                        "   %s"
                        "   AND results.ROWID = report_results.result"
                        "   AND report_results.report = report_hosts.report));",
                        current_credentials.uuid,
                        TASK_STATUS_DONE,
+                       new_type_sql,
                        levels_sql ? levels_sql->str : "");
 
       if (levels_sql)
         g_string_free (levels_sql, TRUE);
+      g_free (new_type_sql);
 
       return ret;
     }
@@ -16192,14 +16299,14 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       else
         {
           init_asset_iterator (&hosts, first_result, max_results, levels,
-                               search_phrase);
+                               search_phrase, apply_overrides);
           PRINT (out,
                  "<host_count>"
                  "<full>%i</full>"
                  "<filtered>%i</filtered>"
                  "</host_count>",
                  host_count (),
-                 filtered_host_count (levels, search_phrase));
+                 filtered_host_count (levels, search_phrase, apply_overrides));
           PRINT (out,
                  "<hosts start=\"%i\" max=\"%i\"/>",
                  /* Add 1 for 1 indexing. */
@@ -16267,8 +16374,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   report = host_iterator_report (&report_hosts);
 
                   report_counts_id (report, NULL, &holes, &infos, &logs,
-                                    &warnings, &false_positives, 0,
-                                    ip);
+                                    &warnings, &false_positives,
+                                    apply_overrides, ip);
 
                   PRINT (out,
                          "<detail>"
@@ -16441,7 +16548,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           host_levels = host_levels ? host_levels : "hmlgd";
 
           init_asset_iterator (&hosts, host_first_result, host_max_results,
-                               host_levels, host_search_phrase);
+                               host_levels, host_search_phrase, 0);
         }
 
       result_count = holes = warnings = infos = logs = 0;
