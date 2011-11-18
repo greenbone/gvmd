@@ -11238,8 +11238,8 @@ create_current_report (task_t task, char **report_id, task_status_t status)
 int
 create_report (array_t *results, const char *task_id, const char *task_name,
                const char *task_comment, const char *scan_start,
-               const char *scan_end, array_t *host_ends,
-               array_t *host_starts, char **report_id)
+               const char *scan_end, array_t *host_starts,
+               array_t *host_ends, char **report_id)
 {
   int index;
   create_report_result_t *result, *end, *start;
