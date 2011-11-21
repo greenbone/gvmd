@@ -251,9 +251,6 @@ delete_task_lock (task_t, int);
 static gchar*
 clean_hosts (const char *);
 
-static char *
-iso_time (time_t *);
-
 
 /* Variables. */
 
@@ -1376,7 +1373,7 @@ parse_iso_time (const char *text_time)
  *
  * @return Pointer to ISO time in static memory, or NULL on error.
  */
-static char *
+char *
 iso_time (time_t *epoch_time)
 {
   struct tm *tm;

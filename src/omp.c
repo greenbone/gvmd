@@ -237,22 +237,6 @@ file_utils_rmdir_rf (const gchar * pathname)
 }
 
 /**
- * @brief Return string from ctime with newline replaces with terminator.
- *
- * @param[in]  time  Time.
- *
- * @return Return from ctime applied to time, with newline stripped off.
- */
-static char*
-ctime_strip_newline (time_t *time)
-{
-  char* ret = ctime (time);
-  if (ret && strlen (ret) > 0)
-    ret[strlen (ret) - 1] = '\0';
-  return ret;
-}
-
-/**
  * @brief Return time defined by broken down time strings.
  *
  * If any argument is NULL, use the value from the current time.
@@ -8183,9 +8167,9 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             }
 
           creation_time = note_iterator_creation_time (notes);
-          creation = g_strdup (ctime_strip_newline (&creation_time));
+          creation = g_strdup (iso_time (&creation_time));
           mod_time = note_iterator_modification_time (notes);
-          mod = g_strdup (ctime_strip_newline (&mod_time));
+          mod = g_strdup (iso_time (&mod_time));
 
           buffer_xml_append_printf
            (buffer,
@@ -8333,9 +8317,9 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             }
 
           creation_time = override_iterator_creation_time (overrides);
-          creation = g_strdup (ctime_strip_newline (&creation_time));
+          creation = g_strdup (iso_time (&creation_time));
           mod_time = override_iterator_modification_time (overrides);
-          mod = g_strdup (ctime_strip_newline (&mod_time));
+          mod = g_strdup (iso_time (&mod_time));
           end_time = override_iterator_end_time (overrides);
 
           buffer_xml_append_printf
@@ -8359,7 +8343,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             creation,
             mod,
             override_iterator_active (overrides),
-            end_time > 1 ? ctime_strip_newline (&end_time) : "",
+            end_time > 1 ? iso_time (&end_time) : "",
             override_iterator_text (overrides),
             override_iterator_hosts (overrides)
              ? override_iterator_hosts (overrides) : "",
@@ -8836,7 +8820,7 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
           iterator_t tasks;
           time_t first_time = schedule_iterator_first_time (schedules);
           time_t next_time = schedule_iterator_next_time (schedules);
-          gchar *first_ctime = g_strdup (ctime_strip_newline (&first_time));
+          gchar *first_iso_time = g_strdup (iso_time (&first_time));
 
           buffer_xml_append_printf
            (buffer,
@@ -8852,14 +8836,14 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
             schedule_iterator_uuid (schedules),
             schedule_iterator_name (schedules),
             schedule_iterator_comment (schedules),
-            first_ctime,
-            (next_time == 0 ? "over" : ctime_strip_newline (&next_time)),
+            first_iso_time,
+            (next_time == 0 ? "over" : iso_time (&next_time)),
             schedule_iterator_period (schedules),
             schedule_iterator_period_months (schedules),
             schedule_iterator_duration (schedules),
             schedule_iterator_in_use (schedules));
 
-          g_free (first_ctime);
+          g_free (first_iso_time);
 
           buffer_xml_append_printf (buffer, "<tasks>");
           init_schedule_task_iterator (&tasks,
@@ -10414,7 +10398,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                      ("<trust>%s<time>%s</time></trust>"
                       "<active>%i</active>",
                       report_format_iterator_trust (&report_formats),
-                      ctime_strip_newline (&trust_time),
+                      iso_time (&trust_time),
                       report_format_iterator_active (&report_formats));
 
                   SEND_TO_CLIENT_OR_FAIL ("</report_format>");
@@ -15586,7 +15570,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             agent_iterator_name (&agents),
                             agent_iterator_comment (&agents),
                             agent_iterator_trust (&agents),
-                            ctime_strip_newline (&trust_time));
+                            iso_time (&trust_time));
                         }
                         break;
                     }
@@ -17006,7 +16990,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  task_schedule_name,
                                  (next_time == 0
                                    ? "over"
-                                   : ctime_strip_newline (&next_time)),
+                                   : iso_time (&next_time)),
                                  first_report,
                                  last_report,
                                  second_last_report);
@@ -17475,7 +17459,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             task_schedule_name,
                                             (next_time == 0
                                               ? "over"
-                                              : ctime_strip_newline (&next_time)),
+                                              : iso_time (&next_time)),
                                             schedule_in_trash,
                                             first_report,
                                             last_report,

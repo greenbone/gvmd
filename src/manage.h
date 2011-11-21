@@ -2005,4 +2005,10 @@ cve_iterator_cvss (iterator_t*);
 int
 manage_set_setting (const gchar *, const gchar *);
 
+
+/* Helpers. */
+
+char *
+iso_time (time_t *);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_H */

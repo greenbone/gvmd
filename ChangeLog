@@ -1,5 +1,17 @@
 2011-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (iso_time): Make public.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (ctime_strip_newline): Remove.  Out of use.
+	(buffer_notes_xml, buffer_overrides_xml, buffer_overrides_xml)
+	(buffer_schedules_xml, buffer_schedules_xml, omp_xml_handle_end_element)
+	(omp_xml_handle_end_element, omp_xml_handle_end_element)
+	(omp_xml_handle_end_element): Send ISO times instead of ctime.
+
+2011-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (parse_ctime): Parse ctime using the current timezone.
 	(parse_iso_time): Call parse_ctime instead of parse_iso_time, so that old
 	reports are imported using the current timezone.
