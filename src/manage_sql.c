@@ -1247,6 +1247,8 @@ find_trash (const char *type, const char *uuid, resource_t *resource)
 /**
  * @brief Convert an OTP time into seconds since epoch.
  *
+ * Use UTC as timezone.
+ *
  * @param[in]  text_time  Time as text in ctime format.
  *
  * @return Time since epoch.
@@ -1305,6 +1307,38 @@ parse_otp_time (const char *text_time)
 }
 
 /**
+ * @brief Convert a ctime into seconds since epoch.
+ *
+ * Use the current timezone.
+ *
+ * @param[in]  text_time  Time as text in ctime format.
+ *
+ * @return Time since epoch.
+ */
+static int
+parse_ctime (const char *text_time)
+{
+  int epoch_time;
+  struct tm tm;
+
+  /* ctime format: "Wed Jun 30 21:49:08 1993". */
+
+  if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
+    {
+      g_warning ("%s: Failed to parse time", __FUNCTION__);
+      return 0;
+    }
+  epoch_time = mktime (&tm);
+  if (epoch_time == -1)
+    {
+      g_warning ("%s: Failed to make time", __FUNCTION__);
+      return 0;
+    }
+
+  return epoch_time;
+}
+
+/**
  * @brief Convert an ISO time into seconds since epoch.
  *
  * For backward compatibility, if the conversion fails try parse in ctime
@@ -1322,7 +1356,7 @@ parse_iso_time (const char *text_time)
 
   if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
     {
-      return parse_otp_time (text_time);
+      return parse_ctime (text_time);
     }
 
   epoch_time = mktime (&tm);

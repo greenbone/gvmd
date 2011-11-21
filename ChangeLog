@@ -1,4 +1,10 @@
-2011-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
+2011-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (parse_ctime): Parse ctime using the current timezone.
+	(parse_iso_time): Call parse_ctime instead of parse_iso_time, so that old
+	reports are imported using the current timezone.
+
+2011-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Switch report times to ISO 8601 format.
 
