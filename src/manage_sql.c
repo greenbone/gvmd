@@ -251,6 +251,9 @@ delete_task_lock (task_t, int);
 static gchar*
 clean_hosts (const char *);
 
+static char *
+iso_time (time_t *);
+
 
 /* Variables. */
 
@@ -849,23 +852,7 @@ sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
- * @brief Return string from ctime with newline replaces with terminator.
- *
- * @param[in]  time  Time.
- *
- * @return Return from ctime applied to time, with newline stripped off.
- */
-static char*
-ctime_strip_newline (time_t *time)
-{
-  char* ret = ctime (time);
-  if (ret && strlen (ret) > 0)
-    ret[strlen (ret) - 1] = '\0';
-  return ret;
-}
-
-/**
- * @brief Convert an epoch time into ctime format.
+ * @brief Convert an epoch time into a string in ISO format.
  *
  * This is a callback for a scalar SQL function of one argument.
  *
@@ -874,9 +861,8 @@ ctime_strip_newline (time_t *time)
  * @param[in]  argv     Argument array.
  */
 static void
-sql_ctime (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_iso_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
-  gchar *text_time;
   time_t epoch_time;
 
   assert (argc == 1);
@@ -886,8 +872,13 @@ sql_ctime (sqlite3_context *context, int argc, sqlite3_value** argv)
     sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
   else
     {
-      text_time = ctime_strip_newline (&epoch_time);
-      sqlite3_result_text (context, text_time, -1, SQLITE_TRANSIENT);
+      const char *iso;
+
+      iso = iso_time (&epoch_time);
+      if (iso)
+        sqlite3_result_text (context, iso, -1, SQLITE_TRANSIENT);
+      else
+        sqlite3_result_error (context, "Failed to format time", -1);
     }
 }
 
@@ -1311,6 +1302,74 @@ parse_otp_time (const char *text_time)
 
   g_free (tz);
   return epoch_time;
+}
+
+/**
+ * @brief Convert an ISO time into seconds since epoch.
+ *
+ * For backward compatibility, if the conversion fails try parse in ctime
+ * format.
+ *
+ * @param[in]  text_time  Time as text in ISO format: 2011-11-03T09:23:28+02:00.
+ *
+ * @return Time since epoch.  0 on error.
+ */
+static int
+parse_iso_time (const char *text_time)
+{
+  int epoch_time;
+  struct tm tm;
+
+  if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
+    {
+      return parse_otp_time (text_time);
+    }
+
+  epoch_time = mktime (&tm);
+  if (epoch_time == -1)
+    {
+      g_warning ("%s: Failed to make time", __FUNCTION__);
+      return 0;
+    }
+
+  return epoch_time;
+}
+
+/**
+ * @brief Create an ISO time from seconds since epoch.
+ *
+ * @param[in]  epoch_time  Time in seconds from epoch.
+ *
+ * @return Pointer to ISO time in static memory, or NULL on error.
+ */
+static char *
+iso_time (time_t *epoch_time)
+{
+  struct tm *tm;
+  static char time_string[100];
+
+  tm = localtime (epoch_time);
+  if (timezone == 0)
+    {
+      if (strftime (time_string, 98, "%FT%TZ", tm) == 0)
+        return NULL;
+    }
+  else
+    {
+      int len;
+
+      if (strftime (time_string, 98, "%FT%T%z", tm) == 0)
+        return NULL;
+
+      /* Insert the ISO 8601 colon by hand. */
+      len = strlen (time_string);
+      time_string[len + 1] = '\0';
+      time_string[len] = time_string[len - 1];
+      time_string[len - 1] = time_string[len - 2];
+      time_string[len - 2] = ':';
+    }
+
+  return time_string;
 }
 
 
@@ -8296,16 +8355,16 @@ init_manage_process (int update_nvt_cache, const gchar *database)
         }
 
       if (sqlite3_create_function (task_db,
-                                   "ctime",
+                                   "iso_time",
                                    1,               /* Number of args. */
                                    SQLITE_UTF8,
                                    NULL,            /* Callback data. */
-                                   sql_ctime,
+                                   sql_iso_time,
                                    NULL,            /* xStep. */
                                    NULL)            /* xFinal. */
           != SQLITE_OK)
         {
-          g_warning ("%s: failed to create ctime", __FUNCTION__);
+          g_warning ("%s: failed to create iso_time", __FUNCTION__);
           abort ();
         }
 
@@ -9824,7 +9883,7 @@ char*
 task_start_time (task_t task)
 {
   return sql_string (0, 0,
-                     "SELECT ctime (start_time)"
+                     "SELECT iso_time (start_time)"
                      " FROM tasks WHERE ROWID = %llu;",
                      task);
 }
@@ -9833,10 +9892,25 @@ task_start_time (task_t task)
  * @brief Set the start time of a task.
  *
  * @param[in]  task  Task.
- * @param[in]  time  New time.  Freed before return.
+ * @param[in]  time  New time.  ISO format.  Freed before return.
  */
 void
 set_task_start_time (task_t task, char* time)
+{
+  sql ("UPDATE tasks SET start_time = %i WHERE ROWID = %llu;",
+       parse_iso_time (time),
+       task);
+  free (time);
+}
+
+/**
+ * @brief Set the start time of a task.
+ *
+ * @param[in]  task  Task.
+ * @param[in]  time  New time.  OTP format (ctime).  Freed before return.
+ */
+void
+set_task_start_time_otp (task_t task, char* time)
 {
   sql ("UPDATE tasks SET start_time = %i WHERE ROWID = %llu;",
        parse_otp_time (time),
@@ -11285,14 +11359,14 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   if (scan_start)
     {
       sql ("UPDATE reports SET start_time = %i WHERE ROWID = %llu;",
-           parse_otp_time (scan_start),
+           parse_iso_time (scan_start),
            report);
     }
 
   if (scan_end)
     {
       sql ("UPDATE reports SET end_time = %i WHERE ROWID = %llu;",
-           parse_otp_time (scan_end),
+           parse_iso_time (scan_end),
            report);
     }
 
@@ -11346,7 +11420,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
              " VALUES (%llu, '%s', %i);",
              report,
              quoted_host,
-             parse_otp_time (start->description));
+             parse_iso_time (start->description));
 
         g_free (quoted_host);
       }
@@ -11400,19 +11474,11 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         quoted_host = sql_quote (end->host);
 
         if (end->description)
-          {
-            gchar *quoted_time;
-
-            quoted_time = sql_quote (end->description);
-
-            sql ("UPDATE report_hosts SET end_time = '%s'"
-                 " WHERE report = %llu AND host = '%s';",
-                 quoted_time,
-                 report,
-                 quoted_host);
-
-            g_free (quoted_time);
-          }
+          sql ("UPDATE report_hosts SET end_time = %i"
+               " WHERE report = %llu AND host = '%s';",
+               parse_iso_time (end->description),
+               report,
+               quoted_host);
         else
           sql ("UPDATE report_hosts SET end_time = NULL"
                " WHERE report = %llu AND host = '%s';",
@@ -12370,8 +12436,8 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
     {
       if (report_host)
         init_iterator (iterator,
-                       "SELECT ROWID, host, ctime (start_time),"
-                       " ctime (end_time), attack_state, current_port,"
+                       "SELECT ROWID, host, iso_time (start_time),"
+                       " iso_time (end_time), attack_state, current_port,"
                        " max_port, report,"
                        " (SELECT uuid FROM reports WHERE ROWID = report)"
                        " FROM report_hosts WHERE ROWID = %llu"
@@ -12385,8 +12451,8 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
                        host ? "'" : "");
       else
         init_iterator (iterator,
-                       "SELECT ROWID, host, ctime (start_time),"
-                       " ctime (end_time), attack_state, current_port,"
+                       "SELECT ROWID, host, iso_time (start_time),"
+                       " iso_time (end_time), attack_state, current_port,"
                        " max_port, report,"
                        " (SELECT uuid FROM reports WHERE ROWID = report)"
                        " FROM report_hosts WHERE report = %llu"
@@ -12401,8 +12467,8 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
     {
       if (report_host)
         init_iterator (iterator,
-                       "SELECT ROWID, host, ctime (start_time),"
-                       " ctime (end_time), attack_state, current_port,"
+                       "SELECT ROWID, host, iso_time (start_time),"
+                       " iso_time (end_time), attack_state, current_port,"
                        " max_port, report,"
                        " (SELECT uuid FROM reports WHERE ROWID = report)"
                        " FROM report_hosts WHERE ROWID = %llu"
@@ -12414,8 +12480,8 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
                        host ? "'" : "");
       else
         init_iterator (iterator,
-                       "SELECT ROWID, host, ctime (start_time),"
-                       " ctime (end_time), attack_state, current_port,"
+                       "SELECT ROWID, host, iso_time (start_time),"
+                       " iso_time (end_time), attack_state, current_port,"
                        " max_port, report,"
                        " (SELECT uuid FROM reports WHERE ROWID = report)"
                        " FROM report_hosts"
@@ -12894,7 +12960,7 @@ char*
 scan_start_time (report_t report)
 {
   char *time = sql_string (0, 0,
-                           "SELECT ctime (start_time)"
+                           "SELECT iso_time (start_time)"
                            " FROM reports WHERE ROWID = %llu;",
                            report);
   return time ? time : g_strdup ("");
@@ -12904,10 +12970,24 @@ scan_start_time (report_t report)
  * @brief Set the start time of a scan.
  *
  * @param[in]  report     The report associated with the scan.
- * @param[in]  timestamp  Start time.
+ * @param[in]  timestamp  Start time.  In ISO format.
  */
 void
 set_scan_start_time (report_t report, const char* timestamp)
+{
+  sql ("UPDATE reports SET start_time = %i WHERE ROWID = %llu;",
+       parse_iso_time (timestamp),
+       report);
+}
+
+/**
+ * @brief Set the start time of a scan.
+ *
+ * @param[in]  report     The report associated with the scan.
+ * @param[in]  timestamp  Start time.  In OTP format (ctime).
+ */
+void
+set_scan_start_time_otp (report_t report, const char* timestamp)
 {
   sql ("UPDATE reports SET start_time = %i WHERE ROWID = %llu;",
        parse_otp_time (timestamp),
@@ -12925,7 +13005,7 @@ char*
 scan_end_time (report_t report)
 {
   char *time = sql_string (0, 0,
-                           "SELECT ctime (end_time)"
+                           "SELECT iso_time (end_time)"
                            " FROM reports WHERE ROWID = %llu;",
                            report);
   return time ? time : g_strdup ("");
@@ -12935,10 +13015,28 @@ scan_end_time (report_t report)
  * @brief Set the end time of a scan.
  *
  * @param[in]  report     The report associated with the scan.
- * @param[in]  timestamp  End time.  If NULL, clear end time.
+ * @param[in]  timestamp  End time.  ISO format.  If NULL, clear end time.
  */
 void
 set_scan_end_time (report_t report, const char* timestamp)
+{
+  if (timestamp)
+    sql ("UPDATE reports SET end_time = %i WHERE ROWID = %llu;",
+         parse_iso_time (timestamp), report);
+  else
+    sql ("UPDATE reports SET end_time = NULL WHERE ROWID = %llu;",
+         report);
+}
+
+/**
+ * @brief Set the end time of a scan.
+ *
+ * @param[in]  report     The report associated with the scan.
+ * @param[in]  timestamp  End time.  OTP format (ctime).  If NULL, clear end
+ *                        time.
+ */
+void
+set_scan_end_time_otp (report_t report, const char* timestamp)
 {
   if (timestamp)
     sql ("UPDATE reports SET end_time = %i WHERE ROWID = %llu;",
@@ -12953,11 +13051,35 @@ set_scan_end_time (report_t report, const char* timestamp)
  *
  * @param[in]  report     Report associated with the scan.
  * @param[in]  host       Host.
- * @param[in]  timestamp  End time.
+ * @param[in]  timestamp  End time.  ISO format.
  */
 void
 set_scan_host_end_time (report_t report, const char* host,
                         const char* timestamp)
+{
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM report_hosts"
+               " WHERE report = %llu AND host = '%s';",
+               report, host))
+    sql ("UPDATE report_hosts SET end_time = %i"
+         " WHERE report = %llu AND host = '%s';",
+         parse_iso_time (timestamp), report, host);
+  else
+    sql ("INSERT into report_hosts (report, host, end_time)"
+         " VALUES (%llu, '%s', %i);",
+         report, host, parse_iso_time (timestamp));
+}
+
+/**
+ * @brief Set the end time of a scanned host.
+ *
+ * @param[in]  report     Report associated with the scan.
+ * @param[in]  host       Host.
+ * @param[in]  timestamp  End time.  OTP format (ctime).
+ */
+void
+set_scan_host_end_time_otp (report_t report, const char* host,
+                            const char* timestamp)
 {
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM report_hosts"
@@ -12977,11 +13099,35 @@ set_scan_host_end_time (report_t report, const char* host,
  *
  * @param[in]  report     Report associated with the scan.
  * @param[in]  host       Host.
- * @param[in]  timestamp  Start time.
+ * @param[in]  timestamp  Start time.  ISO format.
  */
 void
 set_scan_host_start_time (report_t report, const char* host,
                           const char* timestamp)
+{
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM report_hosts"
+               " WHERE report = %llu AND host = '%s';",
+               report, host))
+    sql ("UPDATE report_hosts SET start_time = %i"
+         " WHERE report = %llu AND host = '%s';",
+         parse_iso_time (timestamp), report, host);
+  else
+    sql ("INSERT into report_hosts (report, host, start_time)"
+         " VALUES (%llu, '%s', %i);",
+         report, host, parse_iso_time (timestamp));
+}
+
+/**
+ * @brief Set the start time of a scanned host.
+ *
+ * @param[in]  report     Report associated with the scan.
+ * @param[in]  host       Host.
+ * @param[in]  timestamp  Start time.  OTP format (ctime).
+ */
+void
+set_scan_host_start_time_otp (report_t report, const char* host,
+                              const char* timestamp)
 {
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM report_hosts"
@@ -13015,10 +13161,9 @@ report_timestamp (const char* report_id, gchar** timestamp)
   time_t time = sql_int (0, 0,
                          "SELECT date FROM reports where uuid = '%s';",
                          report_id);
-  stamp = ctime (&time);
+  stamp = iso_time (&time);
   if (stamp == NULL) return -1;
-  /* Allocate a copy, clearing the newline from the end of the timestamp. */
-  *timestamp = g_strndup (stamp, strlen (stamp) - 1);
+  *timestamp = g_strdup (stamp);
   return 0;
 }
 

@@ -2466,9 +2466,9 @@ process_otp_scanner_input ()
                   if (current_scanner_task)
                     {
                       assert (current_host);
-                      set_scan_host_start_time (current_report,
-                                                current_host,
-                                                field);
+                      set_scan_host_start_time_otp (current_report,
+                                                    current_host,
+                                                    field);
                       g_free (current_host);
                       current_host = NULL;
                     }
@@ -2495,9 +2495,9 @@ process_otp_scanner_input ()
                   if (current_scanner_task)
                     {
                       assert (current_host);
-                      set_scan_host_end_time (current_report,
-                                              current_host,
-                                              field);
+                      set_scan_host_end_time_otp (current_report,
+                                                  current_host,
+                                                  field);
                       g_free (current_host);
                       current_host = NULL;
                     }
@@ -2521,9 +2521,9 @@ process_otp_scanner_input ()
                         {
                           set_task_run_status (current_scanner_task,
                                                TASK_STATUS_RUNNING);
-                          set_task_start_time (current_scanner_task,
-                                               g_strdup (field));
-                          set_scan_start_time (current_report, field);
+                          set_task_start_time_otp (current_scanner_task,
+                                                   g_strdup (field));
+                          set_scan_start_time_otp (current_report, field);
                         }
                     }
                   set_scanner_state (SCANNER_DONE);
@@ -2571,7 +2571,7 @@ process_otp_scanner_input ()
                         }
                       if (current_report)
                         {
-                          set_scan_end_time (current_report, field);
+                          set_scan_end_time_otp (current_report, field);
                           current_report = (report_t) 0;
                         }
                       current_scanner_task = (task_t) 0;

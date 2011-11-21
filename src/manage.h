@@ -418,7 +418,10 @@ char*
 task_start_time (task_t);
 
 void
-set_task_start_time (task_t task, char* time);
+set_task_start_time (task_t, char*);
+
+void
+set_task_start_time_otp (task_t, char*);
 
 char*
 task_end_time (task_t);
@@ -724,6 +727,9 @@ scan_start_time (report_t);
 void
 set_scan_start_time (report_t, const char*);
 
+void
+set_scan_start_time_otp (report_t, const char*);
+
 char*
 scan_end_time (report_t);
 
@@ -731,10 +737,19 @@ void
 set_scan_end_time (report_t, const char*);
 
 void
+set_scan_end_time_otp (report_t, const char*);
+
+void
 set_scan_host_start_time (report_t, const char*, const char*);
 
 void
+set_scan_host_start_time_otp (report_t, const char*, const char*);
+
+void
 set_scan_host_end_time (report_t, const char*, const char*);
+
+void
+set_scan_host_end_time_otp (report_t, const char*, const char*);
 
 int
 report_timestamp (const char*, gchar**);

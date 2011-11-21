@@ -1,6 +1,32 @@
 2011-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (create_report): Swap host_starts and host_ends arg
+	Switch report times to ISO 8601 format.
+
+	* src/manage_sql.c (ctime_strip_newline): Remove.  Out of use.
+	(sql_ctime): Remove.  Rename to sql_iso_time.
+	(sql_iso_time): New function.  Was sql_ctime.  Switch to ISO format.
+	(parse_iso_time, iso_time): New functions.
+	(init_manage_process): Rename ctime SQL function to iso_time.  Rename in
+	all callers too.
+	(set_task_start_time, create_report, set_scan_start_time)
+	(set_scan_end_time, set_scan_host_end_time)
+	(set_scan_host_start_time): Expect ISO time instead of ctime.
+	(set_task_start_time_otp, set_scan_start_time_otp)
+	(set_scan_start_time_otp, set_scan_host_end_time_otp)
+	(set_scan_host_start_time_otp): New function.  Copy of old ctime version.
+	(report_timestamp): Switch to ISO format.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Update version to reflect
+	change.
+
+	* src/otp.c (process_otp_scanner_input): Call ctime variants of time
+	functions.
+
+2011-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_report): Swap host_starts and host_ends args
 	to match documentation and callers.
 
 2011-11-16  Michael Wiegand <michael.wiegand@greenbone.net>
