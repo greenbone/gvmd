@@ -30201,13 +30201,10 @@ create_report_format (const char *uuid, const char *name,
       format = g_string_new ("");
 
       g_string_append_printf (format,
-                              "%s%s%s%s%s%s%i",
+                              "%s%s%s%i",
                               uuid,
-                              name,
                               extension,
                               content_type,
-                              summary,
-                              description,
                               global & 1);
 
       index = 0;
@@ -30223,9 +30220,8 @@ create_report_format (const char *uuid, const char *name,
                                                                     index++)))
         {
           g_string_append_printf (format,
-                                  "%s%s%s",
+                                  "%s%s",
                                   param->name,
-                                  param->value,
                                   param->type);
 
           if (param->type_min)
@@ -30937,13 +30933,10 @@ verify_report_format (report_format_t report_format)
 
           g_string_append_printf
            (format,
-            "%s%s%s%s%s%s%i",
+            "%s%s%s%i",
             report_format_iterator_uuid (&formats),
-            report_format_iterator_name (&formats),
             report_format_iterator_extension (&formats),
             report_format_iterator_content_type (&formats),
-            report_format_iterator_summary (&formats),
-            report_format_iterator_description (&formats),
             report_format_iterator_global (&formats) & 1);
 
           report_format = report_format_iterator_report_format (&formats);
@@ -30969,9 +30962,8 @@ verify_report_format (report_format_t report_format)
             {
               g_string_append_printf
                (format,
-                "%s%s%s",
+                "%s%s",
                 report_format_param_iterator_name (&params),
-                report_format_param_iterator_value (&params),
                 report_format_param_iterator_type_name (&params));
 
               if (report_format_param_iterator_type_min (&params) > LLONG_MIN)

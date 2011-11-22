@@ -1,5 +1,12 @@
 2011-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_report_format, verify_report_format): Remove
+	name, summary, description and parameter values from content for signing.
+	This insures that the trust stays the same, even if the report format is
+	edited.
+
+2011-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (iso_time): Make public.
 
 	* src/manage.h: Update header accordingly.
