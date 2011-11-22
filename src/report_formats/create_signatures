@@ -42,7 +42,7 @@ for uuid in `sqlite3 -noheader -init "" $DB 'SELECT uuid FROM report_formats' 2>
     echo "  Format $name with UUID $uuid and ROWID $id"
     rm -f ${name}/${uuid}.asc
     rm -f ${uuid}
-    fore=`sqlite3 -separator '' -noheader -init "" $DB "SELECT uuid, name, extension, content_type, summary, description, '1' FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
+    fore=`sqlite3 -separator '' -noheader -init "" $DB "SELECT uuid, extension, content_type, '1' FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
     echo -n "$fore" > ${uuid}
     for file in `ls $name`; do
       echo "    File $name/$file"
@@ -63,7 +63,7 @@ for uuid in `sqlite3 -noheader -init "" $DB 'SELECT uuid FROM report_formats' 2>
     done
     for param in `sqlite3 -noheader -init "" $DB "SELECT ROWID FROM report_format_params WHERE report_format = $id" 2>/dev/null`; do
       echo "    Param $param"
-      back=`sqlite3 -separator '' -noheader -init "" $DB "SELECT name, value FROM report_format_params WHERE ROWID = $param" 2>/dev/null`
+      back=`sqlite3 -separator '' -noheader -init "" $DB "SELECT name FROM report_format_params WHERE ROWID = $param" 2>/dev/null`
       echo -n "$back" >> ${uuid}
       type=`sqlite3 -noheader -init "" $DB "SELECT type FROM report_format_params WHERE ROWID = $param" 2>/dev/null`
       case $type in
@@ -87,7 +87,7 @@ for uuid in `sqlite3 -noheader -init "" $DB 'SELECT uuid FROM report_formats' 2>
           exit 1
           ;;
       esac
-      back=`sqlite3 -separator '' -noheader -init "" $DB "SELECT min, max FROM report_format_params WHERE ROWID = $param" 2>/dev/null`
+      back=`sqlite3 -separator '' -noheader -init "" $DB "SELECT min, max, value FROM report_format_params WHERE ROWID = $param" 2>/dev/null`
       echo -n "$back" >> ${uuid}
       for value in `sqlite3 -noheader -init "" $DB "SELECT ROWID FROM report_format_param_options WHERE ROWID = $option" 2>/dev/null`/*; do
         echo "    Param option $value"

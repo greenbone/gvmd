@@ -1,5 +1,10 @@
 2011-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/create_signatures: Remove editable values from
+	content for signing.
+
+2011-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (compare_files): New function.
 	(create_report_format): Sort the files alphabetically, to match the order
 	used in verify_report_format.
