@@ -10,7 +10,7 @@ FILE1=`base64 -w 0 generate`
 FNAME2=sourcefire.xsl
 FILE2=`base64 -w 0 sourcefire.xsl`
 
-echo ${UUID}${NAME}${EXTENSION}${CONTENT_TYPE}${SUMMARY}${DESCRIPTION}0${FNAME1}${FILE1}${FNAME2}${FILE2}> ${UUID}
+echo ${UUID}${EXTENSION}${CONTENT_TYPE}0${FNAME1}${FILE1}${FNAME2}${FILE2}> ${UUID}
 gpg --detach-sign --armor ${UUID}
 rm ${UUID}
 

@@ -5,10 +5,10 @@ CONTENT_TYPE="image/png"
 SUMMARY="Geographic Map"
 DESCRIPTION="Targets located on a worldmap as static png image."
 # Names must be in alphabetical order.
-FNAME1=fonts.txt
-FILE1=`base64 -w 0 fonts.txt`
-FNAME2=FreeSans.ttf
-FILE2=`base64 -w 0 FreeSans.ttf`
+FNAME1=FreeSans.ttf
+FILE1=`base64 -w 0 FreeSans.ttf`
+FNAME2=fonts.txt
+FILE2=`base64 -w 0 fonts.txt`
 FNAME3=generate
 FILE3=`base64 -w 0 generate`
 FNAME4=hosts.vrt
@@ -17,18 +17,18 @@ FNAME5=join.awk
 FILE5=`base64 -w 0 join.awk`
 FNAME6=locations.csv
 FILE6=`base64 -w 0 locations.csv`
-FNAME7=report_to_csv_host.xsl
-FILE7=`base64 -w 0 report_to_csv_host.xsl`
-FNAME8=world_map.map
-FILE8=`base64 -w 0 world_map.map`
-FNAME9=world_map.tiff
-FILE9=`base64 -w 0 world_map.tiff`
-FNAME10=non-georeferenced.map
-FILE10=`base64 -w 0 non-georeferenced.map`
-FNAME11=non-georeferenced.dot
-FILE11=`base64 -w 0 non-georeferenced.dot`
+FNAME7=non-georeferenced.dot
+FILE7=`base64 -w 0 non-georeferenced.dot`
+FNAME8=non-georeferenced.map
+FILE8=`base64 -w 0 non-georeferenced.map`
+FNAME9=report_to_csv_host.xsl
+FILE9=`base64 -w 0 report_to_csv_host.xsl`
+FNAME10=world_map.map
+FILE10=`base64 -w 0 world_map.map`
+FNAME11=world_map.tiff
+FILE11=`base64 -w 0 world_map.tiff`
 
-echo ${UUID}${NAME}${EXTENSION}${CONTENT_TYPE}${SUMMARY}${DESCRIPTION}0${FNAME1}${FILE1}${FNAME2}${FILE2}${FNAME3}${FILE3}${FNAME4}${FILE4}${FNAME5}${FILE5}${FNAME6}${FILE6}${FNAME7}${FILE7}${FNAME8}${FILE8}${FNAME9}${FILE9}${FNAME10}${FILE10}${FNAME11}${FILE11}> ${UUID}
+echo ${UUID}${EXTENSION}${CONTENT_TYPE}0${FNAME1}${FILE1}${FNAME2}${FILE2}${FNAME3}${FILE3}${FNAME4}${FILE4}${FNAME5}${FILE5}${FNAME6}${FILE6}${FNAME7}${FILE7}${FNAME8}${FILE8}${FNAME9}${FILE9}${FNAME10}${FILE10}${FNAME11}${FILE11}> ${UUID}
 gpg --detach-sign --armor ${UUID}
 rm ${UUID}
 

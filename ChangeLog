@@ -1,3 +1,16 @@
+2011-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (compare_files): New function.
+	(create_report_format): Sort the files alphabetically, to match the order
+	used in verify_report_format.
+
+	* report_formats/simple_bar_chart/create_report_import,
+	report_formats/simple_map_plot/create_report_import,
+	report_formats/simple_pie_chart/create_report_import,
+	report_formats/simple_topo_plot/create_report_import,
+	report_formats/sourcefire/create_report_import: Remove editable values
+	from content for signing, to match Manager.  Order files alphabetically.
+
 2011-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_report_format, verify_report_format): Remove

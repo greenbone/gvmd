@@ -42,6 +42,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <locale.h>
 #include <pwd.h>
 #include <sqlite3.h>
 #include <stdlib.h>
@@ -30149,6 +30150,29 @@ lookup_report_format (const char* name, report_format_t* report_format)
 }
 
 /**
+ * @brief Compare files for create_report_format.
+ *
+ * @param[in]  one  First.
+ * @param[in]  two  Second.
+ */
+static gint
+compare_files (gconstpointer one, gconstpointer two)
+{
+  gchar *file_one, *file_two;
+  file_one = *((gchar**) one);
+  file_two = *((gchar**) two);
+  if (file_one == NULL)
+    {
+      if (file_two == NULL)
+        return 0;
+      return 1;
+    }
+  else if (file_two == NULL)
+    return -1;
+  return strcoll (file_one, file_two);
+}
+
+/**
  * @brief Create a report format.
  *
  * @param[in]   uuid           UUID of format.
@@ -30196,6 +30220,7 @@ create_report_format (const char *uuid, const char *name,
                           &format_signature_size)
           == 0))
     {
+      char *locale;
       GString *format;
 
       format = g_string_new ("");
@@ -30208,6 +30233,9 @@ create_report_format (const char *uuid, const char *name,
                               global & 1);
 
       index = 0;
+      locale = setlocale (LC_ALL, "C");
+      g_ptr_array_sort (files, compare_files);
+      setlocale (LC_ALL, locale);
       while ((file_name = (gchar*) g_ptr_array_index (files, index++)))
         g_string_append_printf (format,
                                 "%s%s",
