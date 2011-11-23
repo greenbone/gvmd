@@ -1,3 +1,21 @@
+openvas-manager 3.0+beta7 (2011-11-23)
+
+This is the seventh beta version of the upcoming 3.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release improves the handling of timestamps in reports and uses report
+format signatures without the user editable fields, ensure the trust level stays
+correct if these fields have been changed.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell and Michael Wiegand.
+
+Main changes since 3.0+beta6:
+* The handling of timestamps in reports has been improved.
+* Report format signatures no longer contain user editable fields.
+
+
 openvas-manager 3.0+beta6 (2011-11-16)
 
 This is the sixth beta version of the upcoming 3.0 release of the OpenVAS

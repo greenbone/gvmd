@@ -1,3 +1,9 @@
+2011-11-23  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 3.0+beta7 release.
+
+	* CHANGES: Updated.
+
 2011-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Check for the predefined report formats
