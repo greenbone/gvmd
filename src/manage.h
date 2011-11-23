@@ -1453,7 +1453,7 @@ note_uuid (note_t, char **);
 
 int
 modify_note (note_t, const char*, const char*, const char*, const char*,
-             task_t, result_t);
+             const char*, task_t, result_t);
 
 void
 init_note_iterator (iterator_t*, note_t, nvt_t, result_t, task_t, int,
@@ -1488,6 +1488,12 @@ note_iterator_task (iterator_t*);
 
 result_t
 note_iterator_result (iterator_t*);
+
+time_t
+note_iterator_end_time (iterator_t*);
+
+int
+note_iterator_active (iterator_t*);
 
 const char*
 note_iterator_nvt_name (iterator_t *);

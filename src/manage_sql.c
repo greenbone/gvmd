@@ -1430,7 +1430,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY, name UNIQUE, value);");
-  sql ("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, result INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* in manage.h). */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
@@ -5541,6 +5541,40 @@ migrate_52_to_53 ()
 }
 
 /**
+ * @brief Migrate the database from version 53 to version 54.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_53_to_54 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 53. */
+
+  if (manage_db_version () != 53)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The notes table got a end_time column. */
+
+  sql ("ALTER TABLE notes ADD column end_time;");
+  sql ("UPDATE notes SET end_time = 0;");
+
+  /* Set the database version to 54. */
+
+  set_db_version (54);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -5598,6 +5632,7 @@ static migrator_t database_migrators[]
     {51, migrate_50_to_51},
     {52, migrate_51_to_52},
     {53, migrate_52_to_53},
+    {54, migrate_53_to_54},
     /* End marker. */
     {-1, NULL}};
 
@@ -28288,6 +28323,8 @@ note_uuid (note_t note, char ** id)
  * @brief Modify a note.
  *
  * @param[in]  note        Note.
+ * @param[in]  active      NULL or -2 leave as is, -1 on, 0 off, n on for n
+ *                         days.
  * @param[in]  text        Note text.
  * @param[in]  hosts       Hosts to apply note to, NULL for any host.
  * @param[in]  port        Port to apply note to, NULL for any port.
@@ -28295,12 +28332,12 @@ note_uuid (note_t note, char ** id)
  * @param[in]  task        Task to apply note to, 0 for any task.
  * @param[in]  result      Result to apply note to, 0 for any result.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, 1 syntax error in active.
  */
 int
-modify_note (note_t note, const char* text, const char* hosts,
-             const char* port, const char* threat, task_t task,
-             result_t result)
+modify_note (note_t note, const char *active, const char* text,
+             const char* hosts, const char* port, const char* threat,
+             task_t task, result_t result)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
 
@@ -28321,23 +28358,58 @@ modify_note (note_t note, const char* text, const char* hosts,
   quoted_threat = sql_insert ((threat && strlen (threat))
                                 ? threat_message_type (threat) : NULL);
 
-  sql ("UPDATE notes SET"
-       " modification_time = %i,"
-       " text = %s,"
-       " hosts = %s,"
-       " port = %s,"
-       " threat = %s,"
-       " task = %llu,"
-       " result = %llu"
-       " WHERE ROWID = %llu;",
-       time (NULL),
-       quoted_text,
-       quoted_hosts,
-       quoted_port,
-       quoted_threat,
-       task,
-       result,
-       note);
+  if ((active == NULL) || (strcmp (active, "-2") == 0))
+    sql ("UPDATE notes SET"
+         " modification_time = %i,"
+         " text = %s,"
+         " hosts = %s,"
+         " port = %s,"
+         " threat = %s,"
+         " task = %llu,"
+         " result = %llu"
+         " WHERE ROWID = %llu;",
+         time (NULL),
+         quoted_text,
+         quoted_hosts,
+         quoted_port,
+         quoted_threat,
+         task,
+         result,
+         note);
+  else
+    {
+      const char *point;
+      point = active;
+      if (strcmp (point, "-1"))
+        {
+          while (*point && isdigit (*point)) point++;
+          if (*point)
+            return 1;
+        }
+      sql ("UPDATE notes SET"
+           " end_time = %i,"
+           " modification_time = %i,"
+           " text = %s,"
+           " hosts = %s,"
+           " port = %s,"
+           " threat = %s,"
+           " task = %llu,"
+           " result = %llu"
+           " WHERE ROWID = %llu;",
+           (strcmp (active, "-1")
+             ? (strcmp (active, "0")
+                 ? (time (NULL) + atoi (active) * 60 * 60 * 24)
+                 : 1)
+             : 0),
+           time (NULL),
+           quoted_text,
+           quoted_hosts,
+           quoted_port,
+           quoted_threat,
+           task,
+           result,
+           note);
+    }
 
   g_free (quoted_text);
   g_free (quoted_hosts);
@@ -28353,7 +28425,9 @@ modify_note (note_t note, const char* text, const char* hosts,
 #define NOTE_COLUMNS "notes.ROWID, notes.uuid, notes.nvt,"                 \
                      " notes.creation_time, notes.modification_time,"      \
                      " notes.text, notes.hosts, notes.port, notes.threat," \
-                     " notes.task, notes.result"
+                     " notes.task, notes.result, notes.end_time,"          \
+                     " (notes.end_time = 0)"                               \
+                     "  OR (notes.end_time >= now ())"
 
 /**
  * @brief Initialise a note iterator.
@@ -28599,6 +28673,39 @@ note_iterator_result (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return (result_t) sqlite3_column_int64 (iterator->stmt, 10);
+}
+
+/**
+ * @brief Get the end time from an note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Time until which note applies.  0 for always.  1 means the
+ *         note has been explicitly turned off.
+ */
+time_t
+note_iterator_end_time (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 12);
+  return ret;
+}
+
+/**
+ * @brief Get the active status from an note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if active, else 0.
+ */
+int
+note_iterator_active (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = sqlite3_column_int (iterator->stmt, 13);
+  return ret;
 }
 
 /**

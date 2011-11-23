@@ -1,3 +1,29 @@
+2011-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add note end times.  Hence increase database version to 54.  Add
+	database migration from version 53 to 54.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 54.
+
+	* src/manage_sql.c (create_tables): Add end_time to notes.
+	(migrate_53_to_54): New functions.
+	(database_migrators): Add migrate_53_to_54.
+	(modify_note): Add active param.
+	(NOTE_COLUMNS): Add active fields.
+	(note_iterator_end_time, note_iterator_active): New functions.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (modify_note_data_t, modify_note_data_reset)
+	(client_state_t): Add active.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add ACTIVE to MODIFY_NOTE and CREATE_NOTE.
+	(buffer_notes_xml): Add ACTIVE and END_TIME to NOTE.
+
+	* doc/db_postgres.sql (notes): Add column end_time.
+
+	* doc/db.png: Update from source.
+
 2011-11-23  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.

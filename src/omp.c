@@ -2264,6 +2264,7 @@ modify_task_data_reset (modify_task_data_t *data)
  */
 typedef struct
 {
+  char *active;       ///< Whether the override is active.
   char *hosts;        ///< Hosts to which to limit override.
   char *note_id;      ///< ID of note to modify.
   char *nvt_oid;      ///< NVT to which to limit override.
@@ -2282,6 +2283,7 @@ typedef struct
 static void
 modify_note_data_reset (modify_note_data_t *data)
 {
+  free (data->active);
   free (data->hosts);
   free (data->note_id);
   free (data->nvt_oid);
@@ -3319,6 +3321,7 @@ typedef enum
   CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY,
   CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT,
   CLIENT_MODIFY_NOTE,
+  CLIENT_MODIFY_NOTE_ACTIVE,
   CLIENT_MODIFY_NOTE_HOSTS,
   CLIENT_MODIFY_NOTE_PORT,
   CLIENT_MODIFY_NOTE_RESULT,
@@ -7513,7 +7516,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_NOTE:
-        if (strcasecmp ("HOSTS", element_name) == 0)
+        if (strcasecmp ("ACTIVE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_NOTE_ACTIVE);
+        else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_MODIFY_NOTE_HOSTS);
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_NOTE_PORT);
@@ -7547,7 +7552,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_NOTE_THREAT);
         else
           {
-            if (send_element_error_to_client ("MODIFY_note", element_name,
+            if (send_element_error_to_client ("MODIFY_NOTE", element_name,
                                               write_to_client,
                                               write_to_client_data))
               {
@@ -8134,12 +8139,14 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     "<nvt oid=\"%s\">"
                                     "<name>%s</name>"
                                     "</nvt>"
+                                    "<active>%i</active>"
                                     "<text excerpt=\"%i\">%s</text>"
                                     "<orphan>%i</orphan>"
                                     "</note>",
                                     note_iterator_uuid (notes),
                                     note_iterator_nvt_oid (notes),
                                     note_iterator_nvt_name (notes),
+                                    note_iterator_active (notes),
                                     strlen (excerpt) < strlen (text),
                                     excerpt,
                                     ((note_iterator_task (notes)
@@ -8154,6 +8161,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
           time_t creation_time, mod_time;
           gchar *creation, *mod;
           int trash_task;
+          time_t end_time;
 
           if (uuid_task)
             {
@@ -8170,6 +8178,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
           creation = g_strdup (iso_time (&creation_time));
           mod_time = note_iterator_modification_time (notes);
           mod = g_strdup (iso_time (&mod_time));
+          end_time = note_iterator_end_time (notes);
 
           buffer_xml_append_printf
            (buffer,
@@ -8177,6 +8186,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             "<nvt oid=\"%s\"><name>%s</name></nvt>"
             "<creation_time>%s</creation_time>"
             "<modification_time>%s</modification_time>"
+            "<active>%i</active>"
+            "<end_time>%s</end_time>"
             "<text>%s</text>"
             "<hosts>%s</hosts>"
             "<port>%s</port>"
@@ -8188,6 +8199,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             note_iterator_nvt_name (notes),
             creation,
             mod,
+            note_iterator_active (notes),
+            end_time > 1 ? iso_time (&end_time) : "",
             note_iterator_text (notes),
             note_iterator_hosts (notes)
              ? note_iterator_hosts (notes) : "",
@@ -14638,6 +14651,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else switch (modify_note (note,
+                                    modify_note_data->active,
                                     modify_note_data->text,
                                     modify_note_data->hosts,
                                     modify_note_data->port,
@@ -14662,6 +14676,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      case CLIENT_MODIFY_NOTE_ACTIVE:
+        assert (strcasecmp ("ACTIVE", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_NOTE);
+        break;
       case CLIENT_MODIFY_NOTE_HOSTS:
         assert (strcasecmp ("HOSTS", element_name) == 0);
         set_client_state (CLIENT_MODIFY_NOTE);
@@ -18277,6 +18295,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                              text_len);
         break;
 
+      case CLIENT_MODIFY_NOTE_ACTIVE:
+        openvas_append_text (&modify_note_data->active, text, text_len);
+        break;
       case CLIENT_MODIFY_NOTE_HOSTS:
         openvas_append_text (&modify_note_data->hosts, text, text_len);
         break;
