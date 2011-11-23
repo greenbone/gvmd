@@ -1,3 +1,9 @@
+2011-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Check for the predefined report formats
+	by UUID instead of by name.  This prevents them from being duplicated when
+	the user changes the name.
+
 2011-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/create_signatures: Remove editable values from

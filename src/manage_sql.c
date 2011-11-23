@@ -8983,7 +8983,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   /* Ensure the predefined report formats exist. */
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'CPE';")
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM report_formats"
+               " WHERE uuid = 'a0704abb-2120-489f-959f-251c9f4ffebd';")
       == 0)
     {
       report_format_t report_format;
@@ -9008,7 +9010,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       verify_report_format (report_format);
     }
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'HTML';")
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM report_formats"
+               " WHERE uuid = 'b993b6f5-f9fb-4e6e-9c94-dd46c00e058d';")
       == 0)
     {
       report_format_t report_format;
@@ -9025,7 +9029,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       verify_report_format (report_format);
     }
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'ITG';")
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM report_formats"
+               " WHERE uuid = '929884c6-c2c4-41e7-befb-2f6aa163b458';")
       == 0)
     {
       report_format_t report_format;
@@ -9042,7 +9048,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       verify_report_format (report_format);
     }
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'LaTeX';")
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM report_formats"
+               " WHERE uuid = '9f1ab17b-aaaa-411a-8c57-12df446f5588';")
       == 0)
     {
       report_format_t report_format;
@@ -9058,7 +9066,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       verify_report_format (report_format);
     }
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'NBE';")
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM report_formats"
+               " WHERE uuid = 'f5c2a364-47d2-4700-b21d-0a7693daddab';")
       == 0)
     {
       report_format_t report_format;
@@ -9074,7 +9084,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       verify_report_format (report_format);
     }
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'PDF';")
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM report_formats"
+               " WHERE uuid = '1a60a67e-97d0-4cbf-bc77-f71b08e7043d';")
       == 0)
     {
       report_format_t report_format;
@@ -9090,7 +9102,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       verify_report_format (report_format);
     }
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'TXT';")
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM report_formats"
+               " WHERE uuid = '19f6f1b3-7128-4433-888c-ccc764fe6ed5';")
       == 0)
     {
       report_format_t report_format;
@@ -9106,7 +9120,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       verify_report_format (report_format);
     }
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'XML';")
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM report_formats"
+               " WHERE uuid = 'd5da9f67-8551-4e51-807b-b6a873d70e34';")
       == 0)
     {
       report_format_t report_format;
