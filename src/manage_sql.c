@@ -28225,6 +28225,7 @@ find_note (const char* uuid, note_t* note)
 /**
  * @brief Create a note.
  *
+ * @param[in]  active      NULL or -1 on, 0 off, n on for n days.
  * @param[in]  nvt         OID of noted NVT.
  * @param[in]  text        Note text.
  * @param[in]  hosts       Hosts to apply note to, NULL for any host.
@@ -28237,9 +28238,9 @@ find_note (const char* uuid, note_t* note)
  * @return 0 success, -1 error.
  */
 int
-create_note (const char* nvt, const char* text, const char* hosts,
-             const char* port, const char* threat, task_t task,
-             result_t result, note_t *note)
+create_note (const char* active, const char* nvt, const char* text,
+             const char* hosts, const char* port, const char* threat,
+             task_t task, result_t result, note_t *note)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
 
@@ -28262,10 +28263,10 @@ create_note (const char* nvt, const char* text, const char* hosts,
 
   sql ("INSERT INTO notes"
        " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-       "  port, threat, task, result)"
+       "  port, threat, task, result, end_time)"
        " VALUES"
        " (make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "  '%s', %i, %i, %s, %s, %s, %s, %llu, %llu);",
+       "  '%s', %i, %i, %s, %s, %s, %s, %llu, %llu, %i);",
        current_credentials.uuid,
        nvt,
        time (NULL),
@@ -28275,7 +28276,12 @@ create_note (const char* nvt, const char* text, const char* hosts,
        quoted_port,
        quoted_threat,
        task,
-       result);
+       result,
+       (active == NULL || (strcmp (active, "-1") == 0))
+         ? 0
+         : (strcmp (active, "0")
+             ? (time (NULL) + (atoi (active) * 60 * 60 * 24))
+             : 1));
 
   g_free (quoted_text);
   g_free (quoted_hosts);
@@ -28688,7 +28694,7 @@ note_iterator_end_time (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 12);
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 11);
   return ret;
 }
 
@@ -28704,7 +28710,7 @@ note_iterator_active (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = sqlite3_column_int (iterator->stmt, 13);
+  ret = sqlite3_column_int (iterator->stmt, 12);
   return ret;
 }
 

@@ -821,6 +821,7 @@ create_lsc_credential_data_reset (create_lsc_credential_data_t *data)
  */
 typedef struct
 {
+  char *active;       ///< Whether the note is active.
   char *hosts;        ///< Hosts to which to limit override.
   char *nvt_oid;      ///< NVT to which to limit override.
   char *port;         ///< Port to which to limit override.
@@ -838,6 +839,7 @@ typedef struct
 static void
 create_note_data_reset (create_note_data_t *data)
 {
+  free (data->active);
   free (data->hosts);
   free (data->nvt_oid);
   free (data->port);
@@ -2264,7 +2266,7 @@ modify_task_data_reset (modify_task_data_t *data)
  */
 typedef struct
 {
-  char *active;       ///< Whether the override is active.
+  char *active;       ///< Whether the note is active.
   char *hosts;        ///< Hosts to which to limit override.
   char *note_id;      ///< ID of note to modify.
   char *nvt_oid;      ///< NVT to which to limit override.
@@ -3124,6 +3126,7 @@ typedef enum
   CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE,
   CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC,
   CLIENT_CREATE_NOTE,
+  CLIENT_CREATE_NOTE_ACTIVE,
   CLIENT_CREATE_NOTE_HOSTS,
   CLIENT_CREATE_NOTE_NVT,
   CLIENT_CREATE_NOTE_PORT,
@@ -6451,7 +6454,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_NOTE:
-        if (strcasecmp ("HOSTS", element_name) == 0)
+        if (strcasecmp ("ACTIVE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_NOTE_ACTIVE);
+        else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE_HOSTS);
         else if (strcasecmp ("NVT", element_name) == 0)
           {
@@ -12831,7 +12836,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
-          else switch (create_note (create_note_data->nvt_oid,
+          else switch (create_note (create_note_data->active,
+                                    create_note_data->nvt_oid,
                                     create_note_data->text,
                                     create_note_data->hosts,
                                     create_note_data->port,
@@ -12863,6 +12869,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      case CLIENT_CREATE_NOTE_ACTIVE:
+        assert (strcasecmp ("ACTIVE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_NOTE);
+        break;
       case CLIENT_CREATE_NOTE_HOSTS:
         assert (strcasecmp ("HOSTS", element_name) == 0);
         set_client_state (CLIENT_CREATE_NOTE);
@@ -17996,6 +18006,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         openvas_append_text (&create_escalator_data->part_name, text, text_len);
         break;
 
+      case CLIENT_CREATE_NOTE_ACTIVE:
+        openvas_append_text (&create_note_data->active, text, text_len);
+        break;
       case CLIENT_CREATE_NOTE_HOSTS:
         openvas_append_text (&create_note_data->hosts, text, text_len);
         break;

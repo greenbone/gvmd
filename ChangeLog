@@ -1,3 +1,16 @@
+2011-11-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_note): Add missing active param.
+	(note_iterator_end_time, note_iterator_active): Correct position.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (create_note_data_t, create_note_data_reset)
+	(client_state_t): Add active elements.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add ACTIVE to CREATE_NOTE.  Missing from last
+	patch.
+
 2011-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add note end times.  Hence increase database version to 54.  Add
