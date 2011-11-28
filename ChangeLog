@@ -1,3 +1,7 @@
+2011-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_count_filtered): Add missing paren in SQL.
+
 2011-11-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_note): Add missing active param.

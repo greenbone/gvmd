@@ -13809,7 +13809,7 @@ report_count_filtered (report_t report, const char *type, int override,
                   " WHERE ((overrides.owner IS NULL)"
                   "        OR (overrides.owner ="
                   "            (SELECT ROWID FROM users"
-                  "             WHERE users.uuid = '%s'))"
+                  "             WHERE users.uuid = '%s')))"
                   " AND ((overrides.end_time = 0)"
                   "      OR (overrides.end_time >= now ()))",
                   current_credentials.uuid))
