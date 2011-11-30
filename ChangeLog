@@ -1,5 +1,10 @@
 2011-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_counts_id_filt): Account for host in override
+	case.
+
+2011-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_count_filtered): Add missing paren in SQL.
 
 2011-11-24  Matthew Mundell <matthew.mundell@greenbone.net>

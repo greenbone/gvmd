@@ -14246,7 +14246,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
           task_t task;
 
           sqlite3_stmt *stmt, *full_stmt;
-          gchar *select;
+          gchar *select, *quoted_host;
           int ret;
 
           /* Prepare quick inner statement. */
@@ -14347,13 +14347,22 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
           if (filtered_logs) *filtered_logs = 0;
           if (filtered_warnings) *filtered_warnings = 0;
           if (filtered_false_positives) *filtered_false_positives = 0;
+          if (host)
+            quoted_host = sql_quote (host);
           init_iterator (&results,
                          "SELECT results.ROWID, results.nvt, results.type,"
                          " results.host, results.port, results.description"
                          " FROM results, report_results"
-                         " WHERE report_results.report = %llu"
+                         " WHERE"
+                         "%s%s%s"
+                         " report_results.report = %llu"
                          " AND results.ROWID = report_results.result",
+                         host ? " results.host = '" : "",
+                         host ? quoted_host : "",
+                         host ? "' AND" : "",
                          report);
+          if (host)
+            g_free (quoted_host);
           while (next (&results))
             {
               const char *nvt, *new_type;
