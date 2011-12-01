@@ -171,6 +171,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:call-template name="wrap">
       <xsl:with-param name="string" select="text"/>
     </xsl:call-template>
+    <xsl:choose>
+      <xsl:when test="active='0'">
+      </xsl:when>
+      <xsl:when test="active='1' and string-length (end_time) &gt; 0">
+        <xsl:text>Note active until: </xsl:text>
+        <xsl:value-of select="end_time"/>
+        <xsl:text>.</xsl:text>
+        <xsl:call-template name="newline"/>
+      </xsl:when>
+      <xsl:otherwise>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:text>Note last modified: </xsl:text>
     <xsl:value-of select="modification_time"/>
     <xsl:text>.</xsl:text>
@@ -196,6 +208,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:call-template name="wrap">
         <xsl:with-param name="string" select="text"/>
       </xsl:call-template>
+      <xsl:choose>
+        <xsl:when test="active='0'">
+        </xsl:when>
+        <xsl:when test="active='1' and string-length (end_time) &gt; 0">
+          <xsl:text>Override active until: </xsl:text>
+          <xsl:value-of select="end_time"/>
+          <xsl:text>.</xsl:text>
+          <xsl:call-template name="newline"/>
+        </xsl:when>
+        <xsl:otherwise>
+        </xsl:otherwise>
+      </xsl:choose>
       <xsl:text>Override last modified: </xsl:text>
       <xsl:value-of select="modification_time"/>
       <xsl:text>.</xsl:text>
@@ -414,8 +438,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
     <xsl:text>Host            High  Medium  Low  Log  False Positive</xsl:text>
     <xsl:call-template name="newline"/>
-    <xsl:for-each select="host_start" >
-      <xsl:variable name="current_host" select="host/text()" />
+    <xsl:for-each select="host" >
+      <xsl:variable name="current_host" select="ip" />
+      <xsl:variable name="hostname" select="detail[name/text() = 'hostname']/value"/>
       <xsl:call-template name="text-align-left">
         <xsl:with-param name="width" select="$col1-width"/>
         <xsl:with-param name="content" select="$current_host"/>
@@ -440,6 +465,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:with-param name="width" select="$col6-width +2 "/>
         <xsl:with-param name="content" select="count(../results/result[host/text() = $current_host][threat/text() = 'False Positive'])"/>
       </xsl:call-template>
+      <xsl:if test="$hostname">
+        <xsl:call-template name="text-align-right">
+          <xsl:with-param name="width" select="string-length ($hostname) + 4"/>
+          <xsl:with-param name="content" select="$hostname"/>
+        </xsl:call-template>
+      </xsl:if>
       <xsl:call-template name="newline"/>
     </xsl:for-each>
 

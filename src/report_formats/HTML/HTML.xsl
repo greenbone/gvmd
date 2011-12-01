@@ -108,6 +108,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
         </xsl:call-template>
       </pre>
+      <xsl:choose>
+        <xsl:when test="active='0'">
+        </xsl:when>
+        <xsl:when test="active='1' and string-length (end_time) &gt; 0">
+          Active until: <xsl:value-of select="end_time"/>.<br/>
+        </xsl:when>
+        <xsl:otherwise>
+        </xsl:otherwise>
+      </xsl:choose>
       Last modified: <xsl:value-of select="modification_time"/>.
     </div>
   </xsl:template>
@@ -131,6 +140,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
           </xsl:call-template>
         </pre>
+        <xsl:choose>
+          <xsl:when test="active='0'">
+          </xsl:when>
+          <xsl:when test="active='1' and string-length (end_time) &gt; 0">
+            Active until: <xsl:value-of select="end_time"/>.<br/>
+          </xsl:when>
+          <xsl:otherwise>
+          </xsl:otherwise>
+        </xsl:choose>
         Last modified: <xsl:value-of select="modification_time"/>.
       </div>
     </xsl:if>
@@ -319,11 +337,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <td>Log</td>
         <td>False Positive</td>
       </tr>
-      <xsl:for-each select="host_start" >
-        <xsl:variable name="current_host" select="host/text()" />
+      <xsl:for-each select="host" >
+        <xsl:variable name="current_host" select="ip" />
         <tr>
           <td>
-            <a href="#{$current_host}"><xsl:value-of select="$current_host"/></a>
+            <xsl:variable name="hostname" select="detail[name/text() = 'hostname']/value"/>
+            <xsl:choose>
+              <xsl:when test="$hostname">
+                <a href="#{$current_host}"><xsl:value-of select="concat($current_host, ' (', $hostname, ')')"/></a>
+              </xsl:when>
+              <xsl:otherwise>
+                <a href="#{$current_host}"><xsl:value-of select="$current_host"/></a>
+              </xsl:otherwise>
+            </xsl:choose>
           </td>
           <td><xsl:value-of select="count(../results/result[host/text() = $current_host][threat/text() = 'High'])"/></td>
           <td><xsl:value-of select="count(../results/result[host/text() = $current_host][threat/text() = 'Medium'])"/></td>

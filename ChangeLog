@@ -1,3 +1,15 @@
+2011-12-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/HTML/HTML.xsl (note, override): Add "active until".
+	(report): Add hostname in Host Summary.
+
+	* src/report_formats/LaTeX/latex.xsl (result-overview)
+	(results-overview-table-single-host-row): Add hostname in Host Summary.
+	(notes, overrides): Add "active until".
+
+	* src/report_formats/TXT/TXT.xsl (note, override): Add "active until".
+	(report): Add hostname in Host Summary.
+
 2011-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_counts_id_filt): Account for host in override

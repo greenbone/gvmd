@@ -477,11 +477,22 @@ advice given in each description, in order to rectify the issue.
 
   <!-- Row in table with count of issues for a single host. -->
   <xsl:template name="results-overview-table-single-host-row">
-    <xsl:variable name="host" select="host"/>
-    <xsl:call-template name="latex-hyperref">
-      <xsl:with-param name="target" select="concat('host:',$host)"/>
-      <xsl:with-param name="text" select="$host"/>
-    </xsl:call-template>
+    <xsl:variable name="host" select="ip"/>
+    <xsl:variable name="hostname" select="detail[name/text() = 'hostname']/value"/>
+    <xsl:choose>
+      <xsl:when test="$hostname">
+        <xsl:call-template name="latex-hyperref">
+          <xsl:with-param name="target" select="concat('host:',$host)"/>
+          <xsl:with-param name="text" select="concat($host, ' (', $hostname, ')')"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="latex-hyperref">
+          <xsl:with-param name="target" select="concat('host:',$host)"/>
+          <xsl:with-param name="text" select="$host"/>
+        </xsl:call-template>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:text>&amp;Severity: </xsl:text>
     <xsl:call-template name="highest-severity-for-host">
       <xsl:with-param name="host" select="$host"/>
@@ -514,7 +525,7 @@ advice given in each description, in order to rectify the issue.
       <xsl:with-param name="header-color">openvas_report</xsl:with-param>
       <xsl:with-param name="header-text">Host&amp;Most Severe Result(s)&amp;High&amp;Medium&amp;Low&amp;Log&amp;False Positives</xsl:with-param>
     </xsl:call-template>
-    <xsl:for-each select="host_start"><xsl:call-template name="results-overview-table-single-host-row"/></xsl:for-each>
+    <xsl:for-each select="host"><xsl:call-template name="results-overview-table-single-host-row"/></xsl:for-each>
     <xsl:call-template name="latex-hline"/>
     <xsl:text>Total: </xsl:text>
     <xsl:value-of select="count(/report/host_start)"/>&amp;&amp;<xsl:value-of select="count(/report/results/result[threat = 'High'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'Medium'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'Low'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'Log'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'False Positive'])"/><xsl:call-template name="latex-newline"/>
@@ -704,6 +715,15 @@ advice given in each description, in order to rectify the issue.
         <xsl:with-param name="string" select="text"/>
       </xsl:call-template>
       <xsl:text>\rowcolor{openvas_user_note}{}</xsl:text><xsl:call-template name="latex-newline"/>
+      <xsl:choose>
+        <xsl:when test="active='0'">
+        </xsl:when>
+        <xsl:when test="active='1' and string-length (end_time) &gt; 0">
+          <xsl:text>\rowcolor{openvas_user_note}{Active until: </xsl:text><xsl:value-of select="end_time"/><xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
+        </xsl:when>
+        <xsl:otherwise>
+        </xsl:otherwise>
+      </xsl:choose>
       <xsl:text>\rowcolor{openvas_user_note}{Last modified: </xsl:text><xsl:value-of select="modification_time"/><xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
     </xsl:for-each>
   </xsl:template>
@@ -729,6 +749,15 @@ advice given in each description, in order to rectify the issue.
           <xsl:with-param name="string" select="text"/>
         </xsl:call-template>
         <xsl:text>\rowcolor{openvas_user_override}{}</xsl:text><xsl:call-template name="latex-newline"/>
+        <xsl:choose>
+          <xsl:when test="active='0'">
+          </xsl:when>
+          <xsl:when test="active='1' and string-length (end_time) &gt; 0">
+            <xsl:text>\rowcolor{openvas_user_override}{Active until: </xsl:text><xsl:value-of select="end_time"/><xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
+          </xsl:when>
+          <xsl:otherwise>
+          </xsl:otherwise>
+        </xsl:choose>
         <xsl:text>\rowcolor{openvas_user_override}{Last modified: </xsl:text><xsl:value-of select="modification_time"/><xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
       </xsl:for-each>
     </xsl:if>
