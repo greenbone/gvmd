@@ -1,3 +1,9 @@
+2011-12-02  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 3.0+beta8 release.
+
+	* CHANGES: Updated.
+
 2011-12-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl (note, override): Add "active until".

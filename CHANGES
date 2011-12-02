@@ -1,3 +1,24 @@
+openvas-manager 3.0+beta8 (2011-12-02)
+
+This is the eigth beta version of the upcoming 3.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release adds support for note lifetimes and for displaying additional
+information in the HTML, LaTeX and TXT report formats. It also fixes an
+incorrect result count for Asset Management results.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell and Michael Wiegand.
+
+Main changes since 3.0+beta7:
+* Support for note lifetimes has been added.
+* A bug which caused an incorrect result count in the Asset Management view has
+  been fixed.
+* Support for displaying the hostname and the note and override lifetimes has
+  been added to the following report formats: HTML, LaTeX and TXT.
+
+
 openvas-manager 3.0+beta7 (2011-11-23)
 
 This is the seventh beta version of the upcoming 3.0 release of the OpenVAS
