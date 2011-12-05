@@ -11022,6 +11022,114 @@ result_uuid (result_t result, char ** id)
   return 0;
 }
 
+/**
+ * @brief Get product detection results corresponding to a given vulnerability
+ *        detection result.
+ *
+ * @param[in]   result      Vulnerability detection result.
+ * @param[out]  ref         Detection result UUID.
+ * @param[out]  product     Product name.
+ * @param[out]  location    Product location.
+ * @param[out]  oid         Detection script OID.
+ * @param[out]  name        Detection script name.
+ *
+ * @return -1 on error, 0 on success.
+ */
+int
+result_detection_reference (result_t result, char **ref, char **product,
+                            char **location, char **oid, char **name)
+{
+  char *report, *host;
+
+  if ((ref == NULL) || (product == NULL) || (location == NULL) || (oid == NULL)
+      || (name == NULL))
+    return -1;
+
+  report = NULL;
+  host   = NULL;
+
+  *ref = *product = *location = *oid = *name = NULL;
+
+  report = sql_string (0, 0, "SELECT report FROM report_results"
+                             " WHERE result = %llu;",
+                             result);
+  if (report == NULL)
+    goto detect_cleanup;
+
+  host = sql_string (0, 0, "SELECT host FROM results where ROWID = %llu;",
+                     result);
+  if (host == NULL)
+    goto detect_cleanup;
+
+  *oid = sql_string (0, 0, "SELECT value"
+                           " FROM report_host_details"
+                           " WHERE report_host = (SELECT ROWID"
+                           "                      FROM report_hosts"
+                           "                      WHERE report = %s"
+                           "                      AND host = '%s')"
+                           " AND name = 'detected_by'"
+                           " AND source_name = (SELECT nvt FROM results"
+                           "                    WHERE ROWID = %llu);",
+                           report, host, result);
+  if (*oid == NULL)
+    goto detect_cleanup;
+
+  *location = sql_string (0, 0, "SELECT value"
+                                " FROM report_host_details"
+                                " WHERE report_host = (SELECT ROWID"
+                                "                      FROM report_hosts"
+                                "                      WHERE report = %s"
+                                "                      AND host = '%s')"
+                                " AND name = 'detected_at'"
+                                " AND source_name = (SELECT nvt"
+                                "                    FROM results"
+                                "                    WHERE ROWID = %llu);",
+                                report, host, result);
+  if (*location == NULL)
+    goto detect_cleanup;
+
+  *product = sql_string (0, 0, "SELECT name"
+                               " FROM report_host_details"
+                               " WHERE report_host = (SELECT ROWID"
+                               "                      FROM report_hosts"
+                               "                      WHERE report = %s"
+                               "                      AND host = '%s')"
+                               " AND source_name = '%s'"
+                               " AND value = '%s';",
+                               report, host, *oid, *location);
+  if (*product == NULL)
+    goto detect_cleanup;
+  
+  *name = sql_string (0, 0, "SELECT name FROM nvts WHERE oid = '%s';", *oid);
+  if (*name == NULL)
+    goto detect_cleanup;
+
+  *ref = sql_string (0, 0, "SELECT uuid"
+                           " FROM results"
+                           " WHERE ROWID IN (SELECT result"
+                           "                 FROM report_results"
+                           "                 WHERE report = %s)"
+                           " AND host = '%s'"
+                           " AND nvt = '%s'"
+                           " AND (description LIKE '%%%s%%'"
+                           "      OR port LIKE '%%%s%%');",
+                           report, host, *oid, *location, *location);
+  if (*ref == NULL)
+    goto detect_cleanup;
+
+  g_free (report);
+  g_free (host);
+
+  return 0;
+
+detect_cleanup:
+  g_free (report);
+  g_free (host);
+
+  return -1;
+}
+
+
 
 /* Prognostics. */
 
@@ -12733,7 +12841,8 @@ init_report_host_details_iterator (iterator_t* iterator,
   init_iterator (iterator,
                  "SELECT ROWID, name, value, source_type, source_name,"
                  " source_description"
-                 " FROM report_host_details WHERE report_host = %llu;",
+                 " FROM report_host_details WHERE report_host = %llu"
+                 " AND NOT name IN ('detected_at', 'detected_by');",
                  report_host);
 }
 

@@ -638,6 +638,10 @@ find_result (const char*, result_t*);
 int
 result_uuid (result_t, /*@out@*/ char **);
 
+int
+result_detection_reference (result_t, char **, char **, char **, char **,
+                            char **);
+
 const char*
 manage_result_type_threat (const char*);
 

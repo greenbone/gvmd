@@ -1,3 +1,16 @@
+2011-12-05  Henri Doreau <henri.doreau@greenbone.net>
+
+	Implemented CR#57 (NVT Feed Product Detection Improvements).
+
+	* src/manage_sql.c (result_detection_reference): New function.
+	(init_report_host_details_iterator): Filter out product detection host
+	details when generating reports.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (buffer_results_xml): Add product detection block to the
+	vulnerability detection results.
+
 2011-12-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.

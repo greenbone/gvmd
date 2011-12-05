@@ -8673,6 +8673,19 @@ buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
   g_string_append (buffer, "</overrides>");
 }
 
+/**
+ * @brief Add a detail block to a XML buffer.
+ */
+#define ADD_DETAIL(buff, dname, dvalue) do { \
+                                buffer_xml_append_printf (buff,   \
+                                                          "<detail>"          \
+                                                          "<name>%s</name>"   \
+                                                          "<value>%s</value>" \
+                                                          "</detail>",        \
+                                                          dname,              \
+                                                          dvalue);            \
+                                } while (0)
+
 /** @todo Exported for manage_sql.c. */
 /**
  * @brief Buffer XML for some results.
@@ -8705,13 +8718,43 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *risk_factor = result_iterator_nvt_risk_factor (results);
   const char *cve = result_iterator_nvt_cve (results);
   const char *bid = result_iterator_nvt_bid (results);
+  result_t result = result_iterator_result (results);
   char *uuid;
+  char *detect_ref, *detect_cpe, *detect_loc, *detect_oid, *detect_name;
 
-  result_uuid (result_iterator_result (results), &uuid);
+  result_uuid (result, &uuid);
+
+  buffer_xml_append_printf (buffer, "<result id=\"%s\">", uuid);
+
+
+  detect_ref = detect_cpe = detect_loc = detect_oid = detect_name = NULL;
+  if (result_detection_reference (result, &detect_ref, &detect_cpe, &detect_loc,
+                                  &detect_oid, &detect_name) == 0)
+    {
+      buffer_xml_append_printf (buffer,
+                                "<detection>"
+                                "<result id=\"%s\">"
+                                "<details>",
+                                detect_ref);
+
+      ADD_DETAIL(buffer, "product", detect_cpe);
+      ADD_DETAIL(buffer, "location", detect_loc);
+      ADD_DETAIL(buffer, "source_oid", detect_oid);
+      ADD_DETAIL(buffer, "source_name", detect_name);
+
+      buffer_xml_append_printf (buffer,
+                                "</details>"
+                                "</result>"
+                                "</detection>");
+    }
+  g_free (detect_ref);
+  g_free (detect_cpe);
+  g_free (detect_loc);
+  g_free (detect_oid);
+  g_free (detect_name);
 
   buffer_xml_append_printf
    (buffer,
-    "<result id=\"%s\">"
     "<subnet>%s</subnet>"
     "<host>%s</host>"
     "<port>%s</port>"
@@ -8724,7 +8767,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     "</nvt>"
     "<threat>%s</threat>"
     "<description>%s</description>",
-    uuid,
     result_iterator_subnet (results),
     result_iterator_host (results),
     result_iterator_port (results),
@@ -8746,11 +8788,11 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   free (uuid);
 
   if (include_notes)
-    buffer_result_notes_xml (buffer, result_iterator_result (results),
+    buffer_result_notes_xml (buffer, result,
                              task, include_notes_details);
 
   if (include_overrides)
-    buffer_result_overrides_xml (buffer, result_iterator_result (results),
+    buffer_result_overrides_xml (buffer, result,
                                  task, include_overrides_details);
 
   if (delta_state || delta_results)
@@ -8810,6 +8852,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   g_string_append (buffer, "</result>");
 }
+
+#undef ADD_DETAIL
 
 /**
  * @brief Buffer XML for some schedules.
