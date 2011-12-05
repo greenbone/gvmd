@@ -1,3 +1,23 @@
+2011-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Update the UUIDs of the predefined report formats because the signing
+	technique has changed.  Hence increase database version to 55.  Add
+	database migration from version 54 to 55.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 55.
+
+	* src/manage_sql.c (migrate_54_to_55_format, migrate_54_to_55): New
+	functions.
+	(database_migrators): Add migrate_54_to_55.
+	(init_manage, report_format_predefined): Update report format UUIDs.
+
+	* src/omp.c (omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Update report format UUIDs.
+
+	* src/manage.c (run_slave_task): Update report format UUIDs.
+
+	* doc/db.png: Update for version change.
+
 2011-12-05  Henri Doreau <henri.doreau@greenbone.net>
 
 	Implemented CR#57 (NVT Feed Product Detection Improvements).

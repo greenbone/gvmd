@@ -9943,7 +9943,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         if (get_reports_data->format_id == NULL)
           get_reports_data->format_id
-           = g_strdup ("d5da9f67-8551-4e51-807b-b6a873d70e34");
+           = g_strdup ("a994b278-1f62-11e1-96ac-406186ea4fc5");
 
         if (find_report_format (get_reports_data->format_id, &report_format))
           {
@@ -10096,7 +10096,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       /* Special case the XML report, bah. */
                                       strcmp
                                        (get_reports_data->format_id,
-                                        "d5da9f67-8551-4e51-807b-b6a873d70e34"),
+                                        "a994b278-1f62-11e1-96ac-406186ea4fc5"),
                                       send_to_client,
                                       write_to_client,
                                       write_to_client_data,
@@ -10167,7 +10167,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       /* Special case the XML report, bah. */
                                       strcmp
                                        (get_reports_data->format_id,
-                                        "d5da9f67-8551-4e51-807b-b6a873d70e34"),
+                                        "a994b278-1f62-11e1-96ac-406186ea4fc5"),
                                       send_to_client,
                                       write_to_client,
                                       write_to_client_data,
@@ -10244,7 +10244,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       /* Special case the XML report, bah. */
                                       strcmp
                                        (get_reports_data->format_id,
-                                        "d5da9f67-8551-4e51-807b-b6a873d70e34"),
+                                        "a994b278-1f62-11e1-96ac-406186ea4fc5"),
                                       send_to_client,
                                       write_to_client,
                                       write_to_client_data,

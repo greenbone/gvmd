@@ -5575,6 +5575,133 @@ migrate_53_to_54 ()
 }
 
 /**
+ * @brief Migrate a report format from version 54 to version 55.
+ *
+ * @param[in]  old_uuid  Old UUID.
+ * @param[in]  new_uuid  New UUID.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_54_to_55_format (const char *old_uuid, const char *new_uuid)
+{
+  gchar *dir;
+
+  dir = g_build_filename (OPENVAS_DATA_DIR,
+                          "openvasmd",
+                          "global_report_formats",
+                          old_uuid,
+                          NULL);
+
+  if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
+    {
+      g_warning ("%s: failed to remove dir %s", __FUNCTION__, dir);
+      g_free (dir);
+      return -1;
+    }
+  g_free (dir);
+
+  sql ("UPDATE report_formats"
+       " SET uuid = '%s'"
+       " WHERE uuid = '%s';",
+       new_uuid,
+       old_uuid);
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 54 to version 55.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_54_to_55 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 54. */
+
+  if (manage_db_version () != 54)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* For report formats, feed signatures were given priority over signatures
+   * in imported XML.  This includes only setting the db signature when it is
+   * imported.  So remove the db signatures for all predefined reports. */
+
+  /** @todo ROLLBACK on failure. */
+
+  if (migrate_54_to_55_format ("a0704abb-2120-489f-959f-251c9f4ffebd",
+                               "5ceff8ba-1f62-11e1-ab9f-406186ea4fc5"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (migrate_54_to_55_format ("b993b6f5-f9fb-4e6e-9c94-dd46c00e058d",
+                               "6c248850-1f62-11e1-b082-406186ea4fc5"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (migrate_54_to_55_format ("929884c6-c2c4-41e7-befb-2f6aa163b458",
+                               "77bd6c4a-1f62-11e1-abf0-406186ea4fc5"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (migrate_54_to_55_format ("9f1ab17b-aaaa-411a-8c57-12df446f5588",
+                               "7fcc3a1a-1f62-11e1-86bf-406186ea4fc5"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (migrate_54_to_55_format ("f5c2a364-47d2-4700-b21d-0a7693daddab",
+                               "9ca6fe72-1f62-11e1-9e7c-406186ea4fc5"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (migrate_54_to_55_format ("1a60a67e-97d0-4cbf-bc77-f71b08e7043d",
+                               "a0b5bfb2-1f62-11e1-85db-406186ea4fc5"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (migrate_54_to_55_format ("19f6f1b3-7128-4433-888c-ccc764fe6ed5",
+                               "a3810a62-1f62-11e1-9219-406186ea4fc5"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (migrate_54_to_55_format ("d5da9f67-8551-4e51-807b-b6a873d70e34",
+                               "a994b278-1f62-11e1-96ac-406186ea4fc5"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Set the database version to 55. */
+
+  set_db_version (55);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -5633,6 +5760,7 @@ static migrator_t database_migrators[]
     {52, migrate_51_to_52},
     {53, migrate_52_to_53},
     {54, migrate_53_to_54},
+    {55, migrate_54_to_55},
     /* End marker. */
     {-1, NULL}};
 
@@ -9020,13 +9148,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM report_formats"
-               " WHERE uuid = 'a0704abb-2120-489f-959f-251c9f4ffebd';")
+               " WHERE uuid = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5';")
       == 0)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('a0704abb-2120-489f-959f-251c9f4ffebd', NULL, 'CPE',"
+           " VALUES ('5ceff8ba-1f62-11e1-ab9f-406186ea4fc5', NULL, 'CPE',"
            " 'Common Product Enumeration CSV table.',"
            " 'CPE stands for Common Product Enumeration.  It is a structured naming scheme for\n"
            "information technology systems, platforms, and packages.  In other words: CPE\n"
@@ -9047,13 +9175,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM report_formats"
-               " WHERE uuid = 'b993b6f5-f9fb-4e6e-9c94-dd46c00e058d';")
+               " WHERE uuid = '6c248850-1f62-11e1-b082-406186ea4fc5';")
       == 0)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('b993b6f5-f9fb-4e6e-9c94-dd46c00e058d', NULL, 'HTML',"
+           " VALUES ('6c248850-1f62-11e1-b082-406186ea4fc5', NULL, 'HTML',"
            " 'Single page HTML report.',"
            " 'A single HTML page listing results of a scan.  Style information is embedded in\n"
            "the HTML, so the page is suitable for viewing in a browser as is.\n',"
@@ -9066,13 +9194,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM report_formats"
-               " WHERE uuid = '929884c6-c2c4-41e7-befb-2f6aa163b458';")
+               " WHERE uuid = '77bd6c4a-1f62-11e1-abf0-406186ea4fc5';")
       == 0)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('929884c6-c2c4-41e7-befb-2f6aa163b458', NULL, 'ITG',"
+           " VALUES ('77bd6c4a-1f62-11e1-abf0-406186ea4fc5', NULL, 'ITG',"
            " 'German \"IT-Grundschutz-Kataloge\" report.',"
            " 'Tabular report on the German \"IT-Grundschutz-Kataloge\",\n"
            "as published and maintained by the German Federal Agency for IT-Security.\n',"
@@ -9085,13 +9213,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM report_formats"
-               " WHERE uuid = '9f1ab17b-aaaa-411a-8c57-12df446f5588';")
+               " WHERE uuid = '7fcc3a1a-1f62-11e1-86bf-406186ea4fc5';")
       == 0)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('9f1ab17b-aaaa-411a-8c57-12df446f5588', NULL, 'LaTeX',"
+           " VALUES ('7fcc3a1a-1f62-11e1-86bf-406186ea4fc5', NULL, 'LaTeX',"
            " 'LaTeX source file.',"
            " 'Report as LaTeX source file for further processing.\n',"
            " 'tex', 'text/plain', '', %i, %i, 1);",
@@ -9103,13 +9231,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM report_formats"
-               " WHERE uuid = 'f5c2a364-47d2-4700-b21d-0a7693daddab';")
+               " WHERE uuid = '9ca6fe72-1f62-11e1-9e7c-406186ea4fc5';")
       == 0)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('f5c2a364-47d2-4700-b21d-0a7693daddab', NULL, 'NBE',"
+           " VALUES ('9ca6fe72-1f62-11e1-9e7c-406186ea4fc5', NULL, 'NBE',"
            " 'Legacy OpenVAS report.',"
            " 'The traditional OpenVAS Scanner text based format.',"
            " 'nbe', 'text/plain', '', %i, %i, 1);",
@@ -9121,13 +9249,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM report_formats"
-               " WHERE uuid = '1a60a67e-97d0-4cbf-bc77-f71b08e7043d';")
+               " WHERE uuid = 'a0b5bfb2-1f62-11e1-85db-406186ea4fc5';")
       == 0)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('1a60a67e-97d0-4cbf-bc77-f71b08e7043d', NULL, 'PDF',"
+           " VALUES ('a0b5bfb2-1f62-11e1-85db-406186ea4fc5', NULL, 'PDF',"
            " 'Portable Document Format report.',"
            " 'Scan results in Portable Document Format (PDF).',"
            "'pdf', 'application/pdf', '', %i, %i, 1);",
@@ -9139,13 +9267,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM report_formats"
-               " WHERE uuid = '19f6f1b3-7128-4433-888c-ccc764fe6ed5';")
+               " WHERE uuid = 'a3810a62-1f62-11e1-9219-406186ea4fc5';")
       == 0)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('19f6f1b3-7128-4433-888c-ccc764fe6ed5', NULL, 'TXT',"
+           " VALUES ('a3810a62-1f62-11e1-9219-406186ea4fc5', NULL, 'TXT',"
            " 'Plain text report.',"
            " 'Plain text report, best viewed with fixed font size.',"
            " 'txt', 'text/plain', '', %i, %i, 1);",
@@ -9157,13 +9285,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM report_formats"
-               " WHERE uuid = 'd5da9f67-8551-4e51-807b-b6a873d70e34';")
+               " WHERE uuid = 'a994b278-1f62-11e1-96ac-406186ea4fc5';")
       == 0)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('d5da9f67-8551-4e51-807b-b6a873d70e34', NULL, 'XML',"
+           " VALUES ('a994b278-1f62-11e1-96ac-406186ea4fc5', NULL, 'XML',"
            " 'Raw XML report.',"
            " 'Complete scan report in OpenVAS Manager XML format.',"
            " 'xml', 'text/xml', '', %i, %i, 1);",
@@ -11099,7 +11227,7 @@ result_detection_reference (result_t result, char **ref, char **product,
                                report, host, *oid, *location);
   if (*product == NULL)
     goto detect_cleanup;
-  
+
   *name = sql_string (0, 0, "SELECT name FROM nvts WHERE oid = '%s';", *oid);
   if (*name == NULL)
     goto detect_cleanup;
@@ -31449,14 +31577,14 @@ int
 report_format_predefined (report_format_t report_format)
 {
   return sql_int (0, 0,
-                  "SELECT uuid = 'a0704abb-2120-489f-959f-251c9f4ffebd'"
-                  " OR uuid = 'b993b6f5-f9fb-4e6e-9c94-dd46c00e058d'"
-                  " OR uuid = '929884c6-c2c4-41e7-befb-2f6aa163b458'"
-                  " OR uuid = '9f1ab17b-aaaa-411a-8c57-12df446f5588'"
-                  " OR uuid = 'f5c2a364-47d2-4700-b21d-0a7693daddab'"
-                  " OR uuid = '1a60a67e-97d0-4cbf-bc77-f71b08e7043d'"
-                  " OR uuid = '19f6f1b3-7128-4433-888c-ccc764fe6ed5'"
-                  " OR uuid = 'd5da9f67-8551-4e51-807b-b6a873d70e34'"
+                  "SELECT uuid = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5'"
+                  " OR uuid = '6c248850-1f62-11e1-b082-406186ea4fc5'"
+                  " OR uuid = '77bd6c4a-1f62-11e1-abf0-406186ea4fc5'"
+                  " OR uuid = '7fcc3a1a-1f62-11e1-86bf-406186ea4fc5'"
+                  " OR uuid = '9ca6fe72-1f62-11e1-9e7c-406186ea4fc5'"
+                  " OR uuid = 'a0b5bfb2-1f62-11e1-85db-406186ea4fc5'"
+                  " OR uuid = 'a3810a62-1f62-11e1-9219-406186ea4fc5'"
+                  " OR uuid = 'a994b278-1f62-11e1-96ac-406186ea4fc5'"
                   " FROM report_formats"
                   " WHERE ROWID = %llu;",
                   report_format);
