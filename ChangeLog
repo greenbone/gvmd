@@ -1,3 +1,8 @@
+2011-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (run_slave_task): Try the old XML UUID if the new one
+	fails.
+
 2011-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Update the UUIDs of the predefined report formats because the signing

@@ -1671,7 +1671,11 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
           if (omp_get_report (&session, slave_report_uuid,
                               "a994b278-1f62-11e1-96ac-406186ea4fc5",
                               next_result,
-                              &get_report))
+                              &get_report)
+              && omp_get_report (&session, slave_report_uuid,
+                                 "d5da9f67-8551-4e51-807b-b6a873d70e34",
+                                 next_result,
+                                 &get_report))
             {
               free_entity (get_tasks);
               goto fail_stop_task;
