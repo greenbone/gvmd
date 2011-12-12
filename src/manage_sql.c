@@ -5528,6 +5528,12 @@ migrate_52_to_53 ()
 
   /* The overrides table got a end_time column. */
 
+  /* Ensure that the table exists. */
+  sql ("CREATE TABLE IF NOT EXISTS overrides"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       "  creation_time, modification_time, text, hosts, port, threat,"
+       "  new_threat, task INTEGER, result INTEGER);");
+
   sql ("ALTER TABLE overrides ADD column end_time;");
   sql ("UPDATE overrides SET end_time = 0;");
 
@@ -5561,6 +5567,12 @@ migrate_53_to_54 ()
   /* Update the database. */
 
   /* The notes table got a end_time column. */
+
+  /* Ensure that the table exists. */
+  sql ("CREATE TABLE IF NOT EXISTS notes"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       "  creation_time, modification_time, text, hosts, port, threat,"
+       "  task INTEGER, result INTEGER);");
 
   sql ("ALTER TABLE notes ADD column end_time;");
   sql ("UPDATE notes SET end_time = 0;");

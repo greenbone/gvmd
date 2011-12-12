@@ -1,3 +1,8 @@
+2011-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (migrate_53_to_54, migrate_53_to_54): Ensure that the table
+	exists before altering it.
+
 2011-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (run_slave_task): Try the old XML UUID if the new one
