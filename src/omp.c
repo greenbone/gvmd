@@ -14346,6 +14346,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               if (fail)
                 {
+                  request_delete_task (&create_task_data->task);
+                  free (tsk_uuid);
+                  free (description);
                   create_task_data_reset (create_task_data);
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
