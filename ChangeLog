@@ -1,5 +1,10 @@
 2011-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (parse_iso_time): Also try parse the special %FT%TZ ISO
+	format, because this is what's in the report when the timezone was UTC.
+
+2011-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_start_element): In CREATE_TASK remove task if
 	setting observers fails.
 

@@ -1354,14 +1354,63 @@ parse_iso_time (const char *text_time)
 
   if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
     {
-      return parse_ctime (text_time);
-    }
+      gchar *tz;
 
-  epoch_time = mktime (&tm);
-  if (epoch_time == -1)
+      if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
+        return parse_ctime (text_time);
+
+      /* Store current TZ. */
+      tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+      if (setenv ("TZ", "UTC", 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
+          setenv ("TZ", tz, 1);
+          g_free (tz);
+          return 0;
+        }
+
+      if (strptime ((char*) text_time, "%FT%TZ", &tm) == NULL)
+        {
+          assert (0);
+          g_warning ("%s: Failed to parse time", __FUNCTION__);
+          setenv ("TZ", tz, 1);
+          g_free (tz);
+          return 0;
+        }
+
+      epoch_time = mktime (&tm);
+      if (epoch_time == -1)
+        {
+          g_warning ("%s: Failed to make time", __FUNCTION__);
+          setenv ("TZ", tz, 1);
+          g_free (tz);
+          return 0;
+        }
+
+      /* Revert to stored TZ. */
+      if (tz)
+        {
+          if (setenv ("TZ", tz, 1) == -1)
+            {
+              g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+              g_free (tz);
+              return 0;
+            }
+        }
+      else
+        unsetenv ("TZ");
+
+      g_free (tz);
+    }
+  else
     {
-      g_warning ("%s: Failed to make time", __FUNCTION__);
-      return 0;
+      epoch_time = mktime (&tm);
+      if (epoch_time == -1)
+        {
+          g_warning ("%s: Failed to make time", __FUNCTION__);
+          return 0;
+        }
     }
 
   return epoch_time;
