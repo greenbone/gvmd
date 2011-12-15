@@ -1,3 +1,9 @@
+2011-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_result_iterator): In the result ordering convert
+	NULL CVSS bases to 0.0 before sorting.  This ensures that the ordering is
+	the same as the ordering expected by the delta comparison functions.
+
 2011-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (migrate_53_to_54, migrate_53_to_54): Ensure that the table
