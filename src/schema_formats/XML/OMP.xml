@@ -376,6 +376,110 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
   </element>
   <element>
+    <name>result</name>
+    <summary>A result</summary>
+    <pattern>
+      <attrib>
+        <name>id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <e>subnet</e>
+      <e>host</e>
+      <e>port</e>
+      <e>nvt</e>
+      <e>threat</e>
+      <e>description</e>
+      <e>details</e>
+      <e>detection</e>
+    </pattern>
+    <ele>
+      <name>subnet</name>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>host</name>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>nvt</name>
+      <summary>NVT to which result applies</summary>
+      <pattern>
+        <attrib>
+          <name>oid</name>
+          <type>oid</type>
+          <required>1</required>
+        </attrib>
+        <e>name</e>
+        <e>cvss_base</e>
+        <e>risk_factor</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>The name of the NVT</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
+      <ele>
+        <name>cvss_base</name>
+        <summary>CVSS base value associated with the NVT</summary>
+        <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>risk_factor</name>
+        <summary>Risk factor associated with the NVT</summary>
+        <pattern><t>integer</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>threat</name>
+      <pattern><t>threat</t></pattern>
+    </ele>
+    <ele>
+      <name>description</name>
+      <summary>Description of the result</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>details</name>
+      <summary>Any details associated with the result</summary>
+      <pattern>
+        <any><e>detail</e></any>
+      </pattern>
+      <ele>
+        <name>detail</name>
+        <summary>A detail associated with the result</summary>
+        <pattern>
+          <e>name</e>
+          <e>value</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the detail</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>The value of the detail</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+    </ele>
+    <ele>
+      <name>detection</name>
+      <summary>Detection details</summary>
+      <pattern><e>result</e></pattern>
+      <ele>
+        <name>result</name>
+        <summary>Detection result</summary>
+        <type>result</type>
+      </ele>
+    </ele>
+  </element>
+  <element>
     <name>report</name>
     <summary>Actually attributes and either base64 or a report</summary>
     <pattern>
@@ -787,69 +891,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </pattern>
         <ele>
           <name>result</name>
-          <pattern>
-            <attrib>
-              <name>id</name>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
-            <e>subnet</e>
-            <e>host</e>
-            <e>port</e>
-            <e>nvt</e>
-            <e>threat</e>
-            <e>description</e>
-          </pattern>
-          <ele>
-            <name>subnet</name>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>host</name>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>port</name>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>nvt</name>
-            <summary>NVT to which result applies</summary>
-            <pattern>
-              <attrib>
-                <name>oid</name>
-                <type>oid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>cvss_base</e>
-              <e>risk_factor</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the NVT</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>cvss_base</name>
-              <summary>CVSS base value associated with the NVT</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-            <ele>
-              <name>risk_factor</name>
-              <summary>Risk factor associated with the NVT</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-          </ele>
-          <ele>
-            <name>threat</name>
-            <pattern><t>threat</t></pattern>
-          </ele>
-          <ele>
-            <name>description</name>
-            <summary>Description of the result</summary>
-            <pattern>text</pattern>
-          </ele>
+          <summary>A result</summary>
+          <type>result</type>
         </ele>
       </ele>
       <ele>

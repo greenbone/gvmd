@@ -133,6 +133,10 @@
 <td id="index"><div style="margin-left: 15px;">Definition of a command in OMP describing HELP command.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#element_result">result</a></td>
+<td id="index"><div style="margin-left: 15px;">A result.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#element_report">report</a></td>
 <td id="index"><div style="margin-left: 15px;">Actually attributes and either base64 or a report.</div></td>
 </tr>
@@ -1214,11 +1218,217 @@ command_definition_ele
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_report">6.9
+<div><h3 id="element_result">6.9
+        Element <tt>result</tt>
+</h3></div>
+<p>In short: A result.</p>
+<h4>6.9.1 Structure</h4>
+<ul style="list-style: none"><li><ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>subnet</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>host</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>port</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>nvt</b>&gt;
+              <div style="margin-left: 15px; display: inline;">NVT to which result applies.</div>
+<ul style="list-style: none">
+<li>
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>cvss_base</b>&gt;
+              <div style="margin-left: 15px; display: inline;">CVSS base value associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>risk_factor</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Risk factor associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>threat</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>description</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Description of the result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>details</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Any details associated with the result.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>detail</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">A detail associated with the result.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the detail.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The value of the detail.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>detection</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Detection details.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>result</b>&gt;
+              <div style="margin-left: 15px; display: inline;">(<a href="#element_result">result</a>)</div>
+<div style="margin-left: 15px; display: inline;">Detection result.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+</ul></li></ul>
+<h4>6.9.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>result
+ = element result
+     {
+       attribute id { uuid }
+       &amp; result_subnet
+       &amp; result_host
+       &amp; result_port
+       &amp; result_nvt
+       &amp; result_threat
+       &amp; result_description
+       &amp; result_details
+       &amp; result_detection
+     }
+
+result_subnet
+ = element subnet
+     {
+       text
+     }
+
+result_host
+ = element host
+     {
+       text
+     }
+
+result_port
+ = element port
+     {
+       text
+     }
+
+result_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       &amp; result_nvt_name
+       &amp; result_nvt_cvss_base
+       &amp; result_nvt_risk_factor
+     }
+
+result_nvt_name
+ = element name
+     {
+       name
+     }
+
+result_nvt_cvss_base
+ = element cvss_base
+     {
+       integer
+     }
+
+result_nvt_risk_factor
+ = element risk_factor
+     {
+       integer
+     }
+
+result_threat
+ = element threat
+     {
+       threat
+     }
+
+result_description
+ = element description
+     {
+       text
+     }
+
+result_details
+ = element details
+     {
+       result_details_detail*
+     }
+
+result_details_detail
+ = element detail
+     {
+       result_details_detail_name
+       &amp; result_details_detail_value
+     }
+
+result_details_detail_name
+ = element name
+     {
+       text
+     }
+
+result_details_detail_value
+ = element value
+     {
+       text
+     }
+
+result_detection
+ = element detection
+     {
+       result_detection_result
+     }
+
+result_detection_result
+ = element result    # type result
+     {
+       attribute id { uuid }
+       &amp; result_subnet
+       &amp; result_host
+       &amp; result_port
+       &amp; result_nvt
+       &amp; result_threat
+       &amp; result_description
+       &amp; result_details
+       &amp; result_detection
+     }
+</pre></div></div>
+</div>
+<div>
+<div><h3 id="element_report">6.10
         Element <tt>report</tt>
 </h3></div>
 <p>In short: Actually attributes and either base64 or a report.</p>
-<h4>6.9.1 Structure</h4>
+<h4>6.10.1 Structure</h4>
 <ul style="list-style: none"><li><ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -1491,58 +1701,9 @@ command_definition_ele
           </li>
 <li>
               &lt;<b>result</b>&gt;
-              *<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-<li>
-              &lt;<b>subnet</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>host</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>port</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>nvt</b>&gt;
-              <div style="margin-left: 15px; display: inline;">NVT to which result applies.</div>
-<ul style="list-style: none">
-<li>
-          @<b>oid</b>
-          (<a href="#type_oid">oid</a>)
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the NVT.</div>
+              *<div style="margin-left: 15px; display: inline;">(<a href="#element_result">result</a>)</div>
+<div style="margin-left: 15px; display: inline;">A result.</div>
 <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>cvss_base</b>&gt;
-              <div style="margin-left: 15px; display: inline;">CVSS base value associated with the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>risk_factor</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Risk factor associated with the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>threat</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>description</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Description of the result.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
 </li>
 </ul>
 </li>
@@ -1647,7 +1808,7 @@ command_definition_ele
 </ul>
 </li>
 </ul></li></ul>
-<h4>6.9.2 RNC</h4>
+<h4>6.10.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>report
  = element report
      {
@@ -1964,72 +2125,17 @@ report_report_results
      }
 
 report_report_results_result
- = element result
+ = element result    # type result
      {
        attribute id { uuid }
-       &amp; report_report_results_result_subnet
-       &amp; report_report_results_result_host
-       &amp; report_report_results_result_port
-       &amp; report_report_results_result_nvt
-       &amp; report_report_results_result_threat
-       &amp; report_report_results_result_description
-     }
-
-report_report_results_result_subnet
- = element subnet
-     {
-       text
-     }
-
-report_report_results_result_host
- = element host
-     {
-       text
-     }
-
-report_report_results_result_port
- = element port
-     {
-       text
-     }
-
-report_report_results_result_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       &amp; report_report_results_result_nvt_name
-       &amp; report_report_results_result_nvt_cvss_base
-       &amp; report_report_results_result_nvt_risk_factor
-     }
-
-report_report_results_result_nvt_name
- = element name
-     {
-       name
-     }
-
-report_report_results_result_nvt_cvss_base
- = element cvss_base
-     {
-       integer
-     }
-
-report_report_results_result_nvt_risk_factor
- = element risk_factor
-     {
-       integer
-     }
-
-report_report_results_result_threat
- = element threat
-     {
-       threat
-     }
-
-report_report_results_result_description
- = element description
-     {
-       text
+       &amp; result_subnet
+       &amp; result_host
+       &amp; result_port
+       &amp; result_nvt
+       &amp; result_threat
+       &amp; result_description
+       &amp; result_details
+       &amp; result_detection
      }
 
 report_report_hosts
@@ -13405,6 +13511,10 @@ modify_lsc_credential_password
           ID of note to modify.
           </li>
 <li>
+              &lt;<a href="#element_"><b>active</b></a>&gt;
+              ?<div style="margin-left: 15px; display: inline;">.</div>
+</li>
+<li>
               &lt;<b>hosts</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
 <ul style="list-style: none"></ul>
@@ -13461,6 +13571,7 @@ modify_lsc_credential_password
  = element modify_note
      {
        attribute note_id { uuid }
+       &amp; active?
        &amp; modify_note_hosts?
        &amp; modify_note_port?
        &amp; modify_note_result?

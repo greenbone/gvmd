@@ -441,6 +441,137 @@ command_definition_ele
        & command_definition_example*
      }
 
+## Element Type result
+##
+## A result.
+
+result
+ = element result
+     {
+       attribute id { uuid }
+       & result_subnet
+       & result_host
+       & result_port
+       & result_nvt
+       & result_threat
+       & result_description
+       & result_details
+       & result_detection
+     }
+
+result_subnet
+ = element subnet
+     {
+       text
+     }
+
+result_host
+ = element host
+     {
+       text
+     }
+
+result_port
+ = element port
+     {
+       text
+     }
+
+# NVT to which result applies.
+result_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & result_nvt_name
+       & result_nvt_cvss_base
+       & result_nvt_risk_factor
+     }
+
+# The name of the NVT.
+result_nvt_name
+ = element name
+     {
+       name
+     }
+
+# CVSS base value associated with the NVT.
+result_nvt_cvss_base
+ = element cvss_base
+     {
+       integer
+     }
+
+# Risk factor associated with the NVT.
+result_nvt_risk_factor
+ = element risk_factor
+     {
+       integer
+     }
+
+result_threat
+ = element threat
+     {
+       threat
+     }
+
+# Description of the result.
+result_description
+ = element description
+     {
+       text
+     }
+
+# Any details associated with the result.
+result_details
+ = element details
+     {
+       result_details_detail*
+     }
+
+# A detail associated with the result.
+result_details_detail
+ = element detail
+     {
+       result_details_detail_name
+       & result_details_detail_value
+     }
+
+# The name of the detail.
+result_details_detail_name
+ = element name
+     {
+       text
+     }
+
+# The value of the detail.
+result_details_detail_value
+ = element value
+     {
+       text
+     }
+
+# Detection details.
+result_detection
+ = element detection
+     {
+       result_detection_result
+     }
+
+# Detection result.
+result_detection_result
+ = element result    # type result
+     {
+       attribute id { uuid }
+       & result_subnet
+       & result_host
+       & result_port
+       & result_nvt
+       & result_threat
+       & result_description
+       & result_details
+       & result_detection
+     }
+
 ## Element Type report
 ##
 ## Actually attributes and either base64 or a report.
@@ -795,78 +926,19 @@ report_report_results
        & report_report_results_result*
      }
 
+# A result.
 report_report_results_result
- = element result
+ = element result    # type result
      {
        attribute id { uuid }
-       & report_report_results_result_subnet
-       & report_report_results_result_host
-       & report_report_results_result_port
-       & report_report_results_result_nvt
-       & report_report_results_result_threat
-       & report_report_results_result_description
-     }
-
-report_report_results_result_subnet
- = element subnet
-     {
-       text
-     }
-
-report_report_results_result_host
- = element host
-     {
-       text
-     }
-
-report_report_results_result_port
- = element port
-     {
-       text
-     }
-
-# NVT to which result applies.
-report_report_results_result_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       & report_report_results_result_nvt_name
-       & report_report_results_result_nvt_cvss_base
-       & report_report_results_result_nvt_risk_factor
-     }
-
-# The name of the NVT.
-report_report_results_result_nvt_name
- = element name
-     {
-       name
-     }
-
-# CVSS base value associated with the NVT.
-report_report_results_result_nvt_cvss_base
- = element cvss_base
-     {
-       integer
-     }
-
-# Risk factor associated with the NVT.
-report_report_results_result_nvt_risk_factor
- = element risk_factor
-     {
-       integer
-     }
-
-report_report_results_result_threat
- = element threat
-     {
-       threat
-     }
-
-# Description of the result.
-report_report_results_result_description
- = element description
-     {
-       text
+       & result_subnet
+       & result_host
+       & result_port
+       & result_nvt
+       & result_threat
+       & result_description
+       & result_details
+       & result_detection
      }
 
 report_report_hosts
@@ -2609,6 +2681,7 @@ modify_note
      {
        # ID of note to modify.
        attribute note_id { uuid }
+       & active?
        & modify_note_hosts?
        & modify_note_port?
        & modify_note_result?
