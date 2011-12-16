@@ -1,5 +1,15 @@
 2011-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (version): Update.
+	(authenticate): Add ROLE and TIMEZONE to response.
+	(modify_settings): New command.
+	(help): Add new commands to plain response.  Update AUTHENTICATE response
+	in schema example.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2011-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (actions): Remove trailing dot.
 	(create_note, create_override, modify_note, modify_override, get_notes)
 	(get_overrides): Add ACTIVE and END_TIME.
@@ -263,7 +273,8 @@
 
 2011-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/omp.c (migrate_51_to_52): Update comment from previous migrator.
+	* src/manage_sql.c (migrate_51_to_52): Update comment from previous
+	migrator.
 
 2011-11-10  Michael Wiegand <michael.wiegand@greenbone.net>
 

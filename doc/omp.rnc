@@ -1,6 +1,6 @@
 #### OpenVAS Management Protocol (OMP)
 ####
-#### Version: 2.0
+#### Version: 3.0
 ####
 #### The "management" protocol of the Open Vulnerability Assessment System.
 
@@ -65,6 +65,7 @@ command
     | modify_override
     | modify_report
     | modify_report_format
+    | modify_setting
     | modify_task
     | pause_task
     | restore
@@ -134,6 +135,7 @@ response
     | modify_override_response
     | modify_report_response
     | modify_report_format_response
+    | modify_setting_response
     | modify_task_response
     | pause_task_response
     | restore_response
@@ -1164,6 +1166,7 @@ commands
            | modify_note
            | modify_override
            | modify_report
+           | modify_settings
            | modify_task
            | pause_task
            | restore
@@ -2906,6 +2909,31 @@ modify_report_format_param_value
        base64
      }
 
+## Command modify_setting
+##
+## Modify an existing setting.
+
+modify_setting
+ = element modify_setting
+     {
+       modify_setting_name
+       & modify_setting_value
+     }
+
+# The name of the setting.
+modify_setting_name
+ = element name
+     {
+       text
+     }
+
+# The value of the setting.
+modify_setting_value
+ = element value
+     {
+       text
+     }
+
 ## Command modify_task
 ##
 ## Modify an existing task.
@@ -3119,6 +3147,21 @@ authenticate_response
      {
        attribute status { status }
        & attribute status_text { text }
+       & authenticate_response_role
+       & authenticate_response_timezone
+     }
+
+# The user's role.
+authenticate_response_role
+ = element role    # type UserAdminObserver
+     {
+     }
+
+# The user's timezone.
+authenticate_response_timezone
+ = element timezone
+     {
+       text
      }
 
 ## Response to commands
@@ -3179,6 +3222,7 @@ commands_response
            | modify_note_response
            | modify_override_response
            | modify_report_response
+           | modify_settings_response
            | modify_task_response
            | pause_task_response
            | restore_response
@@ -6209,6 +6253,15 @@ modify_report_response
 
 modify_report_format_response
  = element modify_report_format_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_setting
+
+modify_setting_response
+ = element modify_setting_response
      {
        attribute status { status }
        & attribute status_text { text }

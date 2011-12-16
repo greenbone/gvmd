@@ -61,7 +61,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <name>OpenVAS Management Protocol</name>
   <abbreviation>OMP</abbreviation>
   <summary>The "management" protocol of the Open Vulnerability Assessment System</summary>
-  <version>2.0</version>
+  <version>3.0</version>
   <type>
     <name>actions</name>
     <summary>A specifier of actions: get, modify, use</summary>
@@ -1073,7 +1073,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>text</type>
           <required>1</required>
         </attrib>
+        <e>role</e>
+        <e>timezone</e>
       </pattern>
+      <ele>
+        <name>role</name>
+        <summary>The user's role</summary>
+        <type>
+          <alts>
+            <alt>User</alt>
+            <alt>Admin</alt>
+            <alt>Observer</alt>
+          </alts>
+        </type>
+      </ele>
+      <ele>
+        <name>timezone</name>
+        <summary>The user's timezone</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
     </response>
     <example>
       <summary>Authenticate with a good password</summary>
@@ -1086,7 +1106,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </authenticate>
       </request>
       <response>
-        <authenticate_response status="200" status_text="OK"/>
+        <authenticate_response status="200" status_text="OK">
+          <role>User</role>
+          <timezone>UTC</timezone>
+        </authenticate_response>
       </response>
     </example>
     <example>
@@ -1168,6 +1191,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_note</c>
           <c>modify_override</c>
           <c>modify_report</c>
+          <c>modify_settings</c>
           <c>modify_task</c>
           <c>pause_task</c>
           <c>restore</c>
@@ -1245,6 +1269,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_note</r>
             <r>modify_override</r>
             <r>modify_report</r>
+            <r>modify_settings</r>
             <r>modify_task</r>
             <r>pause_task</r>
             <r>restore</r>
@@ -8142,6 +8167,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             CREATE_NOTE            Create a note.
             CREATE_OVERRIDE        Create an override.
             CREATE_REPORT_FORMAT   Create a report format.
+            CREATE_REPORT          Create a report.
             CREATE_SCHEDULE        Create a schedule.
             CREATE_SLAVE           Create a slave.
             CREATE_TARGET          Create a target.
@@ -8180,6 +8206,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_TARGETS            Get all targets.
             GET_TASKS              Get all tasks.
             GET_VERSION            Get the OpenVAS Manager Protocol version.
+            GET_INFO               Get raw information for a given item.
             HELP                   Get this help text.
             MODIFY_CONFIG          Update an existing config.
             MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.
@@ -8187,6 +8214,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             MODIFY_OVERRIDE        Modify an existing override.
             MODIFY_REPORT          Modify an existing report.
             MODIFY_REPORT_FORMAT   Modify an existing report format.
+            MODIFY_SETTING         Modify an existing setting.
             MODIFY_TASK            Update an existing task.
             PAUSE_TASK             Pause a running task.
             RESTORE                Restore a resource.
@@ -8284,6 +8312,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   </request>
                   <response>
                     <authenticate_response status="200" status_text="OK">
+                      <role>User</role>
+                      <timezone>UTC</timezone>
                     </authenticate_response>
                   </response>
                 </example>
@@ -8993,6 +9023,62 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_report_format_response status="200" status_text="OK">
         </modify_report_format_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_setting</name>
+    <summary>Modify an existing setting</summary>
+    <description>
+      <p>
+        The client uses the modify_setting command to change an existing
+        setting.  These are user settings that can be controlled via OMP.
+        Currently this includes "Password" and "Timezone".
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <e>value</e>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>The name of the setting</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>value</name>
+      <summary>The value of the setting</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the timezone</summary>
+      <request>
+        <modify_setting>
+          <name>Timezone</name>
+          <value>Africa/Johannesburg</value>
+        </modify_setting>
+      </request>
+      <response>
+        <modify_setting_response status="200" status_text="OK">
+        </modify_setting_response>
       </response>
     </example>
   </command>
