@@ -1,3 +1,11 @@
+2011-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (actions): Remove trailing dot.
+	(create_note, create_override, modify_note, modify_override, get_notes)
+	(get_overrides): Add ACTIVE and END_TIME.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2011-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (result): New element.  From report.

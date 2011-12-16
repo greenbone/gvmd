@@ -64,7 +64,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <version>2.0</version>
   <type>
     <name>actions</name>
-    <summary>A specifier of actions: get, modify, use.</summary>
+    <summary>A specifier of actions: get, modify, use</summary>
     <pattern>xsd:token { pattern = "[gmu]{1,3}" }</pattern>
   </type>
   <type>
@@ -1761,6 +1761,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>text</e>
       <e>nvt</e>
+      <o><e>active</e></o>
       <o><e>comment</e></o>
       <o><e>hosts</e></o>
       <o><e>port</e></o>
@@ -1785,6 +1786,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
       </pattern>
+    </ele>
+    <ele>
+      <name>active</name>
+      <summary>Seconds note will be active.  -1 on always, 0 off</summary>
+      <pattern><t>integer</t></pattern>
     </ele>
     <ele>
       <name>comment</name>
@@ -1883,6 +1889,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>text</e>
       <e>nvt</e>
+      <o><e>active</e></o>
       <o><e>comment</e></o>
       <o><e>hosts</e></o>
       <o><e>new_threat</e></o>
@@ -1897,6 +1904,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>
         text
       </pattern>
+    </ele>
+    <ele>
+      <name>active</name>
+      <summary>Seconds override will be active.  -1 on always, 0 off</summary>
+      <pattern><t>integer</t></pattern>
     </ele>
     <ele>
       <name>nvt</name>
@@ -4474,6 +4486,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>port</e>
               <e>threat</e>
               <e>task</e>
+              <e>active</e>
+              <o><e>end_time</e></o>
               <o><e>result</e></o>
             </g>
           </o>
@@ -4550,6 +4564,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
           </pattern>
+        </ele>
+        <ele>
+          <name>active</name>
+          <summary>Whether the note is active</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>end_time</name>
+          <summary>End time of the note in case of limit, else empty</summary>
+          <pattern>text</pattern>
         </ele>
         <ele>
           <name>result</name>
@@ -4642,6 +4666,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </nvt>
             <text excerpt="0">This is the full text of the note.</text>
             <orphan>1</orphan>
+            <active>1</active>
           </note>
           <truncated>...</truncated>
         </get_notes_response>
@@ -4683,6 +4708,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <threat>Medium</threat>
               <description>Warning with control char between fullstops: . .</description>
             </result>
+            <active>1</active>
+            <end_time></end_time>
           </note>
           <truncated>...</truncated>
         </get_notes_response>
@@ -5216,6 +5243,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>hosts</e>
               <e>port</e>
               <e>task</e>
+              <e>active</e>
+              <o><e>end_time</e></o>
               <o><e>result</e></o>
             </g>
           </o>
@@ -5299,6 +5328,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
           </pattern>
+        </ele>
+        <ele>
+          <name>active</name>
+          <summary>Whether the override is active</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>end_time</name>
+          <summary>Override end time in case of limit, else empty</summary>
+          <pattern>text</pattern>
         </ele>
         <ele>
           <name>result</name>
@@ -5393,6 +5432,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <threat>High</threat>
             <new_threat>Log</new_threat>
             <orphan>1</orphan>
+            <active>1</active>
           </override>
           <truncated>...</truncated>
         </get_overrides_response>
@@ -5422,6 +5462,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </task>
             <orphan>0</orphan>
             <result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de" />
+            <active>1</active>
+            <end_time></end_time>
           </override>
           <truncated>...</truncated>
         </get_overrides_response>
@@ -8591,6 +8633,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
         <required>1</required>
       </attrib>
+      <o><e>active</e></o>
       <o><e>hosts</e></o>
       <o><e>port</e></o>
       <o><e>result</e></o>
@@ -8598,6 +8641,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>text</e>
       <o><e>threat</e></o>
     </pattern>
+    <ele>
+      <name>active</name>
+      <summary>Seconds note will be active.  -1 on always, 0 off</summary>
+      <pattern><t>integer</t></pattern>
+    </ele>
     <ele>
       <name>hosts</name>
       <summary>A textual list of hosts</summary>
@@ -8696,6 +8744,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
         <required>1</required>
       </attrib>
+      <o><e>active</e></o>
       <o><e>hosts</e></o>
       <o><e>new_threat</e></o>
       <o><e>port</e></o>
@@ -8704,6 +8753,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>text</e>
       <o><e>threat</e></o>
     </pattern>
+    <ele>
+      <name>active</name>
+      <summary>Seconds override will be active.  -1 on always, 0 off</summary>
+      <pattern><t>integer</t></pattern>
+    </ele>
     <ele>
       <name>hosts</name>
       <summary>A textual list of hosts</summary>

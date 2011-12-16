@@ -148,7 +148,7 @@ response
 
 ### Data Types
 
-# A specifier of actions: get, modify, use..
+# A specifier of actions: get, modify, use.
 actions = xsd:token { pattern = "[gmu]{1,3}" }
 # Base64 encoded data.
 base64 = xsd:base64Binary
@@ -1451,6 +1451,7 @@ create_note
      {
        create_note_text
        & create_note_nvt
+       & create_note_active?
        & create_note_comment?
        & create_note_hosts?
        & create_note_port?
@@ -1471,6 +1472,13 @@ create_note_nvt
  = element nvt
      {
        attribute oid { oid }
+     }
+
+# Seconds note will be active. -1 on always, 0 off.
+create_note_active
+ = element active
+     {
+       integer
      }
 
 # A comment on the note.
@@ -1524,6 +1532,7 @@ create_override
      {
        create_override_text
        & create_override_nvt
+       & create_override_active?
        & create_override_comment?
        & create_override_hosts?
        & create_override_new_threat?
@@ -1538,6 +1547,13 @@ create_override_text
  = element text
      {
        text
+     }
+
+# Seconds override will be active. -1 on always, 0 off.
+create_override_active
+ = element active
+     {
+       integer
      }
 
 # NVT to which override applies.
@@ -2681,13 +2697,20 @@ modify_note
      {
        # ID of note to modify.
        attribute note_id { uuid }
-       & active?
+       & modify_note_active?
        & modify_note_hosts?
        & modify_note_port?
        & modify_note_result?
        & modify_note_task?
        & modify_note_text
        & modify_note_threat?
+     }
+
+# Seconds note will be active. -1 on always, 0 off.
+modify_note_active
+ = element active
+     {
+       integer
      }
 
 # A textual list of hosts.
@@ -2741,6 +2764,7 @@ modify_override
      {
        # ID of override to modify.
        attribute override_id { uuid }
+       & modify_override_active?
        & modify_override_hosts?
        & modify_override_new_threat?
        & modify_override_port?
@@ -2748,6 +2772,13 @@ modify_override
        & modify_override_task?
        & modify_override_text
        & modify_override_threat?
+     }
+
+# Seconds override will be active. -1 on always, 0 off.
+modify_override_active
+ = element active
+     {
+       integer
      }
 
 # A textual list of hosts.
@@ -3970,6 +4001,8 @@ get_notes_response_note
            & get_notes_response_note_port
            & get_notes_response_note_threat
            & get_notes_response_note_task
+           & get_notes_response_note_active
+           & get_notes_response_note_end_time?
            & get_notes_response_note_result? )?
      }
 
@@ -4039,6 +4072,20 @@ get_notes_response_note_task
  = element task
      {
        attribute id { uuid }
+     }
+
+# Whether the note is active.
+get_notes_response_note_active
+ = element active
+     {
+       integer
+     }
+
+# End time of the note in case of limit, else empty.
+get_notes_response_note_end_time
+ = element end_time
+     {
+       text
      }
 
 # Result to which note applies.
@@ -4395,6 +4442,8 @@ get_overrides_response_override
            & get_overrides_response_override_hosts
            & get_overrides_response_override_port
            & get_overrides_response_override_task
+           & get_overrides_response_override_active
+           & get_overrides_response_override_end_time?
            & get_overrides_response_override_result? )?
      }
 
@@ -4471,6 +4520,20 @@ get_overrides_response_override_task
  = element task
      {
        attribute id { uuid }
+     }
+
+# Whether the override is active.
+get_overrides_response_override_active
+ = element active
+     {
+       integer
+     }
+
+# Override end time in case of limit, else empty.
+get_overrides_response_override_end_time
+ = element end_time
+     {
+       text
      }
 
 # Result to which override applies.

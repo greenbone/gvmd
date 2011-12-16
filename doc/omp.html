@@ -23,7 +23,7 @@
 <table id="index">
 <tr id="index">
 <td id="index"><a href="#type_actions">actions</a></td>
-<td id="index"><div style="margin-left: 15px;">A specifier of actions: get, modify, use..</div></td>
+<td id="index"><div style="margin-left: 15px;">A specifier of actions: get, modify, use.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#type_base64">base64</a></td>
@@ -560,7 +560,7 @@ response
 <div><h3 id="type_actions">5.1
         Data Type <tt>actions</tt>
 </h3></div>
-<p>In short: A specifier of actions: get, modify, use..</p>
+<p>In short: A specifier of actions: get, modify, use.</p>
 <h4>5.1.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>actions = xsd:token { pattern = "[gmu]{1,3}" }
 </pre></div>
@@ -3838,6 +3838,11 @@ create_lsc_credential_password
           </li></ul>
 </li>
 <li>
+              &lt;<b>active</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Seconds note will be active. -1 on always, 0 off.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>comment</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A comment on the note.</div>
 <ul style="list-style: none"></ul>
@@ -3899,6 +3904,7 @@ create_lsc_credential_password
      {
        create_note_text
        &amp; create_note_nvt
+       &amp; create_note_active?
        &amp; create_note_comment?
        &amp; create_note_hosts?
        &amp; create_note_port?
@@ -3917,6 +3923,12 @@ create_note_nvt
  = element nvt
      {
        attribute oid { oid }
+     }
+
+create_note_active
+ = element active
+     {
+       integer
      }
 
 create_note_comment
@@ -4004,6 +4016,11 @@ create_note_threat
           </li></ul>
 </li>
 <li>
+              &lt;<b>active</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Seconds override will be active. -1 on always, 0 off.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>comment</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A comment on the override.</div>
 <ul style="list-style: none"></ul>
@@ -4070,6 +4087,7 @@ create_note_threat
      {
        create_override_text
        &amp; create_override_nvt
+       &amp; create_override_active?
        &amp; create_override_comment?
        &amp; create_override_hosts?
        &amp; create_override_new_threat?
@@ -4083,6 +4101,12 @@ create_override_text
  = element text
      {
        text
+     }
+
+create_override_active
+ = element active
+     {
+       integer
      }
 
 create_override_nvt
@@ -7572,6 +7596,16 @@ get_lsc_credentials_response_lsc_credential_package
           </li></ul>
 </li>
 <li>
+              &lt;<b>active</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the note is active.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>end_time</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">End time of the note in case of limit, else empty.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>result</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Result to which note applies.</div>
 <ul style="list-style: none">
@@ -7673,6 +7707,8 @@ get_notes_response_note
            &amp; get_notes_response_note_port
            &amp; get_notes_response_note_threat
            &amp; get_notes_response_note_task
+           &amp; get_notes_response_note_active
+           &amp; get_notes_response_note_end_time?
            &amp; get_notes_response_note_result? )?
      }
 
@@ -7736,6 +7772,18 @@ get_notes_response_note_task
  = element task
      {
        attribute id { uuid }
+     }
+
+get_notes_response_note_active
+ = element active
+     {
+       integer
+     }
+
+get_notes_response_note_end_time
+ = element end_time
+     {
+       text
      }
 
 get_notes_response_note_result
@@ -7834,6 +7882,7 @@ get_notes_response_note_result_description
      &lt;/nvt&gt;
      &lt;text excerpt="0"&gt;This is the full text of the note.&lt;/text&gt;
      &lt;orphan&gt;1&lt;/orphan&gt;
+     &lt;active&gt;1&lt;/active&gt;
    &lt;/note&gt;
    ...
  &lt;/get_notes_response&gt;
@@ -7875,6 +7924,8 @@ get_notes_response_note_result_description
        &lt;threat&gt;Medium&lt;/threat&gt;
        &lt;description&gt;Warning with control char between fullstops: . .&lt;/description&gt;
      &lt;/result&gt;
+     &lt;active&gt;1&lt;/active&gt;
+     &lt;end_time/&gt;
    &lt;/note&gt;
    ...
  &lt;/get_notes_response&gt;
@@ -8699,6 +8750,16 @@ get_nvt_feed_checksum_response_checksum
           </li></ul>
 </li>
 <li>
+              &lt;<b>active</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the override is active.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>end_time</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Override end time in case of limit, else empty.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>result</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Result to which override applies.</div>
 <ul style="list-style: none">
@@ -8801,6 +8862,8 @@ get_overrides_response_override
            &amp; get_overrides_response_override_hosts
            &amp; get_overrides_response_override_port
            &amp; get_overrides_response_override_task
+           &amp; get_overrides_response_override_active
+           &amp; get_overrides_response_override_end_time?
            &amp; get_overrides_response_override_result? )?
      }
 
@@ -8870,6 +8933,18 @@ get_overrides_response_override_task
  = element task
      {
        attribute id { uuid }
+     }
+
+get_overrides_response_override_active
+ = element active
+     {
+       integer
+     }
+
+get_overrides_response_override_end_time
+ = element end_time
+     {
+       text
      }
 
 get_overrides_response_override_result
@@ -8970,6 +9045,7 @@ get_overrides_response_override_result_description
      &lt;threat&gt;High&lt;/threat&gt;
      &lt;new_threat&gt;Log&lt;/new_threat&gt;
      &lt;orphan&gt;1&lt;/orphan&gt;
+     &lt;active&gt;1&lt;/active&gt;
    &lt;/override&gt;
    ...
  &lt;/get_overrides_response&gt;
@@ -8998,6 +9074,8 @@ get_overrides_response_override_result_description
      &lt;/task&gt;
      &lt;orphan&gt;0&lt;/orphan&gt;
      &lt;result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de"/&gt;
+     &lt;active&gt;1&lt;/active&gt;
+     &lt;end_time/&gt;
    &lt;/override&gt;
    ...
  &lt;/get_overrides_response&gt;
@@ -13511,8 +13589,9 @@ modify_lsc_credential_password
           ID of note to modify.
           </li>
 <li>
-              &lt;<a href="#element_"><b>active</b></a>&gt;
-              ?<div style="margin-left: 15px; display: inline;">.</div>
+              &lt;<b>active</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Seconds note will be active. -1 on always, 0 off.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>hosts</b>&gt;
@@ -13571,13 +13650,19 @@ modify_lsc_credential_password
  = element modify_note
      {
        attribute note_id { uuid }
-       &amp; active?
+       &amp; modify_note_active?
        &amp; modify_note_hosts?
        &amp; modify_note_port?
        &amp; modify_note_result?
        &amp; modify_note_task?
        &amp; modify_note_text
        &amp; modify_note_threat?
+     }
+
+modify_note_active
+ = element active
+     {
+       integer
      }
 
 modify_note_hosts
@@ -13659,6 +13744,11 @@ modify_note_result
           ID of override to modify.
           </li>
 <li>
+              &lt;<b>active</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Seconds override will be active. -1 on always, 0 off.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>hosts</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
 <ul style="list-style: none"></ul>
@@ -13720,6 +13810,7 @@ modify_note_result
  = element modify_override
      {
        attribute override_id { uuid }
+       &amp; modify_override_active?
        &amp; modify_override_hosts?
        &amp; modify_override_new_threat?
        &amp; modify_override_port?
@@ -13727,6 +13818,12 @@ modify_note_result
        &amp; modify_override_task?
        &amp; modify_override_text
        &amp; modify_override_threat?
+     }
+
+modify_override_active
+ = element active
+     {
+       integer
      }
 
 modify_override_hosts
