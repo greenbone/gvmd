@@ -595,6 +595,7 @@ report_report
      {
        attribute id { uuid }
        & attribute type { xsd:token { pattern = "scan|assets" } }?
+       & report_report_delta?
        & ( report_report_sort
            & report_report_filters
            & report_report_scan_run_status
@@ -609,6 +610,43 @@ report_report
            & report_report_host_start*
            & report_report_host_end*
            & report_report_scan_end )?
+     }
+
+report_report_delta
+ = element delta
+     {
+       report_report_delta_report
+     }
+
+# Second report, for delta reports.
+report_report_delta_report
+ = element report
+     {
+       attribute id { uuid }
+       & report_report_delta_report_scan_run_status
+       & report_report_delta_report_scan_start
+       & report_report_delta_report_scan_end
+     }
+
+# Run status of task scan at time of report.
+report_report_delta_report_scan_run_status
+ = element scan_run_status
+     {
+       task_status
+     }
+
+# Start time of scan.
+report_report_delta_report_scan_start
+ = element scan_start
+     {
+       ctime
+     }
+
+# End time of scan.
+report_report_delta_report_scan_end
+ = element scan_end
+     {
+       ctime
      }
 
 # Result sorting information.
@@ -645,6 +683,8 @@ report_report_filters
        & report_report_filters_result_hosts_only
        & report_report_filters_min_cvss_base
        & report_report_filters_filter*
+       & report_report_filters_host?
+       & report_report_filters_delta?
      }
 
 # Search phrase.
@@ -694,6 +734,58 @@ report_report_filters_filter
  = element filter
      {
        xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+     }
+
+report_report_filters_host
+ = element host
+     {
+       report_report_filters_host_ip
+     }
+
+# IP of single host in report (for "delta" and "prognostic").
+report_report_filters_host_ip
+ = element ip
+     {
+       text
+     }
+
+# Delta states.
+report_report_filters_delta
+ = element delta
+     {
+       text
+       & report_report_filters_delta_changed
+       & report_report_filters_delta_gone
+       & report_report_filters_delta_new
+       & report_report_filters_delta_same
+     }
+
+# Whether changed results are included.
+report_report_filters_delta_changed
+ = element changed
+     {
+       boolean
+     }
+
+# Whether results that have vanished are included.
+report_report_filters_delta_gone
+ = element gone
+     {
+       boolean
+     }
+
+# Whether new results are included.
+report_report_filters_delta_new
+ = element new
+     {
+       boolean
+     }
+
+# Whether results that are equal are included.
+report_report_filters_delta_same
+ = element same
+     {
+       boolean
      }
 
 # Run status of task scan at time of report.
@@ -1623,6 +1715,7 @@ create_report
  = element create_report
      {
        create_report_report
+       & create_report_task
      }
 
 # A report wrapper, as in the GET_REPORTS response.
@@ -1636,6 +1729,29 @@ create_report_report
        & attribute content_type { text }
        & attribute type { xsd:token { pattern = "scan|assets" } }?
        & report_report
+     }
+
+# Task for report: id to use existing task, name to create new task.
+create_report_task
+ = element task
+     {
+       attribute id { uuid }?
+       & create_report_task_name?
+       & create_report_task_comment?
+     }
+
+# The name of the task.
+create_report_task_name
+ = element name
+     {
+       name
+     }
+
+# Comment for the new task.
+create_report_task_comment
+ = element comment
+     {
+       text
      }
 
 ## Command create_report_format
@@ -2344,7 +2460,7 @@ get_reports
        # ID of single report to get.
        attribute report_id { uuid }?
        & # Type of report to get.
-       attribute type { xsd:token { pattern = "scan|assets" } }?
+       attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        & # ID of required report format.
        attribute format_id { uuid }?
        & # ID of escalator to pass generated report to.
@@ -2371,10 +2487,20 @@ get_reports
        attribute override_details { boolean }?
        & # Whether to include only those hosts that have results.
        attribute result_hosts_only { boolean }?
-       & # For type "assets", single host to retrieve.
+       & # For "assets" or "prognostic", single host to retrieve.
        attribute host { text }?
+       & # For "assets" or "prognostic", first host to retrieve.
+       attribute host_first_result { integer }?
+       & # For "assets" or "prognostic", maximum hosts to retrieve.
+       attribute host_max_results { integer }?
+       & # For "assets" or "prognostic", which threat levels to include in hosts.
+       attribute host_levels { levels }?
        & # For type "assets", position of report used, from end.
        attribute pos { integer }?
+       & # ID of second report, for producing a delta report.
+       attribute delta_report_id { uuid }?
+       & # Letters for results to include: c)hanged, g)one, n)ew, s)ame.
+       attribute delta_states {  }?
      }
 
 ## Command get_report_formats
@@ -2552,9 +2678,25 @@ modify_config
      {
        # ID of config to modify.
        attribute config_id { uuid }
-       & ( modify_config_preference
+       & ( modify_config_name
+           | modify_config_comment
+           | modify_config_preference
            | modify_config_family_selection
            | modify_config_nvt_selection )
+     }
+
+# New name for the config.
+modify_config_name
+ = element name
+     {
+       name
+     }
+
+# New comment for the config.
+modify_config_comment
+ = element comment
+     {
+       text
      }
 
 modify_config_preference

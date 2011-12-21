@@ -1468,6 +1468,34 @@ result_detection_result
           ("scan" or "assets")
           </li>
 <li>
+              &lt;<b>delta</b>&gt;
+              ?<ul style="list-style: none"><li>
+              &lt;<b>report</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Second report, for delta reports.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>scan_run_status</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Run status of task scan at time of report.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>scan_start</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Start time of scan.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>scan_end</b>&gt;
+              <div style="margin-left: 15px; display: inline;">End time of scan.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
 <i>The group</i><b>?</b><ul style="list-style: none">
 <li>
               &lt;<b>sort</b>&gt;
@@ -1520,6 +1548,40 @@ result_detection_result
               &lt;<b>filter</b>&gt;
               *<div style="margin-left: 15px; display: inline;">Level filter.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>host</b>&gt;
+              ?<ul style="list-style: none"><li>
+              &lt;<b>ip</b>&gt;
+              <div style="margin-left: 15px; display: inline;">IP of single host in report (for "delta" and "prognostic").</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>delta</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Delta states.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>changed</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether changed results are included.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>gone</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether results that have vanished are included.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>new</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether new results are included.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>same</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether results that are equal are included.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 </ul>
 </li>
@@ -1832,6 +1894,7 @@ report_report
      {
        attribute id { uuid }
        &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
+       &amp; report_report_delta?
        &amp; ( report_report_sort
            &amp; report_report_filters
            &amp; report_report_scan_run_status
@@ -1846,6 +1909,39 @@ report_report
            &amp; report_report_host_start*
            &amp; report_report_host_end*
            &amp; report_report_scan_end )?
+     }
+
+report_report_delta
+ = element delta
+     {
+       report_report_delta_report
+     }
+
+report_report_delta_report
+ = element report
+     {
+       attribute id { uuid }
+       &amp; report_report_delta_report_scan_run_status
+       &amp; report_report_delta_report_scan_start
+       &amp; report_report_delta_report_scan_end
+     }
+
+report_report_delta_report_scan_run_status
+ = element scan_run_status
+     {
+       task_status
+     }
+
+report_report_delta_report_scan_start
+ = element scan_start
+     {
+       ctime
+     }
+
+report_report_delta_report_scan_end
+ = element scan_end
+     {
+       ctime
      }
 
 report_report_sort
@@ -1878,6 +1974,8 @@ report_report_filters
        &amp; report_report_filters_result_hosts_only
        &amp; report_report_filters_min_cvss_base
        &amp; report_report_filters_filter*
+       &amp; report_report_filters_host?
+       &amp; report_report_filters_delta?
      }
 
 report_report_filters_phrase
@@ -1920,6 +2018,52 @@ report_report_filters_filter
  = element filter
      {
        xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+     }
+
+report_report_filters_host
+ = element host
+     {
+       report_report_filters_host_ip
+     }
+
+report_report_filters_host_ip
+ = element ip
+     {
+       text
+     }
+
+report_report_filters_delta
+ = element delta
+     {
+       text
+       &amp; report_report_filters_delta_changed
+       &amp; report_report_filters_delta_gone
+       &amp; report_report_filters_delta_new
+       &amp; report_report_filters_delta_same
+     }
+
+report_report_filters_delta_changed
+ = element changed
+     {
+       boolean
+     }
+
+report_report_filters_delta_gone
+ = element gone
+     {
+       boolean
+     }
+
+report_report_filters_delta_new
+ = element new
+     {
+       boolean
+     }
+
+report_report_filters_delta_same
+ = element same
+     {
+       boolean
      }
 
 report_report_scan_run_status
@@ -4237,12 +4381,34 @@ create_override_threat
 <h4>7.9.1 Structure</h4>
 <ul style="list-style: none">
 <li>
-<i>Command</i><ul style="list-style: none"><li>
+<i>Command</i><ul style="list-style: none">
+<li>
               &lt;<b>report</b>&gt;
               <div style="margin-left: 15px; display: inline;">(<a href="#element_report">report</a>)</div>
 <div style="margin-left: 15px; display: inline;">A report wrapper, as in the GET_REPORTS response.</div>
 <ul style="list-style: none"></ul>
-</li></ul>
+</li>
+<li>
+              &lt;<b>task</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Task for report: id to use existing task, name to create new task.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The name of the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Comment for the new task.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -4267,6 +4433,7 @@ create_override_threat
  = element create_report
      {
        create_report_report
+       &amp; create_report_task
      }
 
 create_report_report
@@ -4280,6 +4447,26 @@ create_report_report
        &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
        &amp; report_report
      }
+
+create_report_task
+ = element task
+     {
+       attribute id { uuid }?
+       &amp; create_report_task_name?
+       &amp; create_report_task_comment?
+     }
+
+create_report_task_name
+ = element name
+     {
+       name
+     }
+
+create_report_task_comment
+ = element comment
+     {
+       text
+     }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_report_response
  = element create_report_response
@@ -4290,7 +4477,7 @@ create_report_report
      }
 </pre></div>
 </div>
-<h4>7.9.3 Example: Create a report format</h4>
+<h4>7.9.3 Example: Create a report in a new task</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_report&gt;
    &lt;get_reports_response&gt;
@@ -4312,6 +4499,9 @@ create_report_report
        &lt;active&gt;1&lt;/active&gt;
      &lt;/report&gt;
    &lt;/get_reports_response&gt;
+   &lt;task&gt;
+     &lt;name&gt;Imported reports&lt;/name&gt;
+   &lt;/task&gt;
  &lt;/create_report&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_report_response status="201"
@@ -9358,7 +9548,7 @@ get_preferences_response_preference_value
           </li>
 <li>
           @<b>type</b>
-          ("scan" or "assets")
+          ("scan", "assets" or "prognostic")
           Type of report to get.
           </li>
 <li>
@@ -9432,12 +9622,37 @@ get_preferences_response_preference_value
 <li>
           @<b>host</b>
           (text)
-          For type "assets", single host to retrieve.
+          For "assets" or "prognostic", single host to retrieve.
+          </li>
+<li>
+          @<b>host_first_result</b>
+          (<a href="#type_integer">integer</a>)
+          For "assets" or "prognostic", first host to retrieve.
+          </li>
+<li>
+          @<b>host_max_results</b>
+          (<a href="#type_integer">integer</a>)
+          For "assets" or "prognostic", maximum hosts to retrieve.
+          </li>
+<li>
+          @<b>host_levels</b>
+          (<a href="#type_levels">levels</a>)
+          For "assets" or "prognostic", which threat levels to include in hosts.
           </li>
 <li>
           @<b>pos</b>
           (<a href="#type_integer">integer</a>)
           For type "assets", position of report used, from end.
+          </li>
+<li>
+          @<b>delta_report_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of second report, for producing a delta report.
+          </li>
+<li>
+          @<b>delta_states</b>
+          ()
+          Letters for results to include: c)hanged, g)one, n)ew, s)ame.
           </li>
 </ul>
 </li>
@@ -9466,7 +9681,7 @@ get_preferences_response_preference_value
  = element get_reports
      {
        attribute report_id { uuid }?
-       &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
+       &amp; attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        &amp; attribute format_id { uuid }?
        &amp; attribute escalator_id { uuid }?
        &amp; attribute first_result { integer }?
@@ -9482,7 +9697,12 @@ get_preferences_response_preference_value
        &amp; attribute override_details { boolean }?
        &amp; attribute result_hosts_only { boolean }?
        &amp; attribute host { text }?
+       &amp; attribute host_first_result { integer }?
+       &amp; attribute host_max_results { integer }?
+       &amp; attribute host_levels { levels }?
        &amp; attribute pos { integer }?
+       &amp; attribute delta_report_id { uuid }?
+       &amp; attribute delta_states {  }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_reports_response
@@ -13202,8 +13422,8 @@ help_response_schema_protocol_command
 </h3></div>
 <p>In short: Update an existing config.</p>
 <p>
-        This command can take three forms: with a preference, with a family selection
-        or with an NVT selection.
+        This command can take five forms: with a preference, with a family
+        selection, with an NVT selection, or with a name or comment.
       </p>
 <p>
         The first form modifies a preference on the config.
@@ -13259,6 +13479,16 @@ help_response_schema_protocol_command
           </li>
 <li>
 <i>One of</i><b></b><ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">New name for the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">New comment for the config.</div>
+<ul style="list-style: none"></ul>
+</li>
 <li>
               &lt;<b>preference</b>&gt;
               <ul style="list-style: none">
@@ -13351,9 +13581,23 @@ help_response_schema_protocol_command
  = element modify_config
      {
        attribute config_id { uuid }
-       &amp; ( modify_config_preference
+       &amp; ( modify_config_name
+           | modify_config_comment
+           | modify_config_preference
            | modify_config_family_selection
            | modify_config_nvt_selection )
+     }
+
+modify_config_name
+ = element name
+     {
+       name
+     }
+
+modify_config_comment
+ = element comment
+     {
+       text
      }
 
 modify_config_preference

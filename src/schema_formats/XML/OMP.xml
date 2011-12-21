@@ -532,6 +532,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </alts>
           </type>
         </attrib>
+        <o><e>delta</e></o>
         <o>
           <g>
             <e>sort</e>
@@ -551,6 +552,41 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </g>
         </o>
       </pattern>
+      <ele>
+        <name>delta</name>
+        <pattern>
+          <e>report</e>
+        </pattern>
+        <ele>
+          <name>report</name>
+          <summary>Second report, for delta reports</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>scan_run_status</e>
+            <e>scan_start</e>
+            <e>scan_end</e>
+          </pattern>
+          <ele>
+            <name>scan_run_status</name>
+            <summary>Run status of task scan at time of report</summary>
+            <pattern><t>task_status</t></pattern>
+          </ele>
+          <ele>
+            <name>scan_start</name>
+            <summary>Start time of scan</summary>
+            <pattern><t>ctime</t></pattern>
+          </ele>
+          <ele>
+            <name>scan_end</name>
+            <summary>End time of scan</summary>
+            <pattern><t>ctime</t></pattern>
+          </ele>
+        </ele>
+      </ele>
       <ele>
         <name>sort</name>
         <summary>Result sorting information</summary>
@@ -590,6 +626,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>result_hosts_only</e>
           <e>min_cvss_base</e>
           <any><e>filter</e></any>
+          <o><e>host</e></o>
+          <o><e>delta</e></o>
         </pattern>
         <ele>
           <name>phrase</name>
@@ -649,6 +687,48 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </alts>
             </t>
           </pattern>
+        </ele>
+        <ele>
+          <name>host</name>
+          <pattern><e>ip</e></pattern>
+          <ele>
+            <name>ip</name>
+            <summary>
+              IP of single host in report (for "delta" and "prognostic")
+            </summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>delta</name>
+          <summary>Delta states</summary>
+          <pattern>
+            text
+            <e>changed</e>
+            <e>gone</e>
+            <e>new</e>
+            <e>same</e>
+          </pattern>
+          <ele>
+            <name>changed</name>
+            <summary>Whether changed results are included</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+          <ele>
+            <name>gone</name>
+            <summary>Whether results that have vanished are included</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+          <ele>
+            <name>new</name>
+            <summary>Whether new results are included</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+          <ele>
+            <name>same</name>
+            <summary>Whether results that are equal are included</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
         </ele>
       </ele>
       <ele>
@@ -2050,11 +2130,37 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </description>
     <pattern>
       <e>report</e>
+      <e>task</e>
     </pattern>
     <ele>
       <name>report</name>
       <summary>A report wrapper, as in the GET_REPORTS response</summary>
       <type>report</type>
+    </ele>
+    <ele>
+      <name>task</name>
+      <summary>
+        Task for report: id to use existing task, name to create new task
+      </summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>0</required>
+        </attrib>
+        <o><e>name</e></o>
+        <o><e>comment</e></o>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>The name of the task</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
+      <ele>
+        <name>comment</name>
+        <summary>Comment for the new task</summary>
+        <pattern>text</pattern>
+      </ele>
     </ele>
     <response>
       <pattern>
@@ -2076,7 +2182,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </response>
     <example>
-      <summary>Create a report format</summary>
+      <summary>Create a report in a new task</summary>
       <request>
         <create_report>
           <get_reports_response>
@@ -2098,12 +2204,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <active>1</active>
             </report>
           </get_reports_response>
+          <task>
+            <name>Imported reports</name>
+          </task>
         </create_report>
       </request>
       <response>
         <create_report_response status="201"
-                                      status_text="OK, resource created"
-                                      id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+                                status_text="OK, resource created"
+                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
         </create_report_response>
       </response>
     </example>
@@ -5681,6 +5790,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <alts>
             <alt>scan</alt>
             <alt>assets</alt>
+            <alt>prognostic</alt>
           </alts>
         </type>
       </attrib>
@@ -5760,13 +5870,44 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <attrib>
         <name>host</name>
-        <summary>For type "assets", single host to retrieve</summary>
+        <summary>For "assets" or "prognostic", single host to retrieve</summary>
         <type>text</type>
+      </attrib>
+      <attrib>
+        <name>host_first_result</name>
+        <summary>For "assets" or "prognostic", first host to retrieve</summary>
+        <type>integer</type>
+      </attrib>
+      <attrib>
+        <name>host_max_results</name>
+        <summary>
+          For "assets" or "prognostic", maximum hosts to retrieve
+        </summary>
+        <type>integer</type>
+      </attrib>
+      <attrib>
+        <name>host_levels</name>
+        <summary>
+          For "assets" or "prognostic", which threat levels to include in hosts
+        </summary>
+        <type>levels</type>
       </attrib>
       <attrib>
         <name>pos</name>
         <summary>For type "assets", position of report used, from end</summary>
         <type>integer</type>
+      </attrib>
+      <attrib>
+        <name>delta_report_id</name>
+        <summary>ID of second report, for producing a delta report</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>delta_states</name>
+        <summary>
+          Letters for results to include: c)hanged, g)one, n)ew, s)ame
+        </summary>
+        <pattern>xsd:token { pattern = "c?g?n?s?" }</pattern>
       </attrib>
     </pattern>
     <response>
@@ -8331,8 +8472,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <summary>Update an existing config</summary>
     <description>
       <p>
-        This command can take three forms: with a preference, with a family selection
-        or with an NVT selection.
+        This command can take five forms: with a preference, with a family
+        selection, with an NVT selection, or with a name or comment.
       </p>
       <p>
         The first form modifies a preference on the config.
@@ -8392,11 +8533,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <required>1</required>
       </attrib>
       <or>
+        <e>name</e>
+        <e>comment</e>
         <e>preference</e>
         <e>family_selection</e>
         <e>nvt_selection</e>
       </or>
     </pattern>
+    <ele>
+      <name>name</name>
+      <summary>New name for the config</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>New comment for the config</summary>
+      <pattern>text</pattern>
+    </ele>
     <ele>
       <name>preference</name>
       <pattern>
