@@ -8814,6 +8814,7 @@ update_nvti_cache ()
       nvti_set_risk_factor (nvti, nvt_iterator_risk_factor (&nvts));
       nvti_set_cve (nvti, nvt_iterator_cve (&nvts));
       nvti_set_bid (nvti, nvt_iterator_bid (&nvts));
+      nvti_set_xref (nvti, nvt_iterator_xref (&nvts));
       nvtis_add (nvti_cache, nvti);
     }
   cleanup_iterator (&nvts);

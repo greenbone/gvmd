@@ -1,5 +1,9 @@
 2011-12-22  Henri Doreau <henri.doreau@greenbone.net>
 
+	* src/manage_sql.c (update_nvti_cache): Add xref to the NVTI cache.
+
+2011-12-22  Henri Doreau <henri.doreau@greenbone.net>
+
 	* src/manage_sql.c (result_iterator_nvt_xref): New function. Get NVT
 	XREF from a result iterator.
 
