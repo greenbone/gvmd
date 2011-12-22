@@ -8718,6 +8718,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *risk_factor = result_iterator_nvt_risk_factor (results);
   const char *cve = result_iterator_nvt_cve (results);
   const char *bid = result_iterator_nvt_bid (results);
+  const char *xref = result_iterator_nvt_xref (results);
   result_t result = result_iterator_result (results);
   char *uuid;
   char *detect_ref, *detect_cpe, *detect_loc, *detect_oid, *detect_name;
@@ -8764,6 +8765,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     "<risk_factor>%s</risk_factor>"
     "<cve>%s</cve>"
     "<bid>%s</bid>"
+    "<xref>%s</xref>"
     "</nvt>"
     "<threat>%s</threat>"
     "<description>%s</description>",
@@ -8776,6 +8778,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     risk_factor ? risk_factor : "",
     cve ? cve : "",
     bid ? bid : "",
+    xref ? xref : "",
     manage_result_type_threat (result_iterator_type (results)),
     descr ? nl_descr : "");
 

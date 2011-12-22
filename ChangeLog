@@ -1,3 +1,12 @@
+2011-12-22  Henri Doreau <henri.doreau@greenbone.net>
+
+	* src/manage_sql.c (result_iterator_nvt_xref): New function. Get NVT
+	XREF from a result iterator.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (buffer_results_xml): Add xref element to scan results.
+
 2011-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (get_reports): Add host filter attribs.

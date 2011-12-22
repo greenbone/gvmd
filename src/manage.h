@@ -809,6 +809,9 @@ const char*
 result_iterator_nvt_bid (iterator_t *);
 
 const char*
+result_iterator_nvt_xref (iterator_t *);
+
+const char*
 result_iterator_type (iterator_t*);
 
 const char*

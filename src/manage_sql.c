@@ -12767,6 +12767,24 @@ result_iterator_nvt_bid (iterator_t *iterator)
 }
 
 /**
+ * @brief Get the NVT XREF from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The XREF of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_xref (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_xref (nvti);
+  return NULL;
+}
+
+/**
  * @brief Get the original type from a result iterator.
  *
  * This is the column 'type'.
