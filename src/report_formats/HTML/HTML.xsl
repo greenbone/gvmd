@@ -154,6 +154,56 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:if>
   </xsl:template>
 
+  <xsl:template match="nvt">
+    <xsl:variable name="cve_ref">
+      <xsl:if test="cve != '' and cve != 'NOCVE'">
+        <xsl:value-of select="cve/text()"/>
+      </xsl:if>
+    </xsl:variable>
+    <xsl:variable name="bid_ref">
+      <xsl:if test="bid != '' and bid != 'NOBID'">
+        <xsl:value-of select="bid/text()"/>
+      </xsl:if>
+    </xsl:variable>
+    <xsl:variable name="xref_ref">
+      <xsl:if test="xref != '' and xref != 'NOXREF'">
+        <xsl:value-of select="xref/text()"/>
+      </xsl:if>
+    </xsl:variable>
+  
+    <xsl:if test="$cve_ref != '' or $bid_ref != '' or $xref_ref != ''">
+      <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+        <b>References</b><br/>
+  
+        <table>
+          <xsl:if test="$cve_ref != ''">
+            <tr valign="top">
+              <td>CVE:</td>
+              <td><xsl:value-of select="$cve_ref"/></td>
+            </tr>
+          </xsl:if>
+          <xsl:if test="$bid_ref != ''">
+            <tr valign="top">
+              <td>BID:</td>
+              <td><xsl:value-of select="$bid_ref"/></td>
+            </tr>
+          </xsl:if>
+          <xsl:if test="$xref_ref != ''">
+            <tr valign="top">
+              <td>Other:</td>
+            </tr>
+            <xsl:for-each select="str:split($xref_ref, ',')">
+              <tr valign="top">
+                <td></td>
+                <td><xsl:value-of select="."/></td>
+              </tr>
+            </xsl:for-each>
+          </xsl:if>
+        </table>
+      </div>
+    </xsl:if>
+  </xsl:template>
+
   <xsl:template match="result" mode="issue">
 
     <xsl:variable name="style">
@@ -210,6 +260,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:call-template>
       </pre>
     </div>
+    <xsl:apply-templates select="nvt"/>
     <xsl:apply-templates select="notes/note"/>
     <xsl:apply-templates select="overrides/override"/>
 

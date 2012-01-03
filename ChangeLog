@@ -1,3 +1,8 @@
+2011-01-03  Henri Doreau <henri.doreau@greenbone.net>
+
+	* src/report_formats/HTML/HTML.xsl (nvt): New. Added a reference box to
+	report CVE/BID/Xrefs of each result.
+
 2011-12-22  Henri Doreau <henri.doreau@greenbone.net>
 
 	* src/manage_sql.c (update_nvti_cache): Add xref to the NVTI cache.
