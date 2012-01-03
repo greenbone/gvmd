@@ -120,6 +120,83 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:for-each>
 </xsl:template>
 
+<!-- Split long comma-separated CVE lists into several lines in order to respect
+     the 80 col. wrapping without cutting in the middle of a CVE id. -->
+<xsl:template name="wrapped_cve_list">
+  <xsl:param name="cves"></xsl:param>
+
+  <xsl:for-each select="str:tokenize($cves, ',')">
+    <xsl:choose>
+      <xsl:when test="position() mod 5 = 1">
+        <xsl:choose>
+          <xsl:when test="position() = 1">
+            <xsl:value-of select="normalize-space(.)"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>
+       </xsl:text><xsl:value-of select="normalize-space(.)"/>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="concat(',', normalize-space(.))"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:for-each>
+</xsl:template>
+
+<xsl:template match="nvt">
+  <xsl:variable name="cve_ref">
+    <xsl:if test="cve != '' and cve != 'NOCVE'">
+      <xsl:value-of select="cve/text()"/>
+    </xsl:if>
+  </xsl:variable>
+  <xsl:variable name="bid_ref">
+    <xsl:if test="bid != '' and bid != 'NOBID'">
+      <xsl:value-of select="bid/text()"/>
+    </xsl:if>
+  </xsl:variable>
+  <xsl:variable name="xref_ref">
+    <xsl:if test="xref != '' and xref != 'NOXREF'">
+      <xsl:value-of select="xref/text()"/>
+    </xsl:if>
+  </xsl:variable>
+
+  <xsl:if test="$cve_ref != '' or $bid_ref != '' or $xref_ref != ''">
+    <xsl:text>----------</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:text>References:</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:if test="$cve_ref != ''">
+      <xsl:text>  </xsl:text>
+      <xsl:text>CVE: </xsl:text>
+      <xsl:call-template name="wrapped_cve_list">
+        <xsl:with-param name="cves" select="$cve_ref"/>
+      </xsl:call-template>
+      <xsl:call-template name="newline"/>
+    </xsl:if>
+    <xsl:if test="$bid_ref != ''">
+      <xsl:text>  </xsl:text>
+      <xsl:text>BID: </xsl:text>
+      <xsl:value-of select="$bid_ref"/>
+      <xsl:call-template name="newline"/>
+    </xsl:if>
+    <xsl:if test="$xref_ref != ''">
+      <xsl:text>  </xsl:text>
+      <xsl:text>Other: </xsl:text>
+      <xsl:for-each select="str:split($xref_ref, ',')">
+        <xsl:call-template name="newline"/>
+        <xsl:text>    </xsl:text>
+        <xsl:value-of select="."/>
+      </xsl:for-each>
+      <xsl:call-template name="newline"/>
+    </xsl:if>
+    <xsl:text>----------</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
+  </xsl:if>
+</xsl:template>
+
 <!-- This is called within a PRE. -->
 <xsl:template name="wrap-line">
   <xsl:param name="string"></xsl:param>
@@ -289,6 +366,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:call-template>
     <xsl:call-template name="newline"/>
 
+    <xsl:apply-templates select="nvt"/>
     <xsl:apply-templates select="notes/note"/>
     <xsl:apply-templates select="overrides/override"/>
 

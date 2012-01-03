@@ -1,5 +1,12 @@
 2011-01-03  Henri Doreau <henri.doreau@greenbone.net>
 
+	* src/report_formats/TXT/TXT.xsl (nvt): New. Added a reference box
+	to report CVE/BID/Xrefs of each result.
+	(wrapped_cve_list): New. Smartly cut long CVE lists into 80 columns-wide
+	lines.
+
+2011-01-03  Henri Doreau <henri.doreau@greenbone.net>
+
 	* src/report_formats/LaTeX/latex.xsl (references): New. Added a reference box
 	to report CVE/BID/Xrefs of each result.
 
