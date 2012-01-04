@@ -120,14 +120,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:for-each>
 </xsl:template>
 
-<!-- Split long comma-separated CVE lists into several lines in order to respect
-     the 80 col. wrapping without cutting in the middle of a CVE id. -->
-<xsl:template name="wrapped_cve_list">
-  <xsl:param name="cves"></xsl:param>
+<!-- Split long comma-separated lists into several lines of items_per_line
+     elements without cutting in the middle of an item. -->
+<xsl:template name="wrapped_list">
+  <xsl:param name="list"></xsl:param>
+  <xsl:param name="items_per_line"></xsl:param>
 
-  <xsl:for-each select="str:tokenize($cves, ',')">
+  <xsl:for-each select="str:tokenize($list, ',')">
     <xsl:choose>
-      <xsl:when test="position() mod 5 = 1">
+      <xsl:when test="position() mod $items_per_line = 1">
         <xsl:choose>
           <xsl:when test="position() = 1">
             <xsl:value-of select="normalize-space(.)"/>
@@ -170,15 +171,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:if test="$cve_ref != ''">
       <xsl:text>  </xsl:text>
       <xsl:text>CVE: </xsl:text>
-      <xsl:call-template name="wrapped_cve_list">
-        <xsl:with-param name="cves" select="$cve_ref"/>
+      <xsl:call-template name="wrapped_list">
+        <xsl:with-param name="list" select="$cve_ref"/>
+        <xsl:with-param name="items_per_line" select="5"/>
       </xsl:call-template>
       <xsl:call-template name="newline"/>
     </xsl:if>
     <xsl:if test="$bid_ref != ''">
       <xsl:text>  </xsl:text>
       <xsl:text>BID: </xsl:text>
-      <xsl:value-of select="$bid_ref"/>
+      <xsl:call-template name="wrapped_list">
+        <xsl:with-param name="list" select="$bid_ref"/>
+        <xsl:with-param name="items_per_line" select="10"/>
+      </xsl:call-template>
       <xsl:call-template name="newline"/>
     </xsl:if>
     <xsl:if test="$xref_ref != ''">

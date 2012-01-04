@@ -1,3 +1,9 @@
+2011-01-04  Henri Doreau <henri.doreau@greenbone.net>
+
+	* src/report_formats/TXT/TXT.xsl (nvt): Wrap BID lists to 80 columns.
+	(wrapped_cve_list): Renamed into wrapped_list. Changed to handle
+	arbitrary elements per line.
+
 2011-01-03  Henri Doreau <henri.doreau@greenbone.net>
 
 	* src/report_formats/TXT/TXT.xsl (nvt): New. Added a reference box
