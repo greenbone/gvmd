@@ -1,22 +1,26 @@
-2011-01-04  Henri Doreau <henri.doreau@greenbone.net>
+2012-01-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* INSTALL: Re-arranged text a bit and added some Debian 6 info.
+
+2012-01-04  Henri Doreau <henri.doreau@greenbone.net>
 
 	* src/report_formats/TXT/TXT.xsl (nvt): Wrap BID lists to 80 columns.
 	(wrapped_cve_list): Renamed into wrapped_list. Changed to handle
 	arbitrary elements per line.
 
-2011-01-03  Henri Doreau <henri.doreau@greenbone.net>
+2012-01-03  Henri Doreau <henri.doreau@greenbone.net>
 
 	* src/report_formats/TXT/TXT.xsl (nvt): New. Added a reference box
 	to report CVE/BID/Xrefs of each result.
 	(wrapped_cve_list): New. Smartly cut long CVE lists into 80 columns-wide
 	lines.
 
-2011-01-03  Henri Doreau <henri.doreau@greenbone.net>
+2012-01-03  Henri Doreau <henri.doreau@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl (references): New. Added a reference box
 	to report CVE/BID/Xrefs of each result.
 
-2011-01-03  Henri Doreau <henri.doreau@greenbone.net>
+2012-01-03  Henri Doreau <henri.doreau@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl (nvt): New. Added a reference box to
 	report CVE/BID/Xrefs of each result.

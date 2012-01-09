@@ -1,13 +1,14 @@
 INSTALLATION INSTRUCTIONS FOR OPENVAS-MANAGER
 =============================================
 
-Please note: The reference system used by the developers is Debian
-GNU/Linux 'Lenny' 5.0.  The build might fail on any other systems.  Also
-it is necessary to install dependent development packages.
+Please note: The reference systems used by most of the developers are Debian
+GNU/Linux 'Lenny' 5.0 and Debian GNU/Linux 'Squeeze' 6.0.  The build might fail
+on any other systems.  Also it is necessary to install dependent development
+packages.
 
 
-Compiling openvas-manager
--------------------------
+Prerequisites for openvas-manager
+---------------------------------
 
 Prerequisites:
 * cmake
@@ -25,6 +26,10 @@ Prerequisites for building documentation:
 
 Please see the section "Prerequisites for Optional Features" below additional
 optional prerequisites.
+
+
+Compiling openvas-manager
+-------------------------
 
 If you have installed required libraries to a non-standard location, remember to
 set the PKG_CONFIG_PATH environment variable to the location of you pkg-config
