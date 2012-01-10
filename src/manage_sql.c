@@ -9363,6 +9363,75 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       verify_report_format (report_format);
     }
 
+  /* Ensure that the report formats trash directory matches the database. */
+
+  {
+    gchar *dir;
+    GError *error;
+    GDir *directory;
+    const gchar *entry;
+
+    dir = g_build_filename (OPENVAS_DATA_DIR,
+                            "openvasmd",
+                            "report_formats_trash",
+                            NULL);
+    error = NULL;
+    directory = g_dir_open (dir, 0, &error);
+
+    if (directory == NULL)
+      {
+        if (error)
+          {
+            g_warning ("g_dir_open (%s) failed - %s\n",
+                       dir,
+                       error->message);
+            g_error_free (error);
+          }
+        g_free (dir);
+        return -1;
+      }
+
+    entry = NULL;
+    while ((entry = g_dir_read_name (directory)) != NULL)
+      {
+        gchar *end;
+        if (strtol (entry, &end, 10) < 0)
+          /* Only interested in positive numbers. */
+          continue;
+        if (*end != '\0')
+          /* Only interested in numbers. */
+          continue;
+
+        /* Check whether the db has a report format with this ID. */
+
+        if (sql_int (0, 0,
+                     "SELECT count(*) FROM report_formats_trash"
+                     " WHERE ROWID = %s;",
+                     entry)
+            == 0)
+          {
+            int ret;
+            gchar *entry_path;
+
+            /* Remove the directory. */
+
+            entry_path = g_build_filename (dir, entry, NULL);
+            ret = file_utils_rmdir_rf (entry_path);
+            g_free (entry_path);
+            if (ret)
+              {
+                g_warning ("%s: failed to remove %s from %s",
+                           __FUNCTION__, entry, dir);
+                g_dir_close (directory);
+                g_free (dir);
+                return -1;
+              }
+          }
+      }
+    g_dir_close (directory);
+    g_free (dir);
+  }
+
   if (nvt_cache_mode == 0)
     {
       iterator_t tasks;

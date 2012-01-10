@@ -1,5 +1,10 @@
 2012-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Ensure that the report formats trash
+	directory matches the database.
+
+2012-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_report_format): Use correct variable in
 	message.
 	(manage_empty_trashcan): Remove the report formats on disk too.
