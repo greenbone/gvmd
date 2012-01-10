@@ -31297,7 +31297,7 @@ delete_report_format (const char *report_format_id, int ultimate)
                                     NULL);
       if (g_mkdir_with_parents (trash_dir, 0755 /* "rwxr-xr-x" */))
         {
-          g_warning ("%s: failed to create dir %s", __FUNCTION__, dir);
+          g_warning ("%s: failed to create dir %s", __FUNCTION__, trash_dir);
           g_free (trash_dir);
           sql ("ROLLBACK;");
           return -1;
@@ -33736,6 +33736,8 @@ manage_restore (const char *id)
 int
 manage_empty_trashcan ()
 {
+  gchar *dir;
+
   sql ("BEGIN IMMEDIATE;");
   sql ("DELETE FROM agents_trash;");
   sql ("DELETE FROM nvt_selectors WHERE name IN"
@@ -33747,7 +33749,6 @@ manage_empty_trashcan ()
   sql ("DELETE FROM escalator_method_data_trash;");
   sql ("DELETE FROM escalators_trash;");
   sql ("DELETE FROM lsc_credentials_trash;");
-  sql ("DELETE FROM report_formats_trash;");
   sql ("DELETE FROM schedules_trash;");
   sql ("DELETE FROM slaves_trash;");
   sql ("DELETE FROM targets_trash;");
@@ -33756,6 +33757,34 @@ manage_empty_trashcan ()
       sql ("ROLLBACK;");
       return -1;
     }
+
+  sql ("DELETE FROM report_formats_trash;");
+
+  /* Remove the report formats dir last, in case any SQL rolls back. */
+
+  dir = g_build_filename (OPENVAS_DATA_DIR,
+                          "openvasmd",
+                          "report_formats_trash",
+                          NULL);
+
+  if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
+    {
+      g_warning ("%s: failed to remove trash dir %s", __FUNCTION__, dir);
+      g_free (dir);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
+    {
+      g_warning ("%s: failed to create trash dir %s", __FUNCTION__, dir);
+      g_free (dir);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  g_free (dir);
+
   sql ("COMMIT;");
   return 0;
 }
