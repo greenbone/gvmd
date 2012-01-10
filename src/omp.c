@@ -17467,81 +17467,82 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         schedule_in_trash = 0;
                       }
                     next_time = task_schedule_next_time (index);
-                    line = g_strdup_printf ("<task"
-                                            " id=\"%s\">"
-                                            "<name>%s</name>"
-                                            "<comment>%s</comment>"
-                                            "<owner><name>%s</name></owner>"
-                                            "<observers>%s</observers>"
-                                            "<config id=\"%s\">"
-                                            "<name>%s</name>"
-                                            "<trash>%i</trash>"
-                                            "</config>"
-                                            "<escalator id=\"%s\">"
-                                            "<name>%s</name>"
-                                            "<trash>%i</trash>"
-                                            "</escalator>"
-                                            "<target id=\"%s\">"
-                                            "<name>%s</name>"
-                                            "<trash>%i</trash>"
-                                            "</target>"
-                                            "<slave id=\"%s\">"
-                                            "<name>%s</name>"
-                                            "<trash>%i</trash>"
-                                            "</slave>"
-                                            "<status>%s</status>"
-                                            "<progress>%s</progress>"
-                                            "%s"
-                                            "<report_count>"
-                                            "%u<finished>%u</finished>"
-                                            "</report_count>"
-                                            "<trend>%s</trend>"
-                                            "<schedule id=\"%s\">"
-                                            "<name>%s</name>"
-                                            "<next_time>%s</next_time>"
-                                            "<trash>%i</trash>"
-                                            "</schedule>"
-                                            "%s%s%s",
-                                            tsk_uuid,
-                                            name,
-                                            comment,
-                                            owner,
-                                            strcmp
-                                              (owner,
-                                               current_credentials.username)
-                                              ? ""
-                                              : observers,
-                                            config_uuid ? config_uuid : "",
-                                            config ? config : "",
-                                            task_config_in_trash (index),
-                                            escalator_uuid ? escalator_uuid : "",
-                                            escalator ? escalator : "",
-                                            escalator
-                                             ? task_escalator_in_trash (index)
-                                             : 0,
-                                            task_target_uuid ? task_target_uuid : "",
-                                            task_target_name ? task_target_name : "",
-                                            target_in_trash,
-                                            task_slave_uuid ? task_slave_uuid : "",
-                                            task_slave_name ? task_slave_name : "",
-                                            task_slave_in_trash (index),
-                                            task_run_status_name (index),
-                                            progress_xml,
-                                            description64,
-                                            task_report_count (index),
-                                            task_finished_report_count (index),
-                                            task_trend
-                                             (index,
-                                              get_tasks_data->apply_overrides),
-                                            task_schedule_uuid,
-                                            task_schedule_name,
-                                            (next_time == 0
-                                              ? "over"
-                                              : iso_time (&next_time)),
-                                            schedule_in_trash,
-                                            first_report,
-                                            last_report,
-                                            second_last_report);
+                    line = g_strdup_printf
+                             ("<task"
+                              " id=\"%s\">"
+                              "<name>%s</name>"
+                              "<comment>%s</comment>"
+                              "<owner><name>%s</name></owner>"
+                              "<observers>%s</observers>"
+                              "<config id=\"%s\">"
+                              "<name>%s</name>"
+                              "<trash>%i</trash>"
+                              "</config>"
+                              "<escalator id=\"%s\">"
+                              "<name>%s</name>"
+                              "<trash>%i</trash>"
+                              "</escalator>"
+                              "<target id=\"%s\">"
+                              "<name>%s</name>"
+                              "<trash>%i</trash>"
+                              "</target>"
+                              "<slave id=\"%s\">"
+                              "<name>%s</name>"
+                              "<trash>%i</trash>"
+                              "</slave>"
+                              "<status>%s</status>"
+                              "<progress>%s</progress>"
+                              "%s"
+                              "<report_count>"
+                              "%u<finished>%u</finished>"
+                              "</report_count>"
+                              "<trend>%s</trend>"
+                              "<schedule id=\"%s\">"
+                              "<name>%s</name>"
+                              "<next_time>%s</next_time>"
+                              "<trash>%i</trash>"
+                              "</schedule>"
+                              "%s%s%s",
+                              tsk_uuid,
+                              name,
+                              comment,
+                              owner ? owner : "",
+                              ((owner == NULL)
+                               || (strcmp (owner,
+                                           current_credentials.username)))
+                                ? ""
+                                : observers,
+                              config_uuid ? config_uuid : "",
+                              config ? config : "",
+                              task_config_in_trash (index),
+                              escalator_uuid ? escalator_uuid : "",
+                              escalator ? escalator : "",
+                              escalator
+                               ? task_escalator_in_trash (index)
+                               : 0,
+                              task_target_uuid ? task_target_uuid : "",
+                              task_target_name ? task_target_name : "",
+                              target_in_trash,
+                              task_slave_uuid ? task_slave_uuid : "",
+                              task_slave_name ? task_slave_name : "",
+                              task_slave_in_trash (index),
+                              task_run_status_name (index),
+                              progress_xml,
+                              description64,
+                              task_report_count (index),
+                              task_finished_report_count (index),
+                              task_trend
+                               (index,
+                                get_tasks_data->apply_overrides),
+                              task_schedule_uuid,
+                              task_schedule_name,
+                              (next_time == 0
+                                ? "over"
+                                : iso_time (&next_time)),
+                              schedule_in_trash,
+                              first_report,
+                              last_report,
+                              second_last_report);
                     free (config);
                     free (escalator);
                     free (escalator_uuid);
