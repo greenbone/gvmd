@@ -1,5 +1,11 @@
 2012-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Remove the requirement that the trash
+	directory exists, in the code that syncs the trash directory with the
+	database.
+
+2012-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (omp_xml_handle_end_element): In GET_REPORTS add NULL
 	owner checks to the brief case, as in the detailed case.  Can be NULL with
 	example task.
