@@ -1,5 +1,10 @@
 2012-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_target, manage_restore): Add missing port_range
+	field to target movement.
+
+2012-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage): Remove the requirement that the trash
 	directory exists, in the code that syncs the trash directory with the
 	database.
