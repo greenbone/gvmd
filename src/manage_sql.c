@@ -13134,6 +13134,8 @@ static void
 init_report_host_details_iterator (iterator_t* iterator,
                                    report_host_t report_host)
 {
+  /* The 'detected_at' and 'detected_by' entries are filtered out of the final
+   * reports as they are only used internally for product detection. */
   init_iterator (iterator,
                  "SELECT ROWID, name, value, source_type, source_name,"
                  " source_description"
