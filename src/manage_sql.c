@@ -13280,9 +13280,8 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        "      WHERE reports.task = tasks.ROWID"
                        "      AND reports.ROWID = report_hosts.report)"
                        "     = 0"
-                       " AND (SELECT reports.scan_run_status FROM reports"
-                       "      WHERE reports.ROWID = report_hosts.report)"
-                       "     = %u"
+                       " AND (report_hosts.end_time IS NOT NULL"
+                       "      AND report_hosts.end_time != '')"
                        " GROUP BY host"
                        " HAVING"
                        /* Search IP. */
@@ -13307,7 +13306,6 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        " ORDER BY host COLLATE collate_ip"
                        " LIMIT %i OFFSET %i;",
                        current_credentials.uuid,
-                       TASK_STATUS_DONE,
                        search_phrase,
                        search_phrase,
                        new_type_sql,
@@ -13326,9 +13324,8 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        "      WHERE reports.task = tasks.ROWID"
                        "      AND reports.ROWID = report_hosts.report)"
                        "     = 0"
-                       " AND (SELECT reports.scan_run_status FROM reports"
-                       "      WHERE reports.ROWID = report_hosts.report)"
-                       "     = %u"
+                       " AND (report_hosts.end_time IS NOT NULL"
+                       "      AND report_hosts.end_time != '')"
                        " GROUP BY host"
                        " HAVING"
                        " EXISTS"
@@ -13341,7 +13338,6 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        " ORDER BY host COLLATE collate_ip"
                        " LIMIT %i OFFSET %i;",
                        current_credentials.uuid,
-                       TASK_STATUS_DONE,
                        new_type_sql,
                        levels_sql ? levels_sql->str : "",
                        max_results,
@@ -13364,9 +13360,8 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                      "      WHERE reports.task = tasks.ROWID"
                      "      AND reports.ROWID = report_hosts.report)"
                      "     = 0"
-                     " AND (SELECT reports.scan_run_status FROM reports"
-                     "      WHERE reports.ROWID = report_hosts.report)"
-                     "     = %u"
+                     " AND (report_hosts.end_time IS NOT NULL"
+                     "      AND report_hosts.end_time != '')"
                      " GROUP BY host"
                      " HAVING host LIKE '%%%s%%'"
                      " OR EXISTS"
@@ -13380,7 +13375,6 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                      " ORDER BY host COLLATE collate_ip"
                      " LIMIT %i OFFSET %i;",
                      current_credentials.uuid,
-                     TASK_STATUS_DONE,
                      search_phrase,
                      search_phrase,
                      max_results,
@@ -13397,13 +13391,11 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                    "      WHERE reports.task = tasks.ROWID"
                    "      AND reports.ROWID = report_hosts.report)"
                    "     = 0"
-                   " AND (SELECT reports.scan_run_status FROM reports"
-                   "      WHERE reports.ROWID = report_hosts.report)"
-                   "     = %u"
+                   " AND (report_hosts.end_time IS NOT NULL"
+                   "      AND report_hosts.end_time != '')"
                    " ORDER BY host COLLATE collate_ip"
                    " LIMIT %i OFFSET %i;",
                    current_credentials.uuid,
-                   TASK_STATUS_DONE,
                    max_results,
                    first_result);
 }
@@ -16362,13 +16354,11 @@ host_nthlast_report_host (const char *host, report_host_t *report_host,
                      "      WHERE reports.task = tasks.ROWID"
                      "      AND reports.ROWID = report_hosts.report)"
                      "     = 0"
-                     " AND (SELECT reports.scan_run_status FROM reports"
-                     "      WHERE reports.ROWID = report_hosts.report)"
-                     "     = %u"
+                     " AND (report_hosts.end_time IS NOT NULL"
+                     "      AND report_hosts.end_time != '')"
                      " ORDER BY ROWID DESC LIMIT %i;",
                      quoted_host,
                      current_credentials.uuid,
-                     TASK_STATUS_DONE,
                      position))
     {
       case 0:
@@ -16517,9 +16507,8 @@ filtered_host_count (const char *levels, const char *search_phrase,
                        "       WHERE reports.task = tasks.ROWID"
                        "       AND reports.ROWID = report_hosts.report)"
                        "      = 0"
-                       "  AND (SELECT reports.scan_run_status FROM reports"
-                       "       WHERE reports.ROWID = report_hosts.report)"
-                       "      = %u"
+                       " AND (report_hosts.end_time IS NOT NULL"
+                       "      AND report_hosts.end_time != '')"
                        "  GROUP BY host"
                        "  HAVING"
                        /* Search IP. */
@@ -16542,7 +16531,6 @@ filtered_host_count (const char *levels, const char *search_phrase,
                        "   AND results.ROWID = report_results.result"
                        "   AND report_results.report = report_hosts.report));",
                        current_credentials.uuid,
-                       TASK_STATUS_DONE,
                        search_phrase,
                        search_phrase,
                        new_type_sql,
@@ -16560,9 +16548,8 @@ filtered_host_count (const char *levels, const char *search_phrase,
                        "       WHERE reports.task = tasks.ROWID"
                        "       AND reports.ROWID = report_hosts.report)"
                        "      = 0"
-                       "  AND (SELECT reports.scan_run_status FROM reports"
-                       "       WHERE reports.ROWID = report_hosts.report)"
-                       "      = %u"
+                       " AND (report_hosts.end_time IS NOT NULL"
+                       "      AND report_hosts.end_time != '')"
                        "  GROUP BY host"
                        "  HAVING"
                        "  EXISTS"
@@ -16573,7 +16560,6 @@ filtered_host_count (const char *levels, const char *search_phrase,
                        "   AND results.ROWID = report_results.result"
                        "   AND report_results.report = report_hosts.report));",
                        current_credentials.uuid,
-                       TASK_STATUS_DONE,
                        new_type_sql,
                        levels_sql ? levels_sql->str : "");
 
@@ -16597,9 +16583,8 @@ filtered_host_count (const char *levels, const char *search_phrase,
                       "       WHERE reports.task = tasks.ROWID"
                       "       AND reports.ROWID = report_hosts.report)"
                       "      = 0"
-                      "  AND (SELECT reports.scan_run_status FROM reports"
-                      "       WHERE reports.ROWID = report_hosts.report)"
-                      "      = %u"
+                      "  AND (report_hosts.end_time IS NOT NULL"
+                      "       AND report_hosts.end_time != '')"
                       "  GROUP BY host"
                       "  HAVING host LIKE '%%%s%%'"
                       "  OR EXISTS"
@@ -16612,7 +16597,6 @@ filtered_host_count (const char *levels, const char *search_phrase,
                       "   AND value LIKE '%%%s%%')"
                       "  ORDER BY host COLLATE collate_ip);",
                       current_credentials.uuid,
-                      TASK_STATUS_DONE,
                       search_phrase,
                       search_phrase);
     }
@@ -16628,11 +16612,9 @@ filtered_host_count (const char *levels, const char *search_phrase,
                   "       WHERE reports.task = tasks.ROWID"
                   "       AND reports.ROWID = report_hosts.report)"
                   "      = 0"
-                  "  AND (SELECT reports.scan_run_status FROM reports"
-                  "       WHERE reports.ROWID = report_hosts.report)"
-                  "      = %u);",
-                  current_credentials.uuid,
-                  TASK_STATUS_DONE);
+                  "  AND (report_hosts.end_time IS NOT NULL"
+                  "       AND report_hosts.end_time != ''));",
+                  current_credentials.uuid);
 }
 
 /**
