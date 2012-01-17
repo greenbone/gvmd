@@ -1,3 +1,8 @@
+2012-01-17  Henri Doreau  <henri.doreau@greenbone.net>
+
+	* src/manage_sql.c (trim_partial_report): Don't delete host details
+	for already-completed hosts when resuming a stopped scan.
+
 2012-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_target, manage_restore): Add missing port_range

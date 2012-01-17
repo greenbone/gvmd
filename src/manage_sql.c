@@ -15402,8 +15402,15 @@ trim_partial_report (report_t report)
   /* Remove partial hosts and host details. */
 
   sql ("DELETE FROM report_host_details WHERE report_host IN"
-       " (SELECT ROWID FROM report_hosts WHERE report = %llu);",
+       " (SELECT results.ROWID FROM report_results, results, report_hosts"
+       "  WHERE report_results.report = %llu"
+       "  AND report_results.result = results.ROWID"
+       "  AND report_hosts.report = %llu"
+       "  AND results.host = report_hosts.host"
+       "  AND (report_hosts.end_time is NULL OR report_hosts.end_time = ''));",
+       report,
        report);
+
   sql ("DELETE FROM report_hosts"
        " WHERE report = %llu"
        " AND (end_time is NULL OR end_time = '');",
