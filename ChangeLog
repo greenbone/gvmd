@@ -1,3 +1,12 @@
+2012-01-18  Henri Doreau <henri.doreau@greenbone.net>
+
+	Added new report format plugin to produce NIST asset identification
+	format 1.1 compliant documents.
+
+	* report_formats/arf/arf.xsl,
+	report_formats/arf/create_report_import,
+	report_formats/arf/generate: new.
+
 2012-01-17  Henri Doreau  <henri.doreau@greenbone.net>
 
 	* src/manage_sql.c (init_asset_iterator, host_nthlast_report_host)
