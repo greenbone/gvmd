@@ -1,5 +1,11 @@
 2012-01-18  Henri Doreau <henri.doreau@greenbone.net>
 
+	* report_formats/arf/create_report_import: Leave name, description and
+	summary out of the plugin signature as they can be changed by the
+	user.
+
+2012-01-18  Henri Doreau <henri.doreau@greenbone.net>
+
 	Added new report format plugin to produce NIST asset identification
 	format 1.1 compliant documents.
 
