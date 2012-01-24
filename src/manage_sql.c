@@ -30664,7 +30664,11 @@ find_report_format (const char* uuid, report_format_t* report_format)
 gboolean
 lookup_report_format (const char* name, report_format_t* report_format)
 {
-  gchar *quoted_name = sql_quote (name);
+  gchar *quoted_name;
+
+  assert (current_credentials.uuid);
+
+  quoted_name = sql_quote (name);
   if (user_owns ("report_format", "name", quoted_name) == 0)
     {
       g_free (quoted_name);
@@ -30672,8 +30676,12 @@ lookup_report_format (const char* name, report_format_t* report_format)
       return FALSE;
     }
   switch (sql_int64 (report_format, 0, 0,
-                     "SELECT ROWID FROM report_formats WHERE name = '%s';",
-                     quoted_name))
+                     "SELECT ROWID FROM report_formats"
+                     " WHERE name = '%s'"
+                     " AND ((owner IS NULL) OR (owner ="
+                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                     quoted_name,
+                     current_credentials.uuid))
     {
       case 0:
         break;

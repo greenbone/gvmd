@@ -1,3 +1,8 @@
+2012-01-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (lookup_report_format): Add current user condition, as
+	many users may have report formats with the given name.
+
 2012-01-24  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Set RSYNC_DELETE to empty by default
