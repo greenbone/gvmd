@@ -1,3 +1,8 @@
+2012-01-24  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/greenbone-scapdata-sync: Set RSYNC_DELETE to empty by default
+	to avoid removing scap.db on every run.
+
 2012-01-18  Henri Doreau <henri.doreau@greenbone.net>
 
 	* report_formats/arf/create_report_import: Leave name, description and

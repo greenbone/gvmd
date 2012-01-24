@@ -36,7 +36,7 @@ VERSION=20110901
 # be removed from the local directory after synchronization. The default value
 # for this setting is "--delete", which means that files which are not part of
 # feed will be deleted.
-RSYNC_DELETE="--delete"
+RSYNC_DELETE=""
 
 # PORT controls the outgoing TCP port for updates. If PAT/Port-Translation is
 # not used, this should be "24". For some application layer firewalls or gates
