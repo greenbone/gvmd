@@ -374,6 +374,7 @@ write_message (task_t task, message_t* message, char* type)
 
   assert (current_report);
 
+  manage_transaction_start ();
   result = make_result (task, message->subnet, message->host,
                         message->port.string, message->oid, type,
                         message->description);
@@ -2574,6 +2575,7 @@ process_otp_scanner_input ()
                           set_scan_end_time_otp (current_report, field);
                           current_report = (report_t) 0;
                         }
+                      manage_transaction_stop (TRUE);
                       current_scanner_task = (task_t) 0;
                     }
                   set_scanner_state (SCANNER_DONE);

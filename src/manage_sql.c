@@ -51,6 +51,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #include <openvas/base/openvas_string.h>
 #include <openvas/misc/openvas_auth.h>
@@ -163,6 +164,12 @@ typedef long long int user_t;
  */
 #define LOCATION_TRASH 1
 
+/**
+ * @brief Number of milliseconds between timevals a and b (performs a-b).
+ */
+#define TIMEVAL_SUBTRACT_MS(a,b) ((((a).tv_sec - (b).tv_sec) * 1000) + \
+                                  ((a).tv_usec - (b).tv_usec) / 1000)
+
 
 /* Headers for symbols defined in manage.c which are private to libmanage. */
 
@@ -274,6 +281,16 @@ gchar* task_db_name = NULL;
  * @brief Whether the SCAP database was present.
  */
 static int scap_loaded = 0;
+
+/**
+ * @brief Whether a transaction has been opened and not committed yet.
+ */
+static gboolean in_transaction;
+
+/**
+ * @brief Time of reception of the currently processed message.
+ */
+static struct timeval last_msg;
 
 
 /* SQL helpers. */
@@ -21209,6 +21226,44 @@ clean_hosts (const char *hosts)
     }
 
   return g_string_free (clean, FALSE);
+}
+
+/**
+ * @brief Start a new IMMEDIATE transaction.
+ */
+void
+manage_transaction_start ()
+{
+  if (!in_transaction)
+    {
+      sql ("BEGIN IMMEDIATE;");
+      in_transaction = TRUE;
+    }
+  gettimeofday (&last_msg, NULL);
+}
+
+/**
+ * @brief Commit the current transaction, if any.
+ *
+ * The algorithm is extremely naive (time elapsed since the last message
+ * was received) but delivers good enough performances when facing
+ * bursts of messages.
+ *
+ * @param[in] force_close  Force committing the pending transaction.
+ */
+void manage_transaction_stop (gboolean force_commit)
+{
+  struct timeval now;
+
+  if (!in_transaction)
+    return;
+
+  gettimeofday (&now, NULL);
+  if (force_commit || TIMEVAL_SUBTRACT_MS (now, last_msg) >= 500)
+    {
+      sql ("COMMIT;");
+      in_transaction = FALSE;
+    }
 }
 
 /**

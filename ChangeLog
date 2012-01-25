@@ -1,3 +1,23 @@
+2012-01-25  Henri Doreau <henri.doreau@greenbone.net>
+
+	Wrap storage of the scanner security messages into transactions. This
+	improves performances by several order of magnitude against message
+	bursts.
+
+	* src/otp.c (write_message): Open transaction (if needed) before
+	inserting a new message into the database.
+	(process_otp_scanner_input): Close any pending transaction.
+
+	* src/manage.c (manage_check_current_task): Close pending and inactive
+	transactions.
+
+	* src/manage_sql.c (TIMEVAL_SUBTRACT_MS, manage_transaction_start)
+	(manage_transaction_stop): New.
+
+	* src/manage_sql.h: Update headers accordingly.
+
+	* src/omp.c (process_omp_client_input): Close pending transactions.
+
 2012-01-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (lookup_report_format): Add current user condition, as

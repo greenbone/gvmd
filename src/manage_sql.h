@@ -30,6 +30,10 @@
 
 typedef long long int rowid_t;
 
+void manage_transaction_start ();
+
+void manage_transaction_stop (gboolean);
+
 void trim_report (report_t);
 
 int delete_report (report_t);

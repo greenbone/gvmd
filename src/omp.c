@@ -91,6 +91,7 @@
 
 #include "omp.h"
 #include "manage.h"
+#include "manage_sql.h"
 /** @todo For access to scanner_t scanner. */
 #include "otp.h"
 #include "tracef.h"
@@ -18509,6 +18510,9 @@ process_omp_client_input ()
 {
   gboolean success;
   GError* error = NULL;
+
+  /* Terminate any pending transaction. (force close = TRUE). */
+  manage_transaction_stop (TRUE);
 
   /* In the XML parser handlers all writes to the to_scanner buffer must be
    * complete OTP commands, because the caller may also write into to_scanner

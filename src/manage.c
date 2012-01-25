@@ -2614,6 +2614,9 @@ manage_check_current_task ()
     {
       task_status_t run_status;
 
+      /* Commit pending transaction if needed. */
+      manage_transaction_stop (FALSE);
+
       /* Check if some other process changed the status. */
 
       run_status = task_run_status (current_scanner_task);
