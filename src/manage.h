@@ -98,15 +98,17 @@ manage_migrate (GSList*, const gchar*);
 
 extern short scanner_active;
 
-/** @todo Should be in otp.c/h. */
 /**
  * @brief Possible port types.
+ *
+ * These numbers are used in the database, so if the number associated with
+ * any symbol changes then a migrator must be added to update existing data.
  */
 typedef enum
 {
-  PORT_PROTOCOL_TCP,
-  PORT_PROTOCOL_UDP,
-  PORT_PROTOCOL_OTHER
+  PORT_PROTOCOL_TCP = 0,
+  PORT_PROTOCOL_UDP = 1,
+  PORT_PROTOCOL_OTHER = 2
 } port_protocol_t;
 
 /** @todo Should be in otp.c/h. */
@@ -173,6 +175,8 @@ typedef long long int report_format_param_t;
 typedef long long int note_t;
 typedef long long int nvt_t;
 typedef long long int override_t;
+typedef long long int port_list_t;
+typedef long long int port_range_t;
 typedef long long int lsc_credential_t;
 typedef long long int schedule_t;
 
@@ -924,14 +928,20 @@ target_iterator_ssh_port (iterator_t*);
 int
 target_iterator_smb_credential (iterator_t*);
 
-const char*
-target_iterator_port_range (iterator_t*);
-
 int
 target_iterator_ssh_trash (iterator_t*);
 
 int
 target_iterator_smb_trash (iterator_t*);
+
+const char*
+target_iterator_port_list_uuid (iterator_t*);
+
+const char*
+target_iterator_port_list_name (iterator_t*);
+
+int
+target_iterator_port_list_trash (iterator_t*);
 
 char*
 target_uuid (target_t);
@@ -947,6 +957,9 @@ trash_target_name (target_t);
 
 char*
 target_hosts (target_t);
+
+char*
+target_port_range (target_t);
 
 char*
 target_ssh_port (target_t);
@@ -1977,10 +1990,122 @@ const char*
 slave_task_iterator_uuid (iterator_t*);
 
 
+/* Port lists. */
+
+gboolean
+find_port_list (const char*, port_list_t*);
+
+#if 0
+int
+create_port_list (const char*, const char*, const char*, const char*,
+               lsc_credential_t, const char*, lsc_credential_t, const char*,
+               const char*, const char*, port_list_t*);
+#endif
+
+int
+delete_port_list (const char*, int);
+
+void
+init_port_list_iterator (iterator_t*, port_list_t, int, int, const char*);
+
+port_list_t
+port_list_iterator_port_list (iterator_t*);
+
+const char*
+port_list_iterator_uuid (iterator_t*);
+
+const char*
+port_list_iterator_name (iterator_t*);
+
+const char*
+port_list_iterator_comment (iterator_t*);
+
+int
+port_list_iterator_in_use (iterator_t*);
+
+#if 0
+char*
+port_list_uuid (port_list_t);
+
+char*
+trash_port_list_uuid (port_list_t);
+
+char*
+port_list_name (port_list_t);
+
+char*
+trash_port_list_name (port_list_t);
+
+char*
+port_list_hosts (port_list_t);
+
+char*
+port_list_ssh_port (port_list_t);
+
+char*
+trash_port_list_hosts (port_list_t);
+
+int
+port_list_in_use (port_list_t);
+
+int
+trash_port_list_in_use (port_list_t);
+
+char*
+port_list_lsc_credential_name (const char *);
+
+void
+init_port_list_task_iterator (iterator_t*, port_list_t, int);
+
+const char*
+port_list_task_iterator_name (iterator_t*);
+
+const char*
+port_list_task_iterator_uuid (iterator_t*);
+#endif
+
+void
+init_port_range_iterator (iterator_t*, port_range_t, int, int, const char*);
+
+const char*
+port_range_iterator_uuid (iterator_t*);
+
+const char*
+port_range_iterator_comment (iterator_t*);
+
+const char*
+port_range_iterator_start (iterator_t*);
+
+const char*
+port_range_iterator_end (iterator_t*);
+
+const char*
+port_range_iterator_type (iterator_t*);
+
+port_protocol_t
+port_range_iterator_type_int (iterator_t* iterator);
+
+int
+port_list_iterator_exclude (iterator_t*);
+
+void
+init_port_list_target_iterator (iterator_t*, port_list_t, int);
+
+const char*
+port_list_target_iterator_uuid (iterator_t*);
+
+const char*
+port_list_target_iterator_name (iterator_t*);
+
+
 /* Schema. */
 
 int
 manage_schema (gchar *, gchar **, gsize *, gchar **, gchar **);
+
+
+/* Port lists. */
+
 
 
 /* Trashcan. */

@@ -356,6 +356,7 @@ static char* help_text = "\n"
 "    DELETE_LSC_CREDENTIAL  Delete a local security check credential.\n"
 "    DELETE_NOTE            Delete a note.\n"
 "    DELETE_OVERRIDE        Delete an override.\n"
+"    DELETE_PORT_LIST       Delete a port list.\n"
 "    DELETE_REPORT          Delete a report.\n"
 "    DELETE_REPORT_FORMAT   Delete a report format.\n"
 "    DELETE_SCHEDULE        Delete a schedule.\n"
@@ -376,6 +377,7 @@ static char* help_text = "\n"
 "    GET_NVT_FAMILIES       Get a list of all NVT families.\n"
 "    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
 "    GET_OVERRIDES          Get all overrides.\n"
+"    GET_PORT_LIST          Get all port lists.\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
 "    GET_REPORTS            Get all reports.\n"
 "    GET_REPORT_FORMATS     Get all report formats.\n"
@@ -1320,6 +1322,28 @@ typedef struct
 } delete_override_data_t;
 
 /**
+ * @brief Command data for the delete_port_list command.
+ */
+typedef struct
+{
+  char *port_list_id;  ///< ID of port list to delete.
+  int ultimate;        ///< Boolean.  Whether to remove entirely or to trashcan.
+} delete_port_list_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+delete_port_list_data_reset (delete_port_list_data_t *data)
+{
+  free (data->port_list_id);
+
+  memset (data, 0, sizeof (delete_port_list_data_t));
+}
+
+/**
  * @brief Reset command data.
  *
  * @param[in]  data  Command data.
@@ -1748,6 +1772,31 @@ get_overrides_data_reset (get_overrides_data_t *data)
   free (data->task_id);
 
   memset (data, 0, sizeof (get_overrides_data_t));
+}
+
+/**
+ * @brief Command data for the get_port_lists command.
+ */
+typedef struct
+{
+  char *port_list_id;  ///< ID of single port list to get.
+  char *sort_field;    ///< Field to sort results on.
+  int sort_order;      ///< Result sort order: 0 descending, else ascending.
+  int trash;              ///< Boolean.  Whether to return lists from trashcan.
+} get_port_lists_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_port_lists_data_reset (get_port_lists_data_t *data)
+{
+  free (data->port_list_id);
+  free (data->sort_field);
+
+  memset (data, 0, sizeof (get_port_lists_data_t));
 }
 
 /**
@@ -2574,6 +2623,7 @@ typedef union
   delete_lsc_credential_data_t delete_lsc_credential; ///< delete_lsc_credential
   delete_note_data_t delete_note;                     ///< delete_note
   delete_override_data_t delete_override;             ///< delete_override
+  delete_port_list_data_t delete_port_list;           ///< delete_port_list
   delete_report_data_t delete_report;                 ///< delete_report
   delete_report_format_data_t delete_report_format;   ///< delete_report_format
   delete_schedule_data_t delete_schedule;             ///< delete_schedule
@@ -2591,6 +2641,7 @@ typedef union
   get_nvt_families_data_t get_nvt_families;           ///< get_nvt_families
   get_nvt_feed_checksum_data_t get_nvt_feed_checksum; ///< get_nvt_feed_checksum
   get_overrides_data_t get_overrides;                 ///< get_overrides
+  get_port_lists_data_t get_port_lists;               ///< get_port_lists
   get_preferences_data_t get_preferences;             ///< get_preferences
   get_reports_data_t get_reports;                     ///< get_reports
   get_report_formats_data_t get_report_formats;       ///< get_report_formats
@@ -2745,6 +2796,12 @@ delete_override_data_t *delete_override_data
  = (delete_override_data_t*) &(command_data.delete_override);
 
 /**
+ * @brief Parser callback data for DELETE_PORT_LIST.
+ */
+delete_port_list_data_t *delete_port_list_data
+ = (delete_port_list_data_t*) &(command_data.delete_port_list);
+
+/**
  * @brief Parser callback data for DELETE_REPORT.
  */
 delete_report_data_t *delete_report_data
@@ -2845,6 +2902,12 @@ get_nvt_feed_checksum_data_t *get_nvt_feed_checksum_data
  */
 get_overrides_data_t *get_overrides_data
  = &(command_data.get_overrides);
+
+/**
+ * @brief Parser callback data for GET_PORT_LISTS.
+ */
+get_port_lists_data_t *get_port_lists_data
+ = &(command_data.get_port_lists);
 
 /**
  * @brief Parser callback data for GET_PREFERENCES.
@@ -3260,6 +3323,7 @@ typedef enum
   CLIENT_DELETE_LSC_CREDENTIAL,
   CLIENT_DELETE_NOTE,
   CLIENT_DELETE_OVERRIDE,
+  CLIENT_DELETE_PORT_LIST,
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_REPORT_FORMAT,
   CLIENT_DELETE_SCHEDULE,
@@ -3280,6 +3344,7 @@ typedef enum
   CLIENT_GET_NVT_FAMILIES,
   CLIENT_GET_NVT_FEED_CHECKSUM,
   CLIENT_GET_OVERRIDES,
+  CLIENT_GET_PORT_LISTS,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
   CLIENT_GET_REPORT_FORMATS,
@@ -3963,6 +4028,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &delete_override_data->override_id);
             set_client_state (CLIENT_DELETE_OVERRIDE);
           }
+        else if (strcasecmp ("DELETE_PORT_LIST", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values, "port_list_id",
+                              &delete_port_list_data->port_list_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_port_list_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_port_list_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_PORT_LIST);
+          }
         else if (strcasecmp ("DELETE_REPORT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "report_id",
@@ -4274,6 +4351,29 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_overrides_data->sort_order = 1;
 
             set_client_state (CLIENT_GET_OVERRIDES);
+          }
+        else if (strcasecmp ("GET_PORT_LISTS", element_name) == 0)
+          {
+            const gchar* attribute;
+
+            append_attribute (attribute_names, attribute_values, "port_list_id",
+                              &get_port_lists_data->port_list_id);
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_port_lists_data->sort_field);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              get_port_lists_data->sort_order = strcmp (attribute, "descending");
+            else
+              get_port_lists_data->sort_order = 1;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "trash", &attribute))
+              get_port_lists_data->trash = strcmp (attribute, "0");
+            else
+              get_port_lists_data->trash = 0;
+
+            set_client_state (CLIENT_GET_PORT_LISTS);
           }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
           {
@@ -5041,6 +5141,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      "Error");
         break;
 
+      case CLIENT_DELETE_PORT_LIST:
+        if (send_element_error_to_client ("delete_port_list", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
       case CLIENT_DELETE_REPORT:
         if (send_element_error_to_client ("delete_report", element_name,
                                           write_to_client,
@@ -5322,6 +5437,23 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_OVERRIDES:
           {
             if (send_element_error_to_client ("get_overrides", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_GET_PORT_LISTS:
+          {
+            if (send_element_error_to_client ("get_port_lists", element_name,
                                               write_to_client,
                                               write_to_client_data))
               {
@@ -9658,6 +9790,98 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
+      case CLIENT_GET_PORT_LISTS:
+        {
+          port_list_t port_list = 0;
+
+          assert (strcasecmp ("GET_PORT_LISTS", element_name) == 0);
+
+          if (get_port_lists_data->port_list_id
+              && find_port_list (get_port_lists_data->port_list_id,
+                                 &port_list))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_port_lists"));
+          else if (get_port_lists_data->port_list_id && port_list == 0)
+            {
+              if (send_find_error_to_client ("get_port_lists",
+                                             "port_list",
+                                             get_port_lists_data->port_list_id,
+                                             write_to_client,
+                                             write_to_client_data))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else
+            {
+              iterator_t lists;
+
+              SEND_TO_CLIENT_OR_FAIL ("<get_port_lists_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              init_port_list_iterator (&lists,
+                                       port_list,
+                                       get_port_lists_data->trash,
+                                       get_port_lists_data->sort_order,
+                                       get_port_lists_data->sort_field);
+              while (next (&lists))
+                {
+                  iterator_t ranges, targets;
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<port_list id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<comment>%s</comment>"
+                                           "<in_use>%i</in_use>"
+                                           "<port_ranges>",
+                                           port_list_iterator_uuid (&lists),
+                                           port_list_iterator_name (&lists),
+                                           port_list_iterator_comment (&lists),
+                                           port_list_iterator_in_use (&lists));
+
+                  init_port_range_iterator (&ranges, port_list,
+                                            get_port_lists_data->trash, 1,
+                                            NULL);
+                  while (next (&ranges))
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<port_range id=\"%s\">"
+                      "<start>%s</start>"
+                      "<end>%s</end>"
+                      "<type>%s</type>"
+                      "<comment>%s</comment>"
+                      "</port_range>",
+                      port_range_iterator_uuid (&ranges),
+                      port_range_iterator_start (&ranges),
+                      port_range_iterator_end (&ranges)
+                       ? port_range_iterator_end (&ranges)
+                       : "",
+                      port_range_iterator_type (&ranges),
+                      port_range_iterator_comment (&ranges));
+                  cleanup_iterator (&ranges);
+
+                  SENDF_TO_CLIENT_OR_FAIL ("</port_ranges>"
+                                           "<targets>");
+
+                  init_port_list_target_iterator (&targets, port_list, 0);
+                  while (next (&targets))
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<target id=\"%s\">"
+                      "<name>%s</name>"
+                      "</target>",
+                      port_list_target_iterator_uuid (&targets),
+                      port_list_target_iterator_name (&targets));
+                  cleanup_iterator (&targets);
+
+                  SENDF_TO_CLIENT_OR_FAIL ("</targets>"
+                                           "</port_list>");
+                }
+              cleanup_iterator (&lists);
+              SEND_TO_CLIENT_OR_FAIL ("</get_port_lists_response>");
+            }
+          get_port_lists_data_reset (get_port_lists_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
       case CLIENT_DELETE_NOTE:
         assert (strcasecmp ("DELETE_NOTE", element_name) == 0);
         if (delete_note_data->note_id)
@@ -10845,6 +11069,53 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               "DELETE_LSC_CREDENTIAL requires an"
                               " lsc_credential_id attribute"));
         delete_lsc_credential_data_reset (delete_lsc_credential_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_DELETE_PORT_LIST:
+        assert (strcasecmp ("DELETE_PORT_LIST", element_name) == 0);
+        if (delete_port_list_data->port_list_id)
+          switch (delete_port_list (delete_port_list_data->port_list_id,
+                                    delete_port_list_data->ultimate))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_port_list"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port_List %s has been deleted",
+                       delete_port_list_data->port_list_id);
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_port_list",
+                                                          "Port list is in use"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port list %s could not be deleted",
+                       delete_port_list_data->port_list_id);
+                break;
+              case 2:
+                if (send_find_error_to_client ("delete_port_list",
+                                               "port_list",
+                                               delete_port_list_data->port_list_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port list %s could not be deleted",
+                       delete_port_list_data->port_list_id);
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_port_list"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port list %s could not be deleted",
+                       delete_port_list_data->port_list_id);
+            }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_port_list",
+                              "DELETE_PORT_LIST requires a port_list_id attribute"));
+        delete_port_list_data_reset (delete_port_list_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -16542,8 +16813,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               while (next (&targets))
                 {
                   char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
-                  const char *port_range, *ssh_port;
+                  const char *port_list_uuid, *port_list_name, *ssh_port;
                   lsc_credential_t ssh_credential, smb_credential;
+                  int port_list_trash;
+                  char *port_range;
 
                   ssh_credential = target_iterator_ssh_credential (&targets);
                   smb_credential = target_iterator_smb_credential (&targets);
@@ -16569,8 +16842,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       smb_lsc_name = lsc_credential_name (smb_credential);
                       smb_lsc_uuid = lsc_credential_uuid (smb_credential);
                     }
-                  port_range = target_iterator_port_range (&targets);
+                  port_list_uuid = target_iterator_port_list_uuid (&targets);
+                  port_list_name = target_iterator_port_list_name (&targets);
+                  port_list_trash = target_iterator_port_list_trash (&targets);
                   ssh_port = target_iterator_ssh_port (&targets);
+                  port_range = target_port_range (target_iterator_target
+                                                    (&targets));
 
                   SENDF_TO_CLIENT_OR_FAIL ("<target id=\"%s\">"
                                            "<name>%s</name>"
@@ -16579,6 +16856,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<comment>%s</comment>"
                                            "<in_use>%i</in_use>"
                                            "<port_range>%s</port_range>"
+                                           "<port_list id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<trash>%i</trash>"
+                                           "</port_list>"
                                            "<ssh_lsc_credential id=\"%s\">"
                                            "<name>%s</name>"
                                            "<port>%s</port>"
@@ -16601,7 +16882,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             : target_in_use
                                                (target_iterator_target
                                                  (&targets)),
-                                           port_range ? port_range : "",
+                                           port_range,
+                                           port_list_uuid ? port_list_uuid : "",
+                                           port_list_name ? port_list_name : "",
+                                           port_list_trash,
                                            ssh_lsc_uuid ? ssh_lsc_uuid : "",
                                            ssh_lsc_name ? ssh_lsc_name : "",
                                            ssh_port ? ssh_port : "",
@@ -16638,6 +16922,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (ssh_lsc_uuid);
                   free (smb_lsc_name);
                   free (smb_lsc_uuid);
+                  free (port_range);
                 }
               cleanup_iterator (&targets);
               SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");

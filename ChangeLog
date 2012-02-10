@@ -1,3 +1,55 @@
+2012-02-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add port lists.  Switch targets to refer to port lists instead of OTP
+	style port ranges.  Hence increase database version to 56.  Add
+	database migration from version 55 to 56.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 56.
+
+	* src/manage_sql.c (PORT_LIST_UUID_DEFAULT): New definition.
+	(create_tables): Add port_lists, port_lists_trash, port_ranges and
+	port_ranges_trash.  Add port_list location to targets_trash.
+	(migrate_55_to_56): New function.
+	(database_migrators): Add migrate_55_to_56.
+	(RANGE): New macro.
+	(ensure_predefined_port_lists_exist): New function.
+	(init_manage): Call ensure_predefined_port_lists_exist.
+	(validate_port_range): Align doc param.
+	(create_target): Autogenerate a port list for the target from the OTP port
+	range.
+	(delete_target): Set port_list_location.
+	(init_user_target_iterator, init_target_iterator): Add port list name and
+	UUID.
+	(target_iterator_port_range): Remove.  Replaced by target_port_range.
+	(target_iterator_port_list_uuid, target_iterator_port_list_name)
+	(target_iterator_port_list_trash, target_port_list): New functions.
+	(target_port_range): Generate the ranges from the port list.
+	(struct range, range_t): New type.
+	(find_port_list, create_port_list_lock, otp_port_range_ranges)
+	(create_port_list_unique, delete_port_list, init_port_list_iterator)
+	(port_list_iterator_port_list, port_list_iterator_uuid)
+	(port_list_iterator_name, port_list_iterator_comment)
+	(port_list_iterator_in_use, init_port_range_iterator)
+	(port_range_iterator_uuid, port_range_iterator_comment)
+	(port_range_iterator_start, port_range_iterator_end)
+	(port_range_iterator_type, port_range_iterator_type_int)
+	(port_range_iterator_exclude, init_port_list_target_iterator)
+	(port_list_target_iterator_uuid, port_list_target_iterator_name): New
+	functions.
+	(manage_restore, manage_empty_trashcan): Add port lists.
+
+	* src/manage.h: Add and remove headers accordingly.
+	(port_protocol_t): Prescribe numbers.
+	(port_list_t, port_range_t): New types.
+
+	* src/omp.c (help_text, command_data_t, client_state_t): Add port list
+	ops.
+	(delete_port_list_data_t, get_port_lists_data_t): New types.
+	(delete_port_list_data_reset, get_port_lists_data_reset): New function.
+	(delete_port_list_data, get_port_lists_data): New variables.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add port list
+	ops.
+
 2012-01-25  Henri Doreau <henri.doreau@greenbone.net>
 
 	Wrap storage of the scanner security messages into transactions. This
