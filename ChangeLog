@@ -1,4 +1,29 @@
-2012-02-06  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-02-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP CREATE_PORT_LIST and add PORT_LIST to OMP CREATE_TARGET.
+
+	* src/manage_sql.c (make_port_ranges_openvas_default): New function.
+	(ensure_predefined_port_lists_exist): Move range creation out to
+	make_port_ranges_openvas_default.
+	(create_target): Add port_list_id arg.  Associate target with this list if
+	given.
+	(create_port_list_lock): Add assertion.  Remove redundant free.
+	(create_port_list, port_list_uuid): New functions.
+
+	* src/omp.c (create_port_list_data_t): New type.
+	(create_port_list_data_reset): New function.
+	(create_target_data_t, create_target_data_reset): Add port_list_id.
+	(command_data_t): Add CREATE_PORT_LIST.
+	(client_state_t): Add CREATE_PORT_LIST states.  Add
+	CLIENT_CREATE_TARGET_PORT_LIST.
+	(create_port_list_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_text): Add CREATE_PORT_LIST.
+	(omp_xml_handle_end_element): Add CREATE_PORT_LIST.  Add PORT_LIST to
+	CREATE_TARGET.
+
+	* src/manage.h: Update headers accordingly.
+
+2012-02-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add port lists.  Switch targets to refer to port lists instead of OTP
 	style port ranges.  Hence increase database version to 56.  Add

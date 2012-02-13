@@ -891,7 +891,7 @@ gboolean
 find_target_for_actions (const char*, target_t*, const char *);
 
 int
-create_target (const char*, const char*, const char*, const char*,
+create_target (const char*, const char*, const char*, const char*, const char*,
                lsc_credential_t, const char*, lsc_credential_t, const char*,
                const char*, const char*, target_t*);
 
@@ -1995,12 +1995,8 @@ slave_task_iterator_uuid (iterator_t*);
 gboolean
 find_port_list (const char*, port_list_t*);
 
-#if 0
 int
-create_port_list (const char*, const char*, const char*, const char*,
-               lsc_credential_t, const char*, lsc_credential_t, const char*,
-               const char*, const char*, port_list_t*);
-#endif
+create_port_list (const char*, const char*, const char*, port_list_t*);
 
 int
 delete_port_list (const char*, int);
@@ -2023,10 +2019,10 @@ port_list_iterator_comment (iterator_t*);
 int
 port_list_iterator_in_use (iterator_t*);
 
-#if 0
 char*
 port_list_uuid (port_list_t);
 
+#if 0
 char*
 trash_port_list_uuid (port_list_t);
 

@@ -344,6 +344,7 @@ static char* help_text = "\n"
 "    CREATE_LSC_CREDENTIAL  Create a local security check credential.\n"
 "    CREATE_NOTE            Create a note.\n"
 "    CREATE_OVERRIDE        Create an override.\n"
+"    CREATE_PORT_LIST       Create a port list.\n"
 "    CREATE_REPORT_FORMAT   Create a report format.\n"
 "    CREATE_REPORT          Create a report.\n"
 "    CREATE_SCHEDULE        Create a schedule.\n"
@@ -892,6 +893,31 @@ create_override_data_reset (create_override_data_t *data)
 }
 
 /**
+ * @brief Command data for the create_port_list command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *port_range;              ///< Port range for new port list.
+  char *name;                    ///< Name of new port list.
+} create_port_list_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+create_port_list_data_reset (create_port_list_data_t *data)
+{
+  free (data->comment);
+  free (data->port_range);
+  free (data->name);
+
+  memset (data, 0, sizeof (create_port_list_data_t));
+}
+
+/**
  * @brief Command data for the create_report command.
  */
 typedef struct
@@ -1114,6 +1140,7 @@ typedef struct
 {
   char *comment;                 ///< Comment.
   char *hosts;                   ///< Hosts for new target.
+  char *port_list_id;            ///< Port list for new target.
   char *port_range;              ///< Port range for new target.
   char *ssh_lsc_credential_id;   ///< SSH LSC credential for new target.
   char *ssh_port;                ///< Port for SSH LSC.
@@ -1134,6 +1161,7 @@ create_target_data_reset (create_target_data_t *data)
 {
   free (data->comment);
   free (data->hosts);
+  free (data->port_list_id);
   free (data->port_range);
   free (data->ssh_lsc_credential_id);
   free (data->ssh_port);
@@ -2611,6 +2639,7 @@ typedef union
   create_lsc_credential_data_t create_lsc_credential; ///< create_lsc_credential
   create_note_data_t create_note;                     ///< create_note
   create_override_data_t create_override;             ///< create_override
+  create_port_list_data_t create_port_list;           ///< create_port_list
   create_report_data_t create_report;                 ///< create_report
   create_report_format_data_t create_report_format;   ///< create_report_format
   create_schedule_data_t create_schedule;             ///< create_schedule
@@ -2722,6 +2751,12 @@ create_note_data_t *create_note_data
  */
 create_override_data_t *create_override_data
  = (create_override_data_t*) &(command_data.create_override);
+
+/**
+ * @brief Parser callback data for CREATE_PORT_LIST.
+ */
+create_port_list_data_t *create_port_list_data
+ = (create_port_list_data_t*) &(command_data.create_port_list);
 
 /**
  * @brief Parser callback data for CREATE_REPORT.
@@ -3208,6 +3243,10 @@ typedef enum
   CLIENT_CREATE_OVERRIDE_TASK,
   CLIENT_CREATE_OVERRIDE_TEXT,
   CLIENT_CREATE_OVERRIDE_THREAT,
+  CLIENT_CREATE_PORT_LIST,
+  CLIENT_CREATE_PORT_LIST_COMMENT,
+  CLIENT_CREATE_PORT_LIST_NAME,
+  CLIENT_CREATE_PORT_LIST_PORT_RANGE,
   /* CREATE_REPORT. */
   CLIENT_CREATE_REPORT,
   CLIENT_CREATE_REPORT_REPORT,
@@ -3300,6 +3339,7 @@ typedef enum
   CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_NAME,
   CLIENT_CREATE_TARGET_PORT_RANGE,
+  CLIENT_CREATE_TARGET_PORT_LIST,
   CLIENT_CREATE_TARGET_TARGET_LOCATOR,
   CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD,
   CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME,
@@ -3941,6 +3981,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_NOTE);
         else if (strcasecmp ("CREATE_OVERRIDE", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE);
+        else if (strcasecmp ("CREATE_PORT_LIST", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PORT_LIST);
         else if (strcasecmp ("CREATE_REPORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT);
         else if (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0)
@@ -6644,6 +6686,33 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_CREATE_PORT_LIST:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PORT_LIST_COMMENT);
+        else if (strcasecmp ("PORT_RANGE", element_name) == 0)
+          {
+            openvas_append_string (&create_port_list_data->port_range, "");
+            set_client_state (CLIENT_CREATE_PORT_LIST_PORT_RANGE);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PORT_LIST_NAME);
+        else
+          {
+            if (send_element_error_to_client ("create_port_list", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
       case CLIENT_CREATE_REPORT:
         if (strcasecmp ("REPORT", element_name) == 0)
           {
@@ -7444,6 +7513,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_COMMENT);
         else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_HOSTS);
+        else if (strcasecmp ("PORT_LIST", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_target_data->port_list_id);
+            set_client_state (CLIENT_CREATE_TARGET_PORT_LIST);
+          }
         else if (strcasecmp ("PORT_RANGE", element_name) == 0)
           {
             openvas_append_string (&create_target_data->port_range, "");
@@ -13361,6 +13436,82 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_OVERRIDE);
         break;
 
+      case CLIENT_CREATE_PORT_LIST:
+        {
+          port_list_t new_port_list;
+
+          assert (strcasecmp ("CREATE_PORT_LIST", element_name) == 0);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_port_list",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (create_port_list_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_port_list",
+                                "CREATE_PORT_LIST requires a NAME"));
+          else if (strlen (create_port_list_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_port_list",
+                                "CREATE_PORT_LIST name must be at"
+                                " least one character long"));
+          else switch (create_port_list
+                        (create_port_list_data->name,
+                         create_port_list_data->comment,
+                         create_port_list_data->port_range,
+                         &new_port_list))
+            {
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_list",
+                                    "Port list exists already"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port list could not be created");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_list",
+                                    "Error in port range"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port list could not be created");
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_port_list"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port list could not be created");
+                break;
+              default:
+                {
+                  char *uuid = port_list_uuid (new_port_list);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_OK_CREATED_ID ("create_port_list"), uuid);
+                  g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                         "Port list %s has been created", uuid);
+                  free (uuid);
+                  break;
+                }
+            }
+
+          create_port_list_data_reset (create_port_list_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_CREATE_PORT_LIST_COMMENT:
+        assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_PORT_LIST);
+        break;
+      case CLIENT_CREATE_PORT_LIST_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_PORT_LIST);
+        break;
+      case CLIENT_CREATE_PORT_LIST_PORT_RANGE:
+        assert (strcasecmp ("PORT_RANGE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_PORT_LIST);
+        break;
+
       case CLIENT_CREATE_REPORT:
         {
           char *uuid;
@@ -14338,6 +14489,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         (create_target_data->name,
                          create_target_data->hosts,
                          create_target_data->comment,
+                         create_target_data->port_list_id,
                          create_target_data->port_range,
                          ssh_lsc_credential,
                          create_target_data->ssh_port,
@@ -14417,6 +14569,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_TARGET_NAME:
         assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_TARGET);
+        break;
+      case CLIENT_CREATE_TARGET_PORT_LIST:
+        assert (strcasecmp ("PORT_LIST", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
       case CLIENT_CREATE_TARGET_PORT_RANGE:
@@ -14693,8 +14849,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
-              if (create_target (target_name, hosts, NULL, NULL, 0, NULL, 0,
-                                 NULL, NULL, NULL, &target))
+              if (create_target (target_name, hosts, NULL, NULL, NULL, 0, NULL,
+                                 0, NULL, NULL, NULL, &target))
                 {
                   request_delete_task (&create_task_data->task);
                   g_free (target_name);
@@ -18376,6 +18532,17 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_OVERRIDE_THREAT:
         openvas_append_text (&create_override_data->threat, text, text_len);
+        break;
+
+      case CLIENT_CREATE_PORT_LIST_COMMENT:
+        openvas_append_text (&create_port_list_data->comment, text, text_len);
+        break;
+      case CLIENT_CREATE_PORT_LIST_NAME:
+        openvas_append_text (&create_port_list_data->name, text, text_len);
+        break;
+      case CLIENT_CREATE_PORT_LIST_PORT_RANGE:
+        openvas_append_text (&create_port_list_data->port_range, text,
+                             text_len);
         break;
 
       case CLIENT_CREATE_REPORT_RR_HOST_END:
