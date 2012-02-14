@@ -130,9 +130,24 @@ typedef long long int user_t;
 #define MANAGE_NVT_SELECTOR_UUID_ALL "54b45713-d4f4-4435-b20d-304c175ed8c5"
 
 /**
- * @brief UUID of 'Default' port list.
+ * @brief UUID of 'OpenVAS Default' port list.
  */
 #define PORT_LIST_UUID_DEFAULT "c7e03b6c-3bbe-11e1-a057-406186ea4fc5"
+
+/**
+ * @brief UUID of 'All TCP' port list.
+ */
+#define PORT_LIST_UUID_ALL_TCP "fd591a34-56fd-11e1-9f27-406186ea4fc5"
+
+/**
+ * @brief UUID of 'All privileged TCP' port list.
+ */
+#define PORT_LIST_UUID_ALL_PRIV_TCP "492b72f4-56fe-11e1-98a7-406186ea4fc5"
+
+/**
+ * @brief UUID of 'All privileged TCP and UDP' port list.
+ */
+#define PORT_LIST_UUID_ALL_PRIV_TCP_UDP "5f2029f6-56fe-11e1-bb94-406186ea4fc5"
 
 /**
  * @brief UUID of 'Localhost' target.
@@ -9831,6 +9846,46 @@ ensure_predefined_port_lists_exist ()
            " '')");
       list = sqlite3_last_insert_rowid (task_db);
       make_port_ranges_openvas_default (list);
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM port_lists"
+               " WHERE uuid = '" PORT_LIST_UUID_ALL_TCP "';")
+      == 0)
+    {
+      port_list_t list;
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+           " VALUES ('" PORT_LIST_UUID_ALL_TCP "', NULL, 'All TCP',"
+           " '')");
+      list = sqlite3_last_insert_rowid (task_db);
+      RANGE (PORT_PROTOCOL_TCP, 1, 65535);
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM port_lists"
+               " WHERE uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP "';")
+      == 0)
+    {
+      port_list_t list;
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+           " VALUES ('" PORT_LIST_UUID_ALL_PRIV_TCP "', NULL,"
+           " 'All privileged TCP', '')");
+      list = sqlite3_last_insert_rowid (task_db);
+      RANGE (PORT_PROTOCOL_TCP, 1, 1023);
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM port_lists"
+               " WHERE uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "';")
+      == 0)
+    {
+      port_list_t list;
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+           " VALUES ('" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "', NULL,"
+           " 'All privileged TCP and UDP', '')");
+      list = sqlite3_last_insert_rowid (task_db);
+      RANGE (PORT_PROTOCOL_TCP, 1, 1023);
+      RANGE (PORT_PROTOCOL_UDP, 1, 1023);
     }
 }
 

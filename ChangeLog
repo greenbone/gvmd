@@ -1,3 +1,9 @@
+2012-02-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (PORT_LIST_UUID_ALL_TCP, PORT_LIST_UUID_ALL_PRIV_TCP)
+	(PORT_LIST_UUID_ALL_PRIV_TCP_UDP): New defines.
+	(ensure_predefined_port_lists_exist): Add more lists.
+
 2012-02-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OMP CREATE_PORT_LIST and add PORT_LIST to OMP CREATE_TARGET.
