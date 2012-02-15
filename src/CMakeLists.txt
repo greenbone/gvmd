@@ -41,7 +41,12 @@ endif (OPENVAS_LIB_INSTALL_DIR)
 add_library (ovas-mngr-comm STATIC ovas-mngr-comm.c)
 set_target_properties (ovas-mngr-comm PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
 
-add_library (manage STATIC manage.c manage_sql.c lsc_user.c)
+add_library (manage STATIC
+             manage.c sql.c manage_ranges_all_tcp_nmap_5_51_top_100.c
+             manage_ranges_all_tcp_nmap_5_51_top_1000.c
+             manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
+             manage_ranges_nmap_5_51_top_2000_top_100.c
+             manage_sql.c lsc_user.c)
 set_target_properties (manage PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 target_link_libraries (manage sqlite3 uuid glib-2.0 openvas_omp)
 
@@ -162,7 +167,11 @@ add_dependencies (check splint rats flawfinder)
 ## Tag files
 
 set (C_FILES "openvasmd.c" "oxpd.c" "otpd.c" "ompd.c" "omp.c" "otp.c"
-             "manage.c" "manage_sql.c" "ovas-mngr-comm.c" "lsc_user.c")
+             "manage.c" "manage_ranges_all_tcp_nmap_5_51_top_100.c"
+             "manage_ranges_all_tcp_nmap_5_51_top_1000.c"
+             "manage_ranges_iana_tcp_2012.c" "manage_ranges_iana_tcp_udp_2012.c"
+             "manage_ranges_nmap_5_51_top_2000_top_100.c"
+             "manage_sql.c" "ovas-mngr-comm.c" "lsc_user.c" "sql.c")
 add_custom_target (etags COMMENT "Building TAGS..."
                    COMMAND etags ${C_FILES})
 add_custom_target (ctags COMMENT "Building tags..."
