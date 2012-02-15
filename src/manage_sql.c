@@ -141,6 +141,16 @@ typedef long long int user_t;
 #define PORT_LIST_UUID_ALL_TCP "fd591a34-56fd-11e1-9f27-406186ea4fc5"
 
 /**
+ * @brief UUID of 'All TCP and Nmap 5.51 Top 100 UDP' port list.
+ */
+#define PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "730ef368-57e2-11e1-a90f-406186ea4fc5"
+
+/**
+ * @brief UUID of 'All TCP and Nmap 5.51 Top 1000 UDP' port list.
+ */
+#define PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "9ddce1ae-57e7-11e1-b13c-406186ea4fc5"
+
+/**
  * @brief UUID of 'All privileged TCP' port list.
  */
 #define PORT_LIST_UUID_ALL_PRIV_TCP "492b72f4-56fe-11e1-98a7-406186ea4fc5"
@@ -149,6 +159,21 @@ typedef long long int user_t;
  * @brief UUID of 'All privileged TCP and UDP' port list.
  */
 #define PORT_LIST_UUID_ALL_PRIV_TCP_UDP "5f2029f6-56fe-11e1-bb94-406186ea4fc5"
+
+/**
+ * @brief UUID of 'All privileged TCP and UDP' port list.
+ */
+#define PORT_LIST_UUID_ALL_IANA_TCP_2012 "33d0cd82-57c6-11e1-8ed1-406186ea4fc5"
+
+/**
+ * @brief UUID of 'All privileged TCP and UDP' port list.
+ */
+#define PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "4a4717fe-57d2-11e1-9a26-406186ea4fc5"
+
+/**
+ * @brief UUID of 'Nmap 5.51 top 2000 TCP top 100 UDP' port list.
+ */
+#define PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "ab33f6b0-57f8-11e1-96f5-406186ea4fc5"
 
 /**
  * @brief UUID of 'Localhost' target.
@@ -206,6 +231,24 @@ const char *message_type_threat (const char *);
 int delete_reports (task_t);
 
 int delete_slave_task (slave_t, const char *);
+
+
+/* Port range headers. */
+
+void
+make_port_ranges_iana_tcp_2012 (port_list_t);
+
+void
+make_port_ranges_iana_tcp_udp_2012 (port_list_t);
+
+void
+make_port_ranges_all_tcp_nmap_5_51_top_100 (port_list_t);
+
+void
+make_port_ranges_all_tcp_nmap_5_51_top_1000 (port_list_t);
+
+void
+make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
 
 
 /* Static headers. */
@@ -9117,6 +9160,32 @@ ensure_predefined_port_lists_exist ()
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM port_lists"
+               " WHERE uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "';")
+      == 0)
+    {
+      port_list_t list;
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+           " VALUES ('" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "', NULL,"
+           " 'All TCP and Nmap 5.51 top 100 UDP', '')");
+      list = sqlite3_last_insert_rowid (task_db);
+      make_port_ranges_all_tcp_nmap_5_51_top_100 (list);
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM port_lists"
+               " WHERE uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "';")
+      == 0)
+    {
+      port_list_t list;
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+           " VALUES ('" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "', NULL,"
+           " 'All TCP and Nmap 5.51 top 1000 UDP', '')");
+      list = sqlite3_last_insert_rowid (task_db);
+      make_port_ranges_all_tcp_nmap_5_51_top_1000 (list);
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM port_lists"
                " WHERE uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP "';")
       == 0)
     {
@@ -9140,6 +9209,45 @@ ensure_predefined_port_lists_exist ()
       list = sqlite3_last_insert_rowid (task_db);
       RANGE (PORT_PROTOCOL_TCP, 1, 1023);
       RANGE (PORT_PROTOCOL_UDP, 1, 1023);
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM port_lists"
+               " WHERE uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_2012 "';")
+      == 0)
+    {
+      port_list_t list;
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+           " VALUES ('" PORT_LIST_UUID_ALL_IANA_TCP_2012 "', NULL,"
+           " 'All IANA assigned TCP 2012-02-10', '')");
+      list = sqlite3_last_insert_rowid (task_db);
+      make_port_ranges_iana_tcp_2012 (list);
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM port_lists"
+               " WHERE uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "';")
+      == 0)
+    {
+      port_list_t list;
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+           " VALUES ('" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "', NULL,"
+           " 'All IANA assigned TCP and UDP 2012-02-10', '')");
+      list = sqlite3_last_insert_rowid (task_db);
+      make_port_ranges_iana_tcp_udp_2012 (list);
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM port_lists"
+               " WHERE uuid = '" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "';")
+      == 0)
+    {
+      port_list_t list;
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+           " VALUES ('" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "', NULL,"
+           " 'Nmap 5.51 top 2000 TCP and top 100 UDP', '')");
+      list = sqlite3_last_insert_rowid (task_db);
+      make_port_ranges_nmap_5_51_top_2000_top_100 (list);
     }
 }
 

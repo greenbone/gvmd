@@ -1,5 +1,21 @@
 2012-02-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add rest of predefined port lists.
+
+	* src/manage_sql.c (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100)
+	(PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000)
+	(PORT_LIST_UUID_ALL_IANA_TCP_2012)
+	(PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012): New defines.
+	(ensure_predefined_port_lists_exist): Add new lists.
+
+	* src/manage_ranges_all_tcp_nmap_5_51_top_100.c,
+	src/manage_ranges_all_tcp_nmap_5_51_top_1000.c,
+	src/manage_ranges_iana_tcp_2012.c, src/manage_ranges_iana_tcp_udp_2012.c,
+	src/manage_ranges_nmap_5_51_top_2000_top_100.c: New files.  Port ranges
+	for the new predefined port lists.
+
+2012-02-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/sql.c, src/sql.h: New files.  SQL helpers and iterators from
 	manage_sql.
 
