@@ -1,3 +1,15 @@
+2012-02-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/sql.c, src/sql.h: New files.  SQL helpers and iterators from
+	manage_sql.
+
+	* src/manage_sql.c (clean_hosts, clean_hosts): Export for sql.c.
+	(task_db, sql_nquote, sql_quote, sql_insert, sql, sql_quiet, sql_x)
+	(sql_int, sql_string, sql_int64, sql_make_uuid, sql_hosts_contains)
+	(sql_clean_hosts, sql_uniquify, sql_iso_time, sql_now): Move to sql.c.
+	(init_iterator, iterator_int64, iterator_string, cleanup_iterator)
+	(next): Move to sql.c.
+
 2012-02-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (PORT_LIST_UUID_ALL_TCP, PORT_LIST_UUID_ALL_PRIV_TCP)
