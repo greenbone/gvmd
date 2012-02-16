@@ -34133,6 +34133,25 @@ delete_port_list (const char *port_list_id, int ultimate)
       return -1;
     }
 
+  if (sql_int
+       (0, 0,
+        "SELECT count (*) FROM port_lists"
+        " WHERE ROWID = %llu AND"
+        " (uuid == " G_STRINGIFY (PORT_LIST_UUID_DEFAULT)
+        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100)
+        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000)
+        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP)
+        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP_UDP)
+        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_2012)
+        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012)
+        "  OR uuid"
+        "     == " G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100) ");")
+      == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
   if (port_list == 0)
     {
       if (find_trash ("port_list", port_list_id, &port_list))
@@ -34344,13 +34363,25 @@ port_list_iterator_comment (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return 1 if schedule is in use, else 0.
+ * @return 1 if port list is in use, else 0.
  */
 int
 port_list_iterator_in_use (iterator_t* iterator)
 {
   int ret;
+  const char *uuid;
   if (iterator->done) return -1;
+  uuid = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  if (strcmp (uuid, PORT_LIST_UUID_DEFAULT) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_TCP) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_PRIV_TCP) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_PRIV_TCP_UDP) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_IANA_TCP_2012) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012) == 0
+      || strcmp (uuid, PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100) == 0)
+    return 1;
   ret = (int) sqlite3_column_int (iterator->stmt, 4);
   return ret;
 }

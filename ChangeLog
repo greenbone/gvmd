@@ -1,3 +1,9 @@
+2012-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (delete_port_list): Prevent removal of predefined port
+	lists.
+	(port_list_iterator_in_use): Always consider predefined port lists in use.
+
 2012-02-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/CMakeLists.txt (manage, C_FILES): Add new port range files.
