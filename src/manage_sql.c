@@ -21706,7 +21706,7 @@ validate_port (const char *port)
 }
 
 /**
- * @brief Validate a port range.
+ * @brief Validate a Manager port range.
  *
  * Scanner accepts "-100,103,200-1024,60000-" or "T:-100,103,U:6000-.
  *
@@ -21719,7 +21719,7 @@ validate_port (const char *port)
 static int
 validate_port_range (const char* port_range)
 {
-  gchar **split, **point;
+  gchar **split, **point, *range, *range_start;
 
   if (strcmp (port_range, "default") == 0)
     return 0;
@@ -21728,20 +21728,32 @@ validate_port_range (const char* port_range)
   if (strcmp (port_range, "") == 0)
     return 1;
 
-  split = g_strsplit (port_range, ",", 0);
+  /* Treat newlines like commas. */
+  range = range_start = g_strdup (port_range);
+  while (*range)
+    {
+      if (*range == '\n') *range = ',';
+      range++;
+    }
+
+  split = g_strsplit (range_start, ",", 0);
+  g_free (range_start);
   point = split;
 
   while (*point)
     {
       gchar *hyphen, *element;
 
+      /* Strip off any outer whitespace. */
+
+      element = g_strstrip (*point);
+
       /* Strip off any leading type specifier. */
 
-      element = *point;
-      if ((strlen (element) > 2)
+      if ((strlen (element) >= 2)
           && ((element[0] == 'T') || (element[0] == 'U'))
           && (element[1] == ':'))
-        element = *point + 2;
+        element = element + 2;
 
       /* Look for a hyphen. */
 
@@ -21800,17 +21812,19 @@ validate_port_range (const char* port_range)
 
           only = element;
           while (*only && isblank (*only)) only++;
-          if (*only == '\0')
-            goto fail;
-          errno = 0;
-          number = strtol (only, &end, 10);
-          while (*end && isblank (*end)) end++;
-          if (errno || *end)
-            goto fail;
-          if (number == 0)
-            goto fail;
-          if (number > 65535)
-            goto fail;
+          /* Empty ranges are OK. */
+          if (*only)
+            {
+              errno = 0;
+              number = strtol (only, &end, 10);
+              while (*end && isblank (*end)) end++;
+              if (errno || *end)
+                goto fail;
+              if (number == 0)
+                goto fail;
+              if (number > 65535)
+                goto fail;
+            }
         }
       point += 1;
     }
@@ -33884,7 +33898,7 @@ create_port_list_lock (const char *quoted_name, const char *comment,
 array_t*
 otp_port_range_ranges (const char *port_range)
 {
-  gchar **split, **point;
+  gchar **split, **point, *range_start, *current;
   array_t *ranges;
   int tcp;
 
@@ -33898,8 +33912,17 @@ otp_port_range_ranges (const char *port_range)
    * it as TCP and UDP.  Manager sends to the Scanner in the format Scanner
    * accepts. */
 
+  /* Treat newlines like commas. */
+  range_start = current = g_strdup (port_range);
+  while (*current)
+    {
+      if (*current == '\n') *current = ',';
+      current++;
+    }
+
   tcp = 1;
-  split = g_strsplit (port_range, ",", 0);
+  split = g_strsplit (range_start, ",", 0);
+  g_free (range_start);
   point = split;
 
   while (*point)
@@ -33907,10 +33930,8 @@ otp_port_range_ranges (const char *port_range)
       gchar *hyphen, *element;
       range_t *range;
 
-      range = (range_t*) g_malloc (sizeof (range_t));
-
-      element = *point;
-      if (strlen (element) > 2)
+      element = g_strstrip (*point);
+      if (strlen (element) >= 2)
         {
           if ((element[0] == 'T') && (element[1] == ':'))
             {
@@ -33925,31 +33946,43 @@ otp_port_range_ranges (const char *port_range)
           /* Else tcp stays as it is. */
         }
 
+      /* Skip any space that followed the type specifier. */
+      while (*element && isblank (*element)) element++;
+
       hyphen = strchr (element, '-');
       if (hyphen)
         {
           *hyphen = '\0';
           hyphen++;
+          while (*hyphen && isblank (*hyphen)) hyphen++;
+          assert (*hyphen);  /* Validation checks this. */
 
           /* A range. */
+
+          range = (range_t*) g_malloc (sizeof (range_t));
 
           range->start = atoi (element);
           range->end = atoi (hyphen);
           range->type = tcp ? PORT_PROTOCOL_TCP : PORT_PROTOCOL_UDP;
           range->exclude = 0;
+
+          array_add (ranges, range);
         }
-      else
+      else if (*element)
         {
           /* A single port. */
+
+          range = (range_t*) g_malloc (sizeof (range_t));
 
           range->start = atoi (element);
           range->end = range->start;
           range->type = tcp ? PORT_PROTOCOL_TCP : PORT_PROTOCOL_UDP;
           range->exclude = 0;
-        }
-      point += 1;
 
-      array_add (ranges, range);
+          array_add (ranges, range);
+        }
+      /* Else skip over empty range. */
+      point += 1;
     }
   g_strfreev (split);
   return ranges;
