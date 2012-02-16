@@ -1,5 +1,13 @@
 2012-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (validate_port_range): Refer to port range by protocol
+	in doc.
+	(otp_port_range_ranges): Remove.  Now port_range_ranges.
+	(port_range_ranges): New function.  Renamed to better fit purpose.  Update
+	callers.
+
+2012-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (validate_port_range, otp_port_range_ranges): Allow
 	newlines, empty ranges and space between tokens.
 

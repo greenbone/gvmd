@@ -21706,11 +21706,11 @@ validate_port (const char *port)
 }
 
 /**
- * @brief Validate a Manager port range.
+ * @brief Validate an OMP port range string.
  *
- * Scanner accepts "-100,103,200-1024,60000-" or "T:-100,103,U:6000-.
+ * OTP accepts "-100,103,200-1024,60000-" or "T:-100,103,U:6000-.
  *
- * Manager accepts "103,U:200-1024,3000-4000,T:3-4,U:7".
+ * OMP accepts "103,U:200-1024,3000-4000,T:3-4,U:7".
  *
  * @param[in]   port_range  A port range.
  *
@@ -33889,14 +33889,14 @@ create_port_list_lock (const char *quoted_name, const char *comment,
 }
 
 /**
- * @brief Create a range array from an OTP port range.
+ * @brief Create a range array from an OMP port range string.
  *
- * @param[out]  port_range  Valid OTP style port range.
+ * @param[out]  port_range  Valid OMP port range string.
  *
  * @return Range array.
  */
-array_t*
-otp_port_range_ranges (const char *port_range)
+static array_t*
+port_range_ranges (const char *port_range)
 {
   gchar **split, **point, *range_start, *current;
   array_t *ranges;
@@ -34022,7 +34022,7 @@ create_port_list_unique (const char *name, const char *comment,
       if (validate_port_range (port_range))
         return 4;
 
-      ranges = otp_port_range_ranges (port_range);
+      ranges = port_range_ranges (port_range);
     }
 
   assert (current_credentials.uuid);
@@ -34123,7 +34123,7 @@ create_port_list (const char* name, const char* comment,
     }
   else
     {
-      ranges = otp_port_range_ranges (port_ranges);
+      ranges = port_range_ranges (port_ranges);
       ret = create_port_list_lock (quoted_name, comment ? comment : "", ranges,
                                    &port_list);
       // FIX free items
