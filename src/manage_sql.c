@@ -34146,7 +34146,7 @@ delete_port_list (const char *port_list_id, int ultimate)
         "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012)
         "  OR uuid"
         "     == " G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100) ");")
-      == 0)
+      > 0)
     {
       sql ("ROLLBACK;");
       return 1;
