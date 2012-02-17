@@ -345,6 +345,7 @@ static char* help_text = "\n"
 "    CREATE_NOTE            Create a note.\n"
 "    CREATE_OVERRIDE        Create an override.\n"
 "    CREATE_PORT_LIST       Create a port list.\n"
+"    CREATE_PORT_RANGE      Create a port range in a port list.\n"
 "    CREATE_REPORT_FORMAT   Create a report format.\n"
 "    CREATE_REPORT          Create a report.\n"
 "    CREATE_SCHEDULE        Create a schedule.\n"
@@ -915,6 +916,35 @@ create_port_list_data_reset (create_port_list_data_t *data)
   free (data->name);
 
   memset (data, 0, sizeof (create_port_list_data_t));
+}
+
+/**
+ * @brief Command data for the create_port_range command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *end;                     ///< Last port.
+  char *port_list_id;            ///< Port list for new port range.
+  char *start;                   ///< First port.
+  char *type;                    ///< Type of new port range.
+} create_port_range_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+create_port_range_data_reset (create_port_range_data_t *data)
+{
+  free (data->comment);
+  free (data->end);
+  free (data->port_list_id);
+  free (data->start);
+  free (data->type);
+
+  memset (data, 0, sizeof (create_port_range_data_t));
 }
 
 /**
@@ -2640,6 +2670,7 @@ typedef union
   create_note_data_t create_note;                     ///< create_note
   create_override_data_t create_override;             ///< create_override
   create_port_list_data_t create_port_list;           ///< create_port_list
+  create_port_range_data_t create_port_range;         ///< create_port_range
   create_report_data_t create_report;                 ///< create_report
   create_report_format_data_t create_report_format;   ///< create_report_format
   create_schedule_data_t create_schedule;             ///< create_schedule
@@ -2757,6 +2788,12 @@ create_override_data_t *create_override_data
  */
 create_port_list_data_t *create_port_list_data
  = (create_port_list_data_t*) &(command_data.create_port_list);
+
+/**
+ * @brief Parser callback data for CREATE_PORT_RANGE.
+ */
+create_port_range_data_t *create_port_range_data
+ = (create_port_range_data_t*) &(command_data.create_port_range);
 
 /**
  * @brief Parser callback data for CREATE_REPORT.
@@ -3247,6 +3284,12 @@ typedef enum
   CLIENT_CREATE_PORT_LIST_COMMENT,
   CLIENT_CREATE_PORT_LIST_NAME,
   CLIENT_CREATE_PORT_LIST_PORT_RANGE,
+  CLIENT_CREATE_PORT_RANGE,
+  CLIENT_CREATE_PORT_RANGE_COMMENT,
+  CLIENT_CREATE_PORT_RANGE_END,
+  CLIENT_CREATE_PORT_RANGE_PORT_LIST,
+  CLIENT_CREATE_PORT_RANGE_START,
+  CLIENT_CREATE_PORT_RANGE_TYPE,
   /* CREATE_REPORT. */
   CLIENT_CREATE_REPORT,
   CLIENT_CREATE_REPORT_REPORT,
@@ -3983,6 +4026,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_OVERRIDE);
         else if (strcasecmp ("CREATE_PORT_LIST", element_name) == 0)
           set_client_state (CLIENT_CREATE_PORT_LIST);
+        else if (strcasecmp ("CREATE_PORT_RANGE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PORT_RANGE);
         else if (strcasecmp ("CREATE_REPORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT);
         else if (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0)
@@ -6699,6 +6744,38 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             if (send_element_error_to_client ("create_port_list", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_PORT_RANGE:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PORT_RANGE_COMMENT);
+        else if (strcasecmp ("END", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PORT_RANGE_END);
+        else if (strcasecmp ("PORT_LIST", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_port_range_data->port_list_id);
+            set_client_state (CLIENT_CREATE_PORT_RANGE_PORT_LIST);
+          }
+        else if (strcasecmp ("START", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PORT_RANGE_START);
+        else if (strcasecmp ("TYPE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PORT_RANGE_TYPE);
+        else
+          {
+            if (send_element_error_to_client ("create_port_range", element_name,
                                               write_to_client,
                                               write_to_client_data))
               {
@@ -13512,6 +13589,119 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_PORT_LIST);
         break;
 
+      case CLIENT_CREATE_PORT_RANGE:
+        {
+          port_range_t new_port_range;
+
+          assert (strcasecmp ("CREATE_PORT_RANGE", element_name) == 0);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_port_range",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (create_port_range_data->start == NULL
+                   || create_port_range_data->end == NULL
+                   || create_port_range_data->port_list_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_port_range",
+                                "CREATE_PORT_RANGE requires a START, END and"
+                                " PORT_LIST ID"));
+          else switch (create_port_range
+                        (create_port_range_data->port_list_id,
+                         create_port_range_data->type,
+                         create_port_range_data->start,
+                         create_port_range_data->end,
+                         create_port_range_data->comment,
+                         &new_port_range))
+            {
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_range",
+                                    "Port range START must be a number"
+                                    " 1-65535"));
+                g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
+                       "Port range could not be created");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_range",
+                                    "Port range END must be a number"
+                                    " 1-65535"));
+                g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
+                       "Port range could not be created");
+                break;
+              case 3:
+                if (send_find_error_to_client
+                     ("create_port_range",
+                      "port_range",
+                      create_port_range_data->port_list_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
+                       "Port range could not be created");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_range",
+                                    "Port range TYPE must be TCP or UDP"));
+                g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
+                       "Port range could not be created");
+                break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_range",
+                                    "Port list is in use"));
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_port_range"));
+                g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
+                       "Port range could not be created");
+                break;
+              default:
+                {
+                  char *uuid;
+                  uuid = port_range_uuid (new_port_range);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_OK_CREATED_ID ("create_port_range"), uuid);
+                  g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
+                         "Port range %s has been created", uuid);
+                  free (uuid);
+                  break;
+                }
+            }
+
+          create_port_range_data_reset (create_port_range_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_CREATE_PORT_RANGE_COMMENT:
+        assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_PORT_RANGE);
+        break;
+      case CLIENT_CREATE_PORT_RANGE_END:
+        assert (strcasecmp ("END", element_name) == 0);
+        set_client_state (CLIENT_CREATE_PORT_RANGE);
+        break;
+      case CLIENT_CREATE_PORT_RANGE_START:
+        assert (strcasecmp ("START", element_name) == 0);
+        set_client_state (CLIENT_CREATE_PORT_RANGE);
+        break;
+      case CLIENT_CREATE_PORT_RANGE_TYPE:
+        assert (strcasecmp ("TYPE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_PORT_RANGE);
+        break;
+      case CLIENT_CREATE_PORT_RANGE_PORT_LIST:
+        assert (strcasecmp ("PORT_LIST", element_name) == 0);
+        set_client_state (CLIENT_CREATE_PORT_RANGE);
+        break;
+
       case CLIENT_CREATE_REPORT:
         {
           char *uuid;
@@ -18543,6 +18733,19 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_PORT_LIST_PORT_RANGE:
         openvas_append_text (&create_port_list_data->port_range, text,
                              text_len);
+        break;
+
+      case CLIENT_CREATE_PORT_RANGE_COMMENT:
+        openvas_append_text (&create_port_range_data->comment, text, text_len);
+        break;
+      case CLIENT_CREATE_PORT_RANGE_END:
+        openvas_append_text (&create_port_range_data->end, text, text_len);
+        break;
+      case CLIENT_CREATE_PORT_RANGE_START:
+        openvas_append_text (&create_port_range_data->start, text, text_len);
+        break;
+      case CLIENT_CREATE_PORT_RANGE_TYPE:
+        openvas_append_text (&create_port_range_data->type, text, text_len);
         break;
 
       case CLIENT_CREATE_REPORT_RR_HOST_END:

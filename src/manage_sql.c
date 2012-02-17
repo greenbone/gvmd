@@ -34145,6 +34145,83 @@ create_port_list (const char* name, const char* comment,
 }
 
 /**
+ * @brief Create a port range in a port list.
+ *
+ * @param[in]   port_list_id      Port list UUID.
+ * @param[in]   type              Type.
+ * @param[in]   start             Start port.
+ * @param[in]   end               End port.
+ * @param[in]   comment           Comment.
+ * @param[out]  port_list_return  Created port range.
+ *
+ * @return 0 success, 1 syntax error in start, 2 syntax error in end, 3 failed
+ *         to find port list, 4 syntax error in type, 5 port list in use,
+ *         -1 error.
+ */
+int
+create_port_range (const char *port_list_id, const char *type,
+                   const char *start, const char *end, const char *comment,
+                   port_range_t *port_range_return)
+{
+  int first, last;
+  port_list_t port_list;
+  port_protocol_t port_type;
+  gchar *quoted_comment;
+
+  first = atoi (start);
+  if (first < 1 || first > 65535)
+    return 1;
+
+  last = atoi (end);
+  if (last < 1 || last > 65535)
+    return 1;
+
+  if (strcasecmp (type, "TCP") == 0)
+    port_type = PORT_PROTOCOL_TCP;
+  else if (strcasecmp (type, "UDP") == 0)
+    port_type = PORT_PROTOCOL_UDP;
+  else
+    return 4;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  port_list = 0;
+
+  if (find_port_list (port_list_id, &port_list))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (port_list == 0)
+    {
+      sql ("ROLLBACK;");
+      return 3;
+    }
+
+  if (port_list_in_use (port_list))
+    {
+      sql ("ROLLBACK;");
+      return 5;
+    }
+
+  quoted_comment = comment ? sql_quote (comment) : g_strdup ("");
+  sql ("INSERT INTO port_ranges"
+       " (uuid, port_list, type, start, end, comment, exclude)"
+       " VALUES"
+       " (make_uuid (), %llu, %i, %i, %i, '', 0);",
+       port_list, port_type, first, last, quoted_comment);
+  g_free (quoted_comment);
+
+  if (port_range_return)
+    *port_range_return = sqlite3_last_insert_rowid (task_db);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Delete a port_list.
  *
  * @param[in]  port_list_id  UUID of port_list.
@@ -34434,6 +34511,21 @@ port_list_uuid (port_list_t port_list)
                      port_list);
 }
 
+/**
+ * @brief Return the UUID of a port_range.
+ *
+ * @param[in]  port_range  Port_Range.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+port_range_uuid (port_range_t port_range)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM port_ranges WHERE ROWID = %llu;",
+                     port_range);
+}
+
 #if 0
 /**
  * @brief Return the UUID of a trashcan port_list.
@@ -34511,6 +34603,7 @@ port_list_ssh_lsc_credential (port_list_t port_list)
     }
   return lsc_credential;
 }
+#endif
 
 /**
  * @brief Return whether a port_list is in use by a task.
@@ -34522,14 +34615,29 @@ port_list_ssh_lsc_credential (port_list_t port_list)
 int
 port_list_in_use (port_list_t port_list)
 {
+  if (sql_int
+       (0, 0,
+        "SELECT count (*) FROM port_lists"
+        " WHERE ROWID = %llu AND"
+        " (UUID = " G_STRINGIFY (PORT_LIST_UUID_DEFAULT)
+        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP)
+        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100)
+        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000)
+        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP)
+        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP_UDP)
+        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_2012)
+        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100)
+        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012) ");")
+      > 0)
+    return 1;
+
   return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks"
-                  " WHERE port_list = %llu"
-                  " AND port_list_location = " G_STRINGIFY (LOCATION_TABLE)
-                  " AND (hidden = 0 OR hidden = 1);",
+                  "SELECT count(*) FROM targets"
+                  " WHERE port_range = %llu",
                   port_list);
 }
 
+#if 0
 /**
  * @brief Return whether a trashcan port_list is referenced by a task.
  *

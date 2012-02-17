@@ -1,3 +1,19 @@
+2012-02-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP CREATE_PORT_RANGE.
+
+	* src/manage_sql.c (create_port_range, port_range_uuid)
+	(port_list_in_use): New functions.
+
+	* src/omp.c (create_port_range_data_t): New type.
+	(create_port_range_data_reset): New function.
+	(command_data_t, client_state_t): Add create_port_range.
+	(create_port_range_data): New variable.
+	(xml_handle_start_element, xml_handle_end_element, xml_handle_text): Add
+	CREATE_PORT_RANGE.
+
+	* src/manage.h: Add headers accordingly.
+
 2012-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (validate_port_range): Refer to port range by protocol

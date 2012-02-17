@@ -1999,6 +1999,10 @@ int
 create_port_list (const char*, const char*, const char*, port_list_t*);
 
 int
+create_port_range (const char *, const char *, const char *, const char *,
+                   const char *, port_range_t *);
+
+int
 delete_port_list (const char*, int);
 
 void
@@ -2022,6 +2026,9 @@ port_list_iterator_in_use (iterator_t*);
 char*
 port_list_uuid (port_list_t);
 
+char*
+port_range_uuid (port_range_t);
+
 #if 0
 char*
 trash_port_list_uuid (port_list_t);
@@ -2031,33 +2038,14 @@ port_list_name (port_list_t);
 
 char*
 trash_port_list_name (port_list_t);
-
-char*
-port_list_hosts (port_list_t);
-
-char*
-port_list_ssh_port (port_list_t);
-
-char*
-trash_port_list_hosts (port_list_t);
+#endif
 
 int
 port_list_in_use (port_list_t);
 
+#if 0
 int
 trash_port_list_in_use (port_list_t);
-
-char*
-port_list_lsc_credential_name (const char *);
-
-void
-init_port_list_task_iterator (iterator_t*, port_list_t, int);
-
-const char*
-port_list_task_iterator_name (iterator_t*);
-
-const char*
-port_list_task_iterator_uuid (iterator_t*);
 #endif
 
 void
