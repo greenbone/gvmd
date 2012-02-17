@@ -33826,6 +33826,61 @@ find_port_list (const char* uuid, port_list_t* port_list)
 }
 
 /**
+ * @brief Find a port range given a UUID.
+ *
+ * @param[in]   uuid        UUID of port_range.
+ * @param[out]  port_range  Port range return, 0 if succesfully failed to find
+ *                          port range.
+ *
+ * @return FALSE on success (including if failed to find port range), TRUE on
+ *         error.
+ */
+gboolean
+find_port_range (const char* uuid, port_range_t* port_range)
+{
+  gchar *quoted_uuid;
+
+  assert (current_credentials.uuid);
+
+  quoted_uuid = sql_quote (uuid);
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM port_ranges, port_lists"
+               " WHERE port_ranges.uuid = '%s'"
+               " AND port_ranges.port_list = port_lists.ROWID"
+               /* The owner of the port list owns the range. */
+               " AND ((port_lists.owner IS NULL) OR (port_lists.owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+               quoted_uuid,
+               current_credentials.uuid)
+      == 0)
+    {
+      g_free (quoted_uuid);
+      *port_range = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (port_range, 0, 0,
+                     "SELECT ROWID FROM port_ranges WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *port_range = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
  * @brief A port range.
  */
 struct range
@@ -34222,13 +34277,13 @@ create_port_range (const char *port_list_id, const char *type,
 }
 
 /**
- * @brief Delete a port_list.
+ * @brief Delete a port list.
  *
  * @param[in]  port_list_id  UUID of port_list.
  * @param[in]  ultimate      Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 1 fail because a target refers to the port_list, 2 failed
- *         to find port_list, -1 error.
+ * @return 0 success, 1 fail because a target refers to the port list, 2 failed
+ *         to find port list, -1 error.
  */
 int
 delete_port_list (const char *port_list_id, int ultimate)
@@ -34338,6 +34393,57 @@ delete_port_list (const char *port_list_id, int ultimate)
 
   sql ("DELETE FROM port_lists WHERE ROWID = %llu;", port_list);
   sql ("DELETE FROM port_ranges WHERE port_list = %llu;", port_list);
+
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
+ * @brief Delete a port range.
+ *
+ * @param[in]  port_range_id  UUID of port_range.
+ *
+ * @return 0 success, 1 failed to find port range, 2 port range is part of
+ *         predefined port list, -1 error.
+ */
+int
+delete_port_range (const char *port_range_id)
+{
+  port_range_t port_range = 0;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (find_port_range (port_range_id, &port_range))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (port_range == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  if (sql_int
+       (0, 0,
+        "SELECT count (*) FROM port_lists WHERE"
+        " ROWID = (SELECT port_list FROM port_ranges"
+        "          WHERE port_ranges.ROWID = %llu)"
+        " AND"
+        " (uuid == " G_STRINGIFY (PORT_LIST_UUID_DEFAULT)
+        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100)
+        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000)
+        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP)
+        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP_UDP)
+        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_2012)
+        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012)
+        "  OR uuid"
+        "     == " G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100) ");",
+        port_range))
+    return 2;
+
+  sql ("DELETE FROM port_ranges WHERE ROWID = %llu;", port_range);
 
   sql ("COMMIT;");
   return 0;

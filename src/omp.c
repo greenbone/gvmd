@@ -359,6 +359,7 @@ static char* help_text = "\n"
 "    DELETE_NOTE            Delete a note.\n"
 "    DELETE_OVERRIDE        Delete an override.\n"
 "    DELETE_PORT_LIST       Delete a port list.\n"
+"    DELETE_PORT_RANGE      Delete a port range.\n"
 "    DELETE_REPORT          Delete a report.\n"
 "    DELETE_REPORT_FORMAT   Delete a report format.\n"
 "    DELETE_SCHEDULE        Delete a schedule.\n"
@@ -1399,6 +1400,27 @@ delete_port_list_data_reset (delete_port_list_data_t *data)
   free (data->port_list_id);
 
   memset (data, 0, sizeof (delete_port_list_data_t));
+}
+
+/**
+ * @brief Command data for the delete_port_range command.
+ */
+typedef struct
+{
+  char *port_range_id;  ///< ID of port range to delete.
+} delete_port_range_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+delete_port_range_data_reset (delete_port_range_data_t *data)
+{
+  free (data->port_range_id);
+
+  memset (data, 0, sizeof (delete_port_range_data_t));
 }
 
 /**
@@ -2684,6 +2706,7 @@ typedef union
   delete_note_data_t delete_note;                     ///< delete_note
   delete_override_data_t delete_override;             ///< delete_override
   delete_port_list_data_t delete_port_list;           ///< delete_port_list
+  delete_port_range_data_t delete_port_range;         ///< delete_port_range
   delete_report_data_t delete_report;                 ///< delete_report
   delete_report_format_data_t delete_report_format;   ///< delete_report_format
   delete_schedule_data_t delete_schedule;             ///< delete_schedule
@@ -2872,6 +2895,12 @@ delete_override_data_t *delete_override_data
  */
 delete_port_list_data_t *delete_port_list_data
  = (delete_port_list_data_t*) &(command_data.delete_port_list);
+
+/**
+ * @brief Parser callback data for DELETE_PORT_RANGE.
+ */
+delete_port_range_data_t *delete_port_range_data
+ = (delete_port_range_data_t*) &(command_data.delete_port_range);
 
 /**
  * @brief Parser callback data for DELETE_REPORT.
@@ -3407,6 +3436,7 @@ typedef enum
   CLIENT_DELETE_NOTE,
   CLIENT_DELETE_OVERRIDE,
   CLIENT_DELETE_PORT_LIST,
+  CLIENT_DELETE_PORT_RANGE,
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_REPORT_FORMAT,
   CLIENT_DELETE_SCHEDULE,
@@ -4126,6 +4156,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               delete_port_list_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_PORT_LIST);
+          }
+        else if (strcasecmp ("DELETE_PORT_RANGE", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "port_range_id",
+                              &delete_port_range_data->port_range_id);
+            set_client_state (CLIENT_DELETE_PORT_RANGE);
           }
         else if (strcasecmp ("DELETE_REPORT", element_name) == 0)
           {
@@ -5230,6 +5266,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_PORT_LIST:
         if (send_element_error_to_client ("delete_port_list", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
+      case CLIENT_DELETE_PORT_RANGE:
+        if (send_element_error_to_client ("delete_port_range", element_name,
                                           write_to_client,
                                           write_to_client_data))
           {
@@ -11268,6 +11319,54 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
            (XML_ERROR_SYNTAX ("delete_port_list",
                               "DELETE_PORT_LIST requires a port_list_id attribute"));
         delete_port_list_data_reset (delete_port_list_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_DELETE_PORT_RANGE:
+        assert (strcasecmp ("DELETE_PORT_RANGE", element_name) == 0);
+        if (delete_port_range_data->port_range_id)
+          switch (delete_port_range (delete_port_range_data->port_range_id))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_port_range"));
+                g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
+                       "Port_Range %s has been deleted",
+                       delete_port_range_data->port_range_id);
+                break;
+              case 1:
+                if (send_find_error_to_client ("delete_port_range",
+                                               "port_range",
+                                               delete_port_range_data->port_range_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
+                       "Port range %s could not be deleted",
+                       delete_port_range_data->port_range_id);
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_port_range",
+                                    "Port range belongs to predefined port"
+                                    " list"));
+                g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
+                       "Port range %s could not be deleted",
+                       delete_port_range_data->port_range_id);
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_port_range"));
+                g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
+                       "Port range %s could not be deleted",
+                       delete_port_range_data->port_range_id);
+            }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_port_range",
+                              "DELETE_PORT_RANGE requires a port_range_id attribute"));
+        delete_port_range_data_reset (delete_port_range_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

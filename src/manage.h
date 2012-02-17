@@ -1995,6 +1995,9 @@ slave_task_iterator_uuid (iterator_t*);
 gboolean
 find_port_list (const char*, port_list_t*);
 
+gboolean
+find_port_range (const char*, port_list_t*);
+
 int
 create_port_list (const char*, const char*, const char*, port_list_t*);
 
@@ -2004,6 +2007,9 @@ create_port_range (const char *, const char *, const char *, const char *,
 
 int
 delete_port_list (const char*, int);
+
+int
+delete_port_range (const char *);
 
 void
 init_port_list_iterator (iterator_t*, port_list_t, int, int, const char*);
