@@ -895,13 +895,34 @@ create_override_data_reset (create_override_data_t *data)
 }
 
 /**
+ * @brief A port range.
+ */
+struct create_port_list_range
+{
+  char *comment;            ///< Comment.
+  char *end;                ///< End.
+  char *id;                 ///< UUID.
+  char *start;              ///< Start.
+  char *type;               ///< Type.
+};
+
+/**
+ * @brief Port range type.
+ */
+typedef struct create_port_list_range create_port_list_range_t;
+
+/**
  * @brief Command data for the create_port_list command.
  */
 typedef struct
 {
   char *comment;                 ///< Comment.
-  char *port_range;              ///< Port range for new port list.
+  char *id;                      ///< UUID.
+  int import;                    ///< Import flag.
   char *name;                    ///< Name of new port list.
+  char *port_range;              ///< Port range for new port list.
+  create_port_list_range_t *range;  ///< Current port range for import.
+  array_t *ranges;               ///< Port ranges for import.
 } create_port_list_data_t;
 
 /**
@@ -913,8 +934,30 @@ static void
 create_port_list_data_reset (create_port_list_data_t *data)
 {
   free (data->comment);
-  free (data->port_range);
   free (data->name);
+  free (data->port_range);
+
+  if (data->ranges)
+    {
+      guint index;
+
+      index = data->ranges->len;
+      while (index--)
+        {
+          create_port_list_range_t *range;
+          range = (create_port_list_range_t*) g_ptr_array_index (data->ranges,
+                                                                 index);
+          if (range)
+            {
+              free (range->comment);
+              free (range->end);
+              free (range->id);
+              free (range->start);
+              free (range->type);
+            }
+        }
+      array_free (data->ranges);
+    }
 
   memset (data, 0, sizeof (create_port_list_data_t));
 }
@@ -3313,6 +3356,21 @@ typedef enum
   CLIENT_CREATE_PORT_LIST_COMMENT,
   CLIENT_CREATE_PORT_LIST_NAME,
   CLIENT_CREATE_PORT_LIST_PORT_RANGE,
+  /* get_port_lists (GPL) is used for port lists export.  CLIENT_CPL is
+   * for CLIENT_CREATE_PORT_LIST. */
+  CLIENT_CPL_GPLR,
+  CLIENT_CPL_GPLR_PORT_LIST,
+  CLIENT_CPL_GPLR_PORT_LIST_COMMENT,
+  CLIENT_CPL_GPLR_PORT_LIST_IN_USE,
+  CLIENT_CPL_GPLR_PORT_LIST_NAME,
+  CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGE,
+  CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES,
+  CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE,
+  CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_COMMENT,
+  CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_END,
+  CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_START,
+  CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_TYPE,
+  CLIENT_CPL_GPLR_PORT_LIST_TARGETS,
   CLIENT_CREATE_PORT_RANGE,
   CLIENT_CREATE_PORT_RANGE_COMMENT,
   CLIENT_CREATE_PORT_RANGE_END,
@@ -6785,6 +6843,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_PORT_LIST:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_PORT_LIST_COMMENT);
+        else if (strcasecmp ("GET_PORT_LISTS_RESPONSE", element_name) == 0)
+          {
+            create_port_list_data->import = 1;
+            set_client_state (CLIENT_CPL_GPLR);
+          }
         else if (strcasecmp ("PORT_RANGE", element_name) == 0)
           {
             openvas_append_string (&create_port_list_data->port_range, "");
@@ -6795,6 +6858,135 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             if (send_element_error_to_client ("create_port_list", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CPL_GPLR:
+        if (strcasecmp ("PORT_LIST", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_port_list_data->id);
+            set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
+          }
+        else
+          {
+            if (send_element_error_to_client ("create_port_list",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CPL_GPLR_PORT_LIST:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CPL_GPLR_PORT_LIST_COMMENT);
+        else if (strcasecmp ("IN_USE", element_name) == 0)
+          set_client_state (CLIENT_CPL_GPLR_PORT_LIST_IN_USE);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_CPL_GPLR_PORT_LIST_NAME);
+        else if (strcasecmp ("PORT_RANGE", element_name) == 0)
+          set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGE);
+        else if (strcasecmp ("PORT_RANGES", element_name) == 0)
+          {
+            create_port_list_data->ranges = make_array ();
+            set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES);
+          }
+        else if (strcasecmp ("TARGETS", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CPL_GPLR_PORT_LIST_TARGETS);
+          }
+        else
+          {
+            if (send_element_error_to_client ("create_port_list",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES:
+        if (strcasecmp ("PORT_RANGE", element_name) == 0)
+          {
+            assert (create_port_list_data->range == NULL);
+            create_port_list_data->range
+             = g_malloc0 (sizeof (create_port_list_range_t));
+            append_attribute (attribute_names, attribute_values, "id",
+                              &(create_port_list_data->range->id));
+            set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE);
+          }
+        else
+          {
+            if (send_element_error_to_client ("create_port_list",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_append_string (&create_port_list_data->range->comment, "");
+            set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_COMMENT);
+          }
+        else if (strcasecmp ("END", element_name) == 0)
+          {
+            openvas_append_string (&create_port_list_data->range->end, "");
+            set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_END);
+          }
+        else if (strcasecmp ("START", element_name) == 0)
+          {
+            openvas_append_string (&create_port_list_data->range->start, "");
+            set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_START);
+          }
+        else if (strcasecmp ("TYPE", element_name) == 0)
+          {
+            openvas_append_string (&create_port_list_data->range->type, "");
+            set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_TYPE);
+          }
+        else
+          {
+            if (send_element_error_to_client ("create_port_list",
+                                              element_name,
                                               write_to_client,
                                               write_to_client_data))
               {
@@ -9262,6 +9454,54 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
                                     "</schedule>");
         }
     }
+}
+
+/**
+ * @brief Convert ranges to manage ranges.
+ *
+ * @param[in]  ranges  Ranges buffered in CREATE_PORT_LIST.
+ *
+ * @return Array of manage ranges on success, else NULL.
+ */
+static array_t *
+convert_to_manage_ranges (array_t *ranges)
+{
+  if (ranges)
+    {
+      guint index;
+      array_t *manage_ranges;
+
+      manage_ranges = make_array ();
+
+      index = ranges->len;
+      while (index--)
+        {
+          create_port_list_range_t *range;
+          range = (create_port_list_range_t*) g_ptr_array_index (ranges,
+                                                                 index);
+          if (range)
+            {
+              range_t *manage_range;
+
+              manage_range = g_malloc0 (sizeof (range_t));
+              manage_range->comment = range->comment;
+              manage_range->end = atoi (range->end);
+              manage_range->id = range->id;
+              manage_range->start = atoi (range->start);
+              if (strcasecmp (range->type, "TCP") == 0)
+                manage_range->type = PORT_PROTOCOL_TCP;
+              else if (strcasecmp (range->type, "UDP") == 0)
+                manage_range->type = PORT_PROTOCOL_UDP;
+              else
+                manage_range->type = PORT_PROTOCOL_OTHER;
+              manage_range->exclude = 0;
+
+              array_add (manage_ranges, manage_range);
+            }
+        }
+      return manage_ranges;
+    }
+  return NULL;
 }
 
 /**
@@ -13615,14 +13855,104 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_PORT_LIST:
         {
           port_list_t new_port_list;
+          array_t *manage_ranges;
 
           assert (strcasecmp ("CREATE_PORT_LIST", element_name) == 0);
+
+          manage_ranges = NULL;
+
+          /* The import element, GET_PORT_LISTS_RESPONSE, overrides any other
+           * elements. */
 
           if (openvas_is_user_observer (current_credentials.username))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_port_list",
                                   "CREATE is forbidden for observer users"));
+            }
+          else if (create_port_list_data->import)
+            {
+              array_terminate (create_port_list_data->ranges);
+
+              if (create_port_list_data->name == NULL)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_list",
+                                    "CREATE_PORT_LIST"
+                                    " GET_PORT_LISTS_RESPONSE requires a"
+                                    " NAME element"));
+              else if (strlen (create_port_list_data->name) == 0)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_list",
+                                    "CREATE_PORT_LIST"
+                                    " GET_PORT_LISTS_RESPONSE NAME must be"
+                                    " at least one character long"));
+              else if (create_port_list_data->id == NULL)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_list",
+                                    "CREATE_PORT_LIST"
+                                    " GET_PORT_LISTS_RESPONSE requires an"
+                                    " ID attribute"));
+              else if (strlen (create_port_list_data->id) == 0)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_list",
+                                    "CREATE_PORT_LIST"
+                                    " GET_PORT_LISTS_RESPONSE ID must be"
+                                    " at least one character long"));
+              else if (!is_uuid (create_port_list_data->id))
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_list",
+                                    "CREATE_PORT_LIST"
+                                    " GET_PORT_LISTS_RESPONSE ID must be"
+                                    " a UUID"));
+              else if ((manage_ranges = convert_to_manage_ranges
+                                         (create_port_list_data->ranges))
+                       == NULL)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_list",
+                                    "Error in GET_PORT_LISTS_RESPONSE ranges"));
+              else switch (create_port_list
+                            (create_port_list_data->id,
+                             create_port_list_data->name,
+                             create_port_list_data->comment,
+                             NULL,
+                             manage_ranges,
+                             &new_port_list))
+                {
+                  case 1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_port_list",
+                                        "Port list exists already"));
+                    g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                           "Port list could not be created");
+                    break;
+                  case 2:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_port_list",
+                                        "Port list exists already, in"
+                                        " trashcan"));
+                    g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                           "Port list could not be created");
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("create_port_list"));
+                    g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                           "Port List could not be created");
+                    break;
+                  default:
+                    {
+                      char *uuid = port_list_uuid (new_port_list);
+                      SENDF_TO_CLIENT_OR_FAIL
+                       (XML_OK_CREATED_ID ("create_port_list"),
+                        uuid);
+                      g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                             "Port List %s has been created", uuid);
+                      free (uuid);
+                      break;
+                    }
+                }
+              /* Range fields are freed by the reset function below. */
+              array_free (manage_ranges);
             }
           else if (create_port_list_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
@@ -13634,9 +13964,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "CREATE_PORT_LIST name must be at"
                                 " least one character long"));
           else switch (create_port_list
-                        (create_port_list_data->name,
+                        (NULL,
+                         create_port_list_data->name,
                          create_port_list_data->comment,
                          create_port_list_data->port_range,
+                         NULL,
                          &new_port_list))
             {
               case 1:
@@ -13679,6 +14011,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("COMMENT", element_name) == 0);
         set_client_state (CLIENT_CREATE_PORT_LIST);
         break;
+      case CLIENT_CPL_GPLR:
+        assert (strcasecmp ("GET_PORT_LISTS_RESPONSE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_PORT_LIST);
+        break;
       case CLIENT_CREATE_PORT_LIST_NAME:
         assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_PORT_LIST);
@@ -13686,6 +14022,64 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_PORT_LIST_PORT_RANGE:
         assert (strcasecmp ("PORT_RANGE", element_name) == 0);
         set_client_state (CLIENT_CREATE_PORT_LIST);
+        break;
+
+      case CLIENT_CPL_GPLR_PORT_LIST:
+        assert (strcasecmp ("PORT_LIST", element_name) == 0);
+        set_client_state (CLIENT_CPL_GPLR);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_COMMENT:
+        assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_IN_USE:
+        assert (strcasecmp ("IN_USE", element_name) == 0);
+        set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_TARGETS:
+        assert (strcasecmp ("TARGETS", element_name) == 0);
+        omp_parser->read_over = 0;
+        set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGE:
+        assert (strcasecmp ("PORT_RANGE", element_name) == 0);
+        set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES:
+        assert (strcasecmp ("PORT_RANGES", element_name) == 0);
+        set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
+        break;
+
+      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE:
+        {
+          assert (strcasecmp ("PORT_RANGE", element_name) == 0);
+          assert (create_port_list_data->ranges);
+
+          array_add (create_port_list_data->ranges,
+                     create_port_list_data->range);
+          create_port_list_data->range = NULL;
+          set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES);
+          break;
+        }
+      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_COMMENT:
+        assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_END:
+        assert (strcasecmp ("END", element_name) == 0);
+        set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_START:
+        assert (strcasecmp ("START", element_name) == 0);
+        set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_TYPE:
+        assert (strcasecmp ("TYPE", element_name) == 0);
+        set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE);
         break;
 
       case CLIENT_CREATE_PORT_RANGE:
@@ -18831,6 +19225,35 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_PORT_LIST_PORT_RANGE:
         openvas_append_text (&create_port_list_data->port_range, text,
+                             text_len);
+        break;
+
+      case CLIENT_CPL_GPLR_PORT_LIST_COMMENT:
+        openvas_append_text (&create_port_list_data->comment, text,
+                             text_len);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_NAME:
+        openvas_append_text (&create_port_list_data->name, text,
+                             text_len);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_COMMENT:
+        openvas_append_text (&create_port_list_data->range->comment,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_END:
+        openvas_append_text (&create_port_list_data->range->end,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_START:
+        openvas_append_text (&create_port_list_data->range->start,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_TYPE:
+        openvas_append_text (&create_port_list_data->range->type,
+                             text,
                              text_len);
         break;
 

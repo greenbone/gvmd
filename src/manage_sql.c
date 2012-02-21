@@ -33881,22 +33881,11 @@ find_port_range (const char* uuid, port_range_t* port_range)
 }
 
 /**
- * @brief A port range.
- */
-struct range
-{
-  int start;       ///< Start port.
-  int end;         ///< End port.  0 for single port.
-  int type;        ///< Port protocol.
-  int exclude;     ///< Whether to exclude range.
-};
-typedef struct range range_t;
-
-/**
  * @brief Create a port list, with database locked.
  *
  * Caller must lock the database.
  *
+ * @param[in]   quoted_id       SQL quoted UUID, or NULL.
  * @param[in]   quoted_name     SQL quoted name of port list.
  * @param[in]   comment         Comment on port list.
  * @param[in]   ranges          Port ranges of port list.
@@ -33905,8 +33894,9 @@ typedef struct range range_t;
  * @return 0 success.
  */
 int
-create_port_list_lock (const char *quoted_name, const char *comment,
-                       array_t *ranges, port_list_t* port_list)
+create_port_list_lock (const char *quoted_id, const char *quoted_name,
+                       const char *comment, array_t *ranges,
+                       port_list_t* port_list)
 {
   gchar *quoted_comment;
   range_t *range;
@@ -33915,14 +33905,25 @@ create_port_list_lock (const char *quoted_name, const char *comment,
   assert (comment);
 
   quoted_comment = sql_quote (comment);
-  sql ("INSERT INTO port_lists"
-       " (uuid, owner, name, comment)"
-       " VALUES"
-       " (make_uuid (), (SELECT ROWID FROM users WHERE uuid = '%s'), '%s',"
-       "  '%s');",
-       current_credentials.uuid,
-       quoted_name,
-       quoted_comment);
+  if (quoted_id)
+    sql ("INSERT INTO port_lists"
+         " (uuid, owner, name, comment)"
+         " VALUES"
+         " ('%s', (SELECT ROWID FROM users WHERE uuid = '%s'), '%s',"
+         "  '%s');",
+         quoted_id,
+         current_credentials.uuid,
+         quoted_name,
+         quoted_comment);
+  else
+    sql ("INSERT INTO port_lists"
+         " (uuid, owner, name, comment)"
+         " VALUES"
+         " (make_uuid (), (SELECT ROWID FROM users WHERE uuid = '%s'), '%s',"
+         "  '%s');",
+         current_credentials.uuid,
+         quoted_name,
+         quoted_comment);
   g_free (quoted_comment);
 
   *port_list = sqlite3_last_insert_rowid (task_db);
@@ -33930,16 +33931,32 @@ create_port_list_lock (const char *quoted_name, const char *comment,
   array_terminate (ranges);
   index = 0;
   while ((range = (range_t*) g_ptr_array_index (ranges, index++)))
-    sql ("INSERT INTO port_ranges"
-         " (uuid, port_list, type, start, end, comment, exclude)"
-         " VALUES"
-         " (make_uuid (), %llu, %i, %i, %i, '', %i);",
-         *port_list,
-         range->type,
-         range->start,
-         range->end,
-         range->exclude);
-
+    if (range->id)
+      {
+        gchar *quoted_range_id;
+        quoted_range_id = sql_quote (range->id);
+        sql ("INSERT INTO port_ranges"
+             " (uuid, port_list, type, start, end, comment, exclude)"
+             " VALUES"
+             " ('%s', %llu, %i, %i, %i, '', %i);",
+             quoted_range_id,
+             *port_list,
+             range->type,
+             range->start,
+             range->end,
+             range->exclude);
+        g_free (quoted_range_id);
+      }
+    else
+      sql ("INSERT INTO port_ranges"
+           " (uuid, port_list, type, start, end, comment, exclude)"
+           " VALUES"
+           " (make_uuid (), %llu, %i, %i, %i, '', %i);",
+           *port_list,
+           range->type,
+           range->start,
+           range->end,
+           range->exclude);
   return 0;
 }
 
@@ -34101,7 +34118,7 @@ create_port_list_unique (const char *name, const char *comment,
       suffix++;
     }
 
-  ret = create_port_list_lock (quoted_name, comment, ranges, port_list);
+  ret = create_port_list_lock (NULL, quoted_name, comment, ranges, port_list);
 
   // FIX free items
   array_free (ranges);
@@ -34112,22 +34129,102 @@ create_port_list_unique (const char *name, const char *comment,
 /**
  * @brief Create a port_list.
  *
- * @param[in]   name              Name of port_list.
- * @param[in]   comment           Comment on port_list.
- * @param[in]   port_ranges       OTP style port ranges.
- * @param[out]  port_list_return  Created port_list.
+ * @param[in]   id                ID of port list.  Only used with \p ranges.
+ * @param[in]   name              Name of port list.
+ * @param[in]   comment           Comment on port list.
+ * @param[in]   port_ranges       OMP port range string.
+ * @param[in]   ranges            Array of port ranges of type range_t.
+ *                                Overrides port_ranges.
+ * @param[out]  port_list_return  Created port list.
  *
- * @return 0 success, 1 port_list exists already, 4 error in port_ranges,
+ * @return 0 success, 1 port list exists already, 4 error in port_ranges,
  *         -1 error.
  */
 int
-create_port_list (const char* name, const char* comment,
-                  const char* port_ranges, port_list_t* port_list_return)
+create_port_list (const char* id, const char* name, const char* comment,
+                  const char* port_ranges, array_t *ranges,
+                  port_list_t* port_list_return)
 {
-  gchar *quoted_name = sql_quote (name);
+  gchar *quoted_name;
   port_list_t port_list;
-  array_t *ranges;
   int ret;
+
+  if (ranges)
+    {
+      int suffix;
+      gchar *quoted_id;
+
+      if (id == NULL)
+        return -1;
+
+      sql ("BEGIN IMMEDIATE;");
+
+      assert (current_credentials.uuid);
+
+      /* Check whether this port list exists already. */
+
+      quoted_id = sql_quote (id);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM port_lists"
+                   " WHERE uuid = '%s'"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_id,
+                   current_credentials.uuid))
+        {
+          g_free (quoted_id);
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM port_lists_trash"
+                   " WHERE uuid = '%s'"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_id,
+                   current_credentials.uuid))
+        {
+          g_free (quoted_id);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+
+      /* Ensure the name is unique. */
+      quoted_name = sql_quote (name);
+      suffix = 1;
+      while (sql_int (0, 0,
+                      "SELECT COUNT(*) FROM port_lists"
+                       " WHERE name = '%s'"
+                       " AND ((owner IS NULL) OR (owner ="
+                       " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                       quoted_name,
+                       current_credentials.uuid))
+        {
+          gchar *new_name;
+          g_free (quoted_name);
+          new_name = g_strdup_printf ("%s %i", name, suffix++);
+          quoted_name = sql_quote (new_name);
+          g_free (new_name);
+        }
+
+      ret = create_port_list_lock (quoted_id, quoted_name,
+                                   comment ? comment : "", ranges, &port_list);
+      g_free (quoted_name);
+      if (ret)
+        {
+          sql ("ROLLBACK;");
+          return ret;
+        }
+
+      if (port_list_return)
+        *port_list_return = port_list;
+
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  quoted_name = sql_quote (name);
 
   if (port_ranges == NULL)
     port_ranges = "default";
@@ -34179,8 +34276,8 @@ create_port_list (const char* name, const char* comment,
   else
     {
       ranges = port_range_ranges (port_ranges);
-      ret = create_port_list_lock (quoted_name, comment ? comment : "", ranges,
-                                   &port_list);
+      ret = create_port_list_lock (NULL, quoted_name, comment ? comment : "",
+                                   ranges, &port_list);
       // FIX free items
       array_free (ranges);
       if (ret)

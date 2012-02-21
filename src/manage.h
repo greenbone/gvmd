@@ -1992,6 +1992,20 @@ slave_task_iterator_uuid (iterator_t*);
 
 /* Port lists. */
 
+/**
+ * @brief A port range.
+ */
+struct range
+{
+  gchar *comment;       ///< Comment.
+  int end;              ///< End port.  0 for single port.
+  int exclude;          ///< Whether to exclude range.
+  gchar *id;            ///< UUID.
+  int start;            ///< Start port.
+  int type;             ///< Port protocol.
+};
+typedef struct range range_t;
+
 gboolean
 find_port_list (const char*, port_list_t*);
 
@@ -1999,7 +2013,8 @@ gboolean
 find_port_range (const char*, port_list_t*);
 
 int
-create_port_list (const char*, const char*, const char*, port_list_t*);
+create_port_list (const char*, const char*, const char*, const char*,
+                  array_t *, port_list_t*);
 
 int
 create_port_range (const char *, const char *, const char *, const char *,
@@ -2092,10 +2107,6 @@ port_list_target_iterator_name (iterator_t*);
 
 int
 manage_schema (gchar *, gchar **, gsize *, gchar **, gchar **);
-
-
-/* Port lists. */
-
 
 
 /* Trashcan. */

@@ -1,3 +1,23 @@
+2012-02-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add importing of port list to OMP CREATE_PORT_LIST.
+
+	* src/manage_sql.c (struct range, range_t): Remove.  Now exported.
+	(create_port_list_lock): Add ID arg, and handle IDs in ranges.  Update
+	callers.
+	(create_port_list): Add import case.
+
+	* src/manage.h: Add header accordingly.  Remove empty page.
+	(struct range, range_t): New type.  From manage_sql.c.
+
+	* src/omp.c (struct create_port_list_range, create_port_list_range_t): New
+	type.
+	(create_port_list_data_t, create_port_list_data_reset): Add import ranges.
+	(client_state_t): Add import states.
+	(xml_handle_start_element, xml_handle_end_element)
+	(omp_xml_handle_text): Add import to CREATE_PORT_LIST.
+	(convert_to_manage_ranges): New function.
+
 2012-02-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OMP DELETE_PORT_RANGE.
