@@ -34446,6 +34446,7 @@ delete_port_list (const char *port_list_id, int ultimate)
         }
 
       sql ("DELETE FROM port_lists_trash WHERE ROWID = %llu;", port_list);
+      sql ("DELETE FROM port_ranges_trash WHERE port_list = %llu;", port_list);
       sql ("COMMIT;");
       return 0;
     }

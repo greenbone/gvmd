@@ -1,5 +1,9 @@
 2012-02-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_port_list): Add missing SQL statement.
+
+2012-02-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add importing of port list to OMP CREATE_PORT_LIST.
 
 	* src/manage_sql.c (struct range, range_t): Remove.  Now exported.
