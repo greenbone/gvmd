@@ -34031,7 +34031,7 @@ port_range_ranges (const char *port_range)
 
           /* A range. */
 
-          range = (range_t*) g_malloc (sizeof (range_t));
+          range = (range_t*) g_malloc0 (sizeof (range_t));
 
           range->start = atoi (element);
           range->end = atoi (hyphen);
@@ -34044,7 +34044,7 @@ port_range_ranges (const char *port_range)
         {
           /* A single port. */
 
-          range = (range_t*) g_malloc (sizeof (range_t));
+          range = (range_t*) g_malloc0 (sizeof (range_t));
 
           range->start = atoi (element);
           range->end = range->start;
@@ -34896,15 +34896,16 @@ port_list_in_use (port_list_t port_list)
        (0, 0,
         "SELECT count (*) FROM port_lists"
         " WHERE ROWID = %llu AND"
-        " (UUID = " G_STRINGIFY (PORT_LIST_UUID_DEFAULT)
-        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP)
-        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100)
-        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000)
-        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP)
-        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP_UDP)
-        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_2012)
-        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100)
-        "  OR UUID = " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012) ");")
+        " (uuid = " G_STRINGIFY (PORT_LIST_UUID_DEFAULT)
+        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP)
+        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100)
+        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000)
+        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP)
+        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP_UDP)
+        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_2012)
+        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100)
+        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012) ");",
+        port_list)
       > 0)
     return 1;
 

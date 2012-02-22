@@ -1,5 +1,11 @@
 2012-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (port_range_ranges): Clear range on allocation so that
+	the fields are initialised.
+	(port_list_in_use): Lowercase UUID and add missing arg.
+
+2012-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (port_list_iterator_count)
 	(port_list_iterator_count_tcp, port_list_iterator_count_udp): New
 	functions.
