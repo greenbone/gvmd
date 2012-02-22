@@ -34941,7 +34941,7 @@ trash_port_list_in_use (port_list_t port_list)
  * @param[in]  port_list   Port list.
  * @param[in]  trash       Whether port_list is in the trashcan.
  * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ * @param[in]  sort_field  Field to sort on, or NULL for type then start.
  */
 void
 init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
@@ -34962,7 +34962,7 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
                  trash ? "_trash" : "",
                  port_list,
                  current_credentials.uuid,
-                 sort_field ? sort_field : "ROWID",
+                 sort_field ? sort_field : "type, CAST (start AS INTEGER)",
                  ascending ? "ASC" : "DESC");
 }
 

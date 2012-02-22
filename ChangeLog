@@ -1,5 +1,11 @@
 2012-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_port_range_iterator): If sort_field is NULL sort
+	by type then start, instead of by ROWID.  This improves sorting of ranges
+	in GET_PORT_LISTS.
+
+2012-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (port_range_ranges): Clear range on allocation so that
 	the fields are initialised.
 	(port_list_in_use): Lowercase UUID and add missing arg.
