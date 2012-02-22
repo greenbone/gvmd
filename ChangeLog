@@ -1,5 +1,12 @@
 2012-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_port_range): Handle overlapping ranges.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_PORT_RANGE add
+	new create_port_range return.
+
+2012-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (range_compare, ranges_sort_merge): New functions.
 	(create_port_list_lock): Merge overlapping ranges before inserting them.
 

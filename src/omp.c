@@ -14161,6 +14161,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_port_range",
                                     "Port list is in use"));
                 break;
+              case 6:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_range",
+                                    "New range is covered by an existing"
+                                    " range"));
+                break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_port_range"));
