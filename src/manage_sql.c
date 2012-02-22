@@ -34701,6 +34701,79 @@ port_list_iterator_in_use (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the port count from a port_list iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Port count.
+ */
+int
+port_list_iterator_count (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return sql_int (0, 0,
+                  "SELECT"
+                  " sum ((CASE"
+                  "       WHEN end IS NULL THEN start ELSE end"
+                  "       END)"
+                  "      - start"
+                  "      + 1)"
+                  " FROM port_ranges"
+                  " WHERE port_list = %llu;",
+                  sqlite3_column_int64 (iterator->stmt, 0));
+}
+
+/**
+ * @brief Get the TCP port count from a port_list iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return TCP port count.
+ */
+int
+port_list_iterator_count_tcp (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return sql_int (0, 0,
+                  "SELECT"
+                  " sum ((CASE"
+                  "       WHEN end IS NULL THEN start ELSE end"
+                  "       END)"
+                  "      - start"
+                  "      + 1)"
+                  " FROM port_ranges"
+                  " WHERE port_list = %llu"
+                  " AND type = %i;",
+                  sqlite3_column_int64 (iterator->stmt, 0),
+                  PORT_PROTOCOL_TCP);
+}
+
+/**
+ * @brief Get the UDP port count from a port_list iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UDP port count.
+ */
+int
+port_list_iterator_count_udp (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return sql_int (0, 0,
+                  "SELECT"
+                  " sum ((CASE"
+                  "       WHEN end IS NULL THEN start ELSE end"
+                  "       END)"
+                  "      - start"
+                  "      + 1)"
+                  " FROM port_ranges"
+                  " WHERE port_list = %llu"
+                  " AND type = %i;",
+                  sqlite3_column_int64 (iterator->stmt, 0),
+                  PORT_PROTOCOL_UDP);
+}
+
+/**
  * @brief Return the UUID of a port_list.
  *
  * @param[in]  port_list  Port_List.

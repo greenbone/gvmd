@@ -10275,11 +10275,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<name>%s</name>"
                                            "<comment>%s</comment>"
                                            "<in_use>%i</in_use>"
+                                           "<port_count>"
+                                           "<all>%i</all>"
+                                           "<tcp>%i</tcp>"
+                                           "<udp>%i</udp>"
+                                           "</port_count>"
                                            "<port_ranges>",
                                            port_list_iterator_uuid (&lists),
                                            port_list_iterator_name (&lists),
                                            port_list_iterator_comment (&lists),
-                                           port_list_iterator_in_use (&lists));
+                                           port_list_iterator_in_use (&lists),
+                                           port_list_iterator_count (&lists),
+                                           port_list_iterator_count_tcp
+                                            (&lists),
+                                           port_list_iterator_count_udp
+                                            (&lists));
 
                   init_port_range_iterator (&ranges, port_list,
                                             get_port_lists_data->trash, 1,

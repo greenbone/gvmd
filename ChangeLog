@@ -1,3 +1,14 @@
+2012-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (port_list_iterator_count)
+	(port_list_iterator_count_tcp, port_list_iterator_count_udp): New
+	functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Add port counts to
+	GET_PORT_LISTS response.
+
 2012-02-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_port_list): Add missing SQL statement.
