@@ -34410,6 +34410,14 @@ create_port_range (const char *port_list_id, const char *type,
   else
     return 4;
 
+  if (last < first)
+    {
+      int tem;
+      tem = first;
+      first = last;
+      last = tem;
+    }
+
   sql ("BEGIN IMMEDIATE;");
 
   port_list = 0;
