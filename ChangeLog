@@ -1,5 +1,14 @@
 2012-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_port_range): If the new range overlaps any
+	existing range then return an error instead of trying to deal with the
+	complexity of combining the ranges.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_PORT_RANGE
+	adjust create_port_range return for new meaning.
+
+2012-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_port_range): If last precedes first, swap them.
 
 2012-02-22  Matthew Mundell <matthew.mundell@greenbone.net>

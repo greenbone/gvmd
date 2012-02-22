@@ -34383,7 +34383,7 @@ create_port_list (const char* id, const char* name, const char* comment,
  *
  * @return 0 success, 1 syntax error in start, 2 syntax error in end, 3 failed
  *         to find port list, 4 syntax error in type, 5 port list in use,
- *         6 new range is covered by an existing range, -1 error.
+ *         6 new range overlaps an existing range, -1 error.
  */
 int
 create_port_range (const char *port_list_id, const char *type,
@@ -34440,34 +34440,27 @@ create_port_range (const char *port_list_id, const char *type,
       return 5;
     }
 
-  /* If the new range overlaps an existing range, then trim the new range
-   * to be adjacent to the existing range. */
   if (sql_int (0, 0,
                "SELECT count (*) FROM port_ranges"
                " WHERE port_list = %llu"
-               " AND start <= %i"
-               " AND end >= %i",
+               " AND type = %i"
+               " AND ((start <= %i AND end >= %i)"
+               "      OR (start <= %i AND end >= %i)"
+               "      OR (start >= %i AND start <= %i)"
+               "      OR (end >= %i AND end <= %i))",
                port_list,
+               port_type,
                first,
-               first))
+               first,
+               last,
+               last,
+               first,
+               last,
+               first,
+               last))
     {
-      int existing_end;
-
-      existing_end = sql_int (0, 0,
-                              "SELECT end FROM port_ranges"
-                              " WHERE port_list = %llu"
-                              " AND start <= %i"
-                              " AND end >= %i",
-                              port_list,
-                              first,
-                              first);
-      if (existing_end >= last)
-        {
-          sql ("ROLLBACK;");
-          return 6;
-        }
-
-      first = existing_end + 1;
+      sql ("ROLLBACK;");
+      return 6;
     }
 
   quoted_comment = comment ? sql_quote (comment) : g_strdup ("");

@@ -14164,7 +14164,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 6:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_port_range",
-                                    "New range is covered by an existing"
+                                    "New range overlaps an existing"
                                     " range"));
                 break;
               case -1:
