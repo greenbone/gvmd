@@ -33881,6 +33881,80 @@ find_port_range (const char* uuid, port_range_t* port_range)
 }
 
 /**
+ * @brief Compare two ranges by type then start.
+ *
+ * @param[in]  one  First range.
+ * @param[in]  two  Second range.
+ */
+static int
+range_compare (gconstpointer one, gconstpointer two)
+{
+  range_t *range_one, *range_two;
+
+  range_one = (range_t*) one;
+  range_two = (range_t*) two;
+
+  if (range_one->type > range_two->type)
+    return 1;
+
+  if (range_one->type < range_two->type)
+    return -1;
+
+  if (range_one->start < range_two->start)
+    return 1;
+
+  if (range_one->start > range_two->start)
+    return -1;
+
+  return 0;
+}
+
+/**
+ * @brief Sort and merge ranges.
+ *
+ * @param[in]  ranges  Array of port ranges of type range_t.
+ */
+static void
+ranges_sort_merge (array_t *ranges)
+{
+  if (ranges->len > 1)
+    {
+      int index;
+      range_t *last_range;
+
+      /* Sort by type then start. */
+
+      g_ptr_array_sort (ranges, range_compare);
+
+      /* Merge overlaps. */
+
+      last_range = (range_t*) g_ptr_array_index (ranges, 0);
+      for (index = 1; index < ranges->len; )
+        {
+          range_t *range;
+
+          range = (range_t*) g_ptr_array_index (ranges, index);
+          if (range == NULL)
+            break;
+
+          if (range->type == last_range->type
+              && range->start <= last_range->end)
+            {
+              if (range->end > last_range->end)
+                last_range->end = range->end;
+              /* This moves everything else up into the space. */
+              g_ptr_array_remove_index (ranges, index);
+            }
+          else
+            {
+              index++;
+              last_range = range;
+            }
+        }
+    }
+}
+
+/**
  * @brief Create a port list, with database locked.
  *
  * Caller must lock the database.
@@ -33928,6 +34002,7 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
 
   *port_list = sqlite3_last_insert_rowid (task_db);
 
+  ranges_sort_merge (ranges);
   array_terminate (ranges);
   index = 0;
   while ((range = (range_t*) g_ptr_array_index (ranges, index++)))
