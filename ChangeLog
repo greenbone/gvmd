@@ -1,5 +1,10 @@
 2012-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (omp_xml_handle_end_element): In CLIENT_GET_PORT_LISTS
+	send start for end if end is NULL.
+
+2012-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_port_range_iterator): If sort_field is NULL sort
 	by type then start, instead of by ROWID.  This improves sorting of ranges
 	in GET_PORT_LISTS.

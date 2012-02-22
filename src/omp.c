@@ -10306,7 +10306,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       port_range_iterator_start (&ranges),
                       port_range_iterator_end (&ranges)
                        ? port_range_iterator_end (&ranges)
-                       : "",
+                       : port_range_iterator_start (&ranges),
                       port_range_iterator_type (&ranges),
                       port_range_iterator_comment (&ranges));
                   cleanup_iterator (&ranges);
