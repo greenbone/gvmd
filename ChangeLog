@@ -1,3 +1,7 @@
+2012-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_tables): Add note about overlapping ranges.
+
 2012-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_port_range): If the new range overlaps any

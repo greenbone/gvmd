@@ -952,6 +952,9 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_name ON nvts (name);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
   sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER, end_time);");
+  /* Overlapping port ranges will cause problems, at least for the port
+   * counting.  OMP CREATE_PORT_LIST and CREATE_PORT_RANGE check for this,
+   * but whoever creates a predefined port list must check this manually. */
   sql ("CREATE TABLE IF NOT EXISTS port_lists (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment);");
   sql ("CREATE TABLE IF NOT EXISTS port_lists_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment);");
   sql ("CREATE TABLE IF NOT EXISTS port_ranges (id INTEGER PRIMARY KEY, uuid UNIQUE, port_list INTEGER, type, start, end, comment, exclude);");
