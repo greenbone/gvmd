@@ -1,5 +1,15 @@
 2012-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add details flag to OMP GET_PORT_LISTS.
+
+	* src/omp.c (help_text): Correct command name.
+	(get_port_lists_data_t): Add details.
+	(omp_xml_handle_start_element): Parse details flag.
+	(omp_xml_handle_end_element): In CLIENT_GET_PORT_LISTS send all info
+	only when details flag is true.
+
+2012-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql (port_lists, port_lists_trash, port_ranges)
 	(port_ranges_trash): New tables.
 	(targets, targets_trash): Switch port ranges to port lists.

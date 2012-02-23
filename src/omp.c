@@ -380,7 +380,7 @@ static char* help_text = "\n"
 "    GET_NVT_FAMILIES       Get a list of all NVT families.\n"
 "    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
 "    GET_OVERRIDES          Get all overrides.\n"
-"    GET_PORT_LIST          Get all port lists.\n"
+"    GET_PORT_LISTS         Get all port lists.\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
 "    GET_REPORTS            Get all reports.\n"
 "    GET_REPORT_FORMATS     Get all report formats.\n"
@@ -1902,6 +1902,7 @@ get_overrides_data_reset (get_overrides_data_t *data)
  */
 typedef struct
 {
+  int details;         ///< Boolean.  Whether to include full port list details.
   char *port_list_id;  ///< ID of single port list to get.
   char *sort_field;    ///< Field to sort results on.
   int sort_order;      ///< Result sort order: 0 descending, else ascending.
@@ -4547,6 +4548,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_port_lists_data->sort_order = strcmp (attribute, "descending");
             else
               get_port_lists_data->sort_order = 1;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "details", &attribute))
+              get_port_lists_data->details = strcmp (attribute, "0");
+            else
+              get_port_lists_data->details = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "trash", &attribute))
@@ -10279,8 +10286,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<all>%i</all>"
                                            "<tcp>%i</tcp>"
                                            "<udp>%i</udp>"
-                                           "</port_count>"
-                                           "<port_ranges>",
+                                           "</port_count>",
                                            port_list_iterator_uuid (&lists),
                                            port_list_iterator_name (&lists),
                                            port_list_iterator_comment (&lists),
@@ -10291,41 +10297,46 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            port_list_iterator_count_udp
                                             (&lists));
 
-                  init_port_range_iterator (&ranges, port_list,
-                                            get_port_lists_data->trash, 1,
-                                            NULL);
-                  while (next (&ranges))
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<port_range id=\"%s\">"
-                      "<start>%s</start>"
-                      "<end>%s</end>"
-                      "<type>%s</type>"
-                      "<comment>%s</comment>"
-                      "</port_range>",
-                      port_range_iterator_uuid (&ranges),
-                      port_range_iterator_start (&ranges),
-                      port_range_iterator_end (&ranges)
-                       ? port_range_iterator_end (&ranges)
-                       : port_range_iterator_start (&ranges),
-                      port_range_iterator_type (&ranges),
-                      port_range_iterator_comment (&ranges));
-                  cleanup_iterator (&ranges);
+                  if (get_port_lists_data->details)
+                    {
+                      SEND_TO_CLIENT_OR_FAIL ("<port_ranges>");
 
-                  SENDF_TO_CLIENT_OR_FAIL ("</port_ranges>"
-                                           "<targets>");
+                      init_port_range_iterator (&ranges, port_list,
+                                                get_port_lists_data->trash, 1,
+                                                NULL);
+                      while (next (&ranges))
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<port_range id=\"%s\">"
+                          "<start>%s</start>"
+                          "<end>%s</end>"
+                          "<type>%s</type>"
+                          "<comment>%s</comment>"
+                          "</port_range>",
+                          port_range_iterator_uuid (&ranges),
+                          port_range_iterator_start (&ranges),
+                          port_range_iterator_end (&ranges)
+                           ? port_range_iterator_end (&ranges)
+                           : port_range_iterator_start (&ranges),
+                          port_range_iterator_type (&ranges),
+                          port_range_iterator_comment (&ranges));
+                      cleanup_iterator (&ranges);
 
-                  init_port_list_target_iterator (&targets, port_list, 0);
-                  while (next (&targets))
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<target id=\"%s\">"
-                      "<name>%s</name>"
-                      "</target>",
-                      port_list_target_iterator_uuid (&targets),
-                      port_list_target_iterator_name (&targets));
-                  cleanup_iterator (&targets);
+                      SENDF_TO_CLIENT_OR_FAIL ("</port_ranges>"
+                                               "<targets>");
 
-                  SENDF_TO_CLIENT_OR_FAIL ("</targets>"
-                                           "</port_list>");
+                      init_port_list_target_iterator (&targets, port_list, 0);
+                      while (next (&targets))
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<target id=\"%s\">"
+                          "<name>%s</name>"
+                          "</target>",
+                          port_list_target_iterator_uuid (&targets),
+                          port_list_target_iterator_name (&targets));
+                      cleanup_iterator (&targets);
+
+                      SEND_TO_CLIENT_OR_FAIL ("</targets>");
+                    }
+                  SEND_TO_CLIENT_OR_FAIL ("</port_list>");
                 }
               cleanup_iterator (&lists);
               SEND_TO_CLIENT_OR_FAIL ("</get_port_lists_response>");
