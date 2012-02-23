@@ -104,6 +104,40 @@ CREATE TABLE nvt_selectors (
 	family_or_nvt text,
 	family text);
 
+CREATE TABLE port_lists (
+	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	comment text);
+
+CREATE TABLE port_lists_trash (
+	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	comment text);
+
+CREATE TABLE port_ranges (
+	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+	port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,
+	type integer,
+	start integer,
+	end integer,
+	comment text,
+	end boolean);
+
+CREATE TABLE port_ranges_trash (
+	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+	port_list integer REFERENCES port_lists_trash (id) ON DELETE RESTRICT,
+	type integer,
+	start integer,
+	end integer,
+	comment text,
+	end boolean);
+
 CREATE TABLE targets (
 	id integer PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
@@ -114,7 +148,7 @@ CREATE TABLE targets (
 	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
 	ssh_port text,
 	smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,
-	port_range text);
+	port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT);
 
 CREATE TABLE targets_trash (
 	id integer PRIMARY KEY,
@@ -125,9 +159,10 @@ CREATE TABLE targets_trash (
 	comment text,
 	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
 	smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,
-	port_range text,
+	port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,
 	ssh_location integer,
-	smb_location integer);
+	smb_location integer,
+	port_list_location integer);
 
 CREATE TABLE configs (
 	id integer PRIMARY KEY,
