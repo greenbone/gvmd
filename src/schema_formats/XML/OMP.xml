@@ -124,6 +124,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>xsd:string</pattern>
   </type>
   <type>
+    <name>port</name>
+    <summary>A port</summary>
+    <pattern>xsd:token { pattern = "[0-9]{1,5}" }</pattern>
+  </type>
+  <type>
     <name>user_list</name>
     <summary>A space separated list of users</summary>
     <pattern>text</pattern>
@@ -1228,6 +1233,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_lsc_credential</c>
           <c>create_note</c>
           <c>create_override</c>
+          <c>create_port_list</c>
+          <c>create_port_range</c>
+          <c>create_report_format</c>
           <c>create_schedule</c>
           <c>create_slave</c>
           <c>create_target</c>
@@ -1239,6 +1247,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_note</c>
           <c>delete_override</c>
           <c>delete_report</c>
+          <c>delete_report_format</c>
+          <c>delete_port_list</c>
+          <c>delete_port_range</c>
           <c>delete_schedule</c>
           <c>delete_slave</c>
           <c>delete_target</c>
@@ -1255,8 +1266,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_nvt_families</c>
           <c>get_nvt_feed_checksum</c>
           <c>get_overrides</c>
+          <c>get_port_lists</c>
           <c>get_preferences</c>
           <c>get_reports</c>
+          <c>get_report_formats</c>
           <c>get_results</c>
           <c>get_schedules</c>
           <c>get_slaves</c>
@@ -1306,6 +1319,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_lsc_credential</r>
             <r>create_note</r>
             <r>create_override</r>
+            <r>create_port_list</r>
+            <r>create_port_range</r>
             <r>create_schedule</r>
             <r>create_slave</r>
             <r>create_target</r>
@@ -1316,7 +1331,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_lsc_credential</r>
             <r>delete_note</r>
             <r>delete_override</r>
+            <r>delete_port_list</r>
+            <r>delete_port_range</r>
             <r>delete_report</r>
+            <r>delete_report_format</r>
             <r>delete_schedule</r>
             <r>delete_slave</r>
             <r>delete_target</r>
@@ -1333,8 +1351,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_nvt_families</r>
             <r>get_nvt_feed_checksum</r>
             <r>get_overrides</r>
+            <r>get_port_lists</r>
             <r>get_preferences</r>
             <r>get_reports</r>
+            <r>get_report_formats</r>
             <r>get_results</r>
             <r>get_slaves</r>
             <r>get_schedules</r>
@@ -2121,6 +2141,179 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>create_port_list</name>
+    <summary>Create a port list</summary>
+    <description>
+      <p>
+        The client uses the create_port_list command to create a new port
+        list.
+      </p>
+      <p>
+        The get_port_lists_response element overrides the port_range
+        element.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <e>port_range</e>
+      <r>get_port_lists</r>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>The name of the port list</summary>
+      <pattern>
+        <t>name</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the port list</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>port_range</name>
+      <summary>
+        Comma or newline separated list of ranges
+      </summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a port list</summary>
+      <request>
+        <create_port_list>
+          <name>All TCP</name>
+          <comment>All possible TCP ports</comment>
+          <port_range>T:1-65535</port_range>
+        </create_port_list>
+      </request>
+      <response>
+        <create_port_list_response
+          status="201"
+          status_text="OK, resource created"
+          id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_port_list_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_port_range</name>
+    <summary>Create a port range</summary>
+    <description>
+      <p>
+        The client uses the create_port_range command to create a new port
+        range.
+      </p>
+    </description>
+    <pattern>
+      <o><e>comment</e></o>
+      <e>port_list</e>
+      <e>start</e>
+      <e>end</e>
+      <e>type</e>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the port range</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>port_list</name>
+      <summary>The port list to which to add the range</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>start</name>
+      <summary>The first port in the range</summary>
+      <pattern>
+        <t>port</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>end</name>
+      <summary>The last port in the range</summary>
+      <pattern>
+        <t>port</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>type</name>
+      <summary>The type of the ports: TCP, UDP, ...</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Add a port range to a port list</summary>
+      <request>
+        <create_port_range>
+          <port_list id="354cd3ef-bbe1-4d58-859d-21b8d0c046c4">
+          </port_list>
+          <start>777</start>
+          <end>779</end>
+          <type>TCP</type>
+        </create_port_range>
+      </request>
+      <response>
+        <create_port_range_response
+          status="201"
+          status_text="OK, resource created"
+          id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_port_range_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>create_report</name>
     <summary>Create a report</summary>
     <description>
@@ -2528,6 +2721,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>smb_lsc_credential</e>
       <e>target_locator</e>
       <o><e>port_range</e></o>
+      <o><e>port_list</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -2602,6 +2796,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>port_range</name>
       <summary>Port range for the target</summary>
       <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>port_list</name>
+      <summary>Port list for the target</summary>
+      <description>Overrides port_range.</description>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
     </ele>
     <response>
       <pattern>
@@ -3139,6 +3345,110 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <delete_report_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_port_list</name>
+    <summary>Delete a port list</summary>
+    <description>
+      <p>
+        The client uses the delete_port_list command to delete an existing
+        port list.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>port_list_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a port list</summary>
+      <request>
+        <delete_port_list port_list_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_port_list>
+      </request>
+      <response>
+        <delete_port_list_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_port_range</name>
+    <summary>Delete a port range</summary>
+    <description>
+      <p>
+        The client uses the delete_port_range command to delete an existing
+        port range.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>port_range_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a port range</summary>
+      <request>
+        <delete_port_range port_range_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_port_range>
+      </request>
+      <response>
+        <delete_port_range_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -5605,6 +5915,211 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>get_port_lists</name>
+    <summary>Get all port lists</summary>
+    <description>
+      <p>
+        The client uses the get_port_lists command to get port list
+        information.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>port_list_id</name>
+        <summary>ID of single port list to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan port lists instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>details</name>
+          <summary>Whether to include full port list details</summary>
+          <type>boolean</type>
+        </attrib>
+        <any><e>port_list</e></any>
+      </pattern>
+      <ele>
+        <name>port_list</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+          <e>comment</e>
+          <e>in_use</e>
+          <e>port_count</e>
+          <o>
+            <g>
+              <e>port_ranges</e>
+              <e>targets</e>
+            </g>
+          </o>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the port list</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the port list</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any targets are using the port list</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>port_count</name>
+          <pattern>
+            <e>all</e>
+            <e>tcp</e>
+            <e>udp</e>
+          </pattern>
+          <ele>
+            <name>all</name>
+            <summary>Total number of ports</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tcp</name>
+            <summary>Total number of TCP ports</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>udp</name>
+            <summary>Total number of UDP ports</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>port_ranges</name>
+          <pattern>
+            <any><e>port_range</e></any>
+          </pattern>
+          <ele>
+            <name>port_range</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>start</e>
+              <e>end</e>
+              <e>type</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>start</name>
+              <summary>First port in range</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>end</name>
+              <summary>Last port in range</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>The type of port: TCP, UDP, ...</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>The comment on the port range</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>targets</name>
+          <summary>The targets using the port list</summary>
+          <pattern>
+            <any><e>target</e></any>
+          </pattern>
+          <ele>
+            <name>target</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the target</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Export a port list</summary>
+      <request>
+        <get_port_lists port_list_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"
+                        details="1">
+        </get_port_lists>
+      </request>
+      <response>
+        <get_port_lists_response status="200" status_text="OK">
+          <port_list id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
+            <name>All TCP</name>
+            <comment>Every single TCP port.</comment>
+            <in_use>1</in_use>
+            <port_count>
+              <all>65535</all>
+              <tcp>65535</tcp>
+              <udp>0</udp>
+            </port_count>
+            <port_ranges>
+              <port_range>
+                <type>TCP</type>
+                <start>1</start>
+                <end>65535</end>
+              </port_range>
+            </port_ranges>
+            <targets>
+              <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
+                <name>Web server</name>
+              </target>
+            </targets>
+          </port_list>
+        </get_port_lists_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_preferences</name>
     <summary>Get all preferences</summary>
     <description>
@@ -7228,6 +7743,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>ssh_lsc_credential</e>
           <e>smb_lsc_credential</e>
           <e>port_range</e>
+          <e>port_list</e>
           <o><e>tasks</e></o>
         </pattern>
         <ele>
@@ -7319,6 +7835,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>port_range</name>
           <summary>Port range of the target</summary>
           <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>port_list</name>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the port_list</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the port_list is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
         </ele>
         <ele>
           <name>tasks</name>
@@ -8307,6 +8845,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             CREATE_LSC_CREDENTIAL  Create a local security check credential.
             CREATE_NOTE            Create a note.
             CREATE_OVERRIDE        Create an override.
+            CREATE_PORT_LIST       Create a port list.
+            CREATE_PORT_RANGE      Create a port range in a port list.
             CREATE_REPORT_FORMAT   Create a report format.
             CREATE_REPORT          Create a report.
             CREATE_SCHEDULE        Create a schedule.
@@ -8319,6 +8859,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             DELETE_LSC_CREDENTIAL  Delete a local security check credential.
             DELETE_NOTE            Delete a note.
             DELETE_OVERRIDE        Delete an override.
+            DELETE_PORT_LIST       Delete a port list.
+            DELETE_PORT_RANGE      Delete a port range.
             DELETE_REPORT          Delete a report.
             DELETE_REPORT_FORMAT   Delete a report format.
             DELETE_SCHEDULE        Delete a schedule.
@@ -8336,6 +8878,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_NVT_FAMILIES       Get a list of all NVT families.
             GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.
             GET_OVERRIDES          Get all overrides.
+            GET_PORT_LISTS         Get all port lists.
             GET_PREFERENCES        Get preferences for all available NVTs.
             GET_REPORTS            Get all reports.
             GET_REPORT_FORMATS     Get all report formats.

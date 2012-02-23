@@ -17,6 +17,8 @@ command
     | create_lsc_credential
     | create_note
     | create_override
+    | create_port_list
+    | create_port_range
     | create_report
     | create_report_format
     | create_schedule
@@ -30,6 +32,8 @@ command
     | delete_note
     | delete_override
     | delete_report
+    | delete_port_list
+    | delete_port_range
     | delete_report_format
     | delete_schedule
     | delete_slave
@@ -47,6 +51,7 @@ command
     | get_nvt_families
     | get_nvt_feed_checksum
     | get_overrides
+    | get_port_lists
     | get_preferences
     | get_reports
     | get_report_formats
@@ -87,6 +92,8 @@ response
     | create_lsc_credential_response
     | create_note_response
     | create_override_response
+    | create_port_list_response
+    | create_port_range_response
     | create_report_response
     | create_report_format_response
     | create_schedule_response
@@ -100,6 +107,8 @@ response
     | delete_note_response
     | delete_override_response
     | delete_report_response
+    | delete_port_list_response
+    | delete_port_range_response
     | delete_report_format_response
     | delete_schedule_response
     | delete_slave_response
@@ -117,6 +126,7 @@ response
     | get_nvt_families_response
     | get_nvt_feed_checksum_response
     | get_overrides_response
+    | get_port_lists_response
     | get_preferences_response
     | get_reports_response
     | get_report_formats_response
@@ -168,6 +178,8 @@ integer = xsd:integer
 levels = xsd:token { pattern = "h?m?l?g?d?" }
 # A name.
 name = xsd:string
+# A port.
+port = xsd:token { pattern = "[0-9]{1,5}" }
 # A space separated list of users.
 user_list = text
 # An Object Identifier (OID).
@@ -1215,6 +1227,9 @@ commands
            | create_lsc_credential
            | create_note
            | create_override
+           | create_port_list
+           | create_port_range
+           | create_report_format
            | create_schedule
            | create_slave
            | create_target
@@ -1226,6 +1241,9 @@ commands
            | delete_note
            | delete_override
            | delete_report
+           | delete_report_format
+           | delete_port_list
+           | delete_port_range
            | delete_schedule
            | delete_slave
            | delete_target
@@ -1242,8 +1260,10 @@ commands
            | get_nvt_families
            | get_nvt_feed_checksum
            | get_overrides
+           | get_port_lists
            | get_preferences
            | get_reports
+           | get_report_formats
            | get_results
            | get_schedules
            | get_slaves
@@ -1707,6 +1727,89 @@ create_override_threat
        threat
      }
 
+## Command create_port_list
+##
+## Create a port list.
+
+create_port_list
+ = element create_port_list
+     {
+       create_port_list_name
+       & create_port_list_comment?
+       & create_port_list_port_range
+       & get_port_lists_response
+     }
+
+# The name of the port list.
+create_port_list_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the port list.
+create_port_list_comment
+ = element comment
+     {
+       text
+     }
+
+# Comma or newline separated list of ranges.
+create_port_list_port_range
+ = element port_range
+     {
+       text
+     }
+
+## Command create_port_range
+##
+## Create a port range.
+
+create_port_range
+ = element create_port_range
+     {
+       create_port_range_comment?
+       & create_port_range_port_list
+       & create_port_range_start
+       & create_port_range_end
+       & create_port_range_type
+     }
+
+# A comment on the port range.
+create_port_range_comment
+ = element comment
+     {
+       text
+     }
+
+# The port list to which to add the range.
+create_port_range_port_list
+ = element port_list
+     {
+       attribute id { uuid }
+     }
+
+# The first port in the range.
+create_port_range_start
+ = element start
+     {
+       port
+     }
+
+# The last port in the range.
+create_port_range_end
+ = element end
+     {
+       port
+     }
+
+# The type of the ports: TCP, UDP, ....
+create_port_range_type
+ = element type
+     {
+       text
+     }
+
 ## Command create_report
 ##
 ## Create a report.
@@ -1932,6 +2035,7 @@ create_target
        & create_target_smb_lsc_credential
        & create_target_target_locator
        & create_target_port_range?
+       & create_target_port_list?
      }
 
 # A name for the target.
@@ -2004,6 +2108,13 @@ create_target_port_range
  = element port_range
      {
        text
+     }
+
+# Port list for the target.
+create_target_port_list
+ = element port_list
+     {
+       attribute id { uuid }
      }
 
 ## Command create_task
@@ -2190,6 +2301,30 @@ delete_report
  = element delete_report
      {
        attribute report_id { uuid }
+     }
+
+## Command delete_port_list
+##
+## Delete a port list.
+
+delete_port_list
+ = element delete_port_list
+     {
+       attribute port_list_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
+     }
+
+## Command delete_port_range
+##
+## Delete a port range.
+
+delete_port_range
+ = element delete_port_range
+     {
+       attribute port_range_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
      }
 
 ## Command delete_report_format
@@ -2432,6 +2567,21 @@ get_overrides
        & attribute task_id { uuid }?
        & attribute details { boolean }?
        & attribute result { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_port_lists
+##
+## Get all port lists.
+
+get_port_lists
+ = element get_port_lists
+     {
+       # ID of single port list to get.
+       attribute port_list_id { uuid }?
+       & # Whether to get the trashcan port lists instead.
+       attribute trash { boolean }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
      }
@@ -3321,6 +3471,8 @@ commands_response
            | create_lsc_credential_response
            | create_note_response
            | create_override_response
+           | create_port_list_response
+           | create_port_range_response
            | create_schedule_response
            | create_slave_response
            | create_target_response
@@ -3331,7 +3483,10 @@ commands_response
            | delete_lsc_credential_response
            | delete_note_response
            | delete_override_response
+           | delete_port_list_response
+           | delete_port_range_response
            | delete_report_response
+           | delete_report_format_response
            | delete_schedule_response
            | delete_slave_response
            | delete_target_response
@@ -3348,8 +3503,10 @@ commands_response
            | get_nvt_families_response
            | get_nvt_feed_checksum_response
            | get_overrides_response
+           | get_port_lists_response
            | get_preferences_response
            | get_reports_response
+           | get_report_formats_response
            | get_results_response
            | get_slaves_response
            | get_schedules_response
@@ -3430,6 +3587,26 @@ create_note_response
 
 create_override_response
  = element create_override_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_port_list
+
+create_port_list_response
+ = element create_port_list_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_port_range
+
+create_port_range_response
+ = element create_port_range_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -3554,6 +3731,24 @@ delete_override_response
 
 delete_report_response
  = element delete_report_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_port_list
+
+delete_port_list_response
+ = element delete_port_list_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_port_range
+
+delete_port_range_response
+ = element delete_port_range_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -4808,6 +5003,145 @@ get_overrides_response_override_result_description
        text
      }
 
+## Response to get_port_lists
+
+get_port_lists_response
+ = element get_port_lists_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & # Whether to include full port list details.
+       attribute details { boolean }?
+       & get_port_lists_response_port_list*
+     }
+
+get_port_lists_response_port_list
+ = element port_list
+     {
+       attribute id { uuid }
+       & get_port_lists_response_port_list_name
+       & get_port_lists_response_port_list_comment
+       & get_port_lists_response_port_list_in_use
+       & get_port_lists_response_port_list_port_count
+       & ( get_port_lists_response_port_list_port_ranges
+           & get_port_lists_response_port_list_targets )?
+     }
+
+# The name of the port list.
+get_port_lists_response_port_list_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the port list.
+get_port_lists_response_port_list_comment
+ = element comment
+     {
+       text
+     }
+
+# Whether any targets are using the port list.
+get_port_lists_response_port_list_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+get_port_lists_response_port_list_port_count
+ = element port_count
+     {
+       get_port_lists_response_port_list_port_count_all
+       & get_port_lists_response_port_list_port_count_tcp
+       & get_port_lists_response_port_list_port_count_udp
+     }
+
+# Total number of ports.
+get_port_lists_response_port_list_port_count_all
+ = element all
+     {
+       integer
+     }
+
+# Total number of TCP ports.
+get_port_lists_response_port_list_port_count_tcp
+ = element tcp
+     {
+       integer
+     }
+
+# Total number of UDP ports.
+get_port_lists_response_port_list_port_count_udp
+ = element udp
+     {
+       integer
+     }
+
+get_port_lists_response_port_list_port_ranges
+ = element port_ranges
+     {
+       get_port_lists_response_port_list_port_ranges_port_range*
+     }
+
+get_port_lists_response_port_list_port_ranges_port_range
+ = element port_range
+     {
+       attribute id { uuid }
+       & get_port_lists_response_port_list_port_ranges_port_range_start
+       & get_port_lists_response_port_list_port_ranges_port_range_end
+       & get_port_lists_response_port_list_port_ranges_port_range_type
+       & get_port_lists_response_port_list_port_ranges_port_range_comment
+     }
+
+# First port in range.
+get_port_lists_response_port_list_port_ranges_port_range_start
+ = element start
+     {
+       integer
+     }
+
+# Last port in range.
+get_port_lists_response_port_list_port_ranges_port_range_end
+ = element end
+     {
+       integer
+     }
+
+# The type of port: TCP, UDP, ....
+get_port_lists_response_port_list_port_ranges_port_range_type
+ = element type
+     {
+       text
+     }
+
+# The comment on the port range.
+get_port_lists_response_port_list_port_ranges_port_range_comment
+ = element comment
+     {
+       text
+     }
+
+# The targets using the port list.
+get_port_lists_response_port_list_targets
+ = element targets
+     {
+       get_port_lists_response_port_list_targets_target*
+     }
+
+get_port_lists_response_port_list_targets_target
+ = element target
+     {
+       attribute id { uuid }
+       & get_port_lists_response_port_list_targets_target_name
+     }
+
+# The name of the target.
+get_port_lists_response_port_list_targets_target_name
+ = element name
+     {
+       name
+     }
+
 ## Response to get_preferences
 
 get_preferences_response
@@ -5551,6 +5885,7 @@ get_targets_response_target
        & get_targets_response_target_ssh_lsc_credential
        & get_targets_response_target_smb_lsc_credential
        & get_targets_response_target_port_range
+       & get_targets_response_target_port_list
        & get_targets_response_target_tasks?
      }
 
@@ -5646,6 +5981,28 @@ get_targets_response_target_port_range
  = element port_range
      {
        name
+     }
+
+get_targets_response_target_port_list
+ = element port_list
+     {
+       attribute id { uuid }
+       & get_targets_response_target_port_list_name
+       & get_targets_response_target_port_list_trash
+     }
+
+# The name of the port_list.
+get_targets_response_target_port_list_name
+ = element name
+     {
+       name
+     }
+
+# Whether the port_list is in the trashcan.
+get_targets_response_target_port_list_trash
+ = element trash
+     {
+       boolean
      }
 
 # All tasks using the target.

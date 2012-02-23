@@ -1,5 +1,17 @@
 2012-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (port): New type.
+	(commands): Add port list commands and responses.
+	(create_port_list, create_port_range): New commands.
+	(create_target): Add PORT_LIST.
+	(delete_port_list, delete_port_range, get_port_lists): New commands.
+	(get_targets): Add TARGET/PORT_LIST.
+	(help): Update text response in example.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2012-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_port_list_unique): Remove out of use ranges
 	arg.  Update caller.  Remove note about freeing item, because array_free
 	does it.
