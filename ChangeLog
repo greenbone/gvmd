@@ -1,5 +1,14 @@
 2012-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_port_list_unique): Remove out of use ranges
+	arg.  Update caller.  Remove note about freeing item, because array_free
+	does it.
+	(create_port_list): Remove note about freeing item, because array_free
+	does it.
+	(create_port_range): Correct return.
+
+2012-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add details flag to OMP GET_PORT_LISTS.
 
 	* src/omp.c (help_text): Correct command name.
