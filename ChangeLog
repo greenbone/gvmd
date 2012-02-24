@@ -1,3 +1,9 @@
+2012-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_max_hosts): Count over empty elements.
+	(create_target): Also return an error if the host count is zero.  This
+	ensures that a target always has at least one host.
+
 2012-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (port): New type.

@@ -21559,7 +21559,14 @@ manage_max_hosts (const char *hosts)
             count++;
         }
       else
-        count++;
+        {
+          char *host;
+          /* Count over empty elements. */
+          host = *point;
+          while (*host && isspace (*host)) host++;
+          if (*host)
+            count++;
+        }
       point += 1;
     }
   return count;
@@ -21959,7 +21966,7 @@ create_target (const char* name, const char* hosts, const char* comment,
       /* User provided hosts. */
 
       max = manage_max_hosts (hosts);
-      if (max == -1)
+      if (max <= 0)
         {
           g_free (quoted_name);
           sql ("ROLLBACK;");
