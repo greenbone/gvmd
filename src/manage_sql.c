@@ -21329,20 +21329,28 @@ end_char (const char *string)
 /**
  * @brief Return number of hosts described by a hosts string.
  *
- * @param[in]  hosts  String describing hosts.
+ * @param[in]  given_hosts  String describing hosts.
  *
  * @return Number of hosts, or -1 on error.
  */
 int
-manage_max_hosts (const char *hosts)
+manage_max_hosts (const char *given_hosts)
 {
   long count = 0;
-  gchar** split;
-  gchar** point;
+  gchar **split, **point, *hosts, *hosts_start;
 
   /** @todo Check for errors in "hosts". */
 
-  split = g_strsplit (hosts, ",", 0);
+  /* Treat newlines like commas. */
+  hosts = hosts_start = g_strdup (given_hosts);
+  while (*hosts)
+    {
+      if (*hosts == '\n') *hosts = ',';
+      hosts++;
+    }
+
+  split = g_strsplit (hosts_start, ",", 0);
+  g_free (hosts_start);
   point = split;
 
   while (*point)
@@ -21604,18 +21612,27 @@ trim_hosts (gchar *string)
 /**
  * @brief Clean a hosts string.
  *
- * @param[in]  hosts  String describing hosts.
+ * @param[in]  given_hosts  String describing hosts.
  *
  * @return Freshly allocated new hosts string, or NULL on error.
  */
 gchar*
-clean_hosts (const char *hosts)
+clean_hosts (const char *given_hosts)
 {
   GString *clean;
-  gchar** split;
-  gchar** point;
+  gchar **split, **point, *hosts, *hosts_start;
+  int first;
 
-  split = g_strsplit (hosts, ",", 0);
+  /* Treat newlines like commas. */
+  hosts = hosts_start = g_strdup (given_hosts);
+  while (*hosts)
+    {
+      if (*hosts == '\n') *hosts = ',';
+      hosts++;
+    }
+
+  split = g_strsplit (hosts_start, ",", 0);
+  g_free (hosts_start);
   point = split;
 
   if ((point == NULL) || (*point == NULL))
@@ -21624,9 +21641,8 @@ clean_hosts (const char *hosts)
       return g_strdup ("");
     }
 
-  clean = g_string_new (trim_hosts (*point));
-
-  point += 1;
+  clean = g_string_new ("");
+  first = 1;
   while (*point)
     {
       gchar *host;
@@ -21634,7 +21650,15 @@ clean_hosts (const char *hosts)
       host = trim_hosts (*point);
 
       if (*host)
-        g_string_append_printf (clean, ", %s", host);
+        {
+          if (first)
+            {
+              first = 0;
+              g_string_append_printf (clean, "%s", host);
+            }
+          else
+            g_string_append_printf (clean, ", %s", host);
+        }
 
       point += 1;
     }
@@ -21939,7 +21963,7 @@ create_target (const char* name, const char* hosts, const char* comment,
 
       openvas_string_list_free (hosts_list);
       max = manage_max_hosts (import_hosts);
-      if (max == -1)
+      if (max <= 0)
         {
           g_free (import_hosts);
           g_free (quoted_name);
