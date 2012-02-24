@@ -1,5 +1,10 @@
 2012-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (validate_host): New function.
+	(manage_max_hosts): Improve validation of hosts.
+
+2012-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_max_hosts): Allow newlines to separate hosts.
 	(clean_hosts): Allow newlines to separate hosts.  Prevent a leading comma
 	in the hosts string when the first host is empty.

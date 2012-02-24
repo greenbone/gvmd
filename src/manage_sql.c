@@ -21327,6 +21327,23 @@ end_char (const char *string)
 }
 
 /**
+ * @brief Validate a host.
+ *
+ * @param[in]  host  Host
+ *
+ * @return 0 if validate, else 1;
+ */
+static int
+validate_host (const char *string)
+{
+  while (*string && (isalnum (*string) || strchr ("-_.:\\", *string)))
+    string++;
+  while (*string && isspace (*string))
+    string++;
+  return *string ? 1 : 0;
+}
+
+/**
  * @brief Return number of hosts described by a hosts string.
  *
  * @param[in]  given_hosts  String describing hosts.
@@ -21338,8 +21355,6 @@ manage_max_hosts (const char *given_hosts)
 {
   long count = 0;
   gchar **split, **point, *hosts, *hosts_start;
-
-  /** @todo Check for errors in "hosts". */
 
   /* Treat newlines like commas. */
   hosts = hosts_start = g_strdup (given_hosts);
@@ -21368,6 +21383,7 @@ manage_max_hosts (const char *given_hosts)
 
           first = *point;
           while (*first && isspace (*first)) first++;
+          /** @todo Check if any char is alpha (e.g. 0abc/24). */
           if (*first && (isalpha (*first) || (first == slash)))
             /* Hostname with netmask, or empty hostname. */
             return -1;
@@ -21377,6 +21393,8 @@ manage_max_hosts (const char *given_hosts)
             {
               long int mask;
               struct in_addr addr;
+
+              /** @todo Validate. */
 
               if (strchr (*point, ':'))
                 /* IPv6.  Scanner current only supports single addresses. */
@@ -21427,13 +21445,20 @@ manage_max_hosts (const char *given_hosts)
       else if (hyphen)
         {
           hyphen++;
+          /** @todo Check if any char is alpha (e.g. gta-04). */
           if (*hyphen && isalpha (end_char (hyphen)))
-            /* A hostname. */
-            count++;
+            {
+              /* A hostname. */
+              if (validate_host (*point))
+                return -1;
+              count++;
+            }
           else if (*hyphen)
             {
               int dot_count, total_dot_count;
               const gchar* dot;
+
+              /** @todo Validate. */
 
               /* An address specifying a range. */
 
@@ -21573,7 +21598,11 @@ manage_max_hosts (const char *given_hosts)
           host = *point;
           while (*host && isspace (*host)) host++;
           if (*host)
-            count++;
+            {
+              if (validate_host (host))
+                return -1;
+              count++;
+            }
         }
       point += 1;
     }
