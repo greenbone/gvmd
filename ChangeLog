@@ -1,5 +1,13 @@
 2012-02-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (clean_hosts): Add max arg.  Adjust for duplicates.
+	(create_targets): Pass max to clean_hosts, and check max for size
+	after clean_hosts, in case of duplicates.
+
+	* src/sql.c (sql_clean_hosts): Add clean_hosts arg.
+
+2012-02-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/otp.c (array_find_string): New function.
 	(clean_hosts): Buffer the cleaned strings in an array temporarily, to
 	prevent textual duplicates.

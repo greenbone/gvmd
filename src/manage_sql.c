@@ -321,7 +321,7 @@ int
 delete_task_lock (task_t, int);
 
 gchar*
-clean_hosts (const char *);
+clean_hosts (const char *, int*);
 
 void
 ensure_predefined_port_lists_exist ();
@@ -21664,11 +21664,12 @@ array_find_string (array_t *array, const gchar *string)
  * @brief Clean a hosts string.
  *
  * @param[in]  given_hosts  String describing hosts.
+ * @param[out] max          Max number of hosts, adjusted for duplicates.
  *
  * @return Freshly allocated new hosts string, or NULL on error.
  */
 gchar*
-clean_hosts (const char *given_hosts)
+clean_hosts (const char *given_hosts, int *max)
 {
   array_t *clean_array;
   GString *clean;
@@ -21703,6 +21704,8 @@ clean_hosts (const char *given_hosts)
           /* Prevent simple duplicates. */
           if (array_find_string (clean_array, host) == NULL)
             array_add (clean_array, host);
+          else if (max)
+            (*max)--;
         }
 
       point += 1;
@@ -22028,6 +22031,7 @@ create_target (const char* name, const char* hosts, const char* comment,
           sql ("ROLLBACK;");
           return 2;
         }
+      clean = clean_hosts (import_hosts, &max);
       if (max > MANAGE_MAX_HOSTS)
         {
           g_free (import_hosts);
@@ -22035,7 +22039,6 @@ create_target (const char* name, const char* hosts, const char* comment,
           sql ("ROLLBACK;");
           return 3;
         }
-      clean = clean_hosts (import_hosts);
       g_free (import_hosts);
       quoted_hosts = sql_quote (clean);
       g_free (clean);
@@ -22054,14 +22057,13 @@ create_target (const char* name, const char* hosts, const char* comment,
           sql ("ROLLBACK;");
           return 2;
         }
+      clean = clean_hosts (hosts, &max);
       if (max > MANAGE_MAX_HOSTS)
         {
           g_free (quoted_name);
           sql ("ROLLBACK;");
           return 3;
         }
-
-      clean = clean_hosts (hosts);
       quoted_hosts = sql_quote (clean);
       g_free (clean);
     }

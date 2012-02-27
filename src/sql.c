@@ -35,7 +35,7 @@
 /* Headers of manage_sql.c function also used here. */
 
 gchar*
-clean_hosts (const char *);
+clean_hosts (const char *, int *);
 
 char *
 iso_time (time_t *);
@@ -555,7 +555,7 @@ sql_clean_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
       return;
     }
 
-  clean = clean_hosts ((gchar*) hosts);
+  clean = clean_hosts ((gchar*) hosts, NULL);
   sqlite3_result_text (context, clean, -1, SQLITE_TRANSIENT);
   g_free (clean);
 }
