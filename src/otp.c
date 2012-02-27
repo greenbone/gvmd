@@ -382,15 +382,15 @@ write_message (task_t task, message_t* message, char* type)
 }
 
 /**
- * @brief Append a debug message to a report.
+ * @brief Append a error message to a report.
  *
  * @param[in]  task         Task.
  * @param[in]  message      Message.
  */
 static void
-append_debug_message (task_t task, message_t* message)
+append_error_message (task_t task, message_t* message)
 {
-  write_message (task, message, "Debug Message");
+  write_message (task, message, "Error Message");
 }
 
 /**
@@ -653,10 +653,10 @@ typedef enum
   SCANNER_CERTIFICATE_PUBLIC_KEY,
   SCANNER_CERTIFICATE_TRUST_LEVEL,
   SCANNER_DONE,
-  SCANNER_DEBUG_DESCRIPTION,
-  SCANNER_DEBUG_HOST,
-  SCANNER_DEBUG_NUMBER,
-  SCANNER_DEBUG_OID,
+  SCANNER_ERRMSG_DESCRIPTION,
+  SCANNER_ERRMSG_HOST,
+  SCANNER_ERRMSG_NUMBER,
+  SCANNER_ERRMSG_OID,
   SCANNER_ERROR,
   SCANNER_HOLE_DESCRIPTION,
   SCANNER_HOLE_HOST,
@@ -1632,7 +1632,7 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_CERTIFICATE_LENGTH);
                   break;
                 }
-              case SCANNER_DEBUG_DESCRIPTION:
+              case SCANNER_ERRMSG_DESCRIPTION:
                 {
                   if (current_message)
                     {
@@ -1640,17 +1640,17 @@ process_otp_scanner_input ()
                       char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
-                  set_scanner_state (SCANNER_DEBUG_OID);
+                  set_scanner_state (SCANNER_ERRMSG_OID);
                   break;
                 }
-              case SCANNER_DEBUG_HOST:
+              case SCANNER_ERRMSG_HOST:
                 {
                   assert (current_message == NULL);
                   current_message = make_message (field);
-                  set_scanner_state (SCANNER_DEBUG_NUMBER);
+                  set_scanner_state (SCANNER_ERRMSG_NUMBER);
                   break;
                 }
-              case SCANNER_DEBUG_NUMBER:
+              case SCANNER_ERRMSG_NUMBER:
                 {
                   /** @todo Field could be "general". */
                   int number;
@@ -1677,10 +1677,10 @@ process_otp_scanner_input ()
                   set_message_port_protocol (current_message, protocol);
                   set_message_port_string (current_message, g_strdup (field));
 
-                  set_scanner_state (SCANNER_DEBUG_DESCRIPTION);
+                  set_scanner_state (SCANNER_ERRMSG_DESCRIPTION);
                   break;
                 }
-              case SCANNER_DEBUG_OID:
+              case SCANNER_ERRMSG_OID:
                 {
                   if (current_message != NULL
                       && current_scanner_task != (task_t) 0)
@@ -1688,7 +1688,7 @@ process_otp_scanner_input ()
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
-                      append_debug_message (current_scanner_task, current_message);
+                      append_error_message (current_scanner_task, current_message);
                       free_message (current_message);
                       current_message = NULL;
                     }
@@ -2264,8 +2264,8 @@ process_otp_scanner_input ()
               case SCANNER_SERVER:
                 if (strcasecmp ("BYE", field) == 0)
                   set_scanner_state (SCANNER_BYE);
-                else if (strcasecmp ("DEBUG", field) == 0)
-                  set_scanner_state (SCANNER_DEBUG_HOST);
+                else if (strcasecmp ("ERRMSG", field) == 0)
+                  set_scanner_state (SCANNER_ERRMSG_HOST);
                 else if (strcasecmp ("ERROR", field) == 0)
                   {
                     set_scanner_state (SCANNER_ERROR);

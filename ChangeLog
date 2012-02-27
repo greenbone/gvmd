@@ -1,3 +1,11 @@
+2012-02-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/otp.c (append_debug_message): Remove.
+	(append_error_message): New function.  Was append_debug_message.
+	(scanner_state_t): Rename states.
+	(process_otp_scanner_input): Convert DEBUG message parsing to ERRMSG
+	parsing.
+
 2012-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (validate_host): New function.
