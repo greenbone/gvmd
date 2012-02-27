@@ -21639,6 +21639,28 @@ trim_hosts (gchar *string)
 }
 
 /**
+ * @brief Find a string in an array.
+ *
+ * @param[in]  array   Array.
+ * @param[in]  string  String.
+ *
+ * @return The string from the array if found, else NULL.
+ */
+static gchar*
+array_find_string (array_t *array, const gchar *string)
+{
+  guint index;
+  for (index = 0; index < array->len; index++)
+    {
+      gchar *ele;
+      ele = (gchar*) g_ptr_array_index (array, index);
+      if (ele && (strcmp (ele, string) == 0))
+        return ele;
+    }
+  return NULL;
+}
+
+/**
  * @brief Clean a hosts string.
  *
  * @param[in]  given_hosts  String describing hosts.
@@ -21648,9 +21670,10 @@ trim_hosts (gchar *string)
 gchar*
 clean_hosts (const char *given_hosts)
 {
+  array_t *clean_array;
   GString *clean;
-  gchar **split, **point, *hosts, *hosts_start;
-  int first;
+  gchar **split, **point, *hosts, *hosts_start, *host;
+  guint index;
 
   /* Treat newlines like commas. */
   hosts = hosts_start = g_strdup (given_hosts);
@@ -21670,26 +21693,32 @@ clean_hosts (const char *given_hosts)
       return g_strdup ("");
     }
 
-  clean = g_string_new ("");
-  first = 1;
+  clean_array = make_array ();
   while (*point)
     {
-      gchar *host;
-
       host = trim_hosts (*point);
 
       if (*host)
         {
-          if (first)
-            {
-              first = 0;
-              g_string_append_printf (clean, "%s", host);
-            }
-          else
-            g_string_append_printf (clean, ", %s", host);
+          /* Prevent simple duplicates. */
+          if (array_find_string (clean_array, host) == NULL)
+            array_add (clean_array, host);
         }
 
       point += 1;
+    }
+
+  clean = g_string_new ("");
+
+  host = (gchar*) g_ptr_array_index (clean_array, 0);
+  if (host)
+    g_string_append_printf (clean, "%s", host);
+
+  for (index = 1; index < clean_array->len; index++)
+    {
+      host = (gchar*) g_ptr_array_index (clean_array, index);
+      if (host)
+        g_string_append_printf (clean, ", %s", host);
     }
 
   return g_string_free (clean, FALSE);

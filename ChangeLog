@@ -1,5 +1,11 @@
 2012-02-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/otp.c (array_find_string): New function.
+	(clean_hosts): Buffer the cleaned strings in an array temporarily, to
+	prevent textual duplicates.
+
+2012-02-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/otp.c (append_debug_message): Remove.
 	(append_error_message): New function.  Was append_debug_message.
 	(scanner_state_t): Rename states.
