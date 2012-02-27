@@ -1,5 +1,13 @@
 2012-02-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_ranges_all_tcp_nmap_5_51_top_100.c
+	(make_port_ranges_all_tcp_nmap_5_51_top_100): Correct upper TCP bound.
+
+	* src/manage_ranges_all_tcp_nmap_5_51_top_1000.c
+	(make_port_ranges_all_tcp_nmap_5_51_top_1000): Correct upper TCP bound.
+
+2012-02-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (clean_hosts): Add max arg.  Adjust for duplicates.
 	(create_targets): Pass max to clean_hosts, and check max for size
 	after clean_hosts, in case of duplicates.
