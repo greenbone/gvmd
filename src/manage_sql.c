@@ -24023,7 +24023,6 @@ delete_config (const char *config_id, int ultimate)
   config_t config = 0;
 
   if ((strcmp (config_id, CONFIG_UUID_FULL_AND_FAST_ULTIMATE) == 0)
-      || (strcmp (config_id, CONFIG_UUID_FULL_AND_FAST_ULTIMATE) == 0)
       || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP) == 0)
       || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE) == 0)
       || (strcmp (config_id, CONFIG_UUID_EMPTY) == 0))
