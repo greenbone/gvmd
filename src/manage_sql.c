@@ -36346,7 +36346,7 @@ manage_set_setting (const gchar *name, const gchar *value_64)
           value_size = 0;
         }
       return openvas_user_modify (current_credentials.username, value,
-                                  NULL, NULL, 0, OPENVAS_USERS_DIR);
+                                  NULL, NULL, 0, OPENVAS_USERS_DIR, NULL);
     }
   return 1;
 }

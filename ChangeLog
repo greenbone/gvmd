@@ -1,3 +1,8 @@
+2012-03-02  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* src/manage_sql.c (manage_set_setting): Fixed compilation against
+	latest openvas-libraries.
+
 2012-02-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_ranges_all_tcp_nmap_5_51_top_100.c
