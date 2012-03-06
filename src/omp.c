@@ -3976,6 +3976,31 @@ append_attribute (const gchar **attribute_names,
 
 /** @endcond */
 
+
+/**
+ * @brief Insert else clause for omp_xml_handle_start_element.
+ *
+ * @param[in]  op  Operation.
+ */
+#define ELSE_ERROR(op)                                          \
+  else                                                          \
+    {                                                           \
+      if (send_element_error_to_client (op, element_name,       \
+                                        write_to_client,        \
+                                        write_to_client_data))  \
+        {                                                       \
+          error_send_to_client (error);                         \
+          return;                                               \
+        }                                                       \
+      set_client_state (CLIENT_AUTHENTIC);                      \
+      g_set_error (error,                                       \
+                   G_MARKUP_ERROR,                              \
+                   G_MARKUP_ERROR_UNKNOWN_ELEMENT,              \
+                   "Error");                                    \
+    }                                                           \
+  break
+
+
 /** @todo Free globals when tags open, in case of duplicate tags. */
 /**
  * @brief Handle the start of an OMP XML element.
@@ -5076,45 +5101,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_to_credentials_password (&current_credentials, "", 0);
             set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
           }
-        else
-          {
-            if (send_element_error_to_client ("authenticate", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            free_credentials (&current_credentials);
-            set_client_state (CLIENT_TOP);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
+        ELSE_ERROR ("authenticate");
         break;
       case CLIENT_AUTHENTICATE_CREDENTIALS:
         if (strcasecmp ("USERNAME", element_name) == 0)
           set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME);
         else if (strcasecmp ("PASSWORD", element_name) == 0)
           set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD);
-        else
-          {
-            if (send_element_error_to_client ("authenticate", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            free_credentials (&current_credentials);
-            set_client_state (CLIENT_TOP);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("authenticate");
 
       case CLIENT_CREATE_SCHEDULE:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -5127,22 +5121,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCHEDULE_NAME);
         else if (strcasecmp ("PERIOD", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD);
-        else
-          {
-            if (send_element_error_to_client ("create_schedule", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_schedule");
 
       case CLIENT_CREATE_SCHEDULE_FIRST_TIME:
         if (strcasecmp ("DAY_OF_MONTH", element_name) == 0)
@@ -5155,62 +5134,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH);
         else if (strcasecmp ("YEAR", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR);
-        else
-          {
-            if (send_element_error_to_client ("create_schedule", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_schedule");
 
       case CLIENT_CREATE_SCHEDULE_DURATION:
         if (strcasecmp ("UNIT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_DURATION_UNIT);
-        else
-          {
-            if (send_element_error_to_client ("create_schedule", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_schedule");
 
       case CLIENT_CREATE_SCHEDULE_PERIOD:
         if (strcasecmp ("UNIT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD_UNIT);
-        else
-          {
-            if (send_element_error_to_client ("create_schedule", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_schedule");
 
       case CLIENT_MODIFY_CONFIG:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -5237,22 +5171,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PREFERENCE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
-        else
-          {
-            if (send_element_error_to_client ("modify_config", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_config");
 
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
         if (strcasecmp ("FAMILY", element_name) == 0)
@@ -5263,22 +5182,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_config_data->nvt_selection_nvt_oid);
             set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT);
           }
-        else
-          {
-            if (send_element_error_to_client ("modify_config", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_config");
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
         if (strcasecmp ("FAMILY", element_name) == 0)
@@ -5291,22 +5195,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GROWING", element_name) == 0)
           set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING);
-        else
-          {
-            if (send_element_error_to_client ("modify_config", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_config");
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
         if (strcasecmp ("ALL", element_name) == 0)
@@ -5317,22 +5206,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
            (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME);
-        else
-          {
-            if (send_element_error_to_client ("modify_config", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_config");
 
       case CLIENT_MODIFY_CONFIG_PREFERENCE:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -5345,22 +5219,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE);
-        else
-          {
-            if (send_element_error_to_client ("modify_config", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_config");
 
       case CLIENT_MODIFY_LSC_CREDENTIAL:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -5379,62 +5238,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_lsc_credential_data->password, "");
             set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD);
           }
-        else
-          {
-            if (send_element_error_to_client ("modify_lsc_credential",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
-
-      case CLIENT_MODIFY_LSC_CREDENTIAL_NAME:
-      case CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT:
-      case CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN:
-      case CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD:
-        if (send_element_error_to_client ("modify_lsc_credential",
-                                          element_name,
-                                          write_to_client,
-                                          write_to_client_data))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
+        ELSE_ERROR ("modify_lsc_credential");
 
       case CLIENT_MODIFY_REPORT:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_COMMENT);
-        else
-          {
-            if (send_element_error_to_client ("modify_report", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_report");
 
       case CLIENT_MODIFY_REPORT_FORMAT:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -5445,46 +5254,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_SUMMARY);
         else if (strcasecmp ("PARAM", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM);
-        else
-          {
-            if (send_element_error_to_client ("modify_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_report_format");
 
       case CLIENT_MODIFY_REPORT_FORMAT_PARAM:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME);
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE);
-        else
-          {
-            if (send_element_error_to_client ("modify_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_report_format");
 
       case CLIENT_MODIFY_SETTING:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -5494,23 +5271,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_setting_data->value, "");
             set_client_state (CLIENT_MODIFY_SETTING_VALUE);
           }
-        else
-          {
-            if (send_element_error_to_client ("modify_setting",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_setting");
 
       case CLIENT_MODIFY_TASK:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -5562,22 +5323,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               openvas_append_string (&modify_task_data->action, "update");
             set_client_state (CLIENT_MODIFY_TASK_FILE);
           }
-        else
-          {
-            if (send_element_error_to_client ("modify_task", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_task");
 
       case CLIENT_MODIFY_TASK_PREFERENCES:
         if (strcasecmp ("PREFERENCE", element_name) == 0)
@@ -5588,44 +5334,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             modify_task_data->preference->value = NULL;
             set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE);
           }
-        else
-          {
-            if (send_element_error_to_client ("modify_task", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_task");
 
       case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE:
         if (strcasecmp ("SCANNER_NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME);
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE);
-        else
-          {
-            if (send_element_error_to_client ("modify_task", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_task");
 
       case CLIENT_CREATE_AGENT:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -5638,45 +5354,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_AGENT_INSTALLER);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_AGENT_NAME);
-        else
-          {
-            if (send_element_error_to_client ("create_agent",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_agent");
       case CLIENT_CREATE_AGENT_INSTALLER:
         if (strcasecmp ("FILENAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_AGENT_INSTALLER_FILENAME);
         else if (strcasecmp ("SIGNATURE", element_name) == 0)
           set_client_state (CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE);
-        else
-          {
-            if (send_element_error_to_client ("create_agent",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_agent");
 
       case CLIENT_CREATE_CONFIG:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -5689,22 +5373,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_CONFIG_NAME);
         else if (strcasecmp ("RCFILE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_RCFILE);
-        else
-          {
-            if (send_element_error_to_client ("create_config", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_config");
 
       case CLIENT_C_C_GCR:
         if (strcasecmp ("CONFIG", element_name) == 0)
@@ -5713,22 +5382,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             create_config_data_reset (create_config_data);
             set_client_state (CLIENT_C_C_GCR_CONFIG);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_config", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_config");
 
       case CLIENT_C_C_GCR_CONFIG:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -5747,42 +5401,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             array_reset (&import_config_data->preferences);
             set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_config", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_config");
 
       case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS:
         if (strcasecmp ("NVT_SELECTOR", element_name) == 0)
           set_client_state (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR);
-        else
-          {
-            if (send_element_error_to_client ("create_config", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_config");
 
       case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR:
         if (strcasecmp ("INCLUDE", element_name) == 0)
@@ -5797,22 +5421,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("FAMILY_OR_NVT", element_name) == 0)
           set_client_state
            (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_FAMILY_OR_NVT);
-        else
-          {
-            if (send_element_error_to_client ("create_config", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_config");
 
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES:
         if (strcasecmp ("PREFERENCE", element_name) == 0)
@@ -5820,22 +5429,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             array_reset (&import_config_data->preference_alts);
             set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_config", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_config");
 
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE:
         if (strcasecmp ("ALT", element_name) == 0)
@@ -5857,43 +5451,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state
            (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE);
-        else
-          {
-            if (send_element_error_to_client ("create_config", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_config");
 
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state
            (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME);
-        else
-          {
-            if (send_element_error_to_client ("create_config", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_config");
 
       case CLIENT_CREATE_ESCALATOR:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -5906,142 +5470,37 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ESCALATOR_METHOD);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_ESCALATOR_NAME);
-        else
-          {
-            if (send_element_error_to_client ("create_escalator", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_escalator");
 
       case CLIENT_CREATE_ESCALATOR_CONDITION:
         if (strcasecmp ("DATA", element_name) == 0)
           set_client_state (CLIENT_CREATE_ESCALATOR_CONDITION_DATA);
-        else
-          {
-            if (send_element_error_to_client ("create_escalator", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_escalator");
 
       case CLIENT_CREATE_ESCALATOR_CONDITION_DATA:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_ESCALATOR_CONDITION_DATA_NAME);
-        else
-          {
-            if (send_element_error_to_client ("create_escalator", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_escalator");
 
       case CLIENT_CREATE_ESCALATOR_EVENT:
         if (strcasecmp ("DATA", element_name) == 0)
           set_client_state (CLIENT_CREATE_ESCALATOR_EVENT_DATA);
-        else
-          {
-            if (send_element_error_to_client ("create_escalator", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_escalator");
 
       case CLIENT_CREATE_ESCALATOR_EVENT_DATA:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_ESCALATOR_EVENT_DATA_NAME);
-        else
-          {
-            if (send_element_error_to_client ("create_escalator", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_escalator");
 
       case CLIENT_CREATE_ESCALATOR_METHOD:
         if (strcasecmp ("DATA", element_name) == 0)
           set_client_state (CLIENT_CREATE_ESCALATOR_METHOD_DATA);
-        else
-          {
-            if (send_element_error_to_client ("create_escalator", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_escalator");
 
       case CLIENT_CREATE_ESCALATOR_METHOD_DATA:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_ESCALATOR_METHOD_DATA_NAME);
-        else
-          {
-            if (send_element_error_to_client ("create_escalator", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_escalator");
 
       case CLIENT_CREATE_LSC_CREDENTIAL:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -6060,23 +5519,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&create_lsc_credential_data->password, "");
             set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_lsc_credential",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_lsc_credential");
 
       case CLIENT_CREATE_LSC_CREDENTIAL_KEY:
         if (strcasecmp ("PHRASE", element_name) == 0)
@@ -6088,23 +5531,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE);
         else if (strcasecmp ("PUBLIC", element_name) == 0)
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC);
-        else
-          {
-            if (send_element_error_to_client ("create_lsc_credential",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_lsc_credential");
 
       case CLIENT_CREATE_NOTE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -6147,22 +5574,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_NOTE_TEXT);
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE_THREAT);
-        else
-          {
-            if (send_element_error_to_client ("create_note", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_note");
 
       case CLIENT_CREATE_PORT_LIST:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -6179,22 +5591,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_PORT_LIST_NAME);
-        else
-          {
-            if (send_element_error_to_client ("create_port_list", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_port_list");
 
       case CLIENT_CPL_GPLR:
         if (strcasecmp ("PORT_LIST", element_name) == 0)
@@ -6203,23 +5600,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &create_port_list_data->id);
             set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_port_list",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_port_list");
 
       case CLIENT_CPL_GPLR_PORT_LIST:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -6240,23 +5621,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             omp_parser->read_over = 1;
             set_client_state (CLIENT_CPL_GPLR_PORT_LIST_TARGETS);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_port_list",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_port_list");
 
       case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES:
         if (strcasecmp ("PORT_RANGE", element_name) == 0)
@@ -6268,23 +5633,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &(create_port_list_data->range->id));
             set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_port_list",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_port_list");
 
       case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -6307,23 +5656,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&create_port_list_data->range->type, "");
             set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_TYPE);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_port_list",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_port_list");
 
       case CLIENT_CREATE_PORT_RANGE:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -6340,22 +5673,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_PORT_RANGE_START);
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_PORT_RANGE_TYPE);
-        else
-          {
-            if (send_element_error_to_client ("create_port_range", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_port_range");
 
       case CLIENT_CREATE_REPORT:
         if (strcasecmp ("REPORT", element_name) == 0)
@@ -6388,23 +5706,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &create_report_data->task_id);
             set_client_state (CLIENT_CREATE_REPORT_TASK);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_report",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_REPORT:
         if (strcasecmp ("REPORT", element_name) == 0)
@@ -6414,23 +5716,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             create_report_data->results = make_array ();
             set_client_state (CLIENT_CREATE_REPORT_RR);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_report",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR:
         if (strcasecmp ("FILTERS", element_name) == 0)
@@ -6498,87 +5784,23 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             omp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_TASK);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_report",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR_HOST_END:
         if (strcasecmp ("HOST", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_HOST_END_HOST);
-        else
-          {
-            if (send_element_error_to_client ("create_report",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR_HOST_START:
         if (strcasecmp ("HOST", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_HOST_START_HOST);
-        else
-          {
-            if (send_element_error_to_client ("create_report",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR_RESULTS:
         if (strcasecmp ("RESULT", element_name) == 0)
           set_client_state
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
-        else
-          {
-            if (send_element_error_to_client ("create_report",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT:
         if (strcasecmp ("DESCRIPTION", element_name) == 0)
@@ -6611,23 +5833,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET);
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT);
-        else
-          {
-            if (send_element_error_to_client ("create_report",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT:
         if (strcasecmp ("BID", element_name) == 0)
@@ -6642,46 +5848,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("RISK_FACTOR", element_name) == 0)
           set_client_state
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_RISK_FACTOR);
-        else
-          {
-            if (send_element_error_to_client ("create_report",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_TASK:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_TASK_COMMENT);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_TASK_NAME);
-        else
-          {
-            if (send_element_error_to_client ("create_report",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_FORMAT:
         if (strcasecmp ("GET_REPORT_FORMATS_RESPONSE", element_name) == 0)
@@ -6689,23 +5863,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             create_report_format_data->import = 1;
             set_client_state (CLIENT_CRF_GRFR);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report_format");
 
       case CLIENT_CRF_GRFR:
         if (strcasecmp ("REPORT_FORMAT", element_name) == 0)
@@ -6717,23 +5875,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &create_report_format_data->id);
             set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report_format");
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT:
         if (strcasecmp ("CONTENT_TYPE", element_name) == 0)
@@ -6773,23 +5915,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY);
         else if (strcasecmp ("TRUST", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST);
-        else
-          {
-            if (send_element_error_to_client ("create_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report_format");
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM:
         if (strcasecmp ("DEFAULT", element_name) == 0)
@@ -6809,23 +5935,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE);
-        else
-          {
-            if (send_element_error_to_client ("create_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report_format");
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS:
         if (strcasecmp ("OPTION", element_name) == 0)
@@ -6835,23 +5945,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state
              (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report_format");
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE:
         if (strcasecmp ("MAX", element_name) == 0)
@@ -6864,23 +5958,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state
              (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_report_format",
-                                              element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_report_format");
 
       case CLIENT_CREATE_OVERRIDE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -6925,22 +6003,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_OVERRIDE_TEXT);
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE_THREAT);
-        else
-          {
-            if (send_element_error_to_client ("create_override", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_override");
 
       case CLIENT_CREATE_SLAVE:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -6955,22 +6018,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SLAVE_PASSWORD);
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SLAVE_PORT);
-        else
-          {
-            if (send_element_error_to_client ("create_slave", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_slave");
 
       case CLIENT_CREATE_TARGET:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7004,64 +6052,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_NAME);
         else if (strcasecmp ("TARGET_LOCATOR", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR);
-        else
-          {
-            if (send_element_error_to_client ("create_target", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_target");
 
       case CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL:
         if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT);
-        else
-          {
-            if (send_element_error_to_client ("create_target", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_target");
 
       case CLIENT_CREATE_TARGET_TARGET_LOCATOR:
         if (strcasecmp ("PASSWORD", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD);
         else if (strcasecmp ("USERNAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME);
-        else
-          {
-            if (send_element_error_to_client ("create_target", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_target");
 
       case CLIENT_CREATE_TASK:
         if (strcasecmp ("RCFILE", element_name) == 0)
@@ -7112,22 +6115,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &create_task_data->target_id);
             set_client_state (CLIENT_CREATE_TASK_TARGET);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_task", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_task");
 
       case CLIENT_CREATE_TASK_PREFERENCES:
         if (strcasecmp ("PREFERENCE", element_name) == 0)
@@ -7138,44 +6126,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             create_task_data->preference->value = NULL;
             set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE);
           }
-        else
-          {
-            if (send_element_error_to_client ("create_task", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_task");
 
       case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE:
         if (strcasecmp ("SCANNER_NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME);
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE);
-        else
-          {
-            if (send_element_error_to_client ("create_task", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("create_task");
 
       case CLIENT_MODIFY_NOTE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -7212,22 +6170,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_NOTE_TEXT);
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_NOTE_THREAT);
-        else
-          {
-            if (send_element_error_to_client ("MODIFY_NOTE", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_note");
 
       case CLIENT_MODIFY_OVERRIDE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -7266,22 +6209,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_OVERRIDE_TEXT);
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_OVERRIDE_THREAT);
-        else
-          {
-            if (send_element_error_to_client ("modify_override", element_name,
-                                              write_to_client,
-                                              write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
-        break;
+        ELSE_ERROR ("modify_override");
 
       default:
         /* Send a generic response. */
