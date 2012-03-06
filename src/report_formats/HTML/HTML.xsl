@@ -170,11 +170,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:value-of select="xref/text()"/>
       </xsl:if>
     </xsl:variable>
-  
+
     <xsl:if test="$cve_ref != '' or $bid_ref != '' or $xref_ref != ''">
       <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
         <b>References</b><br/>
-  
+
         <table>
           <xsl:if test="$cve_ref != ''">
             <tr valign="top">
@@ -253,6 +253,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         (OID: <xsl:value-of select="nvt/@oid"/>)
       </div>
     </div>
+    <xsl:if test="count (detection)">
+      <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+        Product detection result:
+        <xsl:value-of select="detection/result/details/detail[name = 'product']/value/text()"/>
+        by
+        <xsl:value-of select="detection/result/details/detail[name = 'source_name']/value/text()"/>
+      </div>
+    </xsl:if>
     <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
       <pre>
         <xsl:call-template name="wrap">

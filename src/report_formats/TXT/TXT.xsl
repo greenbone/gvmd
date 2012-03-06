@@ -363,6 +363,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:call-template name="newline"/>
     <xsl:call-template name="newline"/>
 
+    <xsl:if test="count (detection)">
+      <xsl:text>Product detection result: </xsl:text>
+      <xsl:value-of select="detection/result/details/detail[name = 'product']/value/text()"/>
+      <xsl:text> by </xsl:text>
+      <xsl:value-of select="detection/result/details/detail[name = 'source_name']/value/text()"/>
+      <xsl:call-template name="newline"/>
+      <xsl:call-template name="newline"/>
+    </xsl:if>
+
     <xsl:text>Description: </xsl:text>
     <xsl:call-template name="newline"/>
 

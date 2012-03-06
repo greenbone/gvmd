@@ -877,6 +877,17 @@ advice given in each description, in order to rectify the issue.
         <xsl:call-template name="latex-hline"/>
         <xsl:text>\endlastfoot</xsl:text><xsl:call-template name="newline"/>
 
+        <xsl:if test="count (detection)">
+          <xsl:call-template name="latex-newline"/>
+          <xsl:text>\textbf{Product detection result}</xsl:text>
+          <xsl:call-template name="latex-newline"/>
+          <xsl:call-template name="text-to-escaped-row">
+            <xsl:with-param name="string" select="concat(detection/result/details/detail[name = 'product']/value/text(), ' by ', detection/result/details/detail[name = 'source_name']/value/text())"/>
+          </xsl:call-template>
+          <xsl:call-template name="latex-newline"/>
+          \hline
+        </xsl:if>
+
         <xsl:call-template name="text-to-escaped-row">
           <xsl:with-param name="string" select="description"/>
         </xsl:call-template>

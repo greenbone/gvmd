@@ -1,3 +1,14 @@
+2012-03-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/HTML/HTML.xsl (result [issue]): Add product detection
+	block.
+
+	* src/report_formats/TXT/TXT.xsl (result [issue]): Add product detection
+	block.
+
+	* src/report_formats/LaTeX/latex.xsl (result-details-host-port-threat): Add
+	product detection block.
+
 2012-03-05  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/manage_sql.c (delete_config): Prevent deletion of "Full and Fast"
