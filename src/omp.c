@@ -18869,6 +18869,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 }
 
 /**
+ * @brief Append text to a var for a case in omp_xml_hand_text.
+ *
+ * @param[in]  state  Parser state.
+ * @param[in]  dest   Append destination.
+ */
+#define APPEND(state, dest)                      \
+  case state:                                    \
+    openvas_append_text (dest, text, text_len);  \
+    break;
+
+/**
  * @brief Handle the addition of text to an OMP XML element.
  *
  * React to the addition of text to the value of an XML element.
@@ -18897,655 +18908,487 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME:
         append_to_credentials_username (&current_credentials, text, text_len);
         break;
+
       case CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD:
         append_to_credentials_password (&current_credentials, text, text_len);
         break;
 
-      case CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY:
-        openvas_append_text (&modify_config_data->nvt_selection_family,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY,
+              &modify_config_data->nvt_selection_family);
 
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL:
-        openvas_append_text
-         (&modify_config_data->family_selection_family_all_text,
-          text,
-          text_len);
-        break;
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING:
-        openvas_append_text
-         (&modify_config_data->family_selection_family_growing_text,
-          text,
-          text_len);
-        break;
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME:
-        openvas_append_text (&modify_config_data->family_selection_family_name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING:
-        openvas_append_text (&modify_config_data->family_selection_growing_text,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL,
+              &modify_config_data->family_selection_family_all_text);
 
-      case CLIENT_MODIFY_LSC_CREDENTIAL_NAME:
-        openvas_append_text (&modify_lsc_credential_data->name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT:
-        openvas_append_text (&modify_lsc_credential_data->comment,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN:
-        openvas_append_text (&modify_lsc_credential_data->login,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD:
-        openvas_append_text (&modify_lsc_credential_data->password,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING,
+              &modify_config_data->family_selection_family_growing_text);
 
-      case CLIENT_MODIFY_CONFIG_COMMENT:
-        openvas_append_text (&modify_config_data->comment,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_CONFIG_NAME:
-        openvas_append_text (&modify_config_data->name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_CONFIG_PREFERENCE_NAME:
-        openvas_append_text (&modify_config_data->preference_name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE:
-        openvas_append_text (&modify_config_data->preference_value,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME,
+              &modify_config_data->family_selection_family_name);
 
-      case CLIENT_MODIFY_REPORT_COMMENT:
-        openvas_append_text (&modify_report_data->comment,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING,
+              &modify_config_data->family_selection_growing_text);
 
-      case CLIENT_MODIFY_REPORT_FORMAT_ACTIVE:
-        openvas_append_text (&modify_report_format_data->active,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_NAME:
-        openvas_append_text (&modify_report_format_data->name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_SUMMARY:
-        openvas_append_text (&modify_report_format_data->summary,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME:
-        openvas_append_text (&modify_report_format_data->param_name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE:
-        openvas_append_text (&modify_report_format_data->param_value,
-                             text,
-                             text_len);
-        break;
 
-      case CLIENT_MODIFY_SETTING_NAME:
-        openvas_append_text (&modify_setting_data->name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_SETTING_VALUE:
-        openvas_append_text (&modify_setting_data->value,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_LSC_CREDENTIAL_NAME,
+              &modify_lsc_credential_data->name);
 
-      case CLIENT_MODIFY_TASK_COMMENT:
-        openvas_append_text (&modify_task_data->comment, text, text_len);
-        break;
-      case CLIENT_MODIFY_TASK_NAME:
-        openvas_append_text (&modify_task_data->name, text, text_len);
-        break;
-      case CLIENT_MODIFY_TASK_OBSERVERS:
-        openvas_append_text (&modify_task_data->observers, text, text_len);
-        break;
-      case CLIENT_MODIFY_TASK_RCFILE:
-        openvas_append_text (&modify_task_data->rcfile, text, text_len);
-        break;
-      case CLIENT_MODIFY_TASK_FILE:
-        openvas_append_text (&modify_task_data->file, text, text_len);
-        break;
+      APPEND (CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT,
+              &modify_lsc_credential_data->comment);
 
-      case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME:
-        openvas_append_text (&modify_task_data->preference->name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE:
-        openvas_append_text (&modify_task_data->preference->value,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN,
+              &modify_lsc_credential_data->login);
 
-      case CLIENT_CREATE_AGENT_COMMENT:
-        openvas_append_text (&create_agent_data->comment, text, text_len);
-        break;
-      case CLIENT_CREATE_AGENT_HOWTO_INSTALL:
-        openvas_append_text (&create_agent_data->howto_install, text, text_len);
-        break;
-      case CLIENT_CREATE_AGENT_HOWTO_USE:
-        openvas_append_text (&create_agent_data->howto_use, text, text_len);
-        break;
-      case CLIENT_CREATE_AGENT_INSTALLER:
-        openvas_append_text (&create_agent_data->installer, text, text_len);
-        break;
-      case CLIENT_CREATE_AGENT_INSTALLER_FILENAME:
-        openvas_append_text (&create_agent_data->installer_filename,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE:
-        openvas_append_text (&create_agent_data->installer_signature,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_AGENT_NAME:
-        openvas_append_text (&create_agent_data->name, text, text_len);
-        break;
+      APPEND (CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD,
+              &modify_lsc_credential_data->password);
 
-      case CLIENT_CREATE_CONFIG_COMMENT:
-        openvas_append_text (&create_config_data->comment, text, text_len);
-        break;
-      case CLIENT_CREATE_CONFIG_COPY:
-        openvas_append_text (&create_config_data->copy, text, text_len);
-        break;
-      case CLIENT_CREATE_CONFIG_NAME:
-        openvas_append_text (&create_config_data->name, text, text_len);
-        break;
-      case CLIENT_CREATE_CONFIG_RCFILE:
-        openvas_append_text (&create_config_data->rcfile, text, text_len);
-        break;
 
-      case CLIENT_C_C_GCR_CONFIG_COMMENT:
-        openvas_append_text (&(import_config_data->comment),
-                             text,
-                             text_len);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_NAME:
-        openvas_append_text (&(import_config_data->name),
-                             text,
-                             text_len);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_INCLUDE:
-        openvas_append_text (&(import_config_data->nvt_selector_include),
-                             text,
-                             text_len);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_NAME:
-        openvas_append_text (&(import_config_data->nvt_selector_name),
-                             text,
-                             text_len);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_TYPE:
-        openvas_append_text (&(import_config_data->nvt_selector_type),
-                             text,
-                             text_len);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_FAMILY_OR_NVT:
-        openvas_append_text (&(import_config_data->nvt_selector_family_or_nvt),
-                             text,
-                             text_len);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ALT:
-        openvas_append_text (&(import_config_data->preference_alt),
-                             text,
-                             text_len);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NAME:
-        openvas_append_text (&(import_config_data->preference_name),
-                             text,
-                             text_len);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME:
-        openvas_append_text (&(import_config_data->preference_nvt_name),
-                             text,
-                             text_len);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_TYPE:
-        openvas_append_text (&(import_config_data->preference_type),
-                             text,
-                             text_len);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE:
-        openvas_append_text (&(import_config_data->preference_value),
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_CONFIG_COMMENT,
+              &modify_config_data->comment);
 
-      case CLIENT_CREATE_LSC_CREDENTIAL_COMMENT:
-        openvas_append_text (&create_lsc_credential_data->comment,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_LSC_CREDENTIAL_KEY_PHRASE:
-        openvas_append_text (&create_lsc_credential_data->key_phrase,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE:
-        openvas_append_text (&create_lsc_credential_data->key_private,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC:
-        openvas_append_text (&create_lsc_credential_data->key_public,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_LSC_CREDENTIAL_LOGIN:
-        openvas_append_text (&create_lsc_credential_data->login,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_LSC_CREDENTIAL_NAME:
-        openvas_append_text (&create_lsc_credential_data->name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD:
-        openvas_append_text (&create_lsc_credential_data->password,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_CONFIG_NAME,
+              &modify_config_data->name);
 
-      case CLIENT_CREATE_ESCALATOR_COMMENT:
-        openvas_append_text (&create_escalator_data->comment, text, text_len);
-        break;
-      case CLIENT_CREATE_ESCALATOR_CONDITION:
-        openvas_append_text (&create_escalator_data->condition, text, text_len);
-        break;
-      case CLIENT_CREATE_ESCALATOR_EVENT:
-        openvas_append_text (&create_escalator_data->event, text, text_len);
-        break;
-      case CLIENT_CREATE_ESCALATOR_METHOD:
-        openvas_append_text (&create_escalator_data->method, text, text_len);
-        break;
-      case CLIENT_CREATE_ESCALATOR_NAME:
-        openvas_append_text (&create_escalator_data->name, text, text_len);
-        break;
+      APPEND (CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
+              &modify_config_data->preference_name);
 
-      case CLIENT_CREATE_ESCALATOR_CONDITION_DATA:
-        openvas_append_text (&create_escalator_data->part_data, text, text_len);
-        break;
-      case CLIENT_CREATE_ESCALATOR_EVENT_DATA:
-        openvas_append_text (&create_escalator_data->part_data, text, text_len);
-        break;
-      case CLIENT_CREATE_ESCALATOR_METHOD_DATA:
-        openvas_append_text (&create_escalator_data->part_data, text, text_len);
-        break;
+      APPEND (CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE,
+              &modify_config_data->preference_value);
 
-      case CLIENT_CREATE_ESCALATOR_CONDITION_DATA_NAME:
-        openvas_append_text (&create_escalator_data->part_name, text, text_len);
-        break;
-      case CLIENT_CREATE_ESCALATOR_EVENT_DATA_NAME:
-        openvas_append_text (&create_escalator_data->part_name, text, text_len);
-        break;
-      case CLIENT_CREATE_ESCALATOR_METHOD_DATA_NAME:
-        openvas_append_text (&create_escalator_data->part_name, text, text_len);
-        break;
 
-      case CLIENT_CREATE_NOTE_ACTIVE:
-        openvas_append_text (&create_note_data->active, text, text_len);
-        break;
-      case CLIENT_CREATE_NOTE_HOSTS:
-        openvas_append_text (&create_note_data->hosts, text, text_len);
-        break;
-      case CLIENT_CREATE_NOTE_PORT:
-        openvas_append_text (&create_note_data->port, text, text_len);
-        break;
-      case CLIENT_CREATE_NOTE_TEXT:
-        openvas_append_text (&create_note_data->text, text, text_len);
-        break;
-      case CLIENT_CREATE_NOTE_THREAT:
-        openvas_append_text (&create_note_data->threat, text, text_len);
-        break;
+      APPEND (CLIENT_MODIFY_REPORT_COMMENT,
+              &modify_report_data->comment);
 
-      case CLIENT_CREATE_OVERRIDE_ACTIVE:
-        openvas_append_text (&create_override_data->active, text, text_len);
-        break;
-      case CLIENT_CREATE_OVERRIDE_HOSTS:
-        openvas_append_text (&create_override_data->hosts, text, text_len);
-        break;
-      case CLIENT_CREATE_OVERRIDE_NEW_THREAT:
-        openvas_append_text (&create_override_data->new_threat, text, text_len);
-        break;
-      case CLIENT_CREATE_OVERRIDE_PORT:
-        openvas_append_text (&create_override_data->port, text, text_len);
-        break;
-      case CLIENT_CREATE_OVERRIDE_TEXT:
-        openvas_append_text (&create_override_data->text, text, text_len);
-        break;
-      case CLIENT_CREATE_OVERRIDE_THREAT:
-        openvas_append_text (&create_override_data->threat, text, text_len);
-        break;
 
-      case CLIENT_CREATE_PORT_LIST_COMMENT:
-        openvas_append_text (&create_port_list_data->comment, text, text_len);
-        break;
-      case CLIENT_CREATE_PORT_LIST_NAME:
-        openvas_append_text (&create_port_list_data->name, text, text_len);
-        break;
-      case CLIENT_CREATE_PORT_LIST_PORT_RANGE:
-        openvas_append_text (&create_port_list_data->port_range, text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_REPORT_FORMAT_ACTIVE,
+              &modify_report_format_data->active);
 
-      case CLIENT_CPL_GPLR_PORT_LIST_COMMENT:
-        openvas_append_text (&create_port_list_data->comment, text,
-                             text_len);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_NAME:
-        openvas_append_text (&create_port_list_data->name, text,
-                             text_len);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_COMMENT:
-        openvas_append_text (&create_port_list_data->range->comment,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_END:
-        openvas_append_text (&create_port_list_data->range->end,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_START:
-        openvas_append_text (&create_port_list_data->range->start,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_TYPE:
-        openvas_append_text (&create_port_list_data->range->type,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_REPORT_FORMAT_NAME,
+              &modify_report_format_data->name);
 
-      case CLIENT_CREATE_PORT_RANGE_COMMENT:
-        openvas_append_text (&create_port_range_data->comment, text, text_len);
-        break;
-      case CLIENT_CREATE_PORT_RANGE_END:
-        openvas_append_text (&create_port_range_data->end, text, text_len);
-        break;
-      case CLIENT_CREATE_PORT_RANGE_START:
-        openvas_append_text (&create_port_range_data->start, text, text_len);
-        break;
-      case CLIENT_CREATE_PORT_RANGE_TYPE:
-        openvas_append_text (&create_port_range_data->type, text, text_len);
-        break;
+      APPEND (CLIENT_MODIFY_REPORT_FORMAT_SUMMARY,
+              &modify_report_format_data->summary);
 
-      case CLIENT_CREATE_REPORT_RR_HOST_END:
-        openvas_append_text (&create_report_data->host_end,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_REPORT_RR_HOST_END_HOST:
-        openvas_append_text (&create_report_data->host_end_host,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_REPORT_RR_HOST_START:
-        openvas_append_text (&create_report_data->host_start,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_REPORT_RR_HOST_START_HOST:
-        openvas_append_text (&create_report_data->host_start_host,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME,
+              &modify_report_format_data->param_name);
 
-      case CLIENT_CREATE_REPORT_RR_SCAN_END:
-        openvas_append_text (&create_report_data->scan_end,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_REPORT_RR_SCAN_START:
-        openvas_append_text (&create_report_data->scan_start,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE,
+              &modify_report_format_data->param_value);
 
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION:
-        openvas_append_text (&create_report_data->result_description,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST:
-        openvas_append_text (&create_report_data->result_host,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT:
-        openvas_append_text (&create_report_data->result_port,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET:
-        openvas_append_text (&create_report_data->result_subnet,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT:
-        openvas_append_text (&create_report_data->result_threat,
-                             text,
-                             text_len);
-        break;
 
-      case CLIENT_CREATE_REPORT_TASK_NAME:
-        openvas_append_text (&create_report_data->task_name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_REPORT_TASK_COMMENT:
-        openvas_append_text (&create_report_data->task_comment,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_SETTING_NAME,
+              &modify_setting_data->name);
 
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE:
-        openvas_append_text (&create_report_format_data->content_type,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_DESCRIPTION:
-        openvas_append_text (&create_report_format_data->description,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_EXTENSION:
-        openvas_append_text (&create_report_format_data->extension,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_FILE:
-        openvas_append_text (&create_report_format_data->file, text, text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_GLOBAL:
-        openvas_append_text (&create_report_format_data->global,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_NAME:
-        openvas_append_text (&create_report_format_data->name, text, text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT:
-        openvas_append_text (&create_report_format_data->param_default,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME:
-        openvas_append_text (&create_report_format_data->param_name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION:
-        openvas_append_text (&create_report_format_data->param_option,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE:
-        openvas_append_text (&create_report_format_data->param_type,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX:
-        openvas_append_text (&create_report_format_data->param_type_max,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN:
-        openvas_append_text (&create_report_format_data->param_type_min,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE:
-        openvas_append_text (&create_report_format_data->param_value,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE:
-        openvas_append_text (&create_report_format_data->signature,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY:
-        openvas_append_text (&create_report_format_data->summary,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_MODIFY_SETTING_VALUE,
+              &modify_setting_data->value);
+
+
+      APPEND (CLIENT_MODIFY_TASK_COMMENT,
+              &modify_task_data->comment);
+
+      APPEND (CLIENT_MODIFY_TASK_NAME,
+              &modify_task_data->name);
+
+      APPEND (CLIENT_MODIFY_TASK_OBSERVERS,
+              &modify_task_data->observers);
+
+      APPEND (CLIENT_MODIFY_TASK_RCFILE,
+              &modify_task_data->rcfile);
+
+      APPEND (CLIENT_MODIFY_TASK_FILE,
+              &modify_task_data->file);
+
+
+      APPEND (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME,
+              &modify_task_data->preference->name);
+
+      APPEND (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE,
+              &modify_task_data->preference->value);
+
+
+      APPEND (CLIENT_CREATE_AGENT_COMMENT,
+              &create_agent_data->comment);
+
+      APPEND (CLIENT_CREATE_AGENT_HOWTO_INSTALL,
+              &create_agent_data->howto_install);
+
+      APPEND (CLIENT_CREATE_AGENT_HOWTO_USE,
+              &create_agent_data->howto_use);
+
+      APPEND (CLIENT_CREATE_AGENT_INSTALLER,
+              &create_agent_data->installer);
+
+      APPEND (CLIENT_CREATE_AGENT_INSTALLER_FILENAME,
+              &create_agent_data->installer_filename);
+
+      APPEND (CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE,
+              &create_agent_data->installer_signature);
+
+      APPEND (CLIENT_CREATE_AGENT_NAME,
+              &create_agent_data->name);
+
+
+      APPEND (CLIENT_CREATE_CONFIG_COMMENT,
+              &create_config_data->comment);
+
+      APPEND (CLIENT_CREATE_CONFIG_COPY,
+              &create_config_data->copy);
+
+      APPEND (CLIENT_CREATE_CONFIG_NAME,
+              &create_config_data->name);
+
+      APPEND (CLIENT_CREATE_CONFIG_RCFILE,
+              &create_config_data->rcfile);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_COMMENT,
+              &create_config_data->comment);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_NAME,
+              &import_config_data->name);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_INCLUDE,
+              &import_config_data->nvt_selector_include);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_NAME,
+              &import_config_data->nvt_selector_name);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_TYPE,
+              &import_config_data->nvt_selector_type);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_FAMILY_OR_NVT,
+              &import_config_data->nvt_selector_family_or_nvt);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_ALT,
+              &import_config_data->preference_alt);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NAME,
+              &import_config_data->preference_name);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME,
+              &import_config_data->preference_nvt_name);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_TYPE,
+              &import_config_data->preference_type);
+
+      APPEND (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE,
+              &import_config_data->preference_value);
+
+
+      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_COMMENT,
+              &create_lsc_credential_data->comment);
+
+      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PHRASE,
+              &create_lsc_credential_data->key_phrase);
+
+      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE,
+              &create_lsc_credential_data->key_private);
+
+      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC,
+              &create_lsc_credential_data->key_public);
+
+      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_LOGIN,
+              &create_lsc_credential_data->login);
+
+      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_NAME,
+              &create_lsc_credential_data->name);
+
+      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD,
+              &create_lsc_credential_data->password);
+
+
+      APPEND (CLIENT_CREATE_ESCALATOR_COMMENT,
+              &create_escalator_data->comment);
+
+      APPEND (CLIENT_CREATE_ESCALATOR_CONDITION,
+              &create_escalator_data->condition);
+
+      APPEND (CLIENT_CREATE_ESCALATOR_EVENT,
+              &create_escalator_data->event);
+
+      APPEND (CLIENT_CREATE_ESCALATOR_METHOD,
+              &create_escalator_data->method);
+
+      APPEND (CLIENT_CREATE_ESCALATOR_NAME,
+              &create_escalator_data->name);
+
+
+      APPEND (CLIENT_CREATE_ESCALATOR_CONDITION_DATA,
+              &create_escalator_data->part_data);
+
+      APPEND (CLIENT_CREATE_ESCALATOR_EVENT_DATA,
+              &create_escalator_data->part_data);
+
+      APPEND (CLIENT_CREATE_ESCALATOR_METHOD_DATA,
+              &create_escalator_data->part_data);
+
+
+      APPEND (CLIENT_CREATE_ESCALATOR_CONDITION_DATA_NAME,
+              &create_escalator_data->part_name);
+
+      APPEND (CLIENT_CREATE_ESCALATOR_EVENT_DATA_NAME,
+              &create_escalator_data->part_name);
+
+      APPEND (CLIENT_CREATE_ESCALATOR_METHOD_DATA_NAME,
+              &create_escalator_data->part_name);
+
+
+      APPEND (CLIENT_CREATE_NOTE_ACTIVE,
+              &create_note_data->active);
+
+      APPEND (CLIENT_CREATE_NOTE_HOSTS,
+              &create_note_data->hosts);
+
+      APPEND (CLIENT_CREATE_NOTE_PORT,
+              &create_note_data->port);
+
+      APPEND (CLIENT_CREATE_NOTE_TEXT,
+              &create_note_data->text);
+
+      APPEND (CLIENT_CREATE_NOTE_THREAT,
+              &create_note_data->threat);
+
+
+      APPEND (CLIENT_CREATE_OVERRIDE_ACTIVE,
+              &create_override_data->active);
+
+      APPEND (CLIENT_CREATE_OVERRIDE_HOSTS,
+              &create_override_data->hosts);
+
+      APPEND (CLIENT_CREATE_OVERRIDE_NEW_THREAT,
+              &create_override_data->new_threat);
+
+      APPEND (CLIENT_CREATE_OVERRIDE_PORT,
+              &create_override_data->port);
+
+      APPEND (CLIENT_CREATE_OVERRIDE_TEXT,
+              &create_override_data->text);
+
+      APPEND (CLIENT_CREATE_OVERRIDE_THREAT,
+              &create_override_data->threat);
+
+
+      APPEND (CLIENT_CREATE_PORT_LIST_COMMENT,
+              &create_port_list_data->comment);
+
+      APPEND (CLIENT_CREATE_PORT_LIST_NAME,
+              &create_port_list_data->name);
+
+      APPEND (CLIENT_CREATE_PORT_LIST_PORT_RANGE,
+              &create_port_list_data->port_range);
+
+
+      APPEND (CLIENT_CPL_GPLR_PORT_LIST_COMMENT,
+              &create_port_list_data->comment);
+
+      APPEND (CLIENT_CPL_GPLR_PORT_LIST_NAME,
+              &create_port_list_data->name);
+
+      APPEND (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_COMMENT,
+              &create_port_list_data->range->comment);
+
+      APPEND (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_END,
+              &create_port_list_data->range->end);
+
+      APPEND (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_START,
+              &create_port_list_data->range->start);
+
+      APPEND (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_TYPE,
+              &create_port_list_data->range->type);
+
+
+      APPEND (CLIENT_CREATE_PORT_RANGE_COMMENT,
+              &create_port_range_data->comment);
+
+      APPEND (CLIENT_CREATE_PORT_RANGE_END,
+              &create_port_range_data->end);
+
+      APPEND (CLIENT_CREATE_PORT_RANGE_START,
+              &create_port_range_data->start);
+
+      APPEND (CLIENT_CREATE_PORT_RANGE_TYPE,
+              &create_port_range_data->type);
+
+
+      APPEND (CLIENT_CREATE_REPORT_RR_HOST_END,
+              &create_report_data->host_end);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_HOST_END_HOST,
+              &create_report_data->host_end_host);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_HOST_START,
+              &create_report_data->host_start);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_HOST_START_HOST,
+              &create_report_data->host_start_host);
+
+
+      APPEND (CLIENT_CREATE_REPORT_RR_SCAN_END,
+              &create_report_data->scan_end);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_SCAN_START,
+              &create_report_data->scan_start);
+
+
+      APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION,
+              &create_report_data->result_description);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST,
+              &create_report_data->result_host);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT,
+              &create_report_data->result_port);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET,
+              &create_report_data->result_subnet);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT,
+              &create_report_data->result_threat);
+
+
+      APPEND (CLIENT_CREATE_REPORT_TASK_NAME,
+              &create_report_data->task_name);
+
+      APPEND (CLIENT_CREATE_REPORT_TASK_COMMENT,
+              &create_report_data->task_comment);
+
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE,
+              &create_report_format_data->content_type);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_DESCRIPTION,
+              &create_report_format_data->description);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_EXTENSION,
+              &create_report_format_data->extension);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_FILE,
+              &create_report_format_data->file);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_GLOBAL,
+              &create_report_format_data->global);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_NAME,
+              &create_report_format_data->name);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT,
+              &create_report_format_data->param_default);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME,
+              &create_report_format_data->param_name);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION,
+              &create_report_format_data->param_option);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE,
+              &create_report_format_data->param_type);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX,
+              &create_report_format_data->param_type_max);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN,
+              &create_report_format_data->param_type_min);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE,
+              &create_report_format_data->param_value);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE,
+              &create_report_format_data->signature);
+
+      APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY,
+              &create_report_format_data->summary);
+
       case CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST:
         break;
 
-      case CLIENT_CREATE_SCHEDULE_COMMENT:
-        openvas_append_text (&create_schedule_data->comment, text, text_len);
-        break;
-      case CLIENT_CREATE_SCHEDULE_DURATION:
-        openvas_append_text (&create_schedule_data->duration, text, text_len);
-        break;
-      case CLIENT_CREATE_SCHEDULE_DURATION_UNIT:
-        openvas_append_text (&create_schedule_data->duration_unit,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH:
-        openvas_append_text (&create_schedule_data->first_time_day_of_month,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR:
-        openvas_append_text (&create_schedule_data->first_time_hour,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE:
-        openvas_append_text (&create_schedule_data->first_time_minute,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH:
-        openvas_append_text (&create_schedule_data->first_time_month,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR:
-        openvas_append_text (&create_schedule_data->first_time_year,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_SCHEDULE_NAME:
-        openvas_append_text (&create_schedule_data->name, text, text_len);
-        break;
-      case CLIENT_CREATE_SCHEDULE_PERIOD:
-        openvas_append_text (&create_schedule_data->period, text, text_len);
-        break;
-      case CLIENT_CREATE_SCHEDULE_PERIOD_UNIT:
-        openvas_append_text (&create_schedule_data->period_unit,
-                             text,
-                             text_len);
-        break;
 
-      case CLIENT_CREATE_SLAVE_COMMENT:
-        openvas_append_text (&create_slave_data->comment, text, text_len);
-        break;
-      case CLIENT_CREATE_SLAVE_HOST:
-        openvas_append_text (&create_slave_data->host, text, text_len);
-        break;
-      case CLIENT_CREATE_SLAVE_LOGIN:
-        openvas_append_text (&create_slave_data->login, text, text_len);
-        break;
-      case CLIENT_CREATE_SLAVE_NAME:
-        openvas_append_text (&create_slave_data->name, text, text_len);
-        break;
-      case CLIENT_CREATE_SLAVE_PASSWORD:
-        openvas_append_text (&create_slave_data->password, text, text_len);
-        break;
-      case CLIENT_CREATE_SLAVE_PORT:
-        openvas_append_text (&create_slave_data->port, text, text_len);
-        break;
+      APPEND (CLIENT_CREATE_SCHEDULE_COMMENT,
+              &create_schedule_data->comment);
 
-      case CLIENT_CREATE_TARGET_COMMENT:
-        openvas_append_text (&create_target_data->comment, text, text_len);
-        break;
-      case CLIENT_CREATE_TARGET_HOSTS:
-        openvas_append_text (&create_target_data->hosts, text, text_len);
-        break;
-      case CLIENT_CREATE_TARGET_NAME:
-        openvas_append_text (&create_target_data->name, text, text_len);
-        break;
-      case CLIENT_CREATE_TARGET_PORT_RANGE:
-        openvas_append_text (&create_target_data->port_range, text, text_len);
-        break;
-      case CLIENT_CREATE_TARGET_TARGET_LOCATOR:
-        openvas_append_text (&create_target_data->target_locator, text, text_len);
-        break;
-      case CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD:
-        openvas_append_text (&create_target_data->target_locator_password,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME:
-        openvas_append_text (&create_target_data->target_locator_username,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_CREATE_SCHEDULE_DURATION,
+              &create_schedule_data->duration);
 
-      case CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT:
-        openvas_append_text (&create_target_data->ssh_port, text, text_len);
-        break;
+      APPEND (CLIENT_CREATE_SCHEDULE_DURATION_UNIT,
+              &create_schedule_data->duration_unit);
+
+      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH,
+              &create_schedule_data->first_time_day_of_month);
+
+      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR,
+              &create_schedule_data->first_time_hour);
+
+      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE,
+              &create_schedule_data->first_time_minute);
+
+      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH,
+              &create_schedule_data->first_time_month);
+
+      APPEND (CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR,
+              &create_schedule_data->first_time_year);
+
+      APPEND (CLIENT_CREATE_SCHEDULE_NAME,
+              &create_schedule_data->name);
+
+      APPEND (CLIENT_CREATE_SCHEDULE_PERIOD,
+              &create_schedule_data->period);
+
+      APPEND (CLIENT_CREATE_SCHEDULE_PERIOD_UNIT,
+              &create_schedule_data->period_unit);
+
+
+      APPEND (CLIENT_CREATE_SLAVE_COMMENT,
+              &create_slave_data->comment);
+
+      APPEND (CLIENT_CREATE_SLAVE_HOST,
+              &create_slave_data->host);
+
+      APPEND (CLIENT_CREATE_SLAVE_LOGIN,
+              &create_slave_data->login);
+
+      APPEND (CLIENT_CREATE_SLAVE_NAME,
+              &create_slave_data->name);
+
+      APPEND (CLIENT_CREATE_SLAVE_PASSWORD,
+              &create_slave_data->password);
+
+      APPEND (CLIENT_CREATE_SLAVE_PORT,
+              &create_slave_data->port);
+
+
+      APPEND (CLIENT_CREATE_TARGET_COMMENT,
+              &create_target_data->comment);
+
+      APPEND (CLIENT_CREATE_TARGET_HOSTS,
+              &create_target_data->hosts);
+
+      APPEND (CLIENT_CREATE_TARGET_NAME,
+              &create_target_data->name);
+
+      APPEND (CLIENT_CREATE_TARGET_PORT_RANGE,
+              &create_target_data->port_range);
+
+      APPEND (CLIENT_CREATE_TARGET_TARGET_LOCATOR,
+              &create_target_data->target_locator);
+
+      APPEND (CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD,
+              &create_target_data->target_locator_password);
+
+      APPEND (CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME,
+              &create_target_data->target_locator_username);
+
+      APPEND (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT,
+              &create_target_data->ssh_port);
+
 
       case CLIENT_CREATE_TASK_COMMENT:
         append_to_task_comment (create_task_data->task, text, text_len);
         break;
+
       case CLIENT_CREATE_TASK_NAME:
         append_to_task_name (create_task_data->task, text, text_len);
         break;
-      case CLIENT_CREATE_TASK_OBSERVERS:
-        openvas_append_text (&create_task_data->observers, text, text_len);
-        break;
+
+      APPEND (CLIENT_CREATE_TASK_OBSERVERS,
+              &create_task_data->observers);
+
       case CLIENT_CREATE_TASK_RCFILE:
         /* Append the text to the task description. */
         add_task_description_line (create_task_data->task,
@@ -19553,51 +19396,47 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                                    text_len);
         break;
 
-      case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME:
-        openvas_append_text (&create_task_data->preference->name,
-                             text,
-                             text_len);
-        break;
-      case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE:
-        openvas_append_text (&create_task_data->preference->value,
-                             text,
-                             text_len);
-        break;
+      APPEND (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME,
+              &create_task_data->preference->name);
 
-      case CLIENT_MODIFY_NOTE_ACTIVE:
-        openvas_append_text (&modify_note_data->active, text, text_len);
-        break;
-      case CLIENT_MODIFY_NOTE_HOSTS:
-        openvas_append_text (&modify_note_data->hosts, text, text_len);
-        break;
-      case CLIENT_MODIFY_NOTE_PORT:
-        openvas_append_text (&modify_note_data->port, text, text_len);
-        break;
-      case CLIENT_MODIFY_NOTE_TEXT:
-        openvas_append_text (&modify_note_data->text, text, text_len);
-        break;
-      case CLIENT_MODIFY_NOTE_THREAT:
-        openvas_append_text (&modify_note_data->threat, text, text_len);
-        break;
+      APPEND (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE,
+              &create_task_data->preference->value);
 
-      case CLIENT_MODIFY_OVERRIDE_ACTIVE:
-        openvas_append_text (&modify_override_data->active, text, text_len);
-        break;
-      case CLIENT_MODIFY_OVERRIDE_HOSTS:
-        openvas_append_text (&modify_override_data->hosts, text, text_len);
-        break;
-      case CLIENT_MODIFY_OVERRIDE_NEW_THREAT:
-        openvas_append_text (&modify_override_data->new_threat, text, text_len);
-        break;
-      case CLIENT_MODIFY_OVERRIDE_PORT:
-        openvas_append_text (&modify_override_data->port, text, text_len);
-        break;
-      case CLIENT_MODIFY_OVERRIDE_TEXT:
-        openvas_append_text (&modify_override_data->text, text, text_len);
-        break;
-      case CLIENT_MODIFY_OVERRIDE_THREAT:
-        openvas_append_text (&modify_override_data->threat, text, text_len);
-        break;
+
+      APPEND (CLIENT_MODIFY_NOTE_ACTIVE,
+              &modify_note_data->active);
+
+      APPEND (CLIENT_MODIFY_NOTE_HOSTS,
+              &modify_note_data->hosts);
+
+      APPEND (CLIENT_MODIFY_NOTE_PORT,
+              &modify_note_data->port);
+
+      APPEND (CLIENT_MODIFY_NOTE_TEXT,
+              &modify_note_data->text);
+
+      APPEND (CLIENT_MODIFY_NOTE_THREAT,
+              &modify_note_data->threat);
+
+
+      APPEND (CLIENT_MODIFY_OVERRIDE_ACTIVE,
+              &modify_override_data->active);
+
+      APPEND (CLIENT_MODIFY_OVERRIDE_HOSTS,
+              &modify_override_data->hosts);
+
+      APPEND (CLIENT_MODIFY_OVERRIDE_NEW_THREAT,
+              &modify_override_data->new_threat);
+
+      APPEND (CLIENT_MODIFY_OVERRIDE_PORT,
+              &modify_override_data->port);
+
+      APPEND (CLIENT_MODIFY_OVERRIDE_TEXT,
+              &modify_override_data->text);
+
+      APPEND (CLIENT_MODIFY_OVERRIDE_THREAT,
+              &modify_override_data->threat);
+
 
       default:
         /* Just pass over the text. */

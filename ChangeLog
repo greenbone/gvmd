@@ -1,5 +1,10 @@
 2012-03-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (APPEND): New macro.
+	(handle_text): Use APPEND to neaten things slightly.
+
+2012-03-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/HTML/HTML.xsl (result [issue]): Add product detection
 	block.
 
