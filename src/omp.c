@@ -368,9 +368,6 @@ static char* help_text = "\n"
 "    DELETE_TASK            Delete a task.\n"
 "    EMPTY_TRASHCAN         Empty the trashcan.\n"
 "    GET_AGENTS             Get all agents.\n"
-#if 0
-"    GET_CERTIFICATES       Get all available certificates.\n"
-#endif
 "    GET_CONFIGS            Get all configs.\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
 "    GET_ESCALATORS         Get all escalators.\n"
@@ -3504,9 +3501,6 @@ typedef enum
   CLIENT_DELETE_TARGET,
   CLIENT_EMPTY_TRASHCAN,
   CLIENT_GET_AGENTS,
-#if 0
-  CLIENT_GET_CERTIFICATES,
-#endif
   CLIENT_GET_CONFIGS,
   CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_ESCALATORS,
@@ -4337,10 +4331,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_agents_data->sort_order = 1;
             set_client_state (CLIENT_GET_AGENTS);
           }
-#if 0
-        else if (strcasecmp ("GET_CERTIFICATES", element_name) == 0)
-          set_client_state (CLIENT_GET_CERTIFICATES);
-#endif
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
             const gchar* attribute;
@@ -6231,50 +6221,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
   return;
 }
 
-#if 0
-/**
- * @brief Send XML for a certificate.
- *
- * @param[in]  cert_gp  The certificate.
- * @param[in]  dummy    Dummy variable, for certificate_find.
- *
- * @return 0 if out of space in to_client buffer, else 1.
- */
-static gint
-send_certificate (gpointer cert_gp, /*@unused@*/ gpointer dummy)
-{
-  certificate_t* cert = (certificate_t*) cert_gp;
-  gchar* msg;
-
-  const char* public_key = certificate_public_key (cert);
-  const char* owner = certificate_owner (cert);
-  gchar* owner_text = owner
-                      ? g_markup_escape_text (owner, -1)
-                      : g_strdup ("");
-
-  msg = g_strdup_printf ("<certificate>"
-                         "<fingerprint>%s</fingerprint>"
-                         "<owner>%s</owner>"
-                         "<trust_level>%s</trust_level>"
-                         "<length>%zu</length>"
-                         "<public_key>%s</public_key>"
-                         "</certificate>",
-                         certificate_fingerprint (cert),
-                         owner_text,
-                         certificate_trusted (cert) ? "trusted" : "notrust",
-                         strlen (public_key),
-                         public_key);
-  g_free (owner_text);
-  if (send_to_client (msg))
-    {
-      g_free (msg);
-      return 0;
-    }
-  g_free (msg);
-  return 1;
-}
-#endif
-
 /**
  * @brief Send XML for a requirement of a plugin.
  *
@@ -7627,28 +7573,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-
-#if 0
-      case CLIENT_GET_CERTIFICATES:
-        if (scanner.certificates)
-          {
-            SEND_TO_CLIENT_OR_FAIL ("<get_certificates_response"
-                                    " status=\"" STATUS_OK "\""
-                                    " status_text=\"" STATUS_OK_TEXT "\">");
-            if (certificates_find (scanner.certificates,
-                                   send_certificate,
-                                   NULL))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            SEND_TO_CLIENT_OR_FAIL ("</get_certificates_response>");
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_certificates"));
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-#endif
 
       case CLIENT_GET_DEPENDENCIES:
         if (scanner.plugins_dependencies)
