@@ -1,3 +1,9 @@
+2012-03-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (CLOSE, CLOSE_READ_OVER): New macros.
+	(omp_xml_handle_end_element): Replace simple element closes with macro
+	calls.
+
 2012-03-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c: Remove prospective GET_CERTIFICATES code.  This can be added

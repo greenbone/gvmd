@@ -7362,6 +7362,31 @@ convert_to_manage_ranges (array_t *ranges)
 }
 
 /**
+ * @brief Insert else clause for omp_xml_handle_start_element.
+ *
+ * @param[in]  op  Operation.
+ */
+#define CLOSE(parent, element)                                           \
+  case parent ## _ ## element:                                           \
+    assert (strcasecmp (G_STRINGIFY (element), element_name) == 0);      \
+    set_client_state (parent);                                           \
+    break
+
+/**
+ * @brief Insert else clause for omp_xml_handle_start_element.
+ *
+ * Stop the parser from reading over elements at the same time.
+ *
+ * @param[in]  op  Operation.
+ */
+#define CLOSE_READ_OVER(parent, element)                                 \
+  case parent ## _ ## element:                                           \
+    assert (strcasecmp (G_STRINGIFY (element), element_name) == 0);      \
+    omp_parser->read_over = 0;                                           \
+    set_client_state (parent);                                           \
+    break
+
+/**
  * @brief Handle the end of an OMP XML element.
  *
  * React to the end of an XML element according to the current value
@@ -9918,10 +9943,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         modify_config_data_reset (modify_config_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-      case CLIENT_MODIFY_CONFIG_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_CONFIG);
-        break;
+      CLOSE (CLIENT_MODIFY_CONFIG, COMMENT);
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
         assert (strcasecmp ("FAMILY_SELECTION", element_name) == 0);
         assert (modify_config_data->families_growing_all);
@@ -9932,20 +9954,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         array_terminate (modify_config_data->families_growing_empty);
         set_client_state (CLIENT_MODIFY_CONFIG);
         break;
-      case CLIENT_MODIFY_CONFIG_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_CONFIG);
-        break;
+      CLOSE (CLIENT_MODIFY_CONFIG, NAME);
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
         assert (strcasecmp ("NVT_SELECTION", element_name) == 0);
         assert (modify_config_data->nvt_selection);
         array_terminate (modify_config_data->nvt_selection);
         set_client_state (CLIENT_MODIFY_CONFIG);
         break;
-      case CLIENT_MODIFY_CONFIG_PREFERENCE:
-        assert (strcasecmp ("PREFERENCE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_CONFIG);
-        break;
+      CLOSE (CLIENT_MODIFY_CONFIG, PREFERENCE);
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
         assert (strcasecmp ("FAMILY", element_name) == 0);
@@ -10001,10 +10017,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           modify_config_data->family_selection_family_all = 0;
         set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
         break;
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
-        break;
+      CLOSE (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY, NAME);
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING:
         assert (strcasecmp ("GROWING", element_name) == 0);
         if (modify_config_data->family_selection_family_growing_text)
@@ -10019,10 +10032,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
         break;
 
-      case CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY:
-        assert (strcasecmp ("FAMILY", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
-        break;
+      CLOSE (CLIENT_MODIFY_CONFIG_NVT_SELECTION, FAMILY);
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT:
         assert (strcasecmp ("NVT", element_name) == 0);
         if (modify_config_data->nvt_selection_nvt_oid)
@@ -10032,14 +10042,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
         break;
 
-      case CLIENT_MODIFY_CONFIG_PREFERENCE_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
-        break;
-      case CLIENT_MODIFY_CONFIG_PREFERENCE_NVT:
-        assert (strcasecmp ("NVT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
-        break;
+      CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NAME);
+      CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NVT);
       case CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE:
         assert (strcasecmp ("VALUE", element_name) == 0);
         /* Init, so it's the empty string when the value is empty. */
@@ -10103,22 +10107,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         modify_lsc_credential_data_reset (modify_lsc_credential_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
-        break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
-        break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN:
-        assert (strcasecmp ("LOGIN", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
-        break;
-      case CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD:
-        assert (strcasecmp ("PASSWORD", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
-        break;
+      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, NAME);
+      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, COMMENT);
+      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, LOGIN);
+      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, PASSWORD);
 
       case CLIENT_MODIFY_REPORT:
         {
@@ -10174,10 +10166,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         modify_report_data_reset (modify_report_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-      case CLIENT_MODIFY_REPORT_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT);
-        break;
+      CLOSE (CLIENT_MODIFY_REPORT, COMMENT);
 
       case CLIENT_MODIFY_REPORT_FORMAT:
         {
@@ -10259,30 +10248,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         modify_report_format_data_reset (modify_report_format_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-      case CLIENT_MODIFY_REPORT_FORMAT_ACTIVE:
-        assert (strcasecmp ("ACTIVE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_SUMMARY:
-        assert (strcasecmp ("SUMMARY", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_PARAM:
-        assert (strcasecmp ("PARAM", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM);
-        break;
-      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE:
-        assert (strcasecmp ("VALUE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM);
-        break;
+      CLOSE (CLIENT_MODIFY_REPORT_FORMAT, ACTIVE);
+      CLOSE (CLIENT_MODIFY_REPORT_FORMAT, NAME);
+      CLOSE (CLIENT_MODIFY_REPORT_FORMAT, SUMMARY);
+      CLOSE (CLIENT_MODIFY_REPORT_FORMAT, PARAM);
+      CLOSE (CLIENT_MODIFY_REPORT_FORMAT_PARAM, NAME);
+      CLOSE (CLIENT_MODIFY_REPORT_FORMAT_PARAM, VALUE);
 
       case CLIENT_MODIFY_SETTING:
         {
@@ -10316,14 +10287,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         modify_setting_data_reset (modify_setting_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-      case CLIENT_MODIFY_SETTING_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_SETTING);
-        break;
-      case CLIENT_MODIFY_SETTING_VALUE:
-        assert (strcasecmp ("VALUE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_SETTING);
-        break;
+      CLOSE (CLIENT_MODIFY_SETTING, NAME);
+      CLOSE (CLIENT_MODIFY_SETTING, VALUE);
 
       case CLIENT_MODIFY_TASK:
         /** @todo Update to match "create_task (config, target)". */
@@ -10614,42 +10579,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         modify_task_data_reset (modify_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-      case CLIENT_MODIFY_TASK_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_TASK);
-        break;
-      case CLIENT_MODIFY_TASK_ESCALATOR:
-        assert (strcasecmp ("ESCALATOR", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_TASK);
-        break;
-      case CLIENT_MODIFY_TASK_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_TASK);
-        break;
-      case CLIENT_MODIFY_TASK_OBSERVERS:
-        assert (strcasecmp ("OBSERVERS", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_TASK);
-        break;
-      case CLIENT_MODIFY_TASK_PREFERENCES:
-        assert (strcasecmp ("PREFERENCES", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_TASK);
-        break;
-      case CLIENT_MODIFY_TASK_RCFILE:
-        assert (strcasecmp ("RCFILE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_TASK);
-        break;
-      case CLIENT_MODIFY_TASK_SCHEDULE:
-        assert (strcasecmp ("SCHEDULE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_TASK);
-        break;
-      case CLIENT_MODIFY_TASK_SLAVE:
-        assert (strcasecmp ("SLAVE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_TASK);
-        break;
-      case CLIENT_MODIFY_TASK_FILE:
-        assert (strcasecmp ("FILE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_TASK);
-        break;
+      CLOSE (CLIENT_MODIFY_TASK, COMMENT);
+      CLOSE (CLIENT_MODIFY_TASK, ESCALATOR);
+      CLOSE (CLIENT_MODIFY_TASK, NAME);
+      CLOSE (CLIENT_MODIFY_TASK, OBSERVERS);
+      CLOSE (CLIENT_MODIFY_TASK, PREFERENCES);
+      CLOSE (CLIENT_MODIFY_TASK, RCFILE);
+      CLOSE (CLIENT_MODIFY_TASK, SCHEDULE);
+      CLOSE (CLIENT_MODIFY_TASK, SLAVE);
+      CLOSE (CLIENT_MODIFY_TASK, FILE);
 
       case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE:
         assert (strcasecmp ("PREFERENCE", element_name) == 0);
@@ -10662,10 +10600,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("SCANNER_NAME", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE);
         break;
-      case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE:
-        assert (strcasecmp ("VALUE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE);
-        break;
+      CLOSE (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE, VALUE);
 
       case CLIENT_CREATE_AGENT:
         {
@@ -10734,34 +10669,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_CREATE_AGENT_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_AGENT);
-        break;
-      case CLIENT_CREATE_AGENT_HOWTO_INSTALL:
-        assert (strcasecmp ("HOWTO_INSTALL", element_name) == 0);
-        set_client_state (CLIENT_CREATE_AGENT);
-        break;
-      case CLIENT_CREATE_AGENT_HOWTO_USE:
-        assert (strcasecmp ("HOWTO_USE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_AGENT);
-        break;
-      case CLIENT_CREATE_AGENT_INSTALLER:
-        assert (strcasecmp ("INSTALLER", element_name) == 0);
-        set_client_state (CLIENT_CREATE_AGENT);
-        break;
-      case CLIENT_CREATE_AGENT_INSTALLER_FILENAME:
-        assert (strcasecmp ("FILENAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_AGENT_INSTALLER);
-        break;
-      case CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE:
-        assert (strcasecmp ("SIGNATURE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_AGENT_INSTALLER);
-        break;
-      case CLIENT_CREATE_AGENT_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_AGENT);
-        break;
+      CLOSE (CLIENT_CREATE_AGENT, COMMENT);
+      CLOSE (CLIENT_CREATE_AGENT, HOWTO_INSTALL);
+      CLOSE (CLIENT_CREATE_AGENT, HOWTO_USE);
+      CLOSE (CLIENT_CREATE_AGENT, INSTALLER);
+      CLOSE (CLIENT_CREATE_AGENT_INSTALLER, FILENAME);
+      CLOSE (CLIENT_CREATE_AGENT_INSTALLER, SIGNATURE);
+      CLOSE (CLIENT_CREATE_AGENT, NAME);
 
       case CLIENT_CREATE_CONFIG:
         {
@@ -10971,44 +10885,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_CREATE_CONFIG_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_CONFIG);
-        break;
-      case CLIENT_CREATE_CONFIG_COPY:
-        assert (strcasecmp ("COPY", element_name) == 0);
-        set_client_state (CLIENT_CREATE_CONFIG);
-        break;
-      case CLIENT_CREATE_CONFIG_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_CONFIG);
-        break;
-      case CLIENT_CREATE_CONFIG_RCFILE:
-        assert (strcasecmp ("RCFILE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_CONFIG);
-        break;
+      CLOSE (CLIENT_CREATE_CONFIG, COMMENT);
+      CLOSE (CLIENT_CREATE_CONFIG, COPY);
+      CLOSE (CLIENT_CREATE_CONFIG, NAME);
+      CLOSE (CLIENT_CREATE_CONFIG, RCFILE);
 
       case CLIENT_C_C_GCR:
         assert (strcasecmp ("GET_CONFIGS_RESPONSE", element_name) == 0);
         import_config_data->import = 1;
         set_client_state (CLIENT_CREATE_CONFIG);
         break;
-      case CLIENT_C_C_GCR_CONFIG:
-        assert (strcasecmp ("CONFIG", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR_CONFIG);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR_CONFIG);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS:
-        assert (strcasecmp ("NVT_SELECTORS", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR_CONFIG);
-        break;
+      CLOSE (CLIENT_C_C_GCR, CONFIG);
+      CLOSE (CLIENT_C_C_GCR_CONFIG, COMMENT);
+      CLOSE (CLIENT_C_C_GCR_CONFIG, NAME);
+      CLOSE (CLIENT_C_C_GCR_CONFIG, NVT_SELECTORS);
       case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR:
         {
           int include;
@@ -11037,26 +10927,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS);
           break;
         }
-      case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_INCLUDE:
-        assert (strcasecmp ("INCLUDE", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_TYPE:
-        assert (strcasecmp ("TYPE", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_FAMILY_OR_NVT:
-        assert (strcasecmp ("FAMILY_OR_NVT", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES:
-        assert (strcasecmp ("PREFERENCES", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR_CONFIG);
-        break;
+      CLOSE (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR, INCLUDE);
+      CLOSE (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR, NAME);
+      CLOSE (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR, TYPE);
+      CLOSE (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR, FAMILY_OR_NVT);
+      CLOSE (CLIENT_C_C_GCR_CONFIG, PREFERENCES);
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE:
         assert (strcasecmp ("PREFERENCE", element_name) == 0);
         array_terminate (import_config_data->preference_alts);
@@ -11082,26 +10957,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         import_config_data->preference_alt = NULL;
         set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE);
         break;
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT:
-        assert (strcasecmp ("NVT", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_TYPE:
-        assert (strcasecmp ("TYPE", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE);
-        break;
-      case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE:
-        assert (strcasecmp ("VALUE", element_name) == 0);
-        set_client_state (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE);
-        break;
+      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, NAME);
+      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, NVT);
+      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT, NAME);
+      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, TYPE);
+      CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, VALUE);
 
       case CLIENT_CREATE_ESCALATOR:
         {
@@ -11214,26 +11074,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_CREATE_ESCALATOR_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_ESCALATOR);
-        break;
-      case CLIENT_CREATE_ESCALATOR_CONDITION:
-        assert (strcasecmp ("CONDITION", element_name) == 0);
-        set_client_state (CLIENT_CREATE_ESCALATOR);
-        break;
-      case CLIENT_CREATE_ESCALATOR_EVENT:
-        assert (strcasecmp ("EVENT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_ESCALATOR);
-        break;
-      case CLIENT_CREATE_ESCALATOR_METHOD:
-        assert (strcasecmp ("METHOD", element_name) == 0);
-        set_client_state (CLIENT_CREATE_ESCALATOR);
-        break;
-      case CLIENT_CREATE_ESCALATOR_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_ESCALATOR);
-        break;
+      CLOSE (CLIENT_CREATE_ESCALATOR, COMMENT);
+      CLOSE (CLIENT_CREATE_ESCALATOR, CONDITION);
+      CLOSE (CLIENT_CREATE_ESCALATOR, EVENT);
+      CLOSE (CLIENT_CREATE_ESCALATOR, METHOD);
+      CLOSE (CLIENT_CREATE_ESCALATOR, NAME);
 
       case CLIENT_CREATE_ESCALATOR_CONDITION_DATA:
         {
@@ -11286,10 +11131,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ESCALATOR_EVENT);
           break;
         }
-      case CLIENT_CREATE_ESCALATOR_EVENT_DATA_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_ESCALATOR_EVENT_DATA);
-        break;
+      CLOSE (CLIENT_CREATE_ESCALATOR_EVENT_DATA, NAME);
 
       case CLIENT_CREATE_ESCALATOR_METHOD_DATA:
         {
@@ -11314,10 +11156,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ESCALATOR_METHOD);
           break;
         }
-      case CLIENT_CREATE_ESCALATOR_METHOD_DATA_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_ESCALATOR_METHOD_DATA);
-        break;
+      CLOSE (CLIENT_CREATE_ESCALATOR_METHOD_DATA, NAME);
 
       case CLIENT_CREATE_LSC_CREDENTIAL:
         {
@@ -11398,38 +11237,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_CREATE_LSC_CREDENTIAL_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
-        break;
-      case CLIENT_CREATE_LSC_CREDENTIAL_KEY:
-        assert (strcasecmp ("KEY", element_name) == 0);
-        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
-        break;
-      case CLIENT_CREATE_LSC_CREDENTIAL_KEY_PHRASE:
-        assert (strcasecmp ("PHRASE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY);
-        break;
-      case CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE:
-        assert (strcasecmp ("PRIVATE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY);
-        break;
-      case CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC:
-        assert (strcasecmp ("PUBLIC", element_name) == 0);
-        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY);
-        break;
-      case CLIENT_CREATE_LSC_CREDENTIAL_LOGIN:
-        assert (strcasecmp ("LOGIN", element_name) == 0);
-        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
-        break;
-      case CLIENT_CREATE_LSC_CREDENTIAL_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
-        break;
-      case CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD:
-        assert (strcasecmp ("PASSWORD", element_name) == 0);
-        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
-        break;
+      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, COMMENT);
+      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, KEY);
+      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL_KEY, PHRASE);
+      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL_KEY, PRIVATE);
+      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL_KEY, PUBLIC);
+      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, LOGIN);
+      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, NAME);
+      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, PASSWORD);
 
       case CLIENT_CREATE_NOTE:
         {
@@ -11528,38 +11343,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_CREATE_NOTE_ACTIVE:
-        assert (strcasecmp ("ACTIVE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_NOTE);
-        break;
-      case CLIENT_CREATE_NOTE_HOSTS:
-        assert (strcasecmp ("HOSTS", element_name) == 0);
-        set_client_state (CLIENT_CREATE_NOTE);
-        break;
-      case CLIENT_CREATE_NOTE_NVT:
-        assert (strcasecmp ("NVT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_NOTE);
-        break;
-      case CLIENT_CREATE_NOTE_PORT:
-        assert (strcasecmp ("PORT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_NOTE);
-        break;
-      case CLIENT_CREATE_NOTE_RESULT:
-        assert (strcasecmp ("RESULT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_NOTE);
-        break;
-      case CLIENT_CREATE_NOTE_TASK:
-        assert (strcasecmp ("TASK", element_name) == 0);
-        set_client_state (CLIENT_CREATE_NOTE);
-        break;
-      case CLIENT_CREATE_NOTE_TEXT:
-        assert (strcasecmp ("TEXT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_NOTE);
-        break;
-      case CLIENT_CREATE_NOTE_THREAT:
-        assert (strcasecmp ("THREAT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_NOTE);
-        break;
+      CLOSE (CLIENT_CREATE_NOTE, ACTIVE);
+      CLOSE (CLIENT_CREATE_NOTE, HOSTS);
+      CLOSE (CLIENT_CREATE_NOTE, NVT);
+      CLOSE (CLIENT_CREATE_NOTE, PORT);
+      CLOSE (CLIENT_CREATE_NOTE, RESULT);
+      CLOSE (CLIENT_CREATE_NOTE, TASK);
+      CLOSE (CLIENT_CREATE_NOTE, TEXT);
+      CLOSE (CLIENT_CREATE_NOTE, THREAT);
 
       case CLIENT_CREATE_OVERRIDE:
         {
@@ -11664,42 +11455,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_CREATE_OVERRIDE_ACTIVE:
-        assert (strcasecmp ("ACTIVE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_OVERRIDE);
-        break;
-      case CLIENT_CREATE_OVERRIDE_HOSTS:
-        assert (strcasecmp ("HOSTS", element_name) == 0);
-        set_client_state (CLIENT_CREATE_OVERRIDE);
-        break;
-      case CLIENT_CREATE_OVERRIDE_NEW_THREAT:
-        assert (strcasecmp ("NEW_THREAT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_OVERRIDE);
-        break;
-      case CLIENT_CREATE_OVERRIDE_NVT:
-        assert (strcasecmp ("NVT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_OVERRIDE);
-        break;
-      case CLIENT_CREATE_OVERRIDE_PORT:
-        assert (strcasecmp ("PORT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_OVERRIDE);
-        break;
-      case CLIENT_CREATE_OVERRIDE_RESULT:
-        assert (strcasecmp ("RESULT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_OVERRIDE);
-        break;
-      case CLIENT_CREATE_OVERRIDE_TASK:
-        assert (strcasecmp ("TASK", element_name) == 0);
-        set_client_state (CLIENT_CREATE_OVERRIDE);
-        break;
-      case CLIENT_CREATE_OVERRIDE_TEXT:
-        assert (strcasecmp ("TEXT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_OVERRIDE);
-        break;
-      case CLIENT_CREATE_OVERRIDE_THREAT:
-        assert (strcasecmp ("THREAT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_OVERRIDE);
-        break;
+      CLOSE (CLIENT_CREATE_OVERRIDE, ACTIVE);
+      CLOSE (CLIENT_CREATE_OVERRIDE, HOSTS);
+      CLOSE (CLIENT_CREATE_OVERRIDE, NEW_THREAT);
+      CLOSE (CLIENT_CREATE_OVERRIDE, NVT);
+      CLOSE (CLIENT_CREATE_OVERRIDE, PORT);
+      CLOSE (CLIENT_CREATE_OVERRIDE, RESULT);
+      CLOSE (CLIENT_CREATE_OVERRIDE, TASK);
+      CLOSE (CLIENT_CREATE_OVERRIDE, TEXT);
+      CLOSE (CLIENT_CREATE_OVERRIDE, THREAT);
 
       case CLIENT_CREATE_PORT_LIST:
         {
@@ -11856,52 +11620,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_CREATE_PORT_LIST_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_PORT_LIST);
-        break;
+      CLOSE (CLIENT_CREATE_PORT_LIST, COMMENT);
       case CLIENT_CPL_GPLR:
         assert (strcasecmp ("GET_PORT_LISTS_RESPONSE", element_name) == 0);
         set_client_state (CLIENT_CREATE_PORT_LIST);
         break;
-      case CLIENT_CREATE_PORT_LIST_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_PORT_LIST);
-        break;
-      case CLIENT_CREATE_PORT_LIST_PORT_RANGE:
-        assert (strcasecmp ("PORT_RANGE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_PORT_LIST);
-        break;
+      CLOSE (CLIENT_CREATE_PORT_LIST, NAME);
+      CLOSE (CLIENT_CREATE_PORT_LIST, PORT_RANGE);
 
-      case CLIENT_CPL_GPLR_PORT_LIST:
-        assert (strcasecmp ("PORT_LIST", element_name) == 0);
-        set_client_state (CLIENT_CPL_GPLR);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_IN_USE:
-        assert (strcasecmp ("IN_USE", element_name) == 0);
-        set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_TARGETS:
-        assert (strcasecmp ("TARGETS", element_name) == 0);
-        omp_parser->read_over = 0;
-        set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGE:
-        assert (strcasecmp ("PORT_RANGE", element_name) == 0);
-        set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES:
-        assert (strcasecmp ("PORT_RANGES", element_name) == 0);
-        set_client_state (CLIENT_CPL_GPLR_PORT_LIST);
-        break;
+      CLOSE (CLIENT_CPL_GPLR, PORT_LIST);
+      CLOSE (CLIENT_CPL_GPLR_PORT_LIST, COMMENT);
+      CLOSE (CLIENT_CPL_GPLR_PORT_LIST, IN_USE);
+      CLOSE (CLIENT_CPL_GPLR_PORT_LIST, NAME);
+      CLOSE_READ_OVER (CLIENT_CPL_GPLR_PORT_LIST, TARGETS);
+      CLOSE (CLIENT_CPL_GPLR_PORT_LIST, PORT_RANGE);
+      CLOSE (CLIENT_CPL_GPLR_PORT_LIST, PORT_RANGES);
 
       case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE:
         {
@@ -11914,22 +11647,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES);
           break;
         }
-      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_END:
-        assert (strcasecmp ("END", element_name) == 0);
-        set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_START:
-        assert (strcasecmp ("START", element_name) == 0);
-        set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE);
-        break;
-      case CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE_TYPE:
-        assert (strcasecmp ("TYPE", element_name) == 0);
-        set_client_state (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE);
-        break;
+      CLOSE (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE, COMMENT);
+      CLOSE (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE, END);
+      CLOSE (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE, START);
+      CLOSE (CLIENT_CPL_GPLR_PORT_LIST_PORT_RANGES_PORT_RANGE, TYPE);
 
       case CLIENT_CREATE_PORT_RANGE:
         {
@@ -12029,26 +11750,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_CREATE_PORT_RANGE_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_PORT_RANGE);
-        break;
-      case CLIENT_CREATE_PORT_RANGE_END:
-        assert (strcasecmp ("END", element_name) == 0);
-        set_client_state (CLIENT_CREATE_PORT_RANGE);
-        break;
-      case CLIENT_CREATE_PORT_RANGE_START:
-        assert (strcasecmp ("START", element_name) == 0);
-        set_client_state (CLIENT_CREATE_PORT_RANGE);
-        break;
-      case CLIENT_CREATE_PORT_RANGE_TYPE:
-        assert (strcasecmp ("TYPE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_PORT_RANGE);
-        break;
-      case CLIENT_CREATE_PORT_RANGE_PORT_LIST:
-        assert (strcasecmp ("PORT_LIST", element_name) == 0);
-        set_client_state (CLIENT_CREATE_PORT_RANGE);
-        break;
+      CLOSE (CLIENT_CREATE_PORT_RANGE, COMMENT);
+      CLOSE (CLIENT_CREATE_PORT_RANGE, END);
+      CLOSE (CLIENT_CREATE_PORT_RANGE, START);
+      CLOSE (CLIENT_CREATE_PORT_RANGE, TYPE);
+      CLOSE (CLIENT_CREATE_PORT_RANGE, PORT_LIST);
 
       case CLIENT_CREATE_REPORT:
         {
@@ -12138,10 +11844,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_CREATE_REPORT_REPORT:
-        assert (strcasecmp ("REPORT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT);
-        break;
+      CLOSE (CLIENT_CREATE_REPORT, REPORT);
       case CLIENT_CREATE_REPORT_RR:
         assert (strcasecmp ("REPORT", element_name) == 0);
         if (create_report_data->wrapper)
@@ -12149,21 +11852,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         else
           set_client_state (CLIENT_CREATE_REPORT);
         break;
-      case CLIENT_CREATE_REPORT_RR_FILTERS:
-        assert (strcasecmp ("FILTERS", element_name) == 0);
-        omp_parser->read_over = 0;
-        set_client_state (CLIENT_CREATE_REPORT_RR);
-        break;
-      case CLIENT_CREATE_REPORT_RR_HOST:
-        assert (strcasecmp ("HOST", element_name) == 0);
-        omp_parser->read_over = 0;
-        set_client_state (CLIENT_CREATE_REPORT_RR);
-        break;
-      case CLIENT_CREATE_REPORT_RR_HOST_COUNT:
-        assert (strcasecmp ("HOST_COUNT", element_name) == 0);
-        omp_parser->read_over = 0;
-        set_client_state (CLIENT_CREATE_REPORT_RR);
-        break;
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, FILTERS);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, HOST);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, HOST_COUNT);
       case CLIENT_CREATE_REPORT_RR_HOST_END:
         assert (strcasecmp ("HOST_END", element_name) == 0);
 
@@ -12213,63 +11904,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         set_client_state (CLIENT_CREATE_REPORT_RR);
         break;
-      case CLIENT_CREATE_REPORT_RR_HOSTS:
-        assert (strcasecmp ("HOSTS", element_name) == 0);
-        omp_parser->read_over = 0;
-        set_client_state (CLIENT_CREATE_REPORT_RR);
-        break;
-      case CLIENT_CREATE_REPORT_RR_PORTS:
-        assert (strcasecmp ("PORTS", element_name) == 0);
-        omp_parser->read_over = 0;
-        set_client_state (CLIENT_CREATE_REPORT_RR);
-        break;
-      case CLIENT_CREATE_REPORT_RR_REPORT_FORMAT:
-        assert (strcasecmp ("REPORT_FORMAT", element_name) == 0);
-        omp_parser->read_over = 0;
-        set_client_state (CLIENT_CREATE_REPORT_RR);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS:
-        assert (strcasecmp ("RESULTS", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR);
-        break;
-      case CLIENT_CREATE_REPORT_RR_SCAN_RUN_STATUS:
-        assert (strcasecmp ("SCAN_RUN_STATUS", element_name) == 0);
-        omp_parser->read_over = 0;
-        set_client_state (CLIENT_CREATE_REPORT_RR);
-        break;
-      case CLIENT_CREATE_REPORT_RR_SCAN_END:
-        assert (strcasecmp ("SCAN_END", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR);
-        break;
-      case CLIENT_CREATE_REPORT_RR_SCAN_START:
-        assert (strcasecmp ("SCAN_START", element_name) == 0);
-        /* Tue Mar 22 20:28:05 2011 */
-        set_client_state (CLIENT_CREATE_REPORT_RR);
-        break;
-      case CLIENT_CREATE_REPORT_RR_SORT:
-        assert (strcasecmp ("SORT", element_name) == 0);
-        omp_parser->read_over = 0;
-        set_client_state (CLIENT_CREATE_REPORT_RR);
-        break;
-      case CLIENT_CREATE_REPORT_RR_TASK:
-        assert (strcasecmp ("TASK", element_name) == 0);
-        omp_parser->read_over = 0;
-        set_client_state (CLIENT_CREATE_REPORT_RR);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULT_COUNT:
-        assert (strcasecmp ("RESULT_COUNT", element_name) == 0);
-        omp_parser->read_over = 0;
-        set_client_state (CLIENT_CREATE_REPORT_RR);
-        break;
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, HOSTS);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, PORTS);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, REPORT_FORMAT);
+      CLOSE (CLIENT_CREATE_REPORT_RR, RESULTS);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, SCAN_RUN_STATUS);
+      CLOSE (CLIENT_CREATE_REPORT_RR, SCAN_END);
+      CLOSE (CLIENT_CREATE_REPORT_RR, SCAN_START);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, SORT);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, TASK);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, RESULT_COUNT);
 
-      case CLIENT_CREATE_REPORT_RR_HOST_END_HOST:
-        assert (strcasecmp ("HOST", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_HOST_END);
-        break;
-      case CLIENT_CREATE_REPORT_RR_HOST_START_HOST:
-        assert (strcasecmp ("HOST", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_HOST_START);
-        break;
+      CLOSE (CLIENT_CREATE_REPORT_RR_HOST_END, HOST);
+      CLOSE (CLIENT_CREATE_REPORT_RR_HOST_START, HOST);
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT:
         {
@@ -12304,78 +11951,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS);
           break;
         }
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION:
-        assert (strcasecmp ("DESCRIPTION", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST:
-        assert (strcasecmp ("HOST", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NOTES:
-        assert (strcasecmp ("NOTES", element_name) == 0);
-        omp_parser->read_over = 0;
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT:
-        assert (strcasecmp ("NVT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT:
-        assert (strcasecmp ("ORIGINAL_THREAT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES:
-        assert (strcasecmp ("OVERRIDES", element_name) == 0);
-        omp_parser->read_over = 0;
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT:
-        assert (strcasecmp ("PORT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET:
-        assert (strcasecmp ("SUBNET", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT:
-        assert (strcasecmp ("THREAT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
-        break;
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, DESCRIPTION);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, HOST);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NOTES);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NVT);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, ORIGINAL_THREAT);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, OVERRIDES);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, PORT);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, SUBNET);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, THREAT);
 
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_BID:
-        assert (strcasecmp ("BID", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CVE:
-        assert (strcasecmp ("CVE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CVSS_BASE:
-        assert (strcasecmp ("CVSS_BASE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT);
-        break;
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_RISK_FACTOR:
-        assert (strcasecmp ("RISK_FACTOR", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT);
-        break;
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, BID);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, CVE);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, CVSS_BASE);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, NAME);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, RISK_FACTOR);
 
-      case CLIENT_CREATE_REPORT_TASK:
-        assert (strcasecmp ("TASK", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT);
-        break;
-      case CLIENT_CREATE_REPORT_TASK_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_TASK);
-        break;
-      case CLIENT_CREATE_REPORT_TASK_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_REPORT_TASK);
-        break;
+      CLOSE (CLIENT_CREATE_REPORT, TASK);
+      CLOSE (CLIENT_CREATE_REPORT_TASK, COMMENT);
+      CLOSE (CLIENT_CREATE_REPORT_TASK, NAME);
 
       case CLIENT_CREATE_REPORT_FORMAT:
         {
@@ -12544,22 +12138,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("GET_REPORT_FORMATS_RESPONSE", element_name) == 0);
         set_client_state (CLIENT_CREATE_REPORT_FORMAT);
         break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT:
-        assert (strcasecmp ("REPORT_FORMAT", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_CONTENT_TYPE:
-        assert (strcasecmp ("CONTENT_TYPE", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_DESCRIPTION:
-        assert (strcasecmp ("DESCRIPTION", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_EXTENSION:
-        assert (strcasecmp ("EXTENSION", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
+      CLOSE (CLIENT_CRF_GRFR, REPORT_FORMAT);
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, CONTENT_TYPE);
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, DESCRIPTION);
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, EXTENSION);
       case CLIENT_CRF_GRFR_REPORT_FORMAT_FILE:
         {
           gchar *string;
@@ -12580,14 +12162,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
           break;
         }
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_GLOBAL:
-        assert (strcasecmp ("GLOBAL", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, GLOBAL);
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, NAME);
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM:
         {
           create_report_format_param_t *param;
@@ -12632,42 +12208,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
           break;
         }
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT:
-        assert (strcasecmp ("DEFAULT", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE:
-        assert (strcasecmp ("TYPE", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS:
-        assert (strcasecmp ("OPTIONS", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE:
-        assert (strcasecmp ("VALUE", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PREDEFINED:
-        assert (strcasecmp ("PREDEFINED", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE:
-        assert (strcasecmp ("SIGNATURE", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY:
-        assert (strcasecmp ("SUMMARY", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST:
-        assert (strcasecmp ("TRUST", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
-        break;
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM, DEFAULT);
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM, NAME);
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM, TYPE);
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM, OPTIONS);
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM, VALUE);
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, PREDEFINED);
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, SIGNATURE);
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, SUMMARY);
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, TRUST);
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION:
         assert (strcasecmp ("OPTION", element_name) == 0);
@@ -12677,14 +12226,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS);
         break;
 
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX:
-        assert (strcasecmp ("MAX", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE);
-        break;
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN:
-        assert (strcasecmp ("MIN", element_name) == 0);
-        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE);
-        break;
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE, MAX);
+      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE, MIN);
 
       case CLIENT_CREATE_SCHEDULE:
         {
@@ -12784,57 +12327,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_CREATE_SCHEDULE_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SCHEDULE);
-        break;
-      case CLIENT_CREATE_SCHEDULE_DURATION:
-        assert (strcasecmp ("DURATION", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SCHEDULE);
-        break;
-      case CLIENT_CREATE_SCHEDULE_FIRST_TIME:
-        assert (strcasecmp ("FIRST_TIME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SCHEDULE);
-        break;
-      case CLIENT_CREATE_SCHEDULE_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SCHEDULE);
-        break;
-      case CLIENT_CREATE_SCHEDULE_PERIOD:
-        assert (strcasecmp ("PERIOD", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SCHEDULE);
-        break;
+      CLOSE (CLIENT_CREATE_SCHEDULE, COMMENT);
+      CLOSE (CLIENT_CREATE_SCHEDULE, DURATION);
+      CLOSE (CLIENT_CREATE_SCHEDULE, FIRST_TIME);
+      CLOSE (CLIENT_CREATE_SCHEDULE, NAME);
+      CLOSE (CLIENT_CREATE_SCHEDULE, PERIOD);
 
-      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH:
-        assert (strcasecmp ("DAY_OF_MONTH", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
-        break;
-      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR:
-        assert (strcasecmp ("HOUR", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
-        break;
-      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE:
-        assert (strcasecmp ("MINUTE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
-        break;
-      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH:
-        assert (strcasecmp ("MONTH", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
-        break;
-      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR:
-        assert (strcasecmp ("YEAR", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
-        break;
+      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, DAY_OF_MONTH);
+      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, HOUR);
+      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, MINUTE);
+      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, MONTH);
+      CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, YEAR);
 
-      case CLIENT_CREATE_SCHEDULE_DURATION_UNIT:
-        assert (strcasecmp ("UNIT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SCHEDULE_DURATION);
-        break;
+      CLOSE (CLIENT_CREATE_SCHEDULE_DURATION, UNIT);
 
-      case CLIENT_CREATE_SCHEDULE_PERIOD_UNIT:
-        assert (strcasecmp ("UNIT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD);
-        break;
+      CLOSE (CLIENT_CREATE_SCHEDULE_PERIOD, UNIT);
 
       case CLIENT_CREATE_SLAVE:
         {
@@ -12924,30 +12431,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_CREATE_SLAVE_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SLAVE);
-        break;
-      case CLIENT_CREATE_SLAVE_HOST:
-        assert (strcasecmp ("HOST", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SLAVE);
-        break;
-      case CLIENT_CREATE_SLAVE_LOGIN:
-        assert (strcasecmp ("LOGIN", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SLAVE);
-        break;
-      case CLIENT_CREATE_SLAVE_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SLAVE);
-        break;
-      case CLIENT_CREATE_SLAVE_PASSWORD:
-        assert (strcasecmp ("PASSWORD", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SLAVE);
-        break;
-      case CLIENT_CREATE_SLAVE_PORT:
-        assert (strcasecmp ("PORT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_SLAVE);
-        break;
+      CLOSE (CLIENT_CREATE_SLAVE, COMMENT);
+      CLOSE (CLIENT_CREATE_SLAVE, HOST);
+      CLOSE (CLIENT_CREATE_SLAVE, LOGIN);
+      CLOSE (CLIENT_CREATE_SLAVE, NAME);
+      CLOSE (CLIENT_CREATE_SLAVE, PASSWORD);
+      CLOSE (CLIENT_CREATE_SLAVE, PORT);
 
       case CLIENT_CREATE_TARGET:
         {
@@ -13097,51 +12586,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_CREATE_TARGET_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET);
-        break;
-      case CLIENT_CREATE_TARGET_HOSTS:
-        assert (strcasecmp ("HOSTS", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET);
-        break;
-      case CLIENT_CREATE_TARGET_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET);
-        break;
-      case CLIENT_CREATE_TARGET_PORT_LIST:
-        assert (strcasecmp ("PORT_LIST", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET);
-        break;
-      case CLIENT_CREATE_TARGET_PORT_RANGE:
-        assert (strcasecmp ("PORT_RANGE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET);
-        break;
-      case CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL:
-        assert (strcasecmp ("SSH_LSC_CREDENTIAL", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET);
-        break;
-      case CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL:
-        assert (strcasecmp ("SMB_LSC_CREDENTIAL", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET);
-        break;
-      case CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD:
-        assert (strcasecmp ("PASSWORD", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR);
-        break;
-      case CLIENT_CREATE_TARGET_TARGET_LOCATOR:
-        assert (strcasecmp ("TARGET_LOCATOR", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET);
-        break;
-      case CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME:
-        assert (strcasecmp ("USERNAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR);
-        break;
+      CLOSE (CLIENT_CREATE_TARGET, COMMENT);
+      CLOSE (CLIENT_CREATE_TARGET, HOSTS);
+      CLOSE (CLIENT_CREATE_TARGET, NAME);
+      CLOSE (CLIENT_CREATE_TARGET, PORT_LIST);
+      CLOSE (CLIENT_CREATE_TARGET, PORT_RANGE);
+      CLOSE (CLIENT_CREATE_TARGET, SSH_LSC_CREDENTIAL);
+      CLOSE (CLIENT_CREATE_TARGET, SMB_LSC_CREDENTIAL);
+      CLOSE (CLIENT_CREATE_TARGET_TARGET_LOCATOR, PASSWORD);
+      CLOSE (CLIENT_CREATE_TARGET, TARGET_LOCATOR);
+      CLOSE (CLIENT_CREATE_TARGET_TARGET_LOCATOR, USERNAME);
 
-      case CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT:
-        assert (strcasecmp ("PORT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL);
-        break;
+      CLOSE (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL, PORT);
 
       case CLIENT_CREATE_TASK:
         {
@@ -13518,30 +12974,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_CREATE_TASK_COMMENT:
-        assert (strcasecmp ("COMMENT", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TASK);
-        break;
-      case CLIENT_CREATE_TASK_CONFIG:
-        assert (strcasecmp ("CONFIG", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TASK);
-        break;
-      case CLIENT_CREATE_TASK_ESCALATOR:
-        assert (strcasecmp ("ESCALATOR", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TASK);
-        break;
-      case CLIENT_CREATE_TASK_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TASK);
-        break;
-      case CLIENT_CREATE_TASK_OBSERVERS:
-        assert (strcasecmp ("OBSERVERS", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TASK);
-        break;
-      case CLIENT_CREATE_TASK_PREFERENCES:
-        assert (strcasecmp ("PREFERENCES", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TASK);
-        break;
+      CLOSE (CLIENT_CREATE_TASK, COMMENT);
+      CLOSE (CLIENT_CREATE_TASK, CONFIG);
+      CLOSE (CLIENT_CREATE_TASK, ESCALATOR);
+      CLOSE (CLIENT_CREATE_TASK, NAME);
+      CLOSE (CLIENT_CREATE_TASK, OBSERVERS);
+      CLOSE (CLIENT_CREATE_TASK, PREFERENCES);
       case CLIENT_CREATE_TASK_RCFILE:
         assert (strcasecmp ("RCFILE", element_name) == 0);
         if (create_task_data->task)
@@ -13570,18 +13008,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_CREATE_TASK);
           }
         break;
-      case CLIENT_CREATE_TASK_TARGET:
-        assert (strcasecmp ("TARGET", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TASK);
-        break;
-      case CLIENT_CREATE_TASK_SCHEDULE:
-        assert (strcasecmp ("SCHEDULE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TASK);
-        break;
-      case CLIENT_CREATE_TASK_SLAVE:
-        assert (strcasecmp ("SLAVE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TASK);
-        break;
+      CLOSE (CLIENT_CREATE_TASK, TARGET);
+      CLOSE (CLIENT_CREATE_TASK, SCHEDULE);
+      CLOSE (CLIENT_CREATE_TASK, SLAVE);
 
       case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE:
         assert (strcasecmp ("PREFERENCE", element_name) == 0);
@@ -13594,10 +13023,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("SCANNER_NAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE);
         break;
-      case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE:
-        assert (strcasecmp ("VALUE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE);
-        break;
+      CLOSE (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE, VALUE);
 
       case CLIENT_EMPTY_TRASHCAN:
         switch (manage_empty_trashcan ())
@@ -13702,34 +13128,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_MODIFY_NOTE_ACTIVE:
-        assert (strcasecmp ("ACTIVE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_NOTE);
-        break;
-      case CLIENT_MODIFY_NOTE_HOSTS:
-        assert (strcasecmp ("HOSTS", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_NOTE);
-        break;
-      case CLIENT_MODIFY_NOTE_PORT:
-        assert (strcasecmp ("PORT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_NOTE);
-        break;
-      case CLIENT_MODIFY_NOTE_RESULT:
-        assert (strcasecmp ("RESULT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_NOTE);
-        break;
-      case CLIENT_MODIFY_NOTE_TASK:
-        assert (strcasecmp ("TASK", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_NOTE);
-        break;
-      case CLIENT_MODIFY_NOTE_TEXT:
-        assert (strcasecmp ("TEXT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_NOTE);
-        break;
-      case CLIENT_MODIFY_NOTE_THREAT:
-        assert (strcasecmp ("THREAT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_NOTE);
-        break;
+      CLOSE (CLIENT_MODIFY_NOTE, ACTIVE);
+      CLOSE (CLIENT_MODIFY_NOTE, HOSTS);
+      CLOSE (CLIENT_MODIFY_NOTE, PORT);
+      CLOSE (CLIENT_MODIFY_NOTE, RESULT);
+      CLOSE (CLIENT_MODIFY_NOTE, TASK);
+      CLOSE (CLIENT_MODIFY_NOTE, TEXT);
+      CLOSE (CLIENT_MODIFY_NOTE, THREAT);
 
       case CLIENT_MODIFY_OVERRIDE:
         {
@@ -13823,38 +13228,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_MODIFY_OVERRIDE_ACTIVE:
-        assert (strcasecmp ("ACTIVE", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_OVERRIDE);
-        break;
-      case CLIENT_MODIFY_OVERRIDE_HOSTS:
-        assert (strcasecmp ("HOSTS", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_OVERRIDE);
-        break;
-      case CLIENT_MODIFY_OVERRIDE_NEW_THREAT:
-        assert (strcasecmp ("NEW_THREAT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_OVERRIDE);
-        break;
-      case CLIENT_MODIFY_OVERRIDE_PORT:
-        assert (strcasecmp ("PORT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_OVERRIDE);
-        break;
-      case CLIENT_MODIFY_OVERRIDE_RESULT:
-        assert (strcasecmp ("RESULT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_OVERRIDE);
-        break;
-      case CLIENT_MODIFY_OVERRIDE_TASK:
-        assert (strcasecmp ("TASK", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_OVERRIDE);
-        break;
-      case CLIENT_MODIFY_OVERRIDE_TEXT:
-        assert (strcasecmp ("TEXT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_OVERRIDE);
-        break;
-      case CLIENT_MODIFY_OVERRIDE_THREAT:
-        assert (strcasecmp ("THREAT", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_OVERRIDE);
-        break;
+      CLOSE (CLIENT_MODIFY_OVERRIDE, ACTIVE);
+      CLOSE (CLIENT_MODIFY_OVERRIDE, HOSTS);
+      CLOSE (CLIENT_MODIFY_OVERRIDE, NEW_THREAT);
+      CLOSE (CLIENT_MODIFY_OVERRIDE, PORT);
+      CLOSE (CLIENT_MODIFY_OVERRIDE, RESULT);
+      CLOSE (CLIENT_MODIFY_OVERRIDE, TASK);
+      CLOSE (CLIENT_MODIFY_OVERRIDE, TEXT);
+      CLOSE (CLIENT_MODIFY_OVERRIDE, THREAT);
 
       case CLIENT_TEST_ESCALATOR:
         if (test_escalator_data->escalator_id)
