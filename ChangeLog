@@ -1,3 +1,8 @@
+2012-03-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/HTML/HTML.xsl (override): Add delta arg.
+	(result [issue]): Add missing override delta case.
+
 2012-03-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl (highlight-diff)

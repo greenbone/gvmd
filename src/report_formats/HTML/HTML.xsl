@@ -237,6 +237,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template match="override">
+    <xsl:param name="delta">0</xsl:param>
     <xsl:if test="/report/filters/apply_overrides/text()='1'">
       <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
         <b>
@@ -249,7 +250,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <xsl:value-of select="threat"/>
             </xsl:otherwise>
           </xsl:choose>
-          to <xsl:value-of select="new_threat"/></b><br/>
+          to <xsl:value-of select="new_threat"/></b><xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if><br/>
         <pre>
           <xsl:call-template name="wrap">
             <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
@@ -433,7 +434,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:apply-templates select="delta/notes/note">
       <xsl:with-param name="delta" select="2"/>
     </xsl:apply-templates>
-    <xsl:apply-templates select="overrides/override"/>
+    <xsl:apply-templates select="overrides/override">
+      <xsl:with-param name="delta" select="$delta"/>
+    </xsl:apply-templates>
+    <xsl:apply-templates select="delta/overrides/override">
+      <xsl:with-param name="delta" select="2"/>
+    </xsl:apply-templates>
 
   </xsl:template>
 
