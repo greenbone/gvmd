@@ -1,5 +1,13 @@
 2012-03-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/HTML/HTML.xsl (highlight-diff)
+	(highlight-diff-line): New function.
+	(note): Add delta param.
+	(result [issue]): Add delta cases.
+	(report): Add delta version of descriptions, and times.
+
+2012-03-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (CLOSE, CLOSE_READ_OVER): New macros.
 	(omp_xml_handle_end_element): Replace simple element closes with macro
 	calls.

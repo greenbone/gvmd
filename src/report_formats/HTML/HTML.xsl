@@ -92,6 +92,120 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 </xsl:template>
 
+<xsl:template name="highlight-diff">
+  <xsl:param name="string"></xsl:param>
+
+  <xsl:for-each select="str:tokenize($string, '&#10;')">
+      <xsl:call-template name="highlight-diff-line">
+        <xsl:with-param name="string"><xsl:value-of select="."/></xsl:with-param>
+      </xsl:call-template>
+  </xsl:for-each>
+</xsl:template>
+
+<!-- This is called within a PRE. -->
+<xsl:template name="highlight-diff-line">
+  <xsl:param name="string"></xsl:param>
+
+  <xsl:variable name="to-next-newline">
+    <xsl:value-of select="substring-before($string, '&#10;')"/>
+  </xsl:variable>
+
+  <xsl:choose>
+    <xsl:when test="string-length($string) = 0">
+      <!-- The string is empty. -->
+    </xsl:when>
+    <xsl:when test="(string-length($to-next-newline) = 0) and (substring($string, 1, 1) != '&#10;')">
+      <!-- A single line missing a newline, output up to the edge. -->
+      <xsl:choose>
+        <xsl:when test="(substring($string, 1, 1) = '@')">
+<div style="white-space: pre; font-family: monospace; color: #9932CC;">
+<xsl:value-of select="substring($string, 1, 90)"/>
+</div>
+        </xsl:when>
+        <xsl:when test="(substring($string, 1, 1) = '+')">
+<div style="white-space: pre; font-family: monospace; color: #006400;">
+<xsl:value-of select="substring($string, 1, 90)"/>
+</div>
+        </xsl:when>
+        <xsl:when test="(substring($string, 1, 1) = '-')">
+<div style="white-space: pre; font-family: monospace; color: #B22222;">
+<xsl:value-of select="substring($string, 1, 90)"/>
+</div>
+        </xsl:when>
+        <xsl:otherwise>
+<div style="white-space: pre; font-family: monospace;">
+<xsl:value-of select="substring($string, 1, 90)"/>
+</div>
+        </xsl:otherwise>
+      </xsl:choose>
+      <xsl:if test="string-length($string) &gt; 90">&#8629;
+<xsl:call-template name="highlight-diff-line">
+  <xsl:with-param name="string"><xsl:value-of select="substring($string, 91, string-length($string))"/></xsl:with-param>
+</xsl:call-template>
+      </xsl:if>
+    </xsl:when>
+    <xsl:when test="(string-length($to-next-newline) + 1 &lt; string-length($string)) and (string-length($to-next-newline) &lt; 90)">
+      <!-- There's a newline before the edge, so output the line. -->
+      <xsl:choose>
+        <xsl:when test="(substring($string, 1, 1) = '@')">
+<div style="white-space: pre; font-family: monospace; color: #9932CC;">
+<xsl:value-of select="substring($string, 1, string-length($to-next-newline) + 1)"/>
+</div>
+        </xsl:when>
+        <xsl:when test="(substring($string, 1, 1) = '+')">
+<div style="white-space: pre; font-family: monospace; color: #006400;">
+<xsl:value-of select="substring($string, 1, 90)"/>
+</div>
+        </xsl:when>
+        <xsl:when test="(substring($string, 1, 1) = '-')">
+<div style="white-space: pre; font-family: monospace; color: #B22222;">
+<xsl:value-of select="substring($string, 1, 90)"/>
+</div>
+        </xsl:when>
+        <xsl:otherwise>
+<div style="white-space: pre; font-family: monospace;">
+<xsl:value-of select="substring($string, 1, string-length($to-next-newline) + 1)"/>
+</div>
+        </xsl:otherwise>
+      </xsl:choose>
+<xsl:call-template name="highlight-diff-line">
+  <xsl:with-param name="string"><xsl:value-of select="substring($string, string-length($to-next-newline) + 2, string-length($string))"/></xsl:with-param>
+</xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <!-- Any newline comes after the edge, so output up to the edge. -->
+      <xsl:choose>
+        <xsl:when test="(substring($string, 1, 1) = '@')">
+<div style="white-space: pre; font-family: monospace;">
+<xsl:value-of select="substring($string, 1, 90)"/>
+</div>
+        </xsl:when>
+        <xsl:when test="(substring($string, 1, 1) = '+')">
+<div style="white-space: pre; font-family: monospace; color: #006400;">
+<xsl:value-of select="substring($string, 1, 90)"/>
+</div>
+        </xsl:when>
+        <xsl:when test="(substring($string, 1, 1) = '-')">
+<div style="white-space: pre; font-family: monospace; color: #B22222;">
+<xsl:value-of select="substring($string, 1, 90)"/>
+</div>
+        </xsl:when>
+        <xsl:otherwise>
+<div style="white-space: pre; font-family: monospace;">
+<xsl:value-of select="substring($string, 1, 90)"/>
+</div>
+        </xsl:otherwise>
+      </xsl:choose>
+      <xsl:if test="string-length($string) &gt; 90">&#8629;
+<xsl:call-template name="hightlight-diff-line">
+  <xsl:with-param name="string"><xsl:value-of select="substring($string, 91, string-length($string))"/></xsl:with-param>
+</xsl:call-template>
+      </xsl:if>
+    </xsl:otherwise>
+  </xsl:choose>
+
+</xsl:template>
+
   <xsl:template match="scan_start">
     <tr><td>Scan started:</td><td><xsl:apply-templates /></td></tr>
   </xsl:template>
@@ -101,8 +215,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template match="note">
+    <xsl:param name="delta">0</xsl:param>
     <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
-      <b>Note</b>
+      <b>Note</b><xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if><br/>
       <pre>
         <xsl:call-template name="wrap">
           <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
@@ -219,6 +334,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <div style="float:right; text-align:right">
         <xsl:value-of select="port"/>
       </div>
+      <xsl:if test="delta/text()">
+        <div style="float: left; font-size: 24px; border: 2px; padding-left: 2px; padding-right: 8px; margin:0px;">
+          <xsl:choose>
+            <xsl:when test="delta/text() = 'changed'">~</xsl:when>
+            <xsl:when test="delta/text() = 'gone'">&#8722;</xsl:when>
+            <xsl:when test="delta/text() = 'new'">+</xsl:when>
+            <xsl:when test="delta/text() = 'same'">=</xsl:when>
+          </xsl:choose>
+        </div>
+      </xsl:if>
       <b><xsl:value-of select="threat"/></b>
       <xsl:choose>
         <xsl:when test="original_threat">
@@ -262,27 +387,79 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </div>
     </xsl:if>
     <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+      <xsl:choose>
+        <xsl:when test="delta/text() = 'changed'">
+          <b>Result 1</b>
+        </xsl:when>
+      </xsl:choose>
       <pre>
         <xsl:call-template name="wrap">
           <xsl:with-param name="string"><xsl:apply-templates select="description"/></xsl:with-param>
         </xsl:call-template>
       </pre>
     </div>
+    <xsl:if test="delta">
+      <xsl:choose>
+        <xsl:when test="delta/text() = 'changed'">
+          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+            <b>Result 2</b>
+            <pre>
+              <xsl:call-template name="wrap">
+                <xsl:with-param name="string"><xsl:value-of select="delta/result/description"/></xsl:with-param>
+              </xsl:call-template>
+            </pre>
+          </div>
+          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+            <b>Different Lines</b>
+            <p>
+              <xsl:call-template name="highlight-diff">
+                <xsl:with-param name="string"><xsl:value-of select="delta/diff"/></xsl:with-param>
+              </xsl:call-template>
+            </p>
+          </div>
+        </xsl:when>
+      </xsl:choose>
+    </xsl:if>
+    <xsl:variable name="delta">
+      <xsl:choose>
+        <xsl:when test="delta">1</xsl:when>
+        <xsl:otherwise>0</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
     <xsl:apply-templates select="nvt"/>
-    <xsl:apply-templates select="notes/note"/>
+    <xsl:apply-templates select="notes/note">
+      <xsl:with-param name="delta" select="$delta"/>
+    </xsl:apply-templates>
+    <xsl:apply-templates select="delta/notes/note">
+      <xsl:with-param name="delta" select="2"/>
+    </xsl:apply-templates>
     <xsl:apply-templates select="overrides/override"/>
 
   </xsl:template>
 
   <xsl:template match="report">
-    <h1>Summary</h1>
+    <xsl:choose>
+      <xsl:when test="/report/delta">
+        <h1>Delta Report Summary</h1>
 
-    <p>
-      This document reports on the results of an automatic security scan.
-      The report first summarises the results found.  Then, for each host,
-      the report describes every issue found.  Please consider the
-      advice given in each description, in order to rectify the issue.
-    </p>
+        <p>
+          This document compares the results of two security scans.
+          The report first summarises the hosts found.  Then, for each host,
+          the report describes the changes that occurred between the two the
+          scans.
+        </p>
+      </xsl:when>
+      <xsl:otherwise>
+        <h1>Summary</h1>
+
+        <p>
+          This document reports on the results of an automatic security scan.
+          The report first summarises the results found.  Then, for each host,
+          the report describes every issue found.  Please consider the
+          advice given in each description, in order to rectify the issue.
+        </p>
+      </xsl:otherwise>
+    </xsl:choose>
 
     <p>
       <xsl:choose>
@@ -380,10 +557,36 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:choose>
     </p>
 
-    <table>
-      <xsl:apply-templates select="scan_start" />
-      <xsl:apply-templates select="scan_end" />
-    </table>
+    <xsl:choose>
+      <xsl:when test="/report/delta">
+        <table>
+          <tr>
+            <td>Scan 1 started:</td>
+            <td><xsl:value-of select="scan_start"/></td>
+          </tr>
+          <tr>
+            <td>Scan 2 started:</td>
+            <td><xsl:value-of select="delta/report/scan_start"/></td>
+          </tr>
+        </table>
+        <table>
+          <tr>
+            <td>Scan 1 ended:</td>
+            <td><xsl:value-of select="scan_end"/></td>
+          </tr>
+          <tr>
+            <td>Scan 2 ended:</td>
+            <td><xsl:value-of select="delta/report/scan_end"/></td>
+          </tr>
+        </table>
+      </xsl:when>
+      <xsl:otherwise>
+        <table>
+          <xsl:apply-templates select="scan_start" />
+          <xsl:apply-templates select="scan_end" />
+        </table>
+      </xsl:otherwise>
+    </xsl:choose>
 
     <h2>Host Summary</h2>
 
