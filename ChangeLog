@@ -1,5 +1,14 @@
 2012-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/TXT/TXT.xsl (nvt): Remove lines around References
+	section, so that it matches the other sections.
+	(notes, overrides): Add delta case.
+	(result [issue]): Add delta state marker to heading.  Add extra delta
+	sections.  Pass delta arg to notes and overrides templates.
+	(report, /): Modify heading and summary in delta case.
+
+2012-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/HTML/HTML.xsl (report): Remove typo.
 
 	* src/report_formats/LaTeX/latex.xsl (header): Add colours chunk, line_new

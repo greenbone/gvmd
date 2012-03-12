@@ -164,8 +164,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:variable>
 
   <xsl:if test="$cve_ref != '' or $bid_ref != '' or $xref_ref != ''">
-    <xsl:text>----------</xsl:text>
-    <xsl:call-template name="newline"/>
     <xsl:text>References:</xsl:text>
     <xsl:call-template name="newline"/>
     <xsl:if test="$cve_ref != ''">
@@ -196,8 +194,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:for-each>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:text>----------</xsl:text>
-    <xsl:call-template name="newline"/>
     <xsl:call-template name="newline"/>
   </xsl:if>
 </xsl:template>
@@ -248,7 +244,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template match="note">
-    <xsl:text>Note:</xsl:text>
+    <xsl:param name="delta">0</xsl:param>
+    <xsl:text>Note</xsl:text>
+    <xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if>
+    <xsl:text>:</xsl:text>
     <xsl:call-template name="newline"/>
     <xsl:call-template name="wrap">
       <xsl:with-param name="string" select="text"/>
@@ -273,6 +272,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template match="override">
+    <xsl:param name="delta">0</xsl:param>
     <xsl:if test="/report/filters/apply_overrides/text()='1'">
       <xsl:text>Override from </xsl:text>
       <xsl:choose>
@@ -285,6 +285,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:choose>
       <xsl:text> to </xsl:text>
       <xsl:value-of select="new_threat"/>
+      <xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if>
       <xsl:text>:</xsl:text>
       <xsl:call-template name="newline"/>
       <xsl:call-template name="wrap">
@@ -313,7 +314,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <!-- Template for single issue -->
   <xsl:template match="result" mode="issue">
     <xsl:call-template name="subsection">
-      <xsl:with-param name="name">Issue</xsl:with-param>
+      <xsl:with-param name="name">
+        <xsl:choose>
+          <xsl:when test="delta/text() = 'changed'">~ Changed Issue</xsl:when>
+          <xsl:when test="delta/text() = 'gone'">- Removed Issue</xsl:when>
+          <xsl:when test="delta/text() = 'new'">+ Added Issue</xsl:when>
+          <xsl:when test="delta/text() = 'same'">= Equal Issue</xsl:when>
+          <xsl:otherwise>Issue</xsl:otherwise>
+        </xsl:choose>
+      </xsl:with-param>
     </xsl:call-template>
 
     <xsl:text>NVT:    </xsl:text>
@@ -372,7 +381,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:call-template name="newline"/>
     </xsl:if>
 
-    <xsl:text>Description: </xsl:text>
+    <xsl:choose>
+      <xsl:when test="delta/text() = 'changed'">
+        <xsl:text>Result 1 Description:</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>Description:</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:call-template name="newline"/>
 
     <xsl:call-template name="wrap">
@@ -381,18 +397,65 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:call-template name="newline"/>
 
     <xsl:apply-templates select="nvt"/>
-    <xsl:apply-templates select="notes/note"/>
-    <xsl:apply-templates select="overrides/override"/>
+
+    <xsl:if test="delta">
+      <xsl:choose>
+        <xsl:when test="delta/text() = 'changed'">
+          <xsl:text>Result 2 Description:</xsl:text>
+          <xsl:call-template name="newline"/>
+          <xsl:call-template name="wrap">
+            <xsl:with-param name="string" select="delta/result/description"/>
+          </xsl:call-template>
+          <xsl:call-template name="newline"/>
+
+          <xsl:text>Different Lines:</xsl:text>
+          <xsl:call-template name="newline"/>
+          <xsl:call-template name="wrap">
+            <xsl:with-param name="string" select="delta/diff"/>
+          </xsl:call-template>
+          <xsl:call-template name="newline"/>
+        </xsl:when>
+      </xsl:choose>
+    </xsl:if>
+
+    <xsl:variable name="delta">
+      <xsl:choose>
+        <xsl:when test="delta">1</xsl:when>
+        <xsl:otherwise>0</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:apply-templates select="notes/note">
+      <xsl:with-param name="delta" select="$delta"/>
+    </xsl:apply-templates>
+    <xsl:apply-templates select="delta/notes/note">
+      <xsl:with-param name="delta" select="2"/>
+    </xsl:apply-templates>
+    <xsl:apply-templates select="overrides/override">
+      <xsl:with-param name="delta" select="$delta"/>
+    </xsl:apply-templates>
+    <xsl:apply-templates select="delta/overrides/override">
+      <xsl:with-param name="delta" select="2"/>
+    </xsl:apply-templates>
 
     <xsl:call-template name="newline"/>
   </xsl:template>
 
   <xsl:template match="report">
-    <xsl:text>This document reports on the results of an automatic security scan.</xsl:text><xsl:call-template name="newline"/>
-    <xsl:text>The report first summarises the results found.</xsl:text><xsl:call-template name="newline"/>
-    <xsl:text>Then, for each host, the report describes every issue found.</xsl:text><xsl:call-template name="newline"/>
-    <xsl:text>Please consider the advice given in each description, in order to rectify</xsl:text><xsl:call-template name="newline"/>
-    <xsl:text>the issue.</xsl:text><xsl:call-template name="newline"/>
+    <xsl:choose>
+      <xsl:when test="/report/delta">
+        <xsl:text>This document compares the results of two security scans.</xsl:text><xsl:call-template name="newline"/>
+        <xsl:text>The report first summarises the hosts found.  Then, for each host,</xsl:text><xsl:call-template name="newline"/>
+        <xsl:text>the report describes the changes that occurred between the two</xsl:text><xsl:call-template name="newline"/>
+        <xsl:text>scans.</xsl:text><xsl:call-template name="newline"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>This document reports on the results of an automatic security scan.</xsl:text><xsl:call-template name="newline"/>
+        <xsl:text>The report first summarises the results found.</xsl:text><xsl:call-template name="newline"/>
+        <xsl:text>Then, for each host, the report describes every issue found.</xsl:text><xsl:call-template name="newline"/>
+        <xsl:text>Please consider the advice given in each description, in order to rectify</xsl:text><xsl:call-template name="newline"/>
+        <xsl:text>the issue.</xsl:text><xsl:call-template name="newline"/>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:call-template name="newline"/>
 
     <xsl:choose>
@@ -649,7 +712,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <!-- Math the root (report) -->
   <xsl:template match="/">
     <xsl:call-template name="chapter">
-      <xsl:with-param name="name">I Summary</xsl:with-param>
+      <xsl:with-param name="name">
+        <xsl:choose>
+          <xsl:when test="/report/delta">I Delta Report Summary</xsl:when>
+          <xsl:otherwise>I Summary</xsl:otherwise>
+        </xsl:choose>
+      </xsl:with-param>
     </xsl:call-template>
     <xsl:call-template name="newline"/>
     <xsl:apply-templates/>
