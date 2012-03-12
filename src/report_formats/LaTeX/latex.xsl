@@ -178,6 +178,9 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 \definecolor{openvas_user_note}{rgb}{1.0,1.0,0.5625}
 \definecolor{openvas_user_override}{rgb}{1.0,1.0,0.5625}
 \definecolor{openvas_warning}{rgb}{0.9764,0.6235,0.1922}
+\definecolor{chunk}{rgb}{0.9412,0.8275,1}
+\definecolor{line_new}{rgb}{0.89,1,0.89}
+\definecolor{line_gone}{rgb}{1.0,0.89,0.89}
 \hypersetup{colorlinks=true,linkcolor=linkblue,urlcolor=blue,bookmarks=true,bookmarksopen=true}
 \usepackage[all]{hypcap}
 
@@ -185,8 +188,17 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 \geometry{verbose,a4paper}
 \setlength{\parskip}{\smallskipamount}
 \setlength{\parindent}{0pt}
-
-\title{Scan Report}
+</xsl:text>
+<xsl:choose>
+  <xsl:when test="/report/delta">
+    <xsl:text>\title{Delta Report}</xsl:text>
+  </xsl:when>
+  <xsl:otherwise>
+    <xsl:text>\title{Scan Report}</xsl:text>
+  </xsl:otherwise>
+</xsl:choose>
+<xsl:call-template name="latex-newline"/>
+<xsl:text>
 \pagestyle{headings}
 \pagenumbering{arabic}
 </xsl:text>
@@ -425,9 +437,37 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     </xsl:for-each>
   </xsl:template>
 
+  <!-- -->
+  <xsl:template name="text-to-escaped-diff-row">
+    <xsl:param name="string"/>
+    <xsl:for-each select="str:tokenize($string, '&#10;')">
+      <xsl:call-template name="break-into-rows">
+        <xsl:with-param name="string" select="."/>
+        <xsl:with-param name="color">
+          <xsl:choose>
+            <xsl:when test="substring(., 1, 2) = '@@'">chunk</xsl:when>
+            <xsl:when test="substring(., 1, 1) = '-'">line_gone</xsl:when>
+            <xsl:when test="substring(., 1, 1) = '+'">line_new</xsl:when>
+            <xsl:otherwise>white</xsl:otherwise>
+          </xsl:choose>
+        </xsl:with-param>
+      </xsl:call-template>
+    </xsl:for-each>
+  </xsl:template>
+
   <!-- The Abstract. -->
   <xsl:template name="abstract">
     <xsl:choose>
+      <xsl:when test="/report/delta and /report/report_format/param[name='summary']">
+        <xsl:text>
+\renewcommand{\abstractname}{Delta Report Summary}
+\begin{abstract}
+</xsl:text>
+        <xsl:value-of select="/report/report_format/param[name='summary']/value"/>
+        <xsl:text>
+\end{abstract}
+</xsl:text>
+      </xsl:when>
       <xsl:when test="/report/report_format/param[name='summary']">
         <xsl:text>
 \renewcommand{\abstractname}{Summary}
@@ -435,6 +475,26 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 </xsl:text>
         <xsl:value-of select="/report/report_format/param[name='summary']/value"/>
         <xsl:text>
+\end{abstract}
+</xsl:text>
+      </xsl:when>
+      <xsl:when test="/report/delta">
+        <xsl:text>
+\renewcommand{\abstractname}{Delta Report Summary}
+\begin{abstract}
+This document compares the results of two security scans.
+The first scan started at </xsl:text>
+        <xsl:value-of select="scan_start"/>
+<xsl:text> and ended at </xsl:text>
+          <xsl:value-of select="scan_end"/>
+<xsl:text>.
+The second scan started at </xsl:text>
+        <xsl:value-of select="delta/report/scan_start"/>
+<xsl:text> and ended at </xsl:text>
+          <xsl:value-of select="delta/report/scan_end"/>
+<xsl:text>.
+The report first summarises the hosts found.  Then, for each host,
+the report describes the changes that occurred between the two scans.
 \end{abstract}
 </xsl:text>
       </xsl:when>
@@ -754,9 +814,16 @@ advice given in each description, in order to rectify the issue.
 
   <!-- Text of a note. -->
   <xsl:template name="notes">
+    <xsl:param name="delta">0</xsl:param>
+    <xsl:if test="count(notes/note) &gt; 0">
+      <xsl:call-template name="latex-hline"/>
+      <xsl:call-template name="latex-newline"/>
+    </xsl:if>
     <xsl:for-each select="notes/note">
       <xsl:call-template name="latex-newline"/>
-      <xsl:text>\rowcolor{openvas_user_note}{\textbf{Note}}</xsl:text>\\<xsl:call-template name="latex-newline"/>
+      <xsl:text>\rowcolor{openvas_user_note}{\textbf{Note}</xsl:text>
+      <xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if>
+      <xsl:text>}</xsl:text>\\<xsl:call-template name="latex-newline"/>
       <xsl:call-template name="text-to-escaped-row">
         <xsl:with-param name="color" select="'openvas_user_note'"/>
         <xsl:with-param name="string" select="text"/>
@@ -777,7 +844,12 @@ advice given in each description, in order to rectify the issue.
 
   <!-- Text of an override. -->
   <xsl:template name="overrides">
+    <xsl:param name="delta">0</xsl:param>
     <xsl:if test="/report/filters/apply_overrides/text()='1'">
+      <xsl:if test="count(overrides/override) &gt; 0">
+        <xsl:call-template name="latex-hline"/>
+        <xsl:call-template name="latex-newline"/>
+      </xsl:if>
       <xsl:for-each select="overrides/override">
         <xsl:call-template name="latex-newline"/>
         <xsl:text>\rowcolor{openvas_user_override}{\textbf{Override from </xsl:text>
@@ -790,7 +862,9 @@ advice given in each description, in order to rectify the issue.
           </xsl:otherwise>
         </xsl:choose>
         <xsl:text> to </xsl:text>
-        <xsl:value-of select="new_threat"/><xsl:text>}}</xsl:text>\\<xsl:call-template name="latex-newline"/>
+        <xsl:value-of select="new_threat"/><xsl:text>}</xsl:text>
+        <xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if>
+        <xsl:text>}</xsl:text>\\<xsl:call-template name="latex-newline"/>
         <xsl:call-template name="text-to-escaped-row">
           <xsl:with-param name="color" select="'openvas_user_override'"/>
           <xsl:with-param name="string" select="text"/>
@@ -829,6 +903,17 @@ advice given in each description, in order to rectify the issue.
           <xsl:with-param name="threat" select="$threat" />
         </xsl:call-template>
         <xsl:text>}{\color{white}{</xsl:text>
+        <xsl:if test="delta/text()">
+          <xsl:text>\vspace{3pt}</xsl:text>
+          <xsl:text>\hspace{3pt}</xsl:text>
+          <xsl:choose>
+            <xsl:when test="delta/text() = 'changed'">\begin{huge}\verb=~=\end{huge}</xsl:when>
+            <xsl:when test="delta/text() = 'gone'">\begin{LARGE}&#8722;\end{LARGE}</xsl:when>
+            <xsl:when test="delta/text() = 'new'">\begin{LARGE}+\end{LARGE}</xsl:when>
+            <xsl:when test="delta/text() = 'same'">\begin{LARGE}=\end{LARGE}</xsl:when>
+          </xsl:choose>
+          <xsl:text>\hspace{3pt}</xsl:text>
+        </xsl:if>
         <xsl:value-of select="$threat"/>
         <xsl:choose>
           <xsl:when test="original_threat">
@@ -885,9 +970,17 @@ advice given in each description, in order to rectify the issue.
             <xsl:with-param name="string" select="concat(detection/result/details/detail[name = 'product']/value/text(), ' by ', detection/result/details/detail[name = 'source_name']/value/text())"/>
           </xsl:call-template>
           <xsl:call-template name="latex-newline"/>
-          \hline
+          <xsl:call-template name="latex-hline"/>
         </xsl:if>
 
+        <xsl:choose>
+          <xsl:when test="delta/text() = 'changed'">
+            <xsl:call-template name="latex-newline"/>
+            <xsl:text>\textbf{Result 1}</xsl:text>
+            <xsl:call-template name="latex-newline"/>
+          </xsl:when>
+        </xsl:choose>
+        <xsl:call-template name="latex-newline"/>
         <xsl:call-template name="text-to-escaped-row">
           <xsl:with-param name="string" select="description"/>
         </xsl:call-template>
@@ -896,9 +989,59 @@ advice given in each description, in order to rectify the issue.
         <xsl:call-template name="latex-newline"/>
         <xsl:text>OID of test routine: </xsl:text><xsl:value-of select="nvt/@oid"/>
         <xsl:call-template name="latex-newline"/>
+        <xsl:if test="delta">
+          <xsl:choose>
+            <xsl:when test="delta/text() = 'changed'">
+
+              <xsl:call-template name="latex-hline"/>
+              <xsl:call-template name="latex-newline"/>
+              <xsl:text>\textbf{Result 2}</xsl:text>
+              <xsl:call-template name="latex-newline"/>
+              <xsl:call-template name="latex-newline"/>
+              <xsl:call-template name="text-to-escaped-row">
+                <xsl:with-param name="string" select="delta/result/description"/>
+              </xsl:call-template>
+              <xsl:text>\rowcolor{white}{\verb==}</xsl:text><xsl:call-template name="latex-newline"/>
+              <xsl:text>\rowcolor{white}{\verb==}</xsl:text><xsl:call-template name="latex-newline"/>
+              <xsl:call-template name="latex-newline"/>
+              <xsl:text>OID of test routine: </xsl:text><xsl:value-of select="delta/result/nvt/@oid"/>
+              <xsl:call-template name="latex-newline"/>
+
+              <xsl:call-template name="latex-hline"/>
+              <xsl:call-template name="latex-newline"/>
+              <xsl:text>\textbf{Different Lines}</xsl:text>
+              <xsl:call-template name="latex-newline"/>
+              <xsl:call-template name="latex-newline"/>
+              <xsl:call-template name="text-to-escaped-diff-row">
+                <xsl:with-param name="string" select="delta/diff"/>
+              </xsl:call-template>
+              <xsl:call-template name="latex-newline"/>
+            </xsl:when>
+          </xsl:choose>
+        </xsl:if>
         <xsl:call-template name="references"/>
-        <xsl:call-template name="notes"/>
-        <xsl:call-template name="overrides"/>
+        <xsl:variable name="delta">
+          <xsl:choose>
+            <xsl:when test="delta">1</xsl:when>
+            <xsl:otherwise>0</xsl:otherwise>
+          </xsl:choose>
+        </xsl:variable>
+        <xsl:call-template name="notes">
+          <xsl:with-param name="delta" select="$delta"/>
+        </xsl:call-template>
+        <xsl:for-each select="delta">
+          <xsl:call-template name="notes">
+            <xsl:with-param name="delta" select="2"/>
+          </xsl:call-template>
+        </xsl:for-each>
+        <xsl:call-template name="overrides">
+          <xsl:with-param name="delta" select="$delta"/>
+        </xsl:call-template>
+        <xsl:for-each select="delta">
+          <xsl:call-template name="overrides">
+            <xsl:with-param name="delta" select="2"/>
+          </xsl:call-template>
+        </xsl:for-each>
         <xsl:text>\end{longtable}</xsl:text>
         <xsl:call-template name="newline"/>
         <xsl:call-template name="newline"/>

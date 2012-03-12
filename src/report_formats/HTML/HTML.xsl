@@ -451,7 +451,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <p>
           This document compares the results of two security scans.
           The report first summarises the hosts found.  Then, for each host,
-          the report describes the changes that occurred between the two the
+          the report describes the changes that occurred between the two
           scans.
         </p>
       </xsl:when>

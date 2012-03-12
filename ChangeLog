@@ -1,3 +1,15 @@
+2012-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/HTML/HTML.xsl (report): Remove typo.
+
+	* src/report_formats/LaTeX/latex.xsl (header): Add colours chunk, line_new
+	and line_gone.  Modify heading for delta.
+	(text-to-escaped-diff-row): New template.
+	(abstract): Add delta versions.
+	(notes, overrides): Add delta case.
+	(result-details-host-port-threat): Add delta state marker and extra
+	sections.  Pass delta arg to notes and overrides templates.
+
 2012-03-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl (override): Add delta arg.
