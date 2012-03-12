@@ -331,115 +331,138 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:choose>
     </xsl:variable>
 
-    <div style="{$style}; padding:4px; margin:3px; margin-bottom:0px; color: #FFFFFF; border: 1px solid #CCCCCC; border-bottom: 0px;">
-      <div style="float:right; text-align:right">
-        <xsl:value-of select="port"/>
-      </div>
-      <xsl:if test="delta/text()">
-        <div style="float: left; font-size: 24px; border: 2px; padding-left: 2px; padding-right: 8px; margin:0px;">
-          <xsl:choose>
-            <xsl:when test="delta/text() = 'changed'">~</xsl:when>
-            <xsl:when test="delta/text() = 'gone'">&#8722;</xsl:when>
-            <xsl:when test="delta/text() = 'new'">+</xsl:when>
-            <xsl:when test="delta/text() = 'same'">=</xsl:when>
-          </xsl:choose>
+    <xsl:choose>
+      <xsl:when test="/report/@type = 'prognostic'">
+        <div style="{$style}; padding:4px; margin:3px; margin-bottom:0px; color: #FFFFFF; border: 1px solid #CCCCCC; border-bottom: 0px;">
+          <div style="float: right; text-align:right">
+            <xsl:value-of select="cve/cpe/@id"/>
+          </div>
+          <b><xsl:value-of select="threat"/></b>
+          <xsl:if test="string-length(cve/cvss_base) &gt; 0">
+             (CVSS: <xsl:value-of select="cve/cvss_base"/>)
+          </xsl:if>
+          <div><xsl:value-of select="cve/@id"/></div>
         </div>
-      </xsl:if>
-      <b><xsl:value-of select="threat"/></b>
-      <xsl:choose>
-        <xsl:when test="original_threat">
+        <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+          <pre>
+            <xsl:call-template name="wrap">
+              <xsl:with-param name="string"><xsl:apply-templates select="description"/></xsl:with-param>
+            </xsl:call-template>
+          </pre>
+        </div>
+      </xsl:when>
+      <xsl:otherwise>
+        <div style="{$style}; padding:4px; margin:3px; margin-bottom:0px; color: #FFFFFF; border: 1px solid #CCCCCC; border-bottom: 0px;">
+          <div style="float:right; text-align:right">
+            <xsl:value-of select="port"/>
+          </div>
+          <xsl:if test="delta/text()">
+            <div style="float: left; font-size: 24px; border: 2px; padding-left: 2px; padding-right: 8px; margin:0px;">
+              <xsl:choose>
+                <xsl:when test="delta/text() = 'changed'">~</xsl:when>
+                <xsl:when test="delta/text() = 'gone'">&#8722;</xsl:when>
+                <xsl:when test="delta/text() = 'new'">+</xsl:when>
+                <xsl:when test="delta/text() = 'same'">=</xsl:when>
+              </xsl:choose>
+            </div>
+          </xsl:if>
+          <b><xsl:value-of select="threat"/></b>
           <xsl:choose>
-            <xsl:when test="threat = original_threat">
+            <xsl:when test="original_threat">
+              <xsl:choose>
+                <xsl:when test="threat = original_threat">
+                  <xsl:if test="string-length(nvt/cvss_base) &gt; 0">
+                     (CVSS: <xsl:value-of select="nvt/cvss_base"/>)
+                  </xsl:if>
+                </xsl:when>
+                <xsl:otherwise>
+                  (Overridden from <b><xsl:value-of select="original_threat"/></b>)
+                </xsl:otherwise>
+              </xsl:choose>
+            </xsl:when>
+            <xsl:otherwise>
               <xsl:if test="string-length(nvt/cvss_base) &gt; 0">
                  (CVSS: <xsl:value-of select="nvt/cvss_base"/>)
               </xsl:if>
-            </xsl:when>
-            <xsl:otherwise>
-              (Overridden from <b><xsl:value-of select="original_threat"/></b>)
             </xsl:otherwise>
           </xsl:choose>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:if test="string-length(nvt/cvss_base) &gt; 0">
-             (CVSS: <xsl:value-of select="nvt/cvss_base"/>)
-          </xsl:if>
-        </xsl:otherwise>
-      </xsl:choose>
-      <div style="width: 100%">
-        NVT:
-        <xsl:variable name="max" select="80"/>
+          <div style="width: 100%">
+            NVT:
+            <xsl:variable name="max" select="80"/>
+              <xsl:choose>
+                <xsl:when test="string-length(nvt/name) &gt; $max">
+                  <xsl:value-of select="substring(nvt/name, 0, $max)"/>...
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:value-of select="nvt/name"/>
+                </xsl:otherwise>
+              </xsl:choose>
+            (OID: <xsl:value-of select="nvt/@oid"/>)
+          </div>
+        </div>
+        <xsl:if test="count (detection)">
+          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+            Product detection result:
+            <xsl:value-of select="detection/result/details/detail[name = 'product']/value/text()"/>
+            by
+            <xsl:value-of select="detection/result/details/detail[name = 'source_name']/value/text()"/>
+          </div>
+        </xsl:if>
+        <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
           <xsl:choose>
-            <xsl:when test="string-length(nvt/name) &gt; $max">
-              <xsl:value-of select="substring(nvt/name, 0, $max)"/>...
+            <xsl:when test="delta/text() = 'changed'">
+              <b>Result 1</b>
             </xsl:when>
-            <xsl:otherwise>
-              <xsl:value-of select="nvt/name"/>
-            </xsl:otherwise>
           </xsl:choose>
-        (OID: <xsl:value-of select="nvt/@oid"/>)
-      </div>
-    </div>
-    <xsl:if test="count (detection)">
-      <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
-        Product detection result:
-        <xsl:value-of select="detection/result/details/detail[name = 'product']/value/text()"/>
-        by
-        <xsl:value-of select="detection/result/details/detail[name = 'source_name']/value/text()"/>
-      </div>
-    </xsl:if>
-    <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
-      <xsl:choose>
-        <xsl:when test="delta/text() = 'changed'">
-          <b>Result 1</b>
-        </xsl:when>
-      </xsl:choose>
-      <pre>
-        <xsl:call-template name="wrap">
-          <xsl:with-param name="string"><xsl:apply-templates select="description"/></xsl:with-param>
-        </xsl:call-template>
-      </pre>
-    </div>
-    <xsl:if test="delta">
-      <xsl:choose>
-        <xsl:when test="delta/text() = 'changed'">
-          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
-            <b>Result 2</b>
-            <pre>
-              <xsl:call-template name="wrap">
-                <xsl:with-param name="string"><xsl:value-of select="delta/result/description"/></xsl:with-param>
-              </xsl:call-template>
-            </pre>
-          </div>
-          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
-            <b>Different Lines</b>
-            <p>
-              <xsl:call-template name="highlight-diff">
-                <xsl:with-param name="string"><xsl:value-of select="delta/diff"/></xsl:with-param>
-              </xsl:call-template>
-            </p>
-          </div>
-        </xsl:when>
-      </xsl:choose>
-    </xsl:if>
-    <xsl:variable name="delta">
-      <xsl:choose>
-        <xsl:when test="delta">1</xsl:when>
-        <xsl:otherwise>0</xsl:otherwise>
-      </xsl:choose>
-    </xsl:variable>
-    <xsl:apply-templates select="nvt"/>
-    <xsl:apply-templates select="notes/note">
-      <xsl:with-param name="delta" select="$delta"/>
-    </xsl:apply-templates>
-    <xsl:apply-templates select="delta/notes/note">
-      <xsl:with-param name="delta" select="2"/>
-    </xsl:apply-templates>
-    <xsl:apply-templates select="overrides/override">
-      <xsl:with-param name="delta" select="$delta"/>
-    </xsl:apply-templates>
-    <xsl:apply-templates select="delta/overrides/override">
-      <xsl:with-param name="delta" select="2"/>
-    </xsl:apply-templates>
+          <pre>
+            <xsl:call-template name="wrap">
+              <xsl:with-param name="string"><xsl:apply-templates select="description"/></xsl:with-param>
+            </xsl:call-template>
+          </pre>
+        </div>
+        <xsl:if test="delta">
+          <xsl:choose>
+            <xsl:when test="delta/text() = 'changed'">
+              <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+                <b>Result 2</b>
+                <pre>
+                  <xsl:call-template name="wrap">
+                    <xsl:with-param name="string"><xsl:value-of select="delta/result/description"/></xsl:with-param>
+                  </xsl:call-template>
+                </pre>
+              </div>
+              <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+                <b>Different Lines</b>
+                <p>
+                  <xsl:call-template name="highlight-diff">
+                    <xsl:with-param name="string"><xsl:value-of select="delta/diff"/></xsl:with-param>
+                  </xsl:call-template>
+                </p>
+              </div>
+            </xsl:when>
+          </xsl:choose>
+        </xsl:if>
+        <xsl:variable name="delta">
+          <xsl:choose>
+            <xsl:when test="delta">1</xsl:when>
+            <xsl:otherwise>0</xsl:otherwise>
+          </xsl:choose>
+        </xsl:variable>
+        <xsl:apply-templates select="nvt"/>
+        <xsl:apply-templates select="notes/note">
+          <xsl:with-param name="delta" select="$delta"/>
+        </xsl:apply-templates>
+        <xsl:apply-templates select="delta/notes/note">
+          <xsl:with-param name="delta" select="2"/>
+        </xsl:apply-templates>
+        <xsl:apply-templates select="overrides/override">
+          <xsl:with-param name="delta" select="$delta"/>
+        </xsl:apply-templates>
+        <xsl:apply-templates select="delta/overrides/override">
+          <xsl:with-param name="delta" select="2"/>
+        </xsl:apply-templates>
+      </xsl:otherwise>
+    </xsl:choose>
 
   </xsl:template>
 
@@ -455,6 +478,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           scans.
         </p>
       </xsl:when>
+      <xsl:when test="/report/@type = 'prognostic'">
+        <h1>Prognostic Report Summary</h1>
+
+        <p>
+          This document predicts the results of a security scan, based on
+          scan information already gathered for the hosts.
+          The report first summarises the results found.  Then, for each host,
+          the report describes every issue found.  Please consider the
+          advice given in each description, in order to rectify the issue.
+        </p>
+      </xsl:when>
       <xsl:otherwise>
         <h1>Summary</h1>
 
@@ -467,27 +501,33 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:otherwise>
     </xsl:choose>
 
-    <p>
-      <xsl:choose>
-        <xsl:when test="filters/apply_overrides/text()='1'">
-          Overrides are on.  When a result has an override, this report uses the threat of the override.
-        </xsl:when>
-        <xsl:otherwise>
-          Overrides are off.  Even when a result has an override, this report uses the actual threat of the result.
-        </xsl:otherwise>
-      </xsl:choose>
-    </p>
+    <xsl:choose>
+      <xsl:when test="/report/@type = 'prognostic'">
+      </xsl:when>
+      <xsl:otherwise>
+        <p>
+          <xsl:choose>
+            <xsl:when test="filters/apply_overrides/text()='1'">
+              Overrides are on.  When a result has an override, this report uses the threat of the override.
+            </xsl:when>
+            <xsl:otherwise>
+              Overrides are off.  Even when a result has an override, this report uses the actual threat of the result.
+            </xsl:otherwise>
+          </xsl:choose>
+        </p>
 
-    <p>
-      <xsl:choose>
-        <xsl:when test="/report/filters/notes = 0">
-          Notes are excluded from the report.
-        </xsl:when>
-        <xsl:otherwise>
-          Notes are included in the report.
-        </xsl:otherwise>
-      </xsl:choose>
-    </p>
+        <p>
+          <xsl:choose>
+            <xsl:when test="/report/filters/notes = 0">
+              Notes are excluded from the report.
+            </xsl:when>
+            <xsl:otherwise>
+              Notes are included in the report.
+            </xsl:otherwise>
+          </xsl:choose>
+        </p>
+      </xsl:otherwise>
+    </xsl:choose>
 
     <p>
       This report might not show details of all issues that were found.
@@ -638,15 +678,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
     <h1>Results per Host</h1>
 
-    <xsl:for-each select="host_start" >
-      <xsl:variable name="current_host" select="host/text()" />
+    <xsl:for-each select="host" >
+      <xsl:variable name="current_host" select="ip" />
 
-      <h2 id="{$current_host}">Host <xsl:value-of select="host/text()"/></h2>
+      <h2 id="{$current_host}">Host <xsl:value-of select="$current_host"/></h2>
       <table>
-        <tr>
-          <td>Scanning of this host started at:</td>
-          <td><xsl:value-of select="text()"/></td>
-        </tr>
+        <xsl:choose>
+          <xsl:when test="/report/@type = 'prognostic'">
+          </xsl:when>
+          <xsl:otherwise>
+            <tr>
+              <td>Scanning of this host started at:</td>
+              <td><xsl:value-of select="start"/></td>
+            </tr>
+          </xsl:otherwise>
+        </xsl:choose>
         <tr>
           <td>Number of results:</td>
           <td>
@@ -656,24 +702,30 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <!-- Number of results: <xsl:value-of select="count(key('host_results', $current_host))"/> -->
       </table>
 
-      <h3>Port Summary for Host <xsl:value-of select="$current_host" /></h3>
+      <xsl:choose>
+        <xsl:when test="/report/@type = 'prognostic'">
+        </xsl:when>
+        <xsl:otherwise>
+          <h3>Port Summary for Host <xsl:value-of select="$current_host" /></h3>
 
-      <table>
-        <tr style="background-color: #d5d5d5;">
-          <td>Service (Port)</td>
-          <td>Threat Level</td>
-        </tr>
+          <table>
+            <tr style="background-color: #d5d5d5;">
+              <td>Service (Port)</td>
+              <td>Threat Level</td>
+            </tr>
 
-        <xsl:for-each select="../ports/port[host=$current_host]">
-          <tr>
-            <td><xsl:value-of select="text()"/></td>
-            <td><xsl:value-of select="threat"/></td>
-          </tr>
-        </xsl:for-each>
+            <xsl:for-each select="../ports/port[host=$current_host]">
+              <tr>
+                <td><xsl:value-of select="text()"/></td>
+                <td><xsl:value-of select="threat"/></td>
+              </tr>
+            </xsl:for-each>
 
-      <!-- <xsl:apply-templates select="key('host_results', $current_host)" mode="FIX"/> -->
+          <!-- <xsl:apply-templates select="key('host_results', $current_host)" mode="FIX"/> -->
 
-      </table>
+          </table>
+        </xsl:otherwise>
+      </xsl:choose>
 
       <h3>Security Issues for Host <xsl:value-of select="$current_host" /></h3>
 

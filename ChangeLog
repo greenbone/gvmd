@@ -1,5 +1,13 @@
 2012-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/HTML/HTML.xsl (result [issue]): Add a separate
+	prognostic case.
+	(report): Add prognostic summary.  Skip notes, overrides, port summary and
+	start time for prognostic.  Iterate over hosts instead of host_starts, because
+	prognostic reports only have hosts.
+
+2012-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/TXT/TXT.xsl (nvt): Remove lines around References
 	section, so that it matches the other sections.
 	(notes, overrides): Add delta case.
