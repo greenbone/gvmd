@@ -17185,7 +17185,13 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       return -1;
     }
 
-  if (report)
+  if (delta && report)
+    {
+      uuid = report_uuid (report);
+      PRINT (out, "<report type=\"delta\" id=\"%s\">", uuid);
+      free (uuid);
+    }
+  else if (report)
     {
       uuid = report_uuid (report);
       PRINT (out, "<report id=\"%s\">", uuid);

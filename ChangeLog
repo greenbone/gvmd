@@ -1,5 +1,9 @@
 2012-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): Add type when delta.
+
+2012-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/HTML/HTML.xsl (result [issue]): Add a separate
 	prognostic case.
 	(report): Add prognostic summary.  Skip notes, overrides, port summary and
