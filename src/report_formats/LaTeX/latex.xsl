@@ -193,6 +193,9 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <xsl:when test="/report/delta">
     <xsl:text>\title{Delta Report}</xsl:text>
   </xsl:when>
+  <xsl:when test="/report/@type = 'prognostic'">
+    <xsl:text>\title{Prognostic Report}</xsl:text>
+  </xsl:when>
   <xsl:otherwise>
     <xsl:text>\title{Scan Report}</xsl:text>
   </xsl:otherwise>
@@ -458,6 +461,16 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <!-- The Abstract. -->
   <xsl:template name="abstract">
     <xsl:choose>
+      <xsl:when test="/report/@type = 'prognostic' and /report/report_format/param[name='summary']">
+        <xsl:text>
+\renewcommand{\abstractname}{Prognostic Report Summary}
+\begin{abstract}
+</xsl:text>
+        <xsl:value-of select="/report/report_format/param[name='summary']/value"/>
+        <xsl:text>
+\end{abstract}
+</xsl:text>
+      </xsl:when>
       <xsl:when test="/report/delta and /report/report_format/param[name='summary']">
         <xsl:text>
 \renewcommand{\abstractname}{Delta Report Summary}
@@ -475,6 +488,18 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 </xsl:text>
         <xsl:value-of select="/report/report_format/param[name='summary']/value"/>
         <xsl:text>
+\end{abstract}
+</xsl:text>
+      </xsl:when>
+      <xsl:when test="/report/@type = 'prognostic'">
+        <xsl:text>
+\renewcommand{\abstractname}{Prognostic Report Summary}
+\begin{abstract}
+This document predicts the results of a security scan, based on
+scan information already gathered for the hosts.
+The report first summarises the predicted results.  Then, for each host,
+the report describes every predicted issue.  Please consider the
+advice given in each description, in order to rectify the issue.
 \end{abstract}
 </xsl:text>
       </xsl:when>
@@ -593,23 +618,29 @@ advice given in each description, in order to rectify the issue.
     <xsl:text>\end{longtable}</xsl:text><xsl:call-template name="newline"/>
 
     <xsl:choose>
-      <xsl:when test="/report/filters/apply_overrides/text()='1'">
-        <xsl:text>Overrides are on.  When a result has an override, this report uses the threat of the override.</xsl:text>
-        <xsl:call-template name="latex-newline"/>
+      <xsl:when test="/report/@type = 'prognostic'">
       </xsl:when>
       <xsl:otherwise>
-        <xsl:text>Overrides are off.  Even when a result has an override, this report uses the actual threat of the result.</xsl:text>
-        <xsl:call-template name="latex-newline"/>
-      </xsl:otherwise>
-    </xsl:choose>
-    <xsl:choose>
-      <xsl:when test="/report/filters/notes = 0">
-        <xsl:text>Notes are excluded from the report.</xsl:text>
-        <xsl:call-template name="latex-newline"/>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:text>Notes are included in the report.</xsl:text>
-        <xsl:call-template name="latex-newline"/>
+        <xsl:choose>
+          <xsl:when test="/report/filters/apply_overrides/text()='1'">
+            <xsl:text>Overrides are on.  When a result has an override, this report uses the threat of the override.</xsl:text>
+            <xsl:call-template name="latex-newline"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>Overrides are off.  Even when a result has an override, this report uses the actual threat of the result.</xsl:text>
+            <xsl:call-template name="latex-newline"/>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:choose>
+          <xsl:when test="/report/filters/notes = 0">
+            <xsl:text>Notes are excluded from the report.</xsl:text>
+            <xsl:call-template name="latex-newline"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>Notes are included in the report.</xsl:text>
+            <xsl:call-template name="latex-newline"/>
+          </xsl:otherwise>
+        </xsl:choose>
       </xsl:otherwise>
     </xsl:choose>
     <xsl:text>This report might not show details of all issues that were found.</xsl:text><xsl:call-template name="latex-newline"/>
@@ -1057,6 +1088,99 @@ advice given in each description, in order to rectify the issue.
     </xsl:if>
   </xsl:template>
 
+  <!-- A prognostic result. -->
+  <xsl:template name="prognostic-result">
+    <xsl:text>\begin{longtable}{|p{\textwidth * 1}|}</xsl:text><xsl:call-template name="newline"/>
+    <xsl:call-template name="latex-hline"/>
+    <xsl:text>\rowcolor{</xsl:text>
+    <xsl:call-template name="threat-to-color">
+      <xsl:with-param name="threat" select="threat" />
+    </xsl:call-template>
+    <xsl:text>}{\color{white}{</xsl:text>
+    <xsl:value-of select="threat"/>
+    <xsl:if test="string-length(cve/cvss_base) &gt; 0">
+      <xsl:text> (CVSS: </xsl:text>
+      <xsl:value-of select="cve/cvss_base"/>
+      <xsl:text>) </xsl:text>
+    </xsl:if>
+    <xsl:text>}}</xsl:text>
+    <xsl:call-template name="latex-newline"/>
+    <xsl:text>\rowcolor{</xsl:text>
+    <xsl:call-template name="threat-to-color">
+      <xsl:with-param name="threat" select="threat"/>
+    </xsl:call-template>
+    <xsl:text>}{\color{white}{</xsl:text>
+    <xsl:value-of select="cve/@id"/>
+    <xsl:text>}}</xsl:text>
+    <xsl:call-template name="latex-newline"/>
+    <xsl:text>\rowcolor{</xsl:text>
+    <xsl:call-template name="threat-to-color">
+      <xsl:with-param name="threat" select="threat"/>
+    </xsl:call-template>
+    <xsl:text>}{\color{white}{</xsl:text>
+    <xsl:call-template name="escape_text">
+      <xsl:with-param name="string" select="cve/cpe/@id"/>
+    </xsl:call-template>
+    <xsl:text>}}</xsl:text>
+    <xsl:call-template name="latex-newline"/>
+    <xsl:call-template name="latex-hline"/>
+    <xsl:text>\endfirsthead</xsl:text><xsl:call-template name="newline"/>
+    <xsl:text>\hfill\ldots continued from previous page \ldots </xsl:text><xsl:call-template name="latex-newline"/>
+    <xsl:call-template name="latex-hline"/>
+    <xsl:text>\endhead</xsl:text><xsl:call-template name="newline"/>
+    <xsl:call-template name="latex-hline"/>
+    <xsl:text>\ldots continues on next page \ldots </xsl:text><xsl:call-template name="latex-newline"/>
+    <xsl:text>\endfoot</xsl:text><xsl:call-template name="newline"/>
+    <xsl:call-template name="latex-hline"/>
+    <xsl:text>\endlastfoot</xsl:text><xsl:call-template name="newline"/>
+
+    <xsl:call-template name="text-to-escaped-row">
+      <xsl:with-param name="string" select="description"/>
+    </xsl:call-template>
+    <xsl:call-template name="latex-newline"/>
+
+    <xsl:text>\end{longtable}</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
+  </xsl:template>
+
+  <!-- Findings for a single prognostic host -->
+  <xsl:template name="results-per-host-prognostic">
+    <xsl:param name="host"/>
+
+    <xsl:for-each select="/report/results/result[host=$host][threat='High']">
+      <xsl:call-template name="prognostic-result"/>
+    </xsl:for-each>
+
+    <xsl:for-each select="/report/results/result[host=$host][threat='Medium']">
+      <xsl:call-template name="prognostic-result"/>
+    </xsl:for-each>
+
+    <xsl:for-each select="/report/results/result[host=$host][threat='Low']">
+      <xsl:call-template name="prognostic-result"/>
+    </xsl:for-each>
+
+    <xsl:for-each select="/report/results/result[host=$host][threat='Log']">
+      <xsl:call-template name="prognostic-result"/>
+    </xsl:for-each>
+
+    <xsl:for-each select="/report/results/result[host=$host][threat='Debug']">
+      <xsl:call-template name="prognostic-result"/>
+    </xsl:for-each>
+
+    <xsl:for-each select="/report/results/result[host=$host][threat='False Positive']">
+      <xsl:call-template name="prognostic-result"/>
+    </xsl:for-each>
+
+    <xsl:text>\begin{footnotesize}</xsl:text>
+    <xsl:call-template name="latex-hyperref">
+      <xsl:with-param name="target" select="concat('host:', $host)"/>
+      <xsl:with-param name="text" select="concat('[ return to ', $host, ' ]')"/>
+    </xsl:call-template>
+
+    <xsl:text>\end{footnotesize}</xsl:text><xsl:call-template name="newline"/>
+  </xsl:template>
+
   <!-- Findings for a single host -->
   <xsl:template name="results-per-host-single-host-findings">
     <xsl:param name="host"/>
@@ -1113,7 +1237,7 @@ advice given in each description, in order to rectify the issue.
 
   <!-- Subsection for a single host, with all details. -->
   <xsl:template name="results-per-host-single-host">
-    <xsl:variable name="host" select="host"/>
+    <xsl:variable name="host" select="ip"/>
     <xsl:call-template name="latex-subsection">
       <xsl:with-param name="subsection_string" select="$host"/>
     </xsl:call-template>
@@ -1121,21 +1245,38 @@ advice given in each description, in order to rectify the issue.
       <xsl:with-param name="label_string" select="concat('host:', $host)"/>
     </xsl:call-template>
     <xsl:call-template name="newline"/>
-    <xsl:text>\begin{tabular}{ll}</xsl:text><xsl:call-template name="newline"/>
-    <xsl:text>Host scan start&amp;</xsl:text>
-    <xsl:value-of select="text()"/>
-    <xsl:call-template name="latex-newline"/>
-    <xsl:text>Host scan end&amp;</xsl:text>
-    <xsl:value-of select="../host_end[host=$host]/text()"/>
-    <xsl:call-template name="latex-newline"/>
-    <xsl:text>\end{tabular}</xsl:text><xsl:call-template name="newline"/>
-    <xsl:call-template name="newline"/>
-    <xsl:call-template name="results-per-host-single-host-port-findings"/>
-    <xsl:call-template name="newline"/>
+
+    <xsl:choose>
+      <xsl:when test="/report/@type = 'prognostic'">
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>\begin{tabular}{ll}</xsl:text><xsl:call-template name="newline"/>
+        <xsl:text>Host scan start&amp;</xsl:text>
+        <xsl:value-of select="start"/>
+        <xsl:call-template name="latex-newline"/>
+        <xsl:text>Host scan end&amp;</xsl:text>
+        <xsl:value-of select="end"/>
+        <xsl:call-template name="latex-newline"/>
+        <xsl:text>\end{tabular}</xsl:text><xsl:call-template name="newline"/>
+        <xsl:call-template name="newline"/>
+        <xsl:call-template name="results-per-host-single-host-port-findings"/>
+        <xsl:call-template name="newline"/>
+      </xsl:otherwise>
+    </xsl:choose>
+
     <xsl:text>%\subsection*{Security Issues and Fixes -- </xsl:text><xsl:value-of select="$host"/><xsl:text>}</xsl:text>
     <xsl:call-template name="newline"/>
     <xsl:call-template name="newline"/>
-    <xsl:call-template name="results-per-host-single-host-findings"><xsl:with-param name="host" select="$host"/></xsl:call-template>
+    <xsl:choose>
+      <xsl:when test="/report/@type = 'prognostic'">
+        <xsl:call-template name="results-per-host-prognostic">
+          <xsl:with-param name="host" select="$host"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="results-per-host-single-host-findings"><xsl:with-param name="host" select="$host"/></xsl:call-template>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
 
@@ -1145,7 +1286,7 @@ advice given in each description, in order to rectify the issue.
   <xsl:template name="results-per-host">
     <xsl:text>\section{Results per Host}</xsl:text>
     <xsl:call-template name="newline"/><xsl:call-template name="newline"/>
-    <xsl:for-each select="host_start">
+    <xsl:for-each select="host">
       <xsl:call-template name="results-per-host-single-host"/>
     </xsl:for-each>
   </xsl:template>

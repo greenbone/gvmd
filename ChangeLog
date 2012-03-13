@@ -1,3 +1,15 @@
+2012-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/HTML/HTML.xsl (template): Add prognostic title.
+	(abstract): Add prognostic cases.
+	(results-overview): Skip overrides and notes for prognostic.
+	(prognostic-result, results-per-host-prognostic): New templates.
+	(results-per-host-single-host): Expect current element to be host instead
+	of host_start.  Skip times for prognostic.  Special case the prognostic
+	result template.
+	(results-per-host): Iterate over hosts instead of host_starts, because
+	prognostic reports only have hosts.
+
 2012-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml): Add type when delta.
