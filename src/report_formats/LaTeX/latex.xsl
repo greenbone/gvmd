@@ -681,10 +681,6 @@ advice given in each description, in order to rectify the issue.
     <xsl:choose>
       <xsl:when test="$last = 0">
         <xsl:text>This report contains 0 results.</xsl:text>
-        <xsl:text>  Before the filtering described above</xsl:text>
-        <xsl:text> there were </xsl:text>
-        <xsl:value-of select="/report/result_count/text()"/>
-        <xsl:text> results.</xsl:text>
       </xsl:when>
       <xsl:when test="$last = /report/results/@start">
         <xsl:text>This report contains result </xsl:text>
@@ -693,18 +689,12 @@ advice given in each description, in order to rectify the issue.
         <xsl:value-of select="/report/result_count/filtered"/>
         <xsl:text> results selected by the</xsl:text>
         <xsl:text> filtering above.</xsl:text>
-        <xsl:text>  Before filtering there were </xsl:text>
-        <xsl:value-of select="/report/result_count/text()"/>
-        <xsl:text> results.</xsl:text>
       </xsl:when>
       <xsl:when test="$last = /report/result_count/filtered">
         <xsl:text>This report contains all </xsl:text>
         <xsl:value-of select="/report/result_count/filtered"/>
         <xsl:text> results selected by the</xsl:text>
         <xsl:text> filtering described above.</xsl:text>
-        <xsl:text>  Before filtering there were </xsl:text>
-        <xsl:value-of select="/report/result_count/text()"/>
-        <xsl:text> results.</xsl:text>
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>This report contains results </xsl:text>
@@ -715,6 +705,14 @@ advice given in each description, in order to rectify the issue.
         <xsl:value-of select="/report/result_count/filtered"/>
         <xsl:text> results selected by the</xsl:text>
         <xsl:text> filtering described above.</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:choose>
+      <xsl:when test="/report/@type = 'prognostic'">
+      </xsl:when>
+      <xsl:when test="/report/delta">
+      </xsl:when>
+      <xsl:otherwise>
         <xsl:text>  Before filtering there were </xsl:text>
         <xsl:value-of select="/report/result_count/text()"/>
         <xsl:text> results.</xsl:text>

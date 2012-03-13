@@ -1,11 +1,26 @@
 2012-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/TXT/TXT.xsl (report): Restrict the mention of the
+	full count to the normal scan report, because the count is only available
+	there.
+
+	* src/report_formats/HTML/HTML.xsl (report): Restrict the mention of the
+	full count to the normal scan report, because the count is only available
+	there.
+
+	* src/report_formats/LaTeX/latex.xsl (results-overview): Restrict the
+	mention of the full count to the normal scan report, because the count is
+	only available there.
+
+2012-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/TXT/TXT.xsl (result [prognostic-issue]): New
 	template.
 	(report): Add prognostic summary.  Skip overrides, notes, times and ports
 	for prognostic.  Iterate over hosts instead of host_starts, because
 	prognostic reports only have hosts.  Special case the prognostic result
 	template.
+	(/): Add prognostic heading.
 
 2012-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
