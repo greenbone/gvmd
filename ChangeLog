@@ -1,5 +1,14 @@
 2012-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/TXT/TXT.xsl (result [prognostic-issue]): New
+	template.
+	(report): Add prognostic summary.  Skip overrides, notes, times and ports
+	for prognostic.  Iterate over hosts instead of host_starts, because
+	prognostic reports only have hosts.  Special case the prognostic result
+	template.
+
+2012-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/HTML/HTML.xsl (template): Add prognostic title.
 	(abstract): Add prognostic cases.
 	(results-overview): Skip overrides and notes for prognostic.

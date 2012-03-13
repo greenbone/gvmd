@@ -440,6 +440,32 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:call-template name="newline"/>
   </xsl:template>
 
+  <!-- Template for single prognostic issue -->
+  <xsl:template match="result" mode="prognostic-issue">
+    <xsl:call-template name="subsection">
+      <xsl:with-param name="name">Issue</xsl:with-param>
+    </xsl:call-template>
+
+    <xsl:text>Threat: </xsl:text>
+    <xsl:value-of select="threat"/>
+    <xsl:if test="string-length(cve/cvss_base) &gt; 0">
+       <xsl:value-of select="concat(' (CVSS: ', cve/cvss_base,')')"/>
+    </xsl:if>
+    <xsl:call-template name="newline"/>
+    <xsl:text>CVE:    </xsl:text>
+    <xsl:value-of select="cve/@id"/>
+    <xsl:call-template name="newline"/>
+    <xsl:text>CPE:    </xsl:text>
+    <xsl:value-of select="cve/cpe/@id"/>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="wrap">
+      <xsl:with-param name="string" select="description"/>
+    </xsl:call-template>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
+  </xsl:template>
+
   <xsl:template match="report">
     <xsl:choose>
       <xsl:when test="/report/delta">
@@ -447,6 +473,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:text>The report first summarises the hosts found.  Then, for each host,</xsl:text><xsl:call-template name="newline"/>
         <xsl:text>the report describes the changes that occurred between the two</xsl:text><xsl:call-template name="newline"/>
         <xsl:text>scans.</xsl:text><xsl:call-template name="newline"/>
+      </xsl:when>
+      <xsl:when test="/report/@type = 'prognostic'">
+        <xsl:text>This document predicts the results of a security scan, based on</xsl:text><xsl:call-template name="newline"/>
+        <xsl:text>scan information already gathered for the hosts.</xsl:text><xsl:call-template name="newline"/>
+        <xsl:text>The report first summarises the results found.  Then, for each host,</xsl:text><xsl:call-template name="newline"/>
+        <xsl:text>the report describes every issue found.  Please consider the</xsl:text><xsl:call-template name="newline"/>
+        <xsl:text>advice given in each description, in order to rectify the issue.</xsl:text><xsl:call-template name="newline"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>This document reports on the results of an automatic security scan.</xsl:text><xsl:call-template name="newline"/>
@@ -459,30 +492,36 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:call-template name="newline"/>
 
     <xsl:choose>
-      <xsl:when test="filters/apply_overrides/text()='1'">
-        <xsl:text>Overrides are on.  When a result has an override, this report uses the</xsl:text>
-        <xsl:call-template name="newline"/>
-        <xsl:text>threat of the override.</xsl:text>
-        <xsl:call-template name="newline"/>
+      <xsl:when test="/report/@type = 'prognostic'">
       </xsl:when>
       <xsl:otherwise>
-        <xsl:text>Overrides are off.  Even when a result has an override, this report uses</xsl:text>
+        <xsl:choose>
+          <xsl:when test="filters/apply_overrides/text()='1'">
+            <xsl:text>Overrides are on.  When a result has an override, this report uses the</xsl:text>
+            <xsl:call-template name="newline"/>
+            <xsl:text>threat of the override.</xsl:text>
+            <xsl:call-template name="newline"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>Overrides are off.  Even when a result has an override, this report uses</xsl:text>
+            <xsl:call-template name="newline"/>
+            <xsl:text>the actual threat of the result.</xsl:text>
+            <xsl:call-template name="newline"/>
+          </xsl:otherwise>
+        </xsl:choose>
         <xsl:call-template name="newline"/>
-        <xsl:text>the actual threat of the result.</xsl:text>
-        <xsl:call-template name="newline"/>
-      </xsl:otherwise>
-    </xsl:choose>
-    <xsl:call-template name="newline"/>
 
-    <xsl:choose>
-      <xsl:when test="/report/filters/notes = 0">
-        <xsl:text>Notes are excluded from the report.</xsl:text>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:text>Notes are included in the report.</xsl:text>
+        <xsl:choose>
+          <xsl:when test="/report/filters/notes = 0">
+            <xsl:text>Notes are excluded from the report.</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>Notes are included in the report.</xsl:text>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:call-template name="newline"/>
       </xsl:otherwise>
     </xsl:choose>
-    <xsl:call-template name="newline"/>
     <xsl:call-template name="newline"/>
 
     <xsl:text>This report might not show details of all issues that were found.</xsl:text>
@@ -573,10 +612,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:call-template name="newline"/>
     <xsl:call-template name="newline"/>
 
-    <xsl:text>Scan started: </xsl:text><xsl:value-of select="/report/scan_start"/><xsl:call-template name="newline"/>
-    <xsl:text>Scan ended:   </xsl:text>
-    <xsl:value-of select="/report/scan_end"/><xsl:call-template name="newline"/>
-    <xsl:call-template name="newline"/>
+    <xsl:choose>
+      <xsl:when test="/report/@type = 'prognostic'">
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>Scan started: </xsl:text><xsl:value-of select="/report/scan_start"/><xsl:call-template name="newline"/>
+        <xsl:text>Scan ended:   </xsl:text>
+        <xsl:value-of select="/report/scan_end"/><xsl:call-template name="newline"/>
+        <xsl:call-template name="newline"/>
+      </xsl:otherwise>
+    </xsl:choose>
 
     <xsl:call-template name="section">
       <xsl:with-param name="name">Host Summary</xsl:with-param>
@@ -662,50 +707,68 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:call-template>
     <xsl:call-template name="newline"/>
 
-    <xsl:for-each select="host_start" >
-      <xsl:variable name="current_host" select="host/text()" />
+    <xsl:for-each select="host" >
+      <xsl:variable name="current_host" select="ip" />
       <xsl:call-template name="section">
         <xsl:with-param name="name" select="concat('Host ', $current_host)"/>
       </xsl:call-template>
       <xsl:call-template name="newline"/>
 
-      <xsl:text>Scanning of this host started at: </xsl:text>
-      <xsl:value-of select="text()"/>
-      <xsl:call-template name="newline"/>
-      <xsl:text>Number of results: </xsl:text>
-      <xsl:value-of select="count(../results/result[host/text()=$current_host])"/>
-      <xsl:call-template name="newline"/>
-      <xsl:call-template name="newline"/>
+      <xsl:choose>
+        <xsl:when test="/report/@type = 'prognostic'">
+          <xsl:text>Number of results: </xsl:text>
+          <xsl:value-of select="count(../results/result[host/text()=$current_host])"/>
+          <xsl:call-template name="newline"/>
+          <xsl:call-template name="newline"/>
 
-      <xsl:call-template name="subsection">
-        <xsl:with-param name="name">Port Summary for Host <xsl:value-of select="$current_host" /></xsl:with-param>
-      </xsl:call-template>
-      <xsl:call-template name="newline"/>
+          <xsl:call-template name="subsection">
+            <xsl:with-param name="name">Security Issues for Host <xsl:value-of select="$current_host" /></xsl:with-param>
+          </xsl:call-template>
+          <xsl:call-template name="newline"/>
 
-      <xsl:variable name="t2-col1-width" select="24"/>
-      <xsl:call-template name="text-align-left">
-        <xsl:with-param name="width" select="$t2-col1-width"/>
-        <xsl:with-param name="content">Service (Port)</xsl:with-param>
-      </xsl:call-template>
-      <xsl:text>Threat Level</xsl:text>
-      <xsl:call-template name="newline"/>
+          <xsl:apply-templates select="../results/result[host/text()=$current_host]" mode="prognostic-issue"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:text>Scanning of this host started at: </xsl:text>
+          <xsl:value-of select="text()"/>
+          <xsl:call-template name="newline"/>
+          <xsl:text>Number of results: </xsl:text>
+          <xsl:value-of select="count(../results/result[host/text()=$current_host])"/>
+          <xsl:call-template name="newline"/>
+          <xsl:call-template name="newline"/>
 
-      <xsl:for-each select="../ports/port">
-        <xsl:call-template name="text-align-left">
-          <xsl:with-param name="width" select="$t2-col1-width"/>
-          <xsl:with-param name="content" select="text()"/>
+          <xsl:call-template name="subsection">
+            <xsl:with-param name="name">Port Summary for Host <xsl:value-of select="$current_host" /></xsl:with-param>
+          </xsl:call-template>
+          <xsl:call-template name="newline"/>
+
+          <xsl:variable name="t2-col1-width" select="24"/>
+          <xsl:call-template name="text-align-left">
+            <xsl:with-param name="width" select="$t2-col1-width"/>
+            <xsl:with-param name="content">Service (Port)</xsl:with-param>
+          </xsl:call-template>
+          <xsl:text>Threat Level</xsl:text>
+          <xsl:call-template name="newline"/>
+
+          <xsl:for-each select="../ports/port">
+            <xsl:call-template name="text-align-left">
+              <xsl:with-param name="width" select="$t2-col1-width"/>
+              <xsl:with-param name="content" select="text()"/>
+            </xsl:call-template>
+            <xsl:value-of select="threat"/>
+            <xsl:call-template name="newline"/>
+          </xsl:for-each>
+          <xsl:call-template name="newline"/>
+        </xsl:otherwise>
+
+        <xsl:call-template name="subsection">
+          <xsl:with-param name="name">Security Issues for Host <xsl:value-of select="$current_host" /></xsl:with-param>
         </xsl:call-template>
-        <xsl:value-of select="threat"/>
         <xsl:call-template name="newline"/>
-      </xsl:for-each>
-      <xsl:call-template name="newline"/>
 
-      <xsl:call-template name="subsection">
-        <xsl:with-param name="name">Security Issues for Host <xsl:value-of select="$current_host" /></xsl:with-param>
-      </xsl:call-template>
-      <xsl:call-template name="newline"/>
+        <xsl:apply-templates select="../results/result[host/text()=$current_host]" mode="issue"/>
+      </xsl:choose>
 
-      <xsl:apply-templates select="../results/result[host/text()=$current_host]" mode="issue"/>
     </xsl:for-each>
   </xsl:template>
 
@@ -715,6 +778,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:with-param name="name">
         <xsl:choose>
           <xsl:when test="/report/delta">I Delta Report Summary</xsl:when>
+          <xsl:when test="/report/@type = 'prognostic'">I Prognostic Report Summary</xsl:when>
           <xsl:otherwise>I Summary</xsl:otherwise>
         </xsl:choose>
       </xsl:with-param>
