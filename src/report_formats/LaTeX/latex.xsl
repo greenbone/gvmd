@@ -31,10 +31,23 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 <xsl:stylesheet
     version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:func = "http://exslt.org/functions"
     xmlns:str="http://exslt.org/strings"
-    extension-element-prefixes="str">
+    xmlns:openvas="http://openvas.org"
+    extension-element-prefixes="str func">
   <xsl:output method="text" encoding="string" indent="no"/>
   <xsl:strip-space elements="*"/>
+
+  <func:function name="openvas:report">
+    <xsl:choose>
+      <xsl:when test="count(/report/report) &gt; 0">
+        <func:result select="/report/report"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <func:result select="/report"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </func:function>
 
   <!-- A newline, after countless failed tries to define a newline-entity. -->
   <xsl:template name="newline">
@@ -190,10 +203,10 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 \setlength{\parindent}{0pt}
 </xsl:text>
 <xsl:choose>
-  <xsl:when test="/report/delta">
+  <xsl:when test="openvas:report()/delta">
     <xsl:text>\title{Delta Report}</xsl:text>
   </xsl:when>
-  <xsl:when test="/report/@type = 'prognostic'">
+  <xsl:when test="openvas:report()/@type = 'prognostic'">
     <xsl:text>\title{Prognostic Report}</xsl:text>
   </xsl:when>
   <xsl:otherwise>
@@ -461,37 +474,37 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <!-- The Abstract. -->
   <xsl:template name="abstract">
     <xsl:choose>
-      <xsl:when test="/report/@type = 'prognostic' and /report/report_format/param[name='summary']">
+      <xsl:when test="openvas:report()/@type = 'prognostic' and openvas:report()/report_format/param[name='summary']">
         <xsl:text>
 \renewcommand{\abstractname}{Prognostic Report Summary}
 \begin{abstract}
 </xsl:text>
-        <xsl:value-of select="/report/report_format/param[name='summary']/value"/>
+        <xsl:value-of select="openvas:report()/report_format/param[name='summary']/value"/>
         <xsl:text>
 \end{abstract}
 </xsl:text>
       </xsl:when>
-      <xsl:when test="/report/delta and /report/report_format/param[name='summary']">
+      <xsl:when test="openvas:report()/delta and openvas:report()/report_format/param[name='summary']">
         <xsl:text>
 \renewcommand{\abstractname}{Delta Report Summary}
 \begin{abstract}
 </xsl:text>
-        <xsl:value-of select="/report/report_format/param[name='summary']/value"/>
+        <xsl:value-of select="openvas:report()/report_format/param[name='summary']/value"/>
         <xsl:text>
 \end{abstract}
 </xsl:text>
       </xsl:when>
-      <xsl:when test="/report/report_format/param[name='summary']">
+      <xsl:when test="openvas:report()/report_format/param[name='summary']">
         <xsl:text>
 \renewcommand{\abstractname}{Summary}
 \begin{abstract}
 </xsl:text>
-        <xsl:value-of select="/report/report_format/param[name='summary']/value"/>
+        <xsl:value-of select="openvas:report()/report_format/param[name='summary']/value"/>
         <xsl:text>
 \end{abstract}
 </xsl:text>
       </xsl:when>
-      <xsl:when test="/report/@type = 'prognostic'">
+      <xsl:when test="openvas:report()/@type = 'prognostic'">
         <xsl:text>
 \renewcommand{\abstractname}{Prognostic Report Summary}
 \begin{abstract}
@@ -503,7 +516,7 @@ advice given in each description, in order to rectify the issue.
 \end{abstract}
 </xsl:text>
       </xsl:when>
-      <xsl:when test="/report/delta">
+      <xsl:when test="openvas:report()/delta">
         <xsl:text>
 \renewcommand{\abstractname}{Delta Report Summary}
 \begin{abstract}
@@ -551,11 +564,11 @@ advice given in each description, in order to rectify the issue.
   <xsl:template name="highest-severity-for-host">
     <xsl:param name="host"/>
     <xsl:choose>
-      <xsl:when test="/report/ports/port[host = $host][threat = 'High']/node()">High</xsl:when>
-      <xsl:when test="/report/ports/port[host = $host][threat = 'Medium']/node()">Medium</xsl:when>
-      <xsl:when test="/report/ports/port[host = $host][threat = 'Low']/node()">Low</xsl:when>
-      <xsl:when test="/report/ports/port[host = $host][threat = 'Log']/node()">Log</xsl:when>
-      <xsl:when test="/report/ports/port[host = $host][threat = 'False Positive']/node()">False Positive</xsl:when>
+      <xsl:when test="openvas:report()/ports/port[host = $host][threat = 'High']/node()">High</xsl:when>
+      <xsl:when test="openvas:report()/ports/port[host = $host][threat = 'Medium']/node()">Medium</xsl:when>
+      <xsl:when test="openvas:report()/ports/port[host = $host][threat = 'Low']/node()">Low</xsl:when>
+      <xsl:when test="openvas:report()/ports/port[host = $host][threat = 'Log']/node()">Log</xsl:when>
+      <xsl:when test="openvas:report()/ports/port[host = $host][threat = 'False Positive']/node()">False Positive</xsl:when>
       <xsl:otherwise>None</xsl:otherwise>
     </xsl:choose>
   </xsl:template>
@@ -613,16 +626,16 @@ advice given in each description, in order to rectify the issue.
     <xsl:for-each select="host"><xsl:call-template name="results-overview-table-single-host-row"/></xsl:for-each>
     <xsl:call-template name="latex-hline"/>
     <xsl:text>Total: </xsl:text>
-    <xsl:value-of select="count(/report/host_start)"/>&amp;&amp;<xsl:value-of select="count(/report/results/result[threat = 'High'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'Medium'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'Low'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'Log'])"/>&amp;<xsl:value-of select="count(/report/results/result[threat = 'False Positive'])"/><xsl:call-template name="latex-newline"/>
+    <xsl:value-of select="count(openvas:report()/host_start)"/>&amp;&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'High'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Medium'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Low'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Log'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'False Positive'])"/><xsl:call-template name="latex-newline"/>
     <xsl:call-template name="latex-hline"/>
     <xsl:text>\end{longtable}</xsl:text><xsl:call-template name="newline"/>
 
     <xsl:choose>
-      <xsl:when test="/report/@type = 'prognostic'">
+      <xsl:when test="openvas:report()/@type = 'prognostic'">
       </xsl:when>
       <xsl:otherwise>
         <xsl:choose>
-          <xsl:when test="/report/filters/apply_overrides/text()='1'">
+          <xsl:when test="openvas:report()/filters/apply_overrides/text()='1'">
             <xsl:text>Overrides are on.  When a result has an override, this report uses the threat of the override.</xsl:text>
             <xsl:call-template name="latex-newline"/>
           </xsl:when>
@@ -632,7 +645,7 @@ advice given in each description, in order to rectify the issue.
           </xsl:otherwise>
         </xsl:choose>
         <xsl:choose>
-          <xsl:when test="/report/filters/notes = 0">
+          <xsl:when test="openvas:report()/filters/notes = 0">
             <xsl:text>Notes are excluded from the report.</xsl:text>
             <xsl:call-template name="latex-newline"/>
           </xsl:when>
@@ -644,77 +657,77 @@ advice given in each description, in order to rectify the issue.
       </xsl:otherwise>
     </xsl:choose>
     <xsl:text>This report might not show details of all issues that were found.</xsl:text><xsl:call-template name="latex-newline"/>
-    <xsl:if test="/report/filters/result_hosts_only = 1">
+    <xsl:if test="openvas:report()/filters/result_hosts_only = 1">
       <xsl:text>It only lists hosts that produced issues.</xsl:text><xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="string-length(/report/filters/phrase) &gt; 0">
-      <xsl:text>It shows issues that contain the search phrase "</xsl:text><xsl:value-of select="/report/filters/phrase"/><xsl:text>".</xsl:text>
+    <xsl:if test="string-length(openvas:report()/filters/phrase) &gt; 0">
+      <xsl:text>It shows issues that contain the search phrase "</xsl:text><xsl:value-of select="openvas:report()/filters/phrase"/><xsl:text>".</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters/text(), 'h') = false">
+    <xsl:if test="contains(openvas:report()/filters/text(), 'h') = false">
       <xsl:text>Issues with the threat level "High" are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters/text(), 'm') = false">
+    <xsl:if test="contains(openvas:report()/filters/text(), 'm') = false">
       <xsl:text>Issues with the threat level "Medium" are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters/text(), 'l') = false">
+    <xsl:if test="contains(openvas:report()/filters/text(), 'l') = false">
       <xsl:text>Issues with the threat level "Low" are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters/text(), 'g') = false">
+    <xsl:if test="contains(openvas:report()/filters/text(), 'g') = false">
       <xsl:text>Issues with the threat level "Log" are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters/text(), 'd') = false">
+    <xsl:if test="contains(openvas:report()/filters/text(), 'd') = false">
       <xsl:text>Issues with the threat level "Debug" are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters/text(), 'f') = false">
+    <xsl:if test="contains(openvas:report()/filters/text(), 'f') = false">
       <xsl:text>Issues with the threat level "False Positive" are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
     <xsl:call-template name="latex-newline"/>
 
-    <xsl:variable name="last" select="/report/results/@start + count(/report/results/result) - 1"/>
+    <xsl:variable name="last" select="openvas:report()/results/@start + count(openvas:report()/results/result) - 1"/>
     <xsl:choose>
       <xsl:when test="$last = 0">
         <xsl:text>This report contains 0 results.</xsl:text>
       </xsl:when>
-      <xsl:when test="$last = /report/results/@start">
+      <xsl:when test="$last = openvas:report()/results/@start">
         <xsl:text>This report contains result </xsl:text>
         <xsl:value-of select="$last"/>
         <xsl:text> of the </xsl:text>
-        <xsl:value-of select="/report/result_count/filtered"/>
+        <xsl:value-of select="openvas:report()/result_count/filtered"/>
         <xsl:text> results selected by the</xsl:text>
         <xsl:text> filtering above.</xsl:text>
       </xsl:when>
-      <xsl:when test="$last = /report/result_count/filtered">
+      <xsl:when test="$last = openvas:report()/result_count/filtered">
         <xsl:text>This report contains all </xsl:text>
-        <xsl:value-of select="/report/result_count/filtered"/>
+        <xsl:value-of select="openvas:report()/result_count/filtered"/>
         <xsl:text> results selected by the</xsl:text>
         <xsl:text> filtering described above.</xsl:text>
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>This report contains results </xsl:text>
-        <xsl:value-of select="/report/results/@start"/>
+        <xsl:value-of select="openvas:report()/results/@start"/>
         <xsl:text> to </xsl:text>
         <xsl:value-of select="$last"/>
         <xsl:text> of the </xsl:text>
-        <xsl:value-of select="/report/result_count/filtered"/>
+        <xsl:value-of select="openvas:report()/result_count/filtered"/>
         <xsl:text> results selected by the</xsl:text>
         <xsl:text> filtering described above.</xsl:text>
       </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-      <xsl:when test="/report/@type = 'prognostic'">
+      <xsl:when test="openvas:report()/@type = 'prognostic'">
       </xsl:when>
-      <xsl:when test="/report/delta">
+      <xsl:when test="openvas:report()/delta">
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>  Before filtering there were </xsl:text>
-        <xsl:value-of select="/report/result_count/text()"/>
+        <xsl:value-of select="openvas:report()/result_count/text()"/>
         <xsl:text> results.</xsl:text>
       </xsl:otherwise>
     </xsl:choose>
@@ -724,9 +737,9 @@ advice given in each description, in order to rectify the issue.
   <xsl:template name="single-host-overview-table-row">
     <xsl:param name="threat"/>
     <xsl:param name="host"/>
-    <xsl:for-each select="/report/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
       <xsl:variable name="port_service" select="text()"/>
-        <xsl:if test="/report/results/result[host=$host][threat/text()=$threat][port=$port_service]">
+        <xsl:if test="openvas:report()/results/result[host=$host][threat/text()=$threat][port=$port_service]">
           <xsl:call-template name="latex-hyperref">
             <xsl:with-param name="target" select="concat('port:', $host, ' ', $port_service, ' ', $threat)"/>
             <xsl:with-param name="text" select="$port_service"/>
@@ -874,7 +887,7 @@ advice given in each description, in order to rectify the issue.
   <!-- Text of an override. -->
   <xsl:template name="overrides">
     <xsl:param name="delta">0</xsl:param>
-    <xsl:if test="/report/filters/apply_overrides/text()='1'">
+    <xsl:if test="openvas:report()/filters/apply_overrides/text()='1'">
       <xsl:if test="count(overrides/override) &gt; 0">
         <xsl:call-template name="latex-hline"/>
         <xsl:call-template name="latex-newline"/>
@@ -920,11 +933,11 @@ advice given in each description, in order to rectify the issue.
     <xsl:param name="host"/>
     <xsl:param name="port_service"/>
     <xsl:param name="threat"/>
-    <xsl:if test="/report/results/result[host=$host][threat/text()=$threat][port=$port_service]">
+    <xsl:if test="openvas:report()/results/result[host=$host][threat/text()=$threat][port=$port_service]">
       <xsl:call-template name="latex-subsubsection"><xsl:with-param name="subsubsection_string" select="concat ($threat, ' ', $port_service)"/></xsl:call-template>
       <xsl:call-template name="latex-label"><xsl:with-param name="label_string" select="concat('port:', $host, ' ', $port_service, ' ', $threat)"/></xsl:call-template>
       <xsl:call-template name="newline"/>
-      <xsl:for-each select="/report/results/result[host=$host][threat/text()=$threat][port=$port_service]">
+      <xsl:for-each select="openvas:report()/results/result[host=$host][threat/text()=$threat][port=$port_service]">
         <xsl:text>\begin{longtable}{|p{\textwidth * 1}|}</xsl:text><xsl:call-template name="newline"/>
         <xsl:call-template name="latex-hline"/>
         <xsl:text>\rowcolor{</xsl:text>
@@ -1146,27 +1159,27 @@ advice given in each description, in order to rectify the issue.
   <xsl:template name="results-per-host-prognostic">
     <xsl:param name="host"/>
 
-    <xsl:for-each select="/report/results/result[host=$host][threat='High']">
+    <xsl:for-each select="openvas:report()/results/result[host=$host][threat='High']">
       <xsl:call-template name="prognostic-result"/>
     </xsl:for-each>
 
-    <xsl:for-each select="/report/results/result[host=$host][threat='Medium']">
+    <xsl:for-each select="openvas:report()/results/result[host=$host][threat='Medium']">
       <xsl:call-template name="prognostic-result"/>
     </xsl:for-each>
 
-    <xsl:for-each select="/report/results/result[host=$host][threat='Low']">
+    <xsl:for-each select="openvas:report()/results/result[host=$host][threat='Low']">
       <xsl:call-template name="prognostic-result"/>
     </xsl:for-each>
 
-    <xsl:for-each select="/report/results/result[host=$host][threat='Log']">
+    <xsl:for-each select="openvas:report()/results/result[host=$host][threat='Log']">
       <xsl:call-template name="prognostic-result"/>
     </xsl:for-each>
 
-    <xsl:for-each select="/report/results/result[host=$host][threat='Debug']">
+    <xsl:for-each select="openvas:report()/results/result[host=$host][threat='Debug']">
       <xsl:call-template name="prognostic-result"/>
     </xsl:for-each>
 
-    <xsl:for-each select="/report/results/result[host=$host][threat='False Positive']">
+    <xsl:for-each select="openvas:report()/results/result[host=$host][threat='False Positive']">
       <xsl:call-template name="prognostic-result"/>
     </xsl:for-each>
 
@@ -1184,7 +1197,7 @@ advice given in each description, in order to rectify the issue.
     <xsl:param name="host"/>
 
     <!-- TODO Solve other sorting possibilities. -->
-    <xsl:for-each select="/report/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">High</xsl:with-param>
         <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
@@ -1192,7 +1205,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="/report/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Medium</xsl:with-param>
         <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
@@ -1200,7 +1213,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="/report/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Low</xsl:with-param>
         <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
@@ -1208,7 +1221,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="/report/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Log</xsl:with-param>
         <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
@@ -1216,7 +1229,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="/report/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Debug</xsl:with-param>
         <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
@@ -1224,7 +1237,7 @@ advice given in each description, in order to rectify the issue.
       </xsl:call-template>
     </xsl:for-each>
 
-    <xsl:for-each select="/report/ports/port[host=$host]">
+    <xsl:for-each select="openvas:report()/ports/port[host=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">False Positive</xsl:with-param>
         <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
@@ -1245,7 +1258,7 @@ advice given in each description, in order to rectify the issue.
     <xsl:call-template name="newline"/>
 
     <xsl:choose>
-      <xsl:when test="/report/@type = 'prognostic'">
+      <xsl:when test="openvas:report()/@type = 'prognostic'">
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>\begin{tabular}{ll}</xsl:text><xsl:call-template name="newline"/>
@@ -1266,7 +1279,7 @@ advice given in each description, in order to rectify the issue.
     <xsl:call-template name="newline"/>
     <xsl:call-template name="newline"/>
     <xsl:choose>
-      <xsl:when test="/report/@type = 'prognostic'">
+      <xsl:when test="openvas:report()/@type = 'prognostic'">
         <xsl:call-template name="results-per-host-prognostic">
           <xsl:with-param name="host" select="$host"/>
         </xsl:call-template>
@@ -1277,9 +1290,6 @@ advice given in each description, in order to rectify the issue.
     </xsl:choose>
   </xsl:template>
 
-
-<!-- SECTION with Results per Host. -->
-
   <!-- Section with Results per Host. -->
   <xsl:template name="results-per-host">
     <xsl:text>\section{Results per Host}</xsl:text>
@@ -1289,10 +1299,8 @@ advice given in each description, in order to rectify the issue.
     </xsl:for-each>
   </xsl:template>
 
-<!-- ROOT, match the report -->
-
-  <!-- Root, match the report. -->
-  <xsl:template match="/report">
+  <!-- The actual report. -->
+  <xsl:template name="real-report">
     <xsl:call-template name="header"/>
     <xsl:call-template name="newline"/>
     <xsl:text>\begin{document}</xsl:text><xsl:call-template name="newline"/>
@@ -1314,6 +1322,23 @@ This file was automatically generated.
 
 \end{document}
 </xsl:text>
+  </xsl:template>
+
+  <!-- The first report element. -->
+  <xsl:template match="report">
+    <xsl:choose>
+      <xsl:when test="@extension='xml'">
+        <xsl:apply-templates select="report"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="real-report"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!-- Match the root. -->
+  <xsl:template match="/">
+    <xsl:apply-templates/>
   </xsl:template>
 
 </xsl:stylesheet>

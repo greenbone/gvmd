@@ -1,3 +1,29 @@
+2012-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	In the the HTML, TXT and LaTeX report formats, handle the wrapper report
+	element present in exported XML reports.  Adjust or remove absolute path
+	references accordingly.
+
+	* src/report_formats/HTML/HTML.xsl (overide): Remove apply_overrides test.
+	Now in caller.
+	(result [issue]): Replace absolute report refs with report param.
+	(report): Move body to real-report.  Swallow wrapper report if present.
+	(real-report): New template.  Body from report.  Remove absolute refs.
+
+	* src/report_formats/TXT/TXT.xsl (overide): Remove apply_overrides test.
+	Now in caller.
+	(result [issue]): Add apply_overrides test.
+	(report): Move body to real-report.  Swallow wrapper report if present.
+	(real-report): New template.  Body from report.  Remove absolute refs.
+	(/): Move body to report.
+
+	* src/report_formats/LaTeX/latex.xsl: Everywhere replace absolute
+	references to /report with a call to openvas:report.
+	(openvas:report): New function.
+	(report): Move body to real-report.  Swallow wrapper report if present.
+	(real-report): New template.  Body from report.  Remove absolute refs.
+	(/): New template.
+
 2012-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/TXT/TXT.xsl (report): Restrict the mention of the

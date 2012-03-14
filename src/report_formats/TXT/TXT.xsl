@@ -273,46 +273,46 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template match="override">
     <xsl:param name="delta">0</xsl:param>
-    <xsl:if test="/report/filters/apply_overrides/text()='1'">
-      <xsl:text>Override from </xsl:text>
-      <xsl:choose>
-        <xsl:when test="string-length(threat) = 0">
-          <xsl:text>Any</xsl:text>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="threat"/>
-        </xsl:otherwise>
-      </xsl:choose>
-      <xsl:text> to </xsl:text>
-      <xsl:value-of select="new_threat"/>
-      <xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if>
-      <xsl:text>:</xsl:text>
-      <xsl:call-template name="newline"/>
-      <xsl:call-template name="wrap">
-        <xsl:with-param name="string" select="text"/>
-      </xsl:call-template>
-      <xsl:choose>
-        <xsl:when test="active='0'">
-        </xsl:when>
-        <xsl:when test="active='1' and string-length (end_time) &gt; 0">
-          <xsl:text>Override active until: </xsl:text>
-          <xsl:value-of select="end_time"/>
-          <xsl:text>.</xsl:text>
-          <xsl:call-template name="newline"/>
-        </xsl:when>
-        <xsl:otherwise>
-        </xsl:otherwise>
-      </xsl:choose>
-      <xsl:text>Override last modified: </xsl:text>
-      <xsl:value-of select="modification_time"/>
-      <xsl:text>.</xsl:text>
-      <xsl:call-template name="newline"/>
-      <xsl:call-template name="newline"/>
-    </xsl:if>
+    <xsl:text>Override from </xsl:text>
+    <xsl:choose>
+      <xsl:when test="string-length(threat) = 0">
+        <xsl:text>Any</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="threat"/>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:text> to </xsl:text>
+    <xsl:value-of select="new_threat"/>
+    <xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if>
+    <xsl:text>:</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="wrap">
+      <xsl:with-param name="string" select="text"/>
+    </xsl:call-template>
+    <xsl:choose>
+      <xsl:when test="active='0'">
+      </xsl:when>
+      <xsl:when test="active='1' and string-length (end_time) &gt; 0">
+        <xsl:text>Override active until: </xsl:text>
+        <xsl:value-of select="end_time"/>
+        <xsl:text>.</xsl:text>
+        <xsl:call-template name="newline"/>
+      </xsl:when>
+      <xsl:otherwise>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:text>Override last modified: </xsl:text>
+    <xsl:value-of select="modification_time"/>
+    <xsl:text>.</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
   </xsl:template>
 
   <!-- Template for single issue -->
   <xsl:template match="result" mode="issue">
+    <xsl:param name="report" select="/report"/>
+
     <xsl:call-template name="subsection">
       <xsl:with-param name="name">
         <xsl:choose>
@@ -430,12 +430,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:apply-templates select="delta/notes/note">
       <xsl:with-param name="delta" select="2"/>
     </xsl:apply-templates>
-    <xsl:apply-templates select="overrides/override">
-      <xsl:with-param name="delta" select="$delta"/>
-    </xsl:apply-templates>
-    <xsl:apply-templates select="delta/overrides/override">
-      <xsl:with-param name="delta" select="2"/>
-    </xsl:apply-templates>
+    <xsl:if test="$report/filters/apply_overrides/text()='1'">
+      <xsl:apply-templates select="overrides/override">
+        <xsl:with-param name="delta" select="$delta"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="delta/overrides/override">
+        <xsl:with-param name="delta" select="2"/>
+      </xsl:apply-templates>
+    </xsl:if>
 
     <xsl:call-template name="newline"/>
   </xsl:template>
@@ -466,15 +468,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:call-template name="newline"/>
   </xsl:template>
 
-  <xsl:template match="report">
+  <xsl:template name="real-report">
     <xsl:choose>
-      <xsl:when test="/report/delta">
+      <xsl:when test="delta">
         <xsl:text>This document compares the results of two security scans.</xsl:text><xsl:call-template name="newline"/>
         <xsl:text>The report first summarises the hosts found.  Then, for each host,</xsl:text><xsl:call-template name="newline"/>
         <xsl:text>the report describes the changes that occurred between the two</xsl:text><xsl:call-template name="newline"/>
         <xsl:text>scans.</xsl:text><xsl:call-template name="newline"/>
       </xsl:when>
-      <xsl:when test="/report/@type = 'prognostic'">
+      <xsl:when test="@type = 'prognostic'">
         <xsl:text>This document predicts the results of a security scan, based on</xsl:text><xsl:call-template name="newline"/>
         <xsl:text>scan information already gathered for the hosts.</xsl:text><xsl:call-template name="newline"/>
         <xsl:text>The report first summarises the results found.  Then, for each host,</xsl:text><xsl:call-template name="newline"/>
@@ -492,7 +494,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:call-template name="newline"/>
 
     <xsl:choose>
-      <xsl:when test="/report/@type = 'prognostic'">
+      <xsl:when test="@type = 'prognostic'">
       </xsl:when>
       <xsl:otherwise>
         <xsl:choose>
@@ -512,7 +514,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:call-template name="newline"/>
 
         <xsl:choose>
-          <xsl:when test="/report/filters/notes = 0">
+          <xsl:when test="filters/notes = 0">
             <xsl:text>Notes are excluded from the report.</xsl:text>
           </xsl:when>
           <xsl:otherwise>
@@ -526,83 +528,83 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
     <xsl:text>This report might not show details of all issues that were found.</xsl:text>
     <xsl:call-template name="newline"/>
-    <xsl:if test="/report/filters/result_hosts_only = 1">
+    <xsl:if test="filters/result_hosts_only = 1">
       <xsl:text>It only lists hosts that produced issues.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:if test="string-length(/report/filters/phrase) &gt; 0">
+    <xsl:if test="string-length(filters/phrase) &gt; 0">
       <xsl:text>It shows issues that contain the search phrase "</xsl:text>
-      <xsl:value-of select="/report/filters/phrase"/>
+      <xsl:value-of select="filters/phrase"/>
       <xsl:text>".</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters/text(), 'h') = false">
+    <xsl:if test="contains(filters/text(), 'h') = false">
       <xsl:text>Issues with the threat level "High" are not shown.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters/text(), 'm') = false">
+    <xsl:if test="contains(filters/text(), 'm') = false">
       <xsl:text>Issues with the threat level "Medium" are not shown.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters/text(), 'l') = false">
+    <xsl:if test="contains(filters/text(), 'l') = false">
       <xsl:text>Issues with the threat level "Low" are not shown.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters/text(), 'g') = false">
+    <xsl:if test="contains(filters/text(), 'g') = false">
       <xsl:text>Issues with the threat level "Log" are not shown.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters/text(), 'd') = false">
+    <xsl:if test="contains(filters/text(), 'd') = false">
       <xsl:text>Issues with the threat level "Debug" are not shown.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters/text(), 'f') = false">
+    <xsl:if test="contains(filters/text(), 'f') = false">
       <xsl:text>Issues with the threat level "False Positive" are not shown.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
     <xsl:call-template name="newline"/>
 
-    <xsl:variable name="last" select="/report/results/@start + count(/report/results/result) - 1"/>
+    <xsl:variable name="last" select="results/@start + count(results/result) - 1"/>
     <xsl:choose>
       <xsl:when test="$last = 0">
         <xsl:text>This report contains 0 results.</xsl:text>
       </xsl:when>
-      <xsl:when test="$last = /report/results/@start">
+      <xsl:when test="$last = results/@start">
         <xsl:text>This report contains result </xsl:text>
         <xsl:value-of select="$last"/>
         <xsl:text> of the </xsl:text>
-        <xsl:value-of select="/report/result_count/filtered"/>
+        <xsl:value-of select="result_count/filtered"/>
         <xsl:text> results selected by the</xsl:text>
         <xsl:call-template name="newline"/>
         <xsl:text>filtering above.</xsl:text>
       </xsl:when>
-      <xsl:when test="$last = /report/result_count/filtered">
+      <xsl:when test="$last = result_count/filtered">
         <xsl:text>This report contains all </xsl:text>
-        <xsl:value-of select="/report/result_count/filtered"/>
+        <xsl:value-of select="result_count/filtered"/>
         <xsl:text> results selected by the</xsl:text>
         <xsl:call-template name="newline"/>
         <xsl:text>filtering described above.</xsl:text>
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>This report contains results </xsl:text>
-        <xsl:value-of select="/report/results/@start"/>
+        <xsl:value-of select="results/@start"/>
         <xsl:text> to </xsl:text>
         <xsl:value-of select="$last"/>
         <xsl:text> of the </xsl:text>
-        <xsl:value-of select="/report/result_count/filtered"/>
+        <xsl:value-of select="result_count/filtered"/>
         <xsl:text> results selected by the</xsl:text>
         <xsl:call-template name="newline"/>
         <xsl:text>filtering described above.</xsl:text>
       </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-      <xsl:when test="/report/@type = 'prognostic'">
+      <xsl:when test="@type = 'prognostic'">
       </xsl:when>
-      <xsl:when test="/report/delta">
+      <xsl:when test="delta">
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>  Before filtering there were </xsl:text>
-        <xsl:value-of select="/report/result_count/text()"/>
+        <xsl:value-of select="result_count/text()"/>
         <xsl:text> results.</xsl:text>
       </xsl:otherwise>
     </xsl:choose>
@@ -610,12 +612,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:call-template name="newline"/>
 
     <xsl:choose>
-      <xsl:when test="/report/@type = 'prognostic'">
+      <xsl:when test="@type = 'prognostic'">
       </xsl:when>
       <xsl:otherwise>
-        <xsl:text>Scan started: </xsl:text><xsl:value-of select="/report/scan_start"/><xsl:call-template name="newline"/>
+        <xsl:text>Scan started: </xsl:text><xsl:value-of select="scan_start"/><xsl:call-template name="newline"/>
         <xsl:text>Scan ended:   </xsl:text>
-        <xsl:value-of select="/report/scan_end"/><xsl:call-template name="newline"/>
+        <xsl:value-of select="scan_end"/><xsl:call-template name="newline"/>
         <xsl:call-template name="newline"/>
       </xsl:otherwise>
     </xsl:choose>
@@ -704,6 +706,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:call-template>
     <xsl:call-template name="newline"/>
 
+    <xsl:variable name="report" select="." />
     <xsl:for-each select="host" >
       <xsl:variable name="current_host" select="ip" />
       <xsl:call-template name="section">
@@ -712,7 +715,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:call-template name="newline"/>
 
       <xsl:choose>
-        <xsl:when test="/report/@type = 'prognostic'">
+        <xsl:when test="$report/@type = 'prognostic'">
           <xsl:text>Number of results: </xsl:text>
           <xsl:value-of select="count(../results/result[host/text()=$current_host])"/>
           <xsl:call-template name="newline"/>
@@ -756,31 +759,44 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <xsl:call-template name="newline"/>
           </xsl:for-each>
           <xsl:call-template name="newline"/>
+
+          <xsl:call-template name="subsection">
+            <xsl:with-param name="name">Security Issues for Host <xsl:value-of select="$current_host" /></xsl:with-param>
+          </xsl:call-template>
+          <xsl:call-template name="newline"/>
+
+          <xsl:apply-templates select="../results/result[host/text()=$current_host]" mode="issue">
+            <xsl:with-param name="report" select="$report"/>
+          </xsl:apply-templates>
         </xsl:otherwise>
-
-        <xsl:call-template name="subsection">
-          <xsl:with-param name="name">Security Issues for Host <xsl:value-of select="$current_host" /></xsl:with-param>
-        </xsl:call-template>
-        <xsl:call-template name="newline"/>
-
-        <xsl:apply-templates select="../results/result[host/text()=$current_host]" mode="issue"/>
       </xsl:choose>
 
     </xsl:for-each>
   </xsl:template>
 
-  <!-- Math the root (report) -->
+  <xsl:template match="report">
+    <xsl:choose>
+      <xsl:when test="@extension='xml'">
+        <xsl:apply-templates select="report"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="chapter">
+          <xsl:with-param name="name">
+            <xsl:choose>
+              <xsl:when test="delta">I Delta Report Summary</xsl:when>
+              <xsl:when test="@type = 'prognostic'">I Prognostic Report Summary</xsl:when>
+              <xsl:otherwise>I Summary</xsl:otherwise>
+            </xsl:choose>
+          </xsl:with-param>
+        </xsl:call-template>
+        <xsl:call-template name="newline"/>
+        <xsl:call-template name="real-report"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!-- Match the root. -->
   <xsl:template match="/">
-    <xsl:call-template name="chapter">
-      <xsl:with-param name="name">
-        <xsl:choose>
-          <xsl:when test="/report/delta">I Delta Report Summary</xsl:when>
-          <xsl:when test="/report/@type = 'prognostic'">I Prognostic Report Summary</xsl:when>
-          <xsl:otherwise>I Summary</xsl:otherwise>
-        </xsl:choose>
-      </xsl:with-param>
-    </xsl:call-template>
-    <xsl:call-template name="newline"/>
     <xsl:apply-templates/>
   </xsl:template>
 
