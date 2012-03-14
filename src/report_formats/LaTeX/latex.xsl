@@ -752,7 +752,7 @@ advice given in each description, in order to rectify the issue.
 
   <!-- Overview table for subsect. of details of findings for a single host. -->
   <xsl:template name="results-per-host-single-host-port-findings">
-    <xsl:variable name="host" select="host"/>
+    <xsl:variable name="host" select="ip"/>
     <xsl:text>\begin{longtable}{|l|l|}</xsl:text><xsl:call-template name="newline"/>
     <xsl:call-template name="latex-hline"/>
     <xsl:call-template name="longtable-continue-block">

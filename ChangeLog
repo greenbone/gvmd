@@ -1,6 +1,12 @@
 2012-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl
+	(results-per-host-single-host-port-findings): Select host from ip element,
+	now that the caller interates over hosts instead of host_starts.
+
+2012-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/LaTeX/latex.xsl
 	(result-details-host-port-threat): Use \sim for the tilde, because it
 	aligns better.
 
