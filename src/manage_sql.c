@@ -364,18 +364,18 @@ static struct timeval last_msg;
 /**
  * @brief Get the threat of a CVSS.
  *
- * @param  cvss  Rounded down CVSS.
+ * @param  cvss  CVSS.
  *
  * @return Static threat name.
  */
 static const char *
-cvss_threat (int cvss)
+cvss_threat (double cvss)
 {
-  if (cvss < 0 || cvss > 10)
+  if (cvss < 0.0 || cvss > 10.0)
     return "";
-  if (cvss <= 2)
+  if (cvss <= 2.0)
     return "Low";
-  if (cvss <= 5)
+  if (cvss <= 5.0)
     return "Medium";
   return "High";
 }
@@ -11861,6 +11861,20 @@ prognosis_iterator_cvss_int (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the CVSS from a result iterator as a double.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return CVSS.
+ */
+double
+prognosis_iterator_cvss_double (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_double (iterator->stmt, 1);
+}
+
+/**
  * @brief Return SQL WHERE for restricting a SELECT to a search phrase.
  *
  * @param[in]  search_phrase  Phrase that results must include.  All results if
@@ -17488,7 +17502,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                    (&details, report_host);
                   while (next (&details))
                     {
-                      int highest_cvss;
+                      double highest_cvss;
                       const char *value;
                       value = report_host_details_iterator_value (&details);
 
@@ -17516,7 +17530,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                               == 0))
                         {
                           iterator_t prognosis;
-                          int cvss;
+                          double cvss;
                           int first;
 
                           first = 1;
@@ -17526,7 +17540,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                             {
                               if (first)
                                 {
-                                  cvss = prognosis_iterator_cvss_int
+                                  cvss = prognosis_iterator_cvss_double
                                           (&prognosis);
                                   if (cvss > highest_cvss)
                                     highest_cvss = cvss;
@@ -17690,7 +17704,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                     {
                       const char *threat;
 
-                      threat = cvss_threat (prognosis_iterator_cvss_int
+                      threat = cvss_threat (prognosis_iterator_cvss_double
                                              (&prognosis));
 
                       if (skip < first_result)

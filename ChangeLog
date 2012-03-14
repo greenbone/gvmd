@@ -1,5 +1,13 @@
 2012-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (cvss_threat): Change param to a double.
+	(prognosis_iterator_cvss_double): New function.
+	(print_report_xml): Get the CVSS from the prognosis iterator as a double,
+	to preserve the fraction, otherwise the rounding can give the result the
+	wrong threat level.
+
+2012-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/LaTeX/latex.xsl
 	(results-per-host-single-host-port-findings): Select host from ip element,
 	now that the caller interates over hosts instead of host_starts.
