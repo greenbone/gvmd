@@ -1,6 +1,21 @@
 2012-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	In the the HTML, TXT and LaTeX report formats, handle the wrapper report
+	In the remaining predefined report formats, handle the wrapper report
+	element present in exported XML reports.
+
+	* src/report_formats/CPE/CPE.xsl (report): New template.  Swallow wrapper
+	report if present, then apply as / did before.
+	(/): Just apply report.
+
+	* src/report_formats/ITG/ITG.xsl (report): New template.  Swallow wrapper
+	report if present, then apply as / did before.
+	(/): Just apply report.
+
+	* src/report_formats/NBE/NBE.xsl (/): Swallow wrapper report if present.
+
+2012-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	In the HTML, TXT and LaTeX report formats, handle the wrapper report
 	element present in exported XML reports.  Adjust or remove absolute path
 	references accordingly.
 

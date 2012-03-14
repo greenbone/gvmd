@@ -69,7 +69,14 @@ timestamps||<xsl:value-of select="host/text()"/>|host_start|<xsl:value-of select
 </xsl:template>
 
 <xsl:template match="/">
-  <xsl:apply-templates/>
+  <xsl:choose>
+    <xsl:when test = "report/@extension = 'xml'">
+      <xsl:apply-templates select="report/report"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="report"/>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 </xsl:stylesheet>

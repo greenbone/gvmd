@@ -31,9 +31,20 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
+<xsl:template match="report">
+  <xsl:choose>
+    <xsl:when test = "@extension = 'xml'">
+      <xsl:apply-templates select="report"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates
+        select="results/result[port='general/CPE-T']/description"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
 <xsl:template match="/">
-<xsl:apply-templates
-  select="report/results/result[port='general/CPE-T']/description"/>
+  <xsl:apply-templates select="report"/>
 </xsl:template>
 
 </xsl:stylesheet>
