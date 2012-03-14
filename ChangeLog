@@ -1,5 +1,11 @@
 2012-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/LaTeX/latex.xsl
+	(result-details-host-port-threat): Use \sim for the tilde, because it
+	aligns better.
+
+2012-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OID to detection results in predefined report formats.
 
 	* src/report_formats/HTML/HTML.xsl (result [issue]): Add OID.

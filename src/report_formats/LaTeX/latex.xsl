@@ -949,7 +949,7 @@ advice given in each description, in order to rectify the issue.
           <xsl:text>\vspace{3pt}</xsl:text>
           <xsl:text>\hspace{3pt}</xsl:text>
           <xsl:choose>
-            <xsl:when test="delta/text() = 'changed'">\begin{huge}\verb=~=\end{huge}</xsl:when>
+            <xsl:when test="delta/text() = 'changed'">\begin{LARGE}\sim\end{LARGE}</xsl:when>
             <xsl:when test="delta/text() = 'gone'">\begin{LARGE}&#8722;\end{LARGE}</xsl:when>
             <xsl:when test="delta/text() = 'new'">\begin{LARGE}+\end{LARGE}</xsl:when>
             <xsl:when test="delta/text() = 'same'">\begin{LARGE}=\end{LARGE}</xsl:when>
