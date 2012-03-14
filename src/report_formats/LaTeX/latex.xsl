@@ -1009,7 +1009,10 @@ advice given in each description, in order to rectify the issue.
           <xsl:text>\textbf{Product detection result}</xsl:text>
           <xsl:call-template name="latex-newline"/>
           <xsl:call-template name="text-to-escaped-row">
-            <xsl:with-param name="string" select="concat(detection/result/details/detail[name = 'product']/value/text(), ' by ', detection/result/details/detail[name = 'source_name']/value/text())"/>
+            <xsl:with-param name="string" select="detection/result/details/detail[name = 'product']/value/text()"/>
+          </xsl:call-template>
+          <xsl:call-template name="text-to-escaped-row">
+            <xsl:with-param name="string" select="concat('Detected by ', detection/result/details/detail[name = 'source_name']/value/text(), ' (OID: ', detection/result/details/detail[name = 'source_oid']/value/text(), ')')"/>
           </xsl:call-template>
           <xsl:call-template name="latex-newline"/>
           <xsl:call-template name="latex-hline"/>

@@ -405,6 +405,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <xsl:value-of select="detection/result/details/detail[name = 'product']/value/text()"/>
             by
             <xsl:value-of select="detection/result/details/detail[name = 'source_name']/value/text()"/>
+            (OID: <xsl:value-of select="detection/result/details/detail[name = 'source_oid']/value/text()"/>)
           </div>
         </xsl:if>
         <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">

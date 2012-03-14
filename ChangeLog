@@ -1,5 +1,16 @@
 2012-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add OID to detection results in predefined report formats.
+
+	* src/report_formats/HTML/HTML.xsl (result [issue]): Add OID.
+
+	* src/report_formats/TXT/TXT.xsl (result [issue]): Add OID.
+
+	* src/report_formats/LaTeX/latex.xsl
+	(result-details-host-port-threat): Add OID.
+
+2012-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	In the remaining predefined report formats, handle the wrapper report
 	element present in exported XML reports.
 
