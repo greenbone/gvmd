@@ -38,7 +38,11 @@ xsltproc ./hostvisdot-summary.xsl $1 > ${TMP}/summary-rgb.dot
 awk '!($0 in a) {a[$0];print}' ${TMP}/summary-rgb.dot > ${TMP}/summary-rgb-nondup.dot
 
 # Generate an SVG graphic using one of the GraphViz modules.
-`cat $1 | xmlstarlet sel -t -v "/report/report_format/param[name='Graph Type']/value"` \
- -Tsvg ${TMP}/summary-rgb-nondup.dot -o ${TMP}/summary-rgb-nondup.svg
+TYPE=`cat $1 | xmlstarlet sel -t -v "/report/report_format/param[name='Graph Type']/value"`
+if [ -z $TYPE ]; then
+    twopi -Tsvg ${TMP}/summary-rgb-nondup.dot -o ${TMP}/summary-rgb-nondup.svg
+else
+    $TYPE -Tsvg ${TMP}/summary-rgb-nondup.dot -o ${TMP}/summary-rgb-nondup.svg
+fi
 
 cat ${TMP}/summary-rgb-nondup.svg

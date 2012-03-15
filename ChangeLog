@@ -1,3 +1,44 @@
+2012-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Make the extra report formats work standalone.
+
+	* report_formats/IVIL/IVIL.xsl (/): Move body to report.  Swallow wrapper.
+	(report): New template.
+
+	* report_formats/arf/arf.xsl (openvas:report): New function.
+	(host-report): Remove absolute ref.
+	(/): New template.
+
+	* report_formats/simple_bar_chart/plot-plt.xsl (/): Move body to report.
+	Swallow wrapper.
+	(report): New template.  Body from /.  Add report format param checks so
+	that the format works with exported XML reports.
+
+	* report_formats/simple_bar_chart/plot.xsl (openvas:report): New
+	function.
+	(/): Remove absolute refs.
+
+	* report_formats/simple_map_plot/report_to_csv_host.xsl (report): Iterate
+	using host instead of host_start.
+	(/): New template.
+
+	* report_formats/simple_pie_chart/pieplot.xsl (newline): New template.
+	(/): Move body to report.  Swallow wrapper.
+	(report): New template.  Body from /.  Add report format param checks so
+	that the format works with exported XML reports.
+
+	* report_formats/simple_topo_plot/generate: Add report format param check
+	so that the format works with exported XML reports.
+
+	* report_formats/simple_topo_plot/hostvisdot-summary.xsl (newline): New
+	template.
+	(report): Add report format param checks so that the format works with
+	exported XML reports.
+	(/): New template.
+
+	* report_formats/sourcefire/sourcefire.xsl (/report): Make relative.
+	(/): New template.
+
 2012-03-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Post release version bump.

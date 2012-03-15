@@ -138,10 +138,21 @@ AddHost,<xsl:value-of select="host"/>
 <!-- the following lines are intentionally not indented because
      empty lines with spaces will trouble the Sourcefire
      host input importer. -->
-<xsl:template match="/report"># Sourcefire Host Input File
+<xsl:template match="report"># Sourcefire Host Input File
 SetSource,OpenVAS
 <xsl:apply-templates select="host_start"/>
 <xsl:apply-templates select="results"/>
+</xsl:template>
+
+<xsl:template match="/">
+  <xsl:choose>
+    <xsl:when test="report/@extension='xml'">
+      <xsl:apply-templates select="report/report"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="report"/>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 </xsl:stylesheet>

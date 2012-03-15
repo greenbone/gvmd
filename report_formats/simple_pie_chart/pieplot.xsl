@@ -3,7 +3,8 @@
     version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
-  <xsl:output method="text" encoding="UTF-8" />
+  <xsl:output method="text" encoding="UTF-8" indent="no" />
+  <xsl:strip-space elements="*"/>
 
 <!--
 OpenVAS Manager
@@ -31,21 +32,45 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
-<xsl:template match="/">
+  <xsl:template name="newline">
+    <xsl:text>
+</xsl:text>
+  </xsl:template>
+
+<xsl:template match="report">
 from pychart import *
 
 theme.use_color = True
 theme.output_format="png"
 theme.reinitialize()
 
-data = [("High (<xsl:value-of select="count (report/results/result[threat='High'])"/>)",
-         <xsl:value-of select="count (report/results/result[threat='High'])"/>),
-        ("Medium (<xsl:value-of select="count (report/results/result[threat='Medium'])"/>)",
-         <xsl:value-of select="count (report/results/result[threat='Medium'])"/>),
-        ("Low (<xsl:value-of select="count (report/results/result[threat='Low'])"/>)",
-         <xsl:value-of select="count (report/results/result[threat='Low'])"/>)]
-
-ar = area.T(size=(<xsl:value-of select="report/report_format/param[name='Width']/value"/>,<xsl:value-of select="report/report_format/param[name='Height']/value"/>), legend=None,
+data = [("High (<xsl:value-of select="count (results/result[threat='High'])"/>)",
+         <xsl:value-of select="count (results/result[threat='High'])"/>),
+        ("Medium (<xsl:value-of select="count (results/result[threat='Medium'])"/>)",
+         <xsl:value-of select="count (results/result[threat='Medium'])"/>),
+        ("Low (<xsl:value-of select="count (results/result[threat='Low'])"/>)",
+         <xsl:value-of select="count (results/result[threat='Low'])"/><xsl:text>)]</xsl:text>
+  <xsl:call-template name="newline"/>
+  <xsl:call-template name="newline"/>
+  <xsl:text>ar = area.T(size=(</xsl:text>
+  <xsl:choose>
+    <xsl:when test="report_format/param[name='Width']">
+      <xsl:value-of select="report_format/param[name='Width']/value"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:text>400</xsl:text>
+    </xsl:otherwise>
+  </xsl:choose>
+  <xsl:text>,</xsl:text>
+  <xsl:choose>
+    <xsl:when test="report_format/param[name='Height']">
+      <xsl:value-of select="report_format/param[name='Height']/value"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:text>400</xsl:text>
+    </xsl:otherwise>
+  </xsl:choose>
+  <xsl:text>), legend=None,</xsl:text>
             x_grid_style = None, y_grid_style = None)
 
 # The "High" element is pulled out of the pie with offset=10
@@ -58,5 +83,16 @@ plot = pie_plot.T(data=data, arc_offsets=[10,0,0],
 ar.add_plot(plot)
 ar.draw()
 </xsl:template>
+
+  <xsl:template match="/">
+    <xsl:choose>
+      <xsl:when test="report/@extension='xml'">
+        <xsl:apply-templates select="report/report"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:apply-templates select="report"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
 
 </xsl:stylesheet>

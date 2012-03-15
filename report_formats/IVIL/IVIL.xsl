@@ -98,22 +98,33 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 	</xsl:for-each>
 </xsl:template>
 
-<xsl:template match="/">
+<xsl:template match="report">
 <ivil version="0.2">
 	<addressee>
 		<program>Seccubus</program>
 		<programSpecificData>
-			<xsl:apply-templates select="report/@id" />
+			<xsl:apply-templates select="@id" />
 		</programSpecificData>
 	</addressee>
 	<sender>
 		<scanner_type>OpenVAS</scanner_type>
-		<version><xsl:apply-templates select="report/results" mode="version" /></version>
-		<timestamp><xsl:apply-templates select="report/scan_end" /></timestamp>
+		<version><xsl:apply-templates select="results" mode="version" /></version>
+		<timestamp><xsl:apply-templates select="scan_end" /></timestamp>
 	</sender>
 	<findings>
-		<xsl:apply-templates select="report/results" mode="findings" />
+		<xsl:apply-templates select="results" mode="findings" />
 	</findings>
 </ivil>
+</xsl:template>
+
+<xsl:template match="/">
+  <xsl:choose>
+    <xsl:when test = "report/@extension = 'xml'">
+      <xsl:apply-templates select="report/report"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="report"/>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 </xsl:stylesheet>

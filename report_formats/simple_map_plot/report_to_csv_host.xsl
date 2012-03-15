@@ -35,8 +35,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:template match="report">
 IP, high, medium, low, color
 127.0.0.1, 0, 0, 0, white
-  <xsl:for-each select="host_start" >
-    <xsl:variable name="current_host" select="host/text()"/>
+  <xsl:for-each select="host" >
+    <xsl:variable name="current_host" select="ip"/>
     <xsl:variable name="high_count" select="count (../results/result[host/text() = $current_host][threat/text() = 'High'])"/>
     <xsl:variable name="med_count" select="count (../results/result[host/text() = $current_host][threat/text() = 'Medium'])"/>
     <xsl:variable name="low_count" select="count (../results/result[host/text() = $current_host][threat/text() = 'Low'])"/>
@@ -61,4 +61,16 @@ IP, high, medium, low, color
     </xsl:choose>
   </xsl:for-each>
 </xsl:template>
+
+  <xsl:template match="/">
+    <xsl:choose>
+      <xsl:when test="report/@extension='xml'">
+        <xsl:apply-templates select="report/report"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:apply-templates select="report"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
 </xsl:stylesheet>

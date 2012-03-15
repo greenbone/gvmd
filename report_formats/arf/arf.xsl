@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet
   version="1.0"
+  xmlns:func = "http://exslt.org/functions"
+  xmlns:openvas="http://openvas.org"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:ai="http://scap.nist.gov/schema/asset-identification/1.1"
   xmlns:core="http://scap.nist.gov/schema/reporting-core/1.1"
   xmlns:cpe-name="http://cpe.mitre.org/naming/2.0"
   xmlns:arf="http://scap.nist.gov/specifications/arf/index.html"
-  xmlns="http://scap.nist.gov/schema/asset-reporting-format/1.1">
+  xmlns="http://scap.nist.gov/schema/asset-reporting-format/1.1"
+  extension-element-prefixes="func">
   <xsl:output
     method = "xml"
     indent = "yes" />
@@ -36,7 +39,18 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
-   
+
+<func:function name="openvas:report">
+  <xsl:choose>
+    <xsl:when test="count(/report/report) &gt; 0">
+      <func:result select="/report/report"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <func:result select="/report"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</func:function>
+
 <xsl:template match="report">
   <asset-report-collection>
 
@@ -123,7 +137,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <report id="{concat('report_', $ip)}">
     <content>
       <xsl:copy>
-        <xsl:for-each select="/report/results/result[host = $ip]">
+        <xsl:for-each select="openvas:report()/results/result[host = $ip]">
           <xsl:copy-of select="."/>
         </xsl:for-each>
       </xsl:copy>
@@ -131,5 +145,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </report>
 </xsl:template>
 
-</xsl:stylesheet>
+<xsl:template match="/">
+  <xsl:choose>
+    <xsl:when test = "report/@extension = 'xml'">
+      <xsl:apply-templates select="report/report"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="report"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
 
+</xsl:stylesheet>

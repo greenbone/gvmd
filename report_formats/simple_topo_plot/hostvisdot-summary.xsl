@@ -32,17 +32,32 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
+  <xsl:template name="newline">
+    <xsl:text>
+</xsl:text>
+  </xsl:template>
+
 <xsl:template match="report">
 digraph scan {
-  nodesep = <xsl:value-of select="report_format/param[name = 'Node Distance']/value"/>;
+  <xsl:choose>
+    <xsl:when test="report_format/param[name = 'Node Distance']">
+      <xsl:text>  nodesep = </xsl:text>
+      <xsl:value-of select="report_format/param[name = 'Node Distance']/value"/>
+      <xsl:text>;</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:text>  nodesep = 8;</xsl:text>
+    </xsl:otherwise>
+  </xsl:choose>
+  <xsl:call-template name="newline"/>
   ranksep = 2;
   overlap = "true";
   fontsize = 8.0;
   concentrate = "true";
   root = "OpenVAS";
   "OpenVAS" [label="OpenVAS", style=filled, color=chartreuse3];
-    <xsl:for-each select="host_start" >
-      <xsl:variable name="current_host" select="host/text()"/>
+    <xsl:for-each select="host" >
+      <xsl:variable name="current_host" select="ip"/>
       <xsl:choose>
         <xsl:when test="count(../results/result[host/text() = $current_host][threat/text() = 'High']) &gt; 0">
   "<xsl:value-of select="$current_host"/>" [label="<xsl:value-of select="$current_host"/>", style=filled, shape=Mrecord, color=red, fontcolor=white];
@@ -146,5 +161,16 @@ digraph scan {
       </xsl:when>
     </xsl:choose>
   </xsl:template>
-</xsl:stylesheet>
 
+  <xsl:template match="/">
+    <xsl:choose>
+      <xsl:when test="report/@extension='xml'">
+        <xsl:apply-templates select="report/report"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:apply-templates select="report"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+</xsl:stylesheet>
