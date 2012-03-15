@@ -1,3 +1,30 @@
+openvas-manager 3.0+rc1 (2012-03-15)
+
+This is the first release candidate of the upcoming 3.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release adds the Port Lists feature and updates the built-in reports
+to cover delta and prognostic results.
+
+Many thanks to everyone who has contributed to this release:
+Henri Doreau, Matthew Mundell and Michael Wiegand.
+
+Main changes since 3.0+beta8:
+* Support for Port Lists has been added.
+* Updated builtin Report Format Plugins HTML, Text and LaTeX/PDF to reflect
+  various new features that are already present in GSA, including delta and
+  prognostic reports. 
+* Changed signing of Report Format Plugins to exclude comment.
+* Improved product detection information in results XML.
+* Improved performance for massiv scanner results by using transaction groups.
+* Improved Import of Target lists to allow comma-separated, line-by-line lists.
+* Doubled entries in Target lists are now eliminated.
+* New optional Report Format Plugin for ARF.
+* Updated OMP documentation.
+* Various little bugs fixed.
+
+
 openvas-manager 3.0+beta8 (2011-12-02)
 
 This is the eigth beta version of the upcoming 3.0 release of the OpenVAS
