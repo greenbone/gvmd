@@ -1,5 +1,17 @@
 2012-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (user_owns_uuid, user_has_access_uuid): Add special
+	case for results.
+	(find_result_for_actions): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_RESULTS use the
+	action versions of the find functions, in case the user is an observer on
+	the result's task.
+
+2012-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Make the extra report formats work standalone.
 
 	* report_formats/IVIL/IVIL.xsl (/): Move body to report.  Swallow wrapper.

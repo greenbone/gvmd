@@ -639,6 +639,9 @@ typedef enum
 gboolean
 find_result (const char*, result_t*);
 
+gboolean
+find_result_for_actions (const char*, result_t*, const char *);
+
 int
 result_uuid (result_t, /*@out@*/ char **);
 

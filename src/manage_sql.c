@@ -330,6 +330,9 @@ int
 create_port_list_unique (const char *, const char *, const char *,
                          port_list_t *);
 
+static int
+user_owns_result (const char *);
+
 
 /* Variables. */
 
@@ -413,6 +416,9 @@ user_owns_uuid (const char *resource, const char *uuid)
 
   assert (current_credentials.uuid);
 
+  if (strcmp (resource, "result") == 0)
+    return user_owns_result (uuid);
+
   ret = sql_int (0, 0,
                  "SELECT count(*) FROM %ss"
                  " WHERE uuid = '%s'"
@@ -474,6 +480,25 @@ user_has_access_uuid (const char *resource, const char *uuid,
 
   if (actions == 0)
     return 0;
+
+  if (strcmp (resource, "result") == 0)
+    return sql_int (0, 0,
+                    "SELECT count(*) FROM results, report_results, reports"
+                    " WHERE results.uuid = '%s'"
+                    " AND report_results.result = results.ROWID"
+                    " AND report_results.report = reports.ROWID"
+                    " AND ((reports.owner IS NULL) OR (reports.owner ="
+                    " (SELECT users.ROWID FROM users WHERE users.uuid = '%s'))"
+                    "  OR reports.task IN"
+                    "     (SELECT task FROM task_users WHERE user ="
+                    "      (SELECT ROWID FROM users"
+                    "       WHERE users.uuid = '%s')"
+                    "      AND actions & %u = %u));",
+                    uuid,
+                    current_credentials.uuid,
+                    current_credentials.uuid,
+                    actions,
+                    actions);
 
   if (strcmp (resource, "report") == 0)
     return sql_int (0, 0,
@@ -11649,6 +11674,43 @@ find_result (const char* uuid, result_t* result)
       case 0:
         break;
       case 1:        /* Too few rows in outcome of query. */
+        *result = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+
+  return FALSE;
+}
+
+/**
+ * @brief Find a result given an identifier.
+ *
+ * @param[in]   uuid     A result identifier.
+ * @param[out]  result   Result return, 0 if succesfully failed to find result.
+ * @param[in]   actions  Actions.
+ *
+ * @return FALSE on success (including if failed to find result), TRUE on error.
+ */
+gboolean
+find_result_for_actions (const char *uuid, result_t *result,
+                         const char *actions)
+{
+  if (user_has_access_uuid ("result", uuid, actions) == 0)
+    {
+      *result = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (result, 0, 0,
+                     "SELECT ROWID FROM results WHERE uuid = '%s';",
+                     uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
         *result = 0;
         break;
       default:       /* Programming error. */
