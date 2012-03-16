@@ -1,3 +1,19 @@
+2012-03-16  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Clean up CMake infrastructure and ensure that compilation with modern
+	gccs works.
+
+	* CMakeLists.txt: Remove setting of OPENVAS_LIB_INSTALL_DIR and
+	OPENVAS_HEADER_INSTALL_DIR as they are retrieved via pkg-config now.
+
+	* src/CMakeLists.txt: Remove handling of now superfluous
+	OPENVAS_LIB_INSTALL_DIR and OPENVAS_HEADER_INSTALL_DIR. Set link
+	libraries via target_link_libraries and not via LINK_FLAGS since this
+	breaks compilation with more modern gccs. Take libraries from
+	pkg-config output instead of hardcoding them.
+
+	* INSTALL: Removed reference to now obsolete variables.
+
 2012-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_target): Quote name later to simplify early

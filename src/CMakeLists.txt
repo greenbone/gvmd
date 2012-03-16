@@ -22,20 +22,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-## Config
-
-if (OPENVAS_HEADER_INSTALL_DIR)
-  set (HEADER_TEMP "-I${OPENVAS_HEADER_INSTALL_DIR}")
-else (OPENVAS_HEADER_INSTALL_DIR)
-  set (HEADER_TEMP "")
-endif (OPENVAS_HEADER_INSTALL_DIR)
-
-if (OPENVAS_LIB_INSTALL_DIR)
-  set (LIB_TEMP "-L${OPENVAS_LIB_INSTALL_DIR}")
-else (OPENVAS_LIB_INSTALL_DIR)
-  set (LIB_TEMP "")
-endif (OPENVAS_LIB_INSTALL_DIR)
-
 ## Libraries
 
 add_library (ovas-mngr-comm STATIC ovas-mngr-comm.c)
@@ -47,19 +33,20 @@ add_library (manage STATIC
              manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
              manage_ranges_nmap_5_51_top_2000_top_100.c
              manage_sql.c lsc_user.c)
-set_target_properties (manage PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
-target_link_libraries (manage sqlite3 uuid glib-2.0 openvas_omp)
+set_target_properties (manage PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+
+target_link_libraries (manage "${SQLITE3_LDFLAGS} ${UUID_LDFLAGS} ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
 
 add_library (omp STATIC omp.c)
-set_target_properties (omp PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+set_target_properties (omp PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 add_library (otp STATIC otp.c)
-set_target_properties (otp PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+set_target_properties (otp PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 ## Program
 
 add_executable (openvasmd openvasmd.c oxpd.c ompd.c otpd.c)
-target_link_libraries (openvasmd ovas-mngr-comm omp otp manage)
+target_link_libraries (openvasmd ovas-mngr-comm omp otp manage "${GNUTLS_LDFLAGS}")
 
 set_target_properties (openvasmd PROPERTIES LINKER_LANGUAGE C)
 
@@ -126,14 +113,8 @@ if (OPENVAS_NVT_DIR)
   add_definitions (-DOPENVAS_NVT_DIR=\\\"${OPENVAS_NVT_DIR}\\\")
 endif (OPENVAS_NVT_DIR)
 
-set_target_properties (openvasmd PROPERTIES LINK_FLAGS
-                       "${LIB_TEMP} ${SQLITE3_LDFLAGS} ${GNUTLS_LDFLAGS} ${UUID_LDFLAGS} ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
-
 set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
-                       "${HEADER_TEMP} ${SQLITE3_CFLAGS} ${GNUTLS_CFLAGS} ${UUID_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
-
-mark_as_advanced (LIB_TEMP)
-mark_as_advanced (HEADER_TEMP)
+                       "${SQLITE3_CFLAGS} ${GNUTLS_CFLAGS} ${UUID_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 ## Install
 

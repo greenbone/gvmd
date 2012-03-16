@@ -61,12 +61,10 @@ In case you want to install openvas-manager to a different path from the
 other OpenVAS modules, you might need to set some paths explicitly
 before running cmake:
 
-Adjust any values in the Variables section of CMakeLists.txt: The
-variables OPENVAS_LIB_INSTALL_DIR and OPENVAS_HEADER_INSTALL_DIR can be
-enabled and edited in order to link to a custom installation of OpenVAS.
+Adjust any values in the Variables section of CMakeLists.txt:
 The certificate and key locations in OPENVAS_SERVER_CERTIFICATE,
 OPENVAS_SERVER_KEY, OPENVAS_CLIENT_CERTIFICATE, OPENVAS_CLIENT_KEY and
-OPENVAS_CA_CERTIFICATE may also need modifying.
+OPENVAS_CA_CERTIFICATE may need modifying.
 
 
 Certificate Generation
