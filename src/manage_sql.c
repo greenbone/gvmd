@@ -22046,8 +22046,8 @@ create_target (const char* name, const char* hosts, const char* comment,
                lsc_credential_t smb_lsc_credential, const char* target_locator,
                const char* username, const char* password, target_t* target)
 {
-  gchar *quoted_name = sql_nquote (name, strlen (name));
-  gchar *quoted_hosts, *quoted_comment, *quoted_ssh_port, *port_list_comment;
+  gchar *quoted_name, *quoted_hosts, *quoted_comment, *quoted_ssh_port;
+  gchar *port_list_comment;
   port_list_t port_list;
   int ret;
 
@@ -22055,22 +22055,17 @@ create_target (const char* name, const char* hosts, const char* comment,
     port_range = "default";
 
   if (validate_port_range (port_range))
-    {
-      g_free (quoted_name);
-      return 4;
-    }
+    return 4;
 
   if (ssh_port && validate_port (ssh_port))
-    {
-      g_free (quoted_name);
-      return 5;
-    }
+    return 5;
 
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
 
   /* Check whether a target with the same name exists already. */
+  quoted_name = sql_quote (name);
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM targets"
                " WHERE name = '%s'"
@@ -22154,7 +22149,10 @@ create_target (const char* name, const char* hosts, const char* comment,
     {
       if (find_port_list (port_list_id, &port_list)
           || (port_list == 0))
-        return 6;
+        {
+          g_free (quoted_name);
+          return 6;
+        }
     }
   else
     {
