@@ -1,3 +1,8 @@
+2012-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (set_task_observers): Allow ',' to separate names too.
+	Skip over empty names.
+
 2012-03-16  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Clean up CMake infrastructure and ensure that compilation with modern

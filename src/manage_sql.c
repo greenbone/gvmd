@@ -11381,7 +11381,7 @@ set_task_observers (task_t task, const gchar *observers)
   assert (current_credentials.username);
 
   added = NULL;
-  split = g_strsplit (observers, " ", 0);
+  split = g_strsplit_set (observers, " ,", 0);
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -11396,6 +11396,12 @@ set_task_observers (task_t task, const gchar *observers)
       name = *point;
 
       g_strstrip (name);
+
+      if (strcmp (name, "") == 0)
+        {
+          point++;
+          continue;
+        }
 
       if ((strcmp (name, current_credentials.username) == 0)
           || g_list_find_custom (added, name, (GCompareFunc) strcmp))
