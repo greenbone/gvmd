@@ -2139,6 +2139,9 @@ parse_tags (const char *, gchar **, gchar **, gchar **);
 /* SCAP. */
 
 int
+manage_scap_loaded ();
+
+int
 manage_read_info (gchar *, gchar *, gchar **);
 
 void

@@ -8462,6 +8462,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
+        if (strcmp (get_reports_data->type, "prognostic") == 0
+            && manage_scap_loaded () == 0)
+          {
+            get_reports_data_reset (get_reports_data);
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_reports",
+                                "GET_REPORTS with type prognostic requires the"
+                                " SCAP database"));
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
+          }
+
         if ((strcmp (get_reports_data->type, "scan") == 0)
             && get_reports_data->report_id
             && find_report_for_actions (get_reports_data->report_id,

@@ -1,5 +1,14 @@
 2012-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_scap_loaded): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Check whether SCAP is available
+	before attempting prognostic report, otherwise the SQL will fault.
+
+2012-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (set_task_observers): Allow ',' to separate names too.
 	Skip over empty names.
 

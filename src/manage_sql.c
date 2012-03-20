@@ -36441,6 +36441,17 @@ manage_set_setting (const gchar *name, const gchar *value_64)
 /* SCAP. */
 
 /**
+ * @brief Check whether SCAP is available.
+ *
+ * @return 1 if SCAP database is loaded, else 0.
+ */
+int
+manage_scap_loaded ()
+{
+  return scap_loaded;
+}
+
+/**
  * @brief Initialise an CVE iterator, for CVEs reported for a certain CPE.
  *
  * @param[in]  iterator    Iterator.
