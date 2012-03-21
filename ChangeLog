@@ -1,5 +1,9 @@
 2012-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (main): Create PID file earlier.
+
+2012-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (find_user): Sort backwards to get the most recently
 	added user, because there can be old users in the db.
 

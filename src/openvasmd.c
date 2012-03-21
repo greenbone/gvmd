@@ -1304,6 +1304,10 @@ main (int argc, char** argv)
       exit (EXIT_FAILURE);
     }
 
+  /* Set our pidfile. */
+
+  if (pidfile_create ("openvasmd")) exit (EXIT_FAILURE);
+
   /* Create the manager socket. */
 
   manager_socket = socket (PF_INET, SOCK_STREAM, 0);
@@ -1448,10 +1452,6 @@ main (int argc, char** argv)
       close (manager_socket);
       exit (EXIT_FAILURE);
     }
-
-  /* Set our pidfile. */
-
-  if (pidfile_create ("openvasmd")) exit (EXIT_FAILURE);
 
   /* Initialize the authentication system. */
 
