@@ -1,5 +1,10 @@
 2012-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (find_user): Sort backwards to get the most recently
+	added user, because there can be old users in the db.
+
+2012-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_scap_loaded): New function.
 
 	* src/manage.h: Add header accordingly.

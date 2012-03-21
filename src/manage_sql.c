@@ -11343,7 +11343,8 @@ find_user (const char* name, user_t *user)
   gchar *quoted_name;
   quoted_name = sql_quote (name);
   switch (sql_int64 (user, 0, 0,
-                     "SELECT ROWID FROM users WHERE name = '%s'",
+                     "SELECT ROWID FROM users WHERE name = '%s'"
+                     " ORDER BY ROWID DESC;",
                      quoted_name))
     {
       case 0:
