@@ -283,7 +283,7 @@ int sighup_update_nvt_cache = 0;
 int
 serve_client (int client_socket)
 {
-  int scanner_socket;
+  int scanner_socket, optval;
   gnutls_session_t scanner_session;
   gnutls_certificate_credentials_t scanner_credentials;
 
@@ -298,6 +298,17 @@ serve_client (int client_socket)
                            client_session,
                            client_credentials);
       return EXIT_FAILURE;
+    }
+
+  optval = 1;
+  if (setsockopt (manager_socket,
+                  SOL_SOCKET, SO_KEEPALIVE,
+                  &optval, sizeof (int)))
+    {
+      g_critical ("%s: failed to set SO_KEEPALIVE on scanner socket: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
+      exit (EXIT_FAILURE);
     }
 
   if (openvas_server_new (GNUTLS_CLIENT,
