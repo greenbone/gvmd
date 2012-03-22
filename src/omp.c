@@ -11412,7 +11412,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "CREATE_OVERRIDE requires a NEW_THREAT"
                                 " entity"));
           else if (create_override_data->task_id
-              && find_task (create_override_data->task_id, &task))
+              && find_task_for_actions (create_override_data->task_id,
+                                        &task,
+                                        "g"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_override"));
           else if (create_override_data->task_id && task == 0)
             {
@@ -11427,7 +11429,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (create_override_data->result_id
-                   && find_result (create_override_data->result_id, &result))
+                   && find_result_for_actions (create_override_data->result_id,
+                                               &result,
+                                               "g"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_override"));
           else if (create_override_data->result_id && result == 0)
             {
@@ -13191,7 +13195,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (modify_override_data->task_id
-                   && find_task (modify_override_data->task_id, &task))
+                   && find_task_for_actions (modify_override_data->task_id,
+                                             &task,
+                                             "g"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
           else if (modify_override_data->task_id && task == 0)
             {
@@ -13206,7 +13212,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (modify_override_data->result_id
-                   && find_result (modify_override_data->result_id, &result))
+                   && find_result_for_actions (modify_override_data->result_id,
+                                               &result,
+                                               "g"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
           else if (modify_override_data->result_id && result == 0)
             {

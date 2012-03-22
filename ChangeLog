@@ -1,5 +1,12 @@
 2012-03-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CREATE_OVERRIDE and
+	MODIFY_OVERRIDE find the result and task with the for_actions versions of
+	the find functions, so that the owners resource is found when the user is
+	observing the task.
+
+2012-03-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CREATE_NOTE and MODIFY_NOTE
 	find the result and task with the for_actions versions of the find
 	functions, so that the owners resource is found when the user is observing
