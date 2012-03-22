@@ -11297,7 +11297,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "Host specification exceeds"
                                 " " G_STRINGIFY (MANAGE_MAX_HOSTS) " hosts"));
           else if (create_note_data->task_id
-                   && find_task (create_note_data->task_id, &task))
+                   && find_task_for_actions (create_note_data->task_id,
+                                             &task,
+                                             "g"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_note"));
           else if (create_note_data->task_id && task == 0)
             {
@@ -11312,7 +11314,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (create_note_data->result_id
-                   && find_result (create_note_data->result_id, &result))
+                   && find_result_for_actions (create_note_data->result_id,
+                                               &result,
+                                               "g"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_note"));
           else if (create_note_data->result_id && result == 0)
             {
@@ -13089,7 +13093,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (modify_note_data->task_id
-                   && find_task (modify_note_data->task_id, &task))
+                   && find_task_for_actions (modify_note_data->task_id,
+                                             &task,
+                                             "g"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
           else if (modify_note_data->task_id && task == 0)
             {
@@ -13104,7 +13110,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (modify_note_data->result_id
-                   && find_result (modify_note_data->result_id, &result))
+                   && find_result_for_actions (modify_note_data->result_id,
+                                               &result,
+                                               "g"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
           else if (modify_note_data->result_id && result == 0)
             {
