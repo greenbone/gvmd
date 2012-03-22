@@ -1,5 +1,10 @@
 2012-03-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (run_slave_task): Add the missing case where the
+	credential has a key, now that there is OMP support for this.
+
+2012-03-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (serve_client): Set SO_KEEPALIVE to 1 on the scanner
 	socket, because the connection may be idle for long periods, for example
 	when the task is paused.

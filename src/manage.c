@@ -1383,33 +1383,39 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
                                              1, NULL);
           if (next (&credentials))
             {
-              const char *user, *password;
+              const char *user, *password, *public_key, *private_key;
               gchar *user_copy, *password_copy;
 
               user = lsc_credential_iterator_login (&credentials);
               password = lsc_credential_iterator_password (&credentials);
-#if 0
-              /** @todo Need more OMP support for this. */
               public_key = lsc_credential_iterator_public_key (&credentials);
               private_key = lsc_credential_iterator_private_key (&credentials);
-#endif
 
-              if (user == NULL || password == NULL)
+              if (user == NULL
+                  || (public_key == NULL && password == NULL))
                 {
                   cleanup_iterator (&credentials);
                   goto fail;
                 }
 
-              user_copy = g_strdup (user);
-              password_copy = g_strdup (password);
-              cleanup_iterator (&credentials);
+              if (public_key)
+                ret = omp_create_lsc_credential_key
+                       (&session, name, user, password, public_key, private_key,
+                        "Slave SSH credential created by Master",
+                        &slave_ssh_credential_uuid);
+              else
+                {
+                  user_copy = g_strdup (user);
+                  password_copy = g_strdup (password);
+                  cleanup_iterator (&credentials);
 
-              ret = omp_create_lsc_credential
-                     (&session, name, user_copy, password_copy,
-                      "Slave SSH credential created by Master",
-                      &slave_ssh_credential_uuid);
-              g_free (user_copy);
-              g_free (password_copy);
+                  ret = omp_create_lsc_credential
+                         (&session, name, user_copy, password_copy,
+                          "Slave SSH credential created by Master",
+                          &slave_ssh_credential_uuid);
+                  g_free (user_copy);
+                  g_free (password_copy);
+                }
               if (ret)
                 goto fail;
             }
