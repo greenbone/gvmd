@@ -1319,6 +1319,21 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
   free (host);
   if (socket == -1) return -1;
 
+  {
+    int optval;
+    optval = 1;
+    if (setsockopt (socket,
+                    SOL_SOCKET, SO_KEEPALIVE,
+                    &optval, sizeof (int)))
+      {
+        g_warning ("%s: failed to set SO_KEEPALIVE on slave socket: %s\n",
+                   __FUNCTION__,
+                   strerror (errno));
+        openvas_server_close (socket, session);
+        return -1;
+      }
+  }
+
   tracef ("   %s: connected\n", __FUNCTION__);
 
   name = openvas_uuid_make ();
