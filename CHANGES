@@ -5,11 +5,10 @@ Vulnerability Assessment System release 5 (OpenVAS-5). The OpenVAS Manager is
 the central management service between the actual security scanner and various
 user clients.
 
-OpenVAS Manager 2.0 represents a significantly advanced feature set. Most
-notable is the new plugin-based report format framework which allows to produce
-arbitrary scan reports (text, graphs, maps, connectors etc.). The new
-master-slave mode allow to network multiple Manager instances. The whole
-functionality is available via the extended protocol: OMP 2.0.
+OpenVAS Manager 3.0 represents a significantly advanced feature set. Most
+notable is Asset Management, Port Lists, SecInfo Management with SCAP data,
+delta reports and prognostic reports.
+The whole functionality is available via the extended protocol: OMP 3.0.
 
 Many thanks to everyone who has contributed to this release:
 Henri Doreau, Stephan Kleine, Matthew Mundell, Jan-Oliver Wagner,

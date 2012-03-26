@@ -1,5 +1,9 @@
 2012-03-26  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* CHANGES: Replaced leftover 2.0 description by 3.0 description.
+
+2012-03-26  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	Post release version bump.
 
 	* CMakeLists.txt: Updated version number to 3.0.1.
