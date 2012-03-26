@@ -1,3 +1,84 @@
+openvas-manager 3.0.0 (2012-03-26)
+
+This is the first release of the openvas-manager 3.0 module for the Open
+Vulnerability Assessment System release 5 (OpenVAS-5). The OpenVAS Manager is
+the central management service between the actual security scanner and various
+user clients.
+
+OpenVAS Manager 2.0 represents a significantly advanced feature set. Most
+notable is the new plugin-based report format framework which allows to produce
+arbitrary scan reports (text, graphs, maps, connectors etc.). The new
+master-slave mode allow to network multiple Manager instances. The whole
+functionality is available via the extended protocol: OMP 2.0.
+
+Many thanks to everyone who has contributed to this release:
+Henri Doreau, Stephan Kleine, Matthew Mundell, Jan-Oliver Wagner,
+Michael Wiegand and Felix Wolfsteller.
+
+Main changes since 2.0.x:
+
+* New: Configuration object 'Port Lists'. 
+* New: Integrated Asset Management.
+* New: Security Information Database: Integrated SCAP data (CPE, CVE) including
+  update method via feed service.
+* New: Delta reports to analyse differences between two scans.
+* New: Prognostic scans based on asset data and current SCAP data.
+* New: Support for individual time zones for users.
+* New: Tasks can be assigned "observes" for read-only access.
+* New: Role "Observer" for read-only access.
+* New: Support for notes/overrides lifetimes.
+* New: Trashcan. It is now possible to place some objects in a trashcan
+  instead of deleting them directly.
+* New: Container tasks for importing reports.
+* New: SSH port for Local Security Checks configurable.
+* New: Product detections as reported by Scanner are handled to allow detailed
+  cross-referenced detection information.
+* Updated builtin Report Format Plugins HTML, Text and LaTeX/PDF to reflect
+  various new features that are already present in GSA, including delta and
+  prognostic reports. 
+* Improved product detection information in results XML.
+* Improved performance for massiv scanner results by using transaction groups.
+* Improved Import of Target lists to allow comma-separated, line-by-line lists.
+* Doubled entries in Target lists are now eliminated.
+* New optional Report Format Plugin for ARF.
+* OMP 3.0: All new functionalities form the new version 3.0 of the OpenVAS
+  Management Protocol (OMP)
+* Changed: Report format signatures no longer contain user editable fields.
+* Support for large database files on 32-bit platforms has been improved.
+* A bug which caused the filter result count to be calculated incorrectly when
+  searching for text phrases has been fixed.
+* Support for sorting results by CVSS score has been added.
+* Support for importing results sent through the XML escalator has been added.
+* The max_host and max_checks scan performance parameters have been moved from
+  scan configs to tasks.
+* An issue which caused meta data for NVTs in the "Credentials" family to be not
+  present in the database has been fixed.
+* A number of compiler warnings discovered by Stephan Kleine have been
+  addressed.
+* Scan start and end times are now set for imported reports.
+* An issue which caused the import of very large reports to fail under certain
+  circumstances has been fixed.
+* The handling of long host lists has been improved.
+* Security: Enforces strict permissions on sensitive OpenVAS Manager files.
+* Security: Drop privileges before executing report format plugins if running with
+  elevated privileges.
+* Security: Ensures report formats are trusted before executing them.
+* Support for escalating result to a Sourcefire Defense Center has been added.
+* Support for using an SSH key pair for SSH authentication has been added.
+
+And additionally changes compared to last release candidate 3.0+rc1:
+
+* Extra report formats work standalone.
+* Observer lists now may also use ',' as separator.
+* Observers may now also create notes and overrides for observed tasks.
+* Opservers with with Role observer are now allowed to see single results
+  of the observed tasks.
+* Added handling of ssh keys for authenticated tests for Master-Slave mode.
+* The PID file is created earlier to avoid daemon handling believe there
+  is an error.
+* Build improvements for modern gcc.
+
+
 openvas-manager 3.0+rc1 (2012-03-15)
 
 This is the first release candidate of the upcoming 3.0 release of the OpenVAS
