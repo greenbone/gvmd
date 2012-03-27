@@ -1,3 +1,8 @@
+2012-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (validate_host): Improve validation significantly.
+	(manage_max_hosts): In the range cases add checks for empty octets.
+
 2012-03-27  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt: Fixed svn revisioning.

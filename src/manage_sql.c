@@ -21425,11 +21425,88 @@ end_char (const char *string)
 static int
 validate_host (const char *string)
 {
-  while (*string && (isalnum (*string) || strchr ("-_.:\\", *string)))
-    string++;
-  while (*string && isspace (*string))
-    string++;
-  return *string ? 1 : 0;
+  gchar **split, **point;
+  int numeric;
+  const char *host;
+
+  host = string;
+
+  /* @todo GInetAddress might do this better, once we get to GLib 2.22. */
+
+  /* Broadly check that the host has the right chars, and is free of space. */
+
+  while (*host && (isalnum (*host) || strchr ("-_.:\\", *host)))
+    host++;
+  while (*host && isspace (*host))
+    host++;
+  if (*host)
+    return 1;
+
+  /* Check number of octets for IPv4. */
+
+  split = g_strsplit (string, ".", 0);
+  if (g_strv_length (split) > 4)
+    return 1;
+
+  point = split;
+  numeric = -1;
+  while (*point)
+    {
+      gchar *octet;
+
+      /* Check an octet. */
+
+      octet = *point;
+      while (*octet && isdigit (*octet)) octet++;
+      if (*octet)
+        {
+          /* Name octet. */
+
+          if (numeric == 1)
+            return 1;
+          numeric = 0;
+
+          /** @todo More checks?  leading -_? */
+        }
+      else
+        {
+          int number;
+
+          /* Numeric octet. */
+
+          if (numeric == 0)
+            return 1;
+          numeric = 1;
+
+          number = atoi (*point);
+          if ((number < 0) || (number > 255))
+            goto free_fail;
+        }
+      point++;
+    }
+
+  /* Check if it's an IPv6 host. */
+
+  if (strchr (string, ':'))
+    {
+      host = string;
+
+      while (*host && (isxdigit (*host) || *host == ':'))
+        host++;
+      while (*host && isspace (*host))
+        host++;
+      if (*host)
+        return 1;
+
+      /** @todo Count and check parts. */
+    }
+
+  g_strfreev (split);
+  return 0;
+
+ free_fail:
+  g_strfreev (split);
+  return 1;
 }
 
 /**
@@ -21555,6 +21632,10 @@ manage_max_hosts (const char *given_hosts)
                 /* Multiple ranges. */
                 return -1;
 
+              if ((hyphen - 1) == *point)
+                /* Leading hyphen. */
+                return -1;
+
               dot_count = 0;
               dot = hyphen;
               while ((dot = strchr (dot, '.')))
@@ -21627,6 +21708,9 @@ manage_max_hosts (const char *given_hosts)
 
                   pos_one = strchr (pos_one, '.');
                   pos_one++;
+                  if (*pos_one == '-')
+                    /* Empty octet. */
+                    return -1;
 
                   pos_two = strchr (pos_two, '.');
                   pos_two++;
@@ -21651,8 +21735,13 @@ manage_max_hosts (const char *given_hosts)
                   /* 192.168.1.102-104 */
 
                   end = atoi (hyphen);
+                  if (end == 0)
+                    return -1;
+
                   dot = strbchr (*point, hyphen, '.');
                   dot = dot ? (dot + 1) : *point;
+                  if (*dot == '-')
+                    return -1;
                   start = atoi (dot);
 
                   if (end < start)
