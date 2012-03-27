@@ -1,5 +1,10 @@
 2012-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_max_hosts): Ensure the octets are within
+	numeric range.  Require the 127.0.0.1/24 form to have all four octets.
+
+2012-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (validate_host): Improve validation significantly.
 	(manage_max_hosts): In the range cases add checks for empty octets.
 

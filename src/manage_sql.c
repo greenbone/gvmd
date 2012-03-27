@@ -21560,14 +21560,30 @@ manage_max_hosts (const char *given_hosts)
               long int mask;
               struct in_addr addr;
 
-              /** @todo Validate. */
-
               if (strchr (*point, ':'))
                 /* IPv6.  Scanner current only supports single addresses. */
                 count++;
               else
                 {
+                  gchar **host_split, **host_point;
+
                   /* IPv4. */
+
+                  /* Check the octets are in range. */
+
+                  host_split = g_strsplit (*point, ".", 0);
+                  host_point = host_split;
+                  while (*host_point)
+                    {
+                      if ((atoi (*host_point) < 0)
+                          || (atoi (*host_point) > 255))
+                        {
+                          g_strfreev (host_split);
+                          return -1;
+                        }
+                      host_point++;
+                    }
+                  g_strfreev (host_split);
 
                   /* Convert text after slash to a bit netmask. */
 
@@ -21624,8 +21640,6 @@ manage_max_hosts (const char *given_hosts)
               int dot_count, total_dot_count;
               const gchar* dot;
 
-              /** @todo Validate. */
-
               /* An address specifying a range. */
 
               if (strchr (hyphen, '-'))
@@ -21665,7 +21679,11 @@ manage_max_hosts (const char *given_hosts)
                   /* First. */
 
                   one = atoi (pos_one);
+                  if ((one < 0) || (one > 255))
+                    return -1;
                   two = atoi (pos_two);
+                  if ((two < 0) || (two > 255))
+                    return -1;
 
                   if (one > two)
                     return -1;
@@ -21681,7 +21699,11 @@ manage_max_hosts (const char *given_hosts)
                   pos_two++;
 
                   one = atoi (pos_one);
+                  if ((one < 0) || (one > 255))
+                    return -1;
                   two = atoi (pos_two);
+                  if ((two < 0) || (two > 255))
+                    return -1;
 
                   if (one > two)
                     return -1;
@@ -21697,7 +21719,11 @@ manage_max_hosts (const char *given_hosts)
                   pos_two++;
 
                   one = atoi (pos_one);
+                  if ((one < 0) || (one > 255))
+                    return -1;
                   two = atoi (pos_two);
+                  if ((two < 0) || (two > 255))
+                    return -1;
 
                   if (one > two)
                     return -1;
@@ -21719,7 +21745,11 @@ manage_max_hosts (const char *given_hosts)
                     return -1;
 
                   one = atoi (pos_one);
+                  if ((one < 0) || (one > 255))
+                    return -1;
                   two = atoi (pos_two);
+                  if ((two < 0) || (two > 255))
+                    return -1;
 
                   if (one > two)
                     return -1;
@@ -21728,14 +21758,28 @@ manage_max_hosts (const char *given_hosts)
 
                   count += subcount;
                 }
-              else if (total_dot_count <= 3)
+              else if (total_dot_count == 3)
                 {
-                  int start, end;
+                  int start, end, number;
+                  gchar *two;
 
                   /* 192.168.1.102-104 */
 
+                  number = atoi (*point);
+                  if ((number < 0) || (number > 255))
+                    return -1;
+
+                  two = strchr (*point, '.') + 1;
+                  number = atoi (two);
+                  if ((number < 0) || (number > 255))
+                    return -1;
+
+                  number = atoi (strchr (two, '.') + 1);
+                  if ((number < 0) || (number > 255))
+                    return -1;
+
                   end = atoi (hyphen);
-                  if (end == 0)
+                  if ((end <= 0) || (end > 255))
                     return -1;
 
                   dot = strbchr (*point, hyphen, '.');
@@ -21743,6 +21787,8 @@ manage_max_hosts (const char *given_hosts)
                   if (*dot == '-')
                     return -1;
                   start = atoi (dot);
+                  if ((start < 0) || (start > 255))
+                    return -1;
 
                   if (end < start)
                     {
@@ -21761,7 +21807,7 @@ manage_max_hosts (const char *given_hosts)
                 }
               else
                 {
-                  /* 192.168-169.1.102-104 */
+                  /* 192.168-169.1.102-104 or 192.102-104 */
                   return -1;
                 }
             }
