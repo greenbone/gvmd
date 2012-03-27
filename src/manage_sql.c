@@ -20561,7 +20561,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
     {
       gchar* quote = sql_nquote (value, strlen (value));
       sql ("UPDATE tasks SET comment = '%s' WHERE ROWID = %llu;",
-           value,
+           quote,
            task);
       g_free (quote);
     }

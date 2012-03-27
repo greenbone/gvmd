@@ -1,5 +1,10 @@
 2012-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (set_task_parameter): Pass quoted value to sql instead
+	of original.
+
+2012-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_text): Correct CLIENT_C_C_GCR_CONFIG_COMMENT
 	variable name.  The was causing the comment of imported configs to come
 	out empty.
