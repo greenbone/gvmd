@@ -1,3 +1,7 @@
+2012-03-27  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* CMakeLists.txt: Fixed svn revisioning.
+
 2012-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (set_task_parameter): Pass quoted value to sql instead
