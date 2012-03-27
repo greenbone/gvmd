@@ -16281,7 +16281,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
               &create_config_data->rcfile);
 
       APPEND (CLIENT_C_C_GCR_CONFIG_COMMENT,
-              &create_config_data->comment);
+              &import_config_data->comment);
 
       APPEND (CLIENT_C_C_GCR_CONFIG_NAME,
               &import_config_data->name);

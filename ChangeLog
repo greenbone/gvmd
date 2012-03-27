@@ -1,3 +1,9 @@
+2012-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_text): Correct CLIENT_C_C_GCR_CONFIG_COMMENT
+	variable name.  The was causing the comment of imported configs to come
+	out empty.
+
 2012-03-26  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CHANGES: Replaced leftover 2.0 description by 3.0 description.
