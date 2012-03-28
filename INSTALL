@@ -12,8 +12,8 @@ Prerequisites for openvas-manager
 
 Prerequisites:
 * cmake
-* glib-2.0
-* gnutls
+* glib-2.0 >= 2.16
+* gnutls >= 2.2
 * libuuid (from e2fsprogs)
 * openvas-libraries >= 5.0.0
 * sqlite3
