@@ -22570,19 +22570,115 @@ delete_target (const char *target_id, int ultimate)
 }
 
 /**
+ * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
+ *
+ * @param[in]  type    Resource type.
+ * @param[in]  filter  Filter term.
+ *
+ * @return WHERE clause for filter if one is required, else NULL.
+ */
+static gchar *
+filter_clause (const char* type, const char* filter)
+{
+  if (filter)
+    {
+      GString *clause;
+      gchar **split, **point;
+      int first;
+      iterator_t rows;
+      array_t *columns;
+
+      while (*filter && isspace (*filter)) filter++;
+
+      if (strlen (filter) == 0)
+        return NULL;
+
+      /* Store the column names of the table. */
+
+      init_iterator (&rows, "SELECT * FROM targets LIMIT 1;");
+      if (next (&rows))
+        {
+          int end, column;
+          end = iterator_column_count (&rows);
+          columns = make_array ();
+          for (column = 0; column < end; column++)
+            if (strcmp (iterator_column_name (&rows, column), "id"))
+              array_add (columns,
+                         g_strdup (iterator_column_name (&rows, column)));
+          assert (columns->len);
+        }
+      else
+        {
+          cleanup_iterator (&rows);
+          return NULL;
+        }
+
+      /* Add SQL to the clause for each keyword. */
+
+      clause = g_string_new ("");
+      split = g_strsplit_set (filter, " \t\n\r", 0);
+      point = split;
+      first = 1;
+      while (*point)
+        {
+          gchar *quoted_keyword;
+          int column;
+
+          if (strlen (*point) == 0)
+            {
+              point++;
+              continue;
+            }
+
+          quoted_keyword = sql_quote (*point);
+          g_string_append_printf (clause,
+                                  "%s(",
+                                  (first ? "" : " OR "));
+
+          /* Add SQL to the clause for each column name. */
+
+          for (column = 0; column < columns->len; column++)
+            g_string_append_printf (clause,
+                                    "%s%s LIKE '%%%%%s%%%%'",
+                                    (column == 0 ? "" : " OR "),
+                                    (gchar*) g_ptr_array_index (columns,
+                                                                column),
+                                    quoted_keyword);
+
+          g_string_append (clause, ")");
+          g_free (quoted_keyword);
+          first = 0;
+
+          point++;
+        }
+      array_free (columns);
+      g_strfreev (split);
+
+      return g_string_free (clause, FALSE);
+    }
+  return NULL;
+}
+
+/**
  * @brief Initialise a target iterator, limited to the current user's targets.
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  target      Target to limit iteration to.  0 for all.
  * @param[in]  trash       Whether to iterate over trashcan targets.
+ * @param[in]  filter      Filter term.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
 init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
-                           int ascending, const char* sort_field)
+                           const char *filter, int ascending,
+                           const char* sort_field)
 {
+  gchar *clause;
+
   assert (current_credentials.uuid);
+
+  clause = filter_clause ("target", filter);
 
   if (target && trash)
     init_iterator (iterator,
@@ -22677,13 +22773,18 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
                    " FROM targets%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   "%s%s"
                    " ORDER BY %s %s;",
                    trash ? "ssh_location" : "0",
                    trash ? "smb_location" : "0",
                    trash ? "_trash" : "",
                    current_credentials.uuid,
+                   clause ? " AND " : "",
+                   clause ? clause : "",
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
+
+  g_free (clause);
 }
 
 /**
@@ -22692,22 +22793,24 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
  * @param[in]  iterator    Iterator.
  * @param[in]  target      Target to limit iteration to.  0 for all.
  * @param[in]  trash       Whether to iterate over trashcan targets.
+ * @param[in]  filter      Filter term.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  * @param[in]  actions_string   Actions.
  */
 void
 init_target_iterator (iterator_t* iterator, target_t target, int trash,
-                      int ascending, const char* sort_field,
+                      const char *filter, int ascending, const char* sort_field,
                       const char *actions_string)
 {
   int actions;
+  gchar *clause;
 
   assert (current_credentials.uuid);
 
   if (actions_string == NULL || strlen (actions_string) == 0)
     {
-      init_user_target_iterator (iterator, target, trash, ascending,
+      init_user_target_iterator (iterator, target, trash, filter, ascending,
                                  sort_field);
       return;
     }
@@ -22716,10 +22819,12 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
 
   if (actions == 0)
     {
-      init_user_target_iterator (iterator, target, trash, ascending,
+      init_user_target_iterator (iterator, target, trash, filter, ascending,
                                  sort_field);
       return;
     }
+
+  clause = filter_clause ("target", filter);
 
   if (target && trash)
     init_iterator (iterator,
@@ -22859,6 +22964,7 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
                    "   (SELECT ROWID FROM users"
                    "    WHERE users.uuid = '%s')"
                    "   AND actions & %u = %u))"
+                   "%s%s"
                    " ORDER BY %s %s;",
                    trash ? "ssh_location" : "0",
                    trash ? "smb_location" : "0",
@@ -22867,8 +22973,12 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
                    current_credentials.uuid,
                    actions,
                    actions,
+                   clause ? " AND " : "",
+                   clause ? clause : "",
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
+
+  g_free (clause);
 }
 
 /**

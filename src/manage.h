@@ -902,10 +902,12 @@ int
 delete_target (const char*, int);
 
 void
-init_user_target_iterator (iterator_t*, target_t, int, int, const char*);
+init_user_target_iterator (iterator_t*, target_t, int, const char*, int,
+                           const char*);
 
 void
-init_target_iterator (iterator_t*, target_t, int, int, const char*, const char*);
+init_target_iterator (iterator_t*, target_t, int, const char*, int, const char*,
+                      const char*);
 
 target_t
 target_iterator_target (iterator_t*);

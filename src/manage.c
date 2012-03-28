@@ -1480,7 +1480,7 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
 
       /* Create the target on the slave. */
 
-      init_user_target_iterator (&targets, target, 0, 1, NULL);
+      init_user_target_iterator (&targets, target, 0, NULL, 1, NULL);
       if (next (&targets))
         {
           const char *hosts;

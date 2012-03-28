@@ -1,5 +1,20 @@
 2012-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add simple keyword filtering to GET_TARGETS.
+
+	* src/manage_sql.c (filter_clause): New function.
+	(init_user_target_iterator, init_target_iterator): Add filter arg.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/manage.c (run_slave_task): Update caller.
+
+	* src/omp.c (get_targets_data_t, get_targets_data_reset): Add filter.
+	(omp_xml_handle_start_element): Append filter attrib.
+	(omp_xml_handle_end_element): Pass filter to init_target_iterator.
+
+2012-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Rename Escalators to Alerts.  Hence increase database version to 57.  Add
 	database migration from version 56 to 57.
 

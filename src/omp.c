@@ -2141,6 +2141,7 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 typedef struct
 {
   char *actions;       ///< Actions.
+  char *filter;        ///< Filter term.
   char *sort_field;    ///< Field to sort results on.
   int sort_order;      ///< Result sort order: 0 descending, else ascending.
   char *target_id;     ///< ID of single target to get.
@@ -2157,6 +2158,7 @@ static void
 get_targets_data_reset (get_targets_data_t *data)
 {
   free (data->actions);
+  free (data->filter);
   free (data->target_id);
   free (data->sort_field);
 
@@ -4889,6 +4891,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_targets_data->trash = strcmp (attribute, "0");
             else
               get_targets_data->trash = 0;
+            append_attribute (attribute_names, attribute_values, "filter",
+                              &get_targets_data->filter);
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_targets_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
@@ -14911,9 +14915,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL ("<get_targets_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
+              SENDF_TO_CLIENT_OR_FAIL ("<filters>"
+                                       "<term>%s</term>"
+                                       "</filters>",
+                                       get_targets_data->filter);
               init_target_iterator (&targets,
                                     target,
                                     get_targets_data->trash,
+                                    get_targets_data->filter,
                                     get_targets_data->sort_order,
                                     get_targets_data->sort_field,
                                     get_targets_data->actions);
