@@ -22584,7 +22584,7 @@ filter_clause (const char* type, const char* filter)
     {
       GString *clause;
       gchar **split, **point;
-      int first;
+      int first, last_was_and;
       iterator_t rows;
       array_t *columns;
 
@@ -22619,6 +22619,7 @@ filter_clause (const char* type, const char* filter)
       split = g_strsplit_set (filter, " \t\n\r", 0);
       point = split;
       first = 1;
+      last_was_and = 0;
       while (*point)
         {
           gchar *quoted_keyword;
@@ -22630,10 +22631,25 @@ filter_clause (const char* type, const char* filter)
               continue;
             }
 
+          if (strcasecmp (*point, "or") == 0)
+            {
+              point++;
+              continue;
+            }
+
+          if (strcasecmp (*point, "and") == 0)
+            {
+              last_was_and = 1;
+              point++;
+              continue;
+            }
+
           quoted_keyword = sql_quote (*point);
           g_string_append_printf (clause,
                                   "%s(",
-                                  (first ? "" : " OR "));
+                                  (first
+                                    ? ""
+                                    : (last_was_and ? " AND " : " OR ")));
 
           /* Add SQL to the clause for each column name. */
 
@@ -22649,6 +22665,7 @@ filter_clause (const char* type, const char* filter)
           g_free (quoted_keyword);
           first = 0;
 
+          last_was_and = 0;
           point++;
         }
       array_free (columns);

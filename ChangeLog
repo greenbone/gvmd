@@ -1,5 +1,9 @@
 2012-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Add AND and OR, as a test.
+
+2012-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add simple keyword filtering to GET_TARGETS.
 
 	* src/manage_sql.c (filter_clause): New function.
