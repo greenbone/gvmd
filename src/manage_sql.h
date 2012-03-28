@@ -63,7 +63,7 @@ const char *lsc_credential_iterator_password (iterator_t *);
 
 int create_current_report (task_t, char **, task_status_t);
 
-char *escalator_data (escalator_t, const char *, const char *);
+char *alert_data (alert_t, const char *, const char *);
 
 time_t add_months (time_t, int);
 

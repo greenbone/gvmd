@@ -243,25 +243,25 @@ short scanner_active = 0;
 report_t current_report = (report_t) 0;
 
 
-/* Escalators. */
+/* Alerts. */
 
 /**
- * @brief Get the name of an escalator condition.
+ * @brief Get the name of an alert condition.
  *
  * @param[in]  condition  Condition.
  *
  * @return The name of the condition (for example, "Always").
  */
 const char*
-escalator_condition_name (escalator_condition_t condition)
+alert_condition_name (alert_condition_t condition)
 {
   switch (condition)
     {
-      case ESCALATOR_CONDITION_ALWAYS:
+      case ALERT_CONDITION_ALWAYS:
         return "Always";
-      case ESCALATOR_CONDITION_THREAT_LEVEL_AT_LEAST:
+      case ALERT_CONDITION_THREAT_LEVEL_AT_LEAST:
         return "Threat level at least";
-      case ESCALATOR_CONDITION_THREAT_LEVEL_CHANGED:
+      case ALERT_CONDITION_THREAT_LEVEL_CHANGED:
         return "Threat level changed";
       default:
         return "Internal Error";
@@ -269,7 +269,7 @@ escalator_condition_name (escalator_condition_t condition)
 }
 
 /**
- * @brief Get the name of an escalator event.
+ * @brief Get the name of an alert event.
  *
  * @param[in]  event  Event.
  *
@@ -286,34 +286,34 @@ event_name (event_t event)
 }
 
 /**
- * @brief Get a description of an escalator condition.
+ * @brief Get a description of an alert condition.
  *
  * @param[in]  condition  Condition.
- * @param[in]  escalator  Escalator.
+ * @param[in]  alert  Alert.
  *
  * @return Freshly allocated description of condition.
  */
 gchar*
-escalator_condition_description (escalator_condition_t condition,
-                                 escalator_t escalator)
+alert_condition_description (alert_condition_t condition,
+                             alert_t alert)
 {
   switch (condition)
     {
-      case ESCALATOR_CONDITION_ALWAYS:
+      case ALERT_CONDITION_ALWAYS:
         return g_strdup ("Always");
-      case ESCALATOR_CONDITION_THREAT_LEVEL_AT_LEAST:
+      case ALERT_CONDITION_THREAT_LEVEL_AT_LEAST:
         {
-          char *level = escalator_data (escalator, "condition", "level");
+          char *level = alert_data (alert, "condition", "level");
           gchar *ret = g_strdup_printf ("Task threat level is at least '%s'",
                                         level);
           free (level);
           return ret;
           break;
         }
-      case ESCALATOR_CONDITION_THREAT_LEVEL_CHANGED:
+      case ALERT_CONDITION_THREAT_LEVEL_CHANGED:
         {
           char *direction;
-          direction = escalator_data (escalator, "condition", "direction");
+          direction = alert_data (alert, "condition", "direction");
           gchar *ret = g_strdup_printf ("Task threat level %s", direction);
           free (direction);
           return ret;
@@ -325,7 +325,7 @@ escalator_condition_description (escalator_condition_t condition,
 }
 
 /**
- * @brief Get a description of an escalator event.
+ * @brief Get a description of an alert event.
  *
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
@@ -353,42 +353,42 @@ event_description (event_t event, const void *event_data, const char *task_name)
 }
 
 /**
- * @brief Get the name of an escalator method.
+ * @brief Get the name of an alert method.
  *
  * @param[in]  method  Method.
  *
  * @return The name of the method (for example, "Email" or "SNMP").
  */
 const char*
-escalator_method_name (escalator_method_t method)
+alert_method_name (alert_method_t method)
 {
   switch (method)
     {
-      case ESCALATOR_METHOD_EMAIL:       return "Email";
-      case ESCALATOR_METHOD_HTTP_GET:    return "HTTP Get";
-      case ESCALATOR_METHOD_SOURCEFIRE:  return "Sourcefire Connector";
-      case ESCALATOR_METHOD_SYSLOG:      return "Syslog";
-      default:                           return "Internal Error";
+      case ALERT_METHOD_EMAIL:       return "Email";
+      case ALERT_METHOD_HTTP_GET:    return "HTTP Get";
+      case ALERT_METHOD_SOURCEFIRE:  return "Sourcefire Connector";
+      case ALERT_METHOD_SYSLOG:      return "Syslog";
+      default:                       return "Internal Error";
     }
 }
 
 /**
- * @brief Get an escalator condition from a name.
+ * @brief Get an alert condition from a name.
  *
  * @param[in]  name  Condition name.
  *
  * @return The condition.
  */
-escalator_condition_t
-escalator_condition_from_name (const char* name)
+alert_condition_t
+alert_condition_from_name (const char* name)
 {
   if (strcasecmp (name, "Always") == 0)
-    return ESCALATOR_CONDITION_ALWAYS;
+    return ALERT_CONDITION_ALWAYS;
   if (strcasecmp (name, "Threat level at least") == 0)
-    return ESCALATOR_CONDITION_THREAT_LEVEL_AT_LEAST;
+    return ALERT_CONDITION_THREAT_LEVEL_AT_LEAST;
   if (strcasecmp (name, "Threat level changed") == 0)
-    return ESCALATOR_CONDITION_THREAT_LEVEL_CHANGED;
-  return ESCALATOR_CONDITION_ERROR;
+    return ALERT_CONDITION_THREAT_LEVEL_CHANGED;
+  return ALERT_CONDITION_ERROR;
 }
 
 /**
@@ -407,24 +407,24 @@ event_from_name (const char* name)
 }
 
 /**
- * @brief Get an escalator method from a name.
+ * @brief Get an alert method from a name.
  *
  * @param[in]  name  Method name.
  *
  * @return The method.
  */
-escalator_method_t
-escalator_method_from_name (const char* name)
+alert_method_t
+alert_method_from_name (const char* name)
 {
   if (strcasecmp (name, "Email") == 0)
-    return ESCALATOR_METHOD_EMAIL;
+    return ALERT_METHOD_EMAIL;
   if (strcasecmp (name, "HTTP Get") == 0)
-    return ESCALATOR_METHOD_HTTP_GET;
+    return ALERT_METHOD_HTTP_GET;
   if (strcasecmp (name, "Sourcefire Connector") == 0)
-    return ESCALATOR_METHOD_SOURCEFIRE;
+    return ALERT_METHOD_SOURCEFIRE;
   if (strcasecmp (name, "Syslog") == 0)
-    return ESCALATOR_METHOD_SYSLOG;
-  return ESCALATOR_METHOD_ERROR;
+    return ALERT_METHOD_SYSLOG;
+  return ALERT_METHOD_ERROR;
 }
 
 

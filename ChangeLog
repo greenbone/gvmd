@@ -1,3 +1,27 @@
+2012-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Rename Escalators to Alerts.  Hence increase database version to 57.  Add
+	database migration from version 56 to 57.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 57.
+
+	* src/sql.c (sql_rename_column, iterator_column_count)
+	(iterator_column_name): New functions.
+
+	* src/sql.h: Add headers accordingly.
+
+	* src/manage_sql.c: Everywhere replace escalator with alert.
+	(migrate_56_to_57): New function.
+	(database_migrators): Add migrate_56_to_57.
+
+	* src/manage.c, src/manage.h, src/manage_sql.h, src/omp.c,
+	doc/db_postgres.sql: Everywhere replace escalator with alert.
+
+	* src/schema_formats/XML/OMP.xml: Everywhere replace escalator with alert.
+	(version): Increment to 4.
+
+	* doc/db.png, doc/omp.rnc, doc/omp.html: Update from source.
+
 2012-03-28  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Post branch version bump.

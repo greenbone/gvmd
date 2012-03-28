@@ -79,6 +79,9 @@ sql_iso_time (sqlite3_context *, int argc, sqlite3_value **);
 void
 sql_now (sqlite3_context *, int argc, sqlite3_value **);
 
+void
+sql_rename_column (const char *, const char *, const char *, const char *);
+
 
 /* Iterators. */
 
@@ -90,6 +93,12 @@ iterator_int64 (iterator_t*, int);
 
 const char*
 iterator_string (iterator_t*, int);
+
+const char*
+iterator_column_name (iterator_t*, int);
+
+int
+iterator_column_count (iterator_t*);
 
 void
 cleanup_iterator (iterator_t*);

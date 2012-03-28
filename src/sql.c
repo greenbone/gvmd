@@ -274,7 +274,7 @@ sql_quiet (char* sql, ...)
  *
  * @return 0 success, 1 too few rows, -1 error.
  */
- int
+int
 sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
        va_list args, sqlite3_stmt** stmt_return)
 {
@@ -669,6 +669,67 @@ sql_now (sqlite3_context *context, int argc, sqlite3_value** argv)
   sqlite3_result_int (context, time (NULL));
 }
 
+/**
+ * @brief Move data from a table to a new table, heeding column rename.
+ *
+ * @param[in]  old_table  Existing table.
+ * @param[in]  new_table  New empty table with renamed column.
+ * @param[in]  old_name   Name of column in old table.
+ * @param[in]  new_name   Name of column in new table.
+ */
+void
+sql_rename_column (const char *old_table, const char *new_table,
+                   const char *old_name, const char *new_name)
+{
+  iterator_t rows;
+
+  /* Get a row with all columns. */
+
+  init_iterator (&rows, "SELECT * FROM %s LIMIT 1;", old_table);
+  if (next (&rows))
+    {
+      GString *one, *two;
+      int end, column, first;
+
+      /* Build the INSERT query from the column names in the row. */
+
+      one = g_string_new ("");
+      g_string_append_printf (one, "INSERT INTO %s (", new_table);
+
+      two = g_string_new (") SELECT ");
+
+      end = iterator_column_count (&rows);
+      first = 1;
+      for (column = 0; column < end; column++)
+        {
+          const char *name;
+          name = iterator_column_name (&rows, column);
+          g_string_append_printf (one, "%s%s",
+                                  (first ? "" : ", "),
+                                  (strcmp (name, old_name) == 0
+                                    ? new_name
+                                    : name));
+          if (first)
+            first = 0;
+          else
+            g_string_append (two, ", ");
+          g_string_append (two, name);
+        }
+      cleanup_iterator (&rows);
+
+      g_string_append_printf (one, "%s FROM %s;", two->str, old_table);
+
+      /* Run the INSERT query. */
+
+      sql (one->str);
+
+      g_string_free (one, TRUE);
+      g_string_free (two, TRUE);
+    }
+  else
+    cleanup_iterator (&rows);
+}
+
 
 /* Iterators. */
 
@@ -746,6 +807,35 @@ iterator_string (iterator_t* iterator, int col)
 {
   if (iterator->done) abort ();
   return (const char*) sqlite3_column_text (iterator->stmt, col);
+}
+
+/**
+ * @brief Get a column name from an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  col       Column offset.
+ *
+ * @return Name of given column.
+ */
+const char*
+iterator_column_name (iterator_t* iterator, int col)
+{
+  if (iterator->done) abort ();
+  return (const char*) sqlite3_column_name (iterator->stmt, col);
+}
+
+/**
+ * @brief Get number of columns from an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Number of columns.
+ */
+int
+iterator_column_count (iterator_t* iterator)
+{
+  if (iterator->done) abort ();
+  return sqlite3_column_count (iterator->stmt);
 }
 
 /**

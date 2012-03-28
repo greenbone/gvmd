@@ -955,14 +955,14 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS config_preferences_trash (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS configs_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data_trash (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS escalator_event_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS escalator_event_data_trash (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS escalator_method_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS escalator_method_data_trash (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS escalators (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS escalators_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS alert_condition_data (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS alert_condition_data_trash (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS alert_event_data (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS alert_event_data_trash (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS alert_method_data (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS alert_method_data_trash (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS alerts_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY, name UNIQUE, value);");
@@ -1011,7 +1011,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range);");
   sql ("CREATE TABLE IF NOT EXISTS targets_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER, port_list_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
-  sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER, escalator_location INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS task_alerts (id INTEGER PRIMARY KEY, task INTEGER, alert INTEGER, alert_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_preferences (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER, upload_result_count INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_users (id INTEGER PRIMARY KEY, task INTEGER, user INTEGER, actions INTEGER);");
@@ -5421,6 +5421,97 @@ migrate_55_to_56 ()
 }
 
 /**
+ * @brief Migrate the database from version 56 to version 57.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_56_to_57 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 56. */
+
+  if (manage_db_version () != 56)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Escalators were renamed to alerts. */
+
+  sql ("CREATE TABLE alert_condition_data"
+       " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql_rename_column ("escalator_condition_data", "alert_condition_data",
+                     "escalator", "alert");
+  sql ("DROP TABLE escalator_condition_data;");
+
+  sql ("CREATE TABLE alert_event_data"
+       " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql_rename_column ("escalator_event_data", "alert_event_data",
+                     "escalator", "alert");
+  sql ("DROP TABLE escalator_event_data;");
+
+  sql ("CREATE TABLE alert_event_data_trash"
+       " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql_rename_column ("escalator_event_data_trash", "alert_event_data_trash",
+                     "escalator", "alert");
+  sql ("DROP TABLE escalator_event_data_trash;");
+
+  sql ("CREATE TABLE alert_method_data"
+       " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql_rename_column ("escalator_method_data", "alert_method_data",
+                     "escalator", "alert");
+  sql ("DROP TABLE escalator_method_data;");
+
+  sql ("CREATE TABLE alert_method_data_trash"
+       " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql_rename_column ("escalator_method_data_trash", "alert_method_data_trash",
+                     "escalator", "alert");
+  sql ("DROP TABLE escalator_method_data_trash;");
+
+  sql ("CREATE TABLE alerts"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  event INTEGER, condition INTEGER, method INTEGER);");
+  sql_rename_column ("escalators", "alerts",
+                     "escalator", "alert");
+  sql ("DROP TABLE escalators;");
+
+  sql ("CREATE TABLE alerts_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  event INTEGER, condition INTEGER, method INTEGER);");
+  sql_rename_column ("escalators_trash", "alerts_trash",
+                     "escalator", "alert");
+  sql ("DROP TABLE escalators_trash;");
+
+  sql ("CREATE TABLE task_alerts_56"
+       " (id INTEGER PRIMARY KEY, task INTEGER, alert INTEGER,"
+       "  escalator_location INTEGER);");
+  sql_rename_column ("task_escalators", "task_alerts_56",
+                     "escalator", "alert");
+  sql ("DROP TABLE task_escalators;");
+
+  sql ("CREATE TABLE task_alerts"
+       " (id INTEGER PRIMARY KEY, task INTEGER, alert INTEGER,"
+       "  alert_location INTEGER);");
+  sql_rename_column ("task_alerts_56", "task_alerts",
+                     "escalator_location", "alert_location");
+  sql ("DROP TABLE task_alerts_56;");
+
+  /* Set the database version to 57. */
+
+  set_db_version (57);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -5481,6 +5572,7 @@ static migrator_t database_migrators[]
     {54, migrate_53_to_54},
     {55, migrate_54_to_55},
     {56, migrate_55_to_56},
+    {57, migrate_56_to_57},
     /* End marker. */
     {-1, NULL}};
 
@@ -5882,35 +5974,35 @@ task_user_iterator_actions (iterator_t* iterator)
 DEF_ACCESS (task_user_iterator_name, 4);
 
 
-/* Events and Escalators. */
+/* Events and Alerts. */
 
 /**
- * @brief Find an escalator given a UUID.
+ * @brief Find an alert given a UUID.
  *
- * @param[in]   uuid       UUID of escalator.
- * @param[out]  escalator  Return.  0 if succesfully failed to find escalator.
+ * @param[in]   uuid       UUID of alert.
+ * @param[out]  alert  Return.  0 if succesfully failed to find alert.
  *
- * @return FALSE on success (including if failed to find escalator), TRUE on
+ * @return FALSE on success (including if failed to find alert), TRUE on
  *         error.
  */
 gboolean
-find_escalator (const char* uuid, escalator_t* escalator)
+find_alert (const char* uuid, alert_t* alert)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("escalator", quoted_uuid) == 0)
+  if (user_owns_uuid ("alert", quoted_uuid) == 0)
     {
       g_free (quoted_uuid);
-      *escalator = 0;
+      *alert = 0;
       return FALSE;
     }
-  switch (sql_int64 (escalator, 0, 0,
-                     "SELECT ROWID FROM escalators WHERE uuid = '%s';",
+  switch (sql_int64 (alert, 0, 0,
+                     "SELECT ROWID FROM alerts WHERE uuid = '%s';",
                      quoted_uuid))
     {
       case 0:
         break;
       case 1:        /* Too few rows in result of query. */
-        *escalator = 0;
+        *alert = 0;
         break;
       default:       /* Programming error. */
         assert (0);
@@ -5984,26 +6076,26 @@ validate_email (const char* address)
 }
 
 /**
- * @brief Create an escalator.
+ * @brief Create an alert.
  *
- * @param[in]  name            Name of escalator.
- * @param[in]  comment         Comment on escalator.
+ * @param[in]  name            Name of alert.
+ * @param[in]  comment         Comment on alert.
  * @param[in]  event           Type of event.
  * @param[in]  event_data      Type-specific event data.
  * @param[in]  condition       Event condition.
  * @param[in]  condition_data  Condition-specific data.
  * @param[in]  method          Escalation method.
  * @param[in]  method_data     Data for escalation method.
- * @param[out] escalator       Created escalator on success.
+ * @param[out] alert       Created alert on success.
  *
  * @return 0 success, 1 escalation exists already, 2 validation of email failed.
  */
 int
-create_escalator (const char* name, const char* comment,
+create_alert (const char* name, const char* comment,
                   event_t event, GPtrArray* event_data,
-                  escalator_condition_t condition, GPtrArray* condition_data,
-                  escalator_method_t method, GPtrArray* method_data,
-                  escalator_t *escalator)
+                  alert_condition_t condition, GPtrArray* condition_data,
+                  alert_method_t method, GPtrArray* method_data,
+                  alert_t *alert)
 {
   int index;
   gchar *item, *quoted_comment;
@@ -6014,7 +6106,7 @@ create_escalator (const char* name, const char* comment,
   sql ("BEGIN IMMEDIATE;");
 
   if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM escalators WHERE name = '%s'"
+               "SELECT COUNT(*) FROM alerts WHERE name = '%s'"
                " AND ((owner IS NULL) OR (owner ="
                " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
                quoted_name,
@@ -6027,7 +6119,7 @@ create_escalator (const char* name, const char* comment,
 
   quoted_comment = comment ? sql_quote (comment) : NULL;
 
-  sql ("INSERT INTO escalators (uuid, owner, name, comment, event, condition,"
+  sql ("INSERT INTO alerts (uuid, owner, name, comment, event, condition,"
        " method)"
        " VALUES (make_uuid (),"
        " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
@@ -6042,16 +6134,16 @@ create_escalator (const char* name, const char* comment,
   g_free (quoted_comment);
   g_free (quoted_name);
 
-  *escalator = sqlite3_last_insert_rowid (task_db);
+  *alert = sqlite3_last_insert_rowid (task_db);
 
   index = 0;
   while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
     {
       gchar *name = sql_quote (item);
       gchar *data = sql_quote (item + strlen (item) + 1);
-      sql ("INSERT INTO escalator_condition_data (escalator, name, data)"
+      sql ("INSERT INTO alert_condition_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
-           *escalator,
+           *alert,
            name,
            data);
       g_free (name);
@@ -6063,9 +6155,9 @@ create_escalator (const char* name, const char* comment,
     {
       gchar *name = sql_quote (item);
       gchar *data = sql_quote (item + strlen (item) + 1);
-      sql ("INSERT INTO escalator_event_data (escalator, name, data)"
+      sql ("INSERT INTO alert_event_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
-           *escalator,
+           *alert,
            name,
            data);
       g_free (name);
@@ -6077,7 +6169,7 @@ create_escalator (const char* name, const char* comment,
     {
       gchar *name = sql_quote (item);
       gchar *data = sql_quote (item + strlen (item) + 1);
-      if (method == ESCALATOR_METHOD_EMAIL
+      if (method == ALERT_METHOD_EMAIL
           && (strcmp (name, "to_address") == 0
               || strcmp (name, "from_address") == 0)
           && validate_email (data))
@@ -6088,9 +6180,9 @@ create_escalator (const char* name, const char* comment,
           return 2;
         }
 
-      sql ("INSERT INTO escalator_method_data (escalator, name, data)"
+      sql ("INSERT INTO alert_method_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
-           *escalator,
+           *alert,
            name,
            data);
       g_free (name);
@@ -6103,35 +6195,35 @@ create_escalator (const char* name, const char* comment,
 }
 
 /**
- * @brief Delete an escalator.
+ * @brief Delete an alert.
  *
- * @param[in]  escalator_id  UUID of escalator.
+ * @param[in]  alert_id  UUID of alert.
  * @param[in]  ultimate      Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 1 fail because a task refers to the escalator, 2 failed
+ * @return 0 success, 1 fail because a task refers to the alert, 2 failed
  *         to find target, -1 error.
  */
 int
-delete_escalator (const char *escalator_id, int ultimate)
+delete_alert (const char *alert_id, int ultimate)
 {
-  escalator_t escalator = 0;
+  alert_t alert = 0;
 
   sql ("BEGIN IMMEDIATE;");
 
-  if (find_escalator (escalator_id, &escalator))
+  if (find_alert (alert_id, &alert))
     {
       sql ("ROLLBACK;");
       return -1;
     }
 
-  if (escalator == 0)
+  if (alert == 0)
     {
-      if (find_trash ("escalator", escalator_id, &escalator))
+      if (find_trash ("alert", alert_id, &alert))
         {
           sql ("ROLLBACK;");
           return -1;
         }
-      if (escalator == 0)
+      if (alert == 0)
         {
           sql ("ROLLBACK;");
           return 2;
@@ -6145,33 +6237,33 @@ delete_escalator (const char *escalator_id, int ultimate)
 
       /* Check if it's in use by a task in the trashcan. */
       if (sql_int (0, 0,
-                   "SELECT count(*) FROM task_escalators"
-                   " WHERE escalator = %llu"
-                   " AND escalator_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-                   escalator))
+                   "SELECT count(*) FROM task_alerts"
+                   " WHERE alert = %llu"
+                   " AND alert_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+                   alert))
         {
           sql ("ROLLBACK;");
           return 1;
         }
 
-      sql ("DELETE FROM escalator_condition_data_trash WHERE escalator = %llu;",
-           escalator);
-      sql ("DELETE FROM escalator_event_data_trash WHERE escalator = %llu;",
-           escalator);
-      sql ("DELETE FROM escalator_method_data_trash WHERE escalator = %llu;",
-           escalator);
-      sql ("DELETE FROM escalators_trash WHERE ROWID = %llu;", escalator);
+      sql ("DELETE FROM alert_condition_data_trash WHERE alert = %llu;",
+           alert);
+      sql ("DELETE FROM alert_event_data_trash WHERE alert = %llu;",
+           alert);
+      sql ("DELETE FROM alert_method_data_trash WHERE alert = %llu;",
+           alert);
+      sql ("DELETE FROM alerts_trash WHERE ROWID = %llu;", alert);
       sql ("COMMIT;");
       return 0;
     }
 
   if (sql_int (0, 0,
-               "SELECT count(*) FROM task_escalators"
-               " WHERE escalator = %llu"
-               " AND escalator_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+               "SELECT count(*) FROM task_alerts"
+               " WHERE alert = %llu"
+               " AND alert_location = " G_STRINGIFY (LOCATION_TABLE) ";",
                " AND (SELECT hidden < 2 FROM tasks"
-               "      WHERE ROWID = task_escalators.task);",
-               escalator))
+               "      WHERE ROWID = task_alerts.task);",
+               alert))
     {
       sql ("ROLLBACK;");
       return 1;
@@ -6179,131 +6271,131 @@ delete_escalator (const char *escalator_id, int ultimate)
 
   if (ultimate == 0)
     {
-      escalator_t trash_escalator;
+      alert_t trash_alert;
 
-      sql ("INSERT INTO escalators_trash"
+      sql ("INSERT INTO alerts_trash"
            " (uuid, owner, name, comment, event, condition, method)"
            " SELECT uuid, owner, name, comment, event, condition, method"
-           " FROM escalators WHERE ROWID = %llu;",
-           escalator);
+           " FROM alerts WHERE ROWID = %llu;",
+           alert);
 
-      trash_escalator = sqlite3_last_insert_rowid (task_db);
+      trash_alert = sqlite3_last_insert_rowid (task_db);
 
-      sql ("INSERT INTO escalator_condition_data_trash"
-           " (escalator, name, data)"
+      sql ("INSERT INTO alert_condition_data_trash"
+           " (alert, name, data)"
            " SELECT %llu, name, data"
-           " FROM escalator_condition_data WHERE ROWID = %llu;",
-           trash_escalator);
+           " FROM alert_condition_data WHERE ROWID = %llu;",
+           trash_alert);
 
-      sql ("INSERT INTO escalator_event_data_trash"
-           " (escalator, name, data)"
+      sql ("INSERT INTO alert_event_data_trash"
+           " (alert, name, data)"
            " SELECT %llu, name, data"
-           " FROM escalator_event_data WHERE ROWID = %llu;",
-           trash_escalator);
+           " FROM alert_event_data WHERE ROWID = %llu;",
+           trash_alert);
 
-      sql ("INSERT INTO escalator_method_data_trash"
-           " (escalator, name, data)"
+      sql ("INSERT INTO alert_method_data_trash"
+           " (alert, name, data)"
            " SELECT %llu, name, data"
-           " FROM escalator_method_data WHERE ROWID = %llu;",
-           trash_escalator);
+           " FROM alert_method_data WHERE ROWID = %llu;",
+           trash_alert);
 
-      /* Update the location of the escalator in any trashcan tasks. */
-      sql ("UPDATE task_escalators"
-           " SET escalator = %llu,"
-           "     escalator_location = " G_STRINGIFY (LOCATION_TRASH)
-           " WHERE escalator = %llu"
-           " AND escalator_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           trash_escalator,
-           escalator);
+      /* Update the location of the alert in any trashcan tasks. */
+      sql ("UPDATE task_alerts"
+           " SET alert = %llu,"
+           "     alert_location = " G_STRINGIFY (LOCATION_TRASH)
+           " WHERE alert = %llu"
+           " AND alert_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           trash_alert,
+           alert);
    }
 
-  sql ("DELETE FROM escalator_condition_data WHERE escalator = %llu;",
-       escalator);
-  sql ("DELETE FROM escalator_event_data WHERE escalator = %llu;", escalator);
-  sql ("DELETE FROM escalator_method_data WHERE escalator = %llu;", escalator);
-  sql ("DELETE FROM escalators WHERE ROWID = %llu;", escalator);
+  sql ("DELETE FROM alert_condition_data WHERE alert = %llu;",
+       alert);
+  sql ("DELETE FROM alert_event_data WHERE alert = %llu;", alert);
+  sql ("DELETE FROM alert_method_data WHERE alert = %llu;", alert);
+  sql ("DELETE FROM alerts WHERE ROWID = %llu;", alert);
   sql ("COMMIT;");
   return 0;
 }
 
 /**
- * @brief Return the UUID of a escalator.
+ * @brief Return the UUID of a alert.
  *
- * @param[in]   escalator  Escalator.
+ * @param[in]   alert  Alert.
  * @param[out]  id         Pointer to a newly allocated string.
  *
  * @return 0.
  */
 int
-escalator_uuid (escalator_t escalator, char ** id)
+alert_uuid (alert_t alert, char ** id)
 {
   *id = sql_string (0, 0,
-                    "SELECT uuid FROM escalators WHERE ROWID = %llu;",
-                    escalator);
+                    "SELECT uuid FROM alerts WHERE ROWID = %llu;",
+                    alert);
   return 0;
 }
 
 /**
- * @brief Return the condition associated with an escalator.
+ * @brief Return the condition associated with an alert.
  *
- * @param[in]  escalator  Escalator.
+ * @param[in]  alert  Alert.
  *
  * @return Condition.
  */
-static escalator_condition_t
-escalator_condition (escalator_t escalator)
+static alert_condition_t
+alert_condition (alert_t alert)
 {
   return sql_int (0, 0,
-                  "SELECT condition FROM escalators WHERE ROWID = %llu;",
-                  escalator);
+                  "SELECT condition FROM alerts WHERE ROWID = %llu;",
+                  alert);
 }
 
 /**
- * @brief Return the method associated with an escalator.
+ * @brief Return the method associated with an alert.
  *
- * @param[in]  escalator  Escalator.
+ * @param[in]  alert  Alert.
  *
  * @return Method.
  */
-static escalator_method_t
-escalator_method (escalator_t escalator)
+static alert_method_t
+alert_method (alert_t alert)
 {
   return sql_int (0, 0,
-                  "SELECT method FROM escalators WHERE ROWID = %llu;",
-                  escalator);
+                  "SELECT method FROM alerts WHERE ROWID = %llu;",
+                  alert);
 }
 
 /**
- * @brief Initialise an escalator iterator.
+ * @brief Initialise an alert iterator.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  escalator   Single escalator to iterator over, 0 for all.
- * @param[in]  task        Iterate over escalators for this task.  0 for all.
- * @param[in]  event       Iterate over escalators handling this event.  0 for
+ * @param[in]  alert   Single alert to iterator over, 0 for all.
+ * @param[in]  task        Iterate over alerts for this task.  0 for all.
+ * @param[in]  event       Iterate over alerts handling this event.  0 for
  *                         all.
- * @param[in]  trash       Whether to iterate over trashcan escalators.
+ * @param[in]  trash       Whether to iterate over trashcan alerts.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_escalator_iterator (iterator_t *iterator, escalator_t escalator,
+init_alert_iterator (iterator_t *iterator, alert_t alert,
                          task_t task, event_t event, int trash, int ascending,
                          const char *sort_field)
 {
-  assert (escalator ? task == 0 : (task ? escalator == 0 : 1));
-  assert (escalator ? event == 0 : (event ? escalator == 0 : 1));
+  assert (alert ? task == 0 : (task ? alert == 0 : 1));
+  assert (alert ? event == 0 : (event ? alert == 0 : 1));
   assert (event ? task : 1);
   assert (current_credentials.uuid);
   assert (task ? trash == 0 : 1);
 
-  if (escalator)
+  if (alert)
     init_iterator (iterator,
-                   "SELECT escalators%s.ROWID, uuid, name, comment,"
+                   "SELECT alerts%s.ROWID, uuid, name, comment,"
                    " 0, event, condition, method,"
-                   " (SELECT count(*) > 0 FROM task_escalators"
-                   "  WHERE task_escalators.escalator = escalators%s.ROWID"
+                   " (SELECT count(*) > 0 FROM task_alerts"
+                   "  WHERE task_alerts.alert = alerts%s.ROWID"
                    "  %s)"
-                   " FROM escalators%s"
+                   " FROM alerts%s"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -6311,83 +6403,83 @@ init_escalator_iterator (iterator_t *iterator, escalator_t escalator,
                    trash ? "_trash" : "",
                    trash ? "_trash" : "",
                    (trash
-                     ? "  AND escalator_location"
+                     ? "  AND alert_location"
                        "      = " G_STRINGIFY (LOCATION_TRASH)
-                     : "  AND escalator_location"
+                     : "  AND alert_location"
                        "      = " G_STRINGIFY (LOCATION_TABLE)
                        "  AND (SELECT hidden FROM tasks"
-                       "       WHERE ROWID = task_escalators.task)"
+                       "       WHERE ROWID = task_alerts.task)"
                        "      < 2"), /* Task in table. */
                    trash ? "_trash" : "",
-                   escalator,
+                   alert,
                    current_credentials.uuid,
-                   sort_field ? sort_field : "escalators.ROWID",
+                   sort_field ? sort_field : "alerts.ROWID",
                    ascending ? "ASC" : "DESC");
   else if (task)
     init_iterator (iterator,
-                   "SELECT escalators.ROWID, uuid, name, comment,"
-                   " task_escalators.task, event, condition, method, 1"
-                   " FROM escalators, task_escalators"
-                   " WHERE task_escalators.escalator = escalators.ROWID"
-                   " AND task_escalators.task = %llu AND event = %i"
+                   "SELECT alerts.ROWID, uuid, name, comment,"
+                   " task_alerts.task, event, condition, method, 1"
+                   " FROM alerts, task_alerts"
+                   " WHERE task_alerts.alert = alerts.ROWID"
+                   " AND task_alerts.task = %llu AND event = %i"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
                    task,
                    event,
                    current_credentials.uuid,
-                   sort_field ? sort_field : "escalators.ROWID",
+                   sort_field ? sort_field : "alerts.ROWID",
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT escalators%s.ROWID, uuid, name, comment,"
+                   "SELECT alerts%s.ROWID, uuid, name, comment,"
                    " 0, event, condition, method,"
-                   " (SELECT count(*) > 0 FROM task_escalators"
-                   "  WHERE task_escalators.escalator = escalators%s.ROWID"
+                   " (SELECT count(*) > 0 FROM task_alerts"
+                   "  WHERE task_alerts.alert = alerts%s.ROWID"
                    "  %s)"
-                   " FROM escalators%s"
+                   " FROM alerts%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
                    trash ? "_trash" : "",
                    trash ? "_trash" : "",
                    (trash
-                     ? "  AND escalator_location"
+                     ? "  AND alert_location"
                        "      = " G_STRINGIFY (LOCATION_TRASH)
-                     : "  AND escalator_location"
+                     : "  AND alert_location"
                        "      = " G_STRINGIFY (LOCATION_TABLE)
                        "  AND (SELECT hidden FROM tasks"
-                       "       WHERE ROWID = task_escalators.task)"
+                       "       WHERE ROWID = task_alerts.task)"
                        "      < 2"), /* Task in table. */
                    trash ? "_trash" : "",
                    current_credentials.uuid,
-                   sort_field ? sort_field : "escalators.ROWID",
+                   sort_field ? sort_field : "alerts.ROWID",
                    ascending ? "ASC" : "DESC");
 }
 
 /**
- * @brief Return the escalator from an escalator iterator.
+ * @brief Return the alert from an alert iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Escalator of the iterator or NULL if iteration is complete.
+ * @return Alert of the iterator or NULL if iteration is complete.
  */
-escalator_t
-escalator_iterator_escalator (iterator_t* iterator)
+alert_t
+alert_iterator_alert (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return sqlite3_column_int64 (iterator->stmt, 0);
 }
 
 /**
- * @brief Return the UUID from an escalator iterator.
+ * @brief Return the UUID from an alert iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return UUID of the escalator or NULL if iteration is complete.
+ * @return UUID of the alert or NULL if iteration is complete.
  */
 const char*
-escalator_iterator_uuid (iterator_t* iterator)
+alert_iterator_uuid (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
@@ -6396,14 +6488,14 @@ escalator_iterator_uuid (iterator_t* iterator)
 }
 
 /**
- * @brief Return the name from an escalator iterator.
+ * @brief Return the name from an alert iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Name the escalator or NULL if iteration is complete.
+ * @return Name the alert or NULL if iteration is complete.
  */
 const char*
-escalator_iterator_name (iterator_t* iterator)
+alert_iterator_name (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
@@ -6412,14 +6504,14 @@ escalator_iterator_name (iterator_t* iterator)
 }
 
 /**
- * @brief Return the comment on an escalator iterator.
+ * @brief Return the comment on an alert iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Comment on the escalator or NULL if iteration is complete.
+ * @return Comment on the alert or NULL if iteration is complete.
  */
 const char *
-escalator_iterator_comment (iterator_t* iterator)
+alert_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
@@ -6428,14 +6520,14 @@ escalator_iterator_comment (iterator_t* iterator)
 }
 
 /**
- * @brief Return the event from an escalator iterator.
+ * @brief Return the event from an alert iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Event of the escalator or NULL if iteration is complete.
+ * @return Event of the alert or NULL if iteration is complete.
  */
 int
-escalator_iterator_event (iterator_t* iterator)
+alert_iterator_event (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
@@ -6444,14 +6536,14 @@ escalator_iterator_event (iterator_t* iterator)
 }
 
 /**
- * @brief Return the condition from an escalator iterator.
+ * @brief Return the condition from an alert iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Condition of the escalator or NULL if iteration is complete.
+ * @return Condition of the alert or NULL if iteration is complete.
  */
 int
-escalator_iterator_condition (iterator_t* iterator)
+alert_iterator_condition (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
@@ -6460,14 +6552,14 @@ escalator_iterator_condition (iterator_t* iterator)
 }
 
 /**
- * @brief Return the method from an escalator iterator.
+ * @brief Return the method from an alert iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Method of the escalator or NULL if iteration is complete.
+ * @return Method of the alert or NULL if iteration is complete.
  */
 int
-escalator_iterator_method (iterator_t* iterator)
+alert_iterator_method (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
@@ -6476,14 +6568,14 @@ escalator_iterator_method (iterator_t* iterator)
 }
 
 /**
- * @brief Return whether an escalator is in use.
+ * @brief Return whether an alert is in use.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Use state of the escalator or NULL if iteration is complete.
+ * @return Use state of the alert or NULL if iteration is complete.
  */
 int
-escalator_iterator_in_use (iterator_t* iterator)
+alert_iterator_in_use (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
@@ -6492,36 +6584,36 @@ escalator_iterator_in_use (iterator_t* iterator)
 }
 
 /**
- * @brief Initialise an escalator data iterator.
+ * @brief Initialise an alert data iterator.
  *
  * @param[in]  iterator   Iterator.
- * @param[in]  escalator  Escalator.
- * @param[in]  trash      Whether to iterate over trashcan escalator data.
+ * @param[in]  alert  Alert.
+ * @param[in]  trash      Whether to iterate over trashcan alert data.
  * @param[in]  table      Type of data: "condition", "event" or "method",
  *                        corresponds to substring of the table to select
  *                        from.
  */
 void
-init_escalator_data_iterator (iterator_t *iterator, escalator_t escalator,
+init_alert_data_iterator (iterator_t *iterator, alert_t alert,
                               int trash, const char *table)
 {
   init_iterator (iterator,
-                 "SELECT name, data FROM escalator_%s_data%s"
-                 " WHERE escalator = %llu;",
+                 "SELECT name, data FROM alert_%s_data%s"
+                 " WHERE alert = %llu;",
                  table,
                  trash ? "_trash" : "",
-                 escalator);
+                 alert);
 }
 
 /**
- * @brief Return the name from an escalator data iterator.
+ * @brief Return the name from an alert data iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Name of the escalator data or NULL if iteration is complete.
+ * @return Name of the alert data or NULL if iteration is complete.
  */
 const char*
-escalator_data_iterator_name (iterator_t* iterator)
+alert_data_iterator_name (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
@@ -6530,15 +6622,15 @@ escalator_data_iterator_name (iterator_t* iterator)
 }
 
 /**
- * @brief Return the data from an escalator data iterator.
+ * @brief Return the data from an alert data iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  *
- * @return Data of the escalator data or NULL if iteration is complete.
+ * @return Data of the alert data or NULL if iteration is complete.
  */
 const char*
-escalator_data_iterator_data (iterator_t* iterator)
+alert_data_iterator_data (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
@@ -6547,16 +6639,16 @@ escalator_data_iterator_data (iterator_t* iterator)
 }
 
 /**
- * @brief Return data associated with an escalator.
+ * @brief Return data associated with an alert.
  *
- * @param[in]  escalator  Escalator.
+ * @param[in]  alert  Alert.
  * @param[in]  type       Type of data: "condition", "event" or "method".
  * @param[in]  name       Name of the data.
  *
  * @return Freshly allocated data if it exists, else NULL.
  */
 char *
-escalator_data (escalator_t escalator, const char *type, const char *name)
+alert_data (alert_t alert, const char *type, const char *name)
 {
   gchar *quoted_name;
   char *data;
@@ -6567,10 +6659,10 @@ escalator_data (escalator_t escalator, const char *type, const char *name)
 
   quoted_name = sql_quote (name);
   data = sql_string (0, 0,
-                     "SELECT data FROM escalator_%s_data"
-                     " WHERE escalator = %llu AND name = '%s';",
+                     "SELECT data FROM alert_%s_data"
+                     " WHERE alert = %llu AND name = '%s';",
                      type,
-                     escalator,
+                     alert,
                      quoted_name);
   g_free (quoted_name);
   return data;
@@ -6914,7 +7006,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
   script_dir = g_build_filename (OPENVAS_DATA_DIR,
                                  "openvasmd",
-                                 "global_escalator_methods",
+                                 "global_alert_methods",
                                  "cd1f5a34-6bdc-11e0-9827-002264764cea",
                                  NULL);
 
@@ -7022,7 +7114,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 }
 
 /**
- * @brief Format string for simple notice escalator email.
+ * @brief Format string for simple notice alert email.
  */
 #define REPORT_NOTICE_FORMAT                                                  \
  "Task '%s': %s\n"                                                            \
@@ -7050,7 +7142,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 #define MAX_CONTENT_LENGTH 20000
 
 /**
- * @brief Format string for attached report escalator email.
+ * @brief Format string for attached report alert email.
  */
 #define REPORT_ATTACH_FORMAT                                                  \
  "Task '%s': %s\n"                                                            \
@@ -7075,7 +7167,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 #define MAX_ATTACH_LENGTH 1048576
 
 /**
- * @brief Format string for simple notice escalator email.
+ * @brief Format string for simple notice alert email.
  */
 #define SIMPLE_NOTICE_FORMAT                                                  \
  "%s.\n"                                                                      \
@@ -7095,13 +7187,13 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 /**
  * @brief Escalate an event.
  *
- * @param[in]  escalator   Escalator.
+ * @param[in]  alert   Alert.
  * @param[in]  task        Task.
  * @param[in]  report      Report.  0 for most recent report.
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
- * @param[in]  method      Method from escalator.
- * @param[in]  condition   Condition from escalator, which was met by event.
+ * @param[in]  method      Method from alert.
+ * @param[in]  condition   Condition from alert, which was met by event.
  * @param[in]  sort_order         Whether to sort ascending or descending.
  * @param[in]  sort_field         Field to sort on, or NULL for "type".
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
@@ -7125,9 +7217,9 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
  * @return 0 success, -1 error.
  */
 static int
-escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
-            const void* event_data, escalator_method_t method,
-            escalator_condition_t condition,
+escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
+            const void* event_data, alert_method_t method,
+            alert_condition_t condition,
             /* Report filtering. */
             int sort_order, const char* sort_field,
             int result_hosts_only, const char *min_cvss_base,
@@ -7136,20 +7228,20 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
             int overrides, int overrides_details, int first_result,
             int max_results)
 {
-  g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
-         "The escalator for task %s was triggered "
+  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+         "The alert for task %s was triggered "
          "(Event: %s, Condition: %s)",
          task_name (task),
          event_description (event, event_data, NULL),
-         escalator_condition_description (condition, escalator));
+         alert_condition_description (condition, alert));
 
   switch (method)
     {
-      case ESCALATOR_METHOD_EMAIL:
+      case ALERT_METHOD_EMAIL:
         {
           char *to_address;
 
-          to_address = escalator_data (escalator, "method", "to_address");
+          to_address = alert_data (alert, "method", "to_address");
 
           if (to_address)
             {
@@ -7162,11 +7254,11 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
               type = NULL;
               extension = NULL;
 
-              from_address = escalator_data (escalator,
+              from_address = alert_data (alert,
                                              "method",
                                              "from_address");
 
-              notice = escalator_data (escalator, "method", "notice");
+              notice = alert_data (alert, "method", "notice");
               name = task_name (task);
               if (notice && strcmp (notice, "0") == 0)
                 {
@@ -7199,7 +7291,7 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
                           return -1;
                       }
 
-                  format_uuid = escalator_data (escalator,
+                  format_uuid = alert_data (alert,
                                                 "method",
                                                 "notice_report_format");
                   if (((format_uuid == NULL)
@@ -7222,8 +7314,8 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
                   format_name = report_format_name (report_format);
 
                   event_desc = event_description (event, event_data, NULL);
-                  condition_desc = escalator_condition_description (condition,
-                                                                    escalator);
+                  condition_desc = alert_condition_description (condition,
+                                                                    alert);
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
@@ -7304,7 +7396,7 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
                           return -1;
                       }
 
-                  format_uuid = escalator_data (escalator,
+                  format_uuid = alert_data (alert,
                                                 "method",
                                                 "notice_attach_format");
                   if (((format_uuid == NULL)
@@ -7327,8 +7419,8 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
                   format_name = report_format_name (report_format);
 
                   event_desc = event_description (event, event_data, NULL);
-                  condition_desc = escalator_condition_description (condition,
-                                                                    escalator);
+                  condition_desc = alert_condition_description (condition,
+                                                                    alert);
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
@@ -7376,8 +7468,8 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
                   /* Simple notice message. */
                   event_desc = event_description (event, event_data, name);
                   generic_desc = event_description (event, event_data, NULL);
-                  condition_desc = escalator_condition_description (condition,
-                                                                    escalator);
+                  condition_desc = alert_condition_description (condition,
+                                                                    alert);
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s':"
                                              " An event occurred",
                                              name);
@@ -7403,11 +7495,11 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
           return -1;
           break;
         }
-      case ESCALATOR_METHOD_HTTP_GET:
+      case ALERT_METHOD_HTTP_GET:
         {
           char *url;
 
-          url = escalator_data (escalator, "method", "URL");
+          url = alert_data (alert, "method", "URL");
 
           if (url)
             {
@@ -7429,8 +7521,8 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
                         case 'c':
                           {
                             gchar *condition_desc;
-                            condition_desc = escalator_condition_description
-                                              (condition, escalator);
+                            condition_desc = alert_condition_description
+                                              (condition, alert);
                             g_string_append (new_url, condition_desc);
                             g_free (condition_desc);
                             break;
@@ -7471,7 +7563,7 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
           return -1;
           break;
         }
-      case ESCALATOR_METHOD_SOURCEFIRE:
+      case ALERT_METHOD_SOURCEFIRE:
         {
           char *ip, *port, *pkcs12;
           gchar *report_content;
@@ -7517,11 +7609,11 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
           if (report_content == NULL)
             return -1;
 
-          ip = escalator_data (escalator, "method", "defense_center_ip");
-          port = escalator_data (escalator, "method", "defense_center_port");
+          ip = alert_data (alert, "method", "defense_center_ip");
+          port = alert_data (alert, "method", "defense_center_port");
           if (port == NULL)
             port = g_strdup ("8307");
-          pkcs12 = escalator_data (escalator, "method", "pkcs12");
+          pkcs12 = alert_data (alert, "method", "pkcs12");
 
           tracef ("  sourcefire   ip: %s", ip);
           tracef ("  sourcefire port: %s", port);
@@ -7537,7 +7629,7 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
           return ret;
           break;
         }
-      case ESCALATOR_METHOD_SYSLOG:
+      case ALERT_METHOD_SYSLOG:
         {
           char *submethod;
           gchar *message, *event_desc, *level;
@@ -7546,7 +7638,7 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
           message = g_strdup_printf ("%s: %s", event_name (event), event_desc);
           g_free (event_desc);
 
-          submethod = escalator_data (escalator, "method", "submethod");
+          submethod = alert_data (alert, "method", "submethod");
           level = g_strdup_printf ("event %s", submethod);
           g_free (submethod);
 
@@ -7561,7 +7653,7 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
           return 0;
           break;
         }
-      case ESCALATOR_METHOD_ERROR:
+      case ALERT_METHOD_ERROR:
       default:
         break;
     }
@@ -7571,21 +7663,21 @@ escalate_2 (escalator_t escalator, task_t task, report_t report, event_t event,
 /**
  * @brief Escalate an event with preset report filtering.
  *
- * @param[in]  escalator   Escalator.
+ * @param[in]  alert   Alert.
  * @param[in]  task        Task.
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
- * @param[in]  method      Method from escalator.
- * @param[in]  condition   Condition from escalator, which was met by event.
+ * @param[in]  method      Method from alert.
+ * @param[in]  condition   Condition from alert, which was met by event.
  *
  * @return 0 success, -1 error.
  */
 static int
-escalate_1 (escalator_t escalator, task_t task, event_t event,
-            const void* event_data, escalator_method_t method,
-            escalator_condition_t condition)
+escalate_1 (alert_t alert, task_t task, event_t event,
+            const void* event_data, alert_method_t method,
+            alert_condition_t condition)
 {
-  return escalate_2 (escalator, task, 0, event, event_data, method, condition,
+  return escalate_2 (alert, task, 0, event, event_data, method, condition,
                      1,       /* Ascending. */
                      NULL,    /* Sort field. */
                      0,       /* Result hosts only. */
@@ -7599,13 +7691,13 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
                      0,       /* Overrides details. */
                      0,       /* First results. */
                      /* Max results. */
-                     (method == ESCALATOR_METHOD_EMAIL ? 1000 : -1));
+                     (method == ALERT_METHOD_EMAIL ? 1000 : -1));
 }
 
 /**
- * @brief Escalate an escalator with task and event data.
+ * @brief Escalate an alert with task and event data.
  *
- * @param[in]  escalator   Escalator.
+ * @param[in]  alert   Alert.
  * @param[in]  task        Task.
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
@@ -7613,43 +7705,43 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
  * @return 0 success, -1 error.
  */
 int
-escalate (escalator_t escalator, task_t task, event_t event,
-          const void* event_data)
+manage_alert (alert_t alert, task_t task, event_t event,
+              const void* event_data)
 {
-  escalator_condition_t condition = escalator_condition (escalator);
-  escalator_method_t method = escalator_method (escalator);
-  return escalate_1 (escalator, task, event, event_data, method, condition);
+  alert_condition_t condition = alert_condition (alert);
+  alert_method_t method = alert_method (alert);
+  return escalate_1 (alert, task, event, event_data, method, condition);
 }
 
 /**
- * @brief Return whether an event applies to a task and an escalator.
+ * @brief Return whether an event applies to a task and an alert.
  *
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
  * @param[in]  task        Task.
- * @param[in]  escalator   Escalator.
+ * @param[in]  alert   Alert.
  *
  * @return 1 if event applies, else 0.
  */
 static int
 event_applies (event_t event, const void *event_data, task_t task,
-               escalator_t escalator)
+               alert_t alert)
 {
   switch (event)
     {
       case EVENT_TASK_RUN_STATUS_CHANGED:
         {
           int ret;
-          char *escalator_event_data;
+          char *alert_event_data;
 
-          escalator_event_data = escalator_data (escalator, "event", "status");
-          if (escalator_event_data == NULL)
+          alert_event_data = alert_data (alert, "event", "status");
+          if (alert_event_data == NULL)
             return 0;
           ret = (task_run_status (task) == (task_status_t) event_data)
-                && (strcmp (escalator_event_data,
+                && (strcmp (alert_event_data,
                             run_status_name ((task_status_t) event_data))
                     == 0);
-          free (escalator_event_data);
+          free (alert_event_data);
           return ret;
           break;
         }
@@ -7660,24 +7752,24 @@ event_applies (event_t event, const void *event_data, task_t task,
 }
 
 /**
- * @brief Return whether the condition of an escalator is met by a task.
+ * @brief Return whether the condition of an alert is met by a task.
  *
  * @param[in]  task       Task.
- * @param[in]  escalator  Escalator.
+ * @param[in]  alert  Alert.
  * @param[in]  condition  Condition.
  *
  * @return 1 if met, else 0.
  */
 static int
-condition_met (task_t task, escalator_t escalator,
-               escalator_condition_t condition)
+condition_met (task_t task, alert_t alert,
+               alert_condition_t condition)
 {
   switch (condition)
     {
-      case ESCALATOR_CONDITION_ALWAYS:
+      case ALERT_CONDITION_ALWAYS:
         return 1;
         break;
-      case ESCALATOR_CONDITION_THREAT_LEVEL_AT_LEAST:
+      case ALERT_CONDITION_THREAT_LEVEL_AT_LEAST:
         {
           char *condition_level;
           const char *report_level;
@@ -7685,7 +7777,7 @@ condition_met (task_t task, escalator_t escalator,
           /* True if the threat level of the last finished report is at
            * least the given level. */
 
-          condition_level = escalator_data (escalator, "condition", "level");
+          condition_level = alert_data (alert, "condition", "level");
           report_level = task_threat_level (task);
           if (condition_level
               && report_level
@@ -7702,7 +7794,7 @@ condition_met (task_t task, escalator_t escalator,
           free (condition_level);
           break;
         }
-      case ESCALATOR_CONDITION_THREAT_LEVEL_CHANGED:
+      case ALERT_CONDITION_THREAT_LEVEL_CHANGED:
         {
           char *direction;
           const char *last_level, *second_last_level;
@@ -7711,7 +7803,7 @@ condition_met (task_t task, escalator_t escalator,
            * in the given direction with respect to the second last finished
            * report. */
 
-          direction = escalator_data (escalator, "condition", "direction");
+          direction = alert_data (alert, "condition", "direction");
           last_level = task_threat_level (task);
           second_last_level = task_previous_threat_level (task);
           if (direction
@@ -7767,67 +7859,67 @@ condition_met (task_t task, escalator_t escalator,
 static void
 event (task_t task, event_t event, void* event_data)
 {
-  iterator_t escalators;
+  iterator_t alerts;
   tracef ("   EVENT %i on task %llu", event, task);
-  init_escalator_iterator (&escalators, 0, task, event, 0, 1, NULL);
-  while (next (&escalators))
+  init_alert_iterator (&alerts, 0, task, event, 0, 1, NULL);
+  while (next (&alerts))
     {
-      escalator_t escalator = escalator_iterator_escalator (&escalators);
-      if (event_applies (event, event_data, task, escalator))
+      alert_t alert = alert_iterator_alert (&alerts);
+      if (event_applies (event, event_data, task, alert))
         {
-          escalator_condition_t condition;
+          alert_condition_t condition;
 
-          condition = escalator_iterator_condition (&escalators);
-          if (condition_met (task, escalator, condition))
-            escalate_1 (escalator,
+          condition = alert_iterator_condition (&alerts);
+          if (condition_met (task, alert, condition))
+            escalate_1 (alert,
                         task,
                         event,
                         event_data,
-                        escalator_iterator_method (&escalators),
+                        alert_iterator_method (&alerts),
                         condition);
         }
     }
-  cleanup_iterator (&escalators);
+  cleanup_iterator (&alerts);
 }
 
 /**
- * @brief Initialise an escalator task iterator.
+ * @brief Initialise an alert task iterator.
  *
- * Iterate over all tasks that use the escalator.
+ * Iterate over all tasks that use the alert.
  *
  * @param[in]  iterator   Iterator.
- * @param[in]  escalator  Escalator.
+ * @param[in]  alert  Alert.
  * @param[in]  ascending  Whether to sort ascending or descending.
  */
 void
-init_escalator_task_iterator (iterator_t* iterator, escalator_t escalator,
+init_alert_task_iterator (iterator_t* iterator, alert_t alert,
                               int ascending)
 {
-  assert (escalator);
+  assert (alert);
   assert (current_credentials.uuid);
 
   init_iterator (iterator,
-                 "SELECT tasks.name, tasks.uuid FROM tasks, task_escalators"
-                 " WHERE tasks.ROWID = task_escalators.task"
-                 " AND task_escalators.escalator = %llu"
+                 "SELECT tasks.name, tasks.uuid FROM tasks, task_alerts"
+                 " WHERE tasks.ROWID = task_alerts.task"
+                 " AND task_alerts.alert = %llu"
                  " AND hidden = 0"
                  " AND ((tasks.owner IS NULL) OR (tasks.owner ="
                  " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY tasks.name %s;",
-                 escalator,
+                 alert,
                  current_credentials.uuid,
                  ascending ? "ASC" : "DESC");
 }
 
 /**
- * @brief Return the name from an escalator task iterator.
+ * @brief Return the name from an alert task iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Name of the task or NULL if iteration is complete.
  */
 const char*
-escalator_task_iterator_name (iterator_t* iterator)
+alert_task_iterator_name (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
@@ -7836,14 +7928,14 @@ escalator_task_iterator_name (iterator_t* iterator)
 }
 
 /**
- * @brief Return the uuid from an escalator task iterator.
+ * @brief Return the uuid from an alert task iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return UUID of the task or NULL if iteration is complete.
  */
 const char*
-escalator_task_iterator_uuid (iterator_t* iterator)
+alert_task_iterator_uuid (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
@@ -10881,58 +10973,58 @@ task_second_last_report_id (task_t task)
 }
 
 /**
- * @brief Return the name of the escalator of a task.
+ * @brief Return the name of the alert of a task.
  *
  * @param[in]  task  Task.
  *
- * @return Name of escalator of task if any, else NULL.
+ * @return Name of alert of task if any, else NULL.
  */
 char*
-task_escalator_name (task_t task)
+task_alert_name (task_t task)
 {
   return sql_string (0, 0,
-                     "SELECT name FROM escalators"
+                     "SELECT name FROM alerts"
                      " WHERE ROWID ="
-                     " (SELECT escalator FROM task_escalators"
+                     " (SELECT alert FROM task_alerts"
                      "  WHERE task = %llu LIMIT 1);",
                      task);
 }
 
 /**
- * @brief Return the UUID of the escalator of a task.
+ * @brief Return the UUID of the alert of a task.
  *
  * @param[in]  task  Task.
  *
- * @return UUID of escalator of task if any, else NULL.
+ * @return UUID of alert of task if any, else NULL.
  */
 char*
-task_escalator_uuid (task_t task)
+task_alert_uuid (task_t task)
 {
   return sql_string (0, 0,
-                     "SELECT uuid FROM escalators"
+                     "SELECT uuid FROM alerts"
                      " WHERE ROWID ="
-                     " (SELECT escalator FROM task_escalators"
+                     " (SELECT alert FROM task_alerts"
                      "  WHERE task = %llu LIMIT 1);",
                      task);
 }
 
 /**
- * @brief Return the escalator of a task.
+ * @brief Return the alert of a task.
  *
  * @param[in]  task  Task.
  *
- * @return Escalator of task if any, else NULL.
+ * @return Alert of task if any, else NULL.
  */
-escalator_t
-task_escalator (task_t task)
+alert_t
+task_alert (task_t task)
 {
-  escalator_t escalator = 0;
-  switch (sql_int64 (&escalator, 0, 0,
-                     "SELECT escalator FROM tasks WHERE ROWID = %llu;",
+  alert_t alert = 0;
+  switch (sql_int64 (&alert, 0, 0,
+                     "SELECT alert FROM tasks WHERE ROWID = %llu;",
                      task))
     {
       case 0:
-        return escalator;
+        return alert;
         break;
       case 1:        /* Too few rows in result of query. */
       default:       /* Programming error. */
@@ -10944,53 +11036,53 @@ task_escalator (task_t task)
 }
 
 /**
- * @brief Return whether the escalator of a task is in the trashcan.
+ * @brief Return whether the alert of a task is in the trashcan.
  *
- * Caller must check that there is an escalator on the task.
+ * Caller must check that there is an alert on the task.
  *
  * @param[in]  task  Task.
  *
  * @return 1 if in trashcan, else 0.
  */
 int
-task_escalator_in_trash (task_t task)
+task_alert_in_trash (task_t task)
 {
   return sql_int (0, 0,
-                 "SELECT escalator_location = " G_STRINGIFY (LOCATION_TRASH)
-                 " FROM task_escalators"
+                 "SELECT alert_location = " G_STRINGIFY (LOCATION_TRASH)
+                 " FROM task_alerts"
                  " WHERE task = %llu;",
                  task);
 }
 
 /**
- * @brief Add an escalator to a task.
+ * @brief Add an alert to a task.
  *
  * @param[in]  task       Task.
- * @param[in]  escalator  Escalator.
+ * @param[in]  alert  Alert.
  */
 void
-add_task_escalator (task_t task, escalator_t escalator)
+add_task_alert (task_t task, alert_t alert)
 {
-  sql ("INSERT INTO task_escalators (task, escalator, escalator_location)"
+  sql ("INSERT INTO task_alerts (task, alert, alert_location)"
        " VALUES (%llu, %llu, " G_STRINGIFY (LOCATION_TABLE) ");",
        task,
-       escalator);
+       alert);
 }
 
 /**
- * @brief Add an escalator to a task, removing any existing ones.
+ * @brief Add an alert to a task, removing any existing ones.
  *
  * @param[in]  task       Task.
- * @param[in]  escalator  Escalator.
+ * @param[in]  alert  Alert.
  */
 void
-set_task_escalator (task_t task, escalator_t escalator)
+set_task_alert (task_t task, alert_t alert)
 {
-  sql ("DELETE FROM task_escalators where task = %llu;", task);
-  sql ("INSERT INTO task_escalators (task, escalator, escalator_location)"
+  sql ("DELETE FROM task_alerts where task = %llu;", task);
+  sql ("INSERT INTO task_alerts (task, alert, alert_location)"
        " VALUES (%llu, %llu, " G_STRINGIFY (LOCATION_TABLE) ");",
        task,
-       escalator);
+       alert);
 }
 
 /**
@@ -19571,7 +19663,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
  * @param[in]  send               Function to write to client.
  * @param[in]  send_data_1        Second argument to \p send.
  * @param[in]  send_data_2        Third argument to \p send.
- * @param[in]  escalator_id       ID of escalator to escalate report with,
+ * @param[in]  alert_id       ID of alert to escalate report with,
  *                                instead of getting report.  NULL to get
  *                                report.
  * @param[in]  type               Type of report: NULL, "scan" or "assets".
@@ -19588,7 +19680,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
  *                                 are 0 indexed.
  * @param[in]  host_max_results    The host maximum number of results returned.
  *
- * @return 0 success, -1 error, 1 failed to find escalator.
+ * @return 0 success, -1 error, 1 failed to find alert.
  */
 int
 manage_send_report (report_t report, report_t delta_report,
@@ -19602,7 +19694,7 @@ manage_send_report (report_t report, report_t delta_report,
                     int base64,
                     gboolean (*send) (const char *, int (*) (void*), void*),
                     int (*send_data_1) (void*), void *send_data_2,
-                    const char *escalator_id, const char *type,
+                    const char *alert_id, const char *type,
                     const char *host, int pos, const char *host_search_phrase,
                     const char *host_levels, int host_first_result,
                     int host_max_results)
@@ -19622,22 +19714,22 @@ manage_send_report (report_t report, report_t delta_report,
 
   /* Escalate instead, if requested. */
 
-  if (escalator_id)
+  if (alert_id)
     {
-      escalator_t escalator = 0;
-      escalator_condition_t condition;
-      escalator_method_t method;
+      alert_t alert = 0;
+      alert_condition_t condition;
+      alert_method_t method;
 
-      if (find_escalator (escalator_id, &escalator))
+      if (find_alert (alert_id, &alert))
         return -1;
 
-      if (escalator == 0)
+      if (alert == 0)
         return 1;
 
-      condition = escalator_condition (escalator);
-      method = escalator_method (escalator);
+      condition = alert_condition (alert);
+      method = alert_method (alert);
 
-      return escalate_2 (escalator, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
+      return escalate_2 (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
                          (void*) TASK_STATUS_DONE, method, condition,
                          /* Report filtering. */
                          sort_order, sort_field, result_hosts_only,
@@ -20688,7 +20780,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
 
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
-      sql ("DELETE FROM task_escalators WHERE task = %llu;", task);
+      sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
       sql ("DELETE FROM task_files WHERE task = %llu;", task);
       sql ("DELETE FROM task_preferences WHERE task = %llu;", task);
       sql ("COMMIT;");
@@ -20770,7 +20862,7 @@ delete_task (task_t task, int ultimate)
 
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
-      sql ("DELETE FROM task_escalators WHERE task = %llu;", task);
+      sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
       sql ("DELETE FROM task_files WHERE task = %llu;", task);
       sql ("DELETE FROM task_preferences WHERE task = %llu;", task);
     }
@@ -20847,7 +20939,7 @@ delete_trash_tasks ()
 
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
-      sql ("DELETE FROM task_escalators WHERE task = %llu;", task);
+      sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
       sql ("DELETE FROM task_files WHERE task = %llu;", task);
       sql ("DELETE FROM task_preferences WHERE task = %llu;", task);
     }
@@ -35888,9 +35980,9 @@ manage_restore (const char *id)
       return 0;
     }
 
-  /* Escalator. */
+  /* Alert. */
 
-  if (find_trash ("escalator", id, &resource))
+  if (find_trash ("alert", id, &resource))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -35898,12 +35990,12 @@ manage_restore (const char *id)
 
   if (resource)
     {
-      escalator_t escalator;
+      alert_t alert;
 
       if (sql_int (0, 0,
-                   "SELECT count(*) FROM escalators"
+                   "SELECT count(*) FROM alerts"
                    " WHERE name ="
-                   " (SELECT name FROM escalators_trash WHERE ROWID = %llu)"
+                   " (SELECT name FROM alerts_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
                    resource,
@@ -35913,51 +36005,51 @@ manage_restore (const char *id)
           return 3;
         }
 
-      sql ("INSERT INTO escalators"
+      sql ("INSERT INTO alerts"
            " (uuid, owner, name, comment, event, condition, method)"
            " SELECT uuid, owner, name, comment, event, condition, method"
-           " FROM escalators_trash WHERE ROWID = %llu;",
+           " FROM alerts_trash WHERE ROWID = %llu;",
            resource);
 
-      escalator = sqlite3_last_insert_rowid (task_db);
+      alert = sqlite3_last_insert_rowid (task_db);
 
-      sql ("INSERT INTO escalator_condition_data"
-           " (escalator, name, data)"
+      sql ("INSERT INTO alert_condition_data"
+           " (alert, name, data)"
            " SELECT %llu, name, data"
-           " FROM escalator_condition_data_trash WHERE escalator = %llu;",
-           escalator,
+           " FROM alert_condition_data_trash WHERE alert = %llu;",
+           alert,
            resource);
 
-      sql ("INSERT INTO escalator_event_data"
-           " (escalator, name, data)"
+      sql ("INSERT INTO alert_event_data"
+           " (alert, name, data)"
            " SELECT %llu, name, data"
-           " FROM escalator_event_data_trash WHERE escalator = %llu;",
-           escalator,
+           " FROM alert_event_data_trash WHERE alert = %llu;",
+           alert,
            resource);
 
-      sql ("INSERT INTO escalator_method_data"
-           " (escalator, name, data)"
+      sql ("INSERT INTO alert_method_data"
+           " (alert, name, data)"
            " SELECT %llu, name, data"
-           " FROM escalator_method_data_trash WHERE escalator = %llu;",
-           escalator,
+           " FROM alert_method_data_trash WHERE alert = %llu;",
+           alert,
            resource);
 
-      /* Update the escalator in any trashcan tasks. */
-      sql ("UPDATE task_escalators"
-           " SET escalator = %llu,"
-           "     escalator_location = " G_STRINGIFY (LOCATION_TABLE)
-           " WHERE escalator = %llu"
-           " AND escalator_location = " G_STRINGIFY (LOCATION_TRASH),
-           escalator,
+      /* Update the alert in any trashcan tasks. */
+      sql ("UPDATE task_alerts"
+           " SET alert = %llu,"
+           "     alert_location = " G_STRINGIFY (LOCATION_TABLE)
+           " WHERE alert = %llu"
+           " AND alert_location = " G_STRINGIFY (LOCATION_TRASH),
+           alert,
            resource);
 
-      sql ("DELETE FROM escalator_condition_data_trash WHERE escalator = %llu;",
+      sql ("DELETE FROM alert_condition_data_trash WHERE alert = %llu;",
            resource);
-      sql ("DELETE FROM escalator_event_data_trash WHERE escalator = %llu;",
+      sql ("DELETE FROM alert_event_data_trash WHERE alert = %llu;",
            resource);
-      sql ("DELETE FROM escalator_method_data_trash WHERE escalator = %llu;",
+      sql ("DELETE FROM alert_method_data_trash WHERE alert = %llu;",
            resource);
-      sql ("DELETE FROM escalators_trash WHERE ROWID = %llu;",
+      sql ("DELETE FROM alerts_trash WHERE ROWID = %llu;",
            resource);
       sql ("COMMIT;");
       return 0;
@@ -36381,9 +36473,9 @@ manage_restore (const char *id)
                    " OR (config_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (schedule_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (slave_location = " G_STRINGIFY (LOCATION_TRASH) ")"
-                   " OR (SELECT count(*) > 0 FROM task_escalators"
+                   " OR (SELECT count(*) > 0 FROM task_alerts"
                    "     WHERE task = tasks.ROWID"
-                   "     AND escalator_location = " G_STRINGIFY (LOCATION_TRASH) ")"
+                   "     AND alert_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " FROM tasks WHERE ROWID = %llu;",
                    resource))
         {
@@ -36416,10 +36508,10 @@ manage_empty_trashcan ()
        " (SELECT nvt_selector FROM configs_trash);");
   sql ("DELETE FROM config_preferences_trash;");
   sql ("DELETE FROM configs_trash;");
-  sql ("DELETE FROM escalator_condition_data_trash;");
-  sql ("DELETE FROM escalator_event_data_trash;");
-  sql ("DELETE FROM escalator_method_data_trash;");
-  sql ("DELETE FROM escalators_trash;");
+  sql ("DELETE FROM alert_condition_data_trash;");
+  sql ("DELETE FROM alert_event_data_trash;");
+  sql ("DELETE FROM alert_method_data_trash;");
+  sql ("DELETE FROM alerts_trash;");
   sql ("DELETE FROM lsc_credentials_trash;");
   sql ("DELETE FROM port_ranges_trash;");
   sql ("DELETE FROM port_lists_trash;");

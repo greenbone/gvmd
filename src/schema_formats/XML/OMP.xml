@@ -61,7 +61,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <name>OpenVAS Management Protocol</name>
   <abbreviation>OMP</abbreviation>
   <summary>The "management" protocol of the Open Vulnerability Assessment System</summary>
-  <version>3.0</version>
+  <version>4.0</version>
   <type>
     <name>actions</name>
     <summary>A specifier of actions: get, modify, use</summary>
@@ -1228,8 +1228,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>authenticate</c>
           <c>commands</c>
           <c>create_agent</c>
+          <c>create_alert</c>
           <c>create_config</c>
-          <c>create_escalator</c>
           <c>create_lsc_credential</c>
           <c>create_note</c>
           <c>create_override</c>
@@ -1241,8 +1241,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_target</c>
           <c>create_task</c>
           <c>delete_agent</c>
+          <c>delete_alert</c>
           <c>delete_config</c>
-          <c>delete_escalator</c>
           <c>delete_lsc_credential</c>
           <c>delete_note</c>
           <c>delete_override</c>
@@ -1256,9 +1256,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_task</c>
           <c>empty_trashcan</c>
           <c>get_agents</c>
+          <c>get_alerts</c>
           <c>get_configs</c>
           <c>get_dependencies</c>
-          <c>get_escalators</c>
           <c>get_info</c>
           <c>get_lsc_credentials</c>
           <c>get_notes</c>
@@ -1293,7 +1293,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>resume_stopped_task</c>
           <c>start_task</c>
           <c>stop_task</c>
-          <c>test_escalator</c>
+          <c>test_alert</c>
         </or>
       </any>
     </pattern>
@@ -1314,8 +1314,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>authenticate</r>
             <r>commands</r>
             <r>create_agent</r>
+            <r>create_alert</r>
             <r>create_config</r>
-            <r>create_escalator</r>
             <r>create_lsc_credential</r>
             <r>create_note</r>
             <r>create_override</r>
@@ -1326,8 +1326,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_target</r>
             <r>create_task</r>
             <r>delete_agent</r>
+            <r>delete_alert</r>
             <r>delete_config</r>
-            <r>delete_escalator</r>
             <r>delete_lsc_credential</r>
             <r>delete_note</r>
             <r>delete_override</r>
@@ -1341,9 +1341,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_task</r>
             <r>empty_trashcan</r>
             <r>get_agents</r>
+            <r>get_alerts</r>
             <r>get_configs</r>
             <r>get_dependencies</r>
-            <r>get_escalators</r>
             <r>get_info</r>
             <r>get_lsc_credentials</r>
             <r>get_notes</r>
@@ -1378,7 +1378,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>resume_stopped_task</r>
             <r>start_task</r>
             <r>stop_task</r>
-            <r>test_escalator</r>
+            <r>test_alert</r>
           </or>
         </any>
       </pattern>
@@ -1606,12 +1606,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>create_escalator</name>
-    <summary>Create an escalator</summary>
+    <name>create_alert</name>
+    <summary>Create an alert</summary>
     <description>
       <p>
-        The client uses the create_escalator command to create a new
-        escalator.
+        The client uses the create_alert command to create a new
+        alert.
       </p>
     </description>
     <pattern>
@@ -1623,19 +1623,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </pattern>
     <ele>
       <name>name</name>
-      <summary>A name for the escalator</summary>
+      <summary>A name for the alert</summary>
       <pattern><t>name</t></pattern>
     </ele>
     <ele>
       <name>comment</name>
-      <summary>A comment on the escalator</summary>
+      <summary>A comment on the alert</summary>
       <pattern>
         text
       </pattern>
     </ele>
     <ele>
       <name>condition</name>
-      <summary>The condition that must be satisfied for escalation</summary>
+      <summary>
+        The condition that must be satisfied for the alert to occur
+      </summary>
       <pattern>
         text
         <any><e>data</e></any>
@@ -1658,7 +1660,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>event</name>
-      <summary>The event that must happen for escalation</summary>
+      <summary>
+        The event that must happen for the alert to occur
+      </summary>
       <pattern>
         text
         <any><e>data</e></any>
@@ -1681,7 +1685,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>method</name>
-      <summary>The method by which escalation must occur</summary>
+      <summary>The method by which the user is alerted</summary>
       <pattern>
         text
         <any><e>data</e></any>
@@ -1722,9 +1726,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </response>
     <example>
-      <summary>Create an escalator</summary>
+      <summary>Create an alert</summary>
       <request>
-        <create_escalator>
+        <create_alert>
           <name>emergency</name>
           <condition>
             Threat level at least
@@ -1751,13 +1755,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               bob@example.org
             </data>
           </method>
-        </create_escalator>
+        </create_alert>
       </request>
       <response>
-        <create_escalator_response status="201"
-                                   status_text="OK, resource created"
-                                   id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
-        </create_escalator_response>
+        <create_alert_response status="201"
+                               status_text="OK, resource created"
+                               id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_alert_response>
       </response>
     </example>
   </command>
@@ -2862,7 +2866,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>comment</e></o>
       <e>config</e>
       <e>target</e>
-      <o><e>escalator</e></o>
+      <o><e>alert</e></o>
       <o><e>schedule</e></o>
       <o><e>slave</e></o>
       <o><e>observers</e></o>
@@ -2904,8 +2908,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
-      <name>escalator</name>
-      <summary>An escalator that applies to the task</summary>
+      <name>alert</name>
+      <summary>An alert that applies to the task</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -3110,12 +3114,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>delete_escalator</name>
-    <summary>Delete an escalator</summary>
+    <name>delete_alert</name>
+    <summary>Delete an alert</summary>
     <description>
       <p>
-        The client uses the delete_escalator command to delete an existing
-        escalator.
+        The client uses the delete_alert command to delete an existing
+        alert.
       </p>
       <p>
         Since this is a destructive command, the client is advised to ask
@@ -3125,7 +3129,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </description>
     <pattern>
       <attrib>
-        <name>escalator_id</name>
+        <name>alert_id</name>
         <type>uuid</type>
         <required>1</required>
       </attrib>
@@ -3151,13 +3155,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </response>
     <example>
-      <summary>Delete an escalator</summary>
+      <summary>Delete an alert</summary>
       <request>
-        <delete_escalator escalator_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
-        </delete_escalator>
+        <delete_alert alert_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_alert>
       </request>
       <response>
-        <delete_escalator_response status="200" status_text="OK"/>
+        <delete_alert_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -4382,22 +4386,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>get_escalators</name>
-    <summary>Get all escalators</summary>
+    <name>get_alerts</name>
+    <summary>Get all alerts</summary>
     <description>
-      The client uses the get_escalators command to get escalator information.
+      The client uses the get_alerts command to get alert information.
       If the command sent by the client was valid, the manager will
-      reply with a list of escalators to the client.
+      reply with a list of alerts to the client.
     </description>
     <pattern>
       <attrib>
-        <name>escalator_id</name>
-        <summary>ID of single escalator to get</summary>
+        <name>alert_id</name>
+        <summary>ID of single alert to get</summary>
         <type>uuid</type>
       </attrib>
       <attrib>
         <name>trash</name>
-        <summary>Whether to get the trashcan escalators instead</summary>
+        <summary>Whether to get the trashcan alerts instead</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
@@ -4421,10 +4425,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>text</type>
           <required>1</required>
         </attrib>
-        <any><e>escalator</e></any>
+        <any><e>alert</e></any>
       </pattern>
       <ele>
-        <name>escalator</name>
+        <name>alert</name>
         <pattern>
           <e>name</e>
           <e>comment</e>
@@ -4435,24 +4439,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </pattern>
         <ele>
           <name>name</name>
-          <summary>The name of the escalator</summary>
+          <summary>The name of the alert</summary>
           <pattern><t>name</t></pattern>
         </ele>
         <ele>
           <name>comment</name>
-          <summary>The comment on the escalator</summary>
+          <summary>The comment on the alert</summary>
           <pattern>
             text
           </pattern>
         </ele>
         <ele>
           <name>in_use</name>
-          <summary>Whether any tasks are using the escalator</summary>
+          <summary>Whether any tasks are using the alert</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>condition</name>
-          <summary>The condition that must be satisfied for escalation</summary>
+          <summary>
+            The condition that must be satisfied for the alert to occur
+          </summary>
           <pattern>
             text
             <any><e>data</e></any>
@@ -4475,7 +4481,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>event</name>
-          <summary>The event that must happen for escalation</summary>
+          <summary>The event that must happen for the alert to occur</summary>
           <pattern>
             text
             <any><e>data</e></any>
@@ -4498,7 +4504,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>method</name>
-          <summary>The method by which escalation must occur</summary>
+          <summary>The method by which he alert must occur</summary>
           <pattern>
             text
             <any><e>data</e></any>
@@ -4522,13 +4528,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get the escalators</summary>
+      <summary>Get the alerts</summary>
       <request>
-        <get_escalators></get_escalators>
+        <get_alerts></get_alerts>
       </request>
       <response>
-        <get_escalators_response status="200" status_text="OK">
-          <escalator id="6181e65d-8ba0-4937-9c44-8f2b10b0def7">
+        <get_alerts_response status="200" status_text="OK">
+          <alert id="6181e65d-8ba0-4937-9c44-8f2b10b0def7">
             <name>Team alert</name>
             <comment></comment>
             <in_use>1</in_use>
@@ -4561,9 +4567,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 0
               </data>
             </method>
-          </escalator>
+          </alert>
           <truncated>...</truncated>
-        </get_escalators_response>
+        </get_alerts_response>
       </response>
     </example>
   </command>
@@ -6315,8 +6321,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>escalator_id</name>
-        <summary>ID of escalator to pass generated report to</summary>
+        <name>alert_id</name>
+        <summary>ID of alert to pass generated report to</summary>
         <description>
           <p>
             In this case the response is empty, and simply indicates success
@@ -8051,7 +8057,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>progress</e>
           <e>config</e>
           <e>target</e>
-          <e>escalator</e>
+          <e>alert</e>
           <e>observers</e>
           <e>schedule</e>
           <e>slave</e>
@@ -8146,8 +8152,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
         <ele>
-          <name>escalator</name>
-          <summary>An escalator that applies to the task</summary>
+          <name>alert</name>
+          <summary>An alert that applies to the task</summary>
           <pattern>
             <attrib>
               <name>id</name>
@@ -8159,12 +8165,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
           <ele>
             <name>name</name>
-            <summary>The name of the escalator</summary>
+            <summary>The name of the alert</summary>
             <pattern><t>name</t></pattern>
           </ele>
           <ele>
             <name>trash</name>
-            <summary>Whether the escalator is in the trashcan</summary>
+            <summary>Whether the alert is in the trashcan</summary>
             <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
@@ -8511,9 +8517,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <config id="daba56c8-73ec-11df-a475-002264764cea">
               <name>Full and fast</name>
             </config>
-            <escalator id="">
+            <alert id="">
               <name></name>
-            </escalator>
+            </alert>
             <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
               <name>dik</name>
             </target>
@@ -8597,9 +8603,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <config id="daba56c8-73ec-11df-a475-002264764cea">
               <name>Full and fast</name>
             </config>
-            <escalator id="">
+            <alert id="">
               <name></name>
-            </escalator>
+            </alert>
             <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
               <name>dik</name>
             </target>
@@ -8841,7 +8847,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             COMMANDS               Run a list of commands.
             CREATE_AGENT           Create an agent.
             CREATE_CONFIG          Create a config.
-            CREATE_ESCALATOR       Create an escalator.
+            CREATE_ALERT           Create an alert.
             CREATE_LSC_CREDENTIAL  Create a local security check credential.
             CREATE_NOTE            Create a note.
             CREATE_OVERRIDE        Create an override.
@@ -8855,7 +8861,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             CREATE_TASK            Create a task.
             DELETE_AGENT           Delete an agent.
             DELETE_CONFIG          Delete a config.
-            DELETE_ESCALATOR       Delete an escalator.
+            DELETE_ALERT           Delete an alert.
             DELETE_LSC_CREDENTIAL  Delete a local security check credential.
             DELETE_NOTE            Delete a note.
             DELETE_OVERRIDE        Delete an override.
@@ -8871,7 +8877,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_AGENTS             Get all agents.
             GET_CONFIGS            Get all configs.
             GET_DEPENDENCIES       Get dependencies for all available NVTs.
-            GET_ESCALATORS         Get all escalators.
+            GET_ALERTS             Get all alerts.
             GET_LSC_CREDENTIALS    Get all local security check credentials.
             GET_NOTES              Get all notes.
             GET_NVTS               Get one or all available NVTs.
@@ -8907,7 +8913,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             RESUME_STOPPED_TASK    Resume a stopped task.
             START_TASK             Manually start an existing task.
             STOP_TASK              Stop a running task.
-            TEST_ESCALATOR         Run an escalator.
+            TEST_ALERT             Run an alert.
             VERIFY_AGENT           Verify an agent.
             VERIFY_REPORT_FORMAT   Verify a report format.
         </help_response>
@@ -9796,7 +9802,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <or>
         <e>comment</e>
-        <e>escalator</e>
+        <e>alert</e>
         <e>name</e>
         <e>observers</e>
         <e>preferences</e>
@@ -9814,8 +9820,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
-      <name>escalator</name>
-      <summary>Task escalator</summary>
+      <name>alert</name>
+      <summary>Task alert</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -10221,17 +10227,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>test_escalator</name>
-    <summary>Run an escalator</summary>
+    <name>test_alert</name>
+    <summary>Run an alert</summary>
     <description>
       <p>
-        The client uses the test_escalator command to invoke a test run of
-        an escalator.
+        The client uses the test_alert command to invoke a test run of
+        an alert.
       </p>
     </description>
     <pattern>
       <attrib>
-        <name>escalator_id</name>
+        <name>alert_id</name>
         <type>uuid</type>
         <required>1</required>
       </attrib>
@@ -10251,13 +10257,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </response>
     <example>
-      <summary>Test an escalator</summary>
+      <summary>Test an alert</summary>
       <request>
-        <test_escalator escalator_id="97390ade-e075-11df-9973-002264764cea">
-        </test_escalator>
+        <test_alert alert_id="97390ade-e075-11df-9973-002264764cea">
+        </test_alert>
       </request>
       <response>
-        <test_escalator_response status="200" status_text="OK"/>
+        <test_alert_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>

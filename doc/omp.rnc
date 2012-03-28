@@ -1,6 +1,6 @@
 #### OpenVAS Management Protocol (OMP)
 ####
-#### Version: 3.0
+#### Version: 4.0
 ####
 #### The "management" protocol of the Open Vulnerability Assessment System.
 
@@ -13,7 +13,7 @@ command
     | commands
     | create_agent
     | create_config
-    | create_escalator
+    | create_alert
     | create_lsc_credential
     | create_note
     | create_override
@@ -27,7 +27,7 @@ command
     | create_task
     | delete_agent
     | delete_config
-    | delete_escalator
+    | delete_alert
     | delete_lsc_credential
     | delete_note
     | delete_override
@@ -43,7 +43,7 @@ command
     | get_agents
     | get_configs
     | get_dependencies
-    | get_escalators
+    | get_alerts
     | get_info
     | get_lsc_credentials
     | get_notes
@@ -79,7 +79,7 @@ command
     | resume_stopped_task
     | start_task
     | stop_task
-    | test_escalator
+    | test_alert
     | verify_agent
     | verify_report_format
 
@@ -88,7 +88,7 @@ response
     | commands_response
     | create_agent_response
     | create_config_response
-    | create_escalator_response
+    | create_alert_response
     | create_lsc_credential_response
     | create_note_response
     | create_override_response
@@ -102,7 +102,7 @@ response
     | create_task_response
     | delete_agent_response
     | delete_config_response
-    | delete_escalator_response
+    | delete_alert_response
     | delete_lsc_credential_response
     | delete_note_response
     | delete_override_response
@@ -118,7 +118,7 @@ response
     | get_agents_response
     | get_configs_response
     | get_dependencies_response
-    | get_escalators_response
+    | get_alerts_response
     | get_info_response
     | get_lsc_credentials_response
     | get_notes_response
@@ -154,7 +154,7 @@ response
     | resume_stopped_task_response
     | start_task_response
     | stop_task_response
-    | test_escalator_response
+    | test_alert_response
     | verify_agent_response
     | verify_report_format_response
 
@@ -1222,8 +1222,8 @@ commands
        ( authenticate
            | commands
            | create_agent
+           | create_alert
            | create_config
-           | create_escalator
            | create_lsc_credential
            | create_note
            | create_override
@@ -1235,8 +1235,8 @@ commands
            | create_target
            | create_task
            | delete_agent
+           | delete_alert
            | delete_config
-           | delete_escalator
            | delete_lsc_credential
            | delete_note
            | delete_override
@@ -1250,9 +1250,9 @@ commands
            | delete_task
            | empty_trashcan
            | get_agents
+           | get_alerts
            | get_configs
            | get_dependencies
-           | get_escalators
            | get_info
            | get_lsc_credentials
            | get_notes
@@ -1287,7 +1287,7 @@ commands
            | resume_stopped_task
            | start_task
            | stop_task
-           | test_escalator )*
+           | test_alert )*
      }
 
 ## Command create_agent
@@ -1389,98 +1389,98 @@ create_config_name
        name
      }
 
-## Command create_escalator
+## Command create_alert
 ##
-## Create an escalator.
+## Create an alert.
 
-create_escalator
- = element create_escalator
+create_alert
+ = element create_alert
      {
-       create_escalator_name
-       & create_escalator_comment?
-       & create_escalator_condition
-       & create_escalator_event
-       & create_escalator_method
+       create_alert_name
+       & create_alert_comment?
+       & create_alert_condition
+       & create_alert_event
+       & create_alert_method
      }
 
-# A name for the escalator.
-create_escalator_name
+# A name for the alert.
+create_alert_name
  = element name
      {
        name
      }
 
-# A comment on the escalator.
-create_escalator_comment
+# A comment on the alert.
+create_alert_comment
  = element comment
      {
        text
      }
 
-# The condition that must be satisfied for escalation.
-create_escalator_condition
+# The condition that must be satisfied for the alert to occur.
+create_alert_condition
  = element condition
      {
        text
-       & create_escalator_condition_data*
+       & create_alert_condition_data*
      }
 
 # Some data that defines the condition.
-create_escalator_condition_data
+create_alert_condition_data
  = element data
      {
        text
-       & create_escalator_condition_data_name
+       & create_alert_condition_data_name
      }
 
 # The name of the condition data.
-create_escalator_condition_data_name
+create_alert_condition_data_name
  = element name
      {
        text
      }
 
-# The event that must happen for escalation.
-create_escalator_event
+# The event that must happen for the alert to occur.
+create_alert_event
  = element event
      {
        text
-       & create_escalator_event_data*
+       & create_alert_event_data*
      }
 
 # Some data that defines the event.
-create_escalator_event_data
+create_alert_event_data
  = element data
      {
        text
-       & create_escalator_event_data_name
+       & create_alert_event_data_name
      }
 
 # The name of the event data.
-create_escalator_event_data_name
+create_alert_event_data_name
  = element name
      {
        text
      }
 
-# The method by which escalation must occur.
-create_escalator_method
+# The method by which the user is alerted.
+create_alert_method
  = element method
      {
        text
-       & create_escalator_method_data*
+       & create_alert_method_data*
      }
 
 # Some data that defines the method.
-create_escalator_method_data
+create_alert_method_data
  = element data
      {
        text
-       & create_escalator_method_data_name
+       & create_alert_method_data_name
      }
 
 # The name of the method data.
-create_escalator_method_data_name
+create_alert_method_data_name
  = element name
      {
        text
@@ -2128,7 +2128,7 @@ create_task
        & create_task_comment?
        & create_task_config
        & create_task_target
-       & create_task_escalator?
+       & create_task_alert?
        & create_task_schedule?
        & create_task_slave?
        & create_task_observers?
@@ -2164,9 +2164,9 @@ create_task_target
        attribute id { uuid }
      }
 
-# An escalator that applies to the task.
-create_task_escalator
- = element escalator
+# An alert that applies to the task.
+create_task_alert
+ = element alert
      {
        attribute id { uuid }
      }
@@ -2249,14 +2249,14 @@ delete_config
        attribute ultimate { boolean }
      }
 
-## Command delete_escalator
+## Command delete_alert
 ##
-## Delete an escalator.
+## Delete an alert.
 
-delete_escalator
- = element delete_escalator
+delete_alert
+ = element delete_alert
      {
-       attribute escalator_id { uuid }
+       attribute alert_id { uuid }
        & # Whether to remove entirely, or to the trashcan.
        attribute ultimate { boolean }
      }
@@ -2444,16 +2444,16 @@ get_dependencies
        attribute nvt_oid { oid }?
      }
 
-## Command get_escalators
+## Command get_alerts
 ##
-## Get all escalators.
+## Get all alerts.
 
-get_escalators
- = element get_escalators
+get_alerts
+ = element get_alerts
      {
-       # ID of single escalator to get.
-       attribute escalator_id { uuid }?
-       & # Whether to get the trashcan escalators instead.
+       # ID of single alert to get.
+       attribute alert_id { uuid }?
+       & # Whether to get the trashcan alerts instead.
        attribute trash { boolean }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
@@ -2613,8 +2613,8 @@ get_reports
        attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        & # ID of required report format.
        attribute format_id { uuid }?
-       & # ID of escalator to pass generated report to.
-       attribute escalator_id { uuid }?
+       & # ID of alert to pass generated report to.
+       attribute alert_id { uuid }?
        & # First result to get.
        attribute first_result { integer }?
        & # Maximum number of results to get.
@@ -3236,7 +3236,7 @@ modify_task
        # ID of task to modify.
        attribute task_id { uuid }
        & ( modify_task_comment
-           | modify_task_escalator
+           | modify_task_alert
            | modify_task_name
            | modify_task_observers
            | modify_task_preferences
@@ -3253,9 +3253,9 @@ modify_task_comment
        text
      }
 
-# Task escalator.
-modify_task_escalator
- = element escalator
+# Task alert.
+modify_task_alert
+ = element alert
      {
        attribute id { uuid }
      }
@@ -3400,14 +3400,14 @@ stop_task
        attribute task_id { uuid }
      }
 
-## Command test_escalator
+## Command test_alert
 ##
-## Run an escalator.
+## Run an alert.
 
-test_escalator
- = element test_escalator
+test_alert
+ = element test_alert
      {
-       attribute escalator_id { uuid }
+       attribute alert_id { uuid }
      }
 
 ## Command verify_agent
@@ -3466,8 +3466,8 @@ commands_response
        & ( authenticate_response
            | commands_response
            | create_agent_response
+           | create_alert_response
            | create_config_response
-           | create_escalator_response
            | create_lsc_credential_response
            | create_note_response
            | create_override_response
@@ -3478,8 +3478,8 @@ commands_response
            | create_target_response
            | create_task_response
            | delete_agent_response
+           | delete_alert_response
            | delete_config_response
-           | delete_escalator_response
            | delete_lsc_credential_response
            | delete_note_response
            | delete_override_response
@@ -3493,9 +3493,9 @@ commands_response
            | delete_task_response
            | empty_trashcan_response
            | get_agents_response
+           | get_alerts_response
            | get_configs_response
            | get_dependencies_response
-           | get_escalators_response
            | get_info_response
            | get_lsc_credentials_response
            | get_notes_response
@@ -3530,7 +3530,7 @@ commands_response
            | resume_stopped_task_response
            | start_task_response
            | stop_task_response
-           | test_escalator_response )*
+           | test_alert_response )*
      }
 
 ## Response to create_agent
@@ -3553,10 +3553,10 @@ create_config_response
        & attribute id { uuid }
      }
 
-## Response to create_escalator
+## Response to create_alert
 
-create_escalator_response
- = element create_escalator_response
+create_alert_response
+ = element create_alert_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -3691,10 +3691,10 @@ delete_config_response
        & attribute status_text { text }
      }
 
-## Response to delete_escalator
+## Response to delete_alert
 
-delete_escalator_response
- = element delete_escalator_response
+delete_alert_response
+ = element delete_alert_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -4146,112 +4146,112 @@ get_dependencies_response_nvt_requires_nvt_name
        name
      }
 
-## Response to get_escalators
+## Response to get_alerts
 
-get_escalators_response
- = element get_escalators_response
+get_alerts_response
+ = element get_alerts_response
      {
        attribute status { status }
        & attribute status_text { text }
-       & get_escalators_response_escalator*
+       & get_alerts_response_alert*
      }
 
-get_escalators_response_escalator
- = element escalator
+get_alerts_response_alert
+ = element alert
      {
-       get_escalators_response_escalator_name
-       & get_escalators_response_escalator_comment
-       & get_escalators_response_escalator_in_use
-       & get_escalators_response_escalator_condition
-       & get_escalators_response_escalator_event
-       & get_escalators_response_escalator_method
+       get_alerts_response_alert_name
+       & get_alerts_response_alert_comment
+       & get_alerts_response_alert_in_use
+       & get_alerts_response_alert_condition
+       & get_alerts_response_alert_event
+       & get_alerts_response_alert_method
      }
 
-# The name of the escalator.
-get_escalators_response_escalator_name
+# The name of the alert.
+get_alerts_response_alert_name
  = element name
      {
        name
      }
 
-# The comment on the escalator.
-get_escalators_response_escalator_comment
+# The comment on the alert.
+get_alerts_response_alert_comment
  = element comment
      {
        text
      }
 
-# Whether any tasks are using the escalator.
-get_escalators_response_escalator_in_use
+# Whether any tasks are using the alert.
+get_alerts_response_alert_in_use
  = element in_use
      {
        boolean
      }
 
-# The condition that must be satisfied for escalation.
-get_escalators_response_escalator_condition
+# The condition that must be satisfied for the alert to occur.
+get_alerts_response_alert_condition
  = element condition
      {
        text
-       & get_escalators_response_escalator_condition_data*
+       & get_alerts_response_alert_condition_data*
      }
 
 # Some data that defines the condition.
-get_escalators_response_escalator_condition_data
+get_alerts_response_alert_condition_data
  = element data
      {
        text
-       & get_escalators_response_escalator_condition_data_name
+       & get_alerts_response_alert_condition_data_name
      }
 
 # The name of the condition data.
-get_escalators_response_escalator_condition_data_name
+get_alerts_response_alert_condition_data_name
  = element name
      {
        text
      }
 
-# The event that must happen for escalation.
-get_escalators_response_escalator_event
+# The event that must happen for the alert to occur.
+get_alerts_response_alert_event
  = element event
      {
        text
-       & get_escalators_response_escalator_event_data*
+       & get_alerts_response_alert_event_data*
      }
 
 # Some data that defines the event.
-get_escalators_response_escalator_event_data
+get_alerts_response_alert_event_data
  = element data
      {
        text
-       & get_escalators_response_escalator_event_data_name
+       & get_alerts_response_alert_event_data_name
      }
 
 # The name of the event data.
-get_escalators_response_escalator_event_data_name
+get_alerts_response_alert_event_data_name
  = element name
      {
        text
      }
 
-# The method by which escalation must occur.
-get_escalators_response_escalator_method
+# The method by which he alert must occur.
+get_alerts_response_alert_method
  = element method
      {
        text
-       & get_escalators_response_escalator_method_data*
+       & get_alerts_response_alert_method_data*
      }
 
 # Some data that defines the method.
-get_escalators_response_escalator_method_data
+get_alerts_response_alert_method_data
  = element data
      {
        text
-       & get_escalators_response_escalator_method_data_name
+       & get_alerts_response_alert_method_data_name
      }
 
 # The name of the method data.
-get_escalators_response_escalator_method_data_name
+get_alerts_response_alert_method_data_name
  = element name
      {
        text
@@ -6079,7 +6079,7 @@ get_tasks_response_task
        & get_tasks_response_task_progress
        & get_tasks_response_task_config
        & get_tasks_response_task_target
-       & get_tasks_response_task_escalator
+       & get_tasks_response_task_alert
        & get_tasks_response_task_observers
        & get_tasks_response_task_schedule
        & get_tasks_response_task_slave
@@ -6182,24 +6182,24 @@ get_tasks_response_task_target_trash
        boolean
      }
 
-# An escalator that applies to the task.
-get_tasks_response_task_escalator
- = element escalator
+# An alert that applies to the task.
+get_tasks_response_task_alert
+ = element alert
      {
        attribute id { uuid_or_empty }
-       & get_tasks_response_task_escalator_name
-       & get_tasks_response_task_escalator_trash
+       & get_tasks_response_task_alert_name
+       & get_tasks_response_task_alert_trash
      }
 
-# The name of the escalator.
-get_tasks_response_task_escalator_name
+# The name of the alert.
+get_tasks_response_task_alert_name
  = element name
      {
        name
      }
 
-# Whether the escalator is in the trashcan.
-get_tasks_response_task_escalator_trash
+# Whether the alert is in the trashcan.
+get_tasks_response_task_alert_trash
  = element trash
      {
        boolean
@@ -6838,10 +6838,10 @@ stop_task_response
        & attribute status_text { text }
      }
 
-## Response to test_escalator
+## Response to test_alert
 
-test_escalator_response
- = element test_escalator_response
+test_alert_response
+ = element test_alert_response
      {
        attribute status { status }
        & attribute status_text { text }

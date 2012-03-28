@@ -163,7 +163,7 @@ typedef enum
 
 typedef long long int agent_t;
 typedef long long int config_t;
-typedef long long int escalator_t;
+typedef long long int alert_t;
 typedef long long int slave_t;
 typedef long long int target_t;
 typedef long long int task_t;
@@ -192,7 +192,7 @@ typedef struct
 } iterator_t;
 
 
-/* Events and Escalators. */
+/* Events and Alerts. */
 
 /**
  * @brief Types of task events.
@@ -204,78 +204,78 @@ typedef enum
 } event_t;
 
 /**
- * @brief Types of escalators.
+ * @brief Types of alerts.
  */
 typedef enum
 {
-  ESCALATOR_METHOD_ERROR,
-  ESCALATOR_METHOD_EMAIL,
-  ESCALATOR_METHOD_HTTP_GET,
-  ESCALATOR_METHOD_SOURCEFIRE,
-  ESCALATOR_METHOD_SYSLOG
-} escalator_method_t;
+  ALERT_METHOD_ERROR,
+  ALERT_METHOD_EMAIL,
+  ALERT_METHOD_HTTP_GET,
+  ALERT_METHOD_SOURCEFIRE,
+  ALERT_METHOD_SYSLOG
+} alert_method_t;
 
 /**
- * @brief Types of escalator conditions.
+ * @brief Types of alert conditions.
  */
 typedef enum
 {
-  ESCALATOR_CONDITION_ERROR,
-  ESCALATOR_CONDITION_ALWAYS,
-  ESCALATOR_CONDITION_THREAT_LEVEL_AT_LEAST,
-  ESCALATOR_CONDITION_THREAT_LEVEL_CHANGED
-} escalator_condition_t;
+  ALERT_CONDITION_ERROR,
+  ALERT_CONDITION_ALWAYS,
+  ALERT_CONDITION_THREAT_LEVEL_AT_LEAST,
+  ALERT_CONDITION_THREAT_LEVEL_CHANGED
+} alert_condition_t;
 
 int
-create_escalator (const char*, const char*, event_t, GPtrArray*,
-                  escalator_condition_t, GPtrArray*, escalator_method_t,
-                  GPtrArray*, escalator_t*);
+create_alert (const char*, const char*, event_t, GPtrArray*,
+                  alert_condition_t, GPtrArray*, alert_method_t,
+                  GPtrArray*, alert_t*);
 
 int
-delete_escalator (const char *, int);
+delete_alert (const char *, int);
 
 int
-escalator_uuid (escalator_t, char **);
+alert_uuid (alert_t, char **);
 
 gboolean
-find_escalator (const char*, escalator_t*);
+find_alert (const char*, alert_t*);
 
 int
-escalate (escalator_t, task_t, event_t, const void*);
+manage_alert (alert_t, task_t, event_t, const void*);
 
 void
-init_escalator_iterator (iterator_t*, escalator_t, task_t, event_t, int, int,
+init_alert_iterator (iterator_t*, alert_t, task_t, event_t, int, int,
                          const char*);
 
-escalator_t
-escalator_iterator_escalator (iterator_t*);
+alert_t
+alert_iterator_alert (iterator_t*);
 
 const char*
-escalator_iterator_uuid (iterator_t*);
+alert_iterator_uuid (iterator_t*);
 
 const char*
-escalator_iterator_name (iterator_t*);
+alert_iterator_name (iterator_t*);
 
 int
-escalator_iterator_in_use (iterator_t*);
+alert_iterator_in_use (iterator_t*);
 
 const char *
-escalator_iterator_comment (iterator_t*);
+alert_iterator_comment (iterator_t*);
 
 int
-escalator_iterator_event (iterator_t*);
+alert_iterator_event (iterator_t*);
 
 int
-escalator_iterator_condition (iterator_t*);
+alert_iterator_condition (iterator_t*);
 
 int
-escalator_iterator_method (iterator_t*);
+alert_iterator_method (iterator_t*);
 
 const char*
-escalator_condition_name (escalator_condition_t);
+alert_condition_name (alert_condition_t);
 
 gchar*
-escalator_condition_description (escalator_condition_t, escalator_t);
+alert_condition_description (alert_condition_t, alert_t);
 
 const char*
 event_name (event_t);
@@ -284,34 +284,34 @@ gchar*
 event_description (event_t, const void *, const char *);
 
 const char*
-escalator_method_name (escalator_method_t);
+alert_method_name (alert_method_t);
 
-escalator_condition_t
-escalator_condition_from_name (const char*);
+alert_condition_t
+alert_condition_from_name (const char*);
 
 event_t
 event_from_name (const char*);
 
-escalator_method_t
-escalator_method_from_name (const char*);
+alert_method_t
+alert_method_from_name (const char*);
 
 void
-init_escalator_data_iterator (iterator_t *, escalator_t, int, const char *);
+init_alert_data_iterator (iterator_t *, alert_t, int, const char *);
 
 const char*
-escalator_data_iterator_name (iterator_t*);
+alert_data_iterator_name (iterator_t*);
 
 const char*
-escalator_data_iterator_data (iterator_t*);
+alert_data_iterator_data (iterator_t*);
 
 void
-init_escalator_task_iterator (iterator_t*, escalator_t, int);
+init_alert_task_iterator (iterator_t*, alert_t, int);
 
 const char*
-escalator_task_iterator_name (iterator_t*);
+alert_task_iterator_name (iterator_t*);
 
 const char*
-escalator_task_iterator_uuid (iterator_t*);
+alert_task_iterator_uuid (iterator_t*);
 
 
 /* Task global variables and preprocessor variables. */
@@ -434,22 +434,22 @@ void
 set_task_end_time (task_t task, char* time);
 
 char*
-task_escalator_name (task_t);
+task_alert_name (task_t);
 
 char*
-task_escalator_uuid (task_t);
+task_alert_uuid (task_t);
 
-escalator_t
-task_escalator (task_t);
+alert_t
+task_alert (task_t);
 
 int
-task_escalator_in_trash (task_t);
+task_alert_in_trash (task_t);
 
 void
-add_task_escalator (task_t, escalator_t);
+add_task_alert (task_t, alert_t);
 
 void
-set_task_escalator (task_t, escalator_t);
+set_task_alert (task_t, alert_t);
 
 int
 set_task_schedule (task_t, schedule_t);

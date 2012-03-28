@@ -7,7 +7,7 @@
 <body style="background-color: #FFFFFF; margin: 0px; font: small Verdana, sans-serif; font-size: 12px; color: #1A1A1A;"><div style="width: 98%; width:700px; align: center; margin-left: auto; margin-right: auto;"><table style="width: 100%;" cellpadding="3" cellspacing="0"><tr><td valign="top">
 <h1>OMP:
                   OpenVAS Management Protocol</h1>
-<p>Version: 3.0</p>
+<p>Version: 4.0</p>
 <p>The "management" protocol of the Open Vulnerability Assessment System.</p>
 <h2 id="contents">Contents</h2>
 <ol>
@@ -164,8 +164,8 @@
 <td id="index"><div style="margin-left: 15px;">Create a config.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#command_create_escalator">create_escalator</a></td>
-<td id="index"><div style="margin-left: 15px;">Create an escalator.</div></td>
+<td id="index"><a href="#command_create_alert">create_alert</a></td>
+<td id="index"><div style="margin-left: 15px;">Create an alert.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_create_lsc_credential">create_lsc_credential</a></td>
@@ -220,8 +220,8 @@
 <td id="index"><div style="margin-left: 15px;">Delete a config.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#command_delete_escalator">delete_escalator</a></td>
-<td id="index"><div style="margin-left: 15px;">Delete an escalator.</div></td>
+<td id="index"><a href="#command_delete_alert">delete_alert</a></td>
+<td id="index"><div style="margin-left: 15px;">Delete an alert.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_delete_lsc_credential">delete_lsc_credential</a></td>
@@ -284,8 +284,8 @@
 <td id="index"><div style="margin-left: 15px;">Get dependencies for all available NVTs.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#command_get_escalators">get_escalators</a></td>
-<td id="index"><div style="margin-left: 15px;">Get all escalators.</div></td>
+<td id="index"><a href="#command_get_alerts">get_alerts</a></td>
+<td id="index"><div style="margin-left: 15px;">Get all alerts.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_get_info">get_info</a></td>
@@ -428,8 +428,8 @@
 <td id="index"><div style="margin-left: 15px;">Stop a running task.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#command_test_escalator">test_escalator</a></td>
-<td id="index"><div style="margin-left: 15px;">Run an escalator.</div></td>
+<td id="index"><a href="#command_test_alert">test_alert</a></td>
+<td id="index"><div style="margin-left: 15px;">Run an alert.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_verify_agent">verify_agent</a></td>
@@ -450,7 +450,7 @@ command
     | commands
     | create_agent
     | create_config
-    | create_escalator
+    | create_alert
     | create_lsc_credential
     | create_note
     | create_override
@@ -464,7 +464,7 @@ command
     | create_task
     | delete_agent
     | delete_config
-    | delete_escalator
+    | delete_alert
     | delete_lsc_credential
     | delete_note
     | delete_override
@@ -480,7 +480,7 @@ command
     | get_agents
     | get_configs
     | get_dependencies
-    | get_escalators
+    | get_alerts
     | get_info
     | get_lsc_credentials
     | get_notes
@@ -516,7 +516,7 @@ command
     | resume_stopped_task
     | start_task
     | stop_task
-    | test_escalator
+    | test_alert
     | verify_agent
     | verify_report_format
 
@@ -525,7 +525,7 @@ response
     | commands_response
     | create_agent_response
     | create_config_response
-    | create_escalator_response
+    | create_alert_response
     | create_lsc_credential_response
     | create_note_response
     | create_override_response
@@ -539,7 +539,7 @@ response
     | create_task_response
     | delete_agent_response
     | delete_config_response
-    | delete_escalator_response
+    | delete_alert_response
     | delete_lsc_credential_response
     | delete_note_response
     | delete_override_response
@@ -555,7 +555,7 @@ response
     | get_agents_response
     | get_configs_response
     | get_dependencies_response
-    | get_escalators_response
+    | get_alerts_response
     | get_info_response
     | get_lsc_credentials_response
     | get_notes_response
@@ -591,7 +591,7 @@ response
     | resume_stopped_task_response
     | start_task_response
     | stop_task_response
-    | test_escalator_response
+    | test_alert_response
     | verify_agent_response
     | verify_report_format_response
 </pre></div>
@@ -2618,13 +2618,13 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
-          &lt;<b>create_config&gt;</b><div style="margin-left: 15px; display: inline;">
-<a href="#command_create_config">create_config</a> command.
+          &lt;<b>create_alert&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_create_alert">create_alert</a> command.
           </div>
 </li>
 <li>
-          &lt;<b>create_escalator&gt;</b><div style="margin-left: 15px; display: inline;">
-<a href="#command_create_escalator">create_escalator</a> command.
+          &lt;<b>create_config&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_create_config">create_config</a> command.
           </div>
 </li>
 <li>
@@ -2683,13 +2683,13 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
-          &lt;<b>delete_config&gt;</b><div style="margin-left: 15px; display: inline;">
-<a href="#command_delete_config">delete_config</a> command.
+          &lt;<b>delete_alert&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_delete_alert">delete_alert</a> command.
           </div>
 </li>
 <li>
-          &lt;<b>delete_escalator&gt;</b><div style="margin-left: 15px; display: inline;">
-<a href="#command_delete_escalator">delete_escalator</a> command.
+          &lt;<b>delete_config&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_delete_config">delete_config</a> command.
           </div>
 </li>
 <li>
@@ -2758,6 +2758,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>get_alerts&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_get_alerts">get_alerts</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>get_configs&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_get_configs">get_configs</a> command.
           </div>
@@ -2765,11 +2770,6 @@ authenticate_response_timezone
 <li>
           &lt;<b>get_dependencies&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_get_dependencies">get_dependencies</a> command.
-          </div>
-</li>
-<li>
-          &lt;<b>get_escalators&gt;</b><div style="margin-left: 15px; display: inline;">
-<a href="#command_get_escalators">get_escalators</a> command.
           </div>
 </li>
 <li>
@@ -2943,8 +2943,8 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
-          &lt;<b>test_escalator&gt;</b><div style="margin-left: 15px; display: inline;">
-<a href="#command_test_escalator">test_escalator</a> command.
+          &lt;<b>test_alert&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_test_alert">test_alert</a> command.
           </div>
 </li>
 </ul>
@@ -2978,13 +2978,13 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
-          &lt;<b>create_config_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_create_config">create_config</a> command.
+          &lt;<b>create_alert_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_create_alert">create_alert</a> command.
           </div>
 </li>
 <li>
-          &lt;<b>create_escalator_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_create_escalator">create_escalator</a> command.
+          &lt;<b>create_config_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_create_config">create_config</a> command.
           </div>
 </li>
 <li>
@@ -3038,13 +3038,13 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
-          &lt;<b>delete_config_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_delete_config">delete_config</a> command.
+          &lt;<b>delete_alert_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_delete_alert">delete_alert</a> command.
           </div>
 </li>
 <li>
-          &lt;<b>delete_escalator_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_delete_escalator">delete_escalator</a> command.
+          &lt;<b>delete_config_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_delete_config">delete_config</a> command.
           </div>
 </li>
 <li>
@@ -3113,6 +3113,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>get_alerts_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_get_alerts">get_alerts</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>get_configs_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_get_configs">get_configs</a> command.
           </div>
@@ -3120,11 +3125,6 @@ authenticate_response_timezone
 <li>
           &lt;<b>get_dependencies_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_get_dependencies">get_dependencies</a> command.
-          </div>
-</li>
-<li>
-          &lt;<b>get_escalators_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_get_escalators">get_escalators</a> command.
           </div>
 </li>
 <li>
@@ -3298,8 +3298,8 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
-          &lt;<b>test_escalator_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_test_escalator">test_escalator</a> command.
+          &lt;<b>test_alert_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_test_alert">test_alert</a> command.
           </div>
 </li>
 </ul>
@@ -3315,8 +3315,8 @@ authenticate_response_timezone
        ( authenticate
            | commands
            | create_agent
+           | create_alert
            | create_config
-           | create_escalator
            | create_lsc_credential
            | create_note
            | create_override
@@ -3328,8 +3328,8 @@ authenticate_response_timezone
            | create_target
            | create_task
            | delete_agent
+           | delete_alert
            | delete_config
-           | delete_escalator
            | delete_lsc_credential
            | delete_note
            | delete_override
@@ -3343,9 +3343,9 @@ authenticate_response_timezone
            | delete_task
            | empty_trashcan
            | get_agents
+           | get_alerts
            | get_configs
            | get_dependencies
-           | get_escalators
            | get_info
            | get_lsc_credentials
            | get_notes
@@ -3380,7 +3380,7 @@ authenticate_response_timezone
            | resume_stopped_task
            | start_task
            | stop_task
-           | test_escalator )*
+           | test_alert )*
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>commands_response
@@ -3391,8 +3391,8 @@ authenticate_response_timezone
        &amp; ( authenticate_response
            | commands_response
            | create_agent_response
+           | create_alert_response
            | create_config_response
-           | create_escalator_response
            | create_lsc_credential_response
            | create_note_response
            | create_override_response
@@ -3403,8 +3403,8 @@ authenticate_response_timezone
            | create_target_response
            | create_task_response
            | delete_agent_response
+           | delete_alert_response
            | delete_config_response
-           | delete_escalator_response
            | delete_lsc_credential_response
            | delete_note_response
            | delete_override_response
@@ -3418,9 +3418,9 @@ authenticate_response_timezone
            | delete_task_response
            | empty_trashcan_response
            | get_agents_response
+           | get_alerts_response
            | get_configs_response
            | get_dependencies_response
-           | get_escalators_response
            | get_info_response
            | get_lsc_credentials_response
            | get_notes_response
@@ -3455,7 +3455,7 @@ authenticate_response_timezone
            | resume_stopped_task_response
            | start_task_response
            | stop_task_response
-           | test_escalator_response )*
+           | test_alert_response )*
      }
 </pre></div>
 </div>
@@ -3760,13 +3760,13 @@ create_config_name
 </div>
 </div>
 <div>
-<div><h3 id="command_create_escalator">7.5
-        Command <tt>create_escalator</tt>
+<div><h3 id="command_create_alert">7.5
+        Command <tt>create_alert</tt>
 </h3></div>
-<p>In short: Create an escalator.</p>
+<p>In short: Create an alert.</p>
 <p>
-        The client uses the create_escalator command to create a new
-        escalator.
+        The client uses the create_alert command to create a new
+        alert.
       </p>
 <h4>7.5.1 Structure</h4>
 <ul style="list-style: none">
@@ -3774,17 +3774,17 @@ create_config_name
 <i>Command</i><ul style="list-style: none">
 <li>
               &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">A name for the escalator.</div>
+              <div style="margin-left: 15px; display: inline;">A name for the alert.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>comment</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">A comment on the escalator.</div>
+              ?<div style="margin-left: 15px; display: inline;">A comment on the alert.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>condition</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The condition that must be satisfied for escalation.</div>
+              <div style="margin-left: 15px; display: inline;">The condition that must be satisfied for the alert to occur.</div>
 <ul style="list-style: none"><li>
               &lt;<b>data</b>&gt;
               *<div style="margin-left: 15px; display: inline;">Some data that defines the condition.</div>
@@ -3797,7 +3797,7 @@ create_config_name
 </li>
 <li>
               &lt;<b>event</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The event that must happen for escalation.</div>
+              <div style="margin-left: 15px; display: inline;">The event that must happen for the alert to occur.</div>
 <ul style="list-style: none"><li>
               &lt;<b>data</b>&gt;
               *<div style="margin-left: 15px; display: inline;">Some data that defines the event.</div>
@@ -3810,7 +3810,7 @@ create_config_name
 </li>
 <li>
               &lt;<b>method</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The method by which escalation must occur.</div>
+              <div style="margin-left: 15px; display: inline;">The method by which the user is alerted.</div>
 <ul style="list-style: none"><li>
               &lt;<b>data</b>&gt;
               *<div style="margin-left: 15px; display: inline;">Some data that defines the method.</div>
@@ -3842,90 +3842,90 @@ create_config_name
 </ul>
 <h4>7.5.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>create_escalator
- = element create_escalator
+<i>Command</i><div style="margin-left: 5%"><pre>create_alert
+ = element create_alert
      {
-       create_escalator_name
-       &amp; create_escalator_comment?
-       &amp; create_escalator_condition
-       &amp; create_escalator_event
-       &amp; create_escalator_method
+       create_alert_name
+       &amp; create_alert_comment?
+       &amp; create_alert_condition
+       &amp; create_alert_event
+       &amp; create_alert_method
      }
 
-create_escalator_name
+create_alert_name
  = element name
      {
        name
      }
 
-create_escalator_comment
+create_alert_comment
  = element comment
      {
        text
      }
 
-create_escalator_condition
+create_alert_condition
  = element condition
      {
        text
-       &amp; create_escalator_condition_data*
+       &amp; create_alert_condition_data*
      }
 
-create_escalator_condition_data
+create_alert_condition_data
  = element data
      {
        text
-       &amp; create_escalator_condition_data_name
+       &amp; create_alert_condition_data_name
      }
 
-create_escalator_condition_data_name
+create_alert_condition_data_name
  = element name
      {
        text
      }
 
-create_escalator_event
+create_alert_event
  = element event
      {
        text
-       &amp; create_escalator_event_data*
+       &amp; create_alert_event_data*
      }
 
-create_escalator_event_data
+create_alert_event_data
  = element data
      {
        text
-       &amp; create_escalator_event_data_name
+       &amp; create_alert_event_data_name
      }
 
-create_escalator_event_data_name
+create_alert_event_data_name
  = element name
      {
        text
      }
 
-create_escalator_method
+create_alert_method
  = element method
      {
        text
-       &amp; create_escalator_method_data*
+       &amp; create_alert_method_data*
      }
 
-create_escalator_method_data
+create_alert_method_data
  = element data
      {
        text
-       &amp; create_escalator_method_data_name
+       &amp; create_alert_method_data_name
      }
 
-create_escalator_method_data_name
+create_alert_method_data_name
  = element name
      {
        text
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>create_escalator_response
- = element create_escalator_response
+<i>Response</i><div style="margin-left: 5%"><pre>create_alert_response
+ = element create_alert_response
      {
        attribute status { status }
        &amp; attribute status_text { text }
@@ -3933,9 +3933,9 @@ create_escalator_method_data_name
      }
 </pre></div>
 </div>
-<h4>7.5.3 Example: Create an escalator</h4>
+<h4>7.5.3 Example: Create an alert</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_escalator&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_alert&gt;
    &lt;name&gt;emergency&lt;/name&gt;
    &lt;condition&gt;
      Threat level at least
@@ -3962,11 +3962,11 @@ create_escalator_method_data_name
        &lt;name&gt;from_address&lt;/name&gt;
      &lt;/data&gt;
    &lt;/method&gt;
- &lt;/create_escalator&gt;
+ &lt;/create_alert&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_escalator_response status="201"
-                            status_text="OK, resource created"
-                            id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_alert_response status="201"
+                        status_text="OK, resource created"
+                        id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 </div>
@@ -5554,8 +5554,8 @@ create_target_port_list
           </li></ul>
 </li>
 <li>
-              &lt;<b>escalator</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">An escalator that applies to the task.</div>
+              &lt;<b>alert</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">An alert that applies to the task.</div>
 <ul style="list-style: none"><li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -5632,7 +5632,7 @@ create_target_port_list
        &amp; create_task_comment?
        &amp; create_task_config
        &amp; create_task_target
-       &amp; create_task_escalator?
+       &amp; create_task_alert?
        &amp; create_task_schedule?
        &amp; create_task_slave?
        &amp; create_task_observers?
@@ -5664,8 +5664,8 @@ create_task_target
        attribute id { uuid }
      }
 
-create_task_escalator
- = element escalator
+create_task_alert
+ = element alert
      {
        attribute id { uuid }
      }
@@ -5878,13 +5878,13 @@ create_task_rcfile
 </div>
 </div>
 <div>
-<div><h3 id="command_delete_escalator">7.19
-        Command <tt>delete_escalator</tt>
+<div><h3 id="command_delete_alert">7.19
+        Command <tt>delete_alert</tt>
 </h3></div>
-<p>In short: Delete an escalator.</p>
+<p>In short: Delete an alert.</p>
 <p>
-        The client uses the delete_escalator command to delete an existing
-        escalator.
+        The client uses the delete_alert command to delete an existing
+        alert.
       </p>
 <p>
         Since this is a destructive command, the client is advised to ask
@@ -5896,7 +5896,7 @@ create_task_rcfile
 <li>
 <i>Command</i><ul style="list-style: none">
 <li>
-          @<b>escalator_id</b>
+          @<b>alert_id</b>
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
@@ -5921,27 +5921,27 @@ create_task_rcfile
 </ul>
 <h4>7.19.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>delete_escalator
- = element delete_escalator
+<i>Command</i><div style="margin-left: 5%"><pre>delete_alert
+ = element delete_alert
      {
-       attribute escalator_id { uuid }
+       attribute alert_id { uuid }
        &amp; attribute ultimate { boolean }
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>delete_escalator_response
- = element delete_escalator_response
+<i>Response</i><div style="margin-left: 5%"><pre>delete_alert_response
+ = element delete_alert_response
      {
        attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre></div>
 </div>
-<h4>7.19.3 Example: Delete an escalator</h4>
+<h4>7.19.3 Example: Delete an alert</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_escalator escalator_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_alert alert_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_escalator_response status="200"
-                            status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_alert_response status="200"
+                        status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
@@ -7605,28 +7605,28 @@ get_dependencies_response_nvt_requires_nvt_name
 </div>
 </div>
 <div>
-<div><h3 id="command_get_escalators">7.35
-        Command <tt>get_escalators</tt>
+<div><h3 id="command_get_alerts">7.35
+        Command <tt>get_alerts</tt>
 </h3></div>
-<p>In short: Get all escalators.</p>
+<p>In short: Get all alerts.</p>
 <p>
-      The client uses the get_escalators command to get escalator information.
+      The client uses the get_alerts command to get alert information.
       If the command sent by the client was valid, the manager will
-      reply with a list of escalators to the client.
+      reply with a list of alerts to the client.
     </p>
 <h4>7.35.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
 <li>
-          @<b>escalator_id</b>
+          @<b>alert_id</b>
           (<a href="#type_uuid">uuid</a>)
-          ID of single escalator to get.
+          ID of single alert to get.
           </li>
 <li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
-          Whether to get the trashcan escalators instead.
+          Whether to get the trashcan alerts instead.
           </li>
 <li>
           @<b>sort_order</b>
@@ -7649,26 +7649,26 @@ get_dependencies_response_nvt_requires_nvt_name
           (text)
           </li>
 <li>
-              &lt;<b>escalator</b>&gt;
+              &lt;<b>alert</b>&gt;
               *<ul style="list-style: none">
 <li>
               &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the escalator.</div>
+              <div style="margin-left: 15px; display: inline;">The name of the alert.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>comment</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The comment on the escalator.</div>
+              <div style="margin-left: 15px; display: inline;">The comment on the alert.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>in_use</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether any tasks are using the escalator.</div>
+              <div style="margin-left: 15px; display: inline;">Whether any tasks are using the alert.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>condition</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The condition that must be satisfied for escalation.</div>
+              <div style="margin-left: 15px; display: inline;">The condition that must be satisfied for the alert to occur.</div>
 <ul style="list-style: none"><li>
               &lt;<b>data</b>&gt;
               *<div style="margin-left: 15px; display: inline;">Some data that defines the condition.</div>
@@ -7681,7 +7681,7 @@ get_dependencies_response_nvt_requires_nvt_name
 </li>
 <li>
               &lt;<b>event</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The event that must happen for escalation.</div>
+              <div style="margin-left: 15px; display: inline;">The event that must happen for the alert to occur.</div>
 <ul style="list-style: none"><li>
               &lt;<b>data</b>&gt;
               *<div style="margin-left: 15px; display: inline;">Some data that defines the event.</div>
@@ -7694,7 +7694,7 @@ get_dependencies_response_nvt_requires_nvt_name
 </li>
 <li>
               &lt;<b>method</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The method by which escalation must occur.</div>
+              <div style="margin-left: 15px; display: inline;">The method by which he alert must occur.</div>
 <ul style="list-style: none"><li>
               &lt;<b>data</b>&gt;
               *<div style="margin-left: 15px; display: inline;">Some data that defines the method.</div>
@@ -7712,120 +7712,120 @@ get_dependencies_response_nvt_requires_nvt_name
 </ul>
 <h4>7.35.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>get_escalators
- = element get_escalators
+<i>Command</i><div style="margin-left: 5%"><pre>get_alerts
+ = element get_alerts
      {
-       attribute escalator_id { uuid }?
+       attribute alert_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute sort_order { sort_order }?
        &amp; attribute sort_field { text }?
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>get_escalators_response
- = element get_escalators_response
+<i>Response</i><div style="margin-left: 5%"><pre>get_alerts_response
+ = element get_alerts_response
      {
        attribute status { status }
        &amp; attribute status_text { text }
-       &amp; get_escalators_response_escalator*
+       &amp; get_alerts_response_alert*
      }
 
-get_escalators_response_escalator
- = element escalator
+get_alerts_response_alert
+ = element alert
      {
-       get_escalators_response_escalator_name
-       &amp; get_escalators_response_escalator_comment
-       &amp; get_escalators_response_escalator_in_use
-       &amp; get_escalators_response_escalator_condition
-       &amp; get_escalators_response_escalator_event
-       &amp; get_escalators_response_escalator_method
+       get_alerts_response_alert_name
+       &amp; get_alerts_response_alert_comment
+       &amp; get_alerts_response_alert_in_use
+       &amp; get_alerts_response_alert_condition
+       &amp; get_alerts_response_alert_event
+       &amp; get_alerts_response_alert_method
      }
 
-get_escalators_response_escalator_name
+get_alerts_response_alert_name
  = element name
      {
        name
      }
 
-get_escalators_response_escalator_comment
+get_alerts_response_alert_comment
  = element comment
      {
        text
      }
 
-get_escalators_response_escalator_in_use
+get_alerts_response_alert_in_use
  = element in_use
      {
        boolean
      }
 
-get_escalators_response_escalator_condition
+get_alerts_response_alert_condition
  = element condition
      {
        text
-       &amp; get_escalators_response_escalator_condition_data*
+       &amp; get_alerts_response_alert_condition_data*
      }
 
-get_escalators_response_escalator_condition_data
+get_alerts_response_alert_condition_data
  = element data
      {
        text
-       &amp; get_escalators_response_escalator_condition_data_name
+       &amp; get_alerts_response_alert_condition_data_name
      }
 
-get_escalators_response_escalator_condition_data_name
+get_alerts_response_alert_condition_data_name
  = element name
      {
        text
      }
 
-get_escalators_response_escalator_event
+get_alerts_response_alert_event
  = element event
      {
        text
-       &amp; get_escalators_response_escalator_event_data*
+       &amp; get_alerts_response_alert_event_data*
      }
 
-get_escalators_response_escalator_event_data
+get_alerts_response_alert_event_data
  = element data
      {
        text
-       &amp; get_escalators_response_escalator_event_data_name
+       &amp; get_alerts_response_alert_event_data_name
      }
 
-get_escalators_response_escalator_event_data_name
+get_alerts_response_alert_event_data_name
  = element name
      {
        text
      }
 
-get_escalators_response_escalator_method
+get_alerts_response_alert_method
  = element method
      {
        text
-       &amp; get_escalators_response_escalator_method_data*
+       &amp; get_alerts_response_alert_method_data*
      }
 
-get_escalators_response_escalator_method_data
+get_alerts_response_alert_method_data
  = element data
      {
        text
-       &amp; get_escalators_response_escalator_method_data_name
+       &amp; get_alerts_response_alert_method_data_name
      }
 
-get_escalators_response_escalator_method_data_name
+get_alerts_response_alert_method_data_name
  = element name
      {
        text
      }
 </pre></div>
 </div>
-<h4>7.35.3 Example: Get the escalators</h4>
+<h4>7.35.3 Example: Get the alerts</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_escalators/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_alerts/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_escalators_response status="200"
-                          status_text="OK"&gt;
-   &lt;escalator id="6181e65d-8ba0-4937-9c44-8f2b10b0def7"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_alerts_response status="200"
+                      status_text="OK"&gt;
+   &lt;alert id="6181e65d-8ba0-4937-9c44-8f2b10b0def7"&gt;
      &lt;name&gt;Team alert&lt;/name&gt;
      &lt;comment/&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
@@ -7858,9 +7858,9 @@ get_escalators_response_escalator_method_data_name
          &lt;name&gt;notice&lt;/name&gt;
        &lt;/data&gt;
      &lt;/method&gt;
-   &lt;/escalator&gt;
+   &lt;/alert&gt;
    ...
- &lt;/get_escalators_response&gt;
+ &lt;/get_alerts_response&gt;
 </pre></div>
 </div>
 </div>
@@ -10393,9 +10393,9 @@ get_preferences_response_preference_value
           ID of required report format.
           </li>
 <li>
-          @<b>escalator_id</b>
+          @<b>alert_id</b>
           (<a href="#type_uuid">uuid</a>)
-          ID of escalator to pass generated report to.
+          ID of alert to pass generated report to.
           </li>
 <li>
           @<b>first_result</b>
@@ -10519,7 +10519,7 @@ get_preferences_response_preference_value
        attribute report_id { uuid }?
        &amp; attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        &amp; attribute format_id { uuid }?
-       &amp; attribute escalator_id { uuid }?
+       &amp; attribute alert_id { uuid }?
        &amp; attribute first_result { integer }?
        &amp; attribute max_results { integer }?
        &amp; attribute sort_order { sort_order }?
@@ -12854,8 +12854,8 @@ get_targets_response_target_tasks_task_name
 </ul>
 </li>
 <li>
-              &lt;<b>escalator</b>&gt;
-              <div style="margin-left: 15px; display: inline;">An escalator that applies to the task.</div>
+              &lt;<b>alert</b>&gt;
+              <div style="margin-left: 15px; display: inline;">An alert that applies to the task.</div>
 <ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -12863,12 +12863,12 @@ get_targets_response_target_tasks_task_name
           </li>
 <li>
               &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the escalator.</div>
+              <div style="margin-left: 15px; display: inline;">The name of the alert.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>trash</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether the escalator is in the trashcan.</div>
+              <div style="margin-left: 15px; display: inline;">Whether the alert is in the trashcan.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -13201,7 +13201,7 @@ get_tasks_response_task
        &amp; get_tasks_response_task_progress
        &amp; get_tasks_response_task_config
        &amp; get_tasks_response_task_target
-       &amp; get_tasks_response_task_escalator
+       &amp; get_tasks_response_task_alert
        &amp; get_tasks_response_task_observers
        &amp; get_tasks_response_task_schedule
        &amp; get_tasks_response_task_slave
@@ -13293,21 +13293,21 @@ get_tasks_response_task_target_trash
        boolean
      }
 
-get_tasks_response_task_escalator
- = element escalator
+get_tasks_response_task_alert
+ = element alert
      {
        attribute id { uuid_or_empty }
-       &amp; get_tasks_response_task_escalator_name
-       &amp; get_tasks_response_task_escalator_trash
+       &amp; get_tasks_response_task_alert_name
+       &amp; get_tasks_response_task_alert_trash
      }
 
-get_tasks_response_task_escalator_name
+get_tasks_response_task_alert_name
  = element name
      {
        name
      }
 
-get_tasks_response_task_escalator_trash
+get_tasks_response_task_alert_trash
  = element trash
      {
        boolean
@@ -13686,9 +13686,9 @@ get_tasks_response_task_preferences_preference_value
      &lt;config id="daba56c8-73ec-11df-a475-002264764cea"&gt;
        &lt;name&gt;Full and fast&lt;/name&gt;
      &lt;/config&gt;
-     &lt;escalator id=""&gt;
+     &lt;alert id=""&gt;
        &lt;name/&gt;
-     &lt;/escalator&gt;
+     &lt;/alert&gt;
      &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
        &lt;name&gt;dik&lt;/name&gt;
      &lt;/target&gt;
@@ -13771,9 +13771,9 @@ get_tasks_response_task_preferences_preference_value
      &lt;config id="daba56c8-73ec-11df-a475-002264764cea"&gt;
        &lt;name&gt;Full and fast&lt;/name&gt;
      &lt;/config&gt;
-     &lt;escalator id=""&gt;
+     &lt;alert id=""&gt;
        &lt;name/&gt;
-     &lt;/escalator&gt;
+     &lt;/alert&gt;
      &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
        &lt;name&gt;dik&lt;/name&gt;
      &lt;/target&gt;
@@ -14128,7 +14128,7 @@ help_response_schema_protocol_command
             COMMANDS               Run a list of commands.
             CREATE_AGENT           Create an agent.
             CREATE_CONFIG          Create a config.
-            CREATE_ESCALATOR       Create an escalator.
+            CREATE_ALERT           Create an alert.
             CREATE_LSC_CREDENTIAL  Create a local security check credential.
             CREATE_NOTE            Create a note.
             CREATE_OVERRIDE        Create an override.
@@ -14142,7 +14142,7 @@ help_response_schema_protocol_command
             CREATE_TASK            Create a task.
             DELETE_AGENT           Delete an agent.
             DELETE_CONFIG          Delete a config.
-            DELETE_ESCALATOR       Delete an escalator.
+            DELETE_ALERT           Delete an alert.
             DELETE_LSC_CREDENTIAL  Delete a local security check credential.
             DELETE_NOTE            Delete a note.
             DELETE_OVERRIDE        Delete an override.
@@ -14158,7 +14158,7 @@ help_response_schema_protocol_command
             GET_AGENTS             Get all agents.
             GET_CONFIGS            Get all configs.
             GET_DEPENDENCIES       Get dependencies for all available NVTs.
-            GET_ESCALATORS         Get all escalators.
+            GET_ALERTS             Get all alerts.
             GET_LSC_CREDENTIALS    Get all local security check credentials.
             GET_NOTES              Get all notes.
             GET_NVTS               Get one or all available NVTs.
@@ -14194,7 +14194,7 @@ help_response_schema_protocol_command
             RESUME_STOPPED_TASK    Resume a stopped task.
             START_TASK             Manually start an existing task.
             STOP_TASK              Stop a running task.
-            TEST_ESCALATOR         Run an escalator.
+            TEST_ALERT             Run an alert.
             VERIFY_AGENT           Verify an agent.
             VERIFY_REPORT_FORMAT   Verify a report format.
  &lt;/help_response&gt;
@@ -15390,8 +15390,8 @@ modify_setting_value
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>escalator</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Task escalator.</div>
+              &lt;<b>alert</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Task alert.</div>
 <ul style="list-style: none"><li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -15483,7 +15483,7 @@ modify_setting_value
      {
        attribute task_id { uuid }
        &amp; ( modify_task_comment
-           | modify_task_escalator
+           | modify_task_alert
            | modify_task_name
            | modify_task_observers
            | modify_task_preferences
@@ -15499,8 +15499,8 @@ modify_task_comment
        text
      }
 
-modify_task_escalator
- = element escalator
+modify_task_alert
+ = element alert
      {
        attribute id { uuid }
      }
@@ -15972,19 +15972,19 @@ modify_task_file
 </div>
 </div>
 <div>
-<div><h3 id="command_test_escalator">7.71
-        Command <tt>test_escalator</tt>
+<div><h3 id="command_test_alert">7.71
+        Command <tt>test_alert</tt>
 </h3></div>
-<p>In short: Run an escalator.</p>
+<p>In short: Run an alert.</p>
 <p>
-        The client uses the test_escalator command to invoke a test run of
-        an escalator.
+        The client uses the test_alert command to invoke a test run of
+        an alert.
       </p>
 <h4>7.71.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
-          @<b>escalator_id</b>
+          @<b>alert_id</b>
           (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
@@ -16003,26 +16003,26 @@ modify_task_file
 </ul>
 <h4>7.71.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>test_escalator
- = element test_escalator
+<i>Command</i><div style="margin-left: 5%"><pre>test_alert
+ = element test_alert
      {
-       attribute escalator_id { uuid }
+       attribute alert_id { uuid }
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>test_escalator_response
- = element test_escalator_response
+<i>Response</i><div style="margin-left: 5%"><pre>test_alert_response
+ = element test_alert_response
      {
        attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre></div>
 </div>
-<h4>7.71.3 Example: Test an escalator</h4>
+<h4>7.71.3 Example: Test an alert</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;test_escalator escalator_id="97390ade-e075-11df-9973-002264764cea"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;test_alert alert_id="97390ade-e075-11df-9973-002264764cea"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;test_escalator_response status="200"
-                          status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;test_alert_response status="200"
+                      status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>

@@ -340,7 +340,7 @@ static char* help_text = "\n"
 "    COMMANDS               Run a list of commands.\n"
 "    CREATE_AGENT           Create an agent.\n"
 "    CREATE_CONFIG          Create a config.\n"
-"    CREATE_ESCALATOR       Create an escalator.\n"
+"    CREATE_ALERT           Create an alert.\n"
 "    CREATE_LSC_CREDENTIAL  Create a local security check credential.\n"
 "    CREATE_NOTE            Create a note.\n"
 "    CREATE_OVERRIDE        Create an override.\n"
@@ -354,7 +354,7 @@ static char* help_text = "\n"
 "    CREATE_TASK            Create a task.\n"
 "    DELETE_AGENT           Delete an agent.\n"
 "    DELETE_CONFIG          Delete a config.\n"
-"    DELETE_ESCALATOR       Delete an escalator.\n"
+"    DELETE_ALERT           Delete an alert.\n"
 "    DELETE_LSC_CREDENTIAL  Delete a local security check credential.\n"
 "    DELETE_NOTE            Delete a note.\n"
 "    DELETE_OVERRIDE        Delete an override.\n"
@@ -370,7 +370,7 @@ static char* help_text = "\n"
 "    GET_AGENTS             Get all agents.\n"
 "    GET_CONFIGS            Get all configs.\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
-"    GET_ESCALATORS         Get all escalators.\n"
+"    GET_ALERTS             Get all alerts.\n"
 "    GET_LSC_CREDENTIALS    Get all local security check credentials.\n"
 "    GET_NOTES              Get all notes.\n"
 "    GET_NVTS               Get one or all available NVTs.\n"
@@ -406,7 +406,7 @@ static char* help_text = "\n"
 "    RESUME_STOPPED_TASK    Resume a stopped task.\n"
 "    START_TASK             Manually start an existing task.\n"
 "    STOP_TASK              Stop a running task.\n"
-"    TEST_ESCALATOR         Run an escalator.\n"
+"    TEST_ALERT             Run an alert.\n"
 "    VERIFY_AGENT           Verify an agent.\n"
 "    VERIFY_REPORT_FORMAT   Verify a report format.\n";
 
@@ -742,7 +742,7 @@ create_config_data_reset (create_config_data_t *data)
 }
 
 /**
- * @brief Command data for the create_escalator command.
+ * @brief Command data for the create_alert command.
  *
  * The pointers in the *_data arrays point to memory that contains two
  * strings concatentated, with a single \\0 between them.  The first string
@@ -752,16 +752,16 @@ create_config_data_reset (create_config_data_t *data)
 typedef struct
 {
   char *comment;             ///< Comment.
-  char *condition;           ///< Condition for escalation, e.g. "Always".
+  char *condition;           ///< Condition for alert, e.g. "Always".
   array_t *condition_data;   ///< Array of pointers.  Extra data for condition.
-  char *event;               ///< Event that will cause escalation.
+  char *event;               ///< Event that will cause alert.
   array_t *event_data;       ///< Array of pointers.  Extra data for event.
-  char *method;              ///< Method of escalation, e.g. "Email".
+  char *method;              ///< Method of alert, e.g. "Email".
   array_t *method_data;      ///< Array of pointer.  Extra data for method.
-  char *name;                ///< Name of escalator.
+  char *name;                ///< Name of alert.
   char *part_data;           ///< Second part of data during *_data: value.
   char *part_name;           ///< First part of data during *_data: name.
-} create_escalator_data_t;
+} create_alert_data_t;
 
 /**
  * @brief Reset command data.
@@ -769,7 +769,7 @@ typedef struct
  * @param[in]  data  Command data.
  */
 static void
-create_escalator_data_reset (create_escalator_data_t *data)
+create_alert_data_reset (create_alert_data_t *data)
 {
   free (data->comment);
   free (data->condition);
@@ -782,7 +782,7 @@ create_escalator_data_reset (create_escalator_data_t *data)
   free (data->part_data);
   free (data->part_name);
 
-  memset (data, 0, sizeof (create_escalator_data_t));
+  memset (data, 0, sizeof (create_alert_data_t));
 }
 
 /**
@@ -1260,7 +1260,7 @@ typedef struct
 typedef struct
 {
   char *config_id;      ///< ID of task config.
-  char *escalator_id;   ///< ID of task escalator.
+  char *alert_id;       ///< ID of task alert.
   char *observers;      ///< Space separated names of observer users.
   name_value_t *preference;  ///< Current preference.
   array_t *preferences; ///< Preferences.
@@ -1279,7 +1279,7 @@ static void
 create_task_data_reset (create_task_data_t *data)
 {
   free (data->config_id);
-  free (data->escalator_id);
+  free (data->alert_id);
   free (data->observers);
   if (data->preferences)
     {
@@ -1348,13 +1348,13 @@ delete_config_data_reset (delete_config_data_t *data)
 }
 
 /**
- * @brief Command data for the delete_escalator command.
+ * @brief Command data for the delete_alert command.
  */
 typedef struct
 {
-  char *escalator_id;   ///< ID of escalator to delete.
+  char *alert_id;   ///< ID of alert to delete.
   int ultimate;     ///< Boolean.  Whether to remove entirely or to trashcan.
-} delete_escalator_data_t;
+} delete_alert_data_t;
 
 /**
  * @brief Reset command data.
@@ -1362,11 +1362,11 @@ typedef struct
  * @param[in]  data  Command data.
  */
 static void
-delete_escalator_data_reset (delete_escalator_data_t *data)
+delete_alert_data_reset (delete_alert_data_t *data)
 {
-  free (data->escalator_id);
+  free (data->alert_id);
 
-  memset (data, 0, sizeof (delete_escalator_data_t));
+  memset (data, 0, sizeof (delete_alert_data_t));
 }
 
 /**
@@ -1686,15 +1686,15 @@ get_dependencies_data_reset (get_dependencies_data_t *data)
 }
 
 /**
- * @brief Command data for the get_escalators command.
+ * @brief Command data for the get_alerts command.
  */
 typedef struct
 {
-  char *escalator_id;    ///< ID of single escalator to get.
+  char *alert_id;        ///< ID of single alert to get.
   char *sort_field;      ///< Field to sort results on.
   int sort_order;        ///< Result sort order: 0 descending, else ascending.
-  int trash;             ///< Boolean.  Whether to return escalators from trashcan.
-} get_escalators_data_t;
+  int trash;             ///< Boolean.  Whether to return alerts from trashcan.
+} get_alerts_data_t;
 
 /**
  * @brief Reset command data.
@@ -1702,12 +1702,12 @@ typedef struct
  * @param[in]  data  Command data.
  */
 static void
-get_escalators_data_reset (get_escalators_data_t *data)
+get_alerts_data_reset (get_alerts_data_t *data)
 {
-  free (data->escalator_id);
+  free (data->alert_id);
   free (data->sort_field);
 
-  memset (data, 0, sizeof (get_escalators_data_t));
+  memset (data, 0, sizeof (get_alerts_data_t));
 }
 
 /**
@@ -1954,7 +1954,7 @@ typedef struct
   char *delta_report_id; ///< ID of report to compare single report to.
   char *delta_states;    ///< Delta states (Changed Gone New Same) to include.
   char *format_id;       ///< ID of report format.
-  char *escalator_id;    ///< ID of escalator.
+  char *alert_id;        ///< ID of alert.
   char *report_id;       ///< ID of single report to get.
   int first_result;      ///< Skip over results before this result number.
   int max_results;       ///< Maximum number of results return.
@@ -1988,7 +1988,7 @@ get_reports_data_reset (get_reports_data_t *data)
   free (data->delta_report_id);
   free (data->delta_states);
   free (data->format_id);
-  free (data->escalator_id);
+  free (data->alert_id);
   free (data->report_id);
   free (data->sort_field);
   free (data->levels);
@@ -2381,7 +2381,7 @@ typedef struct
 {
   char *action;        ///< What to do to file: "update" or "remove".
   char *comment;       ///< Comment.
-  char *escalator_id;  ///< ID of new escalator for task.
+  char *alert_id;      ///< ID of new alert for task.
   char *file;          ///< File to attach to task.
   char *file_name;     ///< Name of file to attach to task.
   char *name;          ///< New name for task.
@@ -2404,7 +2404,7 @@ modify_task_data_reset (modify_task_data_t *data)
 {
   free (data->action);
   free (data->comment);
-  free (data->escalator_id);
+  free (data->alert_id);
   free (data->file);
   free (data->file_name);
   free (data->name);
@@ -2659,12 +2659,12 @@ stop_task_data_reset (stop_task_data_t *data)
 }
 
 /**
- * @brief Command data for the test_escalator command.
+ * @brief Command data for the test_alert command.
  */
 typedef struct
 {
-  char *escalator_id;   ///< ID of escalator to test.
-} test_escalator_data_t;
+  char *alert_id;   ///< ID of alert to test.
+} test_alert_data_t;
 
 /**
  * @brief Reset command data.
@@ -2672,11 +2672,11 @@ typedef struct
  * @param[in]  data  Command data.
  */
 static void
-test_escalator_data_reset (test_escalator_data_t *data)
+test_alert_data_reset (test_alert_data_t *data)
 {
-  free (data->escalator_id);
+  free (data->alert_id);
 
-  memset (data, 0, sizeof (test_escalator_data_t));
+  memset (data, 0, sizeof (test_alert_data_t));
 }
 
 /**
@@ -2728,7 +2728,7 @@ typedef union
 {
   create_agent_data_t create_agent;                   ///< create_agent
   create_config_data_t create_config;                 ///< create_config
-  create_escalator_data_t create_escalator;           ///< create_escalator
+  create_alert_data_t create_alert;                   ///< create_alert
   create_lsc_credential_data_t create_lsc_credential; ///< create_lsc_credential
   create_note_data_t create_note;                     ///< create_note
   create_override_data_t create_override;             ///< create_override
@@ -2742,7 +2742,7 @@ typedef union
   create_task_data_t create_task;                     ///< create_task
   delete_agent_data_t delete_agent;                   ///< delete_agent
   delete_config_data_t delete_config;                 ///< delete_config
-  delete_escalator_data_t delete_escalator;           ///< delete_escalator
+  delete_alert_data_t delete_alert;                   ///< delete_alert
   delete_lsc_credential_data_t delete_lsc_credential; ///< delete_lsc_credential
   delete_note_data_t delete_note;                     ///< delete_note
   delete_override_data_t delete_override;             ///< delete_override
@@ -2757,7 +2757,7 @@ typedef union
   get_agents_data_t get_agents;                       ///< get_agents
   get_configs_data_t get_configs;                     ///< get_configs
   get_dependencies_data_t get_dependencies;           ///< get_dependencies
-  get_escalators_data_t get_escalators;               ///< get_escalators
+  get_alerts_data_t get_alerts;                       ///< get_alerts
   get_info_data_t get_info;                           ///< get_info
   get_lsc_credentials_data_t get_lsc_credentials;     ///< get_lsc_credentials
   get_notes_data_t get_notes;                         ///< get_notes
@@ -2789,7 +2789,7 @@ typedef union
   resume_stopped_task_data_t resume_stopped_task;     ///< resume_stopped_task
   start_task_data_t start_task;                       ///< start_task
   stop_task_data_t stop_task;                         ///< stop_task
-  test_escalator_data_t test_escalator;               ///< test_escalator
+  test_alert_data_t test_alert;                       ///< test_alert
   verify_agent_data_t verify_agent;                   ///< verify_agent
   verify_report_format_data_t verify_report_format;   ///< verify_report_format
 } command_data_t;
@@ -2824,10 +2824,10 @@ create_config_data_t *create_config_data
  = (create_config_data_t*) &(command_data.create_config);
 
 /**
- * @brief Parser callback data for CREATE_ESCALATOR.
+ * @brief Parser callback data for CREATE_ALERT.
  */
-create_escalator_data_t *create_escalator_data
- = (create_escalator_data_t*) &(command_data.create_escalator);
+create_alert_data_t *create_alert_data
+ = (create_alert_data_t*) &(command_data.create_alert);
 
 /**
  * @brief Parser callback data for CREATE_LSC_CREDENTIAL.
@@ -2908,10 +2908,10 @@ delete_config_data_t *delete_config_data
  = (delete_config_data_t*) &(command_data.delete_config);
 
 /**
- * @brief Parser callback data for DELETE_ESCALATOR.
+ * @brief Parser callback data for DELETE_ALERT.
  */
-delete_escalator_data_t *delete_escalator_data
- = (delete_escalator_data_t*) &(command_data.delete_escalator);
+delete_alert_data_t *delete_alert_data
+ = (delete_alert_data_t*) &(command_data.delete_alert);
 
 /**
  * @brief Parser callback data for DELETE_LSC_CREDENTIAL.
@@ -2998,10 +2998,10 @@ get_dependencies_data_t *get_dependencies_data
  = &(command_data.get_dependencies);
 
 /**
- * @brief Parser callback data for GET_ESCALATORS.
+ * @brief Parser callback data for GET_ALERTS.
  */
-get_escalators_data_t *get_escalators_data
- = &(command_data.get_escalators);
+get_alerts_data_t *get_alerts_data
+ = &(command_data.get_alerts);
 
 /**
  * @brief Parser callback data for GET_INFO.
@@ -3208,10 +3208,10 @@ stop_task_data_t *stop_task_data
  = (stop_task_data_t*) &(command_data.stop_task);
 
 /**
- * @brief Parser callback data for TEST_ESCALATOR.
+ * @brief Parser callback data for TEST_ALERT.
  */
-test_escalator_data_t *test_escalator_data
- = (test_escalator_data_t*) &(command_data.test_escalator);
+test_alert_data_t *test_alert_data
+ = (test_alert_data_t*) &(command_data.test_alert);
 
 /**
  * @brief Parser callback data for VERIFY_AGENT.
@@ -3310,18 +3310,18 @@ typedef enum
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_TYPE,
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE,
-  CLIENT_CREATE_ESCALATOR,
-  CLIENT_CREATE_ESCALATOR_COMMENT,
-  CLIENT_CREATE_ESCALATOR_CONDITION,
-  CLIENT_CREATE_ESCALATOR_CONDITION_DATA,
-  CLIENT_CREATE_ESCALATOR_CONDITION_DATA_NAME,
-  CLIENT_CREATE_ESCALATOR_EVENT,
-  CLIENT_CREATE_ESCALATOR_EVENT_DATA,
-  CLIENT_CREATE_ESCALATOR_EVENT_DATA_NAME,
-  CLIENT_CREATE_ESCALATOR_METHOD,
-  CLIENT_CREATE_ESCALATOR_METHOD_DATA,
-  CLIENT_CREATE_ESCALATOR_METHOD_DATA_NAME,
-  CLIENT_CREATE_ESCALATOR_NAME,
+  CLIENT_CREATE_ALERT,
+  CLIENT_CREATE_ALERT_COMMENT,
+  CLIENT_CREATE_ALERT_CONDITION,
+  CLIENT_CREATE_ALERT_CONDITION_DATA,
+  CLIENT_CREATE_ALERT_CONDITION_DATA_NAME,
+  CLIENT_CREATE_ALERT_EVENT,
+  CLIENT_CREATE_ALERT_EVENT_DATA,
+  CLIENT_CREATE_ALERT_EVENT_DATA_NAME,
+  CLIENT_CREATE_ALERT_METHOD,
+  CLIENT_CREATE_ALERT_METHOD_DATA,
+  CLIENT_CREATE_ALERT_METHOD_DATA_NAME,
+  CLIENT_CREATE_ALERT_NAME,
   CLIENT_CREATE_LSC_CREDENTIAL,
   CLIENT_CREATE_LSC_CREDENTIAL_COMMENT,
   CLIENT_CREATE_LSC_CREDENTIAL_NAME,
@@ -3474,7 +3474,7 @@ typedef enum
   CLIENT_CREATE_TASK,
   CLIENT_CREATE_TASK_COMMENT,
   CLIENT_CREATE_TASK_CONFIG,
-  CLIENT_CREATE_TASK_ESCALATOR,
+  CLIENT_CREATE_TASK_ALERT,
   CLIENT_CREATE_TASK_NAME,
   CLIENT_CREATE_TASK_OBSERVERS,
   CLIENT_CREATE_TASK_PREFERENCES,
@@ -3487,7 +3487,7 @@ typedef enum
   CLIENT_CREATE_TASK_TARGET,
   CLIENT_DELETE_AGENT,
   CLIENT_DELETE_CONFIG,
-  CLIENT_DELETE_ESCALATOR,
+  CLIENT_DELETE_ALERT,
   CLIENT_DELETE_LSC_CREDENTIAL,
   CLIENT_DELETE_NOTE,
   CLIENT_DELETE_OVERRIDE,
@@ -3503,7 +3503,7 @@ typedef enum
   CLIENT_GET_AGENTS,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_DEPENDENCIES,
-  CLIENT_GET_ESCALATORS,
+  CLIENT_GET_ALERTS,
   CLIENT_GET_LSC_CREDENTIALS,
   CLIENT_GET_NOTES,
   CLIENT_GET_NVTS,
@@ -3577,7 +3577,7 @@ typedef enum
   CLIENT_MODIFY_SETTING_VALUE,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_COMMENT,
-  CLIENT_MODIFY_TASK_ESCALATOR,
+  CLIENT_MODIFY_TASK_ALERT,
   CLIENT_MODIFY_TASK_FILE,
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_OBSERVERS,
@@ -3595,7 +3595,7 @@ typedef enum
   CLIENT_RESUME_STOPPED_TASK,
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
-  CLIENT_TEST_ESCALATOR,
+  CLIENT_TEST_ALERT,
   CLIENT_VERIFY_AGENT,
   CLIENT_VERIFY_REPORT_FORMAT
 } client_state_t;
@@ -4105,21 +4105,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&create_config_data->name, "");
             set_client_state (CLIENT_CREATE_CONFIG);
           }
-        else if (strcasecmp ("CREATE_ESCALATOR", element_name) == 0)
+        else if (strcasecmp ("CREATE_ALERT", element_name) == 0)
           {
-            create_escalator_data->condition_data = make_array ();
-            create_escalator_data->event_data = make_array ();
-            create_escalator_data->method_data = make_array ();
+            create_alert_data->condition_data = make_array ();
+            create_alert_data->event_data = make_array ();
+            create_alert_data->method_data = make_array ();
 
-            openvas_append_string (&create_escalator_data->part_data, "");
-            openvas_append_string (&create_escalator_data->part_name, "");
-            openvas_append_string (&create_escalator_data->comment, "");
-            openvas_append_string (&create_escalator_data->name, "");
-            openvas_append_string (&create_escalator_data->condition, "");
-            openvas_append_string (&create_escalator_data->method, "");
-            openvas_append_string (&create_escalator_data->event, "");
+            openvas_append_string (&create_alert_data->part_data, "");
+            openvas_append_string (&create_alert_data->part_name, "");
+            openvas_append_string (&create_alert_data->comment, "");
+            openvas_append_string (&create_alert_data->name, "");
+            openvas_append_string (&create_alert_data->condition, "");
+            openvas_append_string (&create_alert_data->method, "");
+            openvas_append_string (&create_alert_data->event, "");
 
-            set_client_state (CLIENT_CREATE_ESCALATOR);
+            set_client_state (CLIENT_CREATE_ALERT);
           }
         else if (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0)
           {
@@ -4184,18 +4184,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               delete_config_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_CONFIG);
           }
-        else if (strcasecmp ("DELETE_ESCALATOR", element_name) == 0)
+        else if (strcasecmp ("DELETE_ALERT", element_name) == 0)
           {
             const gchar* attribute;
             append_attribute (attribute_names, attribute_values,
-                              "escalator_id",
-                              &delete_escalator_data->escalator_id);
+                              "alert_id",
+                              &delete_alert_data->alert_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "ultimate", &attribute))
-              delete_escalator_data->ultimate = strcmp (attribute, "0");
+              delete_alert_data->ultimate = strcmp (attribute, "0");
             else
-              delete_escalator_data->ultimate = 0;
-            set_client_state (CLIENT_DELETE_ESCALATOR);
+              delete_alert_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_ALERT);
           }
         else if (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0)
           {
@@ -4373,26 +4373,26 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_dependencies_data->nvt_oid);
             set_client_state (CLIENT_GET_DEPENDENCIES);
           }
-        else if (strcasecmp ("GET_ESCALATORS", element_name) == 0)
+        else if (strcasecmp ("GET_ALERTS", element_name) == 0)
           {
             const gchar* attribute;
             append_attribute (attribute_names, attribute_values,
-                              "escalator_id",
-                              &get_escalators_data->escalator_id);
+                              "alert_id",
+                              &get_alerts_data->alert_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "trash", &attribute))
-              get_escalators_data->trash = strcmp (attribute, "0");
+              get_alerts_data->trash = strcmp (attribute, "0");
             else
-              get_escalators_data->trash = 0;
+              get_alerts_data->trash = 0;
             append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_escalators_data->sort_field);
+                              &get_alerts_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
-              get_escalators_data->sort_order = strcmp (attribute,
+              get_alerts_data->sort_order = strcmp (attribute,
                                                         "descending");
             else
-              get_escalators_data->sort_order = 1;
-            set_client_state (CLIENT_GET_ESCALATORS);
+              get_alerts_data->sort_order = 1;
+            set_client_state (CLIENT_GET_ALERTS);
           }
         else if (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0)
           {
@@ -4598,8 +4598,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               "delta_report_id",
                               &get_reports_data->delta_report_id);
 
-            append_attribute (attribute_names, attribute_values, "escalator_id",
-                              &get_reports_data->escalator_id);
+            append_attribute (attribute_names, attribute_values, "alert_id",
+                              &get_reports_data->alert_id);
 
             append_attribute (attribute_names, attribute_values, "format_id",
                               &get_reports_data->format_id);
@@ -5049,12 +5049,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &stop_task_data->task_id);
             set_client_state (CLIENT_STOP_TASK);
           }
-        else if (strcasecmp ("TEST_ESCALATOR", element_name) == 0)
+        else if (strcasecmp ("TEST_ALERT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values,
-                              "escalator_id",
-                              &test_escalator_data->escalator_id);
-            set_client_state (CLIENT_TEST_ESCALATOR);
+                              "alert_id",
+                              &test_alert_data->alert_id);
+            set_client_state (CLIENT_TEST_ALERT);
           }
         else if (strcasecmp ("VERIFY_AGENT", element_name) == 0)
           {
@@ -5269,11 +5269,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_task_data->comment, "");
             set_client_state (CLIENT_MODIFY_TASK_COMMENT);
           }
-        else if (strcasecmp ("ESCALATOR", element_name) == 0)
+        else if (strcasecmp ("ALERT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
-                              &modify_task_data->escalator_id);
-            set_client_state (CLIENT_MODIFY_TASK_ESCALATOR);
+                              &modify_task_data->alert_id);
+            set_client_state (CLIENT_MODIFY_TASK_ALERT);
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_NAME);
@@ -5449,48 +5449,48 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
            (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME);
         ELSE_ERROR ("create_config");
 
-      case CLIENT_CREATE_ESCALATOR:
+      case CLIENT_CREATE_ALERT:
         if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_ESCALATOR_COMMENT);
+          set_client_state (CLIENT_CREATE_ALERT_COMMENT);
         else if (strcasecmp ("CONDITION", element_name) == 0)
-          set_client_state (CLIENT_CREATE_ESCALATOR_CONDITION);
+          set_client_state (CLIENT_CREATE_ALERT_CONDITION);
         else if (strcasecmp ("EVENT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_ESCALATOR_EVENT);
+          set_client_state (CLIENT_CREATE_ALERT_EVENT);
         else if (strcasecmp ("METHOD", element_name) == 0)
-          set_client_state (CLIENT_CREATE_ESCALATOR_METHOD);
+          set_client_state (CLIENT_CREATE_ALERT_METHOD);
         else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_ESCALATOR_NAME);
-        ELSE_ERROR ("create_escalator");
+          set_client_state (CLIENT_CREATE_ALERT_NAME);
+        ELSE_ERROR ("create_alert");
 
-      case CLIENT_CREATE_ESCALATOR_CONDITION:
+      case CLIENT_CREATE_ALERT_CONDITION:
         if (strcasecmp ("DATA", element_name) == 0)
-          set_client_state (CLIENT_CREATE_ESCALATOR_CONDITION_DATA);
-        ELSE_ERROR ("create_escalator");
+          set_client_state (CLIENT_CREATE_ALERT_CONDITION_DATA);
+        ELSE_ERROR ("create_alert");
 
-      case CLIENT_CREATE_ESCALATOR_CONDITION_DATA:
+      case CLIENT_CREATE_ALERT_CONDITION_DATA:
         if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_ESCALATOR_CONDITION_DATA_NAME);
-        ELSE_ERROR ("create_escalator");
+          set_client_state (CLIENT_CREATE_ALERT_CONDITION_DATA_NAME);
+        ELSE_ERROR ("create_alert");
 
-      case CLIENT_CREATE_ESCALATOR_EVENT:
+      case CLIENT_CREATE_ALERT_EVENT:
         if (strcasecmp ("DATA", element_name) == 0)
-          set_client_state (CLIENT_CREATE_ESCALATOR_EVENT_DATA);
-        ELSE_ERROR ("create_escalator");
+          set_client_state (CLIENT_CREATE_ALERT_EVENT_DATA);
+        ELSE_ERROR ("create_alert");
 
-      case CLIENT_CREATE_ESCALATOR_EVENT_DATA:
+      case CLIENT_CREATE_ALERT_EVENT_DATA:
         if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_ESCALATOR_EVENT_DATA_NAME);
-        ELSE_ERROR ("create_escalator");
+          set_client_state (CLIENT_CREATE_ALERT_EVENT_DATA_NAME);
+        ELSE_ERROR ("create_alert");
 
-      case CLIENT_CREATE_ESCALATOR_METHOD:
+      case CLIENT_CREATE_ALERT_METHOD:
         if (strcasecmp ("DATA", element_name) == 0)
-          set_client_state (CLIENT_CREATE_ESCALATOR_METHOD_DATA);
-        ELSE_ERROR ("create_escalator");
+          set_client_state (CLIENT_CREATE_ALERT_METHOD_DATA);
+        ELSE_ERROR ("create_alert");
 
-      case CLIENT_CREATE_ESCALATOR_METHOD_DATA:
+      case CLIENT_CREATE_ALERT_METHOD_DATA:
         if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_ESCALATOR_METHOD_DATA_NAME);
-        ELSE_ERROR ("create_escalator");
+          set_client_state (CLIENT_CREATE_ALERT_METHOD_DATA_NAME);
+        ELSE_ERROR ("create_alert");
 
       case CLIENT_CREATE_LSC_CREDENTIAL:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -6079,11 +6079,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &create_task_data->config_id);
             set_client_state (CLIENT_CREATE_TASK_CONFIG);
           }
-        else if (strcasecmp ("ESCALATOR", element_name) == 0)
+        else if (strcasecmp ("ALERT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
-                              &create_task_data->escalator_id);
-            set_client_state (CLIENT_CREATE_TASK_ESCALATOR);
+                              &create_task_data->alert_id);
+            set_client_state (CLIENT_CREATE_TASK_ALERT);
           }
         else if (strcasecmp ("OBSERVERS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_OBSERVERS);
@@ -8603,7 +8603,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        if (get_reports_data->escalator_id == NULL)
+        if (get_reports_data->alert_id == NULL)
           SEND_TO_CLIENT_OR_FAIL
            ("<get_reports_response"
             " status=\"" STATUS_OK "\""
@@ -8657,7 +8657,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       send_to_client,
                                       write_to_client,
                                       write_to_client_data,
-                                      get_reports_data->escalator_id,
+                                      get_reports_data->alert_id,
                                       "assets",
                                       get_reports_data->host,
                                       pos,
@@ -8728,7 +8728,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       send_to_client,
                                       write_to_client,
                                       write_to_client_data,
-                                      get_reports_data->escalator_id,
+                                      get_reports_data->alert_id,
                                       "prognostic",
                                       get_reports_data->host,
                                       pos,
@@ -8765,7 +8765,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             content_type = report_format_content_type (report_format);
             extension = report_format_extension (report_format);
 
-            if (get_reports_data->escalator_id == NULL)
+            if (get_reports_data->alert_id == NULL)
               SENDF_TO_CLIENT_OR_FAIL
                ("<report"
                 " type=\"scan\""
@@ -8805,12 +8805,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       send_to_client,
                                       write_to_client,
                                       write_to_client_data,
-                                      get_reports_data->escalator_id,
+                                      get_reports_data->alert_id,
                                       get_reports_data->type,
                                       NULL, 0, NULL, NULL, 0, 0);
             if (ret)
               {
-                if (get_reports_data->escalator_id)
+                if (get_reports_data->alert_id)
                   switch (ret)
                     {
                       case 0:
@@ -8818,8 +8818,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       case 1:
                         if (send_find_error_to_client
                              ("get_reports",
-                              "escalator",
-                              get_reports_data->escalator_id,
+                              "alert",
+                              get_reports_data->alert_id,
                               write_to_client,
                               write_to_client_data))
                           {
@@ -8852,12 +8852,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
               }
-            if (get_reports_data->escalator_id == NULL)
+            if (get_reports_data->alert_id == NULL)
               SEND_TO_CLIENT_OR_FAIL ("</report>");
           }
         cleanup_iterator (&reports);
 
-        if (get_reports_data->escalator_id)
+        if (get_reports_data->alert_id)
           SEND_TO_CLIENT_OR_FAIL (XML_OK ("get_reports"));
         else
           SEND_TO_CLIENT_OR_FAIL ("</get_reports_response>");
@@ -9311,56 +9311,56 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_DELETE_ESCALATOR:
-        assert (strcasecmp ("DELETE_ESCALATOR", element_name) == 0);
-        if (delete_escalator_data->escalator_id)
+      case CLIENT_DELETE_ALERT:
+        assert (strcasecmp ("DELETE_ALERT", element_name) == 0);
+        if (delete_alert_data->alert_id)
           {
-            switch (delete_escalator (delete_escalator_data->escalator_id,
-                                      delete_escalator_data->ultimate))
+            switch (delete_alert (delete_alert_data->alert_id,
+                                      delete_alert_data->ultimate))
               {
                 case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_escalator"));
-                  g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
-                         "Escalator %s has been deleted",
-                         delete_escalator_data->escalator_id);
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_alert"));
+                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                         "Alert %s has been deleted",
+                         delete_alert_data->alert_id);
                   break;
                 case 1:
                   SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("delete_escalator",
-                                      "Escalator is in use"));
-                  g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
-                         "Escalator %s could not be deleted",
-                         delete_escalator_data->escalator_id);
+                   (XML_ERROR_SYNTAX ("delete_alert",
+                                      "Alert is in use"));
+                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                         "Alert %s could not be deleted",
+                         delete_alert_data->alert_id);
                   break;
                 case 2:
                   if (send_find_error_to_client
-                       ("delete_escalator",
-                        "escalator",
-                        delete_escalator_data->escalator_id,
+                       ("delete_alert",
+                        "alert",
+                        delete_alert_data->alert_id,
                         write_to_client,
                         write_to_client_data))
                     {
                       error_send_to_client (error);
                       return;
                     }
-                  g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
-                         "Escalator %s could not be deleted",
-                         delete_escalator_data->escalator_id);
+                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                         "Alert %s could not be deleted",
+                         delete_alert_data->alert_id);
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("delete_escalator"));
-                  g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
-                         "Escalator %s could not be deleted",
-                         delete_escalator_data->escalator_id);
+                   (XML_INTERNAL_ERROR ("delete_alert"));
+                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                         "Alert %s could not be deleted",
+                         delete_alert_data->alert_id);
               }
           }
         else
           SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_escalator",
-                              "DELETE_ESCALATOR requires an escalator_id"
+           (XML_ERROR_SYNTAX ("delete_alert",
+                              "DELETE_ALERT requires an alert_id"
                               " attribute"));
-        delete_escalator_data_reset (delete_escalator_data);
+        delete_alert_data_reset (delete_alert_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -10326,7 +10326,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
               }
             else if ((modify_task_data->action
-                      || modify_task_data->escalator_id
+                      || modify_task_data->alert_id
                       || modify_task_data->name
                       || modify_task_data->rcfile)
                      == 0)
@@ -10335,7 +10335,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "Too few parameters"));
             else if (modify_task_data->action
                      && (modify_task_data->comment
-                         || modify_task_data->escalator_id
+                         || modify_task_data->alert_id
                          || modify_task_data->name
                          || modify_task_data->rcfile))
               SEND_TO_CLIENT_OR_FAIL
@@ -10343,7 +10343,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "Too many parameters at once"));
             else if ((task_target (task) == 0)
                      && (modify_task_data->rcfile
-                         || modify_task_data->escalator_id
+                         || modify_task_data->alert_id
                          || modify_task_data->schedule_id
                          || modify_task_data->slave_id))
               SEND_TO_CLIENT_OR_FAIL
@@ -10474,25 +10474,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
 
-                if (fail == 0 && modify_task_data->escalator_id)
+                if (fail == 0 && modify_task_data->alert_id)
                   {
-                    escalator_t escalator = 0;
+                    alert_t alert = 0;
 
-                    if (strcmp (modify_task_data->escalator_id, "0") == 0)
+                    if (strcmp (modify_task_data->alert_id, "0") == 0)
                       {
-                        set_task_escalator (task, 0);
+                        set_task_alert (task, 0);
                       }
-                    else if ((fail = find_escalator
-                                      (modify_task_data->escalator_id,
-                                       &escalator)))
+                    else if ((fail = find_alert
+                                      (modify_task_data->alert_id,
+                                       &alert)))
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_INTERNAL_ERROR ("modify_task"));
-                    else if (escalator == 0)
+                    else if (alert == 0)
                       {
                         if (send_find_error_to_client
                              ("modify_task",
-                              "escalator",
-                              modify_task_data->escalator_id,
+                              "alert",
+                              modify_task_data->alert_id,
                               write_to_client,
                               write_to_client_data))
                           {
@@ -10503,7 +10503,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                     else
                       {
-                        set_task_escalator (task, escalator);
+                        set_task_alert (task, alert);
                       }
                   }
 
@@ -10596,7 +10596,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
       CLOSE (CLIENT_MODIFY_TASK, COMMENT);
-      CLOSE (CLIENT_MODIFY_TASK, ESCALATOR);
+      CLOSE (CLIENT_MODIFY_TASK, ALERT);
       CLOSE (CLIENT_MODIFY_TASK, NAME);
       CLOSE (CLIENT_MODIFY_TASK, OBSERVERS);
       CLOSE (CLIENT_MODIFY_TASK, PREFERENCES);
@@ -10979,200 +10979,200 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, TYPE);
       CLOSE (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE, VALUE);
 
-      case CLIENT_CREATE_ESCALATOR:
+      case CLIENT_CREATE_ALERT:
         {
           event_t event;
-          escalator_condition_t condition;
-          escalator_method_t method;
-          escalator_t new_escalator;
+          alert_condition_t condition;
+          alert_method_t method;
+          alert_t new_alert;
 
-          assert (strcasecmp ("CREATE_ESCALATOR", element_name) == 0);
-          assert (create_escalator_data->name != NULL);
-          assert (create_escalator_data->condition != NULL);
-          assert (create_escalator_data->method != NULL);
-          assert (create_escalator_data->event != NULL);
+          assert (strcasecmp ("CREATE_ALERT", element_name) == 0);
+          assert (create_alert_data->name != NULL);
+          assert (create_alert_data->condition != NULL);
+          assert (create_alert_data->method != NULL);
+          assert (create_alert_data->event != NULL);
 
-          array_terminate (create_escalator_data->condition_data);
-          array_terminate (create_escalator_data->event_data);
-          array_terminate (create_escalator_data->method_data);
+          array_terminate (create_alert_data->condition_data);
+          array_terminate (create_alert_data->event_data);
+          array_terminate (create_alert_data->method_data);
 
           if (openvas_is_user_observer (current_credentials.username))
             {
               SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_escalator",
+               (XML_ERROR_SYNTAX ("create_alert",
                                   "CREATE is forbidden for observer users"));
             }
-          else if (strlen (create_escalator_data->name) == 0)
+          else if (strlen (create_alert_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_escalator",
-                                "CREATE_ESCALATOR requires NAME element which"
+             (XML_ERROR_SYNTAX ("create_alert",
+                                "CREATE_ALERT requires NAME element which"
                                 " is at least one character long"));
-          else if (strlen (create_escalator_data->condition) == 0)
+          else if (strlen (create_alert_data->condition) == 0)
             SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_escalator",
-                                "CREATE_ESCALATOR requires a value in a"
+             (XML_ERROR_SYNTAX ("create_alert",
+                                "CREATE_ALERT requires a value in a"
                                 " CONDITION element"));
-          else if (strlen (create_escalator_data->event) == 0)
+          else if (strlen (create_alert_data->event) == 0)
             SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_escalator",
-                                "CREATE_ESCALATOR requires a value in an"
+             (XML_ERROR_SYNTAX ("create_alert",
+                                "CREATE_ALERT requires a value in an"
                                 " EVENT element"));
-          else if (strlen (create_escalator_data->method) == 0)
+          else if (strlen (create_alert_data->method) == 0)
             SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_escalator",
-                                "CREATE_ESCALATOR requires a value in a"
+             (XML_ERROR_SYNTAX ("create_alert",
+                                "CREATE_ALERT requires a value in a"
                                 " METHOD element"));
-          else if ((condition = escalator_condition_from_name
-                                 (create_escalator_data->condition))
+          else if ((condition = alert_condition_from_name
+                                 (create_alert_data->condition))
                    == 0)
             SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_escalator",
+             (XML_ERROR_SYNTAX ("create_alert",
                                 "Failed to recognise condition name"));
-          else if ((event = event_from_name (create_escalator_data->event))
+          else if ((event = event_from_name (create_alert_data->event))
                    == 0)
             SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_escalator",
+             (XML_ERROR_SYNTAX ("create_alert",
                                 "Failed to recognise event name"));
-          else if ((method = escalator_method_from_name
-                              (create_escalator_data->method))
+          else if ((method = alert_method_from_name
+                              (create_alert_data->method))
                    == 0)
             SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_escalator",
+             (XML_ERROR_SYNTAX ("create_alert",
                                 "Failed to recognise method name"));
           else
             {
-              switch (create_escalator (create_escalator_data->name,
-                                        create_escalator_data->comment,
+              switch (create_alert (create_alert_data->name,
+                                        create_alert_data->comment,
                                         event,
-                                        create_escalator_data->event_data,
+                                        create_alert_data->event_data,
                                         condition,
-                                        create_escalator_data->condition_data,
+                                        create_alert_data->condition_data,
                                         method,
-                                        create_escalator_data->method_data,
-                                        &new_escalator))
+                                        create_alert_data->method_data,
+                                        &new_alert))
                 {
                   case 0:
                     {
                       char *uuid;
-                      escalator_uuid (new_escalator, &uuid);
+                      alert_uuid (new_alert, &uuid);
                       SENDF_TO_CLIENT_OR_FAIL
-                       (XML_OK_CREATED_ID ("create_escalator"), uuid);
-                      g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
-                             "Escalator %s has been created", uuid);
+                       (XML_OK_CREATED_ID ("create_alert"), uuid);
+                      g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                             "Alert %s has been created", uuid);
                       free (uuid);
                       break;
                     }
                   case 1:
                     SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_escalator",
-                                        "Escalator exists already"));
-                    g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
-                           "Escalator could not be created");
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Alert exists already"));
+                    g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                           "Alert could not be created");
                     break;
                   case 2:
                     SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_escalator",
+                     (XML_ERROR_SYNTAX ("create_alert",
                                         "Validation of email address failed"));
-                    g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
-                           "Escalator could not be created");
+                    g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                           "Alert could not be created");
                     break;
                   default:
                     assert (0);
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("create_escalator"));
-                    g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
-                           "Escalator could not be created");
+                     (XML_INTERNAL_ERROR ("create_alert"));
+                    g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                           "Alert could not be created");
                     break;
                 }
             }
-          create_escalator_data_reset (create_escalator_data);
+          create_alert_data_reset (create_alert_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      CLOSE (CLIENT_CREATE_ESCALATOR, COMMENT);
-      CLOSE (CLIENT_CREATE_ESCALATOR, CONDITION);
-      CLOSE (CLIENT_CREATE_ESCALATOR, EVENT);
-      CLOSE (CLIENT_CREATE_ESCALATOR, METHOD);
-      CLOSE (CLIENT_CREATE_ESCALATOR, NAME);
+      CLOSE (CLIENT_CREATE_ALERT, COMMENT);
+      CLOSE (CLIENT_CREATE_ALERT, CONDITION);
+      CLOSE (CLIENT_CREATE_ALERT, EVENT);
+      CLOSE (CLIENT_CREATE_ALERT, METHOD);
+      CLOSE (CLIENT_CREATE_ALERT, NAME);
 
-      case CLIENT_CREATE_ESCALATOR_CONDITION_DATA:
+      case CLIENT_CREATE_ALERT_CONDITION_DATA:
         {
           gchar *string;
 
           assert (strcasecmp ("DATA", element_name) == 0);
-          assert (create_escalator_data->condition_data);
-          assert (create_escalator_data->part_data);
-          assert (create_escalator_data->part_name);
+          assert (create_alert_data->condition_data);
+          assert (create_alert_data->part_data);
+          assert (create_alert_data->part_name);
 
-          string = g_strconcat (create_escalator_data->part_name,
+          string = g_strconcat (create_alert_data->part_name,
                                 "0",
-                                create_escalator_data->part_data,
+                                create_alert_data->part_data,
                                 NULL);
-          string[strlen (create_escalator_data->part_name)] = '\0';
-          array_add (create_escalator_data->condition_data, string);
+          string[strlen (create_alert_data->part_name)] = '\0';
+          array_add (create_alert_data->condition_data, string);
 
-          openvas_free_string_var (&create_escalator_data->part_data);
-          openvas_free_string_var (&create_escalator_data->part_name);
-          openvas_append_string (&create_escalator_data->part_data, "");
-          openvas_append_string (&create_escalator_data->part_name, "");
-          set_client_state (CLIENT_CREATE_ESCALATOR_CONDITION);
+          openvas_free_string_var (&create_alert_data->part_data);
+          openvas_free_string_var (&create_alert_data->part_name);
+          openvas_append_string (&create_alert_data->part_data, "");
+          openvas_append_string (&create_alert_data->part_name, "");
+          set_client_state (CLIENT_CREATE_ALERT_CONDITION);
           break;
         }
-      case CLIENT_CREATE_ESCALATOR_CONDITION_DATA_NAME:
+      case CLIENT_CREATE_ALERT_CONDITION_DATA_NAME:
         assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_ESCALATOR_CONDITION_DATA);
+        set_client_state (CLIENT_CREATE_ALERT_CONDITION_DATA);
         break;
 
-      case CLIENT_CREATE_ESCALATOR_EVENT_DATA:
+      case CLIENT_CREATE_ALERT_EVENT_DATA:
         {
           gchar *string;
 
           assert (strcasecmp ("DATA", element_name) == 0);
-          assert (create_escalator_data->event_data);
-          assert (create_escalator_data->part_data);
-          assert (create_escalator_data->part_name);
+          assert (create_alert_data->event_data);
+          assert (create_alert_data->part_data);
+          assert (create_alert_data->part_name);
 
-          string = g_strconcat (create_escalator_data->part_name,
+          string = g_strconcat (create_alert_data->part_name,
                                 "0",
-                                create_escalator_data->part_data,
+                                create_alert_data->part_data,
                                 NULL);
-          string[strlen (create_escalator_data->part_name)] = '\0';
-          array_add (create_escalator_data->event_data, string);
+          string[strlen (create_alert_data->part_name)] = '\0';
+          array_add (create_alert_data->event_data, string);
 
-          openvas_free_string_var (&create_escalator_data->part_data);
-          openvas_free_string_var (&create_escalator_data->part_name);
-          openvas_append_string (&create_escalator_data->part_data, "");
-          openvas_append_string (&create_escalator_data->part_name, "");
-          set_client_state (CLIENT_CREATE_ESCALATOR_EVENT);
+          openvas_free_string_var (&create_alert_data->part_data);
+          openvas_free_string_var (&create_alert_data->part_name);
+          openvas_append_string (&create_alert_data->part_data, "");
+          openvas_append_string (&create_alert_data->part_name, "");
+          set_client_state (CLIENT_CREATE_ALERT_EVENT);
           break;
         }
-      CLOSE (CLIENT_CREATE_ESCALATOR_EVENT_DATA, NAME);
+      CLOSE (CLIENT_CREATE_ALERT_EVENT_DATA, NAME);
 
-      case CLIENT_CREATE_ESCALATOR_METHOD_DATA:
+      case CLIENT_CREATE_ALERT_METHOD_DATA:
         {
           gchar *string;
 
           assert (strcasecmp ("DATA", element_name) == 0);
-          assert (create_escalator_data->method_data);
-          assert (create_escalator_data->part_data);
-          assert (create_escalator_data->part_name);
+          assert (create_alert_data->method_data);
+          assert (create_alert_data->part_data);
+          assert (create_alert_data->part_name);
 
-          string = g_strconcat (create_escalator_data->part_name,
+          string = g_strconcat (create_alert_data->part_name,
                                 "0",
-                                create_escalator_data->part_data,
+                                create_alert_data->part_data,
                                 NULL);
-          string[strlen (create_escalator_data->part_name)] = '\0';
-          array_add (create_escalator_data->method_data, string);
+          string[strlen (create_alert_data->part_name)] = '\0';
+          array_add (create_alert_data->method_data, string);
 
-          openvas_free_string_var (&create_escalator_data->part_data);
-          openvas_free_string_var (&create_escalator_data->part_name);
-          openvas_append_string (&create_escalator_data->part_data, "");
-          openvas_append_string (&create_escalator_data->part_name, "");
-          set_client_state (CLIENT_CREATE_ESCALATOR_METHOD);
+          openvas_free_string_var (&create_alert_data->part_data);
+          openvas_free_string_var (&create_alert_data->part_name);
+          openvas_append_string (&create_alert_data->part_data, "");
+          openvas_append_string (&create_alert_data->part_name, "");
+          set_client_state (CLIENT_CREATE_ALERT_METHOD);
           break;
         }
-      CLOSE (CLIENT_CREATE_ESCALATOR_METHOD_DATA, NAME);
+      CLOSE (CLIENT_CREATE_ALERT_METHOD_DATA, NAME);
 
       case CLIENT_CREATE_LSC_CREDENTIAL:
         {
@@ -12693,12 +12693,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   || (create_task_data->config_id
                       && create_task_data->target_id));
 
-          /* Set any escalator. */
+          /* Set any alert. */
 
-          if (create_task_data->escalator_id)
+          if (create_task_data->alert_id)
             {
-              escalator_t escalator;
-              if (find_escalator (create_task_data->escalator_id, &escalator))
+              alert_t alert;
+              if (find_alert (create_task_data->alert_id, &alert))
                 {
                   request_delete_task (&create_task_data->task);
                   free (tsk_uuid);
@@ -12708,19 +12708,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
-              if (escalator == 0)
+              if (alert == 0)
                 {
                   request_delete_task (&create_task_data->task);
                   free (tsk_uuid);
                   free (description);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
-                                      "CREATE_TASK escalator must exist"));
+                                      "CREATE_TASK alert must exist"));
                   create_task_data_reset (create_task_data);
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
-              add_task_escalator (create_task_data->task, escalator);
+              add_task_alert (create_task_data->task, alert);
             }
 
           /* Set any schedule. */
@@ -13000,7 +13000,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_CREATE_TASK, COMMENT);
       CLOSE (CLIENT_CREATE_TASK, CONFIG);
-      CLOSE (CLIENT_CREATE_TASK, ESCALATOR);
+      CLOSE (CLIENT_CREATE_TASK, ALERT);
       CLOSE (CLIENT_CREATE_TASK, NAME);
       CLOSE (CLIENT_CREATE_TASK, OBSERVERS);
       CLOSE (CLIENT_CREATE_TASK, PREFERENCES);
@@ -13269,20 +13269,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_OVERRIDE, TEXT);
       CLOSE (CLIENT_MODIFY_OVERRIDE, THREAT);
 
-      case CLIENT_TEST_ESCALATOR:
-        if (test_escalator_data->escalator_id)
+      case CLIENT_TEST_ALERT:
+        if (test_alert_data->alert_id)
           {
-            escalator_t escalator;
+            alert_t alert;
             task_t task;
 
-            if (find_escalator (test_escalator_data->escalator_id, &escalator))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_escalator"));
-            else if (escalator == 0)
+            if (find_alert (test_alert_data->alert_id, &alert))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_alert"));
+            else if (alert == 0)
               {
                 if (send_find_error_to_client
-                     ("test_escalator",
-                      "escalator",
-                      test_escalator_data->escalator_id,
+                     ("test_alert",
+                      "alert",
+                      test_alert_data->alert_id,
                       write_to_client,
                       write_to_client_data))
                   {
@@ -13291,34 +13291,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
               }
             else if (find_task (MANAGE_EXAMPLE_TASK_UUID, &task))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_escalator"));
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_alert"));
             else if (task == 0)
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_escalator"));
-            else switch (escalate (escalator,
-                                   task,
-                                   EVENT_TASK_RUN_STATUS_CHANGED,
-                                   (void*) TASK_STATUS_DONE))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_alert"));
+            else switch (manage_alert (alert,
+                                       task,
+                                       EVENT_TASK_RUN_STATUS_CHANGED,
+                                       (void*) TASK_STATUS_DONE))
               {
                 case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("test_escalator"));
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("test_alert"));
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("test_escalator"));
+                   (XML_INTERNAL_ERROR ("test_alert"));
                   break;
                 default: /* Programming error. */
                   assert (0);
                   SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("test_escalator"));
+                   (XML_INTERNAL_ERROR ("test_alert"));
                   break;
               }
           }
         else
           SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("test_escalator",
-                              "TEST_ESCALATOR requires an escalator_id"
+           (XML_ERROR_SYNTAX ("test_alert",
+                              "TEST_ALERT requires an alert_id"
                               " attribute"));
-        test_escalator_data_reset (test_escalator_data);
+        test_alert_data_reset (test_alert_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -14295,25 +14295,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
-      case CLIENT_GET_ESCALATORS:
+      case CLIENT_GET_ALERTS:
         {
-          escalator_t escalator = 0;
+          alert_t alert = 0;
 
-          assert (strcasecmp ("GET_ESCALATORS", element_name) == 0);
+          assert (strcasecmp ("GET_ALERTS", element_name) == 0);
 
-          if (get_escalators_data->escalator_id && get_escalators_data->trash)
+          if (get_alerts_data->alert_id && get_alerts_data->trash)
             SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_escalators",
-                                "GET_ESCALATORS trash given with"
-                                " escalator_id"));
-          else if (get_escalators_data->escalator_id
-              && find_escalator (get_escalators_data->escalator_id, &escalator))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_escalators"));
-          else if (get_escalators_data->escalator_id && escalator == 0)
+             (XML_ERROR_SYNTAX ("get_alerts",
+                                "GET_ALERTS trash given with"
+                                " alert_id"));
+          else if (get_alerts_data->alert_id
+              && find_alert (get_alerts_data->alert_id, &alert))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_alerts"));
+          else if (get_alerts_data->alert_id && alert == 0)
             {
-              if (send_find_error_to_client ("get_escalators",
-                                             "escalator",
-                                             get_escalators_data->escalator_id,
+              if (send_find_error_to_client ("get_alerts",
+                                             "alert",
+                                             get_alerts_data->alert_id,
                                              write_to_client,
                                              write_to_client_data))
                 {
@@ -14323,90 +14323,90 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else
             {
-              iterator_t escalators;
+              iterator_t alerts;
 
-              SEND_TO_CLIENT_OR_FAIL ("<get_escalators_response"
+              SEND_TO_CLIENT_OR_FAIL ("<get_alerts_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
-              init_escalator_iterator (&escalators,
-                                       escalator,
+              init_alert_iterator (&alerts,
+                                       alert,
                                        (task_t) 0,
                                        (event_t) 0,
-                                       get_escalators_data->trash,
-                                       get_escalators_data->sort_order,
-                                       get_escalators_data->sort_field);
-              while (next (&escalators))
+                                       get_alerts_data->trash,
+                                       get_alerts_data->sort_order,
+                                       get_alerts_data->sort_field);
+              while (next (&alerts))
                 {
                   iterator_t data;
 
-                  SENDF_TO_CLIENT_OR_FAIL ("<escalator id=\"%s\">"
+                  SENDF_TO_CLIENT_OR_FAIL ("<alert id=\"%s\">"
                                            "<name>%s</name>"
                                            "<comment>%s</comment>"
                                            "<in_use>%i</in_use>",
-                                           escalator_iterator_uuid (&escalators),
-                                           escalator_iterator_name (&escalators),
-                                           escalator_iterator_comment (&escalators),
-                                           escalator_iterator_in_use (&escalators));
+                                           alert_iterator_uuid (&alerts),
+                                           alert_iterator_name (&alerts),
+                                           alert_iterator_comment (&alerts),
+                                           alert_iterator_in_use (&alerts));
 
                   /* Condition. */
 
                   SENDF_TO_CLIENT_OR_FAIL ("<condition>%s",
-                                           escalator_condition_name
-                                            (escalator_iterator_condition
-                                              (&escalators)));
-                  init_escalator_data_iterator (&data,
-                                                escalator_iterator_escalator
-                                                 (&escalators),
-                                                get_escalators_data->trash,
+                                           alert_condition_name
+                                            (alert_iterator_condition
+                                              (&alerts)));
+                  init_alert_data_iterator (&data,
+                                                alert_iterator_alert
+                                                 (&alerts),
+                                                get_alerts_data->trash,
                                                 "condition");
                   while (next (&data))
                     SENDF_TO_CLIENT_OR_FAIL ("<data>"
                                              "<name>%s</name>"
                                              "%s"
                                              "</data>",
-                                             escalator_data_iterator_name (&data),
-                                             escalator_data_iterator_data (&data));
+                                             alert_data_iterator_name (&data),
+                                             alert_data_iterator_data (&data));
                   cleanup_iterator (&data);
                   SEND_TO_CLIENT_OR_FAIL ("</condition>");
 
                   /* Event. */
 
                   SENDF_TO_CLIENT_OR_FAIL ("<event>%s",
-                                           event_name (escalator_iterator_event
-                                            (&escalators)));
-                  init_escalator_data_iterator (&data,
-                                                escalator_iterator_escalator
-                                                 (&escalators),
-                                                get_escalators_data->trash,
+                                           event_name (alert_iterator_event
+                                            (&alerts)));
+                  init_alert_data_iterator (&data,
+                                                alert_iterator_alert
+                                                 (&alerts),
+                                                get_alerts_data->trash,
                                                 "event");
                   while (next (&data))
                     SENDF_TO_CLIENT_OR_FAIL ("<data>"
                                              "<name>%s</name>"
                                              "%s"
                                              "</data>",
-                                             escalator_data_iterator_name (&data),
-                                             escalator_data_iterator_data (&data));
+                                             alert_data_iterator_name (&data),
+                                             alert_data_iterator_data (&data));
                   cleanup_iterator (&data);
                   SEND_TO_CLIENT_OR_FAIL ("</event>");
 
                   /* Method. */
 
                   SENDF_TO_CLIENT_OR_FAIL ("<method>%s",
-                                           escalator_method_name
-                                            (escalator_iterator_method
-                                              (&escalators)));
-                  init_escalator_data_iterator (&data,
-                                                escalator_iterator_escalator
-                                                 (&escalators),
-                                                get_escalators_data->trash,
+                                           alert_method_name
+                                            (alert_iterator_method
+                                              (&alerts)));
+                  init_alert_data_iterator (&data,
+                                                alert_iterator_alert
+                                                 (&alerts),
+                                                get_alerts_data->trash,
                                                 "method");
                   while (next (&data))
                     SENDF_TO_CLIENT_OR_FAIL ("<data>"
                                              "<name>%s</name>"
                                              "%s"
                                              "</data>",
-                                             escalator_data_iterator_name (&data),
-                                             escalator_data_iterator_data (&data));
+                                             alert_data_iterator_name (&data),
+                                             alert_data_iterator_data (&data));
                   cleanup_iterator (&data);
                   SEND_TO_CLIENT_OR_FAIL ("</method>");
 
@@ -14418,32 +14418,32 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    * by some other mechanism, like a details flag.
                    */
 
-                  if (escalator)
+                  if (alert)
                     {
                       iterator_t tasks;
 
                       SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-                      init_escalator_task_iterator
+                      init_alert_task_iterator
                        (&tasks,
-                        escalator,
-                        get_escalators_data->sort_order);
+                        alert,
+                        get_alerts_data->sort_order);
                       while (next (&tasks))
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<task id=\"%s\">"
                           "<name>%s</name>"
                           "</task>",
-                          escalator_task_iterator_uuid (&tasks),
-                          escalator_task_iterator_name (&tasks));
+                          alert_task_iterator_uuid (&tasks),
+                          alert_task_iterator_name (&tasks));
                       cleanup_iterator (&tasks);
                       SEND_TO_CLIENT_OR_FAIL ("</tasks>");
                     }
 
-                  SEND_TO_CLIENT_OR_FAIL ("</escalator>");
+                  SEND_TO_CLIENT_OR_FAIL ("</alert>");
                 }
-              cleanup_iterator (&escalators);
-              SEND_TO_CLIENT_OR_FAIL ("</get_escalators_response>");
+              cleanup_iterator (&alerts);
+              SEND_TO_CLIENT_OR_FAIL ("</get_alerts_response>");
             }
-          get_escalators_data_reset (get_escalators_data);
+          get_alerts_data_reset (get_alerts_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -15116,7 +15116,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     target_t target;
                     slave_t slave;
                     char *name, *config, *config_uuid;
-                    char *escalator, *escalator_uuid;
+                    char *alert, *alert_uuid;
                     char *task_target_uuid, *task_target_name, *hosts;
                     char *task_slave_uuid, *task_slave_name;
                     char *task_schedule_uuid, *task_schedule_name, *comment;
@@ -15384,8 +15384,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     comment = task_comment (task);
                     owner = task_owner_name (task);
                     observers = task_observers (task);
-                    escalator = task_escalator_name (task);
-                    escalator_uuid = task_escalator_uuid (task);
+                    alert = task_alert_name (task);
+                    alert_uuid = task_alert_uuid (task);
                     config = task_config_name (task);
                     config_uuid = task_config_uuid (task);
                     task_target_uuid = target_uuid (target);
@@ -15413,9 +15413,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<config id=\"%s\">"
                                  "<name>%s</name>"
                                  "</config>"
-                                 "<escalator id=\"%s\">"
+                                 "<alert id=\"%s\">"
                                  "<name>%s</name>"
-                                 "</escalator>"
+                                 "</alert>"
                                  "<target id=\"%s\">"
                                  "<name>%s</name>"
                                  "</target>"
@@ -15444,8 +15444,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    : observers,
                                  config_uuid ? config_uuid : "",
                                  config ? config : "",
-                                 escalator_uuid ? escalator_uuid : "",
-                                 escalator ? escalator : "",
+                                 alert_uuid ? alert_uuid : "",
+                                 alert ? alert : "",
                                  task_target_uuid ? task_target_uuid : "",
                                  task_target_name ? task_target_name : "",
                                  task_slave_uuid ? task_slave_uuid : "",
@@ -15466,7 +15466,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  last_report,
                                  second_last_report);
                     free (config);
-                    free (escalator);
+                    free (alert);
                     free (task_target_name);
                     free (task_target_uuid);
                     g_free (progress_xml);
@@ -15549,7 +15549,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     target_t target;
                     slave_t slave;
                     char *tsk_uuid, *config, *config_uuid;
-                    char *escalator, *escalator_uuid;
+                    char *alert, *alert_uuid;
                     char *task_target_uuid, *task_target_name, *hosts;
                     char *task_slave_uuid, *task_slave_name;
                     char *task_schedule_uuid, *task_schedule_name;
@@ -15824,8 +15824,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     config = task_config_name (index);
                     config_uuid = task_config_uuid (index);
-                    escalator = task_escalator_name (index);
-                    escalator_uuid = task_escalator_uuid (index);
+                    alert = task_alert_name (index);
+                    alert_uuid = task_alert_uuid (index);
                     if (target_in_trash)
                       {
                         task_target_uuid = trash_target_uuid (target);
@@ -15871,10 +15871,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               "<name>%s</name>"
                               "<trash>%i</trash>"
                               "</config>"
-                              "<escalator id=\"%s\">"
+                              "<alert id=\"%s\">"
                               "<name>%s</name>"
                               "<trash>%i</trash>"
-                              "</escalator>"
+                              "</alert>"
                               "<target id=\"%s\">"
                               "<name>%s</name>"
                               "<trash>%i</trash>"
@@ -15908,10 +15908,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               config_uuid ? config_uuid : "",
                               config ? config : "",
                               task_config_in_trash (index),
-                              escalator_uuid ? escalator_uuid : "",
-                              escalator ? escalator : "",
-                              escalator
-                               ? task_escalator_in_trash (index)
+                              alert_uuid ? alert_uuid : "",
+                              alert ? alert : "",
+                              alert
+                               ? task_alert_in_trash (index)
                                : 0,
                               task_target_uuid ? task_target_uuid : "",
                               task_target_name ? task_target_name : "",
@@ -15937,8 +15937,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               last_report,
                               second_last_report);
                     free (config);
-                    free (escalator);
-                    free (escalator_uuid);
+                    free (alert);
+                    free (alert_uuid);
                     free (task_target_name);
                     free (task_target_uuid);
                     g_free (progress_xml);
@@ -16336,40 +16336,40 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
               &create_lsc_credential_data->password);
 
 
-      APPEND (CLIENT_CREATE_ESCALATOR_COMMENT,
-              &create_escalator_data->comment);
+      APPEND (CLIENT_CREATE_ALERT_COMMENT,
+              &create_alert_data->comment);
 
-      APPEND (CLIENT_CREATE_ESCALATOR_CONDITION,
-              &create_escalator_data->condition);
+      APPEND (CLIENT_CREATE_ALERT_CONDITION,
+              &create_alert_data->condition);
 
-      APPEND (CLIENT_CREATE_ESCALATOR_EVENT,
-              &create_escalator_data->event);
+      APPEND (CLIENT_CREATE_ALERT_EVENT,
+              &create_alert_data->event);
 
-      APPEND (CLIENT_CREATE_ESCALATOR_METHOD,
-              &create_escalator_data->method);
+      APPEND (CLIENT_CREATE_ALERT_METHOD,
+              &create_alert_data->method);
 
-      APPEND (CLIENT_CREATE_ESCALATOR_NAME,
-              &create_escalator_data->name);
-
-
-      APPEND (CLIENT_CREATE_ESCALATOR_CONDITION_DATA,
-              &create_escalator_data->part_data);
-
-      APPEND (CLIENT_CREATE_ESCALATOR_EVENT_DATA,
-              &create_escalator_data->part_data);
-
-      APPEND (CLIENT_CREATE_ESCALATOR_METHOD_DATA,
-              &create_escalator_data->part_data);
+      APPEND (CLIENT_CREATE_ALERT_NAME,
+              &create_alert_data->name);
 
 
-      APPEND (CLIENT_CREATE_ESCALATOR_CONDITION_DATA_NAME,
-              &create_escalator_data->part_name);
+      APPEND (CLIENT_CREATE_ALERT_CONDITION_DATA,
+              &create_alert_data->part_data);
 
-      APPEND (CLIENT_CREATE_ESCALATOR_EVENT_DATA_NAME,
-              &create_escalator_data->part_name);
+      APPEND (CLIENT_CREATE_ALERT_EVENT_DATA,
+              &create_alert_data->part_data);
 
-      APPEND (CLIENT_CREATE_ESCALATOR_METHOD_DATA_NAME,
-              &create_escalator_data->part_name);
+      APPEND (CLIENT_CREATE_ALERT_METHOD_DATA,
+              &create_alert_data->part_data);
+
+
+      APPEND (CLIENT_CREATE_ALERT_CONDITION_DATA_NAME,
+              &create_alert_data->part_name);
+
+      APPEND (CLIENT_CREATE_ALERT_EVENT_DATA_NAME,
+              &create_alert_data->part_name);
+
+      APPEND (CLIENT_CREATE_ALERT_METHOD_DATA_NAME,
+              &create_alert_data->part_name);
 
 
       APPEND (CLIENT_CREATE_NOTE_ACTIVE,

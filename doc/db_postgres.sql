@@ -33,43 +33,43 @@ CREATE TABLE agents_trash (
 	howto_install text,
 	howto_use text);
 
-CREATE TABLE escalator_condition_data (
+CREATE TABLE alert_condition_data (
 	id integer PRIMARY KEY,
-	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
+	alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
 	name text,
 	data text);
 
-CREATE TABLE escalator_condition_data_trash (
+CREATE TABLE alert_condition_data_trash (
 	id integer PRIMARY KEY,
-	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
+	alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
 	name text,
 	data text);
 
-CREATE TABLE escalator_event_data (
+CREATE TABLE alert_event_data (
 	id integer PRIMARY KEY,
-	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
+	alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
 	name text,
 	data text);
 
-CREATE TABLE escalator_event_data_trash (
+CREATE TABLE alert_event_data_trash (
 	id integer PRIMARY KEY,
-	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
+	alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
 	name text,
 	data text);
 
-CREATE TABLE escalator_method_data (
+CREATE TABLE alert_method_data (
 	id integer PRIMARY KEY,
-	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
+	alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
 	name text,
 	data text);
 
-CREATE TABLE escalator_method_data_trash (
+CREATE TABLE alert_method_data_trash (
 	id integer PRIMARY KEY,
-	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
+	alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
 	name text,
 	data text);
 
-CREATE TABLE escalators (
+CREATE TABLE alerts (
 	id integer PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
@@ -79,7 +79,7 @@ CREATE TABLE escalators (
 	condition integer,
 	method integer);
 
-CREATE TABLE escalators_trash (
+CREATE TABLE alerts_trash (
 	id integer PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
@@ -228,11 +228,11 @@ CREATE TABLE task_files (
 	name text,
 	content text);
 
-CREATE TABLE task_escalators (
+CREATE TABLE task_alerts (
 	id integer PRIMARY KEY,
 	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
-	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
-	escalator_location integer);
+	alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
+	alert_location integer);
 
 CREATE TABLE task_preferences (
 	task integer PRIMARY KEY REFERENCES tasks (id) ON DELETE RESTRICT,
