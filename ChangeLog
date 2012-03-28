@@ -1,3 +1,10 @@
+2012-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (validate_host): Check whether the octets are empty.
+	Jump instead of leaking.
+	(manage_max_hosts): Check whether the octets are empty.  Return with error
+	if there is a trailing -.
+
 2012-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_max_hosts): Ensure the octets are within

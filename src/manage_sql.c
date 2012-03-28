@@ -21457,13 +21457,15 @@ validate_host (const char *string)
       /* Check an octet. */
 
       octet = *point;
+      if (strlen (octet) == 0)
+        goto free_fail;
       while (*octet && isdigit (*octet)) octet++;
       if (*octet)
         {
           /* Name octet. */
 
           if (numeric == 1)
-            return 1;
+            goto free_fail;
           numeric = 0;
 
           /** @todo More checks?  leading -_? */
@@ -21475,7 +21477,7 @@ validate_host (const char *string)
           /* Numeric octet. */
 
           if (numeric == 0)
-            return 1;
+            goto free_fail;
           numeric = 1;
 
           number = atoi (*point);
@@ -21484,6 +21486,8 @@ validate_host (const char *string)
         }
       point++;
     }
+
+  g_strfreev (split);
 
   /* Check if it's an IPv6 host. */
 
@@ -21501,7 +21505,6 @@ validate_host (const char *string)
       /** @todo Count and check parts. */
     }
 
-  g_strfreev (split);
   return 0;
 
  free_fail:
@@ -21575,6 +21578,12 @@ manage_max_hosts (const char *given_hosts)
                   host_point = host_split;
                   while (*host_point)
                     {
+                      if ((strlen (*host_point) == 0)
+                          || (**host_point == '/'))
+                        {
+                          g_strfreev (host_split);
+                          return -1;
+                        }
                       if ((atoi (*host_point) < 0)
                           || (atoi (*host_point) > 255))
                         {
@@ -21678,8 +21687,12 @@ manage_max_hosts (const char *given_hosts)
 
                   /* First. */
 
+                  if (*pos_one == '.')
+                    return -1;
                   one = atoi (pos_one);
                   if ((one < 0) || (one > 255))
+                    return -1;
+                  if (*pos_two == '.')
                     return -1;
                   two = atoi (pos_two);
                   if ((two < 0) || (two > 255))
@@ -21698,8 +21711,12 @@ manage_max_hosts (const char *given_hosts)
                   pos_two = strchr (pos_two, '.');
                   pos_two++;
 
+                  if (*pos_one == '.')
+                    return -1;
                   one = atoi (pos_one);
                   if ((one < 0) || (one > 255))
+                    return -1;
+                  if (*pos_two == '.')
                     return -1;
                   two = atoi (pos_two);
                   if ((two < 0) || (two > 255))
@@ -21718,8 +21735,12 @@ manage_max_hosts (const char *given_hosts)
                   pos_two = strchr (pos_two, '.');
                   pos_two++;
 
+                  if (*pos_one == '.')
+                    return -1;
                   one = atoi (pos_one);
                   if ((one < 0) || (one > 255))
+                    return -1;
+                  if (*pos_two == '.')
                     return -1;
                   two = atoi (pos_two);
                   if ((two < 0) || (two > 255))
@@ -21765,15 +21786,21 @@ manage_max_hosts (const char *given_hosts)
 
                   /* 192.168.1.102-104 */
 
+                  if (**point == '.')
+                    return -1;
                   number = atoi (*point);
                   if ((number < 0) || (number > 255))
                     return -1;
 
                   two = strchr (*point, '.') + 1;
+                  if (*two == '.')
+                    return -1;
                   number = atoi (two);
                   if ((number < 0) || (number > 255))
                     return -1;
 
+                  if (*(strchr (two, '.') + 1) == '.')
+                    return -1;
                   number = atoi (strchr (two, '.') + 1);
                   if ((number < 0) || (number > 255))
                     return -1;
@@ -21812,8 +21839,8 @@ manage_max_hosts (const char *given_hosts)
                 }
             }
           else
-            /* Just a trailing -. */
-            count++;
+            /* A trailing -. */
+            return -1;
         }
       else
         {
