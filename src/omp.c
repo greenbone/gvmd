@@ -14918,7 +14918,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SENDF_TO_CLIENT_OR_FAIL ("<filters>"
                                        "<term>%s</term>"
                                        "</filters>",
-                                       get_targets_data->filter);
+                                       get_targets_data->filter
+                                        ? get_targets_data->filter
+                                        : "");
               init_target_iterator (&targets,
                                     target,
                                     get_targets_data->trash,
