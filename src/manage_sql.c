@@ -22677,19 +22677,81 @@ filter_clause (const char* type, const char* filter)
 }
 
 /**
+ * @brief Count number of targets.
+ *
+ * @param[in]  filter           Filter term.
+ * @param[in]  actions_string   Actions.
+ *
+ * @return Total number of targets in filtered set.
+ */
+int
+target_count (const char *filter, const char *actions_string)
+{
+  int actions, ret;
+  gchar *clause;
+
+  assert (current_credentials.uuid);
+
+  clause = filter_clause ("target", filter);
+
+  if (actions_string == NULL
+      || strlen (actions_string) == 0
+      || (actions = parse_actions (actions_string)) == 0)
+    {
+      ret = sql_int (0, 0,
+                     "SELECT count (*) FROM targets"
+                     " WHERE ((owner IS NULL) OR (owner ="
+                     " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                     "%s%s;",
+                     current_credentials.uuid,
+                     clause ? " AND " : "",
+                     clause ? clause : "");
+      g_free (clause);
+      return ret;
+    }
+
+  ret = sql_int (0, 0,
+                 "SELECT count (*) FROM targets"
+                 " WHERE"
+                 " ((owner IS NULL) OR (owner ="
+                 "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                 "  OR"
+                 "  (SELECT tasks.ROWID FROM tasks"
+                 "   WHERE target = targets.ROWID)"
+                 "  IN"
+                 "  (SELECT task FROM task_users WHERE user ="
+                 "   (SELECT ROWID FROM users"
+                 "    WHERE users.uuid = '%s')"
+                 "   AND actions & %u = %u))"
+                 "%s%s"
+                 " ORDER BY %s %s;",
+                 current_credentials.uuid,
+                 current_credentials.uuid,
+                 actions,
+                 actions,
+                 clause ? " AND " : "",
+                 clause ? clause : "");
+
+  g_free (clause);
+  return ret;
+}
+
+/**
  * @brief Initialise a target iterator, limited to the current user's targets.
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  target      Target to limit iteration to.  0 for all.
  * @param[in]  trash       Whether to iterate over trashcan targets.
  * @param[in]  filter      Filter term.
+ * @param[in]  first       First target.
+ * @param[in]  max         Maximum number of targets returned.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
 init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
-                           const char *filter, int ascending,
-                           const char* sort_field)
+                           const char *filter, int first, int max,
+                           int ascending, const char* sort_field)
 {
   gchar *clause;
 
@@ -22791,7 +22853,8 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    "%s%s"
-                   " ORDER BY %s %s;",
+                   " ORDER BY %s %s"
+                   " LIMIT %i OFFSET %i;",
                    trash ? "ssh_location" : "0",
                    trash ? "smb_location" : "0",
                    trash ? "_trash" : "",
@@ -22799,7 +22862,9 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
                    clause ? " AND " : "",
                    clause ? clause : "",
                    sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
+                   ascending ? "ASC" : "DESC",
+                   max,
+                   first);
 
   g_free (clause);
 }
@@ -22811,14 +22876,16 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
  * @param[in]  target      Target to limit iteration to.  0 for all.
  * @param[in]  trash       Whether to iterate over trashcan targets.
  * @param[in]  filter      Filter term.
+ * @param[in]  first       First target.
+ * @param[in]  max         Maximum number of targets returned.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  * @param[in]  actions_string   Actions.
  */
 void
 init_target_iterator (iterator_t* iterator, target_t target, int trash,
-                      const char *filter, int ascending, const char* sort_field,
-                      const char *actions_string)
+                      const char *filter, int first, int max, int ascending,
+                      const char* sort_field, const char *actions_string)
 {
   int actions;
   gchar *clause;
@@ -22827,8 +22894,8 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
 
   if (actions_string == NULL || strlen (actions_string) == 0)
     {
-      init_user_target_iterator (iterator, target, trash, filter, ascending,
-                                 sort_field);
+      init_user_target_iterator (iterator, target, trash, filter, first, max,
+                                 ascending, sort_field);
       return;
     }
 
@@ -22836,8 +22903,8 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
 
   if (actions == 0)
     {
-      init_user_target_iterator (iterator, target, trash, filter, ascending,
-                                 sort_field);
+      init_user_target_iterator (iterator, target, trash, filter, first, max,
+                                 ascending, sort_field);
       return;
     }
 
@@ -22982,7 +23049,8 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
                    "    WHERE users.uuid = '%s')"
                    "   AND actions & %u = %u))"
                    "%s%s"
-                   " ORDER BY %s %s;",
+                   " ORDER BY %s %s"
+                   " LIMIT %i OFFSET %i;",
                    trash ? "ssh_location" : "0",
                    trash ? "smb_location" : "0",
                    trash ? "_trash" : "",
@@ -22993,7 +23061,9 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
                    clause ? " AND " : "",
                    clause ? clause : "",
                    sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
+                   ascending ? "ASC" : "DESC",
+                   max,
+                   first);
 
   g_free (clause);
 }

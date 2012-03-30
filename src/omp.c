@@ -2142,6 +2142,8 @@ typedef struct
 {
   char *actions;       ///< Actions.
   char *filter;        ///< Filter term.
+  int first;           ///< Skip over targets before this number.
+  int max;             ///< Maximum number of targets returned.
   char *sort_field;    ///< Field to sort results on.
   int sort_order;      ///< Result sort order: 0 descending, else ascending.
   char *target_id;     ///< ID of single target to get.
@@ -4877,29 +4879,50 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_TARGETS", element_name) == 0)
           {
             const gchar* attribute;
+
             append_attribute (attribute_names, attribute_values, "target_id",
                               &get_targets_data->target_id);
+
             append_attribute (attribute_names, attribute_values, "actions",
                               &get_targets_data->actions);
+
             if (find_attribute (attribute_names, attribute_values,
                                 "tasks", &attribute))
               get_targets_data->tasks = strcmp (attribute, "0");
             else
               get_targets_data->tasks = 0;
+
             if (find_attribute (attribute_names, attribute_values,
                                 "trash", &attribute))
               get_targets_data->trash = strcmp (attribute, "0");
             else
               get_targets_data->trash = 0;
+
             append_attribute (attribute_names, attribute_values, "filter",
                               &get_targets_data->filter);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "first", &attribute))
+              /* Subtract 1 to switch from 1 to 0 indexing. */
+              get_targets_data->first = atoi (attribute) - 1;
+            else
+              get_targets_data->first = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "max", &attribute))
+              get_targets_data->max = atoi (attribute);
+            else
+              get_targets_data->max = -1;
+
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_targets_data->sort_field);
+
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
               get_targets_data->sort_order = strcmp (attribute, "descending");
             else
               get_targets_data->sort_order = 1;
+
             set_client_state (CLIENT_GET_TARGETS);
           }
         else if (strcasecmp ("GET_TASKS", element_name) == 0)
@@ -14911,7 +14934,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             {
               iterator_t targets;
+              int count, filtered;
 
+              count = 0;
               SEND_TO_CLIENT_OR_FAIL ("<get_targets_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
@@ -14921,10 +14946,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        get_targets_data->filter
                                         ? get_targets_data->filter
                                         : "");
+              SENDF_TO_CLIENT_OR_FAIL ("<targets start=\"%i\" max=\"%i\"/>",
+                                       /* Add 1 for 1 indexing. */
+                                       get_targets_data->first + 1,
+                                       get_targets_data->max);
               init_target_iterator (&targets,
                                     target,
                                     get_targets_data->trash,
                                     get_targets_data->filter,
+                                    get_targets_data->first,
+                                    get_targets_data->max,
                                     get_targets_data->sort_order,
                                     get_targets_data->sort_field,
                                     get_targets_data->actions);
@@ -15036,12 +15067,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
 
                   SEND_TO_CLIENT_OR_FAIL ("</target>");
+                  count++;
                   free (ssh_lsc_name);
                   free (ssh_lsc_uuid);
                   free (smb_lsc_name);
                   free (smb_lsc_uuid);
                   free (port_range);
                 }
+              filtered = target
+                          ? 1
+                          : target_count (get_targets_data->filter,
+                                          get_targets_data->actions);
+              SENDF_TO_CLIENT_OR_FAIL ("<target_count>"
+                                       "<filtered>%i</filtered>"
+                                       "<page>%i</page>"
+                                       "</target_count>",
+                                       filtered,
+                                       count);
               cleanup_iterator (&targets);
               SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");
             }

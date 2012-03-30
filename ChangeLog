@@ -1,5 +1,21 @@
 2012-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add pagination to GET_TARGETS.
+
+	* src/manage_sql.c (target_count): New function.
+	(init_user_target_iterator, init_target_iterator): Add first and max args.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/manage.c (run_slave_task): Update caller.
+
+	* src/omp.c (get_targets_data_t): Add first and max.
+	(omp_xml_handle_start_element): Parse first and max attribs.
+	(omp_xml_handle_end_element): In GET_TARGETS add TARGETS and TARGET_COUNT
+	and pass first and max through to the iterator.
+
+2012-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TARGETS add a
 	NULL check on the filter.
 
