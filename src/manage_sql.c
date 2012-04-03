@@ -22004,6 +22004,25 @@ array_find_string (array_t *array, const gchar *string)
 }
 
 /**
+ * @brief Find a string in a glib style string vector.
+ *
+ * @param[in]  vector  Vector.
+ * @param[in]  string  String.
+ *
+ * @return The string from the vector if found, else NULL.
+ */
+static const gchar*
+vector_find_string (const gchar **vector, const gchar *string)
+{
+  while (*vector)
+    if (strcmp (*vector, string) == 0)
+      return *vector;
+    else
+      vector++;
+  return NULL;
+}
+
+/**
  * @brief Clean a hosts string.
  *
  * @param[in]  given_hosts  String describing hosts.
@@ -22692,7 +22711,7 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
       last_was_and = 0;
       while (*point)
         {
-          gchar *quoted_keyword;
+          gchar *quoted_keyword, *equal, *approx, *above, *below;
           int index, column;
           const char *extra_column;
 
@@ -22715,34 +22734,138 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
               continue;
             }
 
-          quoted_keyword = sql_quote (*point);
-          g_string_append_printf (clause,
-                                  "%s(",
-                                  (first
-                                    ? ""
-                                    : (last_was_and ? " AND " : " OR ")));
+          equal = strchr (*point, '=');
+          approx = strchr (*point, '~');
+          above = strchr (*point, '>');
+          below = strchr (*point, '<');
 
           /* Add SQL to the clause for each column name. */
 
-          for (column = 0; column < columns->len; column++)
-            g_string_append_printf (clause,
-                                    "%s%s LIKE '%%%%%s%%%%'",
-                                    (column == 0 ? "" : " OR "),
-                                    (gchar*) g_ptr_array_index (columns,
-                                                                column),
-                                    quoted_keyword);
-          for (index = 0;
-               (extra_column = extra_columns[index]) != NULL;
-               index++)
+          if (equal && (equal > *point))
             {
-              gchar *quoted_extra_column;
-              quoted_extra_column = sql_quote (extra_column);
+              gchar *column;
+              quoted_keyword = sql_quote (equal + 1);
+              column = g_strndup (*point, equal - *point);
+
+              if (vector_find_string (extra_columns, column) == 0
+                  && array_find_string (columns, column) == 0)
+                {
+                  last_was_and = 0;
+                  point++;
+                  continue;
+                }
+
               g_string_append_printf (clause,
-                                      "%s%s LIKE '%%%%%s%%%%'",
-                                      (columns->len ? " OR " : ""),
-                                      quoted_extra_column,
+                                      "%s(%s = '%s'",
+                                      (first
+                                        ? ""
+                                        : (last_was_and ? " AND " : " OR ")),
+                                      column,
                                       quoted_keyword);
-              g_free (quoted_extra_column);
+
+              g_free (column);
+            }
+          else if (approx && (approx > *point))
+            {
+              gchar *column;
+              quoted_keyword = sql_quote (approx + 1);
+              column = g_strndup (*point, approx - *point);
+
+              if (vector_find_string (extra_columns, column) == 0
+                  && array_find_string (columns, column) == 0)
+                {
+                  last_was_and = 0;
+                  point++;
+                  continue;
+                }
+
+              g_string_append_printf (clause,
+                                      "%s(%s LIKE '%%%%%s%%%%'",
+                                      (first
+                                        ? ""
+                                        : (last_was_and ? " AND " : " OR ")),
+                                      column,
+                                      quoted_keyword);
+
+              g_free (column);
+            }
+          else if (above && (above > *point))
+            {
+              gchar *column;
+              quoted_keyword = sql_quote (above + 1);
+              column = g_strndup (*point, above - *point);
+
+              if (vector_find_string (extra_columns, column) == 0
+                  && array_find_string (columns, column) == 0)
+                {
+                  last_was_and = 0;
+                  point++;
+                  continue;
+                }
+
+              g_string_append_printf (clause,
+                                      "%s(%s > '%s'",
+                                      (first
+                                        ? ""
+                                        : (last_was_and ? " AND " : " OR ")),
+                                      column,
+                                      quoted_keyword);
+
+              g_free (column);
+            }
+          else if (below && (below > *point))
+            {
+              gchar *column;
+              quoted_keyword = sql_quote (below + 1);
+              column = g_strndup (*point, below - *point);
+
+              if (vector_find_string (extra_columns, column) == 0
+                  && array_find_string (columns, column) == 0)
+                {
+                  last_was_and = 0;
+                  point++;
+                  continue;
+                }
+
+              g_string_append_printf (clause,
+                                      "%s(%s < '%s'",
+                                      (first
+                                        ? ""
+                                        : (last_was_and ? " AND " : " OR ")),
+                                      column,
+                                      quoted_keyword);
+
+              g_free (column);
+            }
+          else
+            {
+              g_string_append_printf (clause,
+                                      "%s(",
+                                      (first
+                                        ? ""
+                                        : (last_was_and ? " AND " : " OR ")));
+
+              quoted_keyword = sql_quote (*point);
+              for (column = 0; column < columns->len; column++)
+                g_string_append_printf (clause,
+                                        "%s%s LIKE '%%%%%s%%%%'",
+                                        (column == 0 ? "" : " OR "),
+                                        (gchar*) g_ptr_array_index (columns,
+                                                                    column),
+                                        quoted_keyword);
+              for (index = 0;
+                   (extra_column = extra_columns[index]) != NULL;
+                   index++)
+                {
+                  gchar *quoted_extra_column;
+                  quoted_extra_column = sql_quote (extra_column);
+                  g_string_append_printf (clause,
+                                          "%s%s LIKE '%%%%%s%%%%'",
+                                          (columns->len ? " OR " : ""),
+                                          quoted_extra_column,
+                                          quoted_keyword);
+                  g_free (quoted_extra_column);
+                }
             }
 
           g_string_append (clause, ")");
@@ -22755,7 +22878,11 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
       array_free (columns);
       g_strfreev (split);
 
-      return g_string_free (clause, FALSE);
+      if (strlen (clause->str))
+        return g_string_free (clause, FALSE);
+
+      g_string_free (clause, TRUE);
+      return NULL;
     }
   return NULL;
 }

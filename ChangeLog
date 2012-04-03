@@ -1,5 +1,14 @@
 2012-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add index filtering to the GET_TARGETS.  Syntax is like "name~test and
+	port_list_name~iana or hosts=localhost".
+
+	* src/manage_sql.c (vector_find_string): New function.
+	(filter_clause): Check term for index prefix and adjust SQL accordingly.
+	Also return NULL if the result is the empty string.
+
+2012-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add quotation to the GET_TARGETS filtering.
 
 	* src/manage_sql.c (split_filter): New function.
