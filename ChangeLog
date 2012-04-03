@@ -1,5 +1,12 @@
 2012-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (struct term, term_t): New type.
+	(split_filter): Return array of terms, which have quotation flags.
+	(filter_clause): Adjust for new split type.  If term is quoted skip the
+	index check.
+
+2012-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (TARGET_ITERATOR_EXTRA_COLS, target_count)
 	(init_user_target_iterator, init_target_iterator): Make the names of the
 	extra columns match the names of the columns on the GSA Targets page.

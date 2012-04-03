@@ -22589,18 +22589,33 @@ delete_target (const char *target_id, int ultimate)
 }
 
 /**
+ * @brief Term.
+ */
+struct term
+{
+  int quoted;        ///< Whether the term was quoted.
+  gchar *string;     ///< The term string, with outer quotations removed.
+};
+
+/**
+ * @brief Term type.
+ */
+typedef struct term term_t;
+
+/**
  * @brief Split the filter term into parts.
  *
  * @param[in]  filter         Filter term.
  *
  * @return Array of strings, the parts.
  */
-static gchar **
+static array_t *
 split_filter (const gchar* filter)
 {
   int in_quote, between;
   array_t *parts;
   const gchar *current_part;
+  term_t *term;
 
   parts = make_array ();
   in_quote = 0;
@@ -22616,7 +22631,9 @@ split_filter (const gchar* filter)
             if (in_quote || between)
               break;
             /* End of a part. */
-            array_add (parts, g_strndup (current_part, filter - current_part));
+            term = g_malloc0 (sizeof (term_t));
+            term->string = g_strndup (current_part, filter - current_part);
+            array_add (parts, term);
             between = 1;
             break;
 
@@ -22624,8 +22641,11 @@ split_filter (const gchar* filter)
             if (in_quote)
               {
                 /* End of a quoted part. */
-                array_add (parts,
-                           g_strndup (current_part, filter - current_part - 1));
+                term = g_malloc0 (sizeof (term_t));
+                term->quoted = 1;
+                term->string = g_strndup (current_part,
+                                          filter - current_part - 1);
+                array_add (parts, term);
                 in_quote = 0;
                 between = 1;
               }
@@ -22651,10 +22671,15 @@ split_filter (const gchar* filter)
       filter++;
     }
   if (between == 0)
-    array_add (parts, g_strdup (current_part));
+    {
+      term = g_malloc0 (sizeof (term_t));
+      term->quoted = 1;
+      term->string = g_strdup (current_part);
+      array_add (parts, term);
+    }
 
   array_add (parts, NULL);
-  return (gchar**) g_ptr_array_free (parts, FALSE);
+  return parts;
 }
 
 /**
@@ -22672,10 +22697,10 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
   if (filter)
     {
       GString *clause;
-      gchar **split, **point;
+      term_t **point;
       int first, last_was_and;
       iterator_t rows;
-      array_t *columns;
+      array_t *columns, *split;
 
       while (*filter && isspace (*filter)) filter++;
 
@@ -22706,7 +22731,7 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
 
       clause = g_string_new ("");
       split = split_filter (filter);
-      point = split;
+      point = (term_t**) split->pdata;
       first = 1;
       last_was_and = 0;
       while (*point)
@@ -22714,38 +22739,41 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
           gchar *quoted_keyword, *equal, *approx, *above, *below;
           int index, column;
           const char *extra_column;
+          term_t *term;
 
-          if (strlen (*point) == 0)
+          term = *point;
+
+          if (strlen (term->string) == 0)
             {
               point++;
               continue;
             }
 
-          if (strcasecmp (*point, "or") == 0)
+          if (strcasecmp (term->string, "or") == 0)
             {
               point++;
               continue;
             }
 
-          if (strcasecmp (*point, "and") == 0)
+          if (strcasecmp (term->string, "and") == 0)
             {
               last_was_and = 1;
               point++;
               continue;
             }
 
-          equal = strchr (*point, '=');
-          approx = strchr (*point, '~');
-          above = strchr (*point, '>');
-          below = strchr (*point, '<');
+          equal = strchr (term->string, '=');
+          approx = strchr (term->string, '~');
+          above = strchr (term->string, '>');
+          below = strchr (term->string, '<');
 
           /* Add SQL to the clause for each column name. */
 
-          if (equal && (equal > *point))
+          if (term->quoted == 0 && equal && (equal > term->string))
             {
               gchar *column;
               quoted_keyword = sql_quote (equal + 1);
-              column = g_strndup (*point, equal - *point);
+              column = g_strndup (term->string, equal - term->string);
 
               if (vector_find_string (extra_columns, column) == 0
                   && array_find_string (columns, column) == 0)
@@ -22765,11 +22793,11 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
 
               g_free (column);
             }
-          else if (approx && (approx > *point))
+          else if (term->quoted == 0 && approx && (approx > term->string))
             {
               gchar *column;
               quoted_keyword = sql_quote (approx + 1);
-              column = g_strndup (*point, approx - *point);
+              column = g_strndup (term->string, approx - term->string);
 
               if (vector_find_string (extra_columns, column) == 0
                   && array_find_string (columns, column) == 0)
@@ -22789,11 +22817,11 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
 
               g_free (column);
             }
-          else if (above && (above > *point))
+          else if (term->quoted == 0 && above && (above > term->string))
             {
               gchar *column;
               quoted_keyword = sql_quote (above + 1);
-              column = g_strndup (*point, above - *point);
+              column = g_strndup (term->string, above - term->string);
 
               if (vector_find_string (extra_columns, column) == 0
                   && array_find_string (columns, column) == 0)
@@ -22813,11 +22841,11 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
 
               g_free (column);
             }
-          else if (below && (below > *point))
+          else if (term->quoted == 0 && below && (below > term->string))
             {
               gchar *column;
               quoted_keyword = sql_quote (below + 1);
-              column = g_strndup (*point, below - *point);
+              column = g_strndup (term->string, below - term->string);
 
               if (vector_find_string (extra_columns, column) == 0
                   && array_find_string (columns, column) == 0)
@@ -22845,7 +22873,7 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
                                         ? ""
                                         : (last_was_and ? " AND " : " OR ")));
 
-              quoted_keyword = sql_quote (*point);
+              quoted_keyword = sql_quote (term->string);
               for (column = 0; column < columns->len; column++)
                 g_string_append_printf (clause,
                                         "%s%s LIKE '%%%%%s%%%%'",
@@ -22876,7 +22904,9 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
           point++;
         }
       array_free (columns);
-      g_strfreev (split);
+      for (point = (term_t**) split->pdata; *point; point++)
+        g_free ((*point)->string);
+      array_free (split);
 
       if (strlen (clause->str))
         return g_string_free (clause, FALSE);
