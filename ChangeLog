@@ -1,5 +1,11 @@
 2012-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (TARGET_ITERATOR_EXTRA_COLS, target_count)
+	(init_user_target_iterator, init_target_iterator): Make the names of the
+	extra columns match the names of the columns on the GSA Targets page.
+
+2012-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add index filtering to the GET_TARGETS.  Syntax is like "name~test and
 	port_list_name~iana or hosts=localhost".
 
