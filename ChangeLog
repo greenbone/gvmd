@@ -1,5 +1,12 @@
 2012-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add quotation to the GET_TARGETS filtering.
+
+	* src/manage_sql.c (split_filter): New function.
+	(filter_clause): Call split_filter to split the filter term into parts.
+
+2012-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add the names of the port list and credentials to the filtering in
 	GET_TARGETS.
 

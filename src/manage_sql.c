@@ -22570,6 +22570,75 @@ delete_target (const char *target_id, int ultimate)
 }
 
 /**
+ * @brief Split the filter term into parts.
+ *
+ * @param[in]  filter         Filter term.
+ *
+ * @return Array of strings, the parts.
+ */
+static gchar **
+split_filter (const gchar* filter)
+{
+  int in_quote, between;
+  array_t *parts;
+  const gchar *current_part;
+
+  parts = make_array ();
+  in_quote = 0;
+  between = 1;
+  while (*filter)
+    {
+      switch (*filter)
+        {
+          case ' ':
+          case '\t':
+          case '\n':
+          case '\r':
+            if (in_quote || between)
+              break;
+            /* End of a part. */
+            array_add (parts, g_strndup (current_part, filter - current_part));
+            between = 1;
+            break;
+
+          case '"':
+            if (in_quote)
+              {
+                /* End of a quoted part. */
+                array_add (parts,
+                           g_strndup (current_part, filter - current_part - 1));
+                in_quote = 0;
+                between = 1;
+              }
+            else if (between)
+              {
+                /* Start of a quoted part. */
+                in_quote = 1;
+                current_part = filter + 1;
+                between = 0;
+              }
+            /* Else just a quote in a keyword, like ab"cd. */
+            break;
+
+          default:
+            if (between)
+              {
+                /* Start of a part. */
+                current_part = filter;
+                between = 0;
+              }
+            break;
+        }
+      filter++;
+    }
+  if (between == 0)
+    array_add (parts, g_strdup (current_part));
+
+  array_add (parts, NULL);
+  return (gchar**) g_ptr_array_free (parts, FALSE);
+}
+
+/**
  * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
  *
  * @param[in]  type           Resource type.
@@ -22614,10 +22683,10 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
           return NULL;
         }
 
-      /* Add SQL to the clause for each keyword. */
+      /* Add SQL to the clause for each keyword or phrase. */
 
       clause = g_string_new ("");
-      split = g_strsplit_set (filter, " \t\n\r", 0);
+      split = split_filter (filter);
       point = split;
       first = 1;
       last_was_and = 0;
