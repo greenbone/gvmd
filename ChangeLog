@@ -1,5 +1,9 @@
 2012-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (split_filter): Set quoted on end term from in_quote.
+
+2012-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (struct term, term_t): New type.
 	(split_filter): Return array of terms, which have quotation flags.
 	(filter_clause): Adjust for new split type.  If term is quoted skip the

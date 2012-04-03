@@ -22673,7 +22673,7 @@ split_filter (const gchar* filter)
   if (between == 0)
     {
       term = g_malloc0 (sizeof (term_t));
-      term->quoted = 1;
+      term->quoted = in_quote;
       term->string = g_strdup (current_part);
       array_add (parts, term);
     }
