@@ -22572,13 +22572,14 @@ delete_target (const char *target_id, int ultimate)
 /**
  * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
  *
- * @param[in]  type    Resource type.
- * @param[in]  filter  Filter term.
+ * @param[in]  type           Resource type.
+ * @param[in]  filter         Filter term.
+ * @param[in]  extra_columns  Extra columns in the SQL statement.
  *
  * @return WHERE clause for filter if one is required, else NULL.
  */
 static gchar *
-filter_clause (const char* type, const char* filter)
+filter_clause (const char* type, const char* filter, const char **extra_columns)
 {
   if (filter)
     {
@@ -22623,7 +22624,8 @@ filter_clause (const char* type, const char* filter)
       while (*point)
         {
           gchar *quoted_keyword;
-          int column;
+          int index, column;
+          const char *extra_column;
 
           if (strlen (*point) == 0)
             {
@@ -22660,6 +22662,19 @@ filter_clause (const char* type, const char* filter)
                                     (gchar*) g_ptr_array_index (columns,
                                                                 column),
                                     quoted_keyword);
+          for (index = 0;
+               (extra_column = extra_columns[index]) != NULL;
+               index++)
+            {
+              gchar *quoted_extra_column;
+              quoted_extra_column = sql_quote (extra_column);
+              g_string_append_printf (clause,
+                                      "%s%s LIKE '%%%%%s%%%%'",
+                                      (columns->len ? " OR " : ""),
+                                      quoted_extra_column,
+                                      quoted_keyword);
+              g_free (quoted_extra_column);
+            }
 
           g_string_append (clause, ")");
           g_free (quoted_keyword);
@@ -22677,6 +22692,12 @@ filter_clause (const char* type, const char* filter)
 }
 
 /**
+ * @brief Extra columns for target iterator.
+ */
+#define TARGET_ITERATOR_EXTRA_COLS \
+ { "port_list_name", "lsc_credential_name", "smb_lsc_credential_name", NULL }
+
+/**
  * @brief Count number of targets.
  *
  * @param[in]  filter           Filter term.
@@ -22687,19 +22708,30 @@ filter_clause (const char* type, const char* filter)
 int
 target_count (const char *filter, const char *actions_string)
 {
+  static const char *extra_columns[] = TARGET_ITERATOR_EXTRA_COLS;
   int actions, ret;
   gchar *clause;
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause ("target", filter);
+  clause = filter_clause ("target", filter, extra_columns);
 
   if (actions_string == NULL
       || strlen (actions_string) == 0
       || (actions = parse_actions (actions_string)) == 0)
     {
       ret = sql_int (0, 0,
-                     "SELECT count (*) FROM targets"
+                     "SELECT count (*),"
+                     " (SELECT name FROM port_lists"
+                     "  WHERE port_lists.ROWID = port_range)"
+                     " AS port_list_name,"
+                     " (SELECT name FROM lsc_credentials"
+                     "  WHERE lsc_credentials.ROWID = lsc_credential)"
+                     " AS lsc_credential_name,"
+                     " (SELECT name FROM lsc_credentials"
+                     "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"
+                     " AS smb_lsc_credential_name"
+                     " FROM targets"
                      " WHERE ((owner IS NULL) OR (owner ="
                      " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                      "%s%s;",
@@ -22711,7 +22743,17 @@ target_count (const char *filter, const char *actions_string)
     }
 
   ret = sql_int (0, 0,
-                 "SELECT count (*) FROM targets"
+                 "SELECT count (*),"
+                 " (SELECT name FROM port_lists"
+                 "  WHERE port_lists.ROWID = port_range)"
+                 " AS port_list_name,"
+                 " (SELECT name FROM lsc_credentials"
+                 "  WHERE lsc_credentials.ROWID = lsc_credential)"
+                 " AS lsc_credential_name,"
+                 " (SELECT name FROM lsc_credentials"
+                 "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"
+                 " AS smb_lsc_credential_name"
+                 " FROM targets"
                  " WHERE"
                  " ((owner IS NULL) OR (owner ="
                  "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
@@ -22753,11 +22795,12 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
                            const char *filter, int first, int max,
                            int ascending, const char* sort_field)
 {
+  static const char *extra_columns[] = TARGET_ITERATOR_EXTRA_COLS;
   gchar *clause;
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause ("target", filter);
+  clause = filter_clause ("target", filter, extra_columns);
 
   if (target && trash)
     init_iterator (iterator,
@@ -22847,8 +22890,15 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
                    " (SELECT uuid FROM port_lists"
                    "  WHERE port_lists.ROWID = port_range),"
                    " (SELECT name FROM port_lists"
-                   "  WHERE port_lists.ROWID = port_range),"
-                   " 0"
+                   "  WHERE port_lists.ROWID = port_range)"
+                   " AS port_list_name,"
+                   " 0,"
+                   " (SELECT name FROM lsc_credentials"
+                   "  WHERE lsc_credentials.ROWID = lsc_credential)"
+                   " AS lsc_credential_name,"
+                   " (SELECT name FROM lsc_credentials"
+                   "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"
+                   " AS smb_lsc_credential_name"
                    " FROM targets%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -22887,6 +22937,7 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
                       const char *filter, int first, int max, int ascending,
                       const char* sort_field, const char *actions_string)
 {
+  static const char *extra_columns[] = TARGET_ITERATOR_EXTRA_COLS;
   int actions;
   gchar *clause;
 
@@ -22908,7 +22959,7 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
       return;
     }
 
-  clause = filter_clause ("target", filter);
+  clause = filter_clause ("target", filter, extra_columns);
 
   if (target && trash)
     init_iterator (iterator,
@@ -23035,7 +23086,13 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
                    "   WHERE port_lists.ROWID = port_range),"
                    "  (SELECT name FROM port_lists"
                    "   WHERE port_lists.ROWID = port_range),"
-                   " 0"
+                   " 0,"
+                   " (SELECT name FROM lsc_credentials"
+                   "  WHERE lsc_credentials.ROWID = lsc_credential)"
+                   " AS lsc_credential_name,"
+                   " (SELECT name FROM lsc_credentials"
+                   "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"
+                   " AS smb_lsc_credential_name"
                    " FROM targets%s"
                    " WHERE"
                    " ((owner IS NULL) OR (owner ="

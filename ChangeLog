@@ -1,4 +1,15 @@
-2012-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add the names of the port list and credentials to the filtering in
+	GET_TARGETS.
+
+	* src/manage_sql.c (filter_clause): Add extra_columns arg.
+	(TARGET_ITERATOR_EXTRA_COLS): New define.
+	(target_count, init_user_target_iterator, init_target_iterator): Pass
+	extra_columns to filter_clause.  Add extra columns to name so that the
+	filter clause can access them by name.
+
+2012-03-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add pagination to GET_TARGETS.
 
