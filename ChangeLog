@@ -1,3 +1,14 @@
+2012-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add the option to serve OMP on a second address.
+
+	* src/openvasmd.c (manager_socket_2, manager_address_2): New variables.
+	(serve_client, accept_and_maybe_fork): Add server_socket arg.  Update
+	callers.
+	(cleanup, fork_update_nvt_cache): Close manager_socket_2.
+	(serve_and_schedule): Add second listening socket to select.
+	(main): Add --listen2 and --port2, and serve on this address if given.
+
 2012-04-04  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Add ssh options to disable strict

@@ -213,9 +213,19 @@
 int manager_socket = -1;
 
 /**
+ * @brief The optional, second socket accepting OMP connections from clients.
+ */
+int manager_socket_2 = -1;
+
+/**
  * @brief The IP address of this program, "the manager".
  */
 struct sockaddr_in manager_address;
+
+/**
+ * @brief The optional, second IP address of this program, "the manager".
+ */
+struct sockaddr_in manager_address_2;
 
 /**
  * @brief The Scanner port.
@@ -277,11 +287,12 @@ int sighup_update_nvt_cache = 0;
  * In all cases, close client_socket before returning.
  *
  * @param[in]  client_socket  The socket connected to the client.
+ * @param[in]  server_socket  The socket connected to the Manager.
  *
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */
 int
-serve_client (int client_socket)
+serve_client (int server_socket, int client_socket)
 {
   int scanner_socket, optval;
   gnutls_session_t scanner_session;
@@ -301,7 +312,7 @@ serve_client (int client_socket)
     }
 
   optval = 1;
-  if (setsockopt (manager_socket,
+  if (setsockopt (server_socket,
                   SOL_SOCKET, SO_KEEPALIVE,
                   &optval, sizeof (int)))
     {
@@ -409,11 +420,13 @@ serve_client (int client_socket)
 /**
  * @brief Accept and fork.
  *
+ * @param[in]  server_socket  Manager socket.
+ *
  * Accept the client connection and fork a child process to serve the client.
  * The child calls \ref serve_client to do the rest of the work.
  */
 static void
-accept_and_maybe_fork ()
+accept_and_maybe_fork (int server_socket)
 {
   /* Accept the client connection. */
   pid_t pid;
@@ -421,7 +434,7 @@ accept_and_maybe_fork ()
   socklen_t size = sizeof (client_address);
   int client_socket;
   client_address.sin_family = AF_INET;
-  while ((client_socket = accept (manager_socket,
+  while ((client_socket = accept (server_socket,
                                   (struct sockaddr *) &client_address,
                                   &size))
          == -1)
@@ -473,7 +486,7 @@ accept_and_maybe_fork ()
             }
           /* Reopen the database (required after fork). */
           cleanup_manage_process (FALSE);
-          ret = serve_client (client_socket);
+          ret = serve_client (server_socket, client_socket);
           /** @todo This should be done through libomp. */
           save_tasks ();
           exit (ret);
@@ -623,7 +636,7 @@ fork_connection_for_schedular (int *client_socket,
         manage_auth_allow_all ();
         set_scheduled_user_uuid (uuid);
 
-        ret = serve_client (parent_client_socket);
+        ret = serve_client (manager_socket, parent_client_socket);
         /** @todo This should be done through libomp. */
         save_tasks ();
         exit (ret);
@@ -650,6 +663,7 @@ cleanup ()
   /** @todo This should happen via omp, maybe with "cleanup_omp ();". */
   cleanup_manage_process (TRUE);
   if (manager_socket > -1) close (manager_socket);
+  if (manager_socket_2 > -1) close (manager_socket_2);
 #if LOG
   if (log_stream != NULL)
     {
@@ -907,6 +921,7 @@ fork_update_nvt_cache ()
         /** @todo This should happen via omp, maybe with "cleanup_omp ();". */
         cleanup_manage_process (TRUE);
         if (manager_socket > -1) close (manager_socket);
+        if (manager_socket_2 > -1) close (manager_socket_2);
         openvas_auth_tear_down ();
 
         /* Update the cache. */
@@ -958,9 +973,16 @@ serve_and_schedule ()
 
       FD_ZERO (&readfds);
       FD_SET (manager_socket, &readfds);
+      if (manager_socket_2 > -1)
+        FD_SET (manager_socket_2, &readfds);
       FD_ZERO (&exceptfds);
       FD_SET (manager_socket, &exceptfds);
-      nfds = manager_socket + 1;
+      if (manager_socket_2 > -1)
+        FD_SET (manager_socket_2, &exceptfds);
+      if (manager_socket >= manager_socket_2)
+        nfds = manager_socket + 1;
+      else
+        nfds = manager_socket_2 + 1;
 
       if ((time (NULL) - last_schedule_time) > SCHEDULE_PERIOD)
         {
@@ -999,8 +1021,15 @@ serve_and_schedule ()
               g_critical ("%s: exception in select\n", __FUNCTION__);
               exit (EXIT_FAILURE);
             }
+          if ((manager_socket_2 > -1) && FD_ISSET (manager_socket_2, &exceptfds))
+            {
+              g_critical ("%s: exception in select (2)\n", __FUNCTION__);
+              exit (EXIT_FAILURE);
+            }
           if (FD_ISSET (manager_socket, &readfds))
-            accept_and_maybe_fork ();
+            accept_and_maybe_fork (manager_socket);
+          if (FD_ISSET (manager_socket_2, &readfds))
+            accept_and_maybe_fork (manager_socket_2);
         }
 
       if (manage_schedule (fork_connection_for_schedular))
@@ -1037,7 +1066,7 @@ serve_and_schedule ()
 int
 main (int argc, char** argv)
 {
-  int manager_port;
+  int manager_port, manager_port_2;
   gchar *gnupg_home;
 
   /* Process options. */
@@ -1049,7 +1078,9 @@ main (int argc, char** argv)
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
   static gchar *manager_address_string = NULL;
+  static gchar *manager_address_string_2 = NULL;
   static gchar *manager_port_string = NULL;
+  static gchar *manager_port_string_2 = NULL;
   static gchar *scanner_port_string = NULL;
   static gchar *rc_name = NULL;
   GError *error = NULL;
@@ -1060,9 +1091,11 @@ main (int argc, char** argv)
         { "database", 'd', 0, G_OPTION_ARG_STRING, &database, "Use <file> as database.", "<file>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
+        { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
         { "otp", '\0', 0, G_OPTION_ARG_NONE, &otp, "Serve OTP too.", NULL },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
+        { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
         { "slisten", 'l', 0, G_OPTION_ARG_STRING, &scanner_address_string, "Scanner (openvassd) address.", "<address>" },
         { "sport", 's', 0, G_OPTION_ARG_STRING, &scanner_port_string, "Scanner (openvassd) port number.", "<number>" },
@@ -1248,6 +1281,26 @@ main (int argc, char** argv)
         manager_port = htons (OPENVASMD_PORT);
     }
 
+  manager_port_2 = -1;  /* Quiet compiler warning. */
+  if (manager_address_string_2)
+    {
+      if (manager_port_string_2)
+        {
+          manager_port_2 = atoi (manager_port_string_2);
+          if (manager_port_2 <= 0 || manager_port_2 >= 65536)
+            {
+              g_critical ("%s: Manager port must be a number between 0 and"
+                          " 65536\n",
+                          __FUNCTION__);
+              free_log_configuration (log_config);
+              exit (EXIT_FAILURE);
+            }
+          manager_port_2 = htons (manager_port_2);
+        }
+      else
+        manager_port_2 = manager_port;
+    }
+
 #if 0
   /* Initialise scanner information needed by `cleanup'. */
 
@@ -1319,7 +1372,7 @@ main (int argc, char** argv)
 
   if (pidfile_create ("openvasmd")) exit (EXIT_FAILURE);
 
-  /* Create the manager socket. */
+  /* Create the manager socket(s). */
 
   manager_socket = socket (PF_INET, SOCK_STREAM, 0);
   if (manager_socket == -1)
@@ -1328,6 +1381,18 @@ main (int argc, char** argv)
                   __FUNCTION__,
                   strerror (errno));
       exit (EXIT_FAILURE);
+    }
+
+  if (manager_address_string_2)
+    {
+      manager_socket_2 = socket (PF_INET, SOCK_STREAM, 0);
+      if (manager_socket_2 == -1)
+        {
+          g_critical ("%s: failed to create second manager socket: %s\n",
+                      __FUNCTION__,
+                      strerror (errno));
+          exit (EXIT_FAILURE);
+        }
     }
 
 #if LOG
@@ -1417,6 +1482,33 @@ main (int argc, char** argv)
       }
   }
 
+  if (manager_address_string_2)
+    {
+      /* The socket must have O_NONBLOCK set, in case an "asynchronous network
+       * error" removes the connection between `select' and `accept'. */
+      if (fcntl (manager_socket_2, F_SETFL, O_NONBLOCK) == -1)
+        {
+          g_critical ("%s: failed to set manager socket flag: %s\n",
+                      __FUNCTION__,
+                      strerror (errno));
+          exit (EXIT_FAILURE);
+        }
+
+      {
+        int optval = 1;
+        if (setsockopt (manager_socket_2,
+                        SOL_SOCKET, SO_REUSEADDR,
+                        &optval, sizeof (int)))
+          {
+            g_critical ("%s: failed to set SO_REUSEADDR on manager socket:"
+                        " %s\n",
+                        __FUNCTION__,
+                        strerror (errno));
+            exit (EXIT_FAILURE);
+          }
+      }
+    }
+
   /* Bind the manager socket to a port. */
 
   manager_address.sin_family = AF_INET;
@@ -1442,7 +1534,6 @@ main (int argc, char** argv)
       g_critical ("%s: failed to bind manager socket: %s\n",
                   __FUNCTION__,
                   strerror (errno));
-      close (manager_socket);
       exit (EXIT_FAILURE);
     }
 
@@ -1453,14 +1544,58 @@ main (int argc, char** argv)
          scanner_address_string,
          ntohs (scanner_address.sin_port));
 
-  /* Enable connections to the socket. */
+  /* Bind the second manager socket to a port. */
+
+  if (manager_address_string_2)
+    {
+      manager_address_2.sin_family = AF_INET;
+      manager_address_2.sin_port = manager_port_2;
+      if (manager_address_string_2)
+        {
+          if (!inet_aton (manager_address_string_2,
+                          &manager_address_2.sin_addr))
+            {
+              g_critical ("%s: failed to create second manager address %s\n",
+                          __FUNCTION__,
+                          manager_address_string_2);
+              exit (EXIT_FAILURE);
+            }
+        }
+      else
+        manager_address_2.sin_addr.s_addr = INADDR_ANY;
+
+      if (bind (manager_socket_2,
+                (struct sockaddr *) &manager_address_2,
+                sizeof (manager_address_2))
+          == -1)
+        {
+          g_critical ("%s: failed to bind second manager socket: %s\n",
+                      __FUNCTION__,
+                      strerror (errno));
+          exit (EXIT_FAILURE);
+        }
+
+      infof ("   Manager also bound to address %s port %i\n",
+             manager_address_string_2 ? manager_address_string_2 : "*",
+             ntohs (manager_address_2.sin_port));
+    }
+
+  /* Enable connections to the sockets. */
 
   if (listen (manager_socket, MAX_CONNECTIONS) == -1)
     {
       g_critical ("%s: failed to listen on manager socket: %s\n",
                   __FUNCTION__,
                   strerror (errno));
-      close (manager_socket);
+      exit (EXIT_FAILURE);
+    }
+
+  if (manager_address_string_2
+      && (listen (manager_socket_2, MAX_CONNECTIONS) == -1))
+    {
+      g_critical ("%s: failed to listen on second manager socket: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
       exit (EXIT_FAILURE);
     }
 
