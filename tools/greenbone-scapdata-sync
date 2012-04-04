@@ -28,7 +28,7 @@
 # with some characters in order to make it newer than
 # any follow-up version to prevent that your version
 # will be overwritten.
-VERSION=20110901
+VERSION=20120404
 
 # SETTINGS
 # ========
@@ -215,9 +215,9 @@ sync_scapdata(){
       fi
       if [[ $gsmproxy == "proxy_feed" || -z $gsmproxy ]]
       then
-        rsync -e "ssh -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
+        rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
       else
-        rsync -e "ssh -o \"ProxyCommand corkscrew $gsmproxy %h %p\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
+        rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -o \"ProxyCommand corkscrew $gsmproxy %h %p\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
       fi
       if (( $? )) ; then
         echo
