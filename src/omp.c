@@ -4907,11 +4907,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_targets_data->first = atoi (attribute) - 1;
             else
               get_targets_data->first = 0;
+            if (get_targets_data->first < 0)
+              get_targets_data->first = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "max", &attribute))
               get_targets_data->max = atoi (attribute);
             else
+              get_targets_data->max = -1;
+            if (get_targets_data->max < 1)
               get_targets_data->max = -1;
 
             append_attribute (attribute_names, attribute_values, "sort_field",

@@ -23169,6 +23169,11 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
 
   assert (current_credentials.uuid);
 
+  if (first < 0)
+    first = 0;
+  if (max < 1)
+    max = -1;
+
   if (actions_string == NULL || strlen (actions_string) == 0)
     {
       init_user_target_iterator (iterator, target, trash, filter, first, max,

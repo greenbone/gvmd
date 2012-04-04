@@ -1,3 +1,11 @@
+2012-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_target_iterator): Bring first and max into range
+	if they are out.
+
+	* src/omp.c (omp_xml_handle_start_element): Bring GET_TARGETS first and
+	max into range if they are out.
+
 2012-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (split_filter): Set quoted on end term from in_quote.
