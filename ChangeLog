@@ -1,3 +1,25 @@
+2012-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP GET_SETTINGS.
+
+	* src/manage_sql.c (create_tables): Add settings.
+	(init_manage): Ensure default settings exist.
+	(target_count): Remove dangling SQL clause.
+	(SETTING_ITERATOR_EXTRA_COLS): New define.
+	(setting_count, init_setting_iterator, setting_iterator_uuid)
+	(setting_iterator_name, setting_iterator_comment)
+	(setting_iterator_value): New function.
+
+	* src/omp.c (help_text): Add GET_SETTINGS.
+	(get_settings_data_t): New type.
+	(get_settings_data_reset): New function.
+	(command_data_t, client_state_t): Add get_settings.
+	(get_settings_data): New variable.
+	(xml_handle_start_element, xml_handle_end_element): Add GET_SETTINGS.
+
+	* src/manage.h: Add headers accordingly.
+	(setting_t): New type.
+
 2012-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add the option to serve OMP on a second address.

@@ -383,6 +383,7 @@ static char* help_text = "\n"
 "    GET_REPORT_FORMATS     Get all report formats.\n"
 "    GET_RESULTS            Get results.\n"
 "    GET_SCHEDULES          Get all schedules.\n"
+"    GET_SETTINGS           Get all settings.\n"
 "    GET_SLAVES             Get all slaves.\n"
 "    GET_SYSTEM_REPORTS     Get all system reports.\n"
 "    GET_TARGET_LOCATORS    Get configured target locators.\n"
@@ -2084,6 +2085,34 @@ get_schedules_data_reset (get_schedules_data_t *data)
 }
 
 /**
+ * @brief Command data.
+ */
+typedef struct
+{
+  char *filter;        ///< Filter term.
+  int first;           ///< Skip over rows before this number.
+  int max;             ///< Maximum number of rows returned.
+  char *sort_field;    ///< Field to sort results on.
+  int sort_order;      ///< Result sort order: 0 descending, else ascending.
+  char *setting_id;    ///< UUID of single setting to get.
+} get_settings_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_settings_data_reset (get_settings_data_t *data)
+{
+  free (data->filter);
+  free (data->setting_id);
+  free (data->sort_field);
+
+  memset (data, 0, sizeof (get_settings_data_t));
+}
+
+/**
  * @brief Command data for the get_slaves command.
  */
 typedef struct
@@ -2775,6 +2804,7 @@ typedef union
   get_report_formats_data_t get_report_formats;       ///< get_report_formats
   get_results_data_t get_results;                     ///< get_results
   get_schedules_data_t get_schedules;                 ///< get_schedules
+  get_settings_data_t get_settings;                   ///< get_settings
   get_slaves_data_t get_slaves;                       ///< get_slaves
   get_system_reports_data_t get_system_reports;       ///< get_system_reports
   get_targets_data_t get_targets;                     ///< get_targets
@@ -3084,6 +3114,12 @@ get_results_data_t *get_results_data
  */
 get_schedules_data_t *get_schedules_data
  = &(command_data.get_schedules);
+
+/**
+ * @brief Parser callback data for GET_SETTINGS.
+ */
+get_settings_data_t *get_settings_data
+ = &(command_data.get_settings);
 
 /**
  * @brief Parser callback data for GET_SLAVES.
@@ -3520,6 +3556,7 @@ typedef enum
   CLIENT_GET_REPORT_FORMATS,
   CLIENT_GET_RESULTS,
   CLIENT_GET_SCHEDULES,
+  CLIENT_GET_SETTINGS,
   CLIENT_GET_SLAVES,
   CLIENT_GET_SYSTEM_REPORTS,
   CLIENT_GET_TARGET_LOCATORS,
@@ -4831,6 +4868,44 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_schedules_data->sort_order = 1;
 
             set_client_state (CLIENT_GET_SCHEDULES);
+          }
+        else if (strcasecmp ("GET_SETTINGS", element_name) == 0)
+          {
+            const gchar* attribute;
+
+            append_attribute (attribute_names, attribute_values, "setting_id",
+                              &get_settings_data->setting_id);
+
+            append_attribute (attribute_names, attribute_values, "filter",
+                              &get_settings_data->filter);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "first", &attribute))
+              /* Subtract 1 to switch from 1 to 0 indexing. */
+              get_settings_data->first = atoi (attribute) - 1;
+            else
+              get_settings_data->first = 0;
+            if (get_settings_data->first < 0)
+              get_settings_data->first = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "max", &attribute))
+              get_settings_data->max = atoi (attribute);
+            else
+              get_settings_data->max = -1;
+            if (get_settings_data->max < 1)
+              get_settings_data->max = -1;
+
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_settings_data->sort_field);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              get_settings_data->sort_order = strcmp (attribute, "descending");
+            else
+              get_settings_data->sort_order = 1;
+
+            set_client_state (CLIENT_GET_SETTINGS);
           }
         else if (strcasecmp ("GET_SLAVES", element_name) == 0)
           {
@@ -14711,6 +14786,66 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL ("</get_lsc_credentials_response>");
             }
           get_lsc_credentials_data_reset (get_lsc_credentials_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
+      case CLIENT_GET_SETTINGS:
+        {
+          setting_t setting = 0;
+          iterator_t settings;
+          int count, filtered;
+
+          assert (strcasecmp ("GET_SETTINGS", element_name) == 0);
+
+          init_setting_iterator (&settings,
+                                 get_settings_data->setting_id,
+                                 get_settings_data->filter,
+                                 get_settings_data->first,
+                                 get_settings_data->max,
+                                 get_settings_data->sort_order,
+                                 get_settings_data->sort_field);
+
+          SEND_TO_CLIENT_OR_FAIL ("<get_settings_response"
+                                  " status=\"" STATUS_OK "\""
+                                  " status_text=\"" STATUS_OK_TEXT "\">");
+          SENDF_TO_CLIENT_OR_FAIL ("<filters>"
+                                   "<term>%s</term>"
+                                   "</filters>"
+                                   "<settings start=\"%i\" max=\"%i\"/>",
+                                   get_settings_data->filter
+                                    ? get_settings_data->filter
+                                    : "",
+                                   /* Add 1 for 1 indexing. */
+                                   get_settings_data->first + 1,
+                                   get_settings_data->max);
+          count = 0;
+          while (next (&settings))
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<setting id=\"%s\">"
+                                       "<name>%s</name>"
+                                       "<comment>%s</comment>"
+                                       "<value>%s</value>"
+                                       "</setting>",
+                                       setting_iterator_uuid (&settings),
+                                       setting_iterator_name (&settings),
+                                       setting_iterator_comment (&settings),
+                                       setting_iterator_value (&settings));
+              count++;
+            }
+          filtered = setting
+                      ? 1
+                      : setting_count (get_settings_data->filter);
+          SENDF_TO_CLIENT_OR_FAIL ("<setting_count>"
+                                   "<filtered>%i</filtered>"
+                                   "<page>%i</page>"
+                                   "</setting_count>",
+                                   filtered,
+                                   count);
+          cleanup_iterator (&settings);
+          SEND_TO_CLIENT_OR_FAIL ("</get_settings_response>");
+
+          get_settings_data_reset (get_settings_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }

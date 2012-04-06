@@ -1006,6 +1006,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS schedules_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
   sql ("CREATE TABLE IF NOT EXISTS slaves (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
   sql ("CREATE TABLE IF NOT EXISTS slaves_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
+  sql ("CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");
   /* port_range in the following two is actually a port list.  Migrating a
    * column rename is lots of work. */
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range);");
@@ -9975,6 +9976,19 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       }
     g_free (dir);
   }
+
+  /* Ensure the default settings exist. */
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM settings"
+               " WHERE uuid = '5f5a8712-8017-11e1-8556-406186ea4fc5'"
+               " AND owner IS NULL;")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('5f5a8712-8017-11e1-8556-406186ea4fc5', NULL, 'Rows Per Page',"
+         "  'The default number of rows displayed in any listing.',"
+         "  10);");
 
   if (nvt_cache_mode == 0)
     {
@@ -22991,8 +23005,7 @@ target_count (const char *filter, const char *actions_string)
                  "   (SELECT ROWID FROM users"
                  "    WHERE users.uuid = '%s')"
                  "   AND actions & %u = %u))"
-                 "%s%s"
-                 " ORDER BY %s %s;",
+                 "%s%s;",
                  current_credentials.uuid,
                  current_credentials.uuid,
                  actions,
@@ -37125,6 +37138,159 @@ manage_report_host_detail (report_t report, const char *host, const char *xml)
 
 
 /* Settings. */
+
+/**
+ * @brief Extra columns for setting iterator.
+ */
+#define SETTING_ITERATOR_EXTRA_COLS \
+ { NULL }
+
+/**
+ * @brief Count number of settings.
+ *
+ * @param[in]  filter           Filter term.
+ *
+ * @return Total number of settings in filtered set.
+ */
+int
+setting_count (const char *filter)
+{
+  static const char *extra_columns[] = SETTING_ITERATOR_EXTRA_COLS;
+  gchar *clause;
+  int ret;
+
+  assert (current_credentials.uuid);
+
+  clause = filter_clause ("setting", filter, extra_columns);
+
+  ret = sql_int (0, 0,
+                 "SELECT count (*)"
+                 " FROM settings"
+                 " WHERE"
+                 " (owner == (SELECT ROWID FROM users WHERE uuid = '%s')"
+                 "  OR (owner IS NULL"
+                 "      AND uuid"
+                 "      NOT IN (SELECT uuid FROM settings"
+                 "              WHERE owner == (SELECT ROWID FROM users"
+                 "                              WHERE uuid = '%s'))))"
+                 "%s%s;",
+                 current_credentials.uuid,
+                 current_credentials.uuid,
+                 clause ? " AND " : "",
+                 clause ? clause : "");
+
+  g_free (clause);
+
+  return ret;
+}
+
+/**
+ * @brief Initialise a setting iterator, including observed settings.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  uuid        UUID of setting to limit iteration to.  0 for all.
+ * @param[in]  filter      Filter term.
+ * @param[in]  first       First setting.
+ * @param[in]  max         Maximum number of settings returned.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ */
+void
+init_setting_iterator (iterator_t *iterator, const char *uuid,
+                       const char *filter, int first, int max, int ascending,
+                       const char *sort_field)
+{
+  static const char *extra_columns[] = SETTING_ITERATOR_EXTRA_COLS;
+  gchar *clause, *quoted_uuid;
+
+  assert (current_credentials.uuid);
+
+  if (first < 0)
+    first = 0;
+  if (max < 1)
+    max = -1;
+
+  clause = filter_clause ("setting", filter, extra_columns);
+
+  quoted_uuid = uuid ? sql_quote (uuid) : NULL;
+
+  if (quoted_uuid)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, comment, value"
+                   " FROM settings"
+                   " WHERE uuid = '%s'"
+                   " AND (owner IS NULL)"
+                   " OR (owner ="
+                   "     (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                   /* Force the user's setting to come before the default. */
+                   " ORDER BY owner DESC;",
+                   quoted_uuid,
+                   current_credentials.uuid);
+  else
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, comment, value"
+                   " FROM settings"
+                   " WHERE"
+                   " (owner == (SELECT ROWID FROM users WHERE uuid = '%s')"
+                   "  OR (owner IS NULL"
+                   "      AND uuid"
+                   "      NOT IN (SELECT uuid FROM settings"
+                   "              WHERE owner == (SELECT ROWID FROM users"
+                   "                              WHERE uuid = '%s'))))"
+                   "%s%s"
+                   " ORDER BY %s %s"
+                   " LIMIT %i OFFSET %i;",
+                   current_credentials.uuid,
+                   current_credentials.uuid,
+                   clause ? " AND " : "",
+                   clause ? clause : "",
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC",
+                   max,
+                   first);
+
+  g_free (clause);
+}
+
+/**
+ * @brief Get the UUID from a setting iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The UUID of the setting, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (setting_iterator_uuid, 1);
+
+/**
+ * @brief Get the name from a setting iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the setting, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (setting_iterator_name, 2);
+
+/**
+ * @brief Get the comment from a setting iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The comment of the setting, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (setting_iterator_comment, 3);
+
+/**
+ * @brief Get the value from a setting iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The value of the setting, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (setting_iterator_value, 4);
 
 /**
  * @brief Set the value of a setting.

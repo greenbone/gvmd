@@ -179,6 +179,7 @@ typedef long long int port_list_t;
 typedef long long int port_range_t;
 typedef long long int lsc_credential_t;
 typedef long long int schedule_t;
+typedef long long int setting_t;
 
 #include <sqlite3.h>
 
@@ -2160,6 +2161,25 @@ cve_iterator_cvss (iterator_t*);
 
 
 /* Settings. */
+
+int
+setting_count (const char *);
+
+void
+init_setting_iterator (iterator_t *, const char *, const char *, int, int, int,
+                       const char *);
+
+const char*
+setting_iterator_uuid (iterator_t*);
+
+const char*
+setting_iterator_name (iterator_t*);
+
+const char*
+setting_iterator_comment (iterator_t*);
+
+const char*
+setting_iterator_value (iterator_t*);
 
 int
 manage_set_setting (const gchar *, const gchar *);
