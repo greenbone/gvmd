@@ -23166,7 +23166,8 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
  * @param[in]  trash       Whether to iterate over trashcan targets.
  * @param[in]  filter      Filter term.
  * @param[in]  first       First target.
- * @param[in]  max         Maximum number of targets returned.
+ * @param[in]  max         Maximum number of targets returned.  If -2 then
+ *                         Rows Per Page targets.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  * @param[in]  actions_string   Actions.
@@ -23184,7 +23185,10 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
 
   if (first < 0)
     first = 0;
-  if (max < 1)
+
+  if (max == -2)
+    setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5", &max);
+  else if (max < 1)
     max = -1;
 
   if (actions_string == NULL || strlen (actions_string) == 0)
@@ -37291,6 +37295,57 @@ DEF_ACCESS (setting_iterator_comment, 3);
  *         cleanup_iterator.
  */
 DEF_ACCESS (setting_iterator_value, 4);
+
+/**
+ * @brief Get the value of a setting.
+ *
+ * @param[in]   uuid   UUID of setting.
+ * @param[out]  value  Value.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+setting_value_int (const char *uuid, int *value)
+{
+  gchar *quoted_uuid;
+
+  if (value == NULL || uuid == NULL)
+    return -1;
+
+  quoted_uuid = sql_quote (uuid);
+
+  if (sql_int (0, 0,
+               "SELECT count (*)"
+               " FROM settings"
+               " WHERE uuid = '%s'"
+               " AND (owner IS NULL)"
+               " OR (owner ="
+               "     (SELECT ROWID FROM users WHERE users.uuid = '%s'));",
+               quoted_uuid,
+               current_credentials.uuid)
+      == 0)
+    {
+      *value = -1;
+      g_free (quoted_uuid);
+      return -1;
+    }
+
+  *value = sql_int (0, 0,
+                    "SELECT value"
+                    " FROM settings"
+                    " WHERE uuid = '%s'"
+                    " AND (owner IS NULL)"
+                    " OR (owner ="
+                    "     (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                    /* Force the user's setting to come before the default. */
+                    " ORDER BY owner DESC;",
+                    quoted_uuid,
+                    current_credentials.uuid);
+
+  g_free (quoted_uuid);
+
+  return 0;
+}
 
 /**
  * @brief Set the value of a setting.

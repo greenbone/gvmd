@@ -1,5 +1,18 @@
 2012-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_target_iterator): If max is -2 then get max from
+	Rows Per Page setting.
+	(setting_value_int): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_start_element): Let GET_TARGETS max be any
+	negative.
+	(omp_xml_handle_end_element): If GET_TARGETS max is -2 then set is from
+	Rows Per Page setting.
+
+2012-04-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OMP GET_SETTINGS.
 
 	* src/manage_sql.c (create_tables): Add settings.

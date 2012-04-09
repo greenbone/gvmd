@@ -4990,7 +4990,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_targets_data->max = atoi (attribute);
             else
               get_targets_data->max = -1;
-            if (get_targets_data->max < 1)
+            if (get_targets_data->max == 0)
               get_targets_data->max = -1;
 
             append_attribute (attribute_names, attribute_values, "sort_field",
@@ -15085,6 +15085,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        get_targets_data->filter
                                         ? get_targets_data->filter
                                         : "");
+              if (get_targets_data->max == -2)
+                setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
+                                   &get_targets_data->max);
               SENDF_TO_CLIENT_OR_FAIL ("<targets start=\"%i\" max=\"%i\"/>",
                                        /* Add 1 for 1 indexing. */
                                        get_targets_data->first + 1,

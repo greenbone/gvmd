@@ -2182,6 +2182,9 @@ const char*
 setting_iterator_value (iterator_t*);
 
 int
+setting_value_int (const char *, int *);
+
+int
 manage_set_setting (const gchar *, const gchar *);
 
 
