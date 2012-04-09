@@ -37350,17 +37350,20 @@ setting_value_int (const char *uuid, int *value)
 /**
  * @brief Set the value of a setting.
  *
- * @param[in]  name   Setting name.
+ * @param[in]  uuid   UUID of setting.
+ * @param[in]  name   Setting name.  For Timezone and Password.
  * @param[in]  value  New setting value, base64 encoded.
  *
- * @return 0 success, 1 name must be Timezone, -1 on error.
+ * @return 0 success, 1 failed to find setting, 2 syntax error in value, -1 on
+ *         error.
  */
 int
-manage_set_setting (const gchar *name, const gchar *value_64)
+manage_set_setting (const gchar *uuid, const gchar *name,
+                    const gchar *value_64)
 {
   assert (current_credentials.uuid);
 
-  if (strcmp (name, "Timezone") == 0)
+  if (name && (strcmp (name, "Timezone") == 0))
     {
       gsize value_size;
       gchar *quoted_timezone, *value;
@@ -37378,7 +37381,8 @@ manage_set_setting (const gchar *name, const gchar *value_64)
       g_free (quoted_timezone);
       return 0;
     }
-  else if (strcmp (name, "Password") == 0)
+
+  if (name && (strcmp (name, "Password") == 0))
     {
       gsize value_size;
       gchar *value;
@@ -37394,6 +37398,84 @@ manage_set_setting (const gchar *name, const gchar *value_64)
         }
       return openvas_user_modify (current_credentials.username, value,
                                   NULL, NULL, 0, OPENVAS_USERS_DIR, NULL);
+    }
+
+  if (uuid)
+    {
+      gsize value_size;
+      gchar *value, *quoted_uuid, *quoted_value;
+
+      assert (current_credentials.username);
+
+      quoted_uuid = sql_quote (uuid);
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM settings"
+                   " WHERE uuid = '%s'"
+                   " AND owner IS NULL;",
+                   quoted_uuid,
+                   current_credentials.uuid)
+          == 0)
+        {
+          g_free (quoted_uuid);
+          return 1;
+        }
+
+      if (value_64 && strlen (value_64))
+        value = (gchar*) g_base64_decode (value_64, &value_size);
+      else
+        {
+          value = g_strdup ("");
+          value_size = 0;
+        }
+
+      if (strcmp (uuid, "5f5a8712-8017-11e1-8556-406186ea4fc5") == 0)
+        {
+          const gchar *val;
+          /* Rows Per Default. */
+          val = value;
+          while (*val && isdigit (*val)) val++;
+          if (*val && strcmp (value, "-1"))
+            {
+              g_free (quoted_uuid);
+              return 2;
+            }
+        }
+
+      quoted_value = sql_quote (value);
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM settings"
+                   " WHERE uuid = '%s'"
+                   " AND owner = (SELECT ROWID FROM users WHERE uuid = '%s');",
+                   quoted_uuid,
+                   current_credentials.uuid))
+        sql ("UPDATE settings SET value = '%s'"
+             " WHERE uuid = '%s'"
+             " AND owner = (SELECT ROWID FROM users WHERE uuid = '%s');",
+             quoted_value,
+             quoted_uuid,
+             current_credentials.uuid);
+      else
+        sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
+             " VALUES"
+             " ('%s',"
+             "  (SELECT ROWID FROM users WHERE uuid = '%s'),"
+             "  (SELECT name FROM settings"
+             "   WHERE uuid = '%s' AND owner IS NULL),"
+             "  (SELECT comment FROM settings"
+             "   WHERE uuid = '%s' AND owner IS NULL),"
+             "  '%s');",
+             quoted_uuid,
+             current_credentials.uuid,
+             quoted_uuid,
+             quoted_uuid,
+             quoted_value);
+
+      g_free (quoted_uuid);
+      g_free (quoted_value);
+
+      return 0;
     }
   return 1;
 }

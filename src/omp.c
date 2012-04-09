@@ -2390,6 +2390,7 @@ modify_report_format_data_reset (modify_report_format_data_t *data)
 typedef struct
 {
   char *name;           ///< Name.
+  char *setting_id;     ///< Setting.
   char *value;          ///< Value.
 } modify_setting_data_t;
 
@@ -2402,6 +2403,7 @@ static void
 modify_setting_data_reset (modify_setting_data_t *data)
 {
   free (data->name);
+  free (data->setting_id);
   free (data->value);
 
   memset (data, 0, sizeof (modify_setting_data_t));
@@ -5105,6 +5107,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("MODIFY_SETTING", element_name) == 0)
           {
+            append_attribute (attribute_names, attribute_values,
+                              "setting_id",
+                              &modify_setting_data->setting_id);
             set_client_state (CLIENT_MODIFY_SETTING);
           }
         else if (strcasecmp ("MODIFY_TASK", element_name) == 0)
@@ -10379,12 +10384,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_SETTING:
         {
-          if ((modify_setting_data->name == NULL)
+          if (((modify_setting_data->name == NULL)
+               && (modify_setting_data->setting_id == NULL))
               || (modify_setting_data->value == NULL))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_setting",
-                                "MODIFY_SETTING requires a NAME and VALUE"));
-          else switch (manage_set_setting (modify_setting_data->name,
+                                "MODIFY_SETTING requires a NAME or setting_id"
+                                " and a VALUE"));
+          else switch (manage_set_setting (modify_setting_data->setting_id,
+                                           modify_setting_data->name,
                                            modify_setting_data->value))
             {
               case 0:
@@ -10393,7 +10401,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_setting",
-                                    "NAME must be Timezone or Password"));
+                                    "Failed to find setting"));
                 break;
               case 2:
                 SEND_TO_CLIENT_OR_FAIL
