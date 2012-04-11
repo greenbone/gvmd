@@ -22603,6 +22603,225 @@ delete_target (const char *target_id, int ultimate)
 }
 
 /**
+ * @brief Modify a target.
+ *
+ * The \param hosts and \param target_locator parameters are mutually
+ * exclusive, if target_locator is not NULL, always try to import from source.
+ *
+ * @param[in]   target_id       UUID of target.
+ * @param[in]   name            Name of target.
+ * @param[in]   hosts           Host list of target.
+ * @param[in]   comment         Comment on target.
+ * @param[in]   port_list_id    Port list of target (overrides \p port_range).
+ * @param[in]   ssh_lsc_credential_id  SSH LSC credential.
+ * @param[in]   ssh_port        Port for SSH LSC login.
+ * @param[in]   smb_lsc_credential_id  SMB LSC credential.
+ * @param[in]   target_locator  Name of target_locator to import target(s)
+ *                              from.
+ * @param[in]   username        Username to authenticate with against source.
+ * @param[in]   password        Password for user \p username.
+ *
+ * @return 0 success, 1 target exists already, 2 error in host specification,
+ *         3 too many hosts, 4 error in port range, 5 error in SSH port,
+ *         6 failed to find port list, 7 failed to find SSH cred, 8 failed to
+ *         find SMB cred, 9 failed to find target, -1 if import from target
+ *         locator failed or response was empty FIX or internal error.
+ */
+int
+modify_target (const char *target_id, const char *name, const char *hosts,
+               const char *comment, const char *port_list_id,
+               const char *ssh_lsc_credential_id, const char *ssh_port,
+               const char *smb_lsc_credential_id,
+               const char *target_locator, const char *username,
+               const char *password)
+{
+  gchar *quoted_name, *quoted_hosts, *quoted_comment, *quoted_ssh_port;
+  port_list_t port_list;
+  target_t target;
+  lsc_credential_t ssh_lsc_credential, smb_lsc_credential;
+
+  if (ssh_port && validate_port (ssh_port))
+    return 5;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+
+  target = 0;
+  port_list = 0;
+  if (find_target (target_id, &target)
+      || find_port_list (port_list_id, &port_list))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (target == 0)
+    {
+      sql ("ROLLBACK;");
+      return 9;
+    }
+
+  if (port_list == 0)
+    {
+      sql ("ROLLBACK;");
+      return 6;
+    }
+
+  ssh_lsc_credential = 0;
+  if (ssh_lsc_credential_id
+      && find_lsc_credential (ssh_lsc_credential_id, &ssh_lsc_credential))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (ssh_lsc_credential_id && ssh_lsc_credential == 0)
+    {
+      sql ("ROLLBACK;");
+      return 7;
+    }
+
+  smb_lsc_credential = 0;
+  if (smb_lsc_credential_id
+      && find_lsc_credential (smb_lsc_credential_id, &smb_lsc_credential))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (smb_lsc_credential_id && smb_lsc_credential == 0)
+    {
+      sql ("ROLLBACK;");
+      return 8;
+    }
+
+  /* Check whether a target with the same name exists already. */
+  quoted_name = sql_quote (name);
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM targets"
+               " WHERE name = '%s'"
+               " AND ROWID != %llu"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+               quoted_name,
+               target,
+               current_credentials.uuid))
+    {
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  /* Import targets from target locator. */
+  if (target_locator != NULL)
+    {
+      int max;
+      gchar *clean;
+      GSList* hosts_list = resource_request_resource (target_locator,
+                                                      RESOURCE_TYPE_TARGET,
+                                                      username ? username : "",
+                                                      password ? password : "");
+
+      if (hosts_list == NULL)
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      gchar* import_hosts = openvas_string_flatten_string_list (hosts_list,
+                                                                ", ");
+
+      openvas_string_list_free (hosts_list);
+      max = manage_max_hosts (import_hosts);
+      if (max <= 0)
+        {
+          g_free (import_hosts);
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      clean = clean_hosts (import_hosts, &max);
+      if (max > MANAGE_MAX_HOSTS)
+        {
+          g_free (import_hosts);
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 3;
+        }
+      g_free (import_hosts);
+      quoted_hosts = sql_quote (clean);
+      g_free (clean);
+    }
+  else
+    {
+      int max;
+      gchar *clean;
+
+      /* User provided hosts. */
+
+      max = manage_max_hosts (hosts);
+      if (max <= 0)
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      clean = clean_hosts (hosts, &max);
+      if (max > MANAGE_MAX_HOSTS)
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 3;
+        }
+      quoted_hosts = sql_quote (clean);
+      g_free (clean);
+    }
+
+  if (ssh_lsc_credential)
+    quoted_ssh_port = sql_insert (ssh_port ? ssh_port : "22");
+  else
+    quoted_ssh_port = g_strdup ("NULL");
+
+  if (comment)
+    {
+      quoted_comment = sql_quote (comment);
+      sql ("UPDATE targets SET"
+           " name = '%s',"
+           " hosts = '%s',"
+           " comment = '%s',"
+           " lsc_credential = %llu,"
+           " ssh_port = %s,"
+           " smb_lsc_credential = %llu,"
+           " port_range = %llu"
+           " WHERE ROWID = %llu;",
+           quoted_name, quoted_hosts, quoted_comment, ssh_lsc_credential,
+           quoted_ssh_port, smb_lsc_credential, port_list, target);
+      g_free (quoted_comment);
+    }
+  else
+    sql ("UPDATE targets SET"
+         " name = '%s',"
+         " hosts = '%s',"
+         " lsc_credential = %llu,"
+         " ssh_port = %s,"
+         " smb_lsc_credential = %llu,"
+         " port_range = %llu"
+         " WHERE ROWID = %llu;",
+         quoted_name, quoted_hosts, ssh_lsc_credential, quoted_ssh_port,
+         smb_lsc_credential, port_list, target);
+
+  g_free (quoted_name);
+  g_free (quoted_hosts);
+  g_free (quoted_ssh_port);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Term.
  */
 struct term

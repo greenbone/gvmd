@@ -1,3 +1,19 @@
+2012-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP MODIFY_TARGET.
+
+	* src/manage_sql.c (modify_target): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (help_text, command_data_t, client_state_t): Add
+	modify_target.
+	(modify_target_data_t): New structure.
+	(modify_target_data_reset): New function.
+	(modify_target_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add MODIFY_TARGET handling.
+
 2012-04-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_set_setting): Add uuid arg.  Set Rows Per Page

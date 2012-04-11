@@ -900,6 +900,11 @@ create_target (const char*, const char*, const char*, const char*, const char*,
                const char*, const char*, target_t*);
 
 int
+modify_target (const char*, const char*, const char*, const char*, const char*,
+               const char*, const char*, const char*, const char*,
+               const char*, const char*);
+
+int
 delete_target (const char*, int);
 
 int

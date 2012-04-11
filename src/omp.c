@@ -399,6 +399,7 @@ static char* help_text = "\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
 "    MODIFY_REPORT_FORMAT   Modify an existing report format.\n"
 "    MODIFY_SETTING         Modify an existing setting.\n"
+"    MODIFY_TARGET          Modify an existing target.\n"
 "    MODIFY_TASK            Update an existing task.\n"
 "    PAUSE_TASK             Pause a running task.\n"
 "    RESTORE                Restore a resource.\n"
@@ -2410,6 +2411,47 @@ modify_setting_data_reset (modify_setting_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_target command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *hosts;                   ///< Hosts for target.
+  char *name;                    ///< Name of target.
+  char *port_list_id;            ///< Port list for target.
+  char *ssh_lsc_credential_id;   ///< SSH LSC credential for target.
+  char *ssh_port;                ///< Port for SSH LSC.
+  char *smb_lsc_credential_id;   ///< SMB LSC credential for target.
+  char *target_id;               ///< Target UUID.
+  char *target_locator;          ///< Target locator (source name).
+  char *target_locator_password; ///< Target locator credentials: password.
+  char *target_locator_username; ///< Target locator credentials: username.
+} modify_target_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_target_data_reset (modify_target_data_t *data)
+{
+  free (data->comment);
+  free (data->hosts);
+  free (data->name);
+  free (data->port_list_id);
+  free (data->ssh_lsc_credential_id);
+  free (data->ssh_port);
+  free (data->smb_lsc_credential_id);
+  free (data->target_id);
+  free (data->target_locator);
+  free (data->target_locator_password);
+  free (data->target_locator_username);
+
+  memset (data, 0, sizeof (modify_target_data_t));
+}
+
+/**
  * @brief Command data for the modify_task command.
  */
 typedef struct
@@ -2817,6 +2859,7 @@ typedef union
   modify_report_data_t modify_report;                 ///< modify_report
   modify_report_format_data_t modify_report_format;   ///< modify_report_format
   modify_setting_data_t modify_setting;               ///< modify_setting
+  modify_target_data_t modify_target;                 ///< modify_target
   modify_task_data_t modify_task;                     ///< modify_task
   pause_task_data_t pause_task;                       ///< pause_task
   restore_data_t restore;                             ///< restore
@@ -3200,6 +3243,12 @@ modify_report_format_data_t *modify_report_format_data
  */
 modify_setting_data_t *modify_setting_data
  = &(command_data.modify_setting);
+
+/**
+ * @brief Parser callback data for MODIFY_TARGET.
+ */
+modify_target_data_t *modify_target_data
+ = &(command_data.modify_target);
 
 /**
  * @brief Parser callback data for MODIFY_TASK.
@@ -3618,6 +3667,18 @@ typedef enum
   CLIENT_MODIFY_SETTING,
   CLIENT_MODIFY_SETTING_NAME,
   CLIENT_MODIFY_SETTING_VALUE,
+  CLIENT_MODIFY_TARGET,
+  CLIENT_MODIFY_TARGET_COMMENT,
+  CLIENT_MODIFY_TARGET_HOSTS,
+  CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL,
+  CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT,
+  CLIENT_MODIFY_TARGET_SMB_LSC_CREDENTIAL,
+  CLIENT_MODIFY_TARGET_NAME,
+  CLIENT_MODIFY_TARGET_PORT_RANGE,
+  CLIENT_MODIFY_TARGET_PORT_LIST,
+  CLIENT_MODIFY_TARGET_TARGET_LOCATOR,
+  CLIENT_MODIFY_TARGET_TARGET_LOCATOR_PASSWORD,
+  CLIENT_MODIFY_TARGET_TARGET_LOCATOR_USERNAME,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_COMMENT,
   CLIENT_MODIFY_TASK_ALERT,
@@ -5112,6 +5173,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_setting_data->setting_id);
             set_client_state (CLIENT_MODIFY_SETTING);
           }
+        else if (strcasecmp ("MODIFY_TARGET", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "target_id",
+                              &modify_target_data->target_id);
+            set_client_state (CLIENT_MODIFY_TARGET);
+          }
         else if (strcasecmp ("MODIFY_TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "task_id",
@@ -5373,6 +5440,47 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_SETTING_VALUE);
           }
         ELSE_ERROR ("modify_setting");
+
+      case CLIENT_MODIFY_TARGET:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_COMMENT);
+        else if (strcasecmp ("HOSTS", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_HOSTS);
+        else if (strcasecmp ("PORT_LIST", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_target_data->port_list_id);
+            set_client_state (CLIENT_MODIFY_TARGET_PORT_LIST);
+          }
+        else if (strcasecmp ("SSH_LSC_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_target_data->ssh_lsc_credential_id);
+            set_client_state (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL);
+          }
+        else if (strcasecmp ("SMB_LSC_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_target_data->smb_lsc_credential_id);
+            set_client_state (CLIENT_MODIFY_TARGET_SMB_LSC_CREDENTIAL);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_NAME);
+        else if (strcasecmp ("TARGET_LOCATOR", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_TARGET_LOCATOR);
+        ELSE_ERROR ("modify_target");
+
+      case CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL:
+        if (strcasecmp ("PORT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT);
+        ELSE_ERROR ("modify_target");
+
+      case CLIENT_MODIFY_TARGET_TARGET_LOCATOR:
+        if (strcasecmp ("PASSWORD", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_TARGET_LOCATOR_PASSWORD);
+        else if (strcasecmp ("USERNAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_TARGET_LOCATOR_USERNAME);
+        ELSE_ERROR ("modify_target");
 
       case CLIENT_MODIFY_TASK:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -13383,6 +13491,165 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_OVERRIDE, TEXT);
       CLOSE (CLIENT_MODIFY_OVERRIDE, THREAT);
 
+      case CLIENT_MODIFY_TARGET:
+        {
+          assert (strcasecmp ("MODIFY_TARGET", element_name) == 0);
+          assert (modify_target_data->name != NULL);
+          assert (modify_target_data->target_locator
+                  || modify_target_data->hosts != NULL);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_target",
+                                  "MODIFY is forbidden for observer users"));
+            }
+          else if (strlen (modify_target_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_target",
+                                "MODIFY_TARGET name must be at"
+                                " least one character long"));
+          else if (strlen (modify_target_data->hosts) == 0
+                   && modify_target_data->target_locator == NULL)
+            /** @todo Legitimate to pass an empty hosts element? */
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_target",
+                                "MODIFY_TARGET hosts must both be at least one"
+                                " character long, or TARGET_LOCATOR must"
+                                " be set"));
+          else if (strlen (modify_target_data->hosts) != 0
+                   && modify_target_data->target_locator != NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_target",
+                                " MODIFY_TARGET requires either a"
+                                " TARGET_LOCATOR or a host"));
+          /* Modify target from host string. */
+          else switch (modify_target
+                        (modify_target_data->target_id,
+                         modify_target_data->name,
+                         modify_target_data->hosts,
+                         modify_target_data->comment,
+                         modify_target_data->port_list_id,
+                         modify_target_data->ssh_lsc_credential_id,
+                         modify_target_data->ssh_port,
+                         modify_target_data->smb_lsc_credential_id,
+                         modify_target_data->target_locator,
+                         modify_target_data->target_locator_username,
+                         modify_target_data->target_locator_password))
+            {
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Target exists already"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Error in host specification"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Host specification exceeds"
+                                    " " G_STRINGIFY (MANAGE_MAX_HOSTS)
+                                    " hosts"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be modified");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Error in port range"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be modified");
+                break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Error in SSH port"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be modified");
+                break;
+              case 6:
+                // FIX 6 missing in CREATE_TARGET?
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be modified");
+                if (send_find_error_to_client
+                     ("modify_target",
+                      "port_list",
+                      modify_target_data->port_list_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 7:
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be modified");
+                if (send_find_error_to_client
+                     ("modify_target",
+                      "LSC credential",
+                      modify_target_data->ssh_lsc_credential_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 8:
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be modified");
+                if (send_find_error_to_client
+                     ("modify_target",
+                      "LSC credential",
+                      modify_target_data->smb_lsc_credential_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("modify_target"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be modified");
+                break;
+              default:
+                {
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_target"));
+                  g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                         "Target %s has been modified",
+                         modify_target_data->target_id);
+                  break;
+                }
+            }
+
+          modify_target_data_reset (modify_target_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_TARGET, COMMENT);
+      CLOSE (CLIENT_MODIFY_TARGET, HOSTS);
+      CLOSE (CLIENT_MODIFY_TARGET, NAME);
+      CLOSE (CLIENT_MODIFY_TARGET, PORT_LIST);
+      CLOSE (CLIENT_MODIFY_TARGET, PORT_RANGE);
+      CLOSE (CLIENT_MODIFY_TARGET, SSH_LSC_CREDENTIAL);
+      CLOSE (CLIENT_MODIFY_TARGET, SMB_LSC_CREDENTIAL);
+      CLOSE (CLIENT_MODIFY_TARGET_TARGET_LOCATOR, PASSWORD);
+      CLOSE (CLIENT_MODIFY_TARGET, TARGET_LOCATOR);
+      CLOSE (CLIENT_MODIFY_TARGET_TARGET_LOCATOR, USERNAME);
+
+      CLOSE (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL, PORT);
+
       case CLIENT_TEST_ALERT:
         if (test_alert_data->alert_id)
           {
@@ -16880,6 +17147,28 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_OVERRIDE_THREAT,
               &modify_override_data->threat);
+
+
+      APPEND (CLIENT_MODIFY_TARGET_COMMENT,
+              &modify_target_data->comment);
+
+      APPEND (CLIENT_MODIFY_TARGET_HOSTS,
+              &modify_target_data->hosts);
+
+      APPEND (CLIENT_MODIFY_TARGET_NAME,
+              &modify_target_data->name);
+
+      APPEND (CLIENT_MODIFY_TARGET_TARGET_LOCATOR,
+              &modify_target_data->target_locator);
+
+      APPEND (CLIENT_MODIFY_TARGET_TARGET_LOCATOR_PASSWORD,
+              &modify_target_data->target_locator_password);
+
+      APPEND (CLIENT_MODIFY_TARGET_TARGET_LOCATOR_USERNAME,
+              &modify_target_data->target_locator_username);
+
+      APPEND (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT,
+              &modify_target_data->ssh_port);
 
 
       default:
