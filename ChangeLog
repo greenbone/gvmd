@@ -1,5 +1,10 @@
 2012-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Duplicate column names in index filter
+	with g_ascii_strdown so that the user can use any case.
+
+2012-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OMP MODIFY_TARGET.
 
 	* src/manage_sql.c (modify_target): New function.

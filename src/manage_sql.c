@@ -23006,7 +23006,7 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
             {
               gchar *column;
               quoted_keyword = sql_quote (equal + 1);
-              column = g_strndup (term->string, equal - term->string);
+              column = g_ascii_strdown (term->string, equal - term->string);
 
               if (vector_find_string (extra_columns, column) == 0
                   && array_find_string (columns, column) == 0)
@@ -23030,7 +23030,7 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
             {
               gchar *column;
               quoted_keyword = sql_quote (approx + 1);
-              column = g_strndup (term->string, approx - term->string);
+              column = g_ascii_strdown (term->string, approx - term->string);
 
               if (vector_find_string (extra_columns, column) == 0
                   && array_find_string (columns, column) == 0)
@@ -23054,7 +23054,7 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
             {
               gchar *column;
               quoted_keyword = sql_quote (above + 1);
-              column = g_strndup (term->string, above - term->string);
+              column = g_ascii_strdown (term->string, above - term->string);
 
               if (vector_find_string (extra_columns, column) == 0
                   && array_find_string (columns, column) == 0)
@@ -23078,7 +23078,7 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
             {
               gchar *column;
               quoted_keyword = sql_quote (below + 1);
-              column = g_strndup (term->string, below - term->string);
+              column = g_ascii_strdown (term->string, below - term->string);
 
               if (vector_find_string (extra_columns, column) == 0
                   && array_find_string (columns, column) == 0)
