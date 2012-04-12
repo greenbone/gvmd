@@ -40,6 +40,9 @@ clean_hosts (const char *, int *);
 char *
 iso_time (time_t *);
 
+int
+manage_max_hosts (const char *);
+
 
 /* Variables */
 
@@ -667,6 +670,36 @@ sql_now (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   assert (argc == 0);
   sqlite3_result_int (context, time (NULL));
+}
+
+/**
+ * @brief Return number of hosts.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_max_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  const unsigned char *hosts;
+  gchar *max;
+
+  assert (argc == 1);
+
+  hosts = sqlite3_value_text (argv[0]);
+  if (hosts == NULL)
+    {
+      /* Seems this happens when the query result is empty. */
+      sqlite3_result_text (context, "0", -1, SQLITE_TRANSIENT);
+      return;
+    }
+
+  max = g_strdup_printf ("%i", manage_max_hosts ((gchar*) hosts));
+  sqlite3_result_text (context, max, -1, SQLITE_TRANSIENT);
+  g_free (max);
 }
 
 /**

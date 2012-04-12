@@ -1,5 +1,24 @@
 2012-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add IP count to GET_TARGETS filtering.  Also better control which database
+	columns are searched.
+
+	* src/manage_sql.c (init_manage_process): Create max_hosts SQL function.
+	(filter_clause): Remove automatic filtering by all table columns.  Instead
+	filter only on given columns.
+	(TARGET_ITERATOR_EXTRA_COLS): Remove.
+	(TARGET_ITERATOR_COLUMNS): New define.  TARGET_ITERATOR_EXTRA_COLS with
+	all columns.
+	(target_count, init_user_target_iterator, init_target_iterator): Switch to
+	new filter_clause behaviour.  Add ips to SQL so that filters can access
+	value as column.
+
+	* src/sql.c (sql_max_hosts): New function.
+
+	* src/sql.h: Add header accordingly.
+
+2012-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): Duplicate column names in index filter
 	with g_ascii_strdown so that the user can use any case.
 

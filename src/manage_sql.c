@@ -8403,6 +8403,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           g_warning ("%s: failed to create now", __FUNCTION__);
           abort ();
         }
+
+      if (sqlite3_create_function (task_db,
+                                   "max_hosts",
+                                   1,               /* Number of args. */
+                                   SQLITE_UTF8,
+                                   NULL,            /* Callback data. */
+                                   sql_max_hosts,
+                                   NULL,            /* xStep. */
+                                   NULL)            /* xFinal. */
+          != SQLITE_OK)
+        {
+          g_warning ("%s: failed to create max_hosts", __FUNCTION__);
+          abort ();
+        }
     }
 }
 
@@ -22918,47 +22932,26 @@ split_filter (const gchar* filter)
 /**
  * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
  *
- * @param[in]  type           Resource type.
- * @param[in]  filter         Filter term.
- * @param[in]  extra_columns  Extra columns in the SQL statement.
+ * @param[in]  type     Resource type.
+ * @param[in]  filter   Filter term.
+ * @param[in]  columns  Columns in the SQL statement.
  *
  * @return WHERE clause for filter if one is required, else NULL.
  */
 static gchar *
-filter_clause (const char* type, const char* filter, const char **extra_columns)
+filter_clause (const char* type, const char* filter, const char **columns)
 {
   if (filter)
     {
       GString *clause;
       term_t **point;
       int first, last_was_and;
-      iterator_t rows;
-      array_t *columns, *split;
+      array_t *split;
 
       while (*filter && isspace (*filter)) filter++;
 
       if (strlen (filter) == 0)
         return NULL;
-
-      /* Store the column names of the table. */
-
-      init_iterator (&rows, "SELECT * FROM targets LIMIT 1;");
-      if (next (&rows))
-        {
-          int end, column;
-          end = iterator_column_count (&rows);
-          columns = make_array ();
-          for (column = 0; column < end; column++)
-            if (strcmp (iterator_column_name (&rows, column), "id"))
-              array_add (columns,
-                         g_strdup (iterator_column_name (&rows, column)));
-          assert (columns->len);
-        }
-      else
-        {
-          cleanup_iterator (&rows);
-          return NULL;
-        }
 
       /* Add SQL to the clause for each keyword or phrase. */
 
@@ -22970,7 +22963,7 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
       while (*point)
         {
           gchar *quoted_keyword, *equal, *approx, *above, *below;
-          int index, column;
+          int index;
           const char *extra_column;
           term_t *term;
 
@@ -23008,8 +23001,7 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
               quoted_keyword = sql_quote (equal + 1);
               column = g_ascii_strdown (term->string, equal - term->string);
 
-              if (vector_find_string (extra_columns, column) == 0
-                  && array_find_string (columns, column) == 0)
+              if (vector_find_string (columns, column) == 0)
                 {
                   last_was_and = 0;
                   point++;
@@ -23032,8 +23024,7 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
               quoted_keyword = sql_quote (approx + 1);
               column = g_ascii_strdown (term->string, approx - term->string);
 
-              if (vector_find_string (extra_columns, column) == 0
-                  && array_find_string (columns, column) == 0)
+              if (vector_find_string (columns, column) == 0)
                 {
                   last_was_and = 0;
                   point++;
@@ -23056,8 +23047,7 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
               quoted_keyword = sql_quote (above + 1);
               column = g_ascii_strdown (term->string, above - term->string);
 
-              if (vector_find_string (extra_columns, column) == 0
-                  && array_find_string (columns, column) == 0)
+              if (vector_find_string (columns, column) == 0)
                 {
                   last_was_and = 0;
                   point++;
@@ -23080,8 +23070,7 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
               quoted_keyword = sql_quote (below + 1);
               column = g_ascii_strdown (term->string, below - term->string);
 
-              if (vector_find_string (extra_columns, column) == 0
-                  && array_find_string (columns, column) == 0)
+              if (vector_find_string (columns, column) == 0)
                 {
                   last_was_and = 0;
                   point++;
@@ -23107,22 +23096,15 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
                                         : (last_was_and ? " AND " : " OR ")));
 
               quoted_keyword = sql_quote (term->string);
-              for (column = 0; column < columns->len; column++)
-                g_string_append_printf (clause,
-                                        "%s%s LIKE '%%%%%s%%%%'",
-                                        (column == 0 ? "" : " OR "),
-                                        (gchar*) g_ptr_array_index (columns,
-                                                                    column),
-                                        quoted_keyword);
               for (index = 0;
-                   (extra_column = extra_columns[index]) != NULL;
+                   (extra_column = columns[index]) != NULL;
                    index++)
                 {
                   gchar *quoted_extra_column;
                   quoted_extra_column = sql_quote (extra_column);
                   g_string_append_printf (clause,
                                           "%s%s LIKE '%%%%%s%%%%'",
-                                          (columns->len ? " OR " : ""),
+                                          (index ? " OR " : ""),
                                           quoted_extra_column,
                                           quoted_keyword);
                   g_free (quoted_extra_column);
@@ -23136,7 +23118,6 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
           last_was_and = 0;
           point++;
         }
-      array_free (columns);
       for (point = (term_t**) split->pdata; *point; point++)
         g_free ((*point)->string);
       array_free (split);
@@ -23151,10 +23132,11 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
 }
 
 /**
- * @brief Extra columns for target iterator.
+ * @brief Filter columns for target iterator.
  */
-#define TARGET_ITERATOR_EXTRA_COLS \
- { "port_list", "ssh_credential", "smb_credential", NULL }
+#define TARGET_ITERATOR_COLUMNS                                                \
+ { "uuid", "name", "comment", "hosts", "ips", "port_list", "ssh_credential",   \
+   "smb_credential", NULL }
 
 /**
  * @brief Count number of targets.
@@ -23167,7 +23149,7 @@ filter_clause (const char* type, const char* filter, const char **extra_columns)
 int
 target_count (const char *filter, const char *actions_string)
 {
-  static const char *extra_columns[] = TARGET_ITERATOR_EXTRA_COLS;
+  static const char *extra_columns[] = TARGET_ITERATOR_COLUMNS;
   int actions, ret;
   gchar *clause;
 
@@ -23189,7 +23171,9 @@ target_count (const char *filter, const char *actions_string)
                      " AS ssh_credential,"
                      " (SELECT name FROM lsc_credentials"
                      "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"
-                     " AS smb_credential"
+                     " AS smb_credential,"
+                     " hosts,"
+                     " max_hosts (hosts) AS ips"
                      " FROM targets"
                      " WHERE ((owner IS NULL) OR (owner ="
                      " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -23211,7 +23195,9 @@ target_count (const char *filter, const char *actions_string)
                  " AS ssh_credential,"
                  " (SELECT name FROM lsc_credentials"
                  "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"
-                 " AS smb_credential"
+                 " AS smb_credential,"
+                 " hosts,"
+                 " max_hosts (hosts) AS ips"
                  " FROM targets"
                  " WHERE"
                  " ((owner IS NULL) OR (owner ="
@@ -23253,7 +23239,7 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
                            const char *filter, int first, int max,
                            int ascending, const char* sort_field)
 {
-  static const char *extra_columns[] = TARGET_ITERATOR_EXTRA_COLS;
+  static const char *extra_columns[] = TARGET_ITERATOR_COLUMNS;
   gchar *clause;
 
   assert (current_credentials.uuid);
@@ -23356,7 +23342,9 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
                    " AS ssh_credential,"
                    " (SELECT name FROM lsc_credentials"
                    "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"
-                   " AS smb_credential"
+                   " AS smb_credential,"
+                   " hosts,"
+                   " max_hosts (hosts) AS ips"
                    " FROM targets%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -23396,7 +23384,7 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
                       const char *filter, int first, int max, int ascending,
                       const char* sort_field, const char *actions_string)
 {
-  static const char *extra_columns[] = TARGET_ITERATOR_EXTRA_COLS;
+  static const char *extra_columns[] = TARGET_ITERATOR_COLUMNS;
   int actions;
   gchar *clause;
 
@@ -23559,7 +23547,9 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
                    " AS ssh_credential,"
                    " (SELECT name FROM lsc_credentials"
                    "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"
-                   " AS smb_credential"
+                   " AS smb_credential,"
+                   " hosts,"
+                   " max_hosts (hosts) AS ips"
                    " FROM targets%s"
                    " WHERE"
                    " ((owner IS NULL) OR (owner ="
