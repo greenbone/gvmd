@@ -22654,9 +22654,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   target_t target;
   lsc_credential_t ssh_lsc_credential, smb_lsc_credential;
 
-  if (ssh_port && validate_port (ssh_port))
-    return 5;
-
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
@@ -22683,31 +22680,41 @@ modify_target (const char *target_id, const char *name, const char *hosts,
     }
 
   ssh_lsc_credential = 0;
-  if (ssh_lsc_credential_id
-      && find_lsc_credential (ssh_lsc_credential_id, &ssh_lsc_credential))
+  if (ssh_lsc_credential_id && strcmp (ssh_lsc_credential_id, "0"))
     {
-      sql ("ROLLBACK;");
-      return -1;
-    }
+      if (find_lsc_credential (ssh_lsc_credential_id, &ssh_lsc_credential))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
 
-  if (ssh_lsc_credential_id && ssh_lsc_credential == 0)
-    {
-      sql ("ROLLBACK;");
-      return 7;
+      if (ssh_lsc_credential == 0)
+        {
+          sql ("ROLLBACK;");
+          return 7;
+        }
+
+      if (ssh_port && validate_port (ssh_port))
+        {
+          sql ("ROLLBACK;");
+          return 5;
+        }
     }
 
   smb_lsc_credential = 0;
-  if (smb_lsc_credential_id
-      && find_lsc_credential (smb_lsc_credential_id, &smb_lsc_credential))
+  if (smb_lsc_credential_id && strcmp (smb_lsc_credential_id, "0"))
     {
-      sql ("ROLLBACK;");
-      return -1;
-    }
+      if (find_lsc_credential (smb_lsc_credential_id, &smb_lsc_credential))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
 
-  if (smb_lsc_credential_id && smb_lsc_credential == 0)
-    {
-      sql ("ROLLBACK;");
-      return 8;
+      if (smb_lsc_credential == 0)
+        {
+          sql ("ROLLBACK;");
+          return 7;
+        }
     }
 
   /* Check whether a target with the same name exists already. */

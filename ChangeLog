@@ -1,5 +1,10 @@
 2012-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_target): Only validate port when there's an SSH
+	credential.  Add 0 tests for credentials.
+
+2012-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add IP count to GET_TARGETS filtering.  Also better control which database
 	columns are searched.
 
