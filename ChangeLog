@@ -1,3 +1,10 @@
+2012-04-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (scan_start, scan_end): Format date nicely.
+
+	* src/report_formats/HTML/HTML.xsl (real-report): Add start and end
+	columns to host summary.
+
 2012-04-13  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Add switch to disable the sync script.

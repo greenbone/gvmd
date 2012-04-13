@@ -3,7 +3,8 @@
     version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:str="http://exslt.org/strings"
-    extension-element-prefixes="str">
+    xmlns:date="http://exslt.org/dates-and-times"
+    extension-element-prefixes="str date">
   <xsl:output method="html"
               doctype-system="http://www.w3.org/TR/html4/strict.dtd"
               doctype-public="-//W3C//DTD HTML 4.01//EN"
@@ -207,11 +208,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 </xsl:template>
 
   <xsl:template match="scan_start">
-    <tr><td>Scan started:</td><td><xsl:apply-templates /></td></tr>
+    <tr>
+      <td>Scan started:</td>
+      <td>
+        <xsl:if test="string-length (text ())">
+          <b><xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()))"/></b>
+        </xsl:if>
+      </td>
+    </tr>
   </xsl:template>
 
   <xsl:template match="scan_end">
-    <tr><td>Scan ended:</td><td><xsl:apply-templates /></td></tr>
+    <tr>
+      <td>Scan ended:</td>
+      <td>
+        <xsl:if test="string-length (text ())">
+          <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()))"/>
+        </xsl:if>
+      </td>
+    </tr>
   </xsl:template>
 
   <xsl:template match="note">
@@ -650,6 +665,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <table>
       <tr style="background-color: #d5d5d5;">
         <td>Host</td>
+        <td>Start</td>
+        <td>End</td>
         <td>High</td>
         <td>Medium</td>
         <td>Low</td>
@@ -670,6 +687,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </xsl:otherwise>
             </xsl:choose>
           </td>
+          <td>
+            <xsl:value-of select="concat (date:month-abbreviation(start/text()), ' ', date:day-in-month(start/text()), ', ', format-number(date:hour-in-day(start/text()), '00'), ':', format-number(date:minute-in-hour(start/text()), '00'), ':', format-number(date:second-in-minute(start/text()), '00'))"/>
+          </td>
+          <td>
+            <xsl:choose>
+              <xsl:when test="end/text() != ''">
+                <xsl:value-of select="concat (date:month-abbreviation(end/text()), ' ', date:day-in-month(end/text()), ', ', format-number(date:hour-in-day(end/text()), '00'), ':', format-number(date:minute-in-hour(end/text()), '00'), ':', format-number(date:second-in-minute(end/text()), '00'))"/>
+              </xsl:when>
+              <xsl:otherwise>(not finished)</xsl:otherwise>
+            </xsl:choose>
+          </td>
           <td><xsl:value-of select="count(../results/result[host/text() = $current_host][threat/text() = 'High'])"/></td>
           <td><xsl:value-of select="count(../results/result[host/text() = $current_host][threat/text() = 'Medium'])"/></td>
           <td><xsl:value-of select="count(../results/result[host/text() = $current_host][threat/text() = 'Low'])"/></td>
@@ -679,6 +707,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:for-each>
       <tr>
         <td>Total: <xsl:value-of select="count(host_start)"/></td>
+        <td></td>
+        <td></td>
         <td><xsl:value-of select="count(results/result[threat/text() = 'High'])"/></td>
         <td><xsl:value-of select="count(results/result[threat/text() = 'Medium'])"/></td>
         <td><xsl:value-of select="count(results/result[threat/text() = 'Low'])"/></td>
