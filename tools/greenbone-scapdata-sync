@@ -28,7 +28,7 @@
 # with some characters in order to make it newer than
 # any follow-up version to prevent that your version
 # will be overwritten.
-VERSION=20120404
+VERSION=20120413
 
 # SETTINGS
 # ========
@@ -51,6 +51,9 @@ PORT=24
 # sufficient right to access the logfile.
 LOGDIR="/var/log/openvas/"
 LOGFILE="greenbone-scapdata-sync.log"
+
+# If ENABLED is set to 0, the sync script will not perform a synchronization.
+ENABLED=1
 
 [ -r /etc/openvas/greenbone-scapdata-sync.conf ] && . /etc/openvas/greenbone-scapdata-sync.conf
 
@@ -95,6 +98,12 @@ log_write(){
     echo "[`date -R`] $1" >> $LOGDIR$LOGFILE
   fi
 }
+
+if [ $ENABLED -ne 1 ]
+then
+  log_write "SCAP synchronization is disabled, exiting."
+  exit 0
+fi
 
 RSYNC=`command -v rsync`
 if [[ -z $RSYNC ]]
