@@ -22843,18 +22843,138 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 }
 
 /**
- * @brief Term.
+ * @brief Keyword type.
  */
-struct term
+typedef enum
 {
-  int quoted;        ///< Whether the term was quoted.
-  gchar *string;     ///< The term string, with outer quotations removed.
+  KEYWORD_TYPE_NUMBER,
+  KEYWORD_TYPE_STRING
+} keyword_type_t;
+
+/**
+ * @brief Comparison returns.
+ */
+typedef enum
+{
+  KEYWORD_RELATION_APPROX,
+  KEYWORD_RELATION_COLUMN_ABOVE,
+  KEYWORD_RELATION_COLUMN_APPROX,
+  KEYWORD_RELATION_COLUMN_EQUAL,
+  KEYWORD_RELATION_COLUMN_BELOW
+} keyword_relation_t;
+
+/**
+ * @brief Keyword.
+ */
+struct keyword
+{
+  gchar *column;                 ///< The column prefix, or NULL.
+  int number;                    ///< The number, if the keyword is a number.
+  int quoted;                    ///< Whether the keyword was quoted.
+  gchar *string;                 ///< The keyword string, outer quotes removed.
+  keyword_type_t type;           ///< Type of keyword.
+  keyword_relation_t relation;   ///< The relation.
 };
 
 /**
- * @brief Term type.
+ * @brief Keyword type.
  */
-typedef struct term term_t;
+typedef struct keyword keyword_t;
+
+/**
+ * @brief Free a keyword.
+ *
+ * @param[in]  keyword  Filter keyword.
+ */
+static void
+keyword_free (keyword_t* keyword)
+{
+  g_free (keyword->string);
+  g_free (keyword->column);
+}
+
+/**
+ * @brief Parse a filter keyword.
+ *
+ * @param[in]  keyword  Filter keyword.
+ */
+static void
+parse_keyword (keyword_t* keyword)
+{
+  gchar *string, *equal, *approx, *above, *below;
+
+  if (keyword->quoted)
+    {
+      keyword->relation = KEYWORD_RELATION_APPROX;
+      keyword->column = NULL;
+      keyword->type = KEYWORD_TYPE_STRING;
+      return;
+    }
+
+  string = keyword->string;
+
+  /* The relation and index column. */
+
+  equal = strchr (string, '=');
+  approx = strchr (string, '~');
+  above = strchr (string, '>');
+  below = strchr (string, '<');
+
+  if (equal && (equal > string))
+    {
+      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+      keyword->column = g_strndup (string, equal - string);
+      keyword->string = g_strdup (equal + 1);
+    }
+  else if (approx && (approx > string))
+    {
+      keyword->relation = KEYWORD_RELATION_COLUMN_APPROX;
+      keyword->column = g_strndup (string, approx - string);
+      keyword->string = g_strdup (approx + 1);
+    }
+  else if (above && (above > string))
+    {
+      keyword->relation = KEYWORD_RELATION_COLUMN_ABOVE;
+      keyword->column = g_strndup (string, above - string);
+      keyword->string = g_strdup (above + 1);
+    }
+  else if (below && (below > string))
+    {
+      keyword->relation = KEYWORD_RELATION_COLUMN_BELOW;
+      keyword->column = g_strndup (string, below - string);
+      keyword->string = g_strdup (below + 1);
+    }
+  else
+    {
+      keyword->relation = KEYWORD_RELATION_APPROX;
+      keyword->column = NULL;
+      keyword->type = KEYWORD_TYPE_STRING;
+      return;
+    }
+
+  /* The type. */
+
+  string = keyword->string;
+  if (*string && *string == '-' && strlen (string) > 1) string++;
+  while (*string && isdigit (*string)) string++;
+  if (*string)
+    {
+      struct tm date;
+      memset (&date, 0, sizeof (date));
+      if (strptime (keyword->string, "%Y-%m-%d", &date))
+        {
+          keyword->number = mktime (&date);
+          keyword->type = KEYWORD_TYPE_NUMBER;
+        }
+      else
+        keyword->type = KEYWORD_TYPE_STRING;
+    }
+  else
+    {
+      keyword->number = atoi (keyword->string);
+      keyword->type = KEYWORD_TYPE_NUMBER;
+    }
+}
 
 /**
  * @brief Split the filter term into parts.
@@ -22869,7 +22989,7 @@ split_filter (const gchar* filter)
   int in_quote, between;
   array_t *parts;
   const gchar *current_part;
-  term_t *term;
+  keyword_t *keyword;
 
   parts = make_array ();
   in_quote = 0;
@@ -22885,9 +23005,10 @@ split_filter (const gchar* filter)
             if (in_quote || between)
               break;
             /* End of a part. */
-            term = g_malloc0 (sizeof (term_t));
-            term->string = g_strndup (current_part, filter - current_part);
-            array_add (parts, term);
+            keyword = g_malloc0 (sizeof (keyword_t));
+            keyword->string = g_strndup (current_part, filter - current_part);
+            parse_keyword (keyword);
+            array_add (parts, keyword);
             between = 1;
             break;
 
@@ -22895,11 +23016,12 @@ split_filter (const gchar* filter)
             if (in_quote)
               {
                 /* End of a quoted part. */
-                term = g_malloc0 (sizeof (term_t));
-                term->quoted = 1;
-                term->string = g_strndup (current_part,
-                                          filter - current_part - 1);
-                array_add (parts, term);
+                keyword = g_malloc0 (sizeof (keyword_t));
+                keyword->quoted = 1;
+                keyword->string = g_strndup (current_part,
+                                             filter - current_part);
+                parse_keyword (keyword);
+                array_add (parts, keyword);
                 in_quote = 0;
                 between = 1;
               }
@@ -22926,10 +23048,11 @@ split_filter (const gchar* filter)
     }
   if (between == 0)
     {
-      term = g_malloc0 (sizeof (term_t));
-      term->quoted = in_quote;
-      term->string = g_strdup (current_part);
-      array_add (parts, term);
+      keyword = g_malloc0 (sizeof (keyword_t));
+      keyword->quoted = in_quote;
+      keyword->string = g_strdup (current_part);
+      parse_keyword (keyword);
+      array_add (parts, keyword);
     }
 
   array_add (parts, NULL);
@@ -22951,7 +23074,7 @@ filter_clause (const char* type, const char* filter, const char **columns)
   if (filter)
     {
       GString *clause;
-      term_t **point;
+      keyword_t **point;
       int first, last_was_and;
       array_t *split;
 
@@ -22964,157 +23087,158 @@ filter_clause (const char* type, const char* filter, const char **columns)
 
       clause = g_string_new ("");
       split = split_filter (filter);
-      point = (term_t**) split->pdata;
+      point = (keyword_t**) split->pdata;
       first = 1;
       last_was_and = 0;
       while (*point)
         {
-          gchar *quoted_keyword, *equal, *approx, *above, *below;
+          gchar *quoted_keyword, *quoted_column;
           int index;
-          const char *extra_column;
-          term_t *term;
+          keyword_t *keyword;
 
-          term = *point;
+          keyword = *point;
 
-          if (strlen (term->string) == 0)
+          if (strlen (keyword->string) == 0)
             {
               point++;
               continue;
             }
 
-          if (strcasecmp (term->string, "or") == 0)
+          if (strcasecmp (keyword->string, "or") == 0)
             {
               point++;
               continue;
             }
 
-          if (strcasecmp (term->string, "and") == 0)
+          if (strcasecmp (keyword->string, "and") == 0)
             {
               last_was_and = 1;
               point++;
               continue;
             }
 
-          equal = strchr (term->string, '=');
-          approx = strchr (term->string, '~');
-          above = strchr (term->string, '>');
-          below = strchr (term->string, '<');
-
           /* Add SQL to the clause for each column name. */
 
-          if (term->quoted == 0 && equal && (equal > term->string))
+          if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL)
             {
-              gchar *column;
-              quoted_keyword = sql_quote (equal + 1);
-              column = g_ascii_strdown (term->string, equal - term->string);
-
-              if (vector_find_string (columns, column) == 0)
+              if (vector_find_string (columns, keyword->column) == 0)
                 {
                   last_was_and = 0;
                   point++;
                   continue;
                 }
 
+              quoted_keyword = sql_quote (keyword->string);
+              quoted_column = sql_quote (keyword->column);
               g_string_append_printf (clause,
-                                      "%s(%s = '%s'",
+                                      "%s(CAST (%s AS TEXT) = '%s'",
                                       (first
                                         ? ""
                                         : (last_was_and ? " AND " : " OR ")),
-                                      column,
+                                      quoted_column,
                                       quoted_keyword);
-
-              g_free (column);
+              g_free (quoted_column);
             }
-          else if (term->quoted == 0 && approx && (approx > term->string))
+          else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
             {
-              gchar *column;
-              quoted_keyword = sql_quote (approx + 1);
-              column = g_ascii_strdown (term->string, approx - term->string);
-
-              if (vector_find_string (columns, column) == 0)
+              if (vector_find_string (columns, keyword->column) == 0)
                 {
                   last_was_and = 0;
                   point++;
                   continue;
                 }
 
+              quoted_keyword = sql_quote (keyword->string);
+              quoted_column = sql_quote (keyword->column);
               g_string_append_printf (clause,
-                                      "%s(%s LIKE '%%%%%s%%%%'",
+                                      "%s(CAST (%s AS TEXT) LIKE '%%%%%s%%%%'",
                                       (first
                                         ? ""
                                         : (last_was_and ? " AND " : " OR ")),
-                                      column,
+                                      quoted_column,
                                       quoted_keyword);
-
-              g_free (column);
+              g_free (quoted_column);
             }
-          else if (term->quoted == 0 && above && (above > term->string))
+          else if (keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE)
             {
-              gchar *column;
-              quoted_keyword = sql_quote (above + 1);
-              column = g_ascii_strdown (term->string, above - term->string);
-
-              if (vector_find_string (columns, column) == 0)
+              if (vector_find_string (columns, keyword->column) == 0)
                 {
                   last_was_and = 0;
                   point++;
                   continue;
                 }
 
-              g_string_append_printf (clause,
-                                      "%s(%s > '%s'",
-                                      (first
-                                        ? ""
-                                        : (last_was_and ? " AND " : " OR ")),
-                                      column,
-                                      quoted_keyword);
-
-              g_free (column);
+              quoted_keyword = sql_quote (keyword->string);
+              quoted_column = sql_quote (keyword->column);
+              if (keyword->type == KEYWORD_TYPE_NUMBER)
+                g_string_append_printf (clause,
+                                        "%s(CAST (%s AS INTEGER) > %i",
+                                        (first
+                                          ? ""
+                                          : (last_was_and ? " AND " : " OR ")),
+                                        quoted_column,
+                                        keyword->number);
+              else
+                g_string_append_printf (clause,
+                                        "%s(CAST (%s AS TEST) > '%s'",
+                                        (first
+                                          ? ""
+                                          : (last_was_and ? " AND " : " OR ")),
+                                        quoted_column,
+                                        quoted_keyword);
+              g_free (quoted_column);
             }
-          else if (term->quoted == 0 && below && (below > term->string))
+          else if (keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
             {
-              gchar *column;
-              quoted_keyword = sql_quote (below + 1);
-              column = g_ascii_strdown (term->string, below - term->string);
-
-              if (vector_find_string (columns, column) == 0)
+              if (vector_find_string (columns, keyword->column) == 0)
                 {
                   last_was_and = 0;
                   point++;
                   continue;
                 }
 
-              g_string_append_printf (clause,
-                                      "%s(%s < '%s'",
-                                      (first
-                                        ? ""
-                                        : (last_was_and ? " AND " : " OR ")),
-                                      column,
-                                      quoted_keyword);
-
-              g_free (column);
+              quoted_keyword = sql_quote (keyword->string);
+              quoted_column = sql_quote (keyword->column);
+              if (keyword->type == KEYWORD_TYPE_NUMBER)
+                g_string_append_printf (clause,
+                                        "%s(CAST (%s AS INTEGER) < %i",
+                                        (first
+                                          ? ""
+                                          : (last_was_and ? " AND " : " OR ")),
+                                        quoted_column,
+                                        keyword->number);
+              else
+                g_string_append_printf (clause,
+                                        "%s(CAST (%s AS TEXT) > '%s'",
+                                        (first
+                                          ? ""
+                                          : (last_was_and ? " AND " : " OR ")),
+                                        quoted_column,
+                                        quoted_keyword);
+              g_free (quoted_column);
             }
           else
             {
+              const char *column;
+
               g_string_append_printf (clause,
                                       "%s(",
                                       (first
                                         ? ""
                                         : (last_was_and ? " AND " : " OR ")));
 
-              quoted_keyword = sql_quote (term->string);
+              quoted_keyword = sql_quote (keyword->string);
               for (index = 0;
-                   (extra_column = columns[index]) != NULL;
+                   (column = columns[index]) != NULL;
                    index++)
                 {
-                  gchar *quoted_extra_column;
-                  quoted_extra_column = sql_quote (extra_column);
+                  quoted_column = sql_quote (column);
                   g_string_append_printf (clause,
                                           "%s%s LIKE '%%%%%s%%%%'",
                                           (index ? " OR " : ""),
-                                          quoted_extra_column,
+                                          quoted_column,
                                           quoted_keyword);
-                  g_free (quoted_extra_column);
+                  g_free (quoted_column);
                 }
             }
 
@@ -23125,8 +23249,8 @@ filter_clause (const char* type, const char* filter, const char **columns)
           last_was_and = 0;
           point++;
         }
-      for (point = (term_t**) split->pdata; *point; point++)
-        g_free ((*point)->string);
+      for (point = (keyword_t**) split->pdata; *point; point++)
+        keyword_free (*point);
       array_free (split);
 
       if (strlen (clause->str))

@@ -1,5 +1,22 @@
 2012-04-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add integer and date handling to the powerfilter.  If an keyword like
+	"ids>2" has the above (>) or below (<) relation and the keyword part is a
+	number or a date of the form 2011-3-23 then compare the column as a
+	number instead of as text.
+
+	* src/manage_sql.c (keyword_type_t, keyword_relation_t): New enums.
+	(struct term, term_t): Remove.  Now keyword.  Update callers.
+	(struct keyword, keword_t): New type.
+	(keyword_free, parse_keyword): New function.
+	(split_filter): Setup more info about the keyword, using parse_keyword.
+	Also remove a decrement that was chopping off the last char of phrases.
+	(filter_clause): Remove the parsing that's now done by split_filter.  Add
+	casts in the SQL to ensure the column is compared correctly.  Add the
+	number cases to to the above and below cases.
+
+2012-04-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (scan_start, scan_end): Format date nicely.
 
 	* src/report_formats/HTML/HTML.xsl (real-report): Add start and end
