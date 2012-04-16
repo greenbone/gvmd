@@ -22901,53 +22901,11 @@ keyword_free (keyword_t* keyword)
 static void
 parse_keyword (keyword_t* keyword)
 {
-  gchar *string, *equal, *approx, *above, *below;
+  gchar *string;
 
-  if (keyword->quoted)
+  if (keyword->column == NULL)
     {
       keyword->relation = KEYWORD_RELATION_APPROX;
-      keyword->column = NULL;
-      keyword->type = KEYWORD_TYPE_STRING;
-      return;
-    }
-
-  string = keyword->string;
-
-  /* The relation and index column. */
-
-  equal = strchr (string, '=');
-  approx = strchr (string, '~');
-  above = strchr (string, '>');
-  below = strchr (string, '<');
-
-  if (equal && (equal > string))
-    {
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-      keyword->column = g_strndup (string, equal - string);
-      keyword->string = g_strdup (equal + 1);
-    }
-  else if (approx && (approx > string))
-    {
-      keyword->relation = KEYWORD_RELATION_COLUMN_APPROX;
-      keyword->column = g_strndup (string, approx - string);
-      keyword->string = g_strdup (approx + 1);
-    }
-  else if (above && (above > string))
-    {
-      keyword->relation = KEYWORD_RELATION_COLUMN_ABOVE;
-      keyword->column = g_strndup (string, above - string);
-      keyword->string = g_strdup (above + 1);
-    }
-  else if (below && (below > string))
-    {
-      keyword->relation = KEYWORD_RELATION_COLUMN_BELOW;
-      keyword->column = g_strndup (string, below - string);
-      keyword->string = g_strdup (below + 1);
-    }
-  else
-    {
-      keyword->relation = KEYWORD_RELATION_APPROX;
-      keyword->column = NULL;
       keyword->type = KEYWORD_TYPE_STRING;
       return;
     }
@@ -22994,10 +22952,59 @@ split_filter (const gchar* filter)
   parts = make_array ();
   in_quote = 0;
   between = 1;
+  keyword = NULL;
   while (*filter)
     {
       switch (*filter)
         {
+          case '=':
+          case '~':
+          case '>':
+          case '<':
+            if (between)
+              {
+                /* Empty index.  Just start a part for now. */
+                keyword = g_malloc0 (sizeof (keyword_t));
+                current_part = filter;
+                between = 0;
+                break;
+              }
+            if (in_quote)
+              break;
+            /* End of an index. */
+            if (keyword == NULL)
+              {
+                assert (0);
+                break;
+              }
+            if (keyword->column)
+              /* Already had an index char. */
+              break;
+            if (filter <= (current_part - 1))
+              {
+                assert (0);
+                break;
+              }
+            keyword->column = g_strndup (current_part,
+                                         filter - current_part);
+            current_part = filter + 1;
+            switch (*filter)
+              {
+                case '=':
+                  keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+                  break;
+                case '~':
+                  keyword->relation = KEYWORD_RELATION_COLUMN_APPROX;
+                  break;
+                case '>':
+                  keyword->relation = KEYWORD_RELATION_COLUMN_ABOVE;
+                  break;
+                case '<':
+                  keyword->relation = KEYWORD_RELATION_COLUMN_BELOW;
+                  break;
+              }
+            break;
+
           case ' ':
           case '\t':
           case '\n':
@@ -23005,10 +23012,15 @@ split_filter (const gchar* filter)
             if (in_quote || between)
               break;
             /* End of a part. */
-            keyword = g_malloc0 (sizeof (keyword_t));
+            if (keyword == NULL)
+              {
+                assert (0);
+                break;
+              }
             keyword->string = g_strndup (current_part, filter - current_part);
             parse_keyword (keyword);
             array_add (parts, keyword);
+            keyword = NULL;
             between = 1;
             break;
 
@@ -23016,21 +23028,33 @@ split_filter (const gchar* filter)
             if (in_quote)
               {
                 /* End of a quoted part. */
-                keyword = g_malloc0 (sizeof (keyword_t));
+                if (keyword == NULL)
+                  {
+                    assert (0);
+                    break;
+                  }
                 keyword->quoted = 1;
                 keyword->string = g_strndup (current_part,
                                              filter - current_part);
                 parse_keyword (keyword);
                 array_add (parts, keyword);
+                keyword = NULL;
                 in_quote = 0;
                 between = 1;
               }
             else if (between)
               {
                 /* Start of a quoted part. */
+                keyword = g_malloc0 (sizeof (keyword_t));
                 in_quote = 1;
                 current_part = filter + 1;
                 between = 0;
+              }
+            else if (keyword->column && filter == current_part)
+              {
+                /* A quoted index. */
+                in_quote = 1;
+                current_part++;
               }
             /* Else just a quote in a keyword, like ab"cd. */
             break;
@@ -23039,6 +23063,7 @@ split_filter (const gchar* filter)
             if (between)
               {
                 /* Start of a part. */
+                keyword = g_malloc0 (sizeof (keyword_t));
                 current_part = filter;
                 between = 0;
               }
@@ -23048,12 +23073,18 @@ split_filter (const gchar* filter)
     }
   if (between == 0)
     {
-      keyword = g_malloc0 (sizeof (keyword_t));
-      keyword->quoted = in_quote;
-      keyword->string = g_strdup (current_part);
-      parse_keyword (keyword);
-      array_add (parts, keyword);
+      if (keyword == NULL)
+        assert (0);
+      else
+        {
+          keyword->quoted = in_quote;
+          keyword->string = g_strdup (current_part);
+          parse_keyword (keyword);
+          array_add (parts, keyword);
+          keyword = NULL;
+        }
     }
+  assert (keyword == NULL);
 
   array_add (parts, NULL);
   return parts;
