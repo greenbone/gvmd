@@ -329,6 +329,61 @@ interval_from_strings (const char *value, const char *unit, time_t *months)
   return -1;
 }
 
+/**
+ * @brief Find an attribute in a parser callback list of attributes.
+ *
+ * @param[in]   attribute_names   List of names.
+ * @param[in]   attribute_values  List of values.
+ * @param[in]   attribute_name    Name of sought attribute.
+ * @param[out]  attribute_value   Attribute value return.
+ *
+ * @return 1 if found, else 0.
+ */
+int
+find_attribute (const gchar **attribute_names,
+                const gchar **attribute_values,
+                const char *attribute_name,
+                const gchar **attribute_value)
+{
+  while (*attribute_names && *attribute_values)
+    if (strcmp (*attribute_names, attribute_name))
+      attribute_names++, attribute_values++;
+    else
+      {
+        *attribute_value = *attribute_values;
+        return 1;
+      }
+  return 0;
+}
+
+/**
+ * @brief Find an attribute in a parser callback list of attributes and append
+ * @brief it to a string using openvas_append_string.
+ *
+ * @param[in]   attribute_names   List of names.
+ * @param[in]   attribute_values  List of values.
+ * @param[in]   attribute_name    Name of sought attribute.
+ * @param[out]  string            String to append attribute value to, if
+ *                                found.
+ *
+ * @return 1 if found and appended, else 0.
+ */
+int
+append_attribute (const gchar **attribute_names,
+                  const gchar **attribute_values,
+                  const char *attribute_name,
+                  gchar **string)
+{
+  const gchar* attribute;
+  if (find_attribute (attribute_names, attribute_values, attribute_name,
+                      &attribute))
+    {
+      openvas_append_string (string, attribute);
+      return 1;
+    }
+  return 0;
+}
+
 
 /* Help message. */
 
@@ -1610,15 +1665,105 @@ delete_task_data_reset (delete_task_data_t *data)
 }
 
 /**
+ * @brief Command data for a get command.
+ */
+typedef struct
+{
+  char *actions;       ///< Actions.
+  char *filter;        ///< Filter term.
+  int first;           ///< Skip over items before this number.
+  char *id;            ///< ID of single item to get.
+  int max;             ///< Maximum number of items returned.
+  char *sort_field;    ///< Field to sort results on.
+  int sort_order;      ///< Result sort order: 0 descending, else ascending.
+  int trash;           ///< Boolean.  Whether to return from trashcan.
+} get_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_data_reset (get_data_t *data)
+{
+  free (data->actions);
+  free (data->id);
+  free (data->filter);
+  free (data->sort_field);
+
+  memset (data, 0, sizeof (get_data_t));
+}
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data              GET operation data.
+ * @param[in]  type              Resource type.
+ * @param[in]  attribute_names   XML attribute names.
+ * @param[in]  attribute_values  XML attribute values.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_data_parse_attributes (get_data_t *data, const gchar *type,
+                           const gchar **attribute_names,
+                           const gchar **attribute_values)
+{
+  gchar *name;
+  const gchar *attribute;
+
+  append_attribute (attribute_names, attribute_values, "actions",
+                    &data->actions);
+
+  append_attribute (attribute_names, attribute_values, "filter",
+                    &data->filter);
+
+  if (find_attribute (attribute_names, attribute_values,
+                      "first", &attribute))
+    /* Subtract 1 to switch from 1 to 0 indexing. */
+    data->first = atoi (attribute) - 1;
+  else
+    data->first = 0;
+  if (data->first < 0)
+    data->first = 0;
+
+  name = g_strdup_printf ("%s_id", type);
+  append_attribute (attribute_names, attribute_values, name,
+                    &data->id);
+  g_free (name);
+
+  if (find_attribute (attribute_names, attribute_values,
+                      "max", &attribute))
+    data->max = atoi (attribute);
+  else
+    data->max = -1;
+  if (data->max == 0)
+    data->max = -1;
+
+  append_attribute (attribute_names, attribute_values, "sort_field",
+                    &data->sort_field);
+
+  if (find_attribute (attribute_names, attribute_values,
+                      "sort_order", &attribute))
+    data->sort_order = strcmp (attribute, "descending");
+  else
+    data->sort_order = 1;
+
+  if (find_attribute (attribute_names, attribute_values,
+                      "trash", &attribute))
+    data->trash = strcmp (attribute, "0");
+  else
+    data->trash = 0;
+}
+
+/**
  * @brief Command data for the get_agents command.
  */
 typedef struct
 {
-  char *agent_id;        ///< ID of single agent to get.
+  get_data_t get;        ///< Get args.
   char *format;          ///< Format requested: "installer", "howto_use", ....
-  char *sort_field;      ///< Field to sort results on.
-  int sort_order;        ///< Result sort order: 0 descending, else ascending.
-  int trash;             ///< Boolean.  Whether to return agents from trashcan.
 } get_agents_data_t;
 
 /**
@@ -1629,9 +1774,8 @@ typedef struct
 static void
 get_agents_data_reset (get_agents_data_t *data)
 {
-  free (data->agent_id);
+  get_data_reset (&data->get);
   free (data->format);
-  free (data->sort_field);
 
   memset (data, 0, sizeof (get_agents_data_t));
 }
@@ -2170,15 +2314,8 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
  */
 typedef struct
 {
-  char *actions;       ///< Actions.
-  char *filter;        ///< Filter term.
-  int first;           ///< Skip over targets before this number.
-  int max;             ///< Maximum number of targets returned.
-  char *sort_field;    ///< Field to sort results on.
-  int sort_order;      ///< Result sort order: 0 descending, else ascending.
-  char *target_id;     ///< ID of single target to get.
-  int tasks;           ///< Boolean.  Whether to include tasks that use target.
-  int trash;           ///< Boolean.  Whether to return targets from trashcan.
+  get_data_t get;    ///< Get args.
+  int tasks;         ///< Boolean.  Whether to include tasks that use target.
 } get_targets_data_t;
 
 /**
@@ -2189,11 +2326,7 @@ typedef struct
 static void
 get_targets_data_reset (get_targets_data_t *data)
 {
-  free (data->actions);
-  free (data->filter);
-  free (data->target_id);
-  free (data->sort_field);
-
+  get_data_reset (&data->get);
   memset (data, 0, sizeof (get_targets_data_t));
 }
 
@@ -3973,61 +4106,6 @@ internal_error_send_to_client (GError** error)
  " status=\"" STATUS_SERVICE_DOWN "\""                   \
  " status_text=\"" STATUS_SERVICE_DOWN_TEXT "\"/>"
 
-/**
- * @brief Find an attribute in a parser callback list of attributes.
- *
- * @param[in]   attribute_names   List of names.
- * @param[in]   attribute_values  List of values.
- * @param[in]   attribute_name    Name of sought attribute.
- * @param[out]  attribute_value   Attribute value return.
- *
- * @return 1 if found, else 0.
- */
-int
-find_attribute (const gchar **attribute_names,
-                const gchar **attribute_values,
-                const char *attribute_name,
-                const gchar **attribute_value)
-{
-  while (*attribute_names && *attribute_values)
-    if (strcmp (*attribute_names, attribute_name))
-      attribute_names++, attribute_values++;
-    else
-      {
-        *attribute_value = *attribute_values;
-        return 1;
-      }
-  return 0;
-}
-
-/**
- * @brief Find an attribute in a parser callback list of attributes and append
- * @brief it to a string using openvas_append_string.
- *
- * @param[in]   attribute_names   List of names.
- * @param[in]   attribute_values  List of values.
- * @param[in]   attribute_name    Name of sought attribute.
- * @param[out]  string            String to append attribute value to, if
- *                                found.
- *
- * @return 1 if found and appended, else 0.
- */
-int
-append_attribute (const gchar **attribute_names,
-                  const gchar **attribute_values,
-                  const char *attribute_name,
-                  gchar **string)
-{
-  const gchar* attribute;
-  if (find_attribute (attribute_names, attribute_values, attribute_name,
-                      &attribute))
-    {
-      openvas_append_string (string, attribute);
-      return 1;
-    }
-  return 0;
-}
-
 /** @cond STATIC */
 
 /**
@@ -4112,7 +4190,7 @@ append_attribute (const gchar **attribute_names,
  *
  * @param[in]  context           Parser context.
  * @param[in]  element_name      XML element name.
- * @param[in]  attribute_names   XML attribute name.
+ * @param[in]  attribute_names   XML attribute names.
  * @param[in]  attribute_values  XML attribute values.
  * @param[in]  user_data         OMP parser.
  * @param[in]  error             Error parameter.
@@ -4416,23 +4494,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_EMPTY_TRASHCAN);
         else if (strcasecmp ("GET_AGENTS", element_name) == 0)
           {
-            const gchar* attribute;
-            append_attribute (attribute_names, attribute_values, "agent_id",
-                              &get_agents_data->agent_id);
+            get_data_parse_attributes (&get_agents_data->get, "agent",
+                                       attribute_names,
+                                       attribute_values);
             append_attribute (attribute_names, attribute_values, "format",
                               &get_agents_data->format);
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_agents_data->sort_field);
-            if (find_attribute (attribute_names, attribute_values,
-                                "trash", &attribute))
-              get_agents_data->trash = strcmp (attribute, "0");
-            else
-              get_agents_data->trash = 0;
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_agents_data->sort_order = strcmp (attribute, "descending");
-            else
-              get_agents_data->sort_order = 1;
             set_client_state (CLIENT_GET_AGENTS);
           }
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
@@ -5016,55 +5082,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_TARGETS", element_name) == 0)
           {
-            const gchar* attribute;
-
-            append_attribute (attribute_names, attribute_values, "target_id",
-                              &get_targets_data->target_id);
-
-            append_attribute (attribute_names, attribute_values, "actions",
-                              &get_targets_data->actions);
-
+            const gchar *attribute;
+            get_data_parse_attributes (&get_targets_data->get, "target",
+                                       attribute_names,
+                                       attribute_values);
             if (find_attribute (attribute_names, attribute_values,
                                 "tasks", &attribute))
               get_targets_data->tasks = strcmp (attribute, "0");
             else
               get_targets_data->tasks = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "trash", &attribute))
-              get_targets_data->trash = strcmp (attribute, "0");
-            else
-              get_targets_data->trash = 0;
-
-            append_attribute (attribute_names, attribute_values, "filter",
-                              &get_targets_data->filter);
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "first", &attribute))
-              /* Subtract 1 to switch from 1 to 0 indexing. */
-              get_targets_data->first = atoi (attribute) - 1;
-            else
-              get_targets_data->first = 0;
-            if (get_targets_data->first < 0)
-              get_targets_data->first = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "max", &attribute))
-              get_targets_data->max = atoi (attribute);
-            else
-              get_targets_data->max = -1;
-            if (get_targets_data->max == 0)
-              get_targets_data->max = -1;
-
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_targets_data->sort_field);
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_targets_data->sort_order = strcmp (attribute, "descending");
-            else
-              get_targets_data->sort_order = 1;
-
             set_client_state (CLIENT_GET_TARGETS);
           }
         else if (strcasecmp ("GET_TASKS", element_name) == 0)
@@ -14317,14 +14343,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_agents",
                                 "GET_AGENTS format attribute should"
                                 " be 'installer', 'howto_install' or 'howto_use'."));
-          else if (get_agents_data->agent_id
-                   && find_agent (get_agents_data->agent_id, &agent))
+          else if (get_agents_data->get.id
+                   && find_agent (get_agents_data->get.id, &agent))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_agents"));
-          else if (get_agents_data->agent_id && agent == 0)
+          else if (get_agents_data->get.id && agent == 0)
             {
               if (send_find_error_to_client ("get_agents",
                                              "agent",
-                                             get_agents_data->agent_id,
+                                             get_agents_data->get.id,
                                              write_to_client,
                                              write_to_client_data))
                 {
@@ -14339,9 +14365,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               init_agent_iterator (&agents,
                                    agent,
-                                   get_agents_data->trash,
-                                   get_agents_data->sort_order,
-                                   get_agents_data->sort_field);
+                                   get_agents_data->get.trash,
+                                   get_agents_data->get.sort_order,
+                                   get_agents_data->get.sort_field);
               while (next (&agents))
                 {
                   switch (format)
@@ -15324,20 +15350,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_TARGETS", element_name) == 0);
 
-          if (get_targets_data->tasks && get_targets_data->trash)
+          if (get_targets_data->tasks && get_targets_data->get.trash)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_target",
                                 "GET_TARGETS tasks given with trash"));
-          else if (get_targets_data->target_id
-                   && find_target_for_actions (get_targets_data->target_id,
+          else if (get_targets_data->get.id
+                   && find_target_for_actions (get_targets_data->get.id,
                                                &target,
-                                               get_targets_data->actions))
+                                               get_targets_data->get.actions))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_targets"));
-          else if (get_targets_data->target_id && target == 0)
+          else if (get_targets_data->get.id && target == 0)
             {
               if (send_find_error_to_client ("get_targets",
                                              "target",
-                                             get_targets_data->target_id,
+                                             get_targets_data->get.id,
                                              write_to_client,
                                              write_to_client_data))
                 {
@@ -15357,25 +15383,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SENDF_TO_CLIENT_OR_FAIL ("<filters>"
                                        "<term>%s</term>"
                                        "</filters>",
-                                       get_targets_data->filter
-                                        ? get_targets_data->filter
+                                       get_targets_data->get.filter
+                                        ? get_targets_data->get.filter
                                         : "");
-              if (get_targets_data->max == -2)
+              if (get_targets_data->get.max == -2)
                 setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
-                                   &get_targets_data->max);
+                                   &get_targets_data->get.max);
               SENDF_TO_CLIENT_OR_FAIL ("<targets start=\"%i\" max=\"%i\"/>",
                                        /* Add 1 for 1 indexing. */
-                                       get_targets_data->first + 1,
-                                       get_targets_data->max);
+                                       get_targets_data->get.first + 1,
+                                       get_targets_data->get.max);
               init_target_iterator (&targets,
                                     target,
-                                    get_targets_data->trash,
-                                    get_targets_data->filter,
-                                    get_targets_data->first,
-                                    get_targets_data->max,
-                                    get_targets_data->sort_order,
-                                    get_targets_data->sort_field,
-                                    get_targets_data->actions);
+                                    get_targets_data->get.trash,
+                                    get_targets_data->get.filter,
+                                    get_targets_data->get.first,
+                                    get_targets_data->get.max,
+                                    get_targets_data->get.sort_order,
+                                    get_targets_data->get.sort_field,
+                                    get_targets_data->get.actions);
               while (next (&targets))
                 {
                   char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
@@ -15386,7 +15412,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   ssh_credential = target_iterator_ssh_credential (&targets);
                   smb_credential = target_iterator_smb_credential (&targets);
-                  if (get_targets_data->trash
+                  if (get_targets_data->get.trash
                       && target_iterator_ssh_trash (&targets))
                     {
                       ssh_lsc_name = trash_lsc_credential_name (ssh_credential);
@@ -15397,7 +15423,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       ssh_lsc_name = lsc_credential_name (ssh_credential);
                       ssh_lsc_uuid = lsc_credential_uuid (ssh_credential);
                     }
-                  if (get_targets_data->trash
+                  if (get_targets_data->get.trash
                       && target_iterator_smb_trash (&targets))
                     {
                       smb_lsc_name = trash_lsc_credential_name (smb_credential);
@@ -15441,7 +15467,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            manage_max_hosts
                                             (target_iterator_hosts (&targets)),
                                            target_iterator_comment (&targets),
-                                           get_targets_data->trash
+                                           get_targets_data->get.trash
                                             ? trash_target_in_use
                                                (target_iterator_target
                                                  (&targets))
@@ -15455,12 +15481,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            ssh_lsc_uuid ? ssh_lsc_uuid : "",
                                            ssh_lsc_name ? ssh_lsc_name : "",
                                            ssh_port ? ssh_port : "",
-                                           (get_targets_data->trash
+                                           (get_targets_data->get.trash
                                              && target_iterator_ssh_trash
                                                  (&targets)),
                                            smb_lsc_uuid ? smb_lsc_uuid : "",
                                            smb_lsc_name ? smb_lsc_name : "",
-                                           (get_targets_data->trash
+                                           (get_targets_data->get.trash
                                              && target_iterator_smb_trash
                                                  (&targets)));
 
@@ -15472,7 +15498,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       init_target_task_iterator (&tasks,
                                                  target_iterator_target
                                                   (&targets),
-                                                 get_targets_data->sort_order);
+                                                 get_targets_data->get.sort_order);
                       while (next (&tasks))
                         SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
                                                  "<name>%s</name>"
@@ -15493,8 +15519,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               filtered = target
                           ? 1
-                          : target_count (get_targets_data->filter,
-                                          get_targets_data->actions);
+                          : target_count (get_targets_data->get.filter,
+                                          get_targets_data->get.actions);
               SENDF_TO_CLIENT_OR_FAIL ("<target_count>"
                                        "<filtered>%i</filtered>"
                                        "<page>%i</page>"

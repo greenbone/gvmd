@@ -1,5 +1,15 @@
 2012-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (find_attribute, append_attribute): Move up in file.
+	(get_data_t): New struct.
+	(get_data_reset, get_data_parse_attributes): New function.
+	(get_agents_data_t, get_agents_data_reset, get_targets_data_t)
+	(get_targets_data_reset): Use the generic get structure.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Use generic
+	get for agents and targets.
+
+2012-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_target_iterator): Add AS for port_list.
 
 2012-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
