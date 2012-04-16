@@ -1,5 +1,9 @@
 2012-04-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* src/openvasmd.c (main): Updated Copyright years.
+
+2012-04-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	Post release version bump.
 
 	* CMakeLists.txt: Updated version number to 4.0+beta2.
