@@ -1,5 +1,9 @@
 2012-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_target_iterator): Add AS for port_list.
+
+2012-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add quotation to the index case of the the powerfilter.  This allows
 	spaces in the index filters, like name="Debian Machines".
 
