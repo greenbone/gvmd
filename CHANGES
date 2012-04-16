@@ -1,3 +1,22 @@
+openvas-manager 4.0+beta1 (2012-04-16)
+
+This is the first beta version of the upcoming 4.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release introduces name change from Escalator to Alert and extended
+handling of Target object lists.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Michael Wiegand.
+
+Main changes since 3.0 series:
+* Renamed Escalator to Alert.
+* Added keyword filter, pagination and edit to Targets.
+* New command line options --listen2 and --port2 for a second
+  OMP address.
+
+
 openvas-manager 3.0.0 (2012-03-26)
 
 This is the first release of the openvas-manager 3.0 module for the Open

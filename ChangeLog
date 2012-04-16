@@ -1,3 +1,9 @@
+2012-04-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Preparing the openvas-manager 4.0+beta1 release.
+
+	* CHANGES: Updated.
+
 2012-04-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add integer and date handling to the powerfilter.  If an keyword like
