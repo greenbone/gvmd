@@ -35393,21 +35393,36 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
 {
   assert (current_credentials.uuid);
 
-  init_iterator (iterator,
-                 "SELECT uuid, comment, start, end, type, exclude"
-                 " FROM port_ranges%s"
-                 " WHERE port_list = %llu"
-                 " AND"
-                 " (((SELECT owner FROM port_lists WHERE ROWID = port_list)"
-                 "   IS NULL)"
-                 "  OR ((SELECT owner FROM port_lists WHERE ROWID = port_list)"
-                 "      = (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                 " ORDER BY %s %s;",
-                 trash ? "_trash" : "",
-                 port_list,
-                 current_credentials.uuid,
-                 sort_field ? sort_field : "type, CAST (start AS INTEGER)",
-                 ascending ? "ASC" : "DESC");
+  if (port_list)
+    init_iterator (iterator,
+                   "SELECT uuid, comment, start, end, type, exclude"
+                   " FROM port_ranges%s"
+                   " WHERE port_list = %llu"
+                   " AND"
+                   " (((SELECT owner FROM port_lists WHERE ROWID = port_list)"
+                   "   IS NULL)"
+                   "  OR ((SELECT owner FROM port_lists WHERE ROWID = port_list)"
+                   "      = (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
+                   port_list,
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "type, CAST (start AS INTEGER)",
+                   ascending ? "ASC" : "DESC");
+  else
+    init_iterator (iterator,
+                   "SELECT uuid, comment, start, end, type, exclude"
+                   " FROM port_ranges%s"
+                   " WHERE"
+                   " (((SELECT owner FROM port_lists WHERE ROWID = port_list)"
+                   "   IS NULL)"
+                   "  OR ((SELECT owner FROM port_lists WHERE ROWID = port_list)"
+                   "      = (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "type, CAST (start AS INTEGER)",
+                   ascending ? "ASC" : "DESC");
 }
 
 /**
@@ -35525,15 +35540,24 @@ init_port_list_target_iterator (iterator_t* iterator, port_list_t port_list,
 {
   assert (current_credentials.uuid);
 
-  init_iterator (iterator,
-                 "SELECT uuid, name FROM targets"
-                 " WHERE port_range = %llu"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                 " ORDER BY name %s;",
-                 port_list,
-                 current_credentials.uuid,
-                 ascending ? "ASC" : "DESC");
+  if (port_list)
+    init_iterator (iterator,
+                   "SELECT uuid, name FROM targets"
+                   " WHERE port_range = %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY name %s;",
+                   port_list,
+                   current_credentials.uuid,
+                   ascending ? "ASC" : "DESC");
+  else
+    init_iterator (iterator,
+                   "SELECT uuid, name FROM targets"
+                   " WHERE ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY name %s;",
+                   current_credentials.uuid,
+                   ascending ? "ASC" : "DESC");
 }
 
 /**

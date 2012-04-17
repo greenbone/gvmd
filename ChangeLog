@@ -1,3 +1,10 @@
+2012-04-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_port_range_iterator)
+	(init_port_list_target_iterator): Add explicit "all" case, otherwise the
+	selection is always empty.  Backport from trunk; initially committed in
+	r13258.
+
 2012-03-28  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt, INSTALL: Set dependency for glib and gnutls
