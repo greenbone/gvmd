@@ -9854,6 +9854,11 @@ get_overrides_response_override_result_description
           ID of single port list to get.
           </li>
 <li>
+          @<b>details</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include full port list details.
+          </li>
+<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan port lists instead.
@@ -9877,11 +9882,6 @@ get_overrides_response_override_result_description
 <li>
           @<b>status_text</b>
           (text)
-          </li>
-<li>
-          @<b>details</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to include full port list details.
           </li>
 <li>
               &lt;<b>port_list</b>&gt;
@@ -9990,6 +9990,7 @@ get_overrides_response_override_result_description
  = element get_port_lists
      {
        attribute port_list_id { uuid }?
+       &amp; attribute details { boolean }?
        &amp; attribute trash { boolean }?
        &amp; attribute sort_order { sort_order }?
        &amp; attribute sort_field { text }?
@@ -10000,7 +10001,6 @@ get_overrides_response_override_result_description
      {
        attribute status { status }
        &amp; attribute status_text { text }
-       &amp; attribute details { boolean }?
        &amp; get_port_lists_response_port_list*
      }
 
