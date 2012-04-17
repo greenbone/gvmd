@@ -9824,6 +9824,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                        "Target %s could not be deleted",
                        delete_target_data->target_id);
                 break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_target",
+                                    "Attempt to delete a predefined"
+                                    " target"));
+                break;
               default:
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
                 g_log ("event target", G_LOG_LEVEL_MESSAGE,
