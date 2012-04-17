@@ -1,5 +1,10 @@
 2012-04-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (get_join): New function.
+	(filter_clause): Add NOT handling.
+
+2012-04-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_target): Prevent removal of predefined target.
 
 	* src/omp.c (omp_xml_handle_end_element): Handle new return from delete
@@ -10,6 +15,10 @@
 	* src/manage_sql.c (init_port_range_iterator)
 	(init_port_list_target_iterator): Add explicit "all" case, otherwise the
 	selection is always empty.
+
+2012-04-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (get_port_lists): Move details attrib
 
 2012-04-17  Matthew Mundell <matthew.mundell@greenbone.net>
 

@@ -23094,6 +23094,46 @@ split_filter (const gchar* filter)
 }
 
 /**
+ * @brief Return SQL join words for filter_clause.
+ *
+ * @param[in]  first         Whether keyword is first.
+ * @param[in]  last_was_and  Whether last keyword was "and".
+ * @param[in]  last_was_not  Whether last keyword was "not".
+ *
+ * @return SQL join words.
+ */
+static const char *
+get_join (int first, int last_was_and, int last_was_not)
+{
+  const char *pre;
+  if (first)
+    {
+      if (last_was_not)
+        pre = "NOT ";
+      else
+        pre = "";
+    }
+  else
+    {
+      if (last_was_and)
+        {
+          if (last_was_not)
+            pre = " AND NOT ";
+          else
+            pre = " AND ";
+        }
+      else
+        {
+          if (last_was_not)
+            pre = " OR NOT ";
+          else
+            pre = " OR ";
+        }
+    }
+  return pre;
+}
+
+/**
  * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
  *
  * @param[in]  type     Resource type.
@@ -23109,7 +23149,7 @@ filter_clause (const char* type, const char* filter, const char **columns)
     {
       GString *clause;
       keyword_t **point;
-      int first, last_was_and;
+      int first, last_was_and, last_was_not;
       array_t *split;
 
       while (*filter && isspace (*filter)) filter++;
@@ -23124,6 +23164,7 @@ filter_clause (const char* type, const char* filter, const char **columns)
       point = (keyword_t**) split->pdata;
       first = 1;
       last_was_and = 0;
+      last_was_not = 0;
       while (*point)
         {
           gchar *quoted_keyword, *quoted_column;
@@ -23151,6 +23192,13 @@ filter_clause (const char* type, const char* filter, const char **columns)
               continue;
             }
 
+          if (strcasecmp (keyword->string, "not") == 0)
+            {
+              last_was_not = 1;
+              point++;
+              continue;
+            }
+
           /* Add SQL to the clause for each column name. */
 
           if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL)
@@ -23165,10 +23213,9 @@ filter_clause (const char* type, const char* filter, const char **columns)
               quoted_keyword = sql_quote (keyword->string);
               quoted_column = sql_quote (keyword->column);
               g_string_append_printf (clause,
-                                      "%s(CAST (%s AS TEXT) = '%s'",
-                                      (first
-                                        ? ""
-                                        : (last_was_and ? " AND " : " OR ")),
+                                      "%s(CAST (%s AS TEXT) IS '%s'",
+                                      get_join (first, last_was_and,
+                                                last_was_not),
                                       quoted_column,
                                       quoted_keyword);
               g_free (quoted_column);
@@ -23178,6 +23225,7 @@ filter_clause (const char* type, const char* filter, const char **columns)
               if (vector_find_string (columns, keyword->column) == 0)
                 {
                   last_was_and = 0;
+                  last_was_not = 0;
                   point++;
                   continue;
                 }
@@ -23186,9 +23234,8 @@ filter_clause (const char* type, const char* filter, const char **columns)
               quoted_column = sql_quote (keyword->column);
               g_string_append_printf (clause,
                                       "%s(CAST (%s AS TEXT) LIKE '%%%%%s%%%%'",
-                                      (first
-                                        ? ""
-                                        : (last_was_and ? " AND " : " OR ")),
+                                      get_join (first, last_was_and,
+                                                last_was_not),
                                       quoted_column,
                                       quoted_keyword);
               g_free (quoted_column);
@@ -23198,6 +23245,7 @@ filter_clause (const char* type, const char* filter, const char **columns)
               if (vector_find_string (columns, keyword->column) == 0)
                 {
                   last_was_and = 0;
+                  last_was_not = 0;
                   point++;
                   continue;
                 }
@@ -23207,17 +23255,15 @@ filter_clause (const char* type, const char* filter, const char **columns)
               if (keyword->type == KEYWORD_TYPE_NUMBER)
                 g_string_append_printf (clause,
                                         "%s(CAST (%s AS INTEGER) > %i",
-                                        (first
-                                          ? ""
-                                          : (last_was_and ? " AND " : " OR ")),
+                                        get_join (first, last_was_and,
+                                                  last_was_not),
                                         quoted_column,
                                         keyword->number);
               else
                 g_string_append_printf (clause,
                                         "%s(CAST (%s AS TEST) > '%s'",
-                                        (first
-                                          ? ""
-                                          : (last_was_and ? " AND " : " OR ")),
+                                        get_join (first, last_was_and,
+                                                  last_was_not),
                                         quoted_column,
                                         quoted_keyword);
               g_free (quoted_column);
@@ -23227,6 +23273,7 @@ filter_clause (const char* type, const char* filter, const char **columns)
               if (vector_find_string (columns, keyword->column) == 0)
                 {
                   last_was_and = 0;
+                  last_was_not = 0;
                   point++;
                   continue;
                 }
@@ -23236,17 +23283,15 @@ filter_clause (const char* type, const char* filter, const char **columns)
               if (keyword->type == KEYWORD_TYPE_NUMBER)
                 g_string_append_printf (clause,
                                         "%s(CAST (%s AS INTEGER) < %i",
-                                        (first
-                                          ? ""
-                                          : (last_was_and ? " AND " : " OR ")),
+                                        get_join (first, last_was_and,
+                                                  last_was_not),
                                         quoted_column,
                                         keyword->number);
               else
                 g_string_append_printf (clause,
                                         "%s(CAST (%s AS TEXT) > '%s'",
-                                        (first
-                                          ? ""
-                                          : (last_was_and ? " AND " : " OR ")),
+                                        get_join (first, last_was_and,
+                                                  last_was_not),
                                         quoted_column,
                                         quoted_keyword);
               g_free (quoted_column);
@@ -23262,18 +23307,37 @@ filter_clause (const char* type, const char* filter, const char **columns)
                                         : (last_was_and ? " AND " : " OR ")));
 
               quoted_keyword = sql_quote (keyword->string);
-              for (index = 0;
-                   (column = columns[index]) != NULL;
-                   index++)
-                {
-                  quoted_column = sql_quote (column);
-                  g_string_append_printf (clause,
-                                          "%s%s LIKE '%%%%%s%%%%'",
-                                          (index ? " OR " : ""),
-                                          quoted_column,
-                                          quoted_keyword);
-                  g_free (quoted_column);
-                }
+              if (last_was_not)
+                for (index = 0;
+                     (column = columns[index]) != NULL;
+                     index++)
+                  {
+                    quoted_column = sql_quote (column);
+                    g_string_append_printf (clause,
+                                            "%s"
+                                            "(%s IS NULL"
+                                            " OR CAST (%s AS TEXT)"
+                                            " NOT LIKE '%%%%%s%%%%')",
+                                            (index ? " AND " : ""),
+                                            quoted_column,
+                                            quoted_column,
+                                            quoted_keyword);
+                    g_free (quoted_column);
+                  }
+              else
+                for (index = 0;
+                     (column = columns[index]) != NULL;
+                     index++)
+                  {
+                    quoted_column = sql_quote (column);
+                    g_string_append_printf (clause,
+                                            "%sCAST (%s AS TEXT)"
+                                            " LIKE '%%%%%s%%%%'",
+                                            (index ? " OR " : ""),
+                                            quoted_column,
+                                            quoted_keyword);
+                    g_free (quoted_column);
+                  }
             }
 
           g_string_append (clause, ")");
@@ -23281,6 +23345,7 @@ filter_clause (const char* type, const char* filter, const char **columns)
           first = 0;
 
           last_was_and = 0;
+          last_was_not = 0;
           point++;
         }
       for (point = (keyword_t**) split->pdata; *point; point++)
