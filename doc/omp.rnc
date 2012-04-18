@@ -5022,6 +5022,7 @@ get_port_lists_response_port_list
        & get_port_lists_response_port_list_name
        & get_port_lists_response_port_list_comment
        & get_port_lists_response_port_list_in_use
+       & get_port_lists_response_port_list_writable
        & get_port_lists_response_port_list_port_count
        & ( get_port_lists_response_port_list_port_ranges
            & get_port_lists_response_port_list_targets )?
@@ -5044,6 +5045,13 @@ get_port_lists_response_port_list_comment
 # Whether any targets are using the port list.
 get_port_lists_response_port_list_in_use
  = element in_use
+     {
+       boolean
+     }
+
+# Whether the port list is writable.
+get_port_lists_response_port_list_writable
+ = element writable
      {
        boolean
      }
@@ -5882,6 +5890,7 @@ get_targets_response_target
        & get_targets_response_target_hosts
        & get_targets_response_target_max_hosts
        & get_targets_response_target_in_use
+       & get_targets_response_target_writable
        & get_targets_response_target_ssh_lsc_credential
        & get_targets_response_target_smb_lsc_credential
        & get_targets_response_target_port_range
@@ -5920,6 +5929,13 @@ get_targets_response_target_max_hosts
 # Whether any tasks are using the target.
 get_targets_response_target_in_use
  = element in_use
+     {
+       boolean
+     }
+
+# Whether the target is writable.
+get_targets_response_target_writable
+ = element writable
      {
        boolean
      }

@@ -1,5 +1,9 @@
 2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Simplify the GET_TARGETS iterator init slightly.
 
 	* src/manage.h (get_data_t): New type.  From omp.c.

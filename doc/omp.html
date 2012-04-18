@@ -6910,7 +6910,7 @@ get_agents_response_agent_package_filename
    &lt;agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
      &lt;name&gt;Custom Scan Agent&lt;/name&gt;
      &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;in_use&gt;0&lt;/in_use&gt;
      &lt;installer&gt;
        &lt;trust&gt;
          yes
@@ -6931,7 +6931,7 @@ get_agents_response_agent_package_filename
    &lt;agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
      &lt;name&gt;Custom Scan Agent&lt;/name&gt;
      &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;in_use&gt;0&lt;/in_use&gt;
      &lt;installer&gt;
        &lt;trust&gt;
          yes
@@ -6952,7 +6952,7 @@ get_agents_response_agent_package_filename
    &lt;agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
      &lt;name&gt;Custom Scan Agent&lt;/name&gt;
      &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;in_use&gt;0&lt;/in_use&gt;
      &lt;package format="installer"&gt;
        CgoKCgoKCgoKCgoKCSAgI...
        &lt;filename&gt;agent.deb&lt;/filename&gt;
@@ -9906,6 +9906,11 @@ get_overrides_response_override_result_description
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the port list is writable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>port_count</b>&gt;
               <ul style="list-style: none">
 <li>
@@ -10011,6 +10016,7 @@ get_port_lists_response_port_list
        &amp; get_port_lists_response_port_list_name
        &amp; get_port_lists_response_port_list_comment
        &amp; get_port_lists_response_port_list_in_use
+       &amp; get_port_lists_response_port_list_writable
        &amp; get_port_lists_response_port_list_port_count
        &amp; ( get_port_lists_response_port_list_port_ranges
            &amp; get_port_lists_response_port_list_targets )?
@@ -10030,6 +10036,12 @@ get_port_lists_response_port_list_comment
 
 get_port_lists_response_port_list_in_use
  = element in_use
+     {
+       boolean
+     }
+
+get_port_lists_response_port_list_writable
+ = element writable
      {
        boolean
      }
@@ -12397,6 +12409,11 @@ get_target_locators_response_target_locator_name
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the target is writable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>ssh_lsc_credential</b>&gt;
               <ul style="list-style: none">
 <li>
@@ -12515,6 +12532,7 @@ get_targets_response_target
        &amp; get_targets_response_target_hosts
        &amp; get_targets_response_target_max_hosts
        &amp; get_targets_response_target_in_use
+       &amp; get_targets_response_target_writable
        &amp; get_targets_response_target_ssh_lsc_credential
        &amp; get_targets_response_target_smb_lsc_credential
        &amp; get_targets_response_target_port_range
@@ -12548,6 +12566,12 @@ get_targets_response_target_max_hosts
 
 get_targets_response_target_in_use
  = element in_use
+     {
+       boolean
+     }
+
+get_targets_response_target_writable
+ = element writable
      {
        boolean
      }
