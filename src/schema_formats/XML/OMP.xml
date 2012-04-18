@@ -3888,7 +3888,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
             <name>Custom Scan Agent</name>
             <comment>Custom agent for use on the Web servers.</comment>
-            <in_use>1</in_use>
+            <in_use>0</in_use>
             <installer>
               <trust>
                 <time>Wed Jun 30 21:49:08 1993</time>
@@ -3911,7 +3911,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
             <name>Custom Scan Agent</name>
             <comment>Custom agent for use on the Web servers.</comment>
-            <in_use>1</in_use>
+            <in_use>0</in_use>
             <installer>
               <trust>
                 <time>Wed Jun 30 21:49:08 1993</time>
@@ -3934,7 +3934,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
             <name>Custom Scan Agent</name>
             <comment>Custom agent for use on the Web servers.</comment>
-            <in_use>1</in_use>
+            <in_use>0</in_use>
             <package format="installer">
               <filename>agent.deb</filename>
               CgoKCgoKCgoKCgoKCSAgI...
@@ -5979,6 +5979,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>name</e>
           <e>comment</e>
           <e>in_use</e>
+          <e>writable</e>
           <e>port_count</e>
           <o>
             <g>
@@ -6000,6 +6001,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>in_use</name>
           <summary>Whether any targets are using the port list</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the port list is writable</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
@@ -7746,6 +7752,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>hosts</e>
           <e>max_hosts</e>
           <e>in_use</e>
+          <e>writable</e>
           <e>ssh_lsc_credential</e>
           <e>smb_lsc_credential</e>
           <e>port_range</e>
@@ -7779,6 +7786,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>in_use</name>
           <summary>Whether any tasks are using the target</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the target is writable</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
