@@ -15373,35 +15373,50 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_TARGETS:
         {
-          target_t target = 0;
-
           assert (strcasecmp ("GET_TARGETS", element_name) == 0);
 
           if (get_targets_data->tasks && get_targets_data->get.trash)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_target",
                                 "GET_TARGETS tasks given with trash"));
-          else if (get_targets_data->get.id
-                   && find_target_for_actions (get_targets_data->get.id,
-                                               &target,
-                                               get_targets_data->get.actions))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_targets"));
-          else if (get_targets_data->get.id && target == 0)
-            {
-              if (send_find_error_to_client ("get_targets",
-                                             "target",
-                                             get_targets_data->get.id,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
           else
             {
               iterator_t targets;
-              int count, filtered;
+              int count, filtered, ret;
+
+              ret = init_target_iterator (&targets,
+                                          get_targets_data->get.id,
+                                          get_targets_data->get.trash,
+                                          get_targets_data->get.filter,
+                                          get_targets_data->get.first,
+                                          get_targets_data->get.max,
+                                          get_targets_data->get.sort_order,
+                                          get_targets_data->get.sort_field,
+                                          get_targets_data->get.actions);
+              if (ret)
+                {
+                  switch (ret)
+                    {
+                      case 1:
+                        if (send_find_error_to_client ("get_targets",
+                                                       "target",
+                                                       get_targets_data->get.id,
+                                                       write_to_client,
+                                                       write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case -1:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("get_targets"));
+                        break;
+                    }
+                  get_targets_data_reset (get_targets_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
 
               count = 0;
               SEND_TO_CLIENT_OR_FAIL ("<get_targets_response"
@@ -15420,15 +15435,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        /* Add 1 for 1 indexing. */
                                        get_targets_data->get.first + 1,
                                        get_targets_data->get.max);
-              init_target_iterator (&targets,
-                                    target,
-                                    get_targets_data->get.trash,
-                                    get_targets_data->get.filter,
-                                    get_targets_data->get.first,
-                                    get_targets_data->get.max,
-                                    get_targets_data->get.sort_order,
-                                    get_targets_data->get.sort_field,
-                                    get_targets_data->get.actions);
               while (next (&targets))
                 {
                   char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
@@ -15552,7 +15558,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (smb_lsc_uuid);
                   free (port_range);
                 }
-              filtered = target
+              filtered = get_targets_data->get.id
                           ? 1
                           : target_count (get_targets_data->get.filter,
                                           get_targets_data->get.actions);

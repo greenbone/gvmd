@@ -23599,7 +23599,7 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
  * @brief Initialise a target iterator, including observed targets.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  target      Target to limit iteration to.  0 for all.
+ * @param[in]  target_id   UUID of target to limit iteration to.  NULL for all.
  * @param[in]  trash       Whether to iterate over trashcan targets.
  * @param[in]  filter      Filter term.
  * @param[in]  first       First target.
@@ -23608,17 +23608,28 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  * @param[in]  actions_string   Actions.
+ *
+ * @return 0 success, 1 failed to find target, -1 error.
  */
-void
-init_target_iterator (iterator_t* iterator, target_t target, int trash,
+int
+init_target_iterator (iterator_t* iterator, const char *target_id, int trash,
                       const char *filter, int first, int max, int ascending,
                       const char* sort_field, const char *actions_string)
 {
   static const char *extra_columns[] = TARGET_ITERATOR_COLUMNS;
   int actions;
   gchar *clause;
+  target_t target = 0;
 
   assert (current_credentials.uuid);
+
+  if (target_id)
+    {
+      if (find_target_for_actions (target_id, &target, actions_string))
+        return -1;
+      if (target == 0)
+        return 1;
+    }
 
   if (first < 0)
     first = 0;
@@ -23632,7 +23643,7 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
     {
       init_user_target_iterator (iterator, target, trash, filter, first, max,
                                  ascending, sort_field);
-      return;
+      return 0;
     }
 
   actions = parse_actions (actions_string);
@@ -23641,7 +23652,7 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
     {
       init_user_target_iterator (iterator, target, trash, filter, first, max,
                                  ascending, sort_field);
-      return;
+      return 0;
     }
 
   clause = filter_clause ("target", filter, extra_columns);
@@ -23811,6 +23822,7 @@ init_target_iterator (iterator_t* iterator, target_t target, int trash,
                    first);
 
   g_free (clause);
+  return 0;
 }
 
 /**

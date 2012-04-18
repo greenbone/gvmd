@@ -1,5 +1,17 @@
 2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move GET_TARGETS find into the iterator initialiser.
+
+	* src/manage_sql.c (init_target_iterator): Convert target arg from
+	target_t to uuid string.  Add return accordingly.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Pass the target UUID directly
+	into the iterator init, instead finding the target first.
+
+2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (get_agents): Make IN_USE 0 in examples
 	because it's always so.
 	(get_port_lists, get_targets): Add WRITABLE.
