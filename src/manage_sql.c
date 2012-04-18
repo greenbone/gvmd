@@ -36205,6 +36205,21 @@ int
 port_list_iterator_in_use (iterator_t* iterator)
 {
   int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 4);
+  return ret;
+}
+
+/**
+ * @brief Get whether a port list iterator is writable.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if port list is writable, else 0.
+ */
+int
+port_list_iterator_writable (iterator_t* iterator)
+{
   const char *uuid;
   if (iterator->done) return -1;
   uuid = (const char*) sqlite3_column_text (iterator->stmt, 1);
@@ -36218,8 +36233,7 @@ port_list_iterator_in_use (iterator_t* iterator)
       || strcmp (uuid, PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012) == 0
       || strcmp (uuid, PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100) == 0)
     return 1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 4);
-  return ret;
+  return port_list_iterator_in_use (iterator);
 }
 
 /**

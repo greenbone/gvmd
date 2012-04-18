@@ -8380,6 +8380,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<name>%s</name>"
                                            "<comment>%s</comment>"
                                            "<in_use>%i</in_use>"
+                                           "<writable>%i</writable>"
                                            "<port_count>"
                                            "<all>%i</all>"
                                            "<tcp>%i</tcp>"
@@ -8389,6 +8390,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            port_list_iterator_name (&lists),
                                            port_list_iterator_comment (&lists),
                                            port_list_iterator_in_use (&lists),
+                                           port_list_iterator_writable (&lists),
                                            port_list_iterator_count (&lists),
                                            port_list_iterator_count_tcp
                                             (&lists),

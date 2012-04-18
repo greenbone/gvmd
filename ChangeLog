@@ -1,5 +1,15 @@
 2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (port_list_iterator_in_use): Remove consideration of
+	predefined state.
+	(port_list_iterator_writable): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Add WRITABLE to GET_PORT_LIST.
+
+2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_port_list): Add missing argument to sql_int.
 	Change associated return so that error message can be more correct.
 

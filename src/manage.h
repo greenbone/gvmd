@@ -2065,6 +2065,9 @@ int
 port_list_iterator_in_use (iterator_t*);
 
 int
+port_list_iterator_writable (iterator_t*);
+
+int
 port_list_iterator_count (iterator_t*);
 
 int
