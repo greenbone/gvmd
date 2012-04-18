@@ -730,6 +730,49 @@ find_trash (const char *type, const char *uuid, resource_t *resource)
 }
 
 /**
+ * @brief Find a resource for a set of actions, given a UUID.
+ *
+ * @param[in]   type       Type of resource.
+ * @param[in]   uuid       UUID of resource.
+ * @param[out]  resource   Resource return, 0 if succesfully failed to find resource.
+ * @param[in]   actions    Actions.
+ *
+ * @return FALSE on success (including if failed to find resource), TRUE on error.
+ */
+gboolean
+find_resource_for_actions (const char* type, const char* uuid,
+                           resource_t* resource, const char *actions)
+{
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_has_access_uuid ("resource", quoted_uuid, actions) == 0)
+    {
+      g_free (quoted_uuid);
+      *resource = 0;
+      return FALSE;
+    }
+  // TODO should really check type
+  switch (sql_int64 (resource, 0, 0,
+                     "SELECT ROWID FROM %ss WHERE uuid = '%s';",
+                     type, quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *resource = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
  * @brief Convert an OTP time into seconds since epoch.
  *
  * Use UTC as timezone.
@@ -23364,7 +23407,7 @@ filter_clause (const char* type, const char* filter, const char **columns)
 /**
  * @brief Filter columns for target iterator.
  */
-#define TARGET_ITERATOR_COLUMNS                                                \
+#define TARGET_ITERATOR_FILTER_COLUMNS                                         \
  { "uuid", "name", "comment", "hosts", "ips", "port_list", "ssh_credential",   \
    "smb_credential", NULL }
 
@@ -23379,7 +23422,7 @@ filter_clause (const char* type, const char* filter, const char **columns)
 int
 target_count (const char *filter, const char *actions_string)
 {
-  static const char *extra_columns[] = TARGET_ITERATOR_COLUMNS;
+  static const char *extra_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
   int actions, ret;
   gchar *clause;
 
@@ -23455,177 +23498,127 @@ target_count (const char *filter, const char *actions_string)
 /**
  * @brief Initialise a target iterator, limited to the current user's targets.
  *
- * @param[in]  iterator    Iterator.
- * @param[in]  target      Target to limit iteration to.  0 for all.
- * @param[in]  trash       Whether to iterate over trashcan targets.
- * @param[in]  filter      Filter term.
- * @param[in]  first       First target.
- * @param[in]  max         Maximum number of targets returned.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ * @param[in]  iterator        Iterator.
+ * @param[in]  type            Type of resource.
+ * @param[in]  get             GET data.
+ * @param[in]  columns         Columns for SQL.
+ * @param[in]  trash_columns   Columns for SQL trash case.
+ * @param[in]  filter_columns  Columns for filter.
+ * @param[in]  resource        Resource.
+ * @param[in]  first           First row.
+ * @param[in]  max             Max rows.
+ *
+ * @return 0 success.
  */
-void
-init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
-                           const char *filter, int first, int max,
-                           int ascending, const char* sort_field)
+static int
+init_user_get_iterator (iterator_t* iterator, const char *type,
+                        const get_data_t *get, const char *columns,
+                        const char *trash_columns, const char **filter_columns,
+                        resource_t resource, int first, int max)
 {
-  static const char *extra_columns[] = TARGET_ITERATOR_COLUMNS;
   gchar *clause;
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause ("target", filter, extra_columns);
+  clause = filter_clause (type, get->filter, filter_columns);
 
-  if (target && trash)
+  if (resource && get->trash)
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " ssh_port, smb_lsc_credential, port_range, %s, %s,"
-                   " (CASE"
-                   "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)
-                   "  THEN (SELECT uuid FROM port_lists_trash"
-                   "        WHERE port_lists_trash.ROWID = port_range)"
-                   "  ELSE (SELECT uuid FROM port_lists"
-                   "        WHERE port_lists.ROWID = port_range)"
-                   "  END),"
-                   " (CASE"
-                   "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)
-                   "  THEN (SELECT name FROM port_lists_trash"
-                   "        WHERE port_lists_trash.ROWID = port_range)"
-                   "  ELSE (SELECT name FROM port_lists"
-                   "        WHERE port_lists.ROWID = port_range)"
-                   "  END),"
-                   " port_list_location = " G_STRINGIFY (LOCATION_TRASH)
-                   " FROM targets%s"
+                   "SELECT %s"
+                   " FROM %ss"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
-                   trash ? "ssh_location" : "0",
-                   trash ? "smb_location" : "0",
-                   trash ? "_trash" : "",
-                   target,
+                   trash_columns ? trash_columns : columns,
+                   type,
+                   resource,
                    current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else if (trash)
+                   get->sort_field ? get->sort_field : "ROWID",
+                   get->sort_order ? "ASC" : "DESC");
+  else if (get->trash)
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " ssh_port, smb_lsc_credential, port_range, %s, %s,"
-                   " (CASE"
-                   "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)
-                   "  THEN (SELECT uuid FROM port_lists_trash"
-                   "        WHERE port_lists_trash.ROWID = port_range)"
-                   "  ELSE (SELECT uuid FROM port_lists"
-                   "        WHERE port_lists.ROWID = port_range)"
-                   "  END),"
-                   " (CASE"
-                   "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)
-                   "  THEN (SELECT name FROM port_lists_trash"
-                   "        WHERE port_lists_trash.ROWID = port_range)"
-                   "  ELSE (SELECT name FROM port_lists"
-                   "        WHERE port_lists.ROWID = port_range)"
-                   "  END),"
-                   " port_list_location = " G_STRINGIFY (LOCATION_TRASH)
-                   " FROM targets%s"
+                   "SELECT %s"
+                   " FROM %ss"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
-                   trash ? "ssh_location" : "0",
-                   trash ? "smb_location" : "0",
-                   trash ? "_trash" : "",
+                   trash_columns ? trash_columns : columns,
+                   type,
                    current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else if (target)
+                   get->sort_field ? get->sort_field : "ROWID",
+                   get->sort_order ? "ASC" : "DESC");
+  else if (resource)
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " ssh_port, smb_lsc_credential, port_range, %s, %s,"
-                   " (SELECT uuid FROM port_lists"
-                   "  WHERE port_lists.ROWID = port_range),"
-                   " (SELECT name FROM port_lists"
-                   "  WHERE port_lists.ROWID = port_range),"
-                   " 0"
-                   " FROM targets%s"
+                   "SELECT %s"
+                   " FROM %ss"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
-                   trash ? "ssh_location" : "0",
-                   trash ? "smb_location" : "0",
-                   trash ? "_trash" : "",
-                   target,
+                   columns,
+                   type,
+                   resource,
                    current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
+                   get->sort_field ? get->sort_field : "ROWID",
+                   get->sort_order ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " ssh_port, smb_lsc_credential, port_range, %s, %s,"
-                   " (SELECT uuid FROM port_lists"
-                   "  WHERE port_lists.ROWID = port_range),"
-                   " (SELECT name FROM port_lists"
-                   "  WHERE port_lists.ROWID = port_range)"
-                   " AS port_list,"
-                   " 0,"
-                   " (SELECT name FROM lsc_credentials"
-                   "  WHERE lsc_credentials.ROWID = lsc_credential)"
-                   " AS ssh_credential,"
-                   " (SELECT name FROM lsc_credentials"
-                   "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"
-                   " AS smb_credential,"
-                   " hosts,"
-                   " max_hosts (hosts) AS ips"
-                   " FROM targets%s"
+                   "SELECT %s"
+                   " FROM %ss"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    "%s%s"
                    " ORDER BY %s %s"
                    " LIMIT %i OFFSET %i;",
-                   trash ? "ssh_location" : "0",
-                   trash ? "smb_location" : "0",
-                   trash ? "_trash" : "",
+                   columns,
+                   type,
                    current_credentials.uuid,
                    clause ? " AND " : "",
                    clause ? clause : "",
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC",
+                   get->sort_field ? get->sort_field : "ROWID",
+                   get->sort_order ? "ASC" : "DESC",
                    max,
                    first);
 
   g_free (clause);
+  return 0;
 }
 
 /**
- * @brief Initialise a target iterator, including observed targets.
+ * @brief Initialise a GET iterator, including observed resources.
  *
- * @param[in]  iterator    Iterator.
- * @param[in]  target_id   UUID of target to limit iteration to.  NULL for all.
- * @param[in]  trash       Whether to iterate over trashcan targets.
- * @param[in]  filter      Filter term.
- * @param[in]  first       First target.
- * @param[in]  max         Maximum number of targets returned.  If -2 then
- *                         Rows Per Page targets.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
- * @param[in]  actions_string   Actions.
+ * @param[in]  iterator        Iterator.
+ * @param[in]  type            Type of resource.
+ * @param[in]  get             GET data.
+ * @param[in]  columns         Columns for SQL.
+ * @param[in]  trash_columns   Columns for SQL trash case.
+ * @param[in]  filter_columns  Columns for filter.
  *
  * @return 0 success, 1 failed to find target, -1 error.
  */
-int
-init_target_iterator (iterator_t* iterator, const get_data_t *get)
+static int
+init_get_iterator (iterator_t* iterator, const char *type,
+                   const get_data_t *get, const char *columns,
+                   const char *trash_columns, const char **filter_columns)
 {
-  static const char *extra_columns[] = TARGET_ITERATOR_COLUMNS;
   int actions, first, max;
   gchar *clause;
-  target_t target = 0;
+  resource_t resource = 0;
 
   assert (current_credentials.uuid);
 
+  if (columns == NULL)
+    {
+      assert (0);
+      return -1;
+    }
+
   if (get->id)
     {
-      if (find_target_for_actions (get->id, &target, get->actions))
+      if (find_resource_for_actions (type, get->id, &resource, get->actions))
         return -1;
-      if (target == 0)
+      if (resource == 0)
         return 1;
     }
 
@@ -23643,8 +23636,8 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
 
   if (get->actions == NULL || strlen (get->actions) == 0)
     {
-      init_user_target_iterator (iterator, target, get->trash, get->filter,
-                                 first, max, get->sort_order, get->sort_field);
+      init_user_get_iterator (iterator, type, get, columns, trash_columns,
+                              filter_columns, resource, first, max);
       return 0;
     }
 
@@ -23652,34 +23645,17 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
 
   if (actions == 0)
     {
-      init_user_target_iterator (iterator, target, get->trash, get->filter,
-                                 first, max, get->sort_order, get->sort_field);
+      init_user_get_iterator (iterator, type, get, columns, trash_columns,
+                              filter_columns, resource, first, max);
       return 0;
     }
 
-  clause = filter_clause ("target", get->filter, extra_columns);
+  clause = filter_clause ("target", get->filter, filter_columns);
 
-  if (target && get->trash)
+  if (resource && get->trash)
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " ssh_port, smb_lsc_credential, port_range, ssh_location,"
-                   " smb_location,"
-                   " (CASE"
-                   "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)
-                   "  THEN (SELECT uuid FROM port_lists_trash"
-                   "        WHERE port_lists_trash.ROWID = port_range)"
-                   "  ELSE (SELECT uuid FROM port_lists"
-                   "        WHERE port_lists.ROWID = port_range)"
-                   "  END),"
-                   " (CASE"
-                   "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)
-                   "  THEN (SELECT name FROM port_lists_trash"
-                   "        WHERE port_lists_trash.ROWID = port_range)"
-                   "  ELSE (SELECT name FROM port_lists"
-                   "        WHERE port_lists.ROWID = port_range)"
-                   "  END),"
-                   " port_list_location = " G_STRINGIFY (LOCATION_TRASH)
-                   " FROM targets_trash"
+                   "SELECT %s"
+                   " FROM %ss_trash"
                    " WHERE ROWID = %llu"
                    " AND"
                    " ((owner IS NULL) OR (owner ="
@@ -23693,7 +23669,9 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
                    "    WHERE users.uuid = '%s')"
                    "   AND actions & %u = %u))"
                    " ORDER BY %s %s;",
-                   target,
+                   trash_columns ? trash_columns : columns,
+                   type,
+                   resource,
                    current_credentials.uuid,
                    current_credentials.uuid,
                    actions,
@@ -23702,25 +23680,8 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
                    get->sort_order ? "ASC" : "DESC");
   else if (get->trash)
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " ssh_port, smb_lsc_credential, port_range, ssh_location,"
-                   " smb_location,"
-                   " (CASE"
-                   "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)
-                   "  THEN (SELECT uuid FROM port_lists_trash"
-                   "        WHERE port_lists_trash.ROWID = port_range)"
-                   "  ELSE (SELECT uuid FROM port_lists"
-                   "        WHERE port_lists.ROWID = port_range)"
-                   "  END),"
-                   " (CASE"
-                   "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)
-                   "  THEN (SELECT name FROM port_lists_trash"
-                   "        WHERE port_lists_trash.ROWID = port_range)"
-                   "  ELSE (SELECT name FROM port_lists"
-                   "        WHERE port_lists.ROWID = port_range)"
-                   "  END),"
-                   " port_list_location = " G_STRINGIFY (LOCATION_TRASH)
-                   " FROM targets_trash"
+                   "SELECT %s"
+                   " FROM %ss_trash"
                    " WHERE"
                    " ((owner IS NULL) OR (owner ="
                    "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
@@ -23733,22 +23694,18 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
                    "    WHERE users.uuid = '%s')"
                    "   AND actions & %u = %u))"
                    " ORDER BY %s %s;",
+                   trash_columns ? trash_columns : columns,
+                   type,
                    current_credentials.uuid,
                    current_credentials.uuid,
                    actions,
                    actions,
                    get->sort_field ? get->sort_field : "ROWID",
                    get->sort_order ? "ASC" : "DESC");
-  else if (target)
+  else if (resource)
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " ssh_port, smb_lsc_credential, port_range, 0, 0,"
-                   "  (SELECT uuid FROM port_lists"
-                   "   WHERE port_lists.ROWID = port_range),"
-                   "  (SELECT name FROM port_lists"
-                   "   WHERE port_lists.ROWID = port_range),"
-                   " 0"
-                   " FROM targets"
+                   "SELECT %s"
+                   " FROM %ss"
                    " WHERE ROWID = %llu"
                    " AND"
                    " ((owner IS NULL) OR (owner ="
@@ -23762,7 +23719,9 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
                    "    WHERE users.uuid = '%s')"
                    "   AND actions & %u = %u))"
                    " ORDER BY %s %s;",
-                   target,
+                   type,
+                   columns,
+                   resource,
                    current_credentials.uuid,
                    current_credentials.uuid,
                    actions,
@@ -23771,23 +23730,8 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
                    get->sort_order ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential,"
-                   " ssh_port, smb_lsc_credential, port_range,"
-                   " (SELECT uuid FROM port_lists"
-                   "  WHERE port_lists.ROWID = port_range),"
-                   " (SELECT name FROM port_lists"
-                   "  WHERE port_lists.ROWID = port_range)"
-                   " AS port_list,"
-                   " 0,"
-                   " (SELECT name FROM lsc_credentials"
-                   "  WHERE lsc_credentials.ROWID = lsc_credential)"
-                   " AS ssh_credential,"
-                   " (SELECT name FROM lsc_credentials"
-                   "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"
-                   " AS smb_credential,"
-                   " hosts,"
-                   " max_hosts (hosts) AS ips"
-                   " FROM targets"
+                   "SELECT %s"
+                   " FROM %ss"
                    " WHERE"
                    " ((owner IS NULL) OR (owner ="
                    "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
@@ -23802,6 +23746,8 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
                    "%s%s"
                    " ORDER BY %s %s"
                    " LIMIT %i OFFSET %i;",
+                   type,
+                   columns,
                    current_credentials.uuid,
                    current_credentials.uuid,
                    actions,
@@ -23815,6 +23761,101 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
 
   g_free (clause);
   return 0;
+}
+
+/**
+ * @brief Target iterator columns.
+ */
+#define TARGET_ITERATOR_COLUMNS                             \
+  "ROWID, uuid, name, hosts, comment, lsc_credential,"      \
+  " ssh_port, smb_lsc_credential, port_range,"              \
+  " (SELECT uuid FROM port_lists"                           \
+  "  WHERE port_lists.ROWID = port_range),"                 \
+  " (SELECT name FROM port_lists"                           \
+  "  WHERE port_lists.ROWID = port_range)"                  \
+  " AS port_list,"                                          \
+  " 0,"                                                     \
+  " (SELECT name FROM lsc_credentials"                      \
+  "  WHERE lsc_credentials.ROWID = lsc_credential)"         \
+  " AS ssh_credential,"                                     \
+  " (SELECT name FROM lsc_credentials"                      \
+  "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"     \
+  " AS smb_credential,"                                     \
+  " hosts,"                                                 \
+  " max_hosts (hosts) AS ips"
+
+/**
+ * @brief Target iterator columns for trash case.
+ */
+#define TARGET_ITERATOR_TRASH_COLUMNS                         \
+  "ROWID, uuid, name, hosts, comment, lsc_credential,"        \
+  " ssh_port, smb_lsc_credential, port_range, ssh_location,"  \
+  " smb_location,"                                            \
+  " (CASE"                                                    \
+  "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH) \
+  "  THEN (SELECT uuid FROM port_lists_trash"                 \
+  "        WHERE port_lists_trash.ROWID = port_range)"        \
+  "  ELSE (SELECT uuid FROM port_lists"                       \
+  "        WHERE port_lists.ROWID = port_range)"              \
+  "  END),"                                                   \
+  " (CASE"                                                    \
+  "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH) \
+  "  THEN (SELECT name FROM port_lists_trash"                 \
+  "        WHERE port_lists_trash.ROWID = port_range)"        \
+  "  ELSE (SELECT name FROM port_lists"                       \
+  "        WHERE port_lists.ROWID = port_range)"              \
+  "  END),"                                                   \
+  " port_list_location = " G_STRINGIFY (LOCATION_TRASH)
+
+/**
+ * @brief Initialise a target iterator, limited to the current user's targets.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  target      Target to limit iteration to.  0 for all.
+ * @param[in]  trash       Whether to iterate over trashcan targets.
+ * @param[in]  filter      Filter term.
+ * @param[in]  first       First target.
+ * @param[in]  max         Maximum number of targets returned.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ */
+void
+init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
+                           const char *filter, int first, int max,
+                           int ascending, const char* sort_field)
+{
+  static const char *filter_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
+  get_data_t get;
+  get.trash = trash;
+  get.filter = (char*) filter;
+  get.sort_order = ascending;
+  get.sort_field = (char*) sort_field;
+  init_user_get_iterator (iterator, "target", &get, TARGET_ITERATOR_COLUMNS,
+                          TARGET_ITERATOR_TRASH_COLUMNS, filter_columns, target,
+                          first, max);
+}
+
+/**
+ * @brief Initialise a target iterator, including observed targets.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find target, -1 error.
+ */
+int
+init_target_iterator (iterator_t* iterator, const get_data_t *get)
+{
+  static const char *filter_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "target",
+                            get,
+                            /* Columns. */
+                            TARGET_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            TARGET_ITERATOR_TRASH_COLUMNS,
+                            filter_columns);
 }
 
 /**

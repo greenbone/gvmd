@@ -1,5 +1,22 @@
 2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add a generic iterator for GET commands, and call it in the GET_TARGETS
+	iterator.
+
+	* src/manage_sql.c (find_resource_for_actions): New function.
+	(TARGET_ITERATOR_COLUMNS): Set to SQL columns.  Filter columns now defined
+	by TARGET_ITERATOR_FILTER_COLUMNS.
+	(target_count): Update for rename.
+	(init_user_get_iterator, init_get_iterator): New functions.
+	(TARGET_ITERATOR_FILTER_COLUMNS, TARGET_ITERATOR_TRASH_COLUMNS): New
+	definitions.
+	(init_user_target_iterator, init_target_iterator): Call through to generic
+	counterparts.
+
+	* src/omp.c (get_data_t): Remove.  Now in manage.h.
+
+2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/omp.rnc, doc/omp.html: Update from source.
 
 2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
