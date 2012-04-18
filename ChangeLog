@@ -1,5 +1,10 @@
 2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Add missing case to
+	create_target switch.
+
+2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (target_writable, trash_target_writable): New
 	functions.
 
