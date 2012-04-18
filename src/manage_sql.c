@@ -24294,6 +24294,42 @@ trash_target_in_use (target_t target)
 }
 
 /**
+ * @brief Return whether a target is writable.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+target_writable (target_t target)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM targets"
+                  " WHERE ROWID = %llu"
+                  " AND uuid = '" TARGET_UUID_LOCALHOST "'",
+                  target)
+         || target_in_use (target);
+}
+
+/**
+ * @brief Return whether a trashcan target is writable.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+trash_target_writable (target_t target)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM targets_trash"
+                  " WHERE ROWID = %llu"
+                  " AND uuid = '" TARGET_UUID_LOCALHOST "'",
+                  target)
+         || trash_target_in_use (target);
+}
+
+/**
  * @brief Initialise a target task iterator.
  *
  * Iterates over all tasks that use the target.

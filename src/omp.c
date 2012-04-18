@@ -15453,6 +15453,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<max_hosts>%i</max_hosts>"
                                            "<comment>%s</comment>"
                                            "<in_use>%i</in_use>"
+                                           "<writable>%i</writable>"
                                            "<port_range>%s</port_range>"
                                            "<port_list id=\"%s\">"
                                            "<name>%s</name>"
@@ -15478,6 +15479,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                (target_iterator_target
                                                  (&targets))
                                             : target_in_use
+                                               (target_iterator_target
+                                                 (&targets)),
+                                           get_targets_data->get.trash
+                                            ? trash_target_writable
+                                               (target_iterator_target
+                                                 (&targets))
+                                            : target_writable
                                                (target_iterator_target
                                                  (&targets)),
                                            port_range,
