@@ -1665,21 +1665,6 @@ delete_task_data_reset (delete_task_data_t *data)
 }
 
 /**
- * @brief Command data for a get command.
- */
-typedef struct
-{
-  char *actions;       ///< Actions.
-  char *filter;        ///< Filter term.
-  int first;           ///< Skip over items before this number.
-  char *id;            ///< ID of single item to get.
-  int max;             ///< Maximum number of items returned.
-  char *sort_field;    ///< Field to sort results on.
-  int sort_order;      ///< Result sort order: 0 descending, else ascending.
-  int trash;           ///< Boolean.  Whether to return from trashcan.
-} get_data_t;
-
-/**
  * @brief Reset command data.
  *
  * @param[in]  data  Command data.
@@ -15384,15 +15369,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               iterator_t targets;
               int count, filtered, ret;
 
-              ret = init_target_iterator (&targets,
-                                          get_targets_data->get.id,
-                                          get_targets_data->get.trash,
-                                          get_targets_data->get.filter,
-                                          get_targets_data->get.first,
-                                          get_targets_data->get.max,
-                                          get_targets_data->get.sort_order,
-                                          get_targets_data->get.sort_field,
-                                          get_targets_data->get.actions);
+              ret = init_target_iterator (&targets, &get_targets_data->get);
               if (ret)
                 {
                   switch (ret)

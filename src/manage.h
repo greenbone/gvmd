@@ -635,6 +635,24 @@ typedef enum
 } action_t;
 
 
+/* OMP command oriented types. */
+
+/**
+ * @brief Command data for a get command.
+ */
+typedef struct
+{
+  char *actions;       ///< Actions.
+  char *filter;        ///< Filter term.
+  int first;           ///< Skip over items before this number.
+  char *id;            ///< ID of single item to get.
+  int max;             ///< Maximum number of items returned.
+  char *sort_field;    ///< Field to sort results on.
+  int sort_order;      ///< Result sort order: 0 descending, else ascending.
+  int trash;           ///< Boolean.  Whether to return from trashcan.
+} get_data_t;
+
+
 /* Results. */
 
 gboolean
@@ -915,8 +933,7 @@ init_user_target_iterator (iterator_t*, target_t, int, const char*, int, int,
                            int, const char*);
 
 int
-init_target_iterator (iterator_t*, const char *, int, const char*, int, int,
-                      int, const char*, const char*);
+init_target_iterator (iterator_t*, const get_data_t *);
 
 target_t
 target_iterator_target (iterator_t*);

@@ -1,5 +1,19 @@
 2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Simplify the GET_TARGETS iterator init slightly.
+
+	* src/manage.h (get_data_t): New type.  From omp.c.
+	(init_target_iterator): Update header.
+
+	* src/manage_sql.c (init_target_iterator): Group the generic get args into
+	one.
+
+	* src/omp.c (get_data_t): Remove.  Now in manage.h.
+	(omp_xml_handle_end_element): Pass get_targets_data directly to
+	init_target_iterator.
+
+2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move GET_TARGETS find into the iterator initialiser.
 
 	* src/manage_sql.c (init_target_iterator): Convert target arg from
