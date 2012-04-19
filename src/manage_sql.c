@@ -23525,7 +23525,7 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
   if (resource && get->trash)
     init_iterator (iterator,
                    "SELECT %s"
-                   " FROM %ss"
+                   " FROM %ss_trash"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -23539,7 +23539,7 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
   else if (get->trash)
     init_iterator (iterator,
                    "SELECT %s"
-                   " FROM %ss"
+                   " FROM %ss_trash"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
@@ -23768,7 +23768,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
  */
 #define TARGET_ITERATOR_COLUMNS                             \
   "ROWID, uuid, name, hosts, comment, lsc_credential,"      \
-  " ssh_port, smb_lsc_credential, port_range,"              \
+  " ssh_port, smb_lsc_credential, port_range, 0, 0,"        \
   " (SELECT uuid FROM port_lists"                           \
   "  WHERE port_lists.ROWID = port_range),"                 \
   " (SELECT name FROM port_lists"                           \

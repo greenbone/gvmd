@@ -1,5 +1,11 @@
 2012-04-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_user_get_iterator): Add "_trash" to table name
+	in SQL for trash cases.
+	(TARGET_ITERATOR_COLUMNS): Add missing dummy columns.
+
+2012-04-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (find_resource_for_actions): Pass type to
 	user_has_access_uuid instead of static string.
 	(init_get_iterator): Correct order of iterator args.
