@@ -1,5 +1,19 @@
 2012-04-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Switch GET_AGENTS to the GET iterator.
+
+	* src/manage_sql.c (verify_agent): Pass single arg to init_agent_iterator.
+	(AGENT_ITERATOR_FILTER_COLUMNS, AGENT_ITERATOR_COLUMNS)
+	(AGENT_ITERATOR_TRASH_COLUMNS): New definitions.
+	(init_agent_iterator): Use the generic initialiser.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Pass single arg to GET_AGENTS
+	iterator init, and handle return.
+
+2012-04-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_user_get_iterator): Add "_trash" to table name
 	in SQL for trash cases.
 	(TARGET_ITERATOR_COLUMNS): Add missing dummy columns.

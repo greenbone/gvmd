@@ -1450,8 +1450,8 @@ verify_agent (agent_t);
 int
 agent_uuid (agent_t, char **);
 
-void
-init_agent_iterator (iterator_t*, agent_t, int, int, const char*);
+int
+init_agent_iterator (iterator_t*, const get_data_t *);
 
 const char*
 agent_iterator_uuid (iterator_t*);

@@ -30486,10 +30486,13 @@ verify_agent (agent_t agent)
 {
   int agent_trust = TRUST_UNKNOWN;
   iterator_t agents;
+  get_data_t get;
 
   sql ("BEGIN IMMEDIATE;");
 
-  init_agent_iterator (&agents, agent, 0, 1, NULL);
+  memset (&get, 0, sizeof (get));
+  get.sort_order = 1;
+  init_agent_iterator (&agents, &get);
   if (next (&agents))
     {
       const char *signature_64;
@@ -30603,50 +30606,46 @@ agent_uuid (agent_t agent, char ** id)
 }
 
 /**
+ * @brief Filter columns for agent iterator.
+ */
+#define AGENT_ITERATOR_FILTER_COLUMNS          \
+ { "uuid", "name", "comment", /* FIX "trust", */ NULL }
+
+/**
+ * @brief Agent iterator columns.
+ */
+#define AGENT_ITERATOR_COLUMNS                              \
+  "uuid, name, comment, installer, installer_64,"           \
+  " installer_filename, installer_signature_64,"            \
+  " installer_trust, installer_trust_time, howto_install,"  \
+  " howto_use"
+
+/**
+ * @brief Agent iterator columns for trash case.
+ */
+#define AGENT_ITERATOR_TRASH_COLUMNS NULL
+
+/**
  * @brief Initialise an agent iterator.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  agent       Single agent to iterate, 0 for all.
- * @param[in]  trash       Whether to iterate over trashcan targets.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find agent, -1 error.
  */
-void
-init_agent_iterator (iterator_t* iterator, agent_t agent, int trash,
-                     int ascending, const char* sort_field)
+int
+init_agent_iterator (iterator_t* iterator, const get_data_t *get)
 {
-  assert (current_credentials.uuid);
+  static const char *filter_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
 
-  if (agent)
-    init_iterator (iterator,
-                   "SELECT uuid, name, comment, installer, installer_64,"
-                   " installer_filename, installer_signature_64,"
-                   " installer_trust, installer_trust_time, howto_install,"
-                   " howto_use"
-                   " FROM agents%s"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   trash ? "_trash" : "",
-                   agent,
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT uuid, name, comment, installer, installer_64,"
-                   " installer_filename, installer_signature_64,"
-                   " installer_trust, installer_trust_time, howto_install,"
-                   " howto_use"
-                   " FROM agents%s"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   trash ? "_trash" : "",
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
+  return init_get_iterator (iterator,
+                            "agent",
+                            get,
+                            /* Columns. */
+                            AGENT_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            AGENT_ITERATOR_TRASH_COLUMNS,
+                            filter_columns);
 }
 
 /**

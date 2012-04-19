@@ -14323,9 +14323,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_AGENTS:
         {
-          iterator_t agents;
           int format;
-          agent_t agent = 0;
 
           assert (strcasecmp ("GET_AGENTS", element_name) == 0);
 
@@ -14355,31 +14353,42 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_agents",
                                 "GET_AGENTS format attribute should"
                                 " be 'installer', 'howto_install' or 'howto_use'."));
-          else if (get_agents_data->get.id
-                   && find_agent (get_agents_data->get.id, &agent))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_agents"));
-          else if (get_agents_data->get.id && agent == 0)
-            {
-              if (send_find_error_to_client ("get_agents",
-                                             "agent",
-                                             get_agents_data->get.id,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
           else
             {
+              iterator_t agents;
+              int ret;
+
+              ret = init_agent_iterator (&agents,
+                                         &get_agents_data->get);
+              if (ret)
+                {
+                  switch (ret)
+                    {
+                      case 1:
+                        if (send_find_error_to_client ("get_agents",
+                                                       "agents",
+                                                       get_agents_data->get.id,
+                                                       write_to_client,
+                                                       write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case -1:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("get_agents"));
+                        break;
+                    }
+                  get_agents_data_reset (get_agents_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+
               SEND_TO_CLIENT_OR_FAIL ("<get_agents_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
-              init_agent_iterator (&agents,
-                                   agent,
-                                   get_agents_data->get.trash,
-                                   get_agents_data->get.sort_order,
-                                   get_agents_data->get.sort_field);
+
               while (next (&agents))
                 {
                   switch (format)
