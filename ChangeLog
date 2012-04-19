@@ -1,3 +1,7 @@
+2012-04-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Update OMP version to 4.0.
+
 2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add a generic iterator for GET commands, and call it in the GET_TARGETS
