@@ -1,5 +1,11 @@
 2012-04-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (find_resource_for_actions): Pass type to
+	user_has_access_uuid instead of static string.
+	(init_get_iterator): Correct order of iterator args.
+
+2012-04-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Update OMP version to 4.0.
 
 2012-04-18  Matthew Mundell <matthew.mundell@greenbone.net>

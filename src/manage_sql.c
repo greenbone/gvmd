@@ -744,7 +744,7 @@ find_resource_for_actions (const char* type, const char* uuid,
                            resource_t* resource, const char *actions)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("resource", quoted_uuid, actions) == 0)
+  if (user_has_access_uuid (type, quoted_uuid, actions) == 0)
     {
       g_free (quoted_uuid);
       *resource = 0;
@@ -23719,8 +23719,8 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    "    WHERE users.uuid = '%s')"
                    "   AND actions & %u = %u))"
                    " ORDER BY %s %s;",
-                   type,
                    columns,
+                   type,
                    resource,
                    current_credentials.uuid,
                    current_credentials.uuid,
@@ -23746,8 +23746,8 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    "%s%s"
                    " ORDER BY %s %s"
                    " LIMIT %i OFFSET %i;",
-                   type,
                    columns,
+                   type,
                    current_credentials.uuid,
                    current_credentials.uuid,
                    actions,
