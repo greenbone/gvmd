@@ -22386,12 +22386,15 @@ create_target (const char* name, const char* hosts, const char* comment,
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the target, 2 failed
- *         to find target, -1 error.
+ *         to find target, 3 predefined target, -1 error.
  */
 int
 delete_target (const char *target_id, int ultimate)
 {
   target_t target = 0;
+
+  if (strcmp (target_id, TARGET_UUID_LOCALHOST) == 0)
+    return 3;
 
   sql ("BEGIN IMMEDIATE;");
 
