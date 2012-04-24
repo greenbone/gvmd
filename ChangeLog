@@ -1,5 +1,10 @@
 2012-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Add missing case to
+	create_target switch.  Backport from trunk; initially committed in r13282.
+
+2012-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport from trunk; initially committed in r13257.
 
 	* src/schema_formats/XML/OMP.xml (get_port_lists): Move details attrib
