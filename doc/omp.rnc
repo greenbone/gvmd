@@ -2580,6 +2580,8 @@ get_port_lists
      {
        # ID of single port list to get.
        attribute port_list_id { uuid }?
+       & # Whether to include full port list details.
+       attribute details { boolean }?
        & # Whether to get the trashcan port lists instead.
        attribute trash { boolean }?
        & attribute sort_order { sort_order }?
@@ -5010,8 +5012,6 @@ get_port_lists_response
      {
        attribute status { status }
        & attribute status_text { text }
-       & # Whether to include full port list details.
-       attribute details { boolean }?
        & get_port_lists_response_port_list*
      }
 

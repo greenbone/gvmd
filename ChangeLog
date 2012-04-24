@@ -1,4 +1,13 @@
-2012-04-17  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport from trunk; initially committed in r13257.
+
+	* src/schema_formats/XML/OMP.xml (get_port_lists): Move details attrib
+	from response to request.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2012-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport from trunk; initially committed in r13261.
 

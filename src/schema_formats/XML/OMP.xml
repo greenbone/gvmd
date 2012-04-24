@@ -5930,6 +5930,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>details</name>
+        <summary>Whether to include full port list details</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan port lists instead</summary>
         <type>boolean</type>
@@ -5954,11 +5959,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>status_text</name>
           <type>text</type>
           <required>1</required>
-        </attrib>
-        <attrib>
-          <name>details</name>
-          <summary>Whether to include full port list details</summary>
-          <type>boolean</type>
         </attrib>
         <any><e>port_list</e></any>
       </pattern>
