@@ -34827,7 +34827,7 @@ create_port_range (const char *port_list_id, const char *type,
  * @param[in]  ultimate      Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a target refers to the port list, 2 failed
- *         to find port list, -1 error.
+ *         to find port list, 3 predefined port list, -1 error.
  */
 int
 delete_port_list (const char *port_list_id, int ultimate)
@@ -34842,23 +34842,31 @@ delete_port_list (const char *port_list_id, int ultimate)
       return -1;
     }
 
-  if (sql_int
-       (0, 0,
-        "SELECT count (*) FROM port_lists"
-        " WHERE ROWID = %llu AND"
-        " (uuid == " G_STRINGIFY (PORT_LIST_UUID_DEFAULT)
-        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100)
-        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000)
-        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP)
-        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP_UDP)
-        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_2012)
-        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012)
-        "  OR uuid"
-        "     == " G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100) ");")
-      > 0)
+  if (port_list
+      && sql_int
+          (0, 0,
+           "SELECT count (*) FROM port_lists"
+           " WHERE ROWID = %llu AND"
+           " (uuid == " G_STRINGIFY (PORT_LIST_UUID_DEFAULT)
+           "  OR uuid"
+           "     == " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100)
+           "  OR uuid "
+           "     == " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000)
+           "  OR uuid "
+           "     == " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP)
+           "  OR uuid "
+           "     == " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP_UDP)
+           "  OR uuid "
+           "     == " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_2012)
+           "  OR uuid"
+           "     == " G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100)
+           "  OR uuid "
+           "     == " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012) ");",
+           port_list)
+         > 0)
     {
       sql ("ROLLBACK;");
-      return 1;
+      return 3;
     }
 
   if (port_list == 0)

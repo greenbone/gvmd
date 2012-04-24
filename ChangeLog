@@ -1,5 +1,15 @@
 2012-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport from trunk; initially committed in r13283.
+
+	* src/manage_sql.c (delete_port_list): Add missing argument to sql_int.
+	Change associated return so that error message can be more correct.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new return from
+	delete_port_list.
+
+2012-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Add missing case to
 	create_target switch.  Backport from trunk; initially committed in r13282.
 
