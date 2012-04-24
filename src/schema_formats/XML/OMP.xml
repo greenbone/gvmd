@@ -3884,7 +3884,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
             <name>Custom Scan Agent</name>
             <comment>Custom agent for use on the Web servers.</comment>
-            <in_use>1</in_use>
+            <in_use>0</in_use>
             <installer>
               <trust>
                 <time>Wed Jun 30 21:49:08 1993</time>
@@ -3907,7 +3907,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
             <name>Custom Scan Agent</name>
             <comment>Custom agent for use on the Web servers.</comment>
-            <in_use>1</in_use>
+            <in_use>0</in_use>
             <installer>
               <trust>
                 <time>Wed Jun 30 21:49:08 1993</time>
@@ -3930,7 +3930,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
             <name>Custom Scan Agent</name>
             <comment>Custom agent for use on the Web servers.</comment>
-            <in_use>1</in_use>
+            <in_use>0</in_use>
             <package format="installer">
               <filename>agent.deb</filename>
               CgoKCgoKCgoKCgoKCSAgI...

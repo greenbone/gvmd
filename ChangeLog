@@ -1,5 +1,12 @@
 2012-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (get_agents): Make IN_USE 0 in examples
+	because it's always so.  Backport from trunk; initially committed in r13285.
+
+	* doc/omp.html: Update from source.
+
+2012-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport from trunk; initially committed in r13283.
 
 	* src/manage_sql.c (delete_port_list): Add missing argument to sql_int.
