@@ -1028,7 +1028,7 @@ serve_and_schedule ()
             }
           if (FD_ISSET (manager_socket, &readfds))
             accept_and_maybe_fork (manager_socket);
-          if (FD_ISSET (manager_socket_2, &readfds))
+          if ((manager_socket_2 > -1) && FD_ISSET (manager_socket_2, &readfds))
             accept_and_maybe_fork (manager_socket_2);
         }
 

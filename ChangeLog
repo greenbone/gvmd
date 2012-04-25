@@ -1,3 +1,8 @@
+2012-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (serve_and_schedule): Check that the second socket is in
+	use before trying to call FD_ISSET on it.
+
 2012-04-25  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
