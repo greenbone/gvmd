@@ -22562,6 +22562,109 @@ create_target (const char* name, const char* hosts, const char* comment,
 }
 
 /**
+ * @brief Create a target from an existing target.
+ *
+ * @param[in]  name        Name of new target.  NULL to copy from existing.
+ * @param[in]  comment     Comment on new target.  NULL to copy from existing.
+ * @param[in]  target_id   UUID of existing target.
+ * @param[out] new_target  New target.
+ *
+ * @return 0 success, 1 target exists already, 2 failed to find existing
+ *         target, -1 error.
+ */
+int
+copy_target (const char* name, const char* comment, const char *target_id,
+             target_t* new_target)
+{
+  gchar *quoted_name, *quoted_uuid;
+
+  assert (current_credentials.uuid);
+
+  if (target_id == NULL)
+    return -1;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (name && strlen (name))
+    {
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM targets WHERE name = '%s'"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   current_credentials.uuid))
+        {
+          sql ("ROLLBACK;");
+          g_free (quoted_name);
+          return 1;
+        }
+    }
+  else
+    quoted_name = NULL;
+
+  quoted_uuid = sql_quote (target_id);
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM targets"
+               " WHERE uuid = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+               quoted_uuid,
+               current_credentials.uuid)
+      == 0)
+    {
+      sql ("ROLLBACK;");
+      g_free (quoted_name);
+      return 2;
+    }
+
+  /* Copy the existing target. */
+
+  if (comment && strlen (comment))
+    {
+      gchar *quoted_comment;
+      quoted_comment = sql_nquote (comment, strlen (comment));
+      sql ("INSERT INTO targets"
+           " (uuid, owner, name, comment, hosts, lsc_credential, ssh_port,"
+           "  smb_lsc_credential, port_range)"
+           " SELECT make_uuid (),"
+           " (SELECT ROWID FROM users where users.uuid = '%s'),"
+           " %s%s%s, '%s', hosts, lsc_credential, ssh_port,"
+           " smb_lsc_credential, port_range"
+           " FROM targets WHERE uuid = '%s';",
+           current_credentials.uuid,
+           quoted_name ? "'" : "",
+           quoted_name ? quoted_name : "uniquify ('target', name, owner)",
+           quoted_name ? "'" : "",
+           quoted_comment,
+           quoted_uuid);
+      g_free (quoted_comment);
+    }
+  else
+    sql ("INSERT INTO targets"
+         " (uuid, owner, name, comment, hosts, lsc_credential, ssh_port,"
+         "  smb_lsc_credential, port_range)"
+         " SELECT make_uuid (),"
+         " (SELECT ROWID FROM users where users.uuid = '%s'),"
+         " %s%s%s, comment, hosts, lsc_credential, ssh_port,"
+         " smb_lsc_credential, port_range"
+         " FROM targets WHERE uuid = '%s';",
+         current_credentials.uuid,
+         quoted_name ? "'" : "",
+         quoted_name ? quoted_name : "uniquify ('target', name, owner)",
+         quoted_name ? "'" : "",
+         quoted_uuid);
+
+  if (new_target)
+    *new_target = sqlite3_last_insert_rowid (task_db);
+
+  sql ("COMMIT;");
+  g_free (quoted_uuid);
+  g_free (quoted_name);
+  return 0;
+}
+
+/**
  * @brief Delete a target.
  *
  * @param[in]  target_id  UUID of target.

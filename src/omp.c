@@ -1267,6 +1267,7 @@ create_slave_data_reset (create_slave_data_t *data)
 typedef struct
 {
   char *comment;                 ///< Comment.
+  char *copy;                    ///< UUID of resource to copy.
   char *hosts;                   ///< Hosts for new target.
   char *port_list_id;            ///< Port list for new target.
   char *port_range;              ///< Port range for new target.
@@ -3670,6 +3671,7 @@ typedef enum
   CLIENT_CREATE_SLAVE_PORT,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_COMMENT,
+  CLIENT_CREATE_TARGET_COPY,
   CLIENT_CREATE_TARGET_HOSTS,
   CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT,
@@ -6406,6 +6408,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TARGET:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_COMMENT);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_COPY);
         else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_HOSTS);
         else if (strcasecmp ("PORT_LIST", element_name) == 0)
@@ -12888,6 +12892,37 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("create_target",
                                   "CREATE is forbidden for observer users"));
             }
+          else if (create_target_data->copy)
+            switch (copy_target (create_target_data->name,
+                                 create_target_data->comment,
+                                 create_target_data->copy,
+                                 &new_target))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = target_uuid (new_target);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_target"),
+                                             uuid);
+                    g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                           "Target %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_target",
+                                      "Target exists already"));
+                  g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                         "Target could not be created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_target"));
+                  g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                         "Target could not be created");
+                  break;
+              }
           else if (strlen (create_target_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
@@ -13035,6 +13070,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_TARGET, COMMENT);
+      CLOSE (CLIENT_CREATE_TARGET, COPY);
       CLOSE (CLIENT_CREATE_TARGET, HOSTS);
       CLOSE (CLIENT_CREATE_TARGET, NAME);
       CLOSE (CLIENT_CREATE_TARGET, PORT_LIST);
@@ -17247,6 +17283,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_TARGET_COMMENT,
               &create_target_data->comment);
+
+      APPEND (CLIENT_CREATE_TARGET_COPY,
+              &create_target_data->copy);
 
       APPEND (CLIENT_CREATE_TARGET_HOSTS,
               &create_target_data->hosts);

@@ -1,5 +1,14 @@
 2012-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_target): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (create_target_data_t, client_state_t)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Add CREATE_TARGET/COPY.
+
+2012-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Setup an OMP GET response style where the common part of the response
 	to a GET command is done by support code instead of being done in each
 	command.  Convert GET_TARGETS and GET_AGENTS to this style.
