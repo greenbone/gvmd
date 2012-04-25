@@ -635,7 +635,7 @@ typedef enum
 } action_t;
 
 
-/* OMP command oriented types. */
+/* OMP GET. */
 
 /**
  * @brief Command data for a get command.
@@ -651,6 +651,15 @@ typedef struct
   int sort_order;      ///< Result sort order: 0 descending, else ascending.
   int trash;           ///< Boolean.  Whether to return from trashcan.
 } get_data_t;
+
+const char*
+get_iterator_uuid (iterator_t*);
+
+const char*
+get_iterator_name (iterator_t*);
+
+const char*
+get_iterator_comment (iterator_t*);
 
 
 /* Results. */

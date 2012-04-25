@@ -23405,10 +23405,20 @@ filter_clause (const char* type, const char* filter, const char **columns)
 }
 
 /**
+ * @brief Filter columns for GET iterator.
+ */
+#define GET_ITERATOR_FILTER_COLUMNS "uuid", "name", "comment"
+
+/**
+ * @brief Columns for GET iterator.
+ */
+#define GET_ITERATOR_COLUMNS "ROWID, uuid, name, comment"
+
+/**
  * @brief Filter columns for target iterator.
  */
 #define TARGET_ITERATOR_FILTER_COLUMNS                                         \
- { "uuid", "name", "comment", "hosts", "ips", "port_list", "ssh_credential",   \
+ { GET_ITERATOR_FILTER_COLUMNS, "hosts", "ips", "port_list", "ssh_credential", \
    "smb_credential", NULL }
 
 /**
@@ -23767,7 +23777,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
  * @brief Target iterator columns.
  */
 #define TARGET_ITERATOR_COLUMNS                             \
-  "ROWID, uuid, name, hosts, comment, lsc_credential,"      \
+  GET_ITERATOR_COLUMNS ", hosts, lsc_credential,"           \
   " ssh_port, smb_lsc_credential, port_range, 0, 0,"        \
   " (SELECT uuid FROM port_lists"                           \
   "  WHERE port_lists.ROWID = port_range),"                 \
@@ -23788,7 +23798,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
  * @brief Target iterator columns for trash case.
  */
 #define TARGET_ITERATOR_TRASH_COLUMNS                         \
-  "ROWID, uuid, name, hosts, comment, lsc_credential,"        \
+  GET_ITERATOR_COLUMNS ", hosts, lsc_credential,"             \
   " ssh_port, smb_lsc_credential, port_range, ssh_location,"  \
   " smb_location,"                                            \
   " (CASE"                                                    \
@@ -23891,15 +23901,6 @@ DEF_ACCESS (target_iterator_uuid, 1);
 DEF_ACCESS (target_iterator_name, 2);
 
 /**
- * @brief Get the hosts of the target from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Hosts of the target or NULL if iteration is complete.
- */
-DEF_ACCESS (target_iterator_hosts, 3);
-
-/**
  * @brief Get the comment from a target iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -23911,9 +23912,18 @@ target_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 4);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
   return ret ? ret : "";
 }
+
+/**
+ * @brief Get the hosts of the target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Hosts of the target or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_hosts, 4);
 
 /**
  * @brief Get the SSH LSC credential from a target iterator.
@@ -30609,16 +30619,64 @@ agent_uuid (agent_t agent, char ** id)
  * @brief Filter columns for agent iterator.
  */
 #define AGENT_ITERATOR_FILTER_COLUMNS          \
- { "uuid", "name", "comment", /* FIX "trust", */ NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, /* FIX "trust", */ NULL }
 
 /**
  * @brief Agent iterator columns.
  */
 #define AGENT_ITERATOR_COLUMNS                              \
-  "uuid, name, comment, installer, installer_64,"           \
+  GET_ITERATOR_COLUMNS ", installer, installer_64,"         \
   " installer_filename, installer_signature_64,"            \
   " installer_trust, installer_trust_time, howto_install,"  \
   " howto_use"
+
+/**
+ * @brief Get the resource from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Resource.
+ */
+resource_t
+get_iterator_resource (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int64 (iterator->stmt, 0);
+}
+
+/**
+ * @brief Get the UUID of the resource from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID of the resource or NULL if iteration is complete.
+ */
+DEF_ACCESS (get_iterator_uuid, 1);
+
+/**
+ * @brief Get the name of the resource from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name of the resource or NULL if iteration is complete.
+ */
+DEF_ACCESS (get_iterator_name, 2);
+
+/**
+ * @brief Get the comment from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Comment.
+ */
+const char*
+get_iterator_comment (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return "";
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
+  return ret ? ret : "";
+}
 
 /**
  * @brief Agent iterator columns for trash case.
@@ -30656,7 +30714,7 @@ init_agent_iterator (iterator_t* iterator, const get_data_t *get)
  * @return UUID, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_uuid, 0);
+DEF_ACCESS (agent_iterator_uuid, 1);
 
 /**
  * @brief Get the name from an agent iterator.
@@ -30666,7 +30724,7 @@ DEF_ACCESS (agent_iterator_uuid, 0);
  * @return Name, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_name, 1);
+DEF_ACCESS (agent_iterator_name, 2);
 
 /**
  * @brief Get the comment from an agent iterator.
@@ -30680,7 +30738,7 @@ agent_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
   return ret ? ret : "";
 }
 
@@ -30692,7 +30750,7 @@ agent_iterator_comment (iterator_t* iterator)
  * @return Installer, or NULL if iteration is complete.  Freed
  *         by cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_installer, 3);
+DEF_ACCESS (agent_iterator_installer, 4);
 
 /**
  * @brief Get the installer_64 from an agent iterator.
@@ -30702,7 +30760,7 @@ DEF_ACCESS (agent_iterator_installer, 3);
  * @return Base 64 encoded installer, or NULL if iteration is complete.  Freed
  *         by cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_installer_64, 4);
+DEF_ACCESS (agent_iterator_installer_64, 5);
 
 /**
  * @brief Get the installer size from an agent iterator.
@@ -30738,7 +30796,7 @@ agent_iterator_installer_size (iterator_t* iterator)
  * @return Installer filename, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_installer_filename, 5);
+DEF_ACCESS (agent_iterator_installer_filename, 6);
 
 /**
  * @brief Get the installer_signature_64 from an agent iterator.
@@ -30748,7 +30806,7 @@ DEF_ACCESS (agent_iterator_installer_filename, 5);
  * @return Installer signature in base64, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_installer_signature_64, 6);
+DEF_ACCESS (agent_iterator_installer_signature_64, 7);
 
 /**
  * @brief Get the trust value from an agent iterator.
@@ -30761,7 +30819,7 @@ const char*
 agent_iterator_trust (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  switch (sqlite3_column_int (iterator->stmt, 7))
+  switch (sqlite3_column_int (iterator->stmt, 8))
     {
       case 1:  return "yes";
       case 2:  return "no";
@@ -30782,7 +30840,7 @@ agent_iterator_trust_time (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 8);
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 9);
   return ret;
 }
 
@@ -30794,7 +30852,7 @@ agent_iterator_trust_time (iterator_t* iterator)
  * @return Install HOWTO, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_howto_install, 9);
+DEF_ACCESS (agent_iterator_howto_install, 10);
 
 /**
  * @brief Get the usage HOWTO from an agent iterator.
@@ -30804,7 +30862,7 @@ DEF_ACCESS (agent_iterator_howto_install, 9);
  * @return Usage HOWTO, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_howto_use, 10);
+DEF_ACCESS (agent_iterator_howto_use, 11);
 
 /**
  * @brief Get the name of an agent.

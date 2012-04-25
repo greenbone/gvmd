@@ -4094,6 +4094,169 @@ internal_error_send_to_client (GError** error)
 /** @cond STATIC */
 
 /**
+ * @brief Send start of GET response.
+ *
+ * @param[in]  type                  Type.
+ * @param[in]  get                   GET data.
+ * @param[in]  write_to_client       Function that sends to clients.
+ * @param[in]  write_to_client_data  Data for write_to_client.
+ */
+int
+send_get_start (const char *type, get_data_t *get,
+                int (*write_to_client) (void*), void* write_to_client_data)
+{
+  gchar* msg;
+
+  if (get->max == -2)
+    setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
+                       &get->max);
+
+  msg = g_markup_printf_escaped ("<get_%ss_response"
+                                 " status=\"" STATUS_OK "\""
+                                 " status_text=\"" STATUS_OK_TEXT "\">"
+                                 "<filters>"
+                                 "<term>%s</term>"
+                                 "</filters>"
+                                 "<%ss start=\"%i\" max=\"%i\"/>",
+                                 type,
+                                 get->filter ? get->filter : "",
+                                 type,
+                                 /* Add 1 for 1 indexing. */
+                                 get->first + 1,
+                                 get->max);
+
+  if (send_to_client (msg, write_to_client, write_to_client_data))
+    {
+      g_free (msg);
+      return 1;
+    }
+  g_free (msg);
+  return 0;
+}
+
+/**
+ * @brief Send common part of GET response for a single resource.
+ *
+ * @param[in]  type                  Type.
+ * @param[in]  get                   GET data.
+ * @param[in]  iterator              Iterator.
+ * @param[in]  write_to_client       Function that sends to clients.
+ * @param[in]  write_to_client_data  Data for write_to_client.
+ */
+int
+send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
+                 int (*write_to_client) (void*), void* write_to_client_data)
+{
+  gchar* msg;
+
+  msg = g_markup_printf_escaped ("<%s id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "<comment>%s</comment>",
+                                 type,
+                                 get_iterator_uuid (iterator),
+                                 get_iterator_name (iterator),
+                                 get_iterator_comment (iterator));
+
+  if (send_to_client (msg, write_to_client, write_to_client_data))
+    {
+      g_free (msg);
+      return 1;
+    }
+  g_free (msg);
+  return 0;
+}
+
+/**
+ * @brief Send end of GET response.
+ *
+ * @param[in]  type                  Type.
+ * @param[in]  get                   GET data.
+ * @param[in]  count                 Count.
+ * @param[in]  filtered              Filtered count.
+ * @param[in]  write_to_client       Function that sends to clients.
+ * @param[in]  write_to_client_data  Data for write_to_client.
+ */
+int
+send_get_end (const char *type, get_data_t *get, int count, int filtered,
+              int (*write_to_client) (void*), void* write_to_client_data)
+{
+  gchar* msg;
+
+  msg = g_markup_printf_escaped ("<%s_count>"
+                                 "<filtered>%i</filtered>"
+                                 "<page>%i</page>"
+                                 "</%s_count>"
+                                 "</get_%ss_response>",
+                                 type,
+                                 filtered,
+                                 count,
+                                 type,
+                                 type);
+
+  if (send_to_client (msg, write_to_client, write_to_client_data))
+    {
+      g_free (msg);
+      return 1;
+    }
+  g_free (msg);
+  return 0;
+}
+
+/**
+ * @brief Send start of GET response to client, returning on fail.
+ *
+ * @param[in]  type  Type of resource.
+ * @param[in]  get   GET data.
+ */
+#define SEND_GET_START(type, get)                                            \
+  do                                                                         \
+    {                                                                        \
+      if (send_get_start (type, get, write_to_client, write_to_client_data)) \
+        {                                                                    \
+          error_send_to_client (error);                                      \
+          return;                                                            \
+        }                                                                    \
+    }                                                                        \
+  while (0)
+
+/**
+ * @brief Send common part of GET response to client, returning on fail.
+ *
+ * @param[in]  type      Type of resource.
+ * @param[in]  get       GET data.
+ * @param[in]  iterator  Iterator.
+ */
+#define SEND_GET_COMMON(type, get, iterator)                                   \
+  do                                                                           \
+    {                                                                          \
+      if (send_get_common (type, get, iterator,                                \
+                           write_to_client, write_to_client_data))             \
+        {                                                                      \
+          error_send_to_client (error);                                        \
+          return;                                                              \
+        }                                                                      \
+    }                                                                          \
+  while (0)
+
+/**
+ * @brief Send end of GET response to client, returning on fail.
+ *
+ * @param[in]  type  Type of resource.
+ * @param[in]  get   GET data.
+ */
+#define SEND_GET_END(type, get, count, filtered)                             \
+  do                                                                         \
+    {                                                                        \
+      if (send_get_end (type, get, count, filtered, write_to_client,         \
+                        write_to_client_data))                               \
+        {                                                                    \
+          error_send_to_client (error);                                      \
+          return;                                                            \
+        }                                                                    \
+    }                                                                        \
+  while (0)
+
+/**
  * @brief Send response message to client, returning on fail.
  *
  * Queue a message in \ref to_client with \ref send_to_client.  On failure
@@ -14356,7 +14519,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             {
               iterator_t agents;
-              int ret;
+              int ret, count, filtered;
 
               ret = init_agent_iterator (&agents,
                                          &get_agents_data->get);
@@ -14385,55 +14548,42 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              SEND_TO_CLIENT_OR_FAIL ("<get_agents_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              count = 0;
+              SEND_GET_START ("agent", &get_agents_data->get);
 
               while (next (&agents))
                 {
                   switch (format)
                     {
                       case 1: /* installer */
+                        SEND_GET_COMMON ("agent", &get_agents_data->get,
+                                         &agents);
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<agent id=\"%s\">"
-                          "<name>%s</name>"
-                          "<comment>%s</comment>"
-                          "<package format=\"installer\">"
+                         ("<package format=\"installer\">"
                           "<filename>%s</filename>"
                           "%s"
                           "</package>"
                           "<in_use>0</in_use>"
                           "</agent>",
-                          agent_iterator_uuid (&agents),
-                          agent_iterator_name (&agents),
-                          agent_iterator_comment (&agents),
                           agent_iterator_installer_filename (&agents),
                           agent_iterator_installer_64 (&agents));
                         break;
                       case 2: /* howto_install */
+                        SEND_GET_COMMON ("agent", &get_agents_data->get,
+                                         &agents);
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<agent id=\"%s\">"
-                          "<name>%s</name>"
-                          "<comment>%s</comment>"
-                          "<package format=\"howto_install\">%s</package>"
+                         ("<package format=\"howto_install\">%s</package>"
                           "<in_use>0</in_use>"
                           "</agent>",
-                          agent_iterator_uuid (&agents),
-                          agent_iterator_name (&agents),
-                          agent_iterator_comment (&agents),
                           agent_iterator_howto_install (&agents));
                         break;
                       case 3: /* howto_use */
+                        SEND_GET_COMMON ("agent", &get_agents_data->get,
+                                         &agents);
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<agent id=\"%s\">"
-                          "<name>%s</name>"
-                          "<comment>%s</comment>"
-                          "<package format=\"howto_use\">%s</package>"
+                         ("<package format=\"howto_use\">%s</package>"
                           "<in_use>0</in_use>"
                           "</agent>",
-                          agent_iterator_uuid (&agents),
-                          agent_iterator_name (&agents),
-                          agent_iterator_comment (&agents),
                           agent_iterator_howto_use (&agents));
                         break;
                       default:
@@ -14442,26 +14592,29 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                           trust_time = agent_iterator_trust_time (&agents);
 
+                          SEND_GET_COMMON ("agent", &get_agents_data->get,
+                                           &agents);
                           SENDF_TO_CLIENT_OR_FAIL
-                           ("<agent id=\"%s\">"
-                            "<name>%s</name>"
-                            "<comment>%s</comment>"
-                            "<in_use>0</in_use>"
+                           ("<in_use>0</in_use>"
                             "<installer>"
                             "<trust>%s<time>%s</time></trust>"
                             "</installer>"
                             "</agent>",
-                            agent_iterator_uuid (&agents),
-                            agent_iterator_name (&agents),
-                            agent_iterator_comment (&agents),
                             agent_iterator_trust (&agents),
                             iso_time (&trust_time));
                         }
                         break;
                     }
+                  count++;
                 }
               cleanup_iterator (&agents);
-              SEND_TO_CLIENT_OR_FAIL ("</get_agents_response>");
+              filtered = get_agents_data->get.id
+                          ? 1
+                          : 1;
+                          // FIX
+                          //: agent_count (get_agents_data->get.filter,
+                          //               get_agents_data->get.actions);
+              SEND_GET_END ("agent", &get_agents_data->get, count, filtered);
             }
           get_agents_data_reset (get_agents_data);
           set_client_state (CLIENT_AUTHENTIC);
@@ -15405,22 +15558,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
 
               count = 0;
-              SEND_TO_CLIENT_OR_FAIL ("<get_targets_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              SENDF_TO_CLIENT_OR_FAIL ("<filters>"
-                                       "<term>%s</term>"
-                                       "</filters>",
-                                       get_targets_data->get.filter
-                                        ? get_targets_data->get.filter
-                                        : "");
-              if (get_targets_data->get.max == -2)
-                setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
-                                   &get_targets_data->get.max);
-              SENDF_TO_CLIENT_OR_FAIL ("<targets start=\"%i\" max=\"%i\"/>",
-                                       /* Add 1 for 1 indexing. */
-                                       get_targets_data->get.first + 1,
-                                       get_targets_data->get.max);
+              SEND_GET_START ("target", &get_targets_data->get);
               while (next (&targets))
                 {
                   char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
@@ -15460,11 +15598,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   port_range = target_port_range (target_iterator_target
                                                     (&targets));
 
-                  SENDF_TO_CLIENT_OR_FAIL ("<target id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<hosts>%s</hosts>"
+                  SEND_GET_COMMON ("target", &get_targets_data->get, &targets);
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
                                            "<max_hosts>%i</max_hosts>"
-                                           "<comment>%s</comment>"
                                            "<in_use>%i</in_use>"
                                            "<writable>%i</writable>"
                                            "<port_range>%s</port_range>"
@@ -15481,12 +15618,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<name>%s</name>"
                                            "<trash>%i</trash>"
                                            "</smb_lsc_credential>",
-                                           target_iterator_uuid (&targets),
-                                           target_iterator_name (&targets),
                                            target_iterator_hosts (&targets),
                                            manage_max_hosts
                                             (target_iterator_hosts (&targets)),
-                                           target_iterator_comment (&targets),
                                            get_targets_data->get.trash
                                             ? trash_target_in_use
                                                (target_iterator_target
@@ -15544,18 +15678,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (smb_lsc_uuid);
                   free (port_range);
                 }
+              cleanup_iterator (&targets);
               filtered = get_targets_data->get.id
                           ? 1
                           : target_count (get_targets_data->get.filter,
                                           get_targets_data->get.actions);
-              SENDF_TO_CLIENT_OR_FAIL ("<target_count>"
-                                       "<filtered>%i</filtered>"
-                                       "<page>%i</page>"
-                                       "</target_count>",
-                                       filtered,
-                                       count);
-              cleanup_iterator (&targets);
-              SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");
+              SEND_GET_END ("target", &get_targets_data->get, count, filtered);
             }
           get_targets_data_reset (get_targets_data);
           set_client_state (CLIENT_AUTHENTIC);

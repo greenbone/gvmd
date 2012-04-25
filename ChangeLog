@@ -1,5 +1,30 @@
 2012-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Setup an OMP GET response style where the common part of the response
+	to a GET command is done by support code instead of being done in each
+	command.  Convert GET_TARGETS and GET_AGENTS to this style.
+
+	* src/manage_sql.c (GET_ITERATOR_FILTER_COLUMNS)
+	(GET_ITERATOR_COLUMNS): New defines.  Increment agent iterator
+	access functions to match.
+	(TARGET_ITERATOR_COLUMNS, TARGET_ITERATOR_TRASH_COLUMNS)
+	(TARGET_ITERATOR_FILTER_COLUMNS, AGENT_ITERATOR_FILTER_COLUMNS)
+	(AGENT_ITERATOR_COLUMNS): Use GET column definitions.
+	(target_iterator_hosts, target_iterator_comment): Match to positions in
+	GET columns.
+	(get_iterator_resource, get_iterator_uuid, get_iterator_name)
+	(get_iterator_comment): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (send_get_start, send_get_common, send_get_end): New
+	functions.
+	(SEND_GET_START, SEND_GET_COMMON, SEND_GET_END): New macros.
+	(omp_xml_handle_end_element): In GET_AGENTS and GET_TARGETS send the
+	common part of the response with the new send_get functions.
+
+2012-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (serve_and_schedule): Check that the second socket is in
 	use before trying to call FD_ISSET on it.
 
