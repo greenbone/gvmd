@@ -1,3 +1,25 @@
+openvas-manager 3.0.1 (2012-04-25)
+
+This is the first maintenance release of the openvas-manager 3.0 module for the
+Open Vulnerability Assessment System release 5 (OpenVAS-5). The OpenVAS Manager
+is the central management service between the actual security scanner and
+various user clients.
+
+This release fixes a number of issues which were discovered after the release
+of OpenVAS Manager 3.0.0. For details please refer to the list below.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Jan-Oliver Wagner and Michael Wiegand.
+
+Main changes since 3.0.0:
+* A bug which caused the comment of imported configs to be empty has been fixed.
+* Hostname and IP validation has been improved.
+* A bug which caused the port list selection to be empty has been fixed.
+* The minimum version requirements for the glib and gnutls libraries have been
+  set to the minimum requirements of OpenVAS Libraries (2.16 for glib and 2.2
+  for gnutls).
+
+
 openvas-manager 3.0.0 (2012-03-26)
 
 This is the first release of the openvas-manager 3.0 module for the Open

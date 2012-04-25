@@ -1,3 +1,9 @@
+2012-04-25  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 3.0.1 release.
+
+	* CHANGES: Updated.
+
 2012-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (get_agents): Make IN_USE 0 in examples
