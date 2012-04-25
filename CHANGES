@@ -1,3 +1,24 @@
+openvas-manager 4.0+beta2 (2012-04-25)
+
+This is the second beta version of the upcoming 4.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release contains an improved powerfilter feature, updated protocol
+documentation and an improved target object management. It also fixes an issue
+with the port list selection.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Michael Wiegand.
+
+Main changes since 4.0+beta1:
+* Improvements to the target object management; targets can now be edited when
+  they are associated with a task and the task has not yet run.
+* A bug which caused the port list selection to be empty has been fixed.
+* The protocol documentation has been updated.
+* The powerfilter now handles spaces in index filters.
+
+
 openvas-manager 4.0+beta1 (2012-04-16)
 
 This is the first beta version of the upcoming 4.0 release of the OpenVAS
