@@ -8421,7 +8421,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
       if (sqlite3_create_function (task_db,
                                    "uniquify",
-                                   3,               /* Number of args. */
+                                   4,               /* Number of args. */
                                    SQLITE_UTF8,
                                    NULL,            /* Callback data. */
                                    sql_uniquify,
@@ -21522,8 +21522,8 @@ duplicate_target (target_t target, const char *name)
   sql ("INSERT INTO targets"
        " (uuid, owner, name, hosts, comment, lsc_credential,"
        "  smb_lsc_credential)"
-       " SELECT make_uuid (), owner, uniquify ('target', '%s', owner), hosts,"
-       "        comment, lsc_credential, smb_lsc_credential"
+       " SELECT make_uuid (), owner, uniquify ('target', '%s', owner, ''),"
+       "        hosts, comment, lsc_credential, smb_lsc_credential"
        " FROM targets WHERE ROWID = %llu;",
        quoted_name,
        target);
@@ -22634,7 +22634,9 @@ copy_target (const char* name, const char* comment, const char *target_id,
            " FROM targets WHERE uuid = '%s';",
            current_credentials.uuid,
            quoted_name ? "'" : "",
-           quoted_name ? quoted_name : "uniquify ('target', name, owner)",
+           quoted_name
+            ? quoted_name
+            : "uniquify ('target', name, owner, ' Clone')",
            quoted_name ? "'" : "",
            quoted_comment,
            quoted_uuid);
@@ -22651,7 +22653,9 @@ copy_target (const char* name, const char* comment, const char *target_id,
          " FROM targets WHERE uuid = '%s';",
          current_credentials.uuid,
          quoted_name ? "'" : "",
-         quoted_name ? quoted_name : "uniquify ('target', name, owner)",
+         quoted_name
+          ? quoted_name
+          : "uniquify ('target', name, owner, ' Clone')",
          quoted_name ? "'" : "",
          quoted_uuid);
 

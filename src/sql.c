@@ -577,12 +577,12 @@ sql_clean_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
 void
 sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
-  const unsigned char *proposed_name, *type;
+  const unsigned char *proposed_name, *type, *suffix;
   gchar *candidate_name, *quoted_candidate_name;
   unsigned int number;
   sqlite3_int64 owner;
 
-  assert (argc == 3);
+  assert (argc == 4);
 
   type = sqlite3_value_text (argv[0]);
   if (type == NULL)
@@ -602,8 +602,18 @@ sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   owner = sqlite3_value_int64 (argv[2]);
 
+  suffix = sqlite3_value_text (argv[3]);
+  if (suffix == NULL)
+    {
+      sqlite3_result_error (context,
+                            "Failed to get suffix argument",
+                            -1);
+      return;
+    }
+
   number = 0;
-  candidate_name = g_strdup_printf ("%s %i", proposed_name, ++number);
+  candidate_name = g_strdup_printf ("%s%s %i", proposed_name, suffix,
+                                    ++number);
   quoted_candidate_name = sql_quote (candidate_name);
 
   while (sql_int (0, 0,
@@ -615,7 +625,8 @@ sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
     {
       g_free (candidate_name);
       g_free (quoted_candidate_name);
-      candidate_name = g_strdup_printf ("%s %u", proposed_name, ++number);
+      candidate_name = g_strdup_printf ("%s%s %u", proposed_name, suffix,
+                                        ++number);
       quoted_candidate_name = sql_quote (candidate_name);
     }
 
