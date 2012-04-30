@@ -314,9 +314,6 @@ static int
 validate_param_value (report_format_t, report_format_param_t param, const char *,
                       const char *);
 
-static target_t
-duplicate_target (target_t, const char *);
-
 int
 delete_task_lock (task_t, int);
 
@@ -992,8 +989,8 @@ iso_time (time_t *epoch_time)
 static void
 create_tables ()
 {
-  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, installer_trust_time, howto_install TEXT, howto_use TEXT);");
-  sql ("CREATE TABLE IF NOT EXISTS agents_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, installer_trust_time, howto_install TEXT, howto_use TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, installer_trust_time, howto_install TEXT, howto_use TEXT, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS agents_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, installer_trust_time, howto_install TEXT, howto_use TEXT, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences_trash (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
@@ -1052,8 +1049,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");
   /* port_range in the following two is actually a port list.  Migrating a
    * column rename is lots of work. */
-  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range);");
-  sql ("CREATE TABLE IF NOT EXISTS targets_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER, port_list_location INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS targets_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER, port_list_location INTEGER, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_alerts (id INTEGER PRIMARY KEY, task INTEGER, alert INTEGER, alert_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_preferences (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
@@ -3990,6 +3987,30 @@ migrate_34_to_35 ()
 }
 
 /**
+ * @brief Make a copy of a target.
+ *
+ * @param[in]  target  Target to copy.
+ * @param[in]  name    Name for new target.
+ *
+ * @return Address of matching character, else NULL.
+ */
+static target_t
+migrate_35_to_36_duplicate_target (target_t target, const char *name)
+{
+  char *quoted_name = sql_quote (name);
+  sql ("INSERT INTO targets"
+       " (uuid, owner, name, hosts, comment, lsc_credential,"
+       "  smb_lsc_credential)"
+       " SELECT make_uuid (), owner, uniquify ('target', '%s', owner, ''),"
+       "        hosts, comment, lsc_credential, smb_lsc_credential"
+       " FROM targets WHERE ROWID = %llu;",
+       quoted_name,
+       target);
+  g_free (quoted_name);
+  return sqlite3_last_insert_rowid (task_db);
+}
+
+/**
  * @brief Migrate the database from version 35 to version 36.
  *
  * @return 0 success, -1 error.
@@ -4061,7 +4082,7 @@ migrate_35_to_36 ()
                              " WHERE ROWID = %llu;",
                              target);
           assert (name);
-          target = duplicate_target (target, name);
+          target = migrate_35_to_36_duplicate_target (target, name);
           free (name);
 
           sql ("UPDATE tasks SET target = %llu WHERE ROWID = %llu",
@@ -5556,6 +5577,55 @@ migrate_56_to_57 ()
 }
 
 /**
+ * @brief Migrate the database from version 57 to version 58.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_57_to_58 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 57. */
+
+  if (manage_db_version () != 57)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Targets and agents got creation and modification times. */
+
+  sql ("ALTER TABLE targets ADD COLUMN creation_time;");
+  sql ("ALTER TABLE targets ADD COLUMN modification_time;");
+  sql ("UPDATE targets SET creation_time = 0, modification_time = 0;");
+
+  sql ("ALTER TABLE targets_trash ADD COLUMN creation_time;");
+  sql ("ALTER TABLE targets_trash ADD COLUMN modification_time;");
+  sql ("UPDATE targets_trash SET creation_time = 0, modification_time = 0;");
+
+  sql ("ALTER TABLE agents ADD COLUMN creation_time;");
+  sql ("ALTER TABLE agents ADD COLUMN modification_time;");
+  sql ("UPDATE agents SET creation_time = 0, modification_time = 0;");
+
+  sql ("ALTER TABLE agents_trash ADD COLUMN creation_time;");
+  sql ("ALTER TABLE agents_trash ADD COLUMN modification_time;");
+  sql ("UPDATE agents_trash SET creation_time = 0, modification_time = 0;");
+
+  /* Set the database version to 58. */
+
+  set_db_version (58);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -5617,6 +5687,7 @@ static migrator_t database_migrators[]
     {55, migrate_54_to_55},
     {56, migrate_55_to_56},
     {57, migrate_56_to_57},
+    {58, migrate_57_to_58},
     /* End marker. */
     {-1, NULL}};
 
@@ -9737,9 +9808,10 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0, "SELECT count(*) FROM targets WHERE name = 'Localhost';")
       == 0)
-    sql ("INSERT into targets (uuid, owner, name, hosts)"
+    sql ("INSERT INTO targets"
+         " (uuid, owner, name, hosts, creation_time, modification_time)"
          " VALUES ('" TARGET_UUID_LOCALHOST "', NULL, 'Localhost',"
-         " 'localhost');");
+         " 'localhost', now (), now ());");
 
   /* Ensure the predefined example task and report exists. */
 
@@ -21508,30 +21580,6 @@ find_target_for_actions (const char* uuid, target_t* target,
 }
 
 /**
- * @brief Make a copy of a target.
- *
- * @param[in]  target  Target to copy.
- * @param[in]  name    Name for new target.
- *
- * @return Address of matching character, else NULL.
- */
-static target_t
-duplicate_target (target_t target, const char *name)
-{
-  char *quoted_name = sql_quote (name);
-  sql ("INSERT INTO targets"
-       " (uuid, owner, name, hosts, comment, lsc_credential,"
-       "  smb_lsc_credential)"
-       " SELECT make_uuid (), owner, uniquify ('target', '%s', owner, ''),"
-       "        hosts, comment, lsc_credential, smb_lsc_credential"
-       " FROM targets WHERE ROWID = %llu;",
-       quoted_name,
-       target);
-  g_free (quoted_name);
-  return sqlite3_last_insert_rowid (task_db);
-}
-
-/**
  * @brief Search backwards in a string for a character.
  *
  * Start at the character before \p point.
@@ -22529,10 +22577,11 @@ create_target (const char* name, const char* hosts, const char* comment,
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO targets"
            " (uuid, name, owner, hosts, comment, lsc_credential,"
-           "  ssh_port, smb_lsc_credential, port_range)"
+           "  ssh_port, smb_lsc_credential, port_range, creation_time,"
+           "  modification_time)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', %llu, %s, %llu, %llu);",
+           " '%s', '%s', %llu, %s, %llu, %llu, now (), now ());",
            quoted_name, current_credentials.uuid, quoted_hosts, quoted_comment,
            ssh_lsc_credential, quoted_ssh_port, smb_lsc_credential,
            port_list);
@@ -22541,10 +22590,11 @@ create_target (const char* name, const char* hosts, const char* comment,
   else
     sql ("INSERT INTO targets"
          " (uuid, name, owner, hosts, comment, lsc_credential,"
-         "  ssh_port, smb_lsc_credential, port_range)"
+         "  ssh_port, smb_lsc_credential, port_range, creation_time,"
+         "  modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', %llu, %s, %llu, %llu);",
+         " '%s', '', %llu, %s, %llu, %llu, now (), now ());",
          quoted_name, current_credentials.uuid, quoted_hosts,
          ssh_lsc_credential, quoted_ssh_port, smb_lsc_credential,
          port_list);
@@ -22626,11 +22676,12 @@ copy_target (const char* name, const char* comment, const char *target_id,
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO targets"
            " (uuid, owner, name, comment, hosts, lsc_credential, ssh_port,"
-           "  smb_lsc_credential, port_range)"
+           "  smb_lsc_credential, port_range, creation_time,"
+           "  modification_time)"
            " SELECT make_uuid (),"
            " (SELECT ROWID FROM users where users.uuid = '%s'),"
            " %s%s%s, '%s', hosts, lsc_credential, ssh_port,"
-           " smb_lsc_credential, port_range"
+           " smb_lsc_credential, port_range, now (), now ()"
            " FROM targets WHERE uuid = '%s';",
            current_credentials.uuid,
            quoted_name ? "'" : "",
@@ -22645,11 +22696,12 @@ copy_target (const char* name, const char* comment, const char *target_id,
   else
     sql ("INSERT INTO targets"
          " (uuid, owner, name, comment, hosts, lsc_credential, ssh_port,"
-         "  smb_lsc_credential, port_range)"
+         "  smb_lsc_credential, port_range, creation_time,"
+         "  modification_time)"
          " SELECT make_uuid (),"
          " (SELECT ROWID FROM users where users.uuid = '%s'),"
          " %s%s%s, comment, hosts, lsc_credential, ssh_port,"
-         " smb_lsc_credential, port_range"
+         " smb_lsc_credential, port_range, now (), now ()"
          " FROM targets WHERE uuid = '%s';",
          current_credentials.uuid,
          quoted_name ? "'" : "",
@@ -22744,12 +22796,13 @@ delete_target (const char *target_id, int ultimate)
       sql ("INSERT INTO targets_trash"
            " (uuid, owner, name, hosts, comment, lsc_credential, ssh_port,"
            "  smb_lsc_credential, port_range, ssh_location, smb_location,"
-           "  port_list_location)"
+           "  port_list_location, creation_time, modification_time)"
            " SELECT uuid, owner, name, hosts, comment, lsc_credential, ssh_port,"
            "        smb_lsc_credential, port_range, "
            "      " G_STRINGIFY (LOCATION_TABLE) ","
            "      " G_STRINGIFY (LOCATION_TABLE) ","
-           "      " G_STRINGIFY (LOCATION_TABLE)
+           "      " G_STRINGIFY (LOCATION_TABLE) ","
+           "      creation_time, modification_time"
            " FROM targets WHERE ROWID = %llu;",
            target);
 
@@ -22968,7 +23021,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            " lsc_credential = %llu,"
            " ssh_port = %s,"
            " smb_lsc_credential = %llu,"
-           " port_range = %llu"
+           " port_range = %llu,"
+           " modification_time = now ()"
            " WHERE ROWID = %llu;",
            quoted_name, quoted_hosts, quoted_comment, ssh_lsc_credential,
            quoted_ssh_port, smb_lsc_credential, port_list, target);
@@ -22981,7 +23035,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
          " lsc_credential = %llu,"
          " ssh_port = %s,"
          " smb_lsc_credential = %llu,"
-         " port_range = %llu"
+         " port_range = %llu,"
+         " modification_time = now ()"
          " WHERE ROWID = %llu;",
          quoted_name, quoted_hosts, ssh_lsc_credential, quoted_ssh_port,
          smb_lsc_credential, port_list, target);
@@ -23519,7 +23574,14 @@ filter_clause (const char* type, const char* filter, const char **columns)
 /**
  * @brief Columns for GET iterator.
  */
-#define GET_ITERATOR_COLUMNS "ROWID, uuid, name, comment"
+#define GET_ITERATOR_COLUMNS                                 \
+  "ROWID, uuid, name, comment, iso_time (creation_time),"    \
+  " iso_time (modification_time)"
+
+/**
+ * @brief Columns for GET iterator.
+ */
+#define GET_ITERATOR_COLUMN_COUNT 6
 
 /**
  * @brief Filter columns for target iterator.
@@ -24030,7 +24092,7 @@ target_iterator_comment (iterator_t* iterator)
  *
  * @return Hosts of the target or NULL if iteration is complete.
  */
-DEF_ACCESS (target_iterator_hosts, 4);
+DEF_ACCESS (target_iterator_hosts, GET_ITERATOR_COLUMN_COUNT);
 
 /**
  * @brief Get the SSH LSC credential from a target iterator.
@@ -24044,7 +24106,8 @@ target_iterator_ssh_credential (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 5);
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT + 1);
   return ret;
 }
 
@@ -24055,7 +24118,7 @@ target_iterator_ssh_credential (iterator_t* iterator)
  *
  * @return SSH LSC port of the target or NULL if iteration is complete.
  */
-DEF_ACCESS (target_iterator_ssh_port, 6);
+DEF_ACCESS (target_iterator_ssh_port, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the SMB LSC credential from a target iterator.
@@ -24069,7 +24132,8 @@ target_iterator_smb_credential (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 7);
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT + 3);
   return ret;
 }
 
@@ -24085,7 +24149,7 @@ target_iterator_ssh_trash (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 9);
+  ret = (int) sqlite3_column_int (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 5);
   return ret;
 }
 
@@ -24101,7 +24165,8 @@ target_iterator_smb_trash (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 10);
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT + 6);
   return ret;
 }
 
@@ -24112,7 +24177,7 @@ target_iterator_smb_trash (iterator_t* iterator)
  *
  * @return UUID of the target port list or NULL if iteration is complete.
  */
-DEF_ACCESS (target_iterator_port_list_uuid, 11);
+DEF_ACCESS (target_iterator_port_list_uuid, GET_ITERATOR_COLUMN_COUNT + 7);
 
 /**
  * @brief Get the port list name of the target from a target iterator.
@@ -24121,7 +24186,7 @@ DEF_ACCESS (target_iterator_port_list_uuid, 11);
  *
  * @return Name of the target port list or NULL if iteration is complete.
  */
-DEF_ACCESS (target_iterator_port_list_name, 12);
+DEF_ACCESS (target_iterator_port_list_name, GET_ITERATOR_COLUMN_COUNT + 8);
 
 /**
  * @brief Get the location of the port list from a target iterator.
@@ -24135,7 +24200,8 @@ target_iterator_port_list_trash (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 13);
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT + 9);
   return ret;
 }
 
@@ -24415,7 +24481,8 @@ set_target_hosts (target_t target, const char *hosts)
   assert (hosts);
 
   quoted_hosts = sql_quote (hosts);
-  sql ("UPDATE targets SET hosts = '%s' WHERE ROWID = %llu;",
+  sql ("UPDATE targets SET hosts = '%s', modification_time = now ()"
+       " WHERE ROWID = %llu;",
        quoted_hosts, target);
   g_free (quoted_hosts);
 }
@@ -30332,7 +30399,8 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                      "  installer_64, installer_filename,"
                                      "  installer_signature_64,"
                                      "  installer_trust, installer_trust_time,"
-                                     "  howto_install, howto_use)"
+                                     "  howto_install, howto_use,"
+                                     "  creation_time, modification_time)"
                                      " VALUES"
                                      " (make_uuid (), '%s',"
                                      "  (SELECT ROWID FROM users"
@@ -30342,7 +30410,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                      "  '%s',"
                                      "  $installer_signature_64,"
                                      "  %i, %i, $howto_install,"
-                                     "  $howto_use);",
+                                     "  $howto_use, now (), now ());",
                                      quoted_name,
                                      current_credentials.uuid,
                                      quoted_comment,
@@ -30358,7 +30426,8 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                      "  installer_64, installer_filename,"
                                      "  installer_signature_64,"
                                      "  installer_trust, howto_install,"
-                                     "  howto_use)"
+                                     "  howto_use, creation_time,"
+                                     "  modification_time)"
                                      " VALUES"
                                      " (make_uuid (), '%s',"
                                      "  (SELECT ROWID FROM users"
@@ -30368,7 +30437,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                      "  '%s',"
                                      "  $installer_signature_64,"
                                      "  %i, %i, $howto_install,"
-                                     "  $howto_use);",
+                                     "  $howto_use, now (), now ());",
                                      quoted_name,
                                      current_credentials.uuid,
                                      quoted_filename,
@@ -30577,11 +30646,13 @@ delete_agent (const char *agent_id, int ultimate)
       sql ("INSERT INTO agents_trash"
            " (uuid, owner, name, comment, installer, installer_64,"
            "  installer_filename, installer_signature_64, installer_trust,"
-           "  installer_trust_time, howto_install, howto_use)"
+           "  installer_trust_time, howto_install, howto_use, creation_time,"
+           "  modification_time)"
            " SELECT"
            "  uuid, owner, name, comment, installer, installer_64,"
            "  installer_filename, installer_signature_64, installer_trust,"
-           "  installer_trust_time, howto_install, howto_use"
+           "  installer_trust_time, howto_install, howto_use, creation_time,"
+           "  modification_time"
            " FROM agents WHERE ROWID = %llu;",
            agent);
     }
@@ -30786,6 +30857,24 @@ get_iterator_comment (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the creation time of the resource from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Creation time of the resource or NULL if iteration is complete.
+ */
+DEF_ACCESS (get_iterator_creation_time, 4);
+
+/**
+ * @brief Get the modification time of the resource from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Modification time of the resource or NULL if iteration is complete.
+ */
+DEF_ACCESS (get_iterator_modification_time, 5);
+
+/**
  * @brief Agent iterator columns for trash case.
  */
 #define AGENT_ITERATOR_TRASH_COLUMNS NULL
@@ -30857,7 +30946,7 @@ agent_iterator_comment (iterator_t* iterator)
  * @return Installer, or NULL if iteration is complete.  Freed
  *         by cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_installer, 4);
+DEF_ACCESS (agent_iterator_installer, GET_ITERATOR_COLUMN_COUNT);
 
 /**
  * @brief Get the installer_64 from an agent iterator.
@@ -30867,7 +30956,7 @@ DEF_ACCESS (agent_iterator_installer, 4);
  * @return Base 64 encoded installer, or NULL if iteration is complete.  Freed
  *         by cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_installer_64, 5);
+DEF_ACCESS (agent_iterator_installer_64, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
  * @brief Get the installer size from an agent iterator.
@@ -30903,7 +30992,7 @@ agent_iterator_installer_size (iterator_t* iterator)
  * @return Installer filename, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_installer_filename, 6);
+DEF_ACCESS (agent_iterator_installer_filename, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the installer_signature_64 from an agent iterator.
@@ -30913,7 +31002,8 @@ DEF_ACCESS (agent_iterator_installer_filename, 6);
  * @return Installer signature in base64, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_installer_signature_64, 7);
+DEF_ACCESS (agent_iterator_installer_signature_64,
+            GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Get the trust value from an agent iterator.
@@ -30926,7 +31016,7 @@ const char*
 agent_iterator_trust (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  switch (sqlite3_column_int (iterator->stmt, 8))
+  switch (sqlite3_column_int (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 4))
     {
       case 1:  return "yes";
       case 2:  return "no";
@@ -30947,7 +31037,8 @@ agent_iterator_trust_time (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 9);
+  ret = (time_t) sqlite3_column_int (iterator->stmt,
+                                     GET_ITERATOR_COLUMN_COUNT + 5);
   return ret;
 }
 
@@ -30959,7 +31050,7 @@ agent_iterator_trust_time (iterator_t* iterator)
  * @return Install HOWTO, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_howto_install, 10);
+DEF_ACCESS (agent_iterator_howto_install, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Get the usage HOWTO from an agent iterator.
@@ -30969,7 +31060,7 @@ DEF_ACCESS (agent_iterator_howto_install, 10);
  * @return Usage HOWTO, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_howto_use, 11);
+DEF_ACCESS (agent_iterator_howto_use, GET_ITERATOR_COLUMN_COUNT + 7);
 
 /**
  * @brief Get the name of an agent.
@@ -37142,11 +37233,13 @@ manage_restore (const char *id)
       sql ("INSERT INTO agents"
            " (uuid, owner, name, comment, installer, installer_64,"
            "  installer_filename, installer_signature_64, installer_trust,"
-           "  installer_trust_time, howto_install, howto_use)"
+           "  installer_trust_time, howto_install, howto_use, creation_time,"
+           "  modification_time)"
            " SELECT"
            "  uuid, owner, name, comment, installer, installer_64,"
            "  installer_filename, installer_signature_64, installer_trust,"
-           "  installer_trust_time, howto_install, howto_use"
+           "  installer_trust_time, howto_install, howto_use, creation_time,"
+           "  modification_time"
            " FROM agents_trash WHERE ROWID = %llu;",
            resource);
 
@@ -37670,9 +37763,10 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO targets"
            " (uuid, owner, name, hosts, comment, lsc_credential, ssh_port,"
-           "  smb_lsc_credential, port_range)"
+           "  smb_lsc_credential, port_range, creation_time, modification_time)"
            " SELECT uuid, owner, name, hosts, comment, lsc_credential, ssh_port,"
-           "        smb_lsc_credential, port_range"
+           "        smb_lsc_credential, port_range, creation_time,"
+           "        modification_time"
            " FROM targets_trash WHERE ROWID = %llu;",
            resource);
 

@@ -1,3 +1,37 @@
+2012-04-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add creation and modification times to agents and targets.  Hence increase
+	database version to 58.  Add database migration from version 57 to 58.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 58.
+
+	* src/manage_sql.c (create_tables): Add time columns.
+	(migrate_35_to_36_duplicate_target): New function.  Was duplicate_target.
+	(migrate_35_to_36): Adjust call for rename.
+	(migrate_57_to_58): New function.  Agent and target time migrator.
+	(database_migrators): Add migrate_57_to_58.
+	(init_manage): Add times.
+	(duplicate_target): Remove for rename.  Superceded by copy_target, and
+	migrator functions must be specific to the migrator.
+	(create_target, copy_target, delete_target, modify_target, create_agent)
+	(delete_agent): Handle time columns too.
+	(GET_ITERATOR_COLUMNS): Add time columns.
+	(GET_ITERATOR_COLUMN_COUNT): New define.  Adjust all target and agent
+	iterator access function offsets to be relative to this.
+	(set_target_hosts): Set modification time too.
+	(get_iterator_creation_time, get_iterator_modification_time): New
+	functions.
+	(manage_restore): Handle agent and target time columns.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (send_get_common): Add times.
+
+	* src/schema_formats/XML/OMP.xml (get_agents, get_targets): Add times to
+	response.
+
+	* doc/db.png, doc/omp.rnc, doc/omp.html: Update from source.
+
 2012-04-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage_process, duplicate_target): Add arg to

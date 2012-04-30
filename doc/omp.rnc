@@ -3826,6 +3826,8 @@ get_agents_response_agent
        attribute id { uuid }
        & get_agents_response_agent_name
        & get_agents_response_agent_comment
+       & get_agents_response_agent_creation_time
+       & get_agents_response_agent_modification_time
        & get_agents_response_agent_in_use
        & ( get_agents_response_agent_installer
            | get_agents_response_agent_package )
@@ -3843,6 +3845,20 @@ get_agents_response_agent_comment
  = element comment
      {
        text
+     }
+
+# Date and time the agent was created.
+get_agents_response_agent_creation_time
+ = element creation_time
+     {
+       ctime
+     }
+
+# Date and time the agent was last modified.
+get_agents_response_agent_modification_time
+ = element modification_time
+     {
+       ctime
      }
 
 # Whether the agent is in use.
@@ -5887,6 +5903,8 @@ get_targets_response_target
      {
        get_targets_response_target_name
        & get_targets_response_target_comment
+       & get_targets_response_target_creation_time
+       & get_targets_response_target_modification_time
        & get_targets_response_target_hosts
        & get_targets_response_target_max_hosts
        & get_targets_response_target_in_use
@@ -5910,6 +5928,20 @@ get_targets_response_target_comment
  = element comment
      {
        text
+     }
+
+# Date and time the target was created.
+get_targets_response_target_creation_time
+ = element creation_time
+     {
+       ctime
+     }
+
+# Date and time the target was last modified.
+get_targets_response_target_modification_time
+ = element modification_time
+     {
+       ctime
      }
 
 # A list of hosts.

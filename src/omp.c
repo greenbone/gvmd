@@ -4153,11 +4153,15 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
 
   msg = g_markup_printf_escaped ("<%s id=\"%s\">"
                                  "<name>%s</name>"
-                                 "<comment>%s</comment>",
+                                 "<comment>%s</comment>"
+                                 "<creation_time>%s</creation_time>"
+                                 "<modification_time>%s</modification_time>",
                                  type,
                                  get_iterator_uuid (iterator),
                                  get_iterator_name (iterator),
-                                 get_iterator_comment (iterator));
+                                 get_iterator_comment (iterator),
+                                 get_iterator_creation_time (iterator),
+                                 get_iterator_modification_time (iterator));
 
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {

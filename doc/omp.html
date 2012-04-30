@@ -6785,6 +6785,16 @@ create_task_rcfile
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the agent was created.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the agent was last modified.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>in_use</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the agent is in use.</div>
 <ul style="list-style: none"></ul>
@@ -6845,6 +6855,8 @@ get_agents_response_agent
        attribute id { uuid }
        &amp; get_agents_response_agent_name
        &amp; get_agents_response_agent_comment
+       &amp; get_agents_response_agent_creation_time
+       &amp; get_agents_response_agent_modification_time
        &amp; get_agents_response_agent_in_use
        &amp; ( get_agents_response_agent_installer
            | get_agents_response_agent_package )
@@ -6860,6 +6872,18 @@ get_agents_response_agent_comment
  = element comment
      {
        text
+     }
+
+get_agents_response_agent_creation_time
+ = element creation_time
+     {
+       ctime
+     }
+
+get_agents_response_agent_modification_time
+ = element modification_time
+     {
+       ctime
      }
 
 get_agents_response_agent_in_use
@@ -12394,6 +12418,16 @@ get_target_locators_response_target_locator_name
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the target was created.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the target was last modified.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>hosts</b>&gt;
               <div style="margin-left: 15px; display: inline;">A list of hosts.</div>
 <ul style="list-style: none"></ul>
@@ -12529,6 +12563,8 @@ get_targets_response_target
      {
        get_targets_response_target_name
        &amp; get_targets_response_target_comment
+       &amp; get_targets_response_target_creation_time
+       &amp; get_targets_response_target_modification_time
        &amp; get_targets_response_target_hosts
        &amp; get_targets_response_target_max_hosts
        &amp; get_targets_response_target_in_use
@@ -12550,6 +12586,18 @@ get_targets_response_target_comment
  = element comment
      {
        text
+     }
+
+get_targets_response_target_creation_time
+ = element creation_time
+     {
+       ctime
+     }
+
+get_targets_response_target_modification_time
+ = element modification_time
+     {
+       ctime
      }
 
 get_targets_response_target_hosts

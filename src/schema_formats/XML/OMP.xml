@@ -3817,6 +3817,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </attrib>
           <e>name</e>
           <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
           <e>in_use</e>
           <or>
             <e>installer</e>
@@ -3832,6 +3834,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>comment</name>
           <summary>The comment on the agent</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the agent was created</summary>
+          <pattern><t>ctime</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the agent was last modified</summary>
+          <pattern><t>ctime</t></pattern>
         </ele>
         <ele>
           <name>in_use</name>
@@ -7749,6 +7761,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <pattern>
           <e>name</e>
           <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
           <e>hosts</e>
           <e>max_hosts</e>
           <e>in_use</e>
@@ -7768,6 +7782,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>comment</name>
           <summary>The comment on the target</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the target was created</summary>
+          <pattern><t>ctime</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the target was last modified</summary>
+          <pattern><t>ctime</t></pattern>
         </ele>
         <ele>
           <name>hosts</name>
