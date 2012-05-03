@@ -1,5 +1,11 @@
 2012-05-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML-brief, src/schema_formats/XML-brief/OMP.xml,
+	src/schema_formats/XML-brief/generate: New files.  For --disabled-cmds
+	commit.
+
+2012-05-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Remove extra arg from
 	manage_schema call, leftover from experiment.
 
