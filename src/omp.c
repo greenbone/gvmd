@@ -10196,7 +10196,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             gsize output_len;
 
             switch (manage_schema (help_data->format,
-                                   help_data->type,
                                    &output,
                                    &output_len,
                                    &extension,
