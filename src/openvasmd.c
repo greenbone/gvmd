@@ -274,6 +274,11 @@ gboolean otp = FALSE;
  */
 int sighup_update_nvt_cache = 0;
 
+/**
+ * @brief The address of the Scanner.
+ */
+static gchar **disabled_commands = NULL;
+
 
 /* Forking, serving the client. */
 
@@ -383,7 +388,7 @@ serve_client (int server_socket, int client_socket)
         if (serve_omp (&client_session, &scanner_session,
                        &client_credentials, &scanner_credentials,
                        client_socket, &scanner_socket,
-                       database))
+                       database, disabled_commands))
           goto server_fail;
         break;
       case PROTOCOL_CLOSE:
@@ -628,7 +633,7 @@ fork_connection_for_schedular (int *client_socket,
             exit (EXIT_FAILURE);
           }
 
-        init_ompd_process (database);
+        init_ompd_process (database, disabled_commands);
 
         /* Make any further authentications to this process succeed.  This
          * enables the schedular to login as the owner of the scheduled
@@ -660,8 +665,9 @@ static void
 cleanup ()
 {
   tracef ("   Cleaning up.\n");
-  /** @todo This should happen via omp, maybe with "cleanup_omp ();". */
+  /** @todo These should happen via omp, maybe with "cleanup_omp ();". */
   cleanup_manage_process (TRUE);
+  g_strfreev (disabled_commands);
   if (manager_socket > -1) close (manager_socket);
   if (manager_socket_2 > -1) close (manager_socket_2);
 #if LOG
@@ -884,7 +890,8 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
                  NULL, &scanner_credentials,
                  update_nvt_cache ? -1 : -2,
                  &scanner_socket,
-                 database))
+                 database,
+                 NULL))
     {
       openvas_server_free (scanner_socket,
                            scanner_session,
@@ -1083,12 +1090,14 @@ main (int argc, char** argv)
   static gchar *manager_port_string_2 = NULL;
   static gchar *scanner_port_string = NULL;
   static gchar *rc_name = NULL;
+  static gchar *disable = NULL;
   GError *error = NULL;
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
     = {
         { "backup", '\0', 0, G_OPTION_ARG_NONE, &backup_database, "Backup the database.", NULL },
         { "database", 'd', 0, G_OPTION_ARG_STRING, &database, "Use <file> as database.", "<file>" },
+        { "disable-cmds", '\0', 0, G_OPTION_ARG_STRING, &disable, "Disable comma-separated <commands>.", "<commands>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
@@ -1371,6 +1380,11 @@ main (int argc, char** argv)
   /* Set our pidfile. */
 
   if (pidfile_create ("openvasmd")) exit (EXIT_FAILURE);
+
+  /* Setup variable for disabling OMP commands. */
+
+  if (disable)
+    disabled_commands = g_strsplit (disable, ",", 0);
 
   /* Create the manager socket(s). */
 

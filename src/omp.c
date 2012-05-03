@@ -388,84 +388,94 @@ append_attribute (const gchar **attribute_names,
 /* Help message. */
 
 /**
+ * @brief A command.
+ */
+typedef struct
+{
+  gchar *name;     ///< Command name.
+  gchar *summary;  ///< Summary of command.
+} command_t;
+
+/**
  * @brief Response to the help command.
  */
-static char* help_text = "\n"
-"    AUTHENTICATE           Authenticate with the manager.\n"
-"    COMMANDS               Run a list of commands.\n"
-"    CREATE_AGENT           Create an agent.\n"
-"    CREATE_CONFIG          Create a config.\n"
-"    CREATE_ALERT           Create an alert.\n"
-"    CREATE_LSC_CREDENTIAL  Create a local security check credential.\n"
-"    CREATE_NOTE            Create a note.\n"
-"    CREATE_OVERRIDE        Create an override.\n"
-"    CREATE_PORT_LIST       Create a port list.\n"
-"    CREATE_PORT_RANGE      Create a port range in a port list.\n"
-"    CREATE_REPORT_FORMAT   Create a report format.\n"
-"    CREATE_REPORT          Create a report.\n"
-"    CREATE_SCHEDULE        Create a schedule.\n"
-"    CREATE_SLAVE           Create a slave.\n"
-"    CREATE_TARGET          Create a target.\n"
-"    CREATE_TASK            Create a task.\n"
-"    DELETE_AGENT           Delete an agent.\n"
-"    DELETE_CONFIG          Delete a config.\n"
-"    DELETE_ALERT           Delete an alert.\n"
-"    DELETE_LSC_CREDENTIAL  Delete a local security check credential.\n"
-"    DELETE_NOTE            Delete a note.\n"
-"    DELETE_OVERRIDE        Delete an override.\n"
-"    DELETE_PORT_LIST       Delete a port list.\n"
-"    DELETE_PORT_RANGE      Delete a port range.\n"
-"    DELETE_REPORT          Delete a report.\n"
-"    DELETE_REPORT_FORMAT   Delete a report format.\n"
-"    DELETE_SCHEDULE        Delete a schedule.\n"
-"    DELETE_SLAVE           Delete a slave.\n"
-"    DELETE_TARGET          Delete a target.\n"
-"    DELETE_TASK            Delete a task.\n"
-"    EMPTY_TRASHCAN         Empty the trashcan.\n"
-"    GET_AGENTS             Get all agents.\n"
-"    GET_CONFIGS            Get all configs.\n"
-"    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
-"    GET_ALERTS             Get all alerts.\n"
-"    GET_LSC_CREDENTIALS    Get all local security check credentials.\n"
-"    GET_NOTES              Get all notes.\n"
-"    GET_NVTS               Get one or all available NVTs.\n"
-"    GET_NVT_FAMILIES       Get a list of all NVT families.\n"
-"    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
-"    GET_OVERRIDES          Get all overrides.\n"
-"    GET_PORT_LISTS         Get all port lists.\n"
-"    GET_PREFERENCES        Get preferences for all available NVTs.\n"
-"    GET_REPORTS            Get all reports.\n"
-"    GET_REPORT_FORMATS     Get all report formats.\n"
-"    GET_RESULTS            Get results.\n"
-"    GET_SCHEDULES          Get all schedules.\n"
-"    GET_SETTINGS           Get all settings.\n"
-"    GET_SLAVES             Get all slaves.\n"
-"    GET_SYSTEM_REPORTS     Get all system reports.\n"
-"    GET_TARGET_LOCATORS    Get configured target locators.\n"
-"    GET_TARGETS            Get all targets.\n"
-"    GET_TASKS              Get all tasks.\n"
-"    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
-"    GET_INFO               Get raw information for a given item.\n"
-"    HELP                   Get this help text.\n"
-"    MODIFY_CONFIG          Update an existing config.\n"
-"    MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.\n"
-"    MODIFY_NOTE            Modify an existing note.\n"
-"    MODIFY_OVERRIDE        Modify an existing override.\n"
-"    MODIFY_REPORT          Modify an existing report.\n"
-"    MODIFY_REPORT_FORMAT   Modify an existing report format.\n"
-"    MODIFY_SETTING         Modify an existing setting.\n"
-"    MODIFY_TARGET          Modify an existing target.\n"
-"    MODIFY_TASK            Update an existing task.\n"
-"    PAUSE_TASK             Pause a running task.\n"
-"    RESTORE                Restore a resource.\n"
-"    RESUME_OR_START_TASK   Resume task if stopped, else start task.\n"
-"    RESUME_PAUSED_TASK     Resume a paused task.\n"
-"    RESUME_STOPPED_TASK    Resume a stopped task.\n"
-"    START_TASK             Manually start an existing task.\n"
-"    STOP_TASK              Stop a running task.\n"
-"    TEST_ALERT             Run an alert.\n"
-"    VERIFY_AGENT           Verify an agent.\n"
-"    VERIFY_REPORT_FORMAT   Verify a report format.\n";
+static command_t omp_commands[]
+ = {{"AUTHENTICATE", "Authenticate with the manager." },
+    {"COMMANDS",     "Run a list of commands."},
+    {"CREATE_AGENT", "Create an agent."},
+    {"CREATE_CONFIG", "Create a config."},
+    {"CREATE_ALERT", "Create an alert."},
+    {"CREATE_LSC_CREDENTIAL", "Create a local security check credential."},
+    {"CREATE_NOTE", "Create a note."},
+    {"CREATE_OVERRIDE", "Create an override."},
+    {"CREATE_PORT_LIST", "Create a port list."},
+    {"CREATE_PORT_RANGE", "Create a port range in a port list."},
+    {"CREATE_REPORT_FORMAT", "Create a report format."},
+    {"CREATE_REPORT", "Create a report."},
+    {"CREATE_SCHEDULE", "Create a schedule."},
+    {"CREATE_SLAVE", "Create a slave."},
+    {"CREATE_TARGET", "Create a target."},
+    {"CREATE_TASK", "Create a task."},
+    {"DELETE_AGENT", "Delete an agent."},
+    {"DELETE_CONFIG", "Delete a config."},
+    {"DELETE_ALERT", "Delete an alert."},
+    {"DELETE_LSC_CREDENTIAL", "Delete a local security check credential."},
+    {"DELETE_NOTE", "Delete a note."},
+    {"DELETE_OVERRIDE", "Delete an override."},
+    {"DELETE_PORT_LIST", "Delete a port list."},
+    {"DELETE_PORT_RANGE", "Delete a port range."},
+    {"DELETE_REPORT", "Delete a report."},
+    {"DELETE_REPORT_FORMAT", "Delete a report format."},
+    {"DELETE_SCHEDULE", "Delete a schedule."},
+    {"DELETE_SLAVE", "Delete a slave."},
+    {"DELETE_TARGET", "Delete a target."},
+    {"DELETE_TASK", "Delete a task."},
+    {"EMPTY_TRASHCAN", "Empty the trashcan."},
+    {"GET_AGENTS", "Get all agents."},
+    {"GET_CONFIGS", "Get all configs."},
+    {"GET_DEPENDENCIES", "Get dependencies for all available NVTs."},
+    {"GET_ALERTS", "Get all alerts."},
+    {"GET_LSC_CREDENTIALS", "Get all local security check credentials."},
+    {"GET_NOTES", "Get all notes."},
+    {"GET_NVTS", "Get one or all available NVTs."},
+    {"GET_NVT_FAMILIES", "Get a list of all NVT families."},
+    {"GET_NVT_FEED_CHECKSUM", "Get checksum for entire NVT collection."},
+    {"GET_OVERRIDES", "Get all overrides."},
+    {"GET_PORT_LISTS", "Get all port lists."},
+    {"GET_PREFERENCES", "Get preferences for all available NVTs."},
+    {"GET_REPORTS", "Get all reports."},
+    {"GET_REPORT_FORMATS", "Get all report formats."},
+    {"GET_RESULTS", "Get results."},
+    {"GET_SCHEDULES", "Get all schedules."},
+    {"GET_SETTINGS", "Get all settings."},
+    {"GET_SLAVES", "Get all slaves."},
+    {"GET_SYSTEM_REPORTS", "Get all system reports."},
+    {"GET_TARGET_LOCATORS", "Get configured target locators."},
+    {"GET_TARGETS", "Get all targets."},
+    {"GET_TASKS", "Get all tasks."},
+    {"GET_VERSION", "Get the OpenVAS Manager Protocol version."},
+    {"GET_INFO", "Get raw information for a given item."},
+    {"HELP", "Get this help text."},
+    {"MODIFY_CONFIG", "Update an existing config."},
+    {"MODIFY_LSC_CREDENTIAL", "Modify an existing LSC credential."},
+    {"MODIFY_NOTE", "Modify an existing note."},
+    {"MODIFY_OVERRIDE", "Modify an existing override."},
+    {"MODIFY_REPORT", "Modify an existing report."},
+    {"MODIFY_REPORT_FORMAT", "Modify an existing report format."},
+    {"MODIFY_SETTING", "Modify an existing setting."},
+    {"MODIFY_TARGET", "Modify an existing target."},
+    {"MODIFY_TASK", "Update an existing task."},
+    {"PAUSE_TASK", "Pause a running task."},
+    {"RESTORE", "Restore a resource."},
+    {"RESUME_OR_START_TASK", "Resume task if stopped, else start task."},
+    {"RESUME_PAUSED_TASK", "Resume a paused task."},
+    {"RESUME_STOPPED_TASK", "Resume a stopped task."},
+    {"START_TASK", "Manually start an existing task."},
+    {"STOP_TASK", "Stop a running task."},
+    {"TEST_ALERT", "Run an alert."},
+    {"VERIFY_AGENT", "Verify an agent."},
+    {"VERIFY_REPORT_FORMAT", "Verify a report format."},
+    {NULL, NULL}};
 
 
 /* Status codes. */
@@ -576,6 +586,16 @@ static char* help_text = "\n"
 #define STATUS_INTERNAL_ERROR_TEXT     "Internal error"
 
 /**
+ * @brief Response code when a service is unavailable.
+ */
+#define STATUS_SERVICE_UNAVAILABLE     "503"
+
+/**
+ * @brief Response code text when a service is unavailable.
+ */
+#define STATUS_SERVICE_UNAVAILABLE_TEXT "Service unavailable"
+
+/**
  * @brief Response code when a service is down.
  */
 #define STATUS_SERVICE_DOWN            "503"
@@ -596,6 +616,7 @@ typedef struct
   int (*client_writer) (void*);   ///< Function to write to the client.
   void* client_writer_data;       ///< Argument to client_writer.
   int read_over;                  ///< Read over any child elements.
+  gchar **disabled_commands;      ///< Disabled commands.
 } omp_parser_t;
 
 /**
@@ -603,16 +624,20 @@ typedef struct
  *
  * @param[in]  write_to_client       Function to write to client.
  * @param[in]  write_to_client_data  Argument to \p write_to_client.
+ * @param[in]  disable               Commands to disable.  Freed by
+ *                                   omp_parser_free.
  *
  * @return An OMP parser.
  */
 omp_parser_t *
-omp_parser_new (int (*write_to_client) (void*), void* write_to_client_data)
+omp_parser_new (int (*write_to_client) (void*), void* write_to_client_data,
+                gchar **disable)
 {
   omp_parser_t *omp_parser = (omp_parser_t*) g_malloc (sizeof (omp_parser_t));
   omp_parser->client_writer = write_to_client;
   omp_parser->client_writer_data = write_to_client_data;
   omp_parser->read_over = 0;
+  omp_parser->disabled_commands = disable;
   return omp_parser;
 }
 
@@ -626,7 +651,31 @@ omp_parser_new (int (*write_to_client) (void*), void* write_to_client_data)
 void
 omp_parser_free (omp_parser_t *omp_parser)
 {
+  g_strfreev (omp_parser->disabled_commands);
   g_free (omp_parser);
+}
+
+/**
+ * @brief Check if command has been disabled.
+ *
+ * @param[in]  parser  Parser.
+ * @param[in]  name    Command name.
+ *
+ * @return 1 disabled, 0 enabled.
+ */
+static int
+command_disabled (omp_parser_t *omp_parser, const gchar *name)
+{
+  gchar **disabled;
+  disabled = omp_parser->disabled_commands;
+  if (disabled)
+    while (*disabled)
+      {
+        if (strcasecmp (*disabled, name) == 0)
+          return 1;
+        disabled++;
+      }
+  return 0;
 }
 
 
@@ -2378,6 +2427,7 @@ get_tasks_data_reset (get_tasks_data_t *data)
 typedef struct
 {
   char *format;       ///< Format.
+  char *type;         ///< Type of help.
 } help_data_t;
 
 /**
@@ -2389,6 +2439,7 @@ static void
 help_data_reset (help_data_t *data)
 {
   free (data->format);
+  free (data->type);
 
   memset (data, 0, sizeof (help_data_t));
 }
@@ -4013,6 +4064,17 @@ internal_error_send_to_client (GError** error)
  " status_text=\"" STATUS_ERROR_ACCESS_TEXT "\"/>"
 
 /**
+ * @brief Expand to XML for a STATUS_SERVICE_UNAVAILABLE response.
+ *
+ * @param  tag   Name of the command generating the response.
+ * @param  text  Text for the status_text attribute of the response.
+ */
+#define XML_ERROR_UNAVAILABLE(tag)                        \
+ "<" tag "_response"                                      \
+ " status=\"" STATUS_SERVICE_UNAVAILABLE "\""             \
+ " status_text=\"" STATUS_SERVICE_UNAVAILABLE_TEXT "\"/>"
+
+/**
  * @brief Expand to XML for a STATUS_ERROR_MISSING response.
  *
  * @param  tag  Name of the command generating the response.
@@ -4410,7 +4472,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_AUTHENTIC:
       case CLIENT_AUTHENTIC_COMMANDS:
-        if (strcasecmp ("AUTHENTICATE", element_name) == 0)
+        if (command_disabled (omp_parser, element_name))
+          {
+            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE ("omp"));
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Command Unavailable");
+          }
+        else if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
             if (save_tasks ()) abort ();
             free_tasks ();
@@ -5306,6 +5376,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             append_attribute (attribute_names, attribute_values, "format",
                               &help_data->format);
+            append_attribute (attribute_names, attribute_values, "type",
+                              &help_data->type);
             set_client_state (CLIENT_HELP);
           }
         else if (strcasecmp ("MODIFY_CONFIG", element_name) == 0)
@@ -10070,11 +10142,53 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (help_data->format == NULL
             || (strcmp (help_data->format, "text") == 0))
           {
+            command_t *commands;
             SEND_TO_CLIENT_OR_FAIL ("<help_response"
                                     " status=\"" STATUS_OK "\""
-                                    " status_text=\"" STATUS_OK_TEXT "\">");
-            SEND_TO_CLIENT_OR_FAIL (help_text);
+                                    " status_text=\"" STATUS_OK_TEXT "\">\n");
+            commands = omp_commands;
+            while ((*commands).name)
+              {
+                if (command_disabled (omp_parser, (*commands).name) == 0)
+                  {
+                    int count;
+                    SENDF_TO_CLIENT_OR_FAIL ("    %s",
+                                             (*commands).name);
+                    for (count = 23 - strlen ((*commands).name);
+                         count > 0;
+                         count--)
+                      SEND_TO_CLIENT_OR_FAIL (" ");
+                    SENDF_TO_CLIENT_OR_FAIL ("%s\n",
+                                             (*commands).summary);
+                  }
+                commands++;
+              }
             SEND_TO_CLIENT_OR_FAIL ("</help_response>");
+          }
+        else if (strcmp (help_data->type, "brief") == 0)
+          {
+            command_t *commands;
+            SEND_TO_CLIENT_OR_FAIL ("<help_response"
+                                    " status=\"" STATUS_OK "\""
+                                    " status_text=\"" STATUS_OK_TEXT "\">\n"
+                                    "<schema"
+                                    " format=\"XML\""
+                                    " extension=\"xml\""
+                                    " content_type=\"text/xml\">");
+            commands = omp_commands;
+            while ((*commands).name)
+              {
+                if (command_disabled (omp_parser, (*commands).name) == 0)
+                  SENDF_TO_CLIENT_OR_FAIL ("<command>"
+                                           "<name>%s</name>"
+                                           "<summary>%s</summary>"
+                                           "</command>",
+                                           (*commands).name,
+                                           (*commands).summary);
+                commands++;
+              }
+            SEND_TO_CLIENT_OR_FAIL ("</schema>"
+                                    "</help_response>");
           }
         else
           {
@@ -10082,6 +10196,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             gsize output_len;
 
             switch (manage_schema (help_data->format,
+                                   help_data->type,
                                    &output,
                                    &output_len,
                                    &extension,
@@ -10100,6 +10215,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       error_send_to_client (error);
                       return;
                     }
+                  help_data_reset (help_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                  break;
+                case 2:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("help",
+                                      "Brief help is only available in XML."));
                   help_data_reset (help_data);
                   set_client_state (CLIENT_AUTHENTIC);
                   return;
@@ -17458,13 +17581,15 @@ init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database)
  * @param[in]  database          Location of manage database.
  * @param[in]  write_to_client       Function to write to client.
  * @param[in]  write_to_client_data  Argument to \p write_to_client.
+ * @param[in]  disable               Commands to disable.
  *
  * This should run once per process, before the first call to \ref
  * process_omp_client_input.
  */
 void
 init_omp_process (int update_nvt_cache, const gchar *database,
-                  int (*write_to_client) (void*), void* write_to_client_data)
+                  int (*write_to_client) (void*), void* write_to_client_data,
+                  gchar **disable)
 {
   forked = 0;
   init_manage_process (update_nvt_cache, database);
@@ -17478,7 +17603,8 @@ init_omp_process (int update_nvt_cache, const gchar *database,
   xml_context = g_markup_parse_context_new
                  (&xml_parser,
                   0,
-                  omp_parser_new (write_to_client, write_to_client_data),
+                  omp_parser_new (write_to_client, write_to_client_data,
+                                  disable),
                   (GDestroyNotify) omp_parser_free);
 }
 

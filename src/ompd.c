@@ -134,11 +134,12 @@ init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database)
  * @brief Initialise a process forked within the OMP daemon.
  *
  * @param[in]  database  Location of manage database.
+ * @param[in]  disable   Commands to disable.
  */
 void
-init_ompd_process (const gchar *database)
+init_ompd_process (const gchar *database, gchar **disable)
 {
-  init_omp_process (0, database, NULL, NULL);
+  init_omp_process (0, database, NULL, NULL, disable);
 }
 
 /**
@@ -542,6 +543,7 @@ recreate_session (int server_socket,
  * @param[in]  client_socket        The socket connected to the client, if any.
  * @param[in]  scanner_socket_addr  The socket connected to the scanner.
  * @param[in]  database             Location of manage database.
+ * @param[in]  disable              Commands to disable.
  *
  * @return 0 on success, -1 on error.
  */
@@ -551,7 +553,7 @@ serve_omp (gnutls_session_t* client_session,
            gnutls_certificate_credentials_t* client_credentials,
            gnutls_certificate_credentials_t* scanner_credentials,
            int client_socket, int* scanner_socket_addr,
-           const gchar* database)
+           const gchar* database, gchar **disable)
 {
   int nfds, ret;
   time_t last_client_activity_time;
@@ -582,7 +584,8 @@ serve_omp (gnutls_session_t* client_session,
   init_omp_process (ompd_nvt_cache_mode,
                     database,
                     (int (*) (void*)) write_to_client,
-                    (void*) client_session);
+                    (void*) client_session,
+                    disable);
 #if 0
   /** @todo Consider free_omp_data (); on return. */
   if (tasks) free_tasks ();

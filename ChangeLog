@@ -1,5 +1,39 @@
 2012-04-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add --disabled-cmds to disable a list of OMP commands.  Adjust HELP
+	to skip disabled commands.
+
+	* CMakeLists.txt: Install new schema format.
+
+	* src/omp.c (command_t): New type.
+	(help_text): Remove.
+	(omp_commands): New variable.
+	(STATUS_SERVICE_UNAVAILABLE, STATUS_SERVICE_UNAVAILABLE_TEXT): New
+	definitions.
+	(omp_parser_t, omp_parser_free): Add disabled_commands.
+	(omp_parser_new): Add disable arg.
+	(command_disabled): New function.
+	(help_data_t, help_data_reset): Add type.
+	(XML_ERROR_UNAVAILABLE): New macro.
+	(omp_xml_handle_start_element): In the authentic states check if the
+	given command is enabled.  In the simple HELP case only print those
+	commands that are enabled.  Add a HELP flage "type", and print a
+	simple response when the type is "brief".
+	(init_omp_process): Add disable arg.
+
+	* src/manage.h, src/ompd.h: Update headers accordingly.
+
+	* src/ompd.c (init_ompd_process, serve_omp): Add disable arg.
+
+	* src/openvasmd.c (disabled_commands): New variable.
+	(serve_client, fork_connection_for_schedular): Pass disabled_commands to
+	omp handlers.
+	(cleanup): Free disabled_commands too.
+	(update_or_rebuild_nvt_cache): Add dummay serve_omp arg.
+	(main): Add --disable-cmds.
+
+2012-04-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add creation and modification times to agents and targets.  Hence increase
 	database version to 58.  Add database migration from version 57 to 58.
 

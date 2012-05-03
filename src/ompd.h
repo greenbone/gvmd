@@ -34,13 +34,13 @@ int
 init_ompd (GSList*, int, const gchar*);
 
 void
-init_ompd_process (const gchar *);
+init_ompd_process (const gchar *, gchar **);
 
 int
 serve_omp (gnutls_session_t*, gnutls_session_t*,
            gnutls_certificate_credentials_t*,
            gnutls_certificate_credentials_t*,
-           int, int*, const gchar*);
+           int, int*, const gchar*, gchar**);
 
 /** @todo Temporarily declared here, for omp.c SEND_TO_CLIENT. */
 extern char to_client[];
