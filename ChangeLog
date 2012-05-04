@@ -1,3 +1,9 @@
+2012-05-04  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 4.0+beta3 release.
+
+	* CHANGES: Updated.
+
 2012-05-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML-brief, src/schema_formats/XML-brief/OMP.xml,
