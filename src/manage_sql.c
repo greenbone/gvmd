@@ -23591,6 +23591,117 @@ filter_clause (const char* type, const char* filter, const char **columns)
    "smb_credential", NULL }
 
 /**
+ * @brief Target iterator columns.
+ */
+#define TARGET_ITERATOR_COLUMNS                             \
+  GET_ITERATOR_COLUMNS ", hosts, lsc_credential,"           \
+  " ssh_port, smb_lsc_credential, port_range, 0, 0,"        \
+  " (SELECT uuid FROM port_lists"                           \
+  "  WHERE port_lists.ROWID = port_range),"                 \
+  " (SELECT name FROM port_lists"                           \
+  "  WHERE port_lists.ROWID = port_range)"                  \
+  " AS port_list,"                                          \
+  " 0,"                                                     \
+  " (SELECT name FROM lsc_credentials"                      \
+  "  WHERE lsc_credentials.ROWID = lsc_credential)"         \
+  " AS ssh_credential,"                                     \
+  " (SELECT name FROM lsc_credentials"                      \
+  "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"     \
+  " AS smb_credential,"                                     \
+  " hosts,"                                                 \
+  " max_hosts (hosts) AS ips"
+
+/**
+ * @brief Target iterator columns for trash case.
+ */
+#define TARGET_ITERATOR_TRASH_COLUMNS                         \
+  GET_ITERATOR_COLUMNS ", hosts, lsc_credential,"             \
+  " ssh_port, smb_lsc_credential, port_range, ssh_location,"  \
+  " smb_location,"                                            \
+  " (CASE"                                                    \
+  "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH) \
+  "  THEN (SELECT uuid FROM port_lists_trash"                 \
+  "        WHERE port_lists_trash.ROWID = port_range)"        \
+  "  ELSE (SELECT uuid FROM port_lists"                       \
+  "        WHERE port_lists.ROWID = port_range)"              \
+  "  END),"                                                   \
+  " (CASE"                                                    \
+  "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH) \
+  "  THEN (SELECT name FROM port_lists_trash"                 \
+  "        WHERE port_lists_trash.ROWID = port_range)"        \
+  "  ELSE (SELECT name FROM port_lists"                       \
+  "        WHERE port_lists.ROWID = port_range)"              \
+  "  END),"                                                   \
+  " port_list_location = " G_STRINGIFY (LOCATION_TRASH)
+
+/**
+ * @brief Count number of a particular resource.
+ *
+ * @param[in]  filter           Filter term.
+ * @param[in]  actions_string   Actions.
+ *
+ * @return Total number of targets in filtered set.
+ */
+static int
+count (const char *type, const char *filter, const char *actions_string,
+       const char *iterator_columns, const char **extra_columns)
+{
+  int actions, ret;
+  gchar *clause;
+
+  assert (current_credentials.uuid);
+
+  clause = filter_clause (type, filter, extra_columns);
+
+  if (actions_string == NULL
+      || strlen (actions_string) == 0
+      || (actions = parse_actions (actions_string)) == 0)
+    {
+      ret = sql_int (0, 0,
+                     "SELECT count (*), %s"
+                     " FROM %ss"
+                     " WHERE ((owner IS NULL) OR (owner ="
+                     " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                     "%s%s;",
+                     iterator_columns,
+                     type,
+                     current_credentials.uuid,
+                     clause ? " AND " : "",
+                     clause ? clause : "");
+      g_free (clause);
+      return ret;
+    }
+
+  ret = sql_int (0, 0,
+                 "SELECT count (*), %s"
+                 " FROM %ss"
+                 " WHERE"
+                 " ((owner IS NULL) OR (owner ="
+                 "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                 "  OR"
+                 // FIX
+                 "  (SELECT tasks.ROWID FROM tasks"
+                 "   WHERE target = targets.ROWID)"
+                 "  IN"
+                 "  (SELECT task FROM task_users WHERE user ="
+                 "   (SELECT ROWID FROM users"
+                 "    WHERE users.uuid = '%s')"
+                 "   AND actions & %u = %u))"
+                 "%s%s;",
+                 iterator_columns,
+                 type,
+                 current_credentials.uuid,
+                 current_credentials.uuid,
+                 actions,
+                 actions,
+                 clause ? " AND " : "",
+                 clause ? clause : "");
+
+  g_free (clause);
+  return ret;
+}
+
+/**
  * @brief Count number of targets.
  *
  * @param[in]  filter           Filter term.
@@ -23602,76 +23713,8 @@ int
 target_count (const char *filter, const char *actions_string)
 {
   static const char *extra_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
-  int actions, ret;
-  gchar *clause;
-
-  assert (current_credentials.uuid);
-
-  clause = filter_clause ("target", filter, extra_columns);
-
-  if (actions_string == NULL
-      || strlen (actions_string) == 0
-      || (actions = parse_actions (actions_string)) == 0)
-    {
-      ret = sql_int (0, 0,
-                     "SELECT count (*),"
-                     " (SELECT name FROM port_lists"
-                     "  WHERE port_lists.ROWID = port_range)"
-                     " AS port_list,"
-                     " (SELECT name FROM lsc_credentials"
-                     "  WHERE lsc_credentials.ROWID = lsc_credential)"
-                     " AS ssh_credential,"
-                     " (SELECT name FROM lsc_credentials"
-                     "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"
-                     " AS smb_credential,"
-                     " hosts,"
-                     " max_hosts (hosts) AS ips"
-                     " FROM targets"
-                     " WHERE ((owner IS NULL) OR (owner ="
-                     " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                     "%s%s;",
-                     current_credentials.uuid,
-                     clause ? " AND " : "",
-                     clause ? clause : "");
-      g_free (clause);
-      return ret;
-    }
-
-  ret = sql_int (0, 0,
-                 "SELECT count (*),"
-                 " (SELECT name FROM port_lists"
-                 "  WHERE port_lists.ROWID = port_range)"
-                 " AS port_list,"
-                 " (SELECT name FROM lsc_credentials"
-                 "  WHERE lsc_credentials.ROWID = lsc_credential)"
-                 " AS ssh_credential,"
-                 " (SELECT name FROM lsc_credentials"
-                 "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"
-                 " AS smb_credential,"
-                 " hosts,"
-                 " max_hosts (hosts) AS ips"
-                 " FROM targets"
-                 " WHERE"
-                 " ((owner IS NULL) OR (owner ="
-                 "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
-                 "  OR"
-                 "  (SELECT tasks.ROWID FROM tasks"
-                 "   WHERE target = targets.ROWID)"
-                 "  IN"
-                 "  (SELECT task FROM task_users WHERE user ="
-                 "   (SELECT ROWID FROM users"
-                 "    WHERE users.uuid = '%s')"
-                 "   AND actions & %u = %u))"
-                 "%s%s;",
-                 current_credentials.uuid,
-                 current_credentials.uuid,
-                 actions,
-                 actions,
-                 clause ? " AND " : "",
-                 clause ? clause : "");
-
-  g_free (clause);
-  return ret;
+  return count ("target", filter, actions_string, TARGET_ITERATOR_COLUMNS,
+                extra_columns);
 }
 
 /**
@@ -23941,50 +23984,6 @@ init_get_iterator (iterator_t* iterator, const char *type,
   g_free (clause);
   return 0;
 }
-
-/**
- * @brief Target iterator columns.
- */
-#define TARGET_ITERATOR_COLUMNS                             \
-  GET_ITERATOR_COLUMNS ", hosts, lsc_credential,"           \
-  " ssh_port, smb_lsc_credential, port_range, 0, 0,"        \
-  " (SELECT uuid FROM port_lists"                           \
-  "  WHERE port_lists.ROWID = port_range),"                 \
-  " (SELECT name FROM port_lists"                           \
-  "  WHERE port_lists.ROWID = port_range)"                  \
-  " AS port_list,"                                          \
-  " 0,"                                                     \
-  " (SELECT name FROM lsc_credentials"                      \
-  "  WHERE lsc_credentials.ROWID = lsc_credential)"         \
-  " AS ssh_credential,"                                     \
-  " (SELECT name FROM lsc_credentials"                      \
-  "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"     \
-  " AS smb_credential,"                                     \
-  " hosts,"                                                 \
-  " max_hosts (hosts) AS ips"
-
-/**
- * @brief Target iterator columns for trash case.
- */
-#define TARGET_ITERATOR_TRASH_COLUMNS                         \
-  GET_ITERATOR_COLUMNS ", hosts, lsc_credential,"             \
-  " ssh_port, smb_lsc_credential, port_range, ssh_location,"  \
-  " smb_location,"                                            \
-  " (CASE"                                                    \
-  "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH) \
-  "  THEN (SELECT uuid FROM port_lists_trash"                 \
-  "        WHERE port_lists_trash.ROWID = port_range)"        \
-  "  ELSE (SELECT uuid FROM port_lists"                       \
-  "        WHERE port_lists.ROWID = port_range)"              \
-  "  END),"                                                   \
-  " (CASE"                                                    \
-  "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH) \
-  "  THEN (SELECT name FROM port_lists_trash"                 \
-  "        WHERE port_lists_trash.ROWID = port_range)"        \
-  "  ELSE (SELECT name FROM port_lists"                       \
-  "        WHERE port_lists.ROWID = port_range)"              \
-  "  END),"                                                   \
-  " port_list_location = " G_STRINGIFY (LOCATION_TRASH)
 
 /**
  * @brief Initialise a target iterator, limited to the current user's targets.
@@ -31061,6 +31060,22 @@ DEF_ACCESS (agent_iterator_howto_install, GET_ITERATOR_COLUMN_COUNT + 6);
  *         cleanup_iterator.
  */
 DEF_ACCESS (agent_iterator_howto_use, GET_ITERATOR_COLUMN_COUNT + 7);
+
+/**
+ * @brief Count number of agents.
+ *
+ * @param[in]  filter           Filter term.
+ * @param[in]  actions_string   Actions.
+ *
+ * @return Total number of agents in filtered set.
+ */
+int
+agent_count (const char *filter, const char *actions_string)
+{
+  static const char *extra_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
+  return count ("agent", filter, actions_string, AGENT_ITERATOR_COLUMNS,
+                extra_columns);
+}
 
 /**
  * @brief Get the name of an agent.

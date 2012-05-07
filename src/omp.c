@@ -14774,10 +14774,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               cleanup_iterator (&agents);
               filtered = get_agents_data->get.id
                           ? 1
-                          : 1;
-                          // FIX
-                          //: agent_count (get_agents_data->get.filter,
-                          //               get_agents_data->get.actions);
+                          : agent_count (get_agents_data->get.filter,
+                                         get_agents_data->get.actions);
               SEND_GET_END ("agent", &get_agents_data->get, count, filtered);
             }
           get_agents_data_reset (get_agents_data);

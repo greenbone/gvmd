@@ -1,5 +1,18 @@
 2012-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (TARGET_ITERATOR_COLUMNS)
+	(TARGET_ITERATOR_TRASH_COLUMNS): Move up in file.
+	(count): New function.  Body adapted from target_count.
+	(target_count): Call through to count.
+	(agent_count): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_AGENTS enable
+	filtered count.
+
+2012-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In MODIFY_TARGET require NAME
 	and HOSTS or TARGET_LOCATOR, instead of asserting this.
 

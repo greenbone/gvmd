@@ -1469,6 +1469,9 @@ int
 agent_uuid (agent_t, char **);
 
 int
+agent_count (const char *, const char *);
+
+int
 init_agent_iterator (iterator_t*, const get_data_t *);
 
 const char*
