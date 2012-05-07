@@ -174,6 +174,8 @@ ctime = text
 type_name = xsd:string - xsd:whitespace
 # An integer.
 integer = xsd:integer
+# A date and time, in ISO 8601 format.
+iso_time = text
 # A string that may include the characters h, m, l, g and d.
 levels = xsd:token { pattern = "h?m?l?g?d?" }
 # A name.
@@ -651,14 +653,14 @@ report_report_delta_report_scan_run_status
 report_report_delta_report_scan_start
  = element scan_start
      {
-       ctime
+       iso_time
      }
 
 # End time of scan.
 report_report_delta_report_scan_end
  = element scan_end
      {
-       ctime
+       iso_time
      }
 
 # Result sorting information.
@@ -1141,14 +1143,14 @@ report_report_host_detail_source_description
 report_report_scan_start
  = element scan_start
      {
-       ctime
+       iso_time
      }
 
 # Start time of a particular host.
 report_report_host_start
  = element host_start
      {
-       text # RNC limitation: ctime
+       text # RNC limitation: iso_time
        & report_report_host_start_host
      }
 
@@ -1162,7 +1164,7 @@ report_report_host_start_host
 report_report_host_end
  = element host_end
      {
-       text # RNC limitation: ctime
+       text # RNC limitation: iso_time
        & report_report_host_end_host
      }
 
@@ -1176,7 +1178,7 @@ report_report_host_end_host
 report_report_scan_end
  = element scan_end
      {
-       ctime
+       iso_time
      }
 
 ### Commands
@@ -3851,14 +3853,14 @@ get_agents_response_agent_comment
 get_agents_response_agent_creation_time
  = element creation_time
      {
-       ctime
+       iso_time
      }
 
 # Date and time the agent was last modified.
 get_agents_response_agent_modification_time
  = element modification_time
      {
-       ctime
+       iso_time
      }
 
 # Whether the agent is in use.
@@ -3886,7 +3888,7 @@ get_agents_response_agent_installer_trust
 get_agents_response_agent_installer_trust_time
  = element time
      {
-       ctime
+       iso_time
      }
 
 # Either the installer or one of the HOWTOs.
@@ -4436,13 +4438,13 @@ get_notes_response_note_orphan
 get_notes_response_note_creation_time
  = element creation_time
      {
-       ctime
+       iso_time
      }
 
 get_notes_response_note_modification_time
  = element modification_time
      {
-       ctime
+       iso_time
      }
 
 # A textual list of hosts.
@@ -4891,13 +4893,13 @@ get_overrides_response_override_orphan
 get_overrides_response_override_creation_time
  = element creation_time
      {
-       ctime
+       iso_time
      }
 
 get_overrides_response_override_modification_time
  = element modification_time
      {
-       ctime
+       iso_time
      }
 
 # A textual list of hosts.
@@ -5411,7 +5413,7 @@ get_report_formats_response_report_format_trust
 get_report_formats_response_report_format_trust_time
  = element time
      {
-       ctime
+       iso_time
      }
 
 # Whether the report format is active.
@@ -5674,14 +5676,14 @@ get_schedules_response_schedule_comment
 get_schedules_response_schedule_first_time
  = element first_time
      {
-       ctime
+       iso_time
      }
 
 # The next time the task will run.
 get_schedules_response_schedule_next_time
  = element next_time
      {
-       ctime
+       iso_time
      }
 
 # How often the task will run, in seconds.
@@ -5934,14 +5936,14 @@ get_targets_response_target_comment
 get_targets_response_target_creation_time
  = element creation_time
      {
-       ctime
+       iso_time
      }
 
 # Date and time the target was last modified.
 get_targets_response_target_modification_time
  = element modification_time
      {
-       ctime
+       iso_time
      }
 
 # A list of hosts.
@@ -6344,7 +6346,7 @@ get_tasks_response_task_first_report_report
 get_tasks_response_task_first_report_report_timestamp
  = element timestamp
      {
-       ctime
+       iso_time
      }
 
 # Result counts for this report.
@@ -6405,7 +6407,7 @@ get_tasks_response_task_last_report_report
 get_tasks_response_task_last_report_report_timestamp
  = element timestamp
      {
-       ctime
+       iso_time
      }
 
 # Result counts for this report.
@@ -6466,7 +6468,7 @@ get_tasks_response_task_second_last_report_report
 get_tasks_response_task_second_last_report_report_timestamp
  = element timestamp
      {
-       ctime
+       iso_time
      }
 
 # Result counts for this report.
@@ -6534,7 +6536,7 @@ get_tasks_response_task_reports_report
 get_tasks_response_task_reports_report_timestamp
  = element timestamp
      {
-       ctime
+       iso_time
      }
 
 # Run status of task scan.

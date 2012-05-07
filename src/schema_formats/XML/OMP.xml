@@ -110,6 +110,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>xsd:integer</pattern>
   </type>
   <type>
+    <name>iso_time</name>
+    <summary>A date and time, in ISO 8601 format</summary>
+    <description>
+      An example string in this format is "2011-11-08T19:57:06+02:00".
+    </description>
+    <pattern>text</pattern>
+  </type>
+  <type>
     <name>levels</name>
     <summary>A string that may include the characters h, m, l, g and d</summary>
     <pattern>xsd:token { pattern = "h?m?l?g?d?" }</pattern>
@@ -583,12 +591,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>scan_start</name>
             <summary>Start time of scan</summary>
-            <pattern><t>ctime</t></pattern>
+            <pattern><t>iso_time</t></pattern>
           </ele>
           <ele>
             <name>scan_end</name>
             <summary>End time of scan</summary>
-            <pattern><t>ctime</t></pattern>
+            <pattern><t>iso_time</t></pattern>
           </ele>
         </ele>
       </ele>
@@ -1075,13 +1083,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>scan_start</name>
         <summary>Start time of scan</summary>
-        <pattern><t>ctime</t></pattern>
+        <pattern><t>iso_time</t></pattern>
       </ele>
       <ele>
         <name>host_start</name>
         <summary>Start time of a particular host</summary>
         <pattern>
-          <t>ctime</t>
+          <t>iso_time</t>
           <e>host</e>
         </pattern>
         <ele>
@@ -1093,7 +1101,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>host_end</name>
         <summary>End time of a particular host</summary>
         <pattern>
-          <t>ctime</t>
+          <t>iso_time</t>
           <e>host</e>
         </pattern>
         <ele>
@@ -1104,7 +1112,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>scan_end</name>
         <summary>End time of scan</summary>
-        <pattern><t>ctime</t></pattern>
+        <pattern><t>iso_time</t></pattern>
       </ele>
     </ele>
   </element>
@@ -3838,12 +3846,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>creation_time</name>
           <summary>Date and time the agent was created</summary>
-          <pattern><t>ctime</t></pattern>
+          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>modification_time</name>
           <summary>Date and time the agent was last modified</summary>
-          <pattern><t>ctime</t></pattern>
+          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>in_use</name>
@@ -3871,7 +3879,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <ele>
               <name>time</name>
               <summary>When the signature was verified</summary>
-              <pattern><t>ctime</t></pattern>
+              <pattern><t>iso_time</t></pattern>
             </ele>
           </ele>
         </ele>
@@ -4989,11 +4997,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>creation_time</name>
-          <pattern><t>ctime</t></pattern>
+          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>modification_time</name>
-          <pattern><t>ctime</t></pattern>
+          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>hosts</name>
@@ -5760,11 +5768,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>creation_time</name>
-          <pattern><t>ctime</t></pattern>
+          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>modification_time</name>
-          <pattern><t>ctime</t></pattern>
+          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>hosts</name>
@@ -6790,7 +6798,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>time</name>
             <summary>The time the trust was checked</summary>
-            <pattern><t>ctime</t></pattern>
+            <pattern><t>iso_time</t></pattern>
           </ele>
         </ele>
         <ele>
@@ -7279,12 +7287,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>first_time</name>
           <summary>First time the task ran or will run</summary>
-          <pattern><t>ctime</t></pattern>
+          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>next_time</name>
           <summary>The next time the task will run</summary>
-          <pattern><t>ctime</t></pattern>
+          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>period</name>
@@ -7786,12 +7794,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>creation_time</name>
           <summary>Date and time the target was created</summary>
-          <pattern><t>ctime</t></pattern>
+          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>modification_time</name>
           <summary>Date and time the target was last modified</summary>
-          <pattern><t>ctime</t></pattern>
+          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>hosts</name>
@@ -8296,7 +8304,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
             <ele>
               <name>timestamp</name>
-              <pattern><t>ctime</t></pattern>
+              <pattern><t>iso_time</t></pattern>
             </ele>
             <ele>
               <name>result_count</name>
@@ -8349,7 +8357,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
             <ele>
               <name>timestamp</name>
-              <pattern><t>ctime</t></pattern>
+              <pattern><t>iso_time</t></pattern>
             </ele>
             <ele>
               <name>result_count</name>
@@ -8402,7 +8410,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
             <ele>
               <name>timestamp</name>
-              <pattern><t>ctime</t></pattern>
+              <pattern><t>iso_time</t></pattern>
             </ele>
             <ele>
               <name>result_count</name>
@@ -8460,7 +8468,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
             <ele>
               <name>timestamp</name>
-              <pattern><t>ctime</t></pattern>
+              <pattern><t>iso_time</t></pattern>
             </ele>
             <ele>
               <name>scan_run_status</name>

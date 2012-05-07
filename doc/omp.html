@@ -50,6 +50,10 @@
 <td id="index"><div style="margin-left: 15px;">An integer.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#type_iso_time">iso_time</a></td>
+<td id="index"><div style="margin-left: 15px;">A date and time, in ISO 8601 format.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#type_levels">levels</a></td>
 <td id="index"><div style="margin-left: 15px;">A string that may include the characters h, m, l, g and d.</div></td>
 </tr>
@@ -672,16 +676,28 @@ response
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_levels">5.8
+<div><h3 id="type_iso_time">5.8
+        Data Type <tt>iso_time</tt>
+</h3></div>
+<p>In short: A date and time, in ISO 8601 format.</p>
+<p>
+      An example string in this format is "2011-11-08T19:57:06+02:00".
+    </p>
+<h4>5.8.1 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>iso_time = text
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_levels">5.9
         Data Type <tt>levels</tt>
 </h3></div>
 <p>In short: A string that may include the characters h, m, l, g and d.</p>
-<h4>5.8.1 RNC</h4>
+<h4>5.9.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>levels = xsd:token { pattern = "h?m?l?g?d?" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_name">5.9
+<div><h3 id="type_name">5.10
         Data Type <tt>name</tt>
 </h3></div>
 <p>In short: A name.</p>
@@ -689,39 +705,39 @@ response
       Typically this is the name of one of the manager resources, like a
       task or target.
     </p>
-<h4>5.9.1 RNC</h4>
+<h4>5.10.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>name = xsd:string
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_port">5.10
+<div><h3 id="type_port">5.11
         Data Type <tt>port</tt>
 </h3></div>
 <p>In short: A port.</p>
-<h4>5.10.1 RNC</h4>
+<h4>5.11.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>port = xsd:token { pattern = "[0-9]{1,5}" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_user_list">5.11
+<div><h3 id="type_user_list">5.12
         Data Type <tt>user_list</tt>
 </h3></div>
 <p>In short: A space separated list of users.</p>
-<h4>5.11.1 RNC</h4>
+<h4>5.12.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>user_list = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_oid">5.12
+<div><h3 id="type_oid">5.13
         Data Type <tt>oid</tt>
 </h3></div>
 <p>In short: An Object Identifier (OID).</p>
-<h4>5.12.1 RNC</h4>
+<h4>5.13.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>oid = xsd:token { pattern = "[0-9\.]{1,80}" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_sort_order">5.13
+<div><h3 id="type_sort_order">5.14
         Data Type <tt>sort_order</tt>
 </h3></div>
 <p>In short: A string describing an order for sorting.</p>
@@ -729,71 +745,71 @@ response
       The string "descending" denotes descending order, anything else means
       ascending.
     </p>
-<h4>5.13.1 RNC</h4>
+<h4>5.14.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>sort_order = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_status">5.14
+<div><h3 id="type_status">5.15
         Data Type <tt>status</tt>
 </h3></div>
 <p>In short: The success or failure status of a command.</p>
-<h4>5.14.1 RNC</h4>
+<h4>5.15.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>status = xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_task_status">5.15
+<div><h3 id="type_task_status">5.16
         Data Type <tt>task_status</tt>
 </h3></div>
 <p>In short: A task run status.</p>
-<h4>5.15.1 RNC</h4>
+<h4>5.16.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>task_status = xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|Paused|Requ↵
 ested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_task_trend">5.16
+<div><h3 id="type_task_trend">5.17
         Data Type <tt>task_trend</tt>
 </h3></div>
 <p>In short: The trend of results for a task.</p>
-<h4>5.16.1 RNC</h4>
+<h4>5.17.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>task_trend = xsd:token { pattern = "up|down|more|less|same" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_threat">5.17
+<div><h3 id="type_threat">5.18
         Data Type <tt>threat</tt>
 </h3></div>
 <p>In short: A threat level.</p>
-<h4>5.17.1 RNC</h4>
+<h4>5.18.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>threat = xsd:token { pattern = "High|Medium|Low|Log|Debug" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_time_unit">5.18
+<div><h3 id="type_time_unit">5.19
         Data Type <tt>time_unit</tt>
 </h3></div>
 <p>In short: A unit of time.</p>
-<h4>5.18.1 RNC</h4>
+<h4>5.19.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>time_unit = xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_uuid">5.19
+<div><h3 id="type_uuid">5.20
         Data Type <tt>uuid</tt>
 </h3></div>
 <p>In short: A Universally Unique Identifier (UUID).</p>
-<h4>5.19.1 RNC</h4>
+<h4>5.20.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_uuid_or_empty">5.20
+<div><h3 id="type_uuid_or_empty">5.21
         Data Type <tt>uuid_or_empty</tt>
 </h3></div>
 <p>In short: A Universally Unique Identifier (UUID), or the empty string.</p>
-<h4>5.20.1 RNC</h4>
+<h4>5.21.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>uuid_or_empty = xsd:token { pattern = "[0-9abcdefABCDEF\-]{0,40}" }
 </pre></div>
 </div>
@@ -1978,13 +1994,13 @@ report_report_delta_report_scan_run_status
 report_report_delta_report_scan_start
  = element scan_start
      {
-       ctime
+       iso_time
      }
 
 report_report_delta_report_scan_end
  = element scan_end
      {
-       ctime
+       iso_time
      }
 
 report_report_sort
@@ -2414,13 +2430,13 @@ report_report_host_detail_source_description
 report_report_scan_start
  = element scan_start
      {
-       ctime
+       iso_time
      }
 
 report_report_host_start
  = element host_start
      {
-       text # RNC limitation: ctime
+       text # RNC limitation: iso_time
        &amp; report_report_host_start_host
      }
 
@@ -2433,7 +2449,7 @@ report_report_host_start_host
 report_report_host_end
  = element host_end
      {
-       text # RNC limitation: ctime
+       text # RNC limitation: iso_time
        &amp; report_report_host_end_host
      }
 
@@ -2446,7 +2462,7 @@ report_report_host_end_host
 report_report_scan_end
  = element scan_end
      {
-       ctime
+       iso_time
      }
 </pre></div></div>
 </div>
@@ -6877,13 +6893,13 @@ get_agents_response_agent_comment
 get_agents_response_agent_creation_time
  = element creation_time
      {
-       ctime
+       iso_time
      }
 
 get_agents_response_agent_modification_time
  = element modification_time
      {
-       ctime
+       iso_time
      }
 
 get_agents_response_agent_in_use
@@ -6908,7 +6924,7 @@ get_agents_response_agent_installer_trust
 get_agents_response_agent_installer_trust_time
  = element time
      {
-       ctime
+       iso_time
      }
 
 get_agents_response_agent_package
@@ -8518,13 +8534,13 @@ get_notes_response_note_orphan
 get_notes_response_note_creation_time
  = element creation_time
      {
-       ctime
+       iso_time
      }
 
 get_notes_response_note_modification_time
  = element modification_time
      {
-       ctime
+       iso_time
      }
 
 get_notes_response_note_hosts
@@ -9685,13 +9701,13 @@ get_overrides_response_override_orphan
 get_overrides_response_override_creation_time
  = element creation_time
      {
-       ctime
+       iso_time
      }
 
 get_overrides_response_override_modification_time
  = element modification_time
      {
-       ctime
+       iso_time
      }
 
 get_overrides_response_override_hosts
@@ -11061,7 +11077,7 @@ get_report_formats_response_report_format_trust
 get_report_formats_response_report_format_trust_time
  = element time
      {
-       ctime
+       iso_time
      }
 
 get_report_formats_response_report_format_active
@@ -11789,13 +11805,13 @@ get_schedules_response_schedule_comment
 get_schedules_response_schedule_first_time
  = element first_time
      {
-       ctime
+       iso_time
      }
 
 get_schedules_response_schedule_next_time
  = element next_time
      {
-       ctime
+       iso_time
      }
 
 get_schedules_response_schedule_period
@@ -12591,13 +12607,13 @@ get_targets_response_target_comment
 get_targets_response_target_creation_time
  = element creation_time
      {
-       ctime
+       iso_time
      }
 
 get_targets_response_target_modification_time
  = element modification_time
      {
-       ctime
+       iso_time
      }
 
 get_targets_response_target_hosts
@@ -13467,7 +13483,7 @@ get_tasks_response_task_first_report_report
 get_tasks_response_task_first_report_report_timestamp
  = element timestamp
      {
-       ctime
+       iso_time
      }
 
 get_tasks_response_task_first_report_report_result_count
@@ -13527,7 +13543,7 @@ get_tasks_response_task_last_report_report
 get_tasks_response_task_last_report_report_timestamp
  = element timestamp
      {
-       ctime
+       iso_time
      }
 
 get_tasks_response_task_last_report_report_result_count
@@ -13587,7 +13603,7 @@ get_tasks_response_task_second_last_report_report
 get_tasks_response_task_second_last_report_report_timestamp
  = element timestamp
      {
-       ctime
+       iso_time
      }
 
 get_tasks_response_task_second_last_report_report_result_count
@@ -13654,7 +13670,7 @@ get_tasks_response_task_reports_report
 get_tasks_response_task_reports_report_timestamp
  = element timestamp
      {
-       ctime
+       iso_time
      }
 
 get_tasks_response_task_reports_report_scan_run_status
