@@ -13858,9 +13858,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_TARGET:
         {
           assert (strcasecmp ("MODIFY_TARGET", element_name) == 0);
-          assert (modify_target_data->name != NULL);
-          assert (modify_target_data->target_locator
-                  || modify_target_data->hosts != NULL);
 
           if (openvas_is_user_observer (current_credentials.username))
             {
@@ -13868,12 +13865,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("modify_target",
                                   "MODIFY is forbidden for observer users"));
             }
+          else if (modify_target_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_target",
+                                "MODIFY_TARGET requires a NAME entity"));
           else if (strlen (modify_target_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_target",
                                 "MODIFY_TARGET name must be at"
                                 " least one character long"));
-          else if (strlen (modify_target_data->hosts) == 0
+          else if (((modify_target_data->hosts == NULL)
+                    || (strlen (modify_target_data->hosts) == 0))
                    && modify_target_data->target_locator == NULL)
             /** @todo Legitimate to pass an empty hosts element? */
             SEND_TO_CLIENT_OR_FAIL

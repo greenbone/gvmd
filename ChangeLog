@@ -1,5 +1,10 @@
 2012-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In MODIFY_TARGET require NAME
+	and HOSTS or TARGET_LOCATOR, instead of asserting this.
+
+2012-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Replace ctime with iso_time everywhere.
 	(iso_time): New type.
 
