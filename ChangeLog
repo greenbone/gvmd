@@ -1,4 +1,12 @@
+2012-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Add DETECTION and NVT/XREF to RESULT
+	in report import.
+
 2012-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Implement the filtered count for GET_AGENTS.
 
 	* src/manage_sql.c (TARGET_ITERATOR_COLUMNS)
 	(TARGET_ITERATOR_TRASH_COLUMNS): Move up in file.

@@ -3653,6 +3653,7 @@ typedef enum
   CLIENT_CREATE_REPORT_RR_RESULTS,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NOTES,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT,
@@ -3661,6 +3662,7 @@ typedef enum
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CVSS_BASE,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_NAME,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_RISK_FACTOR,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_XREF,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT,
@@ -6267,6 +6269,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         if (strcasecmp ("DESCRIPTION", element_name) == 0)
           set_client_state
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION);
+        else if (strcasecmp ("DETECTION", element_name) == 0)
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION);
+          }
         else if (strcasecmp ("HOST", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST);
         else if (strcasecmp ("NOTES", element_name) == 0)
@@ -6309,6 +6316,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("RISK_FACTOR", element_name) == 0)
           set_client_state
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_RISK_FACTOR);
+        else if (strcasecmp ("XREF", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_XREF);
         ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_TASK:
@@ -12516,6 +12525,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, DESCRIPTION);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, DETECTION);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, HOST);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NOTES);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NVT);
@@ -12530,6 +12540,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, CVSS_BASE);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, NAME);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, RISK_FACTOR);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, XREF);
 
       CLOSE (CLIENT_CREATE_REPORT, TASK);
       CLOSE (CLIENT_CREATE_REPORT_TASK, COMMENT);
