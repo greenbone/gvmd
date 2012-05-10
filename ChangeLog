@@ -1,3 +1,9 @@
+2012-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Add DETECTION and NVT/XREF to RESULT
+	in report import.  Backport from trunk r13441.
+
 2012-04-25  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
