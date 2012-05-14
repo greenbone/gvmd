@@ -1,5 +1,11 @@
 2012-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_task): Set the report run status explicitly, because
+	set_task_run_status only does this when current_scanner_task is set and
+	current_scanner_task is set at the end of the function.
+
+2012-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (client_state_t, omp_xml_handle_start_element)
 	(omp_xml_handle_end_element): Add DETECTION and NVT/XREF to RESULT
 	in report import.
