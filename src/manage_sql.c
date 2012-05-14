@@ -7321,6 +7321,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
  * @param[in]  apply_overrides    Whether to apply overrides.
  * @param[in]  search_phrase      Phrase that results must include.  All results
  *                                if NULL or "".
+ * @param[in]  autofp             Whether to apply auto FP filter.
  * @param[in]  notes              Whether to include notes.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides          Whether to include overrides.
@@ -7339,7 +7340,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             int sort_order, const char* sort_field,
             int result_hosts_only, const char *min_cvss_base,
             const char *levels, int apply_overrides,
-            const char *search_phrase, int notes, int notes_details,
+            const char *search_phrase, int autofp, int notes, int notes_details,
             int overrides, int overrides_details, int first_result,
             int max_results)
 {
@@ -7439,7 +7440,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   result_hosts_only,
                                                   min_cvss_base, levels,
                                                   apply_overrides,
-                                                  search_phrase, notes,
+                                                  search_phrase, autofp, notes,
                                                   notes_details, overrides,
                                                   overrides_details,
                                                   first_result, max_results,
@@ -7544,7 +7545,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   result_hosts_only,
                                                   min_cvss_base, levels,
                                                   apply_overrides,
-                                                  search_phrase, notes,
+                                                  search_phrase, autofp, notes,
                                                   notes_details, overrides,
                                                   overrides_details,
                                                   first_result, max_results,
@@ -7713,7 +7714,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           result_hosts_only,
                                           min_cvss_base, levels,
                                           apply_overrides,
-                                          search_phrase, notes,
+                                          search_phrase, autofp, notes,
                                           notes_details, overrides,
                                           overrides_details,
                                           first_result, max_results,
@@ -7800,6 +7801,7 @@ escalate_1 (alert_t alert, task_t task, event_t event,
                      NULL,    /* Levels. */
                      1,       /* Apply overrides. */
                      NULL,    /* Search phrase. */
+                     1,       /* Auto FP. */
                      1,       /* Notes. */
                      0,       /* Notes details. */
                      1,       /* Overrides. */
@@ -13108,6 +13110,65 @@ where_search_phrase (const char* search_phrase)
 }
 
 /**
+ * @brief SQL list of LSC families.
+ */
+#define LSC_FAMILY_LIST                  \
+  "'AIX Local Security Checks',"         \
+  " 'CentOS Local Security Checks',"     \
+  " 'Debian Local Security Checks',"     \
+  " 'Fedora Local Security Checks',"     \
+  " 'FreeBSD Local Security Checks',"    \
+  " 'Gentoo Local Security Checks',"     \
+  " 'HP-UX Local Security Checks',"      \
+  " 'Mac OS X Local Security Checks',"   \
+  " 'Mandrake Local Security Checks',"   \
+  " 'Red Hat Local Security Checks',"    \
+  " 'Solaris Local Security Checks',"    \
+  " 'SuSE Local Security Checks',"       \
+  " 'Ubuntu Local Security Checks',"     \
+  " 'Windows : Microsoft Bulletins',"    \
+  " 'Privilege escalation'"
+
+/**
+ * @brief Return SQL WHERE for restricting a SELECT for auto FP filter.
+ *
+ * @param[in] autofp  Whether to apply the auto FP filter.
+ *
+ * @return WHERE clause for autofp if desired, else NULL.
+ */
+static GString *
+where_autofp (int autofp, report_t report)
+{
+  if (autofp)
+    {
+      GString *autofp_sql;
+
+      autofp_sql = g_string_new ("");
+      g_string_append_printf
+       (autofp_sql,
+        " AND"
+        " (((SELECT family FROM nvts WHERE oid = results.nvt)"
+        "   IN (" LSC_FAMILY_LIST "))"
+        "  OR"
+        "  (SELECT ROWID FROM nvts"
+        "   WHERE oid = results.nvt"
+        "   AND cve NOT IN (SELECT cve FROM nvts"
+        "                   WHERE oid IN (SELECT source_name"
+        "                                 FROM report_host_details"
+        "                                 WHERE report_host"
+        "                                 = (SELECT id FROM report_hosts"
+        "                                    WHERE report = %llu"
+        "                                    AND host = results.host)"
+        "                                 AND name = 'EXIT_CODE'"
+        "                                 AND value = 'EXIT_NOTVULN')"
+        "                   AND family IN (" LSC_FAMILY_LIST "))))",
+        report);
+      return autofp_sql;
+    }
+  return NULL;
+}
+
+/**
  * @brief Initialise a result iterator.
  *
  * The results are ordered by host, then port and type (severity) according
@@ -13129,6 +13190,7 @@ where_search_phrase (const char* search_phrase)
  *                            to include in report (for example, "hmlgdf" for
  *                            High, Medium, Low, loG, Debug and False positive).
  *                            All levels if NULL.
+ * @param[in]  autofp         Whether to apply auto FP filter.
  * @param[in]  search_phrase  Phrase that results must include.  All results if
  *                            NULL or "".
  * @param[in]  min_cvss_base  Minimum value for CVSS.  All results if NULL.
@@ -13138,10 +13200,10 @@ void
 init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                       const char* host, int first_result, int max_results,
                       int ascending, const char* sort_field, const char* levels,
-                      const char* search_phrase, const char* min_cvss_base,
-                      int override)
+                      int autofp, const char* search_phrase,
+                      const char* min_cvss_base, int override)
 {
-  GString *levels_sql, *phrase_sql, *cvss_sql;
+  GString *levels_sql, *phrase_sql, *cvss_sql, *autofp_sql;
   gchar* sql;
 
   assert ((report && result) == 0);
@@ -13158,6 +13220,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       levels_sql = where_levels (levels);
       phrase_sql = where_search_phrase (search_phrase);
       cvss_sql = where_cvss_base (min_cvss_base);
+      autofp_sql = where_autofp (autofp, report);
+
       if (override)
         {
           gchar *ov;
@@ -13218,11 +13282,13 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                "%s"
                                "%s"
                                "%s"
+                               "%s"
                                " LIMIT %i OFFSET %i;",
                                new_type_sql,
                                report,
                                levels_sql ? levels_sql->str : "",
                                host,
+                               autofp_sql ? autofp_sql->str : "",
                                phrase_sql ? phrase_sql->str : "",
                                cvss_sql ? cvss_sql->str : "",
                                ascending
@@ -13277,12 +13343,14 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                "%s"
                                "%s"
                                "%s"
+                               "%s"
                                " AND report_results.result = results.ROWID"
                                "%s"
                                " LIMIT %i OFFSET %i;",
                                new_type_sql,
                                report,
                                levels_sql ? levels_sql->str : "",
+                               autofp_sql ? autofp_sql->str : "",
                                phrase_sql ? phrase_sql->str : "",
                                cvss_sql ? cvss_sql->str : "",
                                ascending
@@ -13333,6 +13401,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       if (levels_sql) g_string_free (levels_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
+      if (autofp_sql) g_string_free (autofp_sql, TRUE);
       g_free (new_type_sql);
     }
   else if (result)
@@ -17420,6 +17489,7 @@ free_buffer (array_t *buffer)
  * @param[in]  apply_overrides    Whether to apply overrides.
  * @param[in]  search_phrase      Phrase that results must include.  All results
  *                                if NULL or "".
+ * @param[in]  autofp             Whether to apply the auto FP filter.
  * @param[in]  notes              Whether to include notes.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides          Whether to include overrides.
@@ -17448,12 +17518,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   int sort_order, const char* sort_field, int result_hosts_only,
                   const char *min_cvss_base, report_format_t report_format,
                   const char *levels, const char *delta_states,
-                  int apply_overrides, const char *search_phrase, int notes,
-                  int notes_details, int overrides, int overrides_details,
-                  int first_result, int max_results, const char *type,
-                  const char *host, int pos, const char *host_search_phrase,
-                  const char *host_levels, int host_first_result,
-                  int host_max_results)
+                  int apply_overrides, const char *search_phrase, int autofp,
+                  int notes, int notes_details, int overrides, int
+                  overrides_details, int first_result, int max_results, const
+                  char *type, const char *host, int pos, const char
+                  *host_search_phrase, const char *host_levels,
+                  int host_first_result, int host_max_results)
 {
   FILE *out;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
@@ -17582,6 +17652,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     "<filters>"
     "%s"
     "<phrase>%s</phrase>"
+    "<autofp>%i</autofp>"
     "<notes>%i</notes>"
     "<overrides>%i</overrides>"
     "<apply_overrides>%i</apply_overrides>"
@@ -17591,6 +17662,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     sort_order ? "ascending" : "descending",
     levels,
     search_phrase ? search_phrase : "",
+    autofp ? 1 : 0,
     notes ? 1 : 0,
     overrides ? 1 : 0,
     apply_overrides ? 1 : 0,
@@ -18297,6 +18369,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         sort_order,
         sort_field,
         levels,
+        autofp,
         search_phrase,
         min_cvss_base,
         apply_overrides);
@@ -18435,6 +18508,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                             sort_order,
                             sort_field,
                             levels,
+                            autofp,
                             search_phrase,
                             min_cvss_base,
                             apply_overrides);
@@ -18445,6 +18519,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                             sort_order,
                             sort_field,
                             levels,
+                            autofp,
                             search_phrase,
                             min_cvss_base,
                             apply_overrides);
@@ -18456,6 +18531,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                           sort_order,
                           sort_field,
                           levels,
+                          autofp,
                           search_phrase,
                           min_cvss_base,
                           apply_overrides);
@@ -19351,6 +19427,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  * @param[in]  apply_overrides    Whether to apply overrides.
  * @param[in]  search_phrase      Phrase that results must include.  All results
  *                                if NULL or "".
+ * @param[in]  autofp             Whether to apply auto FP filter.
  * @param[in]  notes              Whether to include notes.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides          Whether to include overrides.
@@ -19370,7 +19447,7 @@ gchar *
 manage_report (report_t report, report_format_t report_format, int sort_order,
                const char* sort_field, int result_hosts_only,
                const char *min_cvss_base, const char *levels,
-               int apply_overrides, const char *search_phrase, int notes,
+               int apply_overrides, const char *search_phrase, int autofp, int notes,
                int notes_details, int overrides, int overrides_details,
                int first_result, int max_results, const char *type,
                gsize *output_length, gchar **extension, gchar **content_type)
@@ -19400,8 +19477,8 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
   if (print_report_xml (report, 0, task, xml_file, sort_order, sort_field,
                         result_hosts_only, min_cvss_base, report_format,
-                        levels, NULL, apply_overrides, search_phrase, notes,
-                        notes_details, overrides, overrides_details,
+                        levels, NULL, apply_overrides, search_phrase, autofp,
+                        notes, notes_details, overrides, overrides_details,
                         first_result, max_results, type, NULL, 0, NULL, NULL,
                         0, 0))
     {
@@ -19795,6 +19872,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
  * @param[in]  apply_overrides    Whether to apply overrides.
  * @param[in]  search_phrase      Phrase that results must include.  All results
  *                                if NULL or "".
+ * @param[in]  autofp             Whether to apply auto FP filter.
  * @param[in]  notes              Whether to include notes.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides          Whether to include overrides.
@@ -19832,7 +19910,7 @@ manage_send_report (report_t report, report_t delta_report,
                     int result_hosts_only, const char *min_cvss_base,
                     const char *levels, const char *delta_states,
                     int apply_overrides, const char *search_phrase,
-                    int notes, int notes_details, int overrides,
+                    int autofp, int notes, int notes_details, int overrides,
                     int overrides_details, int first_result, int max_results,
                     int base64,
                     gboolean (*send) (const char *, int (*) (void*), void*),
@@ -19877,7 +19955,7 @@ manage_send_report (report_t report, report_t delta_report,
                          /* Report filtering. */
                          sort_order, sort_field, result_hosts_only,
                          min_cvss_base, levels, apply_overrides,
-                         search_phrase, notes, notes_details, overrides,
+                         search_phrase, autofp, notes, notes_details, overrides,
                          overrides_details, first_result, max_results);
     }
 
@@ -19897,7 +19975,7 @@ manage_send_report (report_t report, report_t delta_report,
   if (print_report_xml (report, delta_report, task, xml_file, sort_order,
                         sort_field, result_hosts_only, min_cvss_base,
                         report_format, levels, delta_states, apply_overrides,
-                        search_phrase, notes, notes_details, overrides,
+                        search_phrase, autofp, notes, notes_details, overrides,
                         overrides_details, first_result, max_results, type,
                         host, pos, host_search_phrase, host_levels,
                         host_first_result, host_max_results))

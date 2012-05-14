@@ -1,3 +1,22 @@
+2012-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add autofp attribute to OMP GET_RESULTS.  When given filter out results
+	which have an EXIT_CODE host detail with value EXIT_NOTVULN.  Slight
+	modification of patch from Henri Doreau.
+
+	* src/manage_sql.c (escalate_2): Add autofp arg.  Update caller.
+	(LSC_FAMILY_LIST): New define.
+	(where_autofp): New function.
+	(init_result_iterator): Add autofp arg.  If given add autofp WHERE
+	clause to SQL.  Update callers in omp.c.
+	(print_report_xml): Add autofp arg.  Print in XML, pass to iterator.
+	(manage_report_report): Add autofp arg.  Pass to printer or escalator.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (get_reports_data_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Add autofp attribute to GET_RESULTS.
+
 2012-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (run_task): Set the report run status explicitly, because

@@ -2148,6 +2148,7 @@ typedef struct
   char *search_phrase;   ///< Search phrase result filter.
   char *host_search_phrase;  ///< Search phrase result filter.
   char *min_cvss_base;   ///< Minimum CVSS base filter.
+  int autofp;            ///< Boolean.  Whether to apply auto FP filter.
   int notes;             ///< Boolean.  Whether to include associated notes.
   int notes_details;     ///< Boolean.  Whether to include details of above.
   int overrides;         ///< Boolean.  Whether to include associated overrides.
@@ -5056,6 +5057,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_reports_data->search_phrase);
 
             if (find_attribute (attribute_names, attribute_values,
+                                "autofp", &attribute))
+              get_reports_data->autofp = strcmp (attribute, "0");
+            else
+              get_reports_data->autofp = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
                                 "notes", &attribute))
               get_reports_data->notes = strcmp (attribute, "0");
             else
@@ -7096,7 +7103,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
               init_result_iterator (&results, 0,
                                     note_iterator_result (notes),
-                                    NULL, 0, 1, 1, NULL, NULL, NULL, NULL, 0);
+                                    NULL, 0, 1, 1, NULL, NULL, 1, NULL, NULL, 0);
               while (next (&results))
                 buffer_results_xml (buffer,
                                     &results,
@@ -7253,7 +7260,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
 
               init_result_iterator (&results, 0,
                                     override_iterator_result (overrides),
-                                    NULL, 0, 1, 1, NULL, NULL, NULL, NULL, 0);
+                                    NULL, 0, 1, 1, NULL, NULL, 1, NULL, NULL, 0);
               while (next (&results))
                 buffer_results_xml (buffer,
                                     &results,
@@ -9128,6 +9135,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->delta_states,
                                       get_reports_data->apply_overrides,
                                       get_reports_data->search_phrase,
+                                      get_reports_data->autofp,
                                       get_reports_data->notes,
                                       get_reports_data->notes_details,
                                       get_reports_data->overrides,
@@ -9199,6 +9207,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->delta_states,
                                       get_reports_data->apply_overrides,
                                       get_reports_data->search_phrase,
+                                      get_reports_data->autofp,
                                       get_reports_data->notes,
                                       get_reports_data->notes_details,
                                       get_reports_data->overrides,
@@ -9276,6 +9285,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->delta_states,
                                       get_reports_data->apply_overrides,
                                       get_reports_data->search_phrase,
+                                      get_reports_data->autofp,
                                       get_reports_data->notes,
                                       get_reports_data->notes_details,
                                       get_reports_data->overrides,
@@ -9613,7 +9623,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">"
                                       "<results>");
               init_result_iterator (&results, 0, result, NULL, 0, 1, 1, NULL,
-                                    NULL, NULL, NULL,
+                                    NULL, 1, NULL, NULL,
                                     get_results_data->apply_overrides);
               while (next (&results))
                 {

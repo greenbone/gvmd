@@ -813,7 +813,7 @@ report_iterator_uuid (iterator_t*);
 
 void
 init_result_iterator (iterator_t*, task_t, result_t, const char*, int, int,
-                      int, const char *, const char *, const char *,
+                      int, const char *, const char *, int, const char *,
                       const char *, int);
 
 gboolean
@@ -894,12 +894,12 @@ trim_partial_report (report_t);
 gchar *
 manage_report (report_t, report_format_t, int, const char*, int, const char *,
                const char *, int, const char *, int, int, int, int, int, int,
-               const char *, gsize *, gchar **, gchar **);
+               int, const char *, gsize *, gchar **, gchar **);
 
 int
 manage_send_report (report_t, report_t, report_format_t, int, const char*, int,
                     const char *, const char *, const char *, int,
-                    const char *, int, int, int, int, int, int, int,
+                    const char *, int, int, int, int, int, int, int, int,
                     gboolean (*) (const char *, int (*) (void*), void*),
                     int (*) (void*), void *, const char *, const char *,
                     const char *, int, const char *, const char *, int, int);
