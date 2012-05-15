@@ -1998,6 +1998,7 @@ run_task (task_t task, char **report_id, int from)
         {
           free (hosts);
           set_task_run_status (task, run_status);
+          set_report_scan_run_status (current_report, run_status);
           exit (EXIT_FAILURE);
         }
       exit (EXIT_SUCCESS);
@@ -2009,6 +2010,7 @@ run_task (task_t task, char **report_id, int from)
     {
       free (hosts);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2021,6 +2023,7 @@ run_task (task_t task, char **report_id, int from)
       free (hosts);
       tracef ("   task config is 0.\n");
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2053,6 +2056,7 @@ run_task (task_t task, char **report_id, int from)
     {
       free (hosts);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2063,6 +2067,7 @@ run_task (task_t task, char **report_id, int from)
     {
       free (hosts);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2070,6 +2075,7 @@ run_task (task_t task, char **report_id, int from)
     {
       free (hosts);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2078,6 +2084,7 @@ run_task (task_t task, char **report_id, int from)
     {
       free (hosts);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2085,6 +2092,7 @@ run_task (task_t task, char **report_id, int from)
     {
       free (hosts);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2095,6 +2103,7 @@ run_task (task_t task, char **report_id, int from)
     {
       free (hosts);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2103,6 +2112,7 @@ run_task (task_t task, char **report_id, int from)
     {
       free (hosts);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2116,6 +2126,7 @@ run_task (task_t task, char **report_id, int from)
       free (port_range);
       free (hosts);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2128,6 +2139,7 @@ run_task (task_t task, char **report_id, int from)
     {
       free (port);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2146,6 +2158,7 @@ run_task (task_t task, char **report_id, int from)
       slist_free (files);
       free (hosts);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2159,6 +2172,7 @@ run_task (task_t task, char **report_id, int from)
       array_free (preference_files);
       slist_free (files);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2197,6 +2211,7 @@ run_task (task_t task, char **report_id, int from)
               array_free (preference_files);
               slist_free (files);
               set_task_run_status (task, run_status);
+              set_report_scan_run_status (current_report, run_status);
               current_report = (report_t) 0;
               return -10;
             }
@@ -2272,6 +2287,7 @@ run_task (task_t task, char **report_id, int from)
               array_free (preference_files);
               slist_free (files);
               set_task_run_status (task, run_status);
+              set_report_scan_run_status (current_report, run_status);
               current_report = (report_t) 0;
               return -10;
             }
@@ -2287,6 +2303,7 @@ run_task (task_t task, char **report_id, int from)
       array_free (preference_files);
       slist_free (files);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2320,6 +2337,7 @@ run_task (task_t task, char **report_id, int from)
             array_free (preference_files);
             slist_free (files);
             set_task_run_status (task, run_status);
+            set_report_scan_run_status (current_report, run_status);
             current_report = (report_t) 0;
             return -10;
           }
@@ -2339,6 +2357,7 @@ run_task (task_t task, char **report_id, int from)
           free (hosts);
           slist_free (files);
           set_task_run_status (task, run_status);
+          set_report_scan_run_status (current_report, run_status);
           current_report = (report_t) 0;
           return -10;
         }
@@ -2353,6 +2372,7 @@ run_task (task_t task, char **report_id, int from)
     {
       free (hosts);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2361,6 +2381,7 @@ run_task (task_t task, char **report_id, int from)
     {
       free (hosts);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2369,6 +2390,7 @@ run_task (task_t task, char **report_id, int from)
     {
       free (hosts);
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
@@ -2385,6 +2407,7 @@ run_task (task_t task, char **report_id, int from)
   if (fail)
     {
       set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
     }
