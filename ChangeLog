@@ -1,3 +1,12 @@
+2012-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add creation and modification times to the powerfilter.
+
+	* src/manage_sql.c (parse_keyword): Add date format with hour and minute.
+	(GET_ITERATOR_FILTER_COLUMNS, GET_ITERATOR_COLUMNS): Add created and
+	modified.
+	(GET_ITERATOR_COLUMN_COUNT): Increase.
+
 2012-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add autofp attribute to OMP GET_RESULTS.  When given filter out results

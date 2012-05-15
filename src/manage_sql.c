@@ -23205,7 +23205,12 @@ parse_keyword (keyword_t* keyword)
     {
       struct tm date;
       memset (&date, 0, sizeof (date));
-      if (strptime (keyword->string, "%Y-%m-%d", &date))
+      if (strptime (keyword->string, "%Y-%m-%dT%H:%M", &date))
+        {
+          keyword->number = mktime (&date);
+          keyword->type = KEYWORD_TYPE_NUMBER;
+        }
+      else if (strptime (keyword->string, "%Y-%m-%d", &date))
         {
           keyword->number = mktime (&date);
           keyword->type = KEYWORD_TYPE_NUMBER;
@@ -23647,19 +23652,21 @@ filter_clause (const char* type, const char* filter, const char **columns)
 /**
  * @brief Filter columns for GET iterator.
  */
-#define GET_ITERATOR_FILTER_COLUMNS "uuid", "name", "comment"
+#define GET_ITERATOR_FILTER_COLUMNS "uuid", "name", "comment", \
+ "created", "modified"
 
 /**
  * @brief Columns for GET iterator.
  */
 #define GET_ITERATOR_COLUMNS                                 \
   "ROWID, uuid, name, comment, iso_time (creation_time),"    \
-  " iso_time (modification_time)"
+  " iso_time (modification_time), creation_time AS created," \
+  " modification_time AS modified"
 
 /**
  * @brief Columns for GET iterator.
  */
-#define GET_ITERATOR_COLUMN_COUNT 6
+#define GET_ITERATOR_COLUMN_COUNT 8
 
 /**
  * @brief Filter columns for target iterator.
