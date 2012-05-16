@@ -1025,6 +1025,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS port_ranges (id INTEGER PRIMARY KEY, uuid UNIQUE, port_list INTEGER, type, start, end, comment, exclude);");
   sql ("CREATE TABLE IF NOT EXISTS port_ranges_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, port_list INTEGER, type, start, end, comment, exclude);");
   sql ("CREATE TABLE IF NOT EXISTS report_host_details (id INTEGER PRIMARY KEY, report_host INTEGER, source_type, source_name, source_description, name, value);");
+  sql ("CREATE INDEX IF NOT EXISTS report_host_details_by_report_host_and_name_and_value ON report_host_details (report_host, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_host ON report_hosts (host);");
   sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_report ON report_hosts (report);");
@@ -1076,6 +1077,7 @@ create_tables_version_4 ()
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
   sql ("CREATE TABLE IF NOT EXISTS nvts (id INTEGER PRIMARY KEY, oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category INTEGER, family);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
+  sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_report_and_host ON report_hosts (report, host);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, task INTEGER, subnet, host, port, nvt, type, description)");
@@ -10890,7 +10892,7 @@ task_upload_progress (task_t task)
   if (report)
     {
       int count;
-      if (report_scan_result_count (report, NULL, NULL, NULL, 0, &count))
+      if (report_scan_result_count (report, NULL, NULL, NULL, 0, 0, &count))
         return -1;
       return sql_int (0, 0,
                       "SELECT"
@@ -14508,6 +14510,7 @@ set_report_scan_run_status (report_t report, task_status_t status)
  * @param[in]   min_cvss_base  Minimum CVSS base of included results.  All
  *                             results if NULL.
  * @param[in]   override       Whether to override threats.
+ * @param[in]   autofp         Whether to apply the auto FP filter.
  * @param[out]  count          Total number of results in the scan.
  *
  * @return 0 on success, -1 on error.
@@ -14515,11 +14518,12 @@ set_report_scan_run_status (report_t report, task_status_t status)
 int
 report_scan_result_count (report_t report, const char* levels,
                           const char* search_phrase, const char* min_cvss_base,
-                          int override, int* count)
+                          int override, int autofp, int* count)
 {
-  GString *levels_sql, *phrase_sql, *cvss_sql;
+  GString *autofp_sql, *levels_sql, *phrase_sql, *cvss_sql;
   gchar *new_type_sql = NULL;
 
+  autofp_sql = where_autofp (autofp, report);
   phrase_sql = where_search_phrase (search_phrase);
   cvss_sql = where_cvss_base (min_cvss_base);
 
@@ -14575,14 +14579,16 @@ report_scan_result_count (report_t report, const char* levels,
                     "SELECT count(results.ROWID)%s"
                     " FROM results, report_results"
                     " WHERE results.ROWID = report_results.result"
-                    "%s%s%s"
+                    "%s%s%s%s"
                     " AND report_results.report = %llu;",
                     new_type_sql ? new_type_sql : "",
                     levels_sql ? levels_sql->str : "",
+                    autofp_sql ? autofp_sql->str : "",
                     phrase_sql ? phrase_sql->str : "",
                     cvss_sql ? cvss_sql->str : "",
                     report);
 
+  if (autofp_sql) g_string_free (autofp_sql, TRUE);
   if (levels_sql) g_string_free (levels_sql, TRUE);
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
   if (cvss_sql) g_string_free (cvss_sql, TRUE);
@@ -14931,18 +14937,54 @@ report_count (report_t report, const char *type, int override, const char *host)
 }
 
 /**
+ * @brief Check if a result matches the autofp filter criteria.
+ *
+ * @param[in]  results        Result iterator.
+ *
+ * @return 1 if match, 0 otherwise.
+ */
+static int
+report_counts_autofp_match (iterator_t *results)
+{
+  if (sql_int (0, 0,
+               "SELECT count (*) FROM nvts"
+               " WHERE oid = '%s'"
+               " AND"
+               " (family IN (" LSC_FAMILY_LIST ")"
+               "  OR cve NOT IN (SELECT cve FROM nvts"
+               "                 WHERE oid IN (SELECT source_name"
+               "                               FROM report_host_details"
+               "                               WHERE report_host"
+               "                               = (SELECT id FROM report_hosts"
+               "                                  WHERE report = %llu"
+               "                                  AND host = '%s')"
+               "                               AND name = 'EXIT_CODE'"
+               "                               AND value = 'EXIT_NOTVULN')"
+               "                 AND family IN (" LSC_FAMILY_LIST ")));",
+               (const char*) sqlite3_column_text (results->stmt, 1),
+               sqlite3_column_int64 (results->stmt, 6),
+               (const char*) sqlite3_column_text (results->stmt, 3)))
+    return 1;
+  return 0;
+}
+
+/**
  * @brief Check if a result matches the filter criteria.
  *
  * @param[in]  results        Result iterator.
  * @param[in]  search_phrase  Search phrase.
  * @param[in]  min_cvss_base  Minimum CVSS base.
+ * @param[in]  autofp         Whether to apply the auto FP filter.
  *
  * @return 1 if match, 0 otherwise.
  */
 static int
 report_counts_match (iterator_t *results, const char *search_phrase,
-                     const char *min_cvss_base)
+                     const char *min_cvss_base, int autofp)
 {
+  if (autofp && (report_counts_autofp_match (results) == 0))
+    return 0;
+
   if (search_phrase)
     {
       if (strcasestr ((const char*) sqlite3_column_text (results->stmt, 5),
@@ -14998,13 +15040,14 @@ report_counts_match (iterator_t *results, const char *search_phrase,
  *                            results if NULL.
  * @param[in]  search_phrase  Phrase that filtered results must include.  All results
  *                            if NULL or "".
+ * @param[in]  autofp         Whether to apply the auto FP filter.
  *
  * @return Message count.
  */
 int
 report_count_filtered (report_t report, const char *type, int override,
                        const char *host, const char *min_cvss_base,
-                       const char *search_phrase)
+                       const char *search_phrase, int autofp)
 {
   if (search_phrase && strcmp (search_phrase, "") == 0)
     search_phrase = NULL;
@@ -15128,6 +15171,7 @@ report_count_filtered (report_t report, const char *type, int override,
       init_iterator (&results,
                      "SELECT results.ROWID, results.nvt, results.type,"
                      " results.host, results.port, results.description"
+                     " report_results.report"
                      " FROM results, report_results"
                      " WHERE report_results.report = %llu"
                      " AND results.ROWID = report_results.result",
@@ -15178,7 +15222,8 @@ report_count_filtered (report_t report, const char *type, int override,
                   && (strcmp (new_type, type) == 0)
                   && report_counts_match (&results,
                                           search_phrase,
-                                          min_cvss_base))
+                                          min_cvss_base,
+                                          autofp))
                 count++;
             }
           else
@@ -15282,7 +15327,8 @@ report_count_filtered (report_t report, const char *type, int override,
                   && (strcmp (new_type, type) == 0)
                   && report_counts_match (&results,
                                           search_phrase,
-                                          min_cvss_base))
+                                          min_cvss_base,
+                                          autofp))
                 count++;
 
               /* Reset the full inner statement. */
@@ -15324,6 +15370,7 @@ report_count_filtered (report_t report, const char *type, int override,
     }
   else if (host)
     {
+      GString *autofp_sql = where_autofp (autofp, report);
       GString *phrase_sql = where_search_phrase (search_phrase);
       GString *cvss_sql = where_cvss_base (min_cvss_base);
       gchar* quoted_host = sql_quote (host);
@@ -15332,13 +15379,15 @@ report_count_filtered (report_t report, const char *type, int override,
                            " WHERE results.host = '%s' AND results.type = '%s'"
                            " AND results.ROWID = report_results.result"
                            " AND report_results.report = %llu"
-                           "%s%s;",
+                           "%s%s%s;",
                            quoted_host,
                            type,
                            report,
+                           autofp_sql ? autofp_sql->str : "",
                            phrase_sql ? phrase_sql->str : "",
-                           phrase_sql ? phrase_sql->str : "");
+                           cvss_sql ? cvss_sql->str : "");
       g_free (quoted_host);
+      if (autofp_sql) g_string_free (autofp_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
       return count;
@@ -15346,6 +15395,7 @@ report_count_filtered (report_t report, const char *type, int override,
   else
     {
       int count;
+      GString *autofp_sql = where_autofp (autofp, report);
       GString *phrase_sql = where_search_phrase (search_phrase);
       GString *cvss_sql = where_cvss_base (min_cvss_base);
       count = sql_int (0, 0,
@@ -15353,11 +15403,13 @@ report_count_filtered (report_t report, const char *type, int override,
                        " WHERE report_results.report = %llu"
                        " AND report_results.result = results.ROWID"
                        " AND results.type = '%s'"
-                       "%s%s;",
+                       "%s%s%s;",
                        report,
                        type,
+                       autofp_sql ? autofp_sql->str : "",
                        phrase_sql ? phrase_sql->str : "",
                        cvss_sql ? cvss_sql->str : "");
+      if (autofp_sql) g_string_free (autofp_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
       return count;
@@ -15379,18 +15431,20 @@ report_count_filtered (report_t report, const char *type, int override,
  * @param[out]  warnings     Number of warning messages.
  * @param[out]  false_positives  Number of false positives.
  * @param[in]   override     Whether to override the threat.
+ * @param[in]   autofp       Whether to apply the auto FP filter.
  *
  * @return 0 on success, -1 on error.
  */
 int
 report_counts (const char* report_id, int* debugs, int* holes, int* infos,
-               int* logs, int* warnings, int* false_positives, int override)
+               int* logs, int* warnings, int* false_positives, int override,
+               int autofp)
 {
   report_t report;
   if (find_report_for_actions (report_id, &report, "g"))
     return -1;
   return report_counts_id (report, debugs, holes, infos, logs, warnings,
-                           false_positives, override, NULL);
+                           false_positives, override, NULL, autofp);
 }
 
 /**
@@ -15409,6 +15463,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
  *                                 results if NULL.
  * @param[in]   search_phrase      Phrase that filtered results must include.
  *                                 All results if NULL or "".
+ * @param[in]   autofp             Whether to apply the auto FP filter.
  * @param[out]  filtered_debugs    Number of debug messages after filtering.
  * @param[out]  filtered_holes     Number of hole messages after filtering.
  * @param[out]  filtered_infos     Number of info messages after filtering.
@@ -15424,7 +15479,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                        int* logs, int* warnings, int* false_positives,
                        int override, const char *host,
                        const char *min_cvss_base, const char *search_phrase,
-                       int* filtered_debugs, int* filtered_holes,
+                       int autofp, int* filtered_debugs, int* filtered_holes,
                        int* filtered_infos, int* filtered_logs,
                        int* filtered_warnings, int* filtered_false_positives)
 {
@@ -15623,7 +15678,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                           if (filtered_holes
                               && report_counts_match (&results,
                                                       search_phrase,
-                                                      min_cvss_base))
+                                                      min_cvss_base,
+                                                      autofp))
                             (*filtered_holes)++;
                         }
                       else if (strcmp (new_type, "Security Warning") == 0)
@@ -15632,7 +15688,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                           if (filtered_warnings
                               && report_counts_match (&results,
                                                       search_phrase,
-                                                      min_cvss_base))
+                                                      min_cvss_base,
+                                                      autofp))
                             (*filtered_warnings)++;
                         }
                       else if (strcmp (new_type, "Security Note") == 0)
@@ -15641,7 +15698,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                           if (filtered_infos
                               && report_counts_match (&results,
                                                       search_phrase,
-                                                      min_cvss_base))
+                                                      min_cvss_base,
+                                                      autofp))
                             (*filtered_infos)++;
                         }
                       else if (strcmp (new_type, "Log Message") == 0)
@@ -15650,7 +15708,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                           if (filtered_logs
                               && report_counts_match (&results,
                                                       search_phrase,
-                                                      min_cvss_base))
+                                                      min_cvss_base,
+                                                      autofp))
                             (*filtered_logs)++;
                         }
                       else if (strcmp (new_type, "False Positive") == 0)
@@ -15659,7 +15718,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                           if (filtered_false_positives
                               && report_counts_match (&results,
                                                       search_phrase,
-                                                      min_cvss_base))
+                                                      min_cvss_base,
+                                                      autofp))
                             (*filtered_false_positives)++;
                         }
                     }
@@ -15769,7 +15829,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                           if (filtered_holes
                               && report_counts_match (&results,
                                                       search_phrase,
-                                                      min_cvss_base))
+                                                      min_cvss_base,
+                                                      autofp))
                             (*filtered_holes)++;
                         }
                       else if (strcmp (new_type, "Security Warning") == 0)
@@ -15778,7 +15839,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                           if (filtered_warnings
                               && report_counts_match (&results,
                                                       search_phrase,
-                                                      min_cvss_base))
+                                                      min_cvss_base,
+                                                      autofp))
                             (*filtered_warnings)++;
                         }
                       else if (strcmp (new_type, "Security Note") == 0)
@@ -15787,7 +15849,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                           if (filtered_infos
                               && report_counts_match (&results,
                                                       search_phrase,
-                                                      min_cvss_base))
+                                                      min_cvss_base,
+                                                      autofp))
                             (*filtered_infos)++;
                         }
                       else if (strcmp (new_type, "Log Message") == 0)
@@ -15796,7 +15859,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                           if (filtered_logs
                               && report_counts_match (&results,
                                                       search_phrase,
-                                                      min_cvss_base))
+                                                      min_cvss_base,
+                                                      autofp))
                             (*filtered_logs)++;
                         }
                       else if (strcmp (new_type, "False Positive") == 0)
@@ -15805,7 +15869,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                           if (filtered_false_positives
                               && report_counts_match (&results,
                                                       search_phrase,
-                                                      min_cvss_base))
+                                                      min_cvss_base,
+                                                      autofp))
                             (*filtered_false_positives)++;
                         }
                     }
@@ -15861,23 +15926,23 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
   if (filtered_false_positives)
     *filtered_false_positives
      = report_count_filtered (report, "False Positive", override, host,
-                              min_cvss_base, search_phrase);
+                              min_cvss_base, search_phrase, autofp);
   if (filtered_holes)
     *filtered_holes
      = report_count_filtered (report, "Security Hole", override, host,
-                              min_cvss_base, search_phrase);
+                              min_cvss_base, search_phrase, autofp);
   if (filtered_infos)
     *filtered_infos
      = report_count_filtered (report, "Security Note", override, host,
-                              min_cvss_base, search_phrase);
+                              min_cvss_base, search_phrase, autofp);
   if (filtered_logs)
     *filtered_logs
      = report_count_filtered (report, "Log Message", override, host,
-                              min_cvss_base, search_phrase);
+                              min_cvss_base, search_phrase, autofp);
   if (filtered_warnings)
     *filtered_warnings
      = report_count_filtered (report, "Security Warning", override, host,
-                              min_cvss_base, search_phrase);
+                              min_cvss_base, search_phrase, autofp);
 
   return 0;
 }
@@ -15893,18 +15958,19 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
  * @param[out]  warnings  Number of warning messages.
  * @param[out]  false_positives  Number of false positive messages.
  * @param[in]   override  Whether to override the threat.
- * @param[in]   host      Host to which to limit the count.  NULL to allow all.
+ * @param[in]   host      Host to which to limit the count.  NULL to allow all.#
+ * @param[in]   autofp    Whether to apply the auto FP filter.
  *
  * @return 0 on success, -1 on error.
  */
 int
 report_counts_id (report_t report, int* debugs, int* holes, int* infos,
                   int* logs, int* warnings, int* false_positives, int override,
-                  const char *host)
+                  const char *host, int autofp)
 {
   return report_counts_id_filt (report, debugs, holes, infos, logs, warnings,
                                 false_positives, override, host, NULL, NULL,
-                                NULL, NULL, NULL, NULL, NULL, NULL);
+                                autofp, NULL, NULL, NULL, NULL, NULL, NULL);
 
 }
 
@@ -17635,7 +17701,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       if (delta == 0)
         {
           report_scan_result_count (report, NULL, NULL, NULL,
-                                    apply_overrides,
+                                    apply_overrides, autofp,
                                     &result_count);
         }
       report_scan_result_count (report,
@@ -17643,6 +17709,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                 search_phrase,
                                 min_cvss_base,
                                 apply_overrides,
+                                autofp,
                                 &filtered_result_count);
       report_scan_run_status (report, &run_status);
     }
@@ -17836,7 +17903,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
                   report_counts_id (report, NULL, &holes, &infos, &logs,
                                     &warnings, &false_positives,
-                                    apply_overrides, ip);
+                                    apply_overrides, ip, autofp);
 
                   PRINT (out,
                          "<detail>"
@@ -18226,7 +18293,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
               report_counts_id (report, NULL, &h_holes, &h_infos, &h_logs,
                                 &h_warnings, &h_false_positives, 0,
-                                buffer_host->ip);
+                                buffer_host->ip, 0);
 
               PRINT (out,
                      "<detail>"
@@ -18495,8 +18562,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   report_counts_id_filt (report, &debugs, &holes, &infos, &logs,
                          &warnings, &false_positives,
                          apply_overrides, NULL, min_cvss_base, search_phrase,
-                         &f_debugs, &f_holes, &f_infos, &f_logs, &f_warnings,
-                         &f_false_positives);
+                         autofp, &f_debugs, &f_holes, &f_infos, &f_logs,
+                         &f_warnings, &f_false_positives);
 
   /* Results. */
 
@@ -20439,7 +20506,7 @@ task_trend (task_t task, int override)
   /* Count the logs and false positives too, as report_counts_id is faster
    * with all five. */
   if (report_counts_id (last_report, NULL, &holes_a, &infos_a, &logs_a, &warns_a,
-                        &false_positives_a, override, NULL))
+                        &false_positives_a, override, NULL, 0))
     /** @todo Either fail better or abort at SQL level. */
     abort ();
 
@@ -20461,7 +20528,7 @@ task_trend (task_t task, int override)
   /* Count the logs and false positives too, as report_counts_id is faster
    * with all five. */
   if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, &logs_b,
-                        &warns_b, &false_positives_b, override, NULL))
+                        &warns_b, &false_positives_b, override, NULL, 0))
     /** @todo Either fail better or abort at SQL level. */
     abort ();
 

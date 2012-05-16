@@ -6848,7 +6848,7 @@ send_reports (task_t task, int apply_overrides, int (*write_to_client) (void*),
       uuid = report_uuid (index);
 
       if (report_counts (uuid, &debugs, &holes, &infos, &logs, &warnings,
-                         &false_positives, apply_overrides))
+                         &false_positives, apply_overrides, 0))
         {
           free (uuid);
           return -5;
@@ -15978,7 +15978,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         if (report_counts (first_report_id,
                                            &debugs, &holes, &infos, &logs,
                                            &warnings, &false_positives,
-                                           get_tasks_data->apply_overrides))
+                                           get_tasks_data->apply_overrides,
+                                           0))
                           /** @todo Either fail better or abort at SQL level. */
                           abort ();
 
@@ -16027,7 +16028,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         if (report_counts (last_report_id,
                                            &debugs, &holes, &infos, &logs,
                                            &warnings, &false_positives,
-                                           get_tasks_data->apply_overrides))
+                                           get_tasks_data->apply_overrides,
+                                           0))
                           /** @todo Either fail better or abort at SQL level. */
                           abort ();
 
@@ -16076,7 +16078,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         if (report_counts (second_last_report_id,
                                            &debugs, &holes, &infos, &logs,
                                            &warnings, &false_positives,
-                                           get_tasks_data->apply_overrides))
+                                           get_tasks_data->apply_overrides,
+                                           0))
                           /** @todo Either fail better or abort at SQL level. */
                           abort ();
 
@@ -16423,7 +16426,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         if (report_counts (first_report_id,
                                            &debugs, &holes, &infos, &logs,
                                            &warnings, &false_positives,
-                                           get_tasks_data->apply_overrides))
+                                           get_tasks_data->apply_overrides,
+                                           0))
                           /** @todo Either fail better or abort at SQL level. */
                           abort ();
 
@@ -16471,7 +16475,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             && report_counts (second_last_report_id,
                                               &debugs, &holes, &infos, &logs,
                                               &warnings, &false_positives,
-                                              get_tasks_data->apply_overrides))
+                                              get_tasks_data->apply_overrides,
+                                              0))
                           /** @todo Either fail better or abort at SQL level. */
                           abort ();
 
@@ -16521,7 +16526,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  (last_report_id,
                                   &debugs, &holes, &infos, &logs,
                                   &warnings, &false_positives,
-                                  get_tasks_data->apply_overrides)))
+                                  get_tasks_data->apply_overrides,
+                                  0)))
                           /** @todo Either fail better or abort at SQL level. */
                           abort ();
 

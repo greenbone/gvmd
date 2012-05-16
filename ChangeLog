@@ -1,3 +1,19 @@
+2012-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add autofp filtering to the counts too.
+
+	* src/manage_sql.c (create_table): Add indexes
+	report_host_details_by_report_host_and_name_and_value and
+	report_hosts_by_host.
+	(report_scan_result_count, report_counts_match)
+	(report_count_filtered, report_counts, report_counts_id_filt)
+	(report_counts_id): Add autofp arg.  Update callers.
+	(report_counts_autofp_match): New function.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c: Add autofp for updated manage_sql.c functions.
+
 2012-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add creation and modification times to the powerfilter.
