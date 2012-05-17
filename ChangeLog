@@ -1,5 +1,12 @@
 2012-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (where_autofp, report_counts_autofp_match): If autofp
+	is 2 then do partial CVE matching.
+	(report_counts_match): Pass autofp to report_counts_autofp_match.
+	(print_report_xml): Respond with actual value of autofp instead of 1 or 0.
+
+2012-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add autofp filtering to the counts too.
 
 	* src/manage_sql.c (create_table): Add indexes

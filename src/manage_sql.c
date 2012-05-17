@@ -13141,33 +13141,60 @@ where_search_phrase (const char* search_phrase)
 static GString *
 where_autofp (int autofp, report_t report)
 {
-  if (autofp)
+  GString *autofp_sql;
+  switch (autofp)
     {
-      GString *autofp_sql;
-
-      autofp_sql = g_string_new ("");
-      g_string_append_printf
-       (autofp_sql,
-        " AND"
-        " (((SELECT family FROM nvts WHERE oid = results.nvt)"
-        "   IN (" LSC_FAMILY_LIST "))"
-        "  OR"
-        "  (SELECT ROWID FROM nvts"
-        "   WHERE oid = results.nvt"
-        "   AND cve NOT IN (SELECT cve FROM nvts"
-        "                   WHERE oid IN (SELECT source_name"
-        "                                 FROM report_host_details"
-        "                                 WHERE report_host"
-        "                                 = (SELECT id FROM report_hosts"
-        "                                    WHERE report = %llu"
-        "                                    AND host = results.host)"
-        "                                 AND name = 'EXIT_CODE'"
-        "                                 AND value = 'EXIT_NOTVULN')"
-        "                   AND family IN (" LSC_FAMILY_LIST "))))",
-        report);
-      return autofp_sql;
+      case 1:
+        autofp_sql = g_string_new ("");
+        g_string_append_printf
+         (autofp_sql,
+          " AND"
+          " (((SELECT family FROM nvts WHERE oid = results.nvt)"
+          "   IN (" LSC_FAMILY_LIST "))"
+          "  OR"
+          "  (SELECT ROWID FROM nvts"
+          "   WHERE oid = results.nvt"
+          "   AND cve NOT IN (SELECT cve FROM nvts"
+          "                   WHERE oid IN (SELECT source_name"
+          "                                 FROM report_host_details"
+          "                                 WHERE report_host"
+          "                                 = (SELECT id"
+          "                                    FROM report_hosts"
+          "                                    WHERE report = %llu"
+          "                                    AND host = results.host)"
+          "                                 AND name = 'EXIT_CODE'"
+          "                                 AND value = 'EXIT_NOTVULN')"
+          "                   AND family IN (" LSC_FAMILY_LIST "))))",
+          report);
+        break;
+      case 2:
+        autofp_sql = g_string_new ("");
+        g_string_append_printf
+         (autofp_sql,
+          " AND"
+          " (((SELECT family FROM nvts WHERE oid = results.nvt)"
+          "   IN (" LSC_FAMILY_LIST "))"
+          "  OR"
+          "  (SELECT ROWID FROM nvts"
+          "   WHERE oid = results.nvt"
+          "   AND (SELECT cve FROM nvts"
+          "        WHERE oid IN (SELECT source_name"
+          "                      FROM report_host_details"
+          "                      WHERE report_host"
+          "                      = (SELECT id"
+          "                         FROM report_hosts"
+          "                         WHERE report = %llu"
+          "                         AND host = results.host)"
+          "                      AND name = 'EXIT_CODE'"
+          "                      AND value = 'EXIT_NOTVULN')"
+          "        AND family IN (" LSC_FAMILY_LIST "))"
+          "       NOT LIKE ('%%' || cve || '%%')))",
+          report);
+        break;
+      default:
+        return NULL;
     }
-  return NULL;
+  return autofp_sql;
 }
 
 /**
@@ -14940,31 +14967,59 @@ report_count (report_t report, const char *type, int override, const char *host)
  * @brief Check if a result matches the autofp filter criteria.
  *
  * @param[in]  results        Result iterator.
+ * @param[in]  autofp         Whether to apply the auto FP filter.
  *
  * @return 1 if match, 0 otherwise.
  */
 static int
-report_counts_autofp_match (iterator_t *results)
+report_counts_autofp_match (iterator_t *results, int autofp)
 {
-  if (sql_int (0, 0,
-               "SELECT count (*) FROM nvts"
-               " WHERE oid = '%s'"
-               " AND"
-               " (family IN (" LSC_FAMILY_LIST ")"
-               "  OR cve NOT IN (SELECT cve FROM nvts"
-               "                 WHERE oid IN (SELECT source_name"
-               "                               FROM report_host_details"
-               "                               WHERE report_host"
-               "                               = (SELECT id FROM report_hosts"
-               "                                  WHERE report = %llu"
-               "                                  AND host = '%s')"
-               "                               AND name = 'EXIT_CODE'"
-               "                               AND value = 'EXIT_NOTVULN')"
-               "                 AND family IN (" LSC_FAMILY_LIST ")));",
-               (const char*) sqlite3_column_text (results->stmt, 1),
-               sqlite3_column_int64 (results->stmt, 6),
-               (const char*) sqlite3_column_text (results->stmt, 3)))
-    return 1;
+  switch (autofp)
+    {
+      case 1:
+        if (sql_int (0, 0,
+                     "SELECT count (*) FROM nvts"
+                     " WHERE oid = '%s'"
+                     " AND"
+                     " (family IN (" LSC_FAMILY_LIST ")"
+                     "  OR cve NOT IN (SELECT cve FROM nvts"
+                     "                 WHERE oid IN (SELECT source_name"
+                     "                               FROM report_host_details"
+                     "                               WHERE report_host"
+                     "                               = (SELECT id FROM report_hosts"
+                     "                                  WHERE report = %llu"
+                     "                                  AND host = '%s')"
+                     "                               AND name = 'EXIT_CODE'"
+                     "                               AND value = 'EXIT_NOTVULN')"
+                     "                 AND family IN (" LSC_FAMILY_LIST ")));",
+                     (const char*) sqlite3_column_text (results->stmt, 1),
+                     sqlite3_column_int64 (results->stmt, 6),
+                     (const char*) sqlite3_column_text (results->stmt, 3)))
+          return 1;
+        break;
+      case 2:
+        if (sql_int (0, 0,
+                     "SELECT count (*) FROM nvts"
+                     " WHERE oid = '%s'"
+                     " AND"
+                     " (family IN (" LSC_FAMILY_LIST ")"
+                     "  OR (SELECT cve FROM nvts"
+                     "      WHERE oid IN (SELECT source_name"
+                     "                    FROM report_host_details"
+                     "                    WHERE report_host"
+                     "                    = (SELECT id FROM report_hosts"
+                     "                       WHERE report = %llu"
+                     "                       AND host = '%s')"
+                     "                    AND name = 'EXIT_CODE'"
+                     "                    AND value = 'EXIT_NOTVULN')"
+                     "      AND family IN (" LSC_FAMILY_LIST "))"
+                     "     NOT LIKE ('%%' || cve || '%%'));",
+                     (const char*) sqlite3_column_text (results->stmt, 1),
+                     sqlite3_column_int64 (results->stmt, 6),
+                     (const char*) sqlite3_column_text (results->stmt, 3)))
+          return 1;
+        break;
+    }
   return 0;
 }
 
@@ -14982,7 +15037,7 @@ static int
 report_counts_match (iterator_t *results, const char *search_phrase,
                      const char *min_cvss_base, int autofp)
 {
-  if (autofp && (report_counts_autofp_match (results) == 0))
+  if (autofp && (report_counts_autofp_match (results, autofp) == 0))
     return 0;
 
   if (search_phrase)
@@ -17729,7 +17784,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     sort_order ? "ascending" : "descending",
     levels,
     search_phrase ? search_phrase : "",
-    autofp ? 1 : 0,
+    autofp,
     notes ? 1 : 0,
     overrides ? 1 : 0,
     apply_overrides ? 1 : 0,
