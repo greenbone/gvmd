@@ -1,3 +1,7 @@
+2012-05-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_counts_id_filt): Add missing column to query.
+
 2012-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (where_autofp, report_counts_autofp_match): If autofp

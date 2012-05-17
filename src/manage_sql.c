@@ -15671,7 +15671,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
             quoted_host = sql_quote (host);
           init_iterator (&results,
                          "SELECT results.ROWID, results.nvt, results.type,"
-                         " results.host, results.port, results.description"
+                         " results.host, results.port, results.description,"
+                         " report_results.report"
                          " FROM results, report_results"
                          " WHERE"
                          "%s%s%s"
