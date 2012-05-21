@@ -16007,8 +16007,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       gchar *max_checks, *max_hosts;
 
-                      max_checks = task_preference_value (task, "max_checks");
-                      max_hosts = task_preference_value (task, "max_hosts");
+                      max_checks = task_preference_value (index, "max_checks");
+                      max_hosts = task_preference_value (index, "max_hosts");
 
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<preferences>"

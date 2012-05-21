@@ -1,3 +1,8 @@
+2012-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS brief case use the
+	correct variable to get the task preferences.  Backport from trunk r13478.
+
 2012-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (run_task): Set the report run status explicitly, because
