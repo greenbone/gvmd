@@ -1,3 +1,7 @@
+2012-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (init_report_host_details_iterator): Add closed CVEs.
+
 2012-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS brief case use the

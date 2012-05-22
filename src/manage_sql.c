@@ -13982,7 +13982,18 @@ init_report_host_details_iterator (iterator_t* iterator,
                  "SELECT ROWID, name, value, source_type, source_name,"
                  " source_description"
                  " FROM report_host_details WHERE report_host = %llu"
-                 " AND NOT name IN ('detected_at', 'detected_by');",
+                 " AND NOT name IN ('detected_at', 'detected_by')"
+                 " UNION"
+                 " SELECT 0, 'Closed CVE', cve, 'openvasmd', oid, ''"
+                 " FROM nvts"
+                 " WHERE cve != 'NOCVE'"
+                 " AND family IN (" LSC_FAMILY_LIST ")"
+                 " AND oid IN"
+                 " (SELECT source_name FROM report_host_details"
+                 "  WHERE report_host = %llu"
+                 "  AND name = 'EXIT_CODE'"
+                 "  AND value = 'EXIT_NOTVULN');",
+                 report_host,
                  report_host);
 }
 
