@@ -1,3 +1,8 @@
+2012-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (validate_host): Only do the length check when the last
+	octet is a number, because hostnames can have any number of parts.
+
 2012-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (init_report_host_details_iterator): Add closed CVEs.
