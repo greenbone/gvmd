@@ -1,5 +1,23 @@
 2012-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Convert the results closed by autofp into false positives, instead of just
+	excluding them.
+
+	* src/manage_sql.c (where_levels_auto): New function.
+	(where_autofp): Correct SQL.
+	(init_result_iterator): Treat closed results as false positives by adding
+	an auto_type column to the query
+	(original_type): Doc typo.
+	(result_iterator_type): Take new auto_type column into account.
+	(result_iterator_descr, result_iterator_nvt_cvss_base_double): Increment
+	for new column.
+	(report_scan_result_count): Add auto_type to query, as above.
+	(report_counts_autofp_match): Add special case for open ports.  Correct
+	SQL.
+	(report_count_filtered): Add a False Positive special case for autofp.
+
+2012-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (validate_host): Only do the length check when the last
 	octet is a number, because hostnames can have any number of parts.
 

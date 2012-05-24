@@ -12957,6 +12957,104 @@ where_levels (const char* levels)
 }
 
 /**
+ * @brief Return SQL WHERE for restricting a SELECT to levels.
+ *
+ * @param[in]  levels  String describing threat levels (message types)
+ *                     to include in report (for example, "hmlgd" for
+ *                     High, Medium, Low, loG and Debug).  All levels if
+ *                     NULL.
+ *
+ * @return WHERE clause for levels if one is required, else NULL.
+ */
+static GString *
+where_levels_auto (const char* levels)
+{
+  int count;
+  GString *levels_sql;
+
+  /* Generate SQL for constraints on message type, according to levels. */
+
+  if (levels == NULL || strlen (levels) == 0)
+    return NULL;
+
+  levels_sql = NULL;
+  count = 0;
+
+  /* High. */
+  if (strchr (levels, 'h'))
+    {
+      count = 1;
+      levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'Security Hole'");
+    }
+
+  /* Medium. */
+  if (strchr (levels, 'm'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'Security Warning'");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR new_type = 'Security Warning'");
+      count++;
+    }
+
+  /* Low. */
+  if (strchr (levels, 'l'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'Security Note'");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR new_type = 'Security Note'");
+      count++;
+    }
+
+  /* loG. */
+  if (strchr (levels, 'g'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'Log Message'");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR new_type = 'Log Message'");
+      count++;
+    }
+
+  /* Debug. */
+  if (strchr (levels, 'd'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'Debug Message'");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR new_type = 'Debug Message'");
+      count++;
+    }
+
+  /* False Positive. */
+  if (strchr (levels, 'f'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'False Positive')) OR auto_type = 'False_Positive')");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR new_type = 'False Positive')) OR auto_type = 'False Positive')");
+      count++;
+    }
+  else if (count)
+    levels_sql = g_string_append (levels_sql, ")))");
+
+  if (count == 6)
+    {
+      /* All levels. */
+      g_string_free (levels_sql, TRUE);
+      levels_sql = NULL;
+    }
+
+  return levels_sql;
+}
+
+/**
  * @brief Return SQL WHERE for restricting a SELECT to levels by type column.
  *
  * @param[in]  levels  String describing threat levels (message types)
@@ -13151,11 +13249,13 @@ where_autofp (int autofp, report_t report)
           " AND"
           " (((SELECT family FROM nvts WHERE oid = results.nvt)"
           "   IN (" LSC_FAMILY_LIST "))"
+          "  OR results.nvt == '0'"
           "  OR"
           "  (SELECT ROWID FROM nvts"
           "   WHERE oid = results.nvt"
-          "   AND cve != 'NOCVE'"
-          "   AND cve NOT IN (SELECT cve FROM nvts"
+          "   AND"
+          "   (cve == 'NOCVE'"
+          "    OR cve NOT IN (SELECT cve FROM nvts"
           "                   WHERE oid IN (SELECT source_name"
           "                                 FROM report_host_details"
           "                                 WHERE report_host"
@@ -13165,7 +13265,7 @@ where_autofp (int autofp, report_t report)
           "                                    AND host = results.host)"
           "                                 AND name = 'EXIT_CODE'"
           "                                 AND value = 'EXIT_NOTVULN')"
-          "                   AND family IN (" LSC_FAMILY_LIST "))))",
+          "                   AND family IN (" LSC_FAMILY_LIST ")))))",
           report);
         break;
       case 2:
@@ -13175,11 +13275,13 @@ where_autofp (int autofp, report_t report)
           " AND"
           " (((SELECT family FROM nvts WHERE oid = results.nvt)"
           "   IN (" LSC_FAMILY_LIST "))"
+          "  OR results.nvt == '0'"
           "  OR"
           "  (SELECT ROWID FROM nvts"
           "   WHERE oid = results.nvt"
-          "   AND cve != 'NOCVE'"
-          "   AND (SELECT cve FROM nvts"
+          "   AND"
+          "   (cve == 'NOCVE'"
+          "    OR (SELECT cve FROM nvts"
           "        WHERE oid IN (SELECT source_name"
           "                      FROM report_host_details"
           "                      WHERE report_host"
@@ -13190,7 +13292,7 @@ where_autofp (int autofp, report_t report)
           "                      AND name = 'EXIT_CODE'"
           "                      AND value = 'EXIT_NOTVULN')"
           "        AND family IN (" LSC_FAMILY_LIST "))"
-          "       NOT LIKE ('%%' || cve || '%%')))",
+          "       NOT LIKE ('%%' || cve || '%%'))))",
           report);
         break;
       default:
@@ -13234,7 +13336,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                       int autofp, const char* search_phrase,
                       const char* min_cvss_base, int override)
 {
-  GString *levels_sql, *phrase_sql, *cvss_sql, *autofp_sql;
+  GString *levels_sql, *phrase_sql, *cvss_sql;
   gchar* sql;
 
   assert ((report && result) == 0);
@@ -13243,15 +13345,14 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
 
   if (report)
     {
-      gchar *new_type_sql;
+      gchar *new_type_sql, *auto_type_sql;
 
       if (sort_field == NULL) sort_field = "type";
       if (levels == NULL) levels = "hmlgdf";
 
-      levels_sql = where_levels (levels);
+      levels_sql = where_levels_auto (levels);
       phrase_sql = where_search_phrase (search_phrase);
       cvss_sql = where_cvss_base (min_cvss_base);
-      autofp_sql = where_autofp (autofp, report);
 
       if (override)
         {
@@ -13298,9 +13399,71 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       else
         new_type_sql = g_strdup ("type");
 
+      switch (autofp)
+        {
+          case 1:
+            auto_type_sql = g_strdup_printf
+              ("(CASE WHEN"
+               "  (((SELECT family FROM nvts WHERE oid = results.nvt)"
+               "    IN (" LSC_FAMILY_LIST "))"
+               "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
+               "   OR"
+               "   (SELECT ROWID FROM nvts"
+               "    WHERE oid = results.nvt"
+               "    AND"
+               "    (cve == 'NOCVE'"
+               "     OR cve NOT IN (SELECT cve FROM nvts"
+               "                    WHERE oid IN (SELECT source_name"
+               "                                  FROM report_host_details"
+               "                                  WHERE report_host"
+               "                                  = (SELECT id"
+               "                                     FROM report_hosts"
+               "                                     WHERE report = %llu"
+               "                                     AND host = results.host)"
+               "                                  AND name = 'EXIT_CODE'"
+               "                                  AND value = 'EXIT_NOTVULN')"
+               "                    AND family IN (" LSC_FAMILY_LIST ")))))"
+               " THEN NULL"
+               " ELSE 'False Positive' END)",
+               report);
+            break;
+
+          case 2:
+            auto_type_sql = g_strdup_printf
+              ("(CASE WHEN"
+               "  (((SELECT family FROM nvts WHERE oid = results.nvt)"
+               "    IN (" LSC_FAMILY_LIST "))"
+               "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
+               "   OR"
+               "   (SELECT ROWID FROM nvts"
+               "    WHERE oid = results.nvt"
+               "    AND"
+               "    (cve == 'NOCVE'"
+               "     OR (SELECT cve FROM nvts"
+               "         WHERE oid IN (SELECT source_name"
+               "                       FROM report_host_details"
+               "                       WHERE report_host"
+               "                       = (SELECT id"
+               "                          FROM report_hosts"
+               "                          WHERE report = %llu"
+               "                          AND host = results.host)"
+               "                       AND name = 'EXIT_CODE'"
+               "                       AND value = 'EXIT_NOTVULN')"
+               "         AND family IN (" LSC_FAMILY_LIST "))"
+               "        NOT LIKE ('%%' || cve || '%%'))))"
+               " THEN NULL"
+               " ELSE 'False Positive' END)",
+               report);
+             break;
+
+           default:
+             auto_type_sql = g_strdup ("NULL");
+             break;
+         }
+
       if (host)
         sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
-                               " nvt, type, %s AS new_type,"
+                               " nvt, type, %s AS new_type, %s AS auto_type"
                                " results.description,"
                                " (SELECT cvss_base FROM nvts"
                                "  WHERE nvts.oid = results.nvt)"
@@ -13313,16 +13476,16 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                "%s"
                                "%s"
                                "%s"
-                               "%s"
                                " LIMIT %i OFFSET %i;",
                                new_type_sql,
+                               auto_type_sql,
                                report,
                                levels_sql ? levels_sql->str : "",
                                host,
-                               autofp_sql ? autofp_sql->str : "",
                                phrase_sql ? phrase_sql->str : "",
                                cvss_sql ? cvss_sql->str : "",
                                ascending
+// FIX collate as below
                                 ? ((strcmp (sort_field, "port") == 0)
                                     ? " ORDER BY"
                                       " port,"
@@ -13364,7 +13527,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                first_result);
       else
         sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
-                               " nvt, type, %s AS new_type,"
+                               " nvt, type, %s AS new_type, %s AS auto_type,"
                                " results.description,"
                                " (SELECT cvss_base FROM nvts"
                                "  WHERE nvts.oid = results.nvt)"
@@ -13374,14 +13537,13 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                "%s"
                                "%s"
                                "%s"
-                               "%s"
                                " AND report_results.result = results.ROWID"
                                "%s"
                                " LIMIT %i OFFSET %i;",
                                new_type_sql,
+                               auto_type_sql,
                                report,
                                levels_sql ? levels_sql->str : "",
-                               autofp_sql ? autofp_sql->str : "",
                                phrase_sql ? phrase_sql->str : "",
                                cvss_sql ? cvss_sql->str : "",
                                ascending
@@ -13390,7 +13552,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                     : ((strcmp (sort_field, "port") == 0)
                                         ? " ORDER BY host COLLATE collate_ip,"
                                           " port,"
-                                          " new_type"
+                                          " (CASE WHEN auto_type IS NULL"
+                                          "  THEN new_type ELSE auto_type END)"
                                           " COLLATE collate_message_type DESC,"
                                           " (CAST ((CASE WHEN cvss_base >= 0.0"
                                           "        THEN cvss_base ELSE 0.0 END)"
@@ -13398,7 +13561,9 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                           " nvt,"
                                           " description"
                                         : " ORDER BY host COLLATE collate_ip,"
-                                          " new_type COLLATE collate_message_type,"
+                                          " (CASE WHEN auto_type IS NULL"
+                                          "  THEN new_type ELSE auto_type END)"
+                                          " COLLATE collate_message_type,"
                                           " port,"
                                           " (CAST ((CASE WHEN cvss_base >= 0.0"
                                           "        THEN cvss_base ELSE 0.0 END)"
@@ -13410,7 +13575,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                     : ((strcmp (sort_field, "port") == 0)
                                         ? " ORDER BY host COLLATE collate_ip,"
                                           " port DESC,"
-                                          " new_type"
+                                          " (CASE WHEN auto_type IS NULL"
+                                          "  THEN new_type ELSE auto_type END)"
                                           " COLLATE collate_message_type DESC,"
                                           " (CAST ((CASE WHEN cvss_base >= 0.0"
                                           "        THEN cvss_base ELSE 0.0 END)"
@@ -13418,7 +13584,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                           " nvt,"
                                           " description"
                                         : " ORDER BY host COLLATE collate_ip,"
-                                          " new_type"
+                                          " (CASE WHEN auto_type IS NULL"
+                                          "  THEN new_type ELSE auto_type END)"
                                           " COLLATE collate_message_type DESC,"
                                           " port,"
                                           " (CAST ((CASE WHEN cvss_base >= 0.0"
@@ -13432,8 +13599,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       if (levels_sql) g_string_free (levels_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
-      if (autofp_sql) g_string_free (autofp_sql, TRUE);
       g_free (new_type_sql);
+      g_free (auto_type_sql);
     }
   else if (result)
     {
@@ -13486,7 +13653,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
         new_type_sql = g_strdup ("type");
 
       sql = g_strdup_printf ("SELECT ROWID, subnet, host, port, nvt,"
-                             " type, %s, description"
+                             // FIX auto_type
+                             " type, %s, new_type, description"
                              " FROM results"
                              " WHERE ROWID = %llu;",
                              new_type_sql,
@@ -13496,7 +13664,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
     }
   else
     sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
-                           " type, type, description"
+                           " type, type, type, description"
                            " FROM results, report_results, reports"
                            " WHERE results.ROWID = report_results.result"
                            " AND report_results.report = reports.ROWID"
@@ -13706,7 +13874,7 @@ result_iterator_nvt_xref (iterator_t *iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The origianl type of the result.  Caller must only use before calling
+ * @return The original type of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
 DEF_ACCESS (original_type, 5);
@@ -13714,14 +13882,25 @@ DEF_ACCESS (original_type, 5);
 /**
  * @brief Get the original type from a result iterator.
  *
- * This is the column 'new_type', the overridden type.
+ * This is the the autofp adjusted overridden type.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The origianl type of the result.  Caller must only use before calling
+ * @return The type of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (type, 6);
+const char*
+result_iterator_type (iterator_t *iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  /* auto_type */
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 7);
+  if (ret == NULL)
+    /* new_type */
+    ret = (const char*) sqlite3_column_text (iterator->stmt, 6);
+  return ret;
+}
 
 /**
  * @brief Get the descr from a result iterator.
@@ -13731,7 +13910,7 @@ DEF_ACCESS (type, 6);
  * @return The descr of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (descr, 7);
+DEF_ACCESS (descr, 8);
 
 /**
  * @brief Get the CVSS base from a result iterator.
@@ -13744,7 +13923,7 @@ double
 result_iterator_nvt_cvss_base_double (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return sqlite3_column_double (iterator->stmt, 8);
+  return sqlite3_column_double (iterator->stmt, 9);
 }
 
 #undef DEF_ACCESS
@@ -14560,10 +14739,9 @@ report_scan_result_count (report_t report, const char* levels,
                           const char* search_phrase, const char* min_cvss_base,
                           int override, int autofp, int* count)
 {
-  GString *autofp_sql, *levels_sql, *phrase_sql, *cvss_sql;
-  gchar *new_type_sql = NULL;
+  GString *levels_sql, *phrase_sql, *cvss_sql;
+  gchar *new_type_sql = NULL, *auto_type_sql = NULL;
 
-  autofp_sql = where_autofp (autofp, report);
   phrase_sql = where_search_phrase (search_phrase);
   cvss_sql = where_cvss_base (min_cvss_base);
 
@@ -14573,7 +14751,7 @@ report_scan_result_count (report_t report, const char* levels,
 
       assert (current_credentials.uuid);
 
-      levels_sql = where_levels (levels);
+      levels_sql = where_levels_auto (levels);
 
       ov = g_strdup_printf
             ("SELECT overrides.new_threat"
@@ -14610,29 +14788,99 @@ report_scan_result_count (report_t report, const char* levels,
                                       " AS new_type",
                                       ov, ov);
 
+      switch (autofp)
+        {
+          case 1:
+            auto_type_sql = g_strdup_printf
+              (", (CASE WHEN"
+               "   (((SELECT family FROM nvts WHERE oid = results.nvt)"
+               "    IN (" LSC_FAMILY_LIST "))"
+               // FIX align
+               "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
+               "   OR"
+               "   (SELECT ROWID FROM nvts"
+               "    WHERE oid = results.nvt"
+               "    AND"
+               "    (cve == 'NOCVE'"
+               "     OR cve NOT IN (SELECT cve FROM nvts"
+               "                    WHERE oid IN (SELECT source_name"
+               "                                  FROM report_host_details"
+               "                                  WHERE report_host"
+               "                                  = (SELECT id"
+               "                                     FROM report_hosts"
+               "                                     WHERE report = %llu"
+               "                                     AND host = results.host)"
+               "                                  AND name = 'EXIT_CODE'"
+               "                                  AND value = 'EXIT_NOTVULN')"
+               "                    AND family IN (" LSC_FAMILY_LIST ")))))"
+               "   THEN NULL"
+               "   ELSE 'False Positive' END)"
+               "   AS auto_type",
+               report);
+             break;
+
+          case 2:
+            auto_type_sql = g_strdup_printf
+              (", (CASE WHEN"
+               "   ((((SELECT family FROM nvts WHERE oid = results.nvt)"
+               "    IN (" LSC_FAMILY_LIST "))"
+               // FIX align
+               "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
+               "   OR"
+               "   (SELECT ROWID FROM nvts"
+               "    WHERE oid = results.nvt"
+               "    AND"
+               "    (cve = 'NOCVE'"
+               "     OR (SELECT cve FROM nvts"
+               "         WHERE oid IN (SELECT source_name"
+               "                       FROM report_host_details"
+               "                       WHERE report_host"
+               "                       = (SELECT id"
+               "                          FROM report_hosts"
+               "                          WHERE report = %llu"
+               "                          AND host = results.host)"
+               "                       AND name = 'EXIT_CODE'"
+               "                       AND value = 'EXIT_NOTVULN')"
+               "         AND family IN (" LSC_FAMILY_LIST "))"
+               "        NOT LIKE ('%%' || cve || '%%')))))"
+               "   THEN NULL"
+               "   ELSE 'False Positive' END)"
+               "   AS auto_type",
+               report);
+             break;
+
+           default:
+             auto_type_sql = g_strdup (", NULL AS auto_type");
+             break;
+         }
+
       g_free (ov);
     }
   else
-    levels_sql = where_levels_type (levels);
+    {
+      // FIX this case
+      auto_type_sql = g_strdup ("NULL");  // FIX AS auto_type
+      levels_sql = where_levels_type (levels);
+    }
 
   *count = sql_int (0, 0,
-                    "SELECT count(results.ROWID)%s"
+                    "SELECT count(results.ROWID)%s%s"
                     " FROM results, report_results"
                     " WHERE results.ROWID = report_results.result"
-                    "%s%s%s%s"
+                    "%s%s%s"
                     " AND report_results.report = %llu;",
                     new_type_sql ? new_type_sql : "",
+                    auto_type_sql ? auto_type_sql : "",
                     levels_sql ? levels_sql->str : "",
-                    autofp_sql ? autofp_sql->str : "",
                     phrase_sql ? phrase_sql->str : "",
                     cvss_sql ? cvss_sql->str : "",
                     report);
 
-  if (autofp_sql) g_string_free (autofp_sql, TRUE);
   if (levels_sql) g_string_free (levels_sql, TRUE);
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
   if (cvss_sql) g_string_free (cvss_sql, TRUE);
   g_free (new_type_sql);
+  g_free (auto_type_sql);
 
   return 0;
 }
@@ -14987,6 +15235,10 @@ report_count (report_t report, const char *type, int override, const char *host)
 static int
 report_counts_autofp_match (iterator_t *results, int autofp)
 {
+  if (strcmp (result_iterator_nvt_oid (results), "0") == 0)
+    /* Open port special case. */
+    return 1;
+
   switch (autofp)
     {
       case 1:
@@ -14995,9 +15247,9 @@ report_counts_autofp_match (iterator_t *results, int autofp)
                      " WHERE oid = '%s'"
                      " AND"
                      " (family IN (" LSC_FAMILY_LIST ")"
-                     "  OR"
-                     "  (cve != 'NOCVE'"
-                     "   AND cve NOT IN (SELECT cve FROM nvts"
+                     "  OR cve == 'NOCVE'"
+                     "  OR cve NOT IN (SELECT cve FROM nvts"
+                     // FIX align
                      "                   WHERE oid IN (SELECT source_name"
                      "                                 FROM report_host_details"
                      "                                 WHERE report_host"
@@ -15019,19 +15271,18 @@ report_counts_autofp_match (iterator_t *results, int autofp)
                      " WHERE oid = '%s'"
                      " AND"
                      " (family IN (" LSC_FAMILY_LIST ")"
-                     "  OR"
-                     "  (cve != 'NOCVE'"
-                     "   AND (SELECT cve FROM nvts"
-                     "        WHERE oid IN (SELECT source_name"
-                     "                      FROM report_host_details"
-                     "                      WHERE report_host"
-                     "                      = (SELECT id FROM report_hosts"
-                     "                         WHERE report = %llu"
-                     "                         AND host = '%s')"
-                     "                      AND name = 'EXIT_CODE'"
-                     "                      AND value = 'EXIT_NOTVULN')"
-                     "        AND family IN (" LSC_FAMILY_LIST "))"
-                     "       NOT LIKE ('%%' || cve || '%%')));",
+                     "  OR cve == 'NOCVE'"
+                     "  OR (SELECT cve FROM nvts"
+                     "      WHERE oid IN (SELECT source_name"
+                     "                    FROM report_host_details"
+                     "                    WHERE report_host"
+                     "                    = (SELECT id FROM report_hosts"
+                     "                       WHERE report = %llu"
+                     "                       AND host = '%s')"
+                     "                    AND name = 'EXIT_CODE'"
+                     "                    AND value = 'EXIT_NOTVULN')"
+                     "      AND family IN (" LSC_FAMILY_LIST "))"
+                     "     NOT LIKE ('%%' || cve || '%%')));",
                      (const char*) sqlite3_column_text (results->stmt, 1),
                      sqlite3_column_int64 (results->stmt, 6),
                      (const char*) sqlite3_column_text (results->stmt, 3)))
@@ -15443,7 +15694,7 @@ report_count_filtered (report_t report, const char *type, int override,
     }
   else if (host)
     {
-      GString *autofp_sql = where_autofp (autofp, report);
+      GString *autofp_sql = where_autofp (autofp, report);  // FIX?
       GString *phrase_sql = where_search_phrase (search_phrase);
       GString *cvss_sql = where_cvss_base (min_cvss_base);
       gchar* quoted_host = sql_quote (host);
@@ -15463,6 +15714,97 @@ report_count_filtered (report_t report, const char *type, int override,
       if (autofp_sql) g_string_free (autofp_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
+      return count;
+    }
+  else if (strcmp (type, "False Positive") == 0)
+    {
+      int count;
+      GString *phrase_sql = where_search_phrase (search_phrase);
+      GString *cvss_sql = where_cvss_base (min_cvss_base);
+      gchar *auto_type_sql;
+
+      // FIX same block above
+      switch (autofp)
+        {
+          case 1:
+            auto_type_sql = g_strdup_printf
+              (", (CASE WHEN"
+               "   (((SELECT family FROM nvts WHERE oid = results.nvt)"
+               "    IN (" LSC_FAMILY_LIST "))"
+               // FIX align
+               "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
+               "   OR"
+               "   (SELECT ROWID FROM nvts"
+               "    WHERE oid = results.nvt"
+               "    AND"
+               "    (cve == 'NOCVE'"
+               "     OR cve NOT IN (SELECT cve FROM nvts"
+               "                    WHERE oid IN (SELECT source_name"
+               "                                  FROM report_host_details"
+               "                                  WHERE report_host"
+               "                                  = (SELECT id"
+               "                                     FROM report_hosts"
+               "                                     WHERE report = %llu"
+               "                                     AND host = results.host)"
+               "                                  AND name = 'EXIT_CODE'"
+               "                                  AND value = 'EXIT_NOTVULN')"
+               "                    AND family IN (" LSC_FAMILY_LIST ")))))"
+               "   THEN NULL"
+               "   ELSE 'False Positive' END)"
+               "   AS auto_type",
+               report);
+             break;
+
+          case 2:
+            auto_type_sql = g_strdup_printf
+              (", (CASE WHEN"
+               "   ((((SELECT family FROM nvts WHERE oid = results.nvt)"
+               "    IN (" LSC_FAMILY_LIST "))"
+               // FIX align
+               "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
+               "   OR"
+               "   (SELECT ROWID FROM nvts"
+               "    WHERE oid = results.nvt"
+               "    AND"
+               "    (cve = 'NOCVE'"
+               "     OR (SELECT cve FROM nvts"
+               "         WHERE oid IN (SELECT source_name"
+               "                       FROM report_host_details"
+               "                       WHERE report_host"
+               "                       = (SELECT id"
+               "                          FROM report_hosts"
+               "                          WHERE report = %llu"
+               "                          AND host = results.host)"
+               "                       AND name = 'EXIT_CODE'"
+               "                       AND value = 'EXIT_NOTVULN')"
+               "         AND family IN (" LSC_FAMILY_LIST "))"
+               "        NOT LIKE ('%%' || cve || '%%')))))"
+               "   THEN NULL"
+               "   ELSE 'False Positive' END)"
+               "   AS auto_type",
+               report);
+             break;
+
+           default:
+             auto_type_sql = g_strdup (", NULL AS auto_type");
+             break;
+         }
+
+      count = sql_int (0, 0,
+                       "SELECT count(*)%s FROM results, report_results"
+                       " WHERE report_results.report = %llu"
+                       " AND report_results.result = results.ROWID"
+                       " AND (results.type = '%s' OR auto_type IS NOT NULL)"
+                       "%s%s;",
+                       auto_type_sql,
+                       report,
+                       type,
+                       phrase_sql ? phrase_sql->str : "",
+                       cvss_sql ? cvss_sql->str : "");
+
+      if (phrase_sql) g_string_free (phrase_sql, TRUE);
+      if (cvss_sql) g_string_free (cvss_sql, TRUE);
+      g_free (auto_type_sql);
       return count;
     }
   else
