@@ -14863,7 +14863,7 @@ report_scan_result_count (report_t report, const char* levels,
   else
     {
       // FIX this case
-      auto_type_sql = g_strdup ("NULL");  // FIX AS auto_type
+      auto_type_sql = g_strdup (", NULL AS auto_type");
       levels_sql = where_levels_type (levels);
     }
 
