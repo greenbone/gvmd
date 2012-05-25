@@ -15910,6 +15910,9 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
   if (debugs)
     *debugs = 0;
 
+  if (filtered_debugs)
+    *filtered_debugs = 0;
+
   if (search_phrase && strcmp (search_phrase, "") == 0)
     search_phrase = NULL;
 

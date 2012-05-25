@@ -1,5 +1,9 @@
 2012-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_counts_id_filt): Set filtered_debugs if given.
+
+2012-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_scan_result_count): Add missing SQL to
 	auto_type default case.
 
