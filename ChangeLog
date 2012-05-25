@@ -1,3 +1,11 @@
+2012-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (where_autofp, init_result_iterator)
+	(report_scan_result_count, report_counts_autofp_match)
+	(report_count_filtered): In the SQL for the partial case put the CVE
+	clause inside the inner NVT SELECT and use an EXISTS, instead of doing a
+	LIKE between a multi-row select and a single value.
+
 2012-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Convert the results closed by autofp into false positives, instead of just

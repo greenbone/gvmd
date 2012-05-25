@@ -13277,11 +13277,12 @@ where_autofp (int autofp, report_t report)
           "   IN (" LSC_FAMILY_LIST "))"
           "  OR results.nvt == '0'"
           "  OR"
-          "  (SELECT ROWID FROM nvts"
+          "  (SELECT ROWID FROM nvts AS outer_nvts"
           "   WHERE oid = results.nvt"
           "   AND"
           "   (cve == 'NOCVE'"
-          "    OR (SELECT cve FROM nvts"
+          "    OR NOT EXISTS"
+          "       (SELECT cve FROM nvts"
           "        WHERE oid IN (SELECT source_name"
           "                      FROM report_host_details"
           "                      WHERE report_host"
@@ -13291,8 +13292,8 @@ where_autofp (int autofp, report_t report)
           "                         AND host = results.host)"
           "                      AND name = 'EXIT_CODE'"
           "                      AND value = 'EXIT_NOTVULN')"
-          "        AND family IN (" LSC_FAMILY_LIST "))"
-          "       NOT LIKE ('%%' || cve || '%%'))))",
+          "        AND family IN (" LSC_FAMILY_LIST ")"
+          "        AND nvts.cve LIKE ('%%' || outer_nvts.cve || '%%')))))",
           report);
         break;
       default:
@@ -13435,11 +13436,12 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                "    IN (" LSC_FAMILY_LIST "))"
                "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
                "   OR"
-               "   (SELECT ROWID FROM nvts"
+               "   (SELECT ROWID FROM nvts AS outer_nvts"
                "    WHERE oid = results.nvt"
                "    AND"
                "    (cve == 'NOCVE'"
-               "     OR (SELECT cve FROM nvts"
+               "     OR NOT EXISTS"
+               "        (SELECT cve FROM nvts"
                "         WHERE oid IN (SELECT source_name"
                "                       FROM report_host_details"
                "                       WHERE report_host"
@@ -13449,8 +13451,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                "                          AND host = results.host)"
                "                       AND name = 'EXIT_CODE'"
                "                       AND value = 'EXIT_NOTVULN')"
-               "         AND family IN (" LSC_FAMILY_LIST "))"
-               "        NOT LIKE ('%%' || cve || '%%'))))"
+               "         AND family IN (" LSC_FAMILY_LIST ")"
+               "         AND nvts.cve LIKE ('%%' || outer_nvts.cve || '%%')))))"
                " THEN NULL"
                " ELSE 'False Positive' END)",
                report);
@@ -14827,11 +14829,12 @@ report_scan_result_count (report_t report, const char* levels,
                // FIX align
                "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
                "   OR"
-               "   (SELECT ROWID FROM nvts"
+               "   (SELECT ROWID FROM nvts AS outer_nvts"
                "    WHERE oid = results.nvt"
                "    AND"
                "    (cve = 'NOCVE'"
-               "     OR (SELECT cve FROM nvts"
+               "     OR NOT EXISTS"
+               "        (SELECT cve FROM nvts"
                "         WHERE oid IN (SELECT source_name"
                "                       FROM report_host_details"
                "                       WHERE report_host"
@@ -14841,8 +14844,9 @@ report_scan_result_count (report_t report, const char* levels,
                "                          AND host = results.host)"
                "                       AND name = 'EXIT_CODE'"
                "                       AND value = 'EXIT_NOTVULN')"
-               "         AND family IN (" LSC_FAMILY_LIST "))"
-               "        NOT LIKE ('%%' || cve || '%%')))))"
+               "         AND family IN (" LSC_FAMILY_LIST ")"
+               "         AND nvts.cve"
+               "         LIKE ('%%' || outer_nvts.cve || '%%'))))))"
                "   THEN NULL"
                "   ELSE 'False Positive' END)"
                "   AS auto_type",
@@ -15267,12 +15271,13 @@ report_counts_autofp_match (iterator_t *results, int autofp)
         break;
       case 2:
         if (sql_int (0, 0,
-                     "SELECT count (*) FROM nvts"
+                     "SELECT count (*) FROM nvts AS outer_nvts"
                      " WHERE oid = '%s'"
                      " AND"
                      " (family IN (" LSC_FAMILY_LIST ")"
                      "  OR cve == 'NOCVE'"
-                     "  OR (SELECT cve FROM nvts"
+                     "  OR NOT EXISTS"
+                     "     (SELECT cve FROM nvts"
                      "      WHERE oid IN (SELECT source_name"
                      "                    FROM report_host_details"
                      "                    WHERE report_host"
@@ -15281,8 +15286,9 @@ report_counts_autofp_match (iterator_t *results, int autofp)
                      "                       AND host = '%s')"
                      "                    AND name = 'EXIT_CODE'"
                      "                    AND value = 'EXIT_NOTVULN')"
-                     "      AND family IN (" LSC_FAMILY_LIST "))"
-                     "     NOT LIKE ('%%' || cve || '%%')));",
+                     "      AND family IN (" LSC_FAMILY_LIST ")"
+                     "      AND nvts.cve"
+                     "      LIKE ('%%' || outer_nvts.cve || '%%')));",
                      (const char*) sqlite3_column_text (results->stmt, 1),
                      sqlite3_column_int64 (results->stmt, 6),
                      (const char*) sqlite3_column_text (results->stmt, 3)))
@@ -15763,11 +15769,12 @@ report_count_filtered (report_t report, const char *type, int override,
                // FIX align
                "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
                "   OR"
-               "   (SELECT ROWID FROM nvts"
+               "   (SELECT ROWID FROM nvts AS outer_nvts"
                "    WHERE oid = results.nvt"
                "    AND"
                "    (cve = 'NOCVE'"
-               "     OR (SELECT cve FROM nvts"
+               "     OR NOT EXISTS"
+               "        (SELECT cve FROM nvts"
                "         WHERE oid IN (SELECT source_name"
                "                       FROM report_host_details"
                "                       WHERE report_host"
@@ -15777,8 +15784,9 @@ report_count_filtered (report_t report, const char *type, int override,
                "                          AND host = results.host)"
                "                       AND name = 'EXIT_CODE'"
                "                       AND value = 'EXIT_NOTVULN')"
-               "         AND family IN (" LSC_FAMILY_LIST "))"
-               "        NOT LIKE ('%%' || cve || '%%')))))"
+               "         AND family IN (" LSC_FAMILY_LIST ")"
+               "         AND nvts.cve"
+               "         LIKE ('%%' || outer_nvts.cve || '%%'))))))"
                "   THEN NULL"
                "   ELSE 'False Positive' END)"
                "   AS auto_type",
