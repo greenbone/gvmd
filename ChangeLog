@@ -1,5 +1,10 @@
 2012-05-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_scan_result_count): Generate the autofp SQL
+	always, whatever the value of override is.
+
+2012-05-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_scan_result_count)
 	(report_counts_autofp_match, report_count_filtered): Clean up SQL
 	alignment.

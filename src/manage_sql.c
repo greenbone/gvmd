@@ -14787,80 +14787,76 @@ report_scan_result_count (report_t report, const char* levels,
                                       " AS new_type",
                                       ov, ov);
 
-      switch (autofp)
-        {
-          case 1:
-            auto_type_sql = g_strdup_printf
-              (", (CASE WHEN"
-               "   (((SELECT family FROM nvts WHERE oid = results.nvt)"
-               "     IN (" LSC_FAMILY_LIST "))"
-               "    OR results.nvt == '0'" /* Open ports have 0 NVT. */
-               "    OR"
-               "    (SELECT ROWID FROM nvts"
-               "     WHERE oid = results.nvt"
-               "     AND"
-               "     (cve == 'NOCVE'"
-               "      OR cve NOT IN (SELECT cve FROM nvts"
-               "                     WHERE oid IN (SELECT source_name"
-               "                                   FROM report_host_details"
-               "                                   WHERE report_host"
-               "                                   = (SELECT id"
-               "                                      FROM report_hosts"
-               "                                      WHERE report = %llu"
-               "                                      AND host = results.host)"
-               "                                   AND name = 'EXIT_CODE'"
-               "                                   AND value = 'EXIT_NOTVULN')"
-               "                     AND family IN (" LSC_FAMILY_LIST ")))))"
-               "   THEN NULL"
-               "   ELSE 'False Positive' END)"
-               "   AS auto_type",
-               report);
-             break;
-
-          case 2:
-            auto_type_sql = g_strdup_printf
-              (", (CASE WHEN"
-               "   (((SELECT family FROM nvts WHERE oid = results.nvt)"
-               "     IN (" LSC_FAMILY_LIST "))"
-               "    OR results.nvt == '0'" /* Open ports have 0 NVT. */
-               "    OR"
-               "    (SELECT ROWID FROM nvts AS outer_nvts"
-               "     WHERE oid = results.nvt"
-               "     AND"
-               "     (cve = 'NOCVE'"
-               "      OR NOT EXISTS"
-               "         (SELECT cve FROM nvts"
-               "          WHERE oid IN (SELECT source_name"
-               "                        FROM report_host_details"
-               "                        WHERE report_host"
-               "                        = (SELECT id"
-               "                           FROM report_hosts"
-               "                           WHERE report = %llu"
-               "                           AND host = results.host)"
-               "                        AND name = 'EXIT_CODE'"
-               "                        AND value = 'EXIT_NOTVULN')"
-               "          AND family IN (" LSC_FAMILY_LIST ")"
-               "          AND nvts.cve"
-               "          LIKE ('%%' || outer_nvts.cve || '%%')))))"
-               "   THEN NULL"
-               "   ELSE 'False Positive' END)"
-               "   AS auto_type",
-               report);
-             break;
-
-           default:
-             auto_type_sql = g_strdup (", NULL AS auto_type");
-             break;
-         }
-
       g_free (ov);
     }
   else
+    levels_sql = where_levels_type (levels);
+
+  switch (autofp)
     {
-      // FIX this case
-      auto_type_sql = g_strdup (", NULL AS auto_type");
-      levels_sql = where_levels_type (levels);
-    }
+      case 1:
+        auto_type_sql = g_strdup_printf
+          (", (CASE WHEN"
+           "   (((SELECT family FROM nvts WHERE oid = results.nvt)"
+           "     IN (" LSC_FAMILY_LIST "))"
+           "    OR results.nvt == '0'" /* Open ports have 0 NVT. */
+           "    OR"
+           "    (SELECT ROWID FROM nvts"
+           "     WHERE oid = results.nvt"
+           "     AND"
+           "     (cve == 'NOCVE'"
+           "      OR cve NOT IN (SELECT cve FROM nvts"
+           "                     WHERE oid IN (SELECT source_name"
+           "                                   FROM report_host_details"
+           "                                   WHERE report_host"
+           "                                   = (SELECT id"
+           "                                      FROM report_hosts"
+           "                                      WHERE report = %llu"
+           "                                      AND host = results.host)"
+           "                                   AND name = 'EXIT_CODE'"
+           "                                   AND value = 'EXIT_NOTVULN')"
+           "                     AND family IN (" LSC_FAMILY_LIST ")))))"
+           "   THEN NULL"
+           "   ELSE 'False Positive' END)"
+           "   AS auto_type",
+           report);
+         break;
+
+      case 2:
+        auto_type_sql = g_strdup_printf
+          (", (CASE WHEN"
+           "   (((SELECT family FROM nvts WHERE oid = results.nvt)"
+           "     IN (" LSC_FAMILY_LIST "))"
+           "    OR results.nvt == '0'" /* Open ports have 0 NVT. */
+           "    OR"
+           "    (SELECT ROWID FROM nvts AS outer_nvts"
+           "     WHERE oid = results.nvt"
+           "     AND"
+           "     (cve = 'NOCVE'"
+           "      OR NOT EXISTS"
+           "         (SELECT cve FROM nvts"
+           "          WHERE oid IN (SELECT source_name"
+           "                        FROM report_host_details"
+           "                        WHERE report_host"
+           "                        = (SELECT id"
+           "                           FROM report_hosts"
+           "                           WHERE report = %llu"
+           "                           AND host = results.host)"
+           "                        AND name = 'EXIT_CODE'"
+           "                        AND value = 'EXIT_NOTVULN')"
+           "          AND family IN (" LSC_FAMILY_LIST ")"
+           "          AND nvts.cve"
+           "          LIKE ('%%' || outer_nvts.cve || '%%')))))"
+           "   THEN NULL"
+           "   ELSE 'False Positive' END)"
+           "   AS auto_type",
+           report);
+         break;
+
+       default:
+         auto_type_sql = g_strdup (", NULL AS auto_type");
+         break;
+     }
 
   *count = sql_int (0, 0,
                     "SELECT count(results.ROWID)%s%s"
