@@ -1,5 +1,11 @@
 2012-05-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_scan_result_count)
+	(report_counts_autofp_match, report_count_filtered): Clean up SQL
+	alignment.
+
+2012-05-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (get_results_data_t, omp_xml_handle_start_element)
 	(omp_xml_handle_end_element): Add autofp arg to GET_RESULTS.
 
