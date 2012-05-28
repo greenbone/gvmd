@@ -7103,7 +7103,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
               init_result_iterator (&results, 0,
                                     note_iterator_result (notes),
-                                    NULL, 0, 1, 1, NULL, NULL, 1, NULL, NULL, 0);
+                                    0, 1, 1, NULL, NULL, 1, NULL, NULL, 0);
               while (next (&results))
                 buffer_results_xml (buffer,
                                     &results,
@@ -7260,7 +7260,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
 
               init_result_iterator (&results, 0,
                                     override_iterator_result (overrides),
-                                    NULL, 0, 1, 1, NULL, NULL, 1, NULL, NULL, 0);
+                                    0, 1, 1, NULL, NULL, 1, NULL, NULL, 0);
               while (next (&results))
                 buffer_results_xml (buffer,
                                     &results,
@@ -9622,7 +9622,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">"
                                       "<results>");
-              init_result_iterator (&results, 0, result, NULL, 0, 1, 1, NULL,
+              init_result_iterator (&results, 0, result, 0, 1, 1, NULL,
                                     NULL, 1, NULL, NULL,
                                     get_results_data->apply_overrides);
               while (next (&results))

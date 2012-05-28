@@ -812,8 +812,8 @@ const char*
 report_iterator_uuid (iterator_t*);
 
 void
-init_result_iterator (iterator_t*, task_t, result_t, const char*, int, int,
-                      int, const char *, const char *, int, const char *,
+init_result_iterator (iterator_t*, task_t, result_t, int, int, int,
+                      const char *, const char *, int, const char *,
                       const char *, int);
 
 gboolean

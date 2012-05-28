@@ -1,3 +1,12 @@
+2012-05-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_result_iterator): Remove host case, as host is
+	always NULL.  Update callers.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c: Update init_result_iterator callers.
+
 2012-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_counts_id_filt): Set filtered_debugs if given.

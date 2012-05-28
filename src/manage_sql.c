@@ -13313,8 +13313,6 @@ where_autofp (int autofp, report_t report)
  *                            or 0 to use result.
  * @param[in]  result         Single result to iterate over.  0 for all.
  *                            Overridden by report.
- * @param[in]  host           Host whose results the iterator loops over.  All
- *                            results if NULL.  Only considered if report given.
  * @param[in]  first_result   The result to start from.  The results are 0
  *                            indexed.
  * @param[in]  max_results    The maximum number of results returned.
@@ -13332,7 +13330,7 @@ where_autofp (int autofp, report_t report)
  */
 void
 init_result_iterator (iterator_t* iterator, report_t report, result_t result,
-                      const char* host, int first_result, int max_results,
+                      int first_result, int max_results,
                       int ascending, const char* sort_field, const char* levels,
                       int autofp, const char* search_phrase,
                       const char* min_cvss_base, int override)
@@ -13463,140 +13461,75 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
              break;
          }
 
-      if (host)
-        sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
-                               " nvt, type, %s AS new_type, %s AS auto_type"
-                               " results.description,"
-                               " (SELECT cvss_base FROM nvts"
-                               "  WHERE nvts.oid = results.nvt)"
-                               " AS cvss_base"
-                               " FROM results, report_results"
-                               " WHERE report_results.report = %llu"
-                               "%s"
-                               " AND report_results.result = results.ROWID"
-                               " AND results.host = '%s'"
-                               "%s"
-                               "%s"
-                               "%s"
-                               " LIMIT %i OFFSET %i;",
-                               new_type_sql,
-                               auto_type_sql,
-                               report,
-                               levels_sql ? levels_sql->str : "",
-                               host,
-                               phrase_sql ? phrase_sql->str : "",
-                               cvss_sql ? cvss_sql->str : "",
-                               ascending
-// FIX collate as below
-                                ? ((strcmp (sort_field, "port") == 0)
-                                    ? " ORDER BY"
-                                      " port,"
-                                      " new_type"
-                                      " COLLATE collate_message_type DESC,"
-                                      " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                      "         THEN cvss_base ELSE 0.0 END)"
-                                      "       AS REAL)) DESC,"
-                                      " nvt,"
-                                      " description"
-                                    : " ORDER BY"
-                                      " new_type COLLATE collate_message_type,"
-                                      " port,"
-                                      " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                      "         THEN cvss_base ELSE 0.0 END)"
-                                      "       AS REAL)) DESC,"
-                                      " nvt,"
-                                      " description")
-                                : ((strcmp (sort_field, "port") == 0)
-                                    ? " ORDER BY"
-                                      " port DESC,"
-                                      " new_type"
-                                      " COLLATE collate_message_type DESC,"
-                                      " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                      "         THEN cvss_base ELSE 0.0 END)"
-                                      "       AS REAL)) DESC,"
-                                      " nvt,"
-                                      " description"
-                                    : " ORDER BY"
-                                      " new_type"
-                                      " COLLATE collate_message_type DESC,"
-                                      " port,"
-                                      " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                      "        THEN cvss_base ELSE 0.0 END)"
-                                      "       AS REAL)) DESC,"
-                                      " nvt,"
-                                      " description"),
-                               max_results,
-                               first_result);
-      else
-        sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
-                               " nvt, type, %s AS new_type, %s AS auto_type,"
-                               " results.description,"
-                               " (SELECT cvss_base FROM nvts"
-                               "  WHERE nvts.oid = results.nvt)"
-                               " AS cvss_base"
-                               " FROM results, report_results"
-                               " WHERE report_results.report = %llu"
-                               "%s"
-                               "%s"
-                               "%s"
-                               " AND report_results.result = results.ROWID"
-                               "%s"
-                               " LIMIT %i OFFSET %i;",
-                               new_type_sql,
-                               auto_type_sql,
-                               report,
-                               levels_sql ? levels_sql->str : "",
-                               phrase_sql ? phrase_sql->str : "",
-                               cvss_sql ? cvss_sql->str : "",
-                               ascending
-                                ? ((strcmp (sort_field, "ROWID") == 0)
-                                    ? " ORDER BY results.ROWID"
-                                    : ((strcmp (sort_field, "port") == 0)
-                                        ? " ORDER BY host COLLATE collate_ip,"
-                                          " port,"
-                                          " (CASE WHEN auto_type IS NULL"
-                                          "  THEN new_type ELSE auto_type END)"
-                                          " COLLATE collate_message_type DESC,"
-                                          " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                          "        THEN cvss_base ELSE 0.0 END)"
-                                          "       AS REAL)) DESC,"
-                                          " nvt,"
-                                          " description"
-                                        : " ORDER BY host COLLATE collate_ip,"
-                                          " (CASE WHEN auto_type IS NULL"
-                                          "  THEN new_type ELSE auto_type END)"
-                                          " COLLATE collate_message_type,"
-                                          " port,"
-                                          " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                          "        THEN cvss_base ELSE 0.0 END)"
-                                          "       AS REAL)) DESC,"
-                                          " nvt,"
-                                          " description"))
-                                : ((strcmp (sort_field, "ROWID") == 0)
-                                    ? " ORDER BY results.ROWID DESC"
-                                    : ((strcmp (sort_field, "port") == 0)
-                                        ? " ORDER BY host COLLATE collate_ip,"
-                                          " port DESC,"
-                                          " (CASE WHEN auto_type IS NULL"
-                                          "  THEN new_type ELSE auto_type END)"
-                                          " COLLATE collate_message_type DESC,"
-                                          " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                          "        THEN cvss_base ELSE 0.0 END)"
-                                          "       AS REAL)) DESC,"
-                                          " nvt,"
-                                          " description"
-                                        : " ORDER BY host COLLATE collate_ip,"
-                                          " (CASE WHEN auto_type IS NULL"
-                                          "  THEN new_type ELSE auto_type END)"
-                                          " COLLATE collate_message_type DESC,"
-                                          " port,"
-                                          " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                          "        THEN cvss_base ELSE 0.0 END)"
-                                          "       AS REAL)) DESC,"
-                                          " nvt,"
-                                          " description")),
-                               max_results,
-                               first_result);
+      sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
+                             " nvt, type, %s AS new_type, %s AS auto_type,"
+                             " results.description,"
+                             " (SELECT cvss_base FROM nvts"
+                             "  WHERE nvts.oid = results.nvt)"
+                             " AS cvss_base"
+                             " FROM results, report_results"
+                             " WHERE report_results.report = %llu"
+                             "%s"
+                             "%s"
+                             "%s"
+                             " AND report_results.result = results.ROWID"
+                             "%s"
+                             " LIMIT %i OFFSET %i;",
+                             new_type_sql,
+                             auto_type_sql,
+                             report,
+                             levels_sql ? levels_sql->str : "",
+                             phrase_sql ? phrase_sql->str : "",
+                             cvss_sql ? cvss_sql->str : "",
+                             ascending
+                              ? ((strcmp (sort_field, "ROWID") == 0)
+                                  ? " ORDER BY results.ROWID"
+                                  : ((strcmp (sort_field, "port") == 0)
+                                      ? " ORDER BY host COLLATE collate_ip,"
+                                        " port,"
+                                        " (CASE WHEN auto_type IS NULL"
+                                        "  THEN new_type ELSE auto_type END)"
+                                        " COLLATE collate_message_type DESC,"
+                                        " (CAST ((CASE WHEN cvss_base >= 0.0"
+                                        "        THEN cvss_base ELSE 0.0 END)"
+                                        "       AS REAL)) DESC,"
+                                        " nvt,"
+                                        " description"
+                                      : " ORDER BY host COLLATE collate_ip,"
+                                        " (CASE WHEN auto_type IS NULL"
+                                        "  THEN new_type ELSE auto_type END)"
+                                        " COLLATE collate_message_type,"
+                                        " port,"
+                                        " (CAST ((CASE WHEN cvss_base >= 0.0"
+                                        "        THEN cvss_base ELSE 0.0 END)"
+                                        "       AS REAL)) DESC,"
+                                        " nvt,"
+                                        " description"))
+                              : ((strcmp (sort_field, "ROWID") == 0)
+                                  ? " ORDER BY results.ROWID DESC"
+                                  : ((strcmp (sort_field, "port") == 0)
+                                      ? " ORDER BY host COLLATE collate_ip,"
+                                        " port DESC,"
+                                        " (CASE WHEN auto_type IS NULL"
+                                        "  THEN new_type ELSE auto_type END)"
+                                        " COLLATE collate_message_type DESC,"
+                                        " (CAST ((CASE WHEN cvss_base >= 0.0"
+                                        "        THEN cvss_base ELSE 0.0 END)"
+                                        "       AS REAL)) DESC,"
+                                        " nvt,"
+                                        " description"
+                                      : " ORDER BY host COLLATE collate_ip,"
+                                        " (CASE WHEN auto_type IS NULL"
+                                        "  THEN new_type ELSE auto_type END)"
+                                        " COLLATE collate_message_type DESC,"
+                                        " port,"
+                                        " (CAST ((CASE WHEN cvss_base >= 0.0"
+                                        "        THEN cvss_base ELSE 0.0 END)"
+                                        "       AS REAL)) DESC,"
+                                        " nvt,"
+                                        " description")),
+                             max_results,
+                             first_result);
 
       if (levels_sql) g_string_free (levels_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
@@ -18854,7 +18787,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
 
       init_result_iterator
-       (&results, report, 0, NULL,
+       (&results, report, 0,
         first_result,
         max_results,
         /* Sort by the requested field in the requested order, in case there is
@@ -18996,7 +18929,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   if (delta)
     {
-      init_result_iterator (&results, report, 0, NULL,
+      init_result_iterator (&results, report, 0,
                             0,
                             -1,
                             sort_order,
@@ -19007,7 +18940,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                             min_cvss_base,
                             apply_overrides);
 
-      init_result_iterator (&delta_results, delta, 0, NULL,
+      init_result_iterator (&delta_results, delta, 0,
                             0,
                             -1,
                             sort_order,
@@ -19019,7 +18952,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                             apply_overrides);
     }
   else
-    init_result_iterator (&results, report, 0, NULL,
+    init_result_iterator (&results, report, 0,
                           first_result,
                           max_results,
                           sort_order,
