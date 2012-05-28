@@ -2218,6 +2218,7 @@ get_report_formats_data_reset (get_report_formats_data_t *data)
 typedef struct
 {
   int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
+  int autofp;            ///< Boolean.  Whether to apply auto FP filter.
   char *result_id;       ///< ID of single result to get.
   char *task_id;         ///< Task associated with results.
   int notes;             ///< Boolean.  Whether to include associated notes.
@@ -5197,6 +5198,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_results_data->apply_overrides = strcmp (attribute, "0");
             else
               get_results_data->apply_overrides = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "autofp", &attribute))
+              get_results_data->autofp = strcmp (attribute, "0");
+            else
+              get_results_data->autofp = 0;
 
             set_client_state (CLIENT_GET_RESULTS);
           }
@@ -9623,7 +9630,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">"
                                       "<results>");
               init_result_iterator (&results, 0, result, 0, 1, 1, NULL,
-                                    NULL, 1, NULL, NULL,
+                                    NULL, get_results_data->autofp, NULL, NULL,
                                     get_results_data->apply_overrides);
               while (next (&results))
                 {

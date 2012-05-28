@@ -1,5 +1,12 @@
 2012-05-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (get_results_data_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Add autofp arg to GET_RESULTS.
+
+	* src/manage_sql.c (init_result_iterator): Add autofp result case.
+
+2012-05-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_start_element): Correct variable name in
 	GET_REPORTS attribute parsing.
 

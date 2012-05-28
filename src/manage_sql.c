@@ -13539,7 +13539,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
     }
   else if (result)
     {
-      gchar *new_type_sql;
+      gchar *new_type_sql, *auto_type_sql;
 
       if (override)
         {
@@ -13587,15 +13587,79 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       else
         new_type_sql = g_strdup ("type");
 
+      switch (autofp)
+        {
+          case 1:
+            auto_type_sql = g_strdup_printf
+              ("(CASE WHEN"
+               "  (((SELECT family FROM nvts WHERE oid = results.nvt)"
+               "    IN (" LSC_FAMILY_LIST "))"
+               "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
+               "   OR"
+               "   (SELECT ROWID FROM nvts"
+               "    WHERE oid = results.nvt"
+               "    AND"
+               "    (cve == 'NOCVE'"
+               "     OR cve NOT IN (SELECT cve FROM nvts"
+               "                    WHERE oid IN (SELECT source_name"
+               "                                  FROM report_host_details"
+               "                                  WHERE report_host"
+               "                                  = (SELECT id"
+               "                                     FROM report_hosts"
+               "                                     WHERE report = (SELECT report FROM report_results WHERE result = %llu)"
+               "                                     AND host = results.host)"
+               "                                  AND name = 'EXIT_CODE'"
+               "                                  AND value = 'EXIT_NOTVULN')"
+               "                    AND family IN (" LSC_FAMILY_LIST ")))))"
+               " THEN NULL"
+               " ELSE 'False Positive' END)",
+               result);
+            break;
+
+          case 2:
+            auto_type_sql = g_strdup_printf
+              ("(CASE WHEN"
+               "  (((SELECT family FROM nvts WHERE oid = results.nvt)"
+               "    IN (" LSC_FAMILY_LIST "))"
+               "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
+               "   OR"
+               "   (SELECT ROWID FROM nvts AS outer_nvts"
+               "    WHERE oid = results.nvt"
+               "    AND"
+               "    (cve == 'NOCVE'"
+               "     OR NOT EXISTS"
+               "        (SELECT cve FROM nvts"
+               "         WHERE oid IN (SELECT source_name"
+               "                       FROM report_host_details"
+               "                       WHERE report_host"
+               "                       = (SELECT id"
+               "                          FROM report_hosts"
+               "                          WHERE report = (SELECT report FROM report_results WHERE result = %llu)"
+               "                          AND host = results.host)"
+               "                       AND name = 'EXIT_CODE'"
+               "                       AND value = 'EXIT_NOTVULN')"
+               "         AND family IN (" LSC_FAMILY_LIST ")"
+               "         AND nvts.cve LIKE ('%%' || outer_nvts.cve || '%%')))))"
+               " THEN NULL"
+               " ELSE 'False Positive' END)",
+               result);
+             break;
+
+           default:
+             auto_type_sql = g_strdup ("NULL");
+             break;
+         }
+
       sql = g_strdup_printf ("SELECT ROWID, subnet, host, port, nvt,"
-                             // FIX auto_type
-                             " type, %s, new_type, description"
+                             " type, %s, %s, description"
                              " FROM results"
                              " WHERE ROWID = %llu;",
                              new_type_sql,
+                             auto_type_sql,
                              result);
 
       g_free (new_type_sql);
+      g_free (auto_type_sql);
     }
   else
     sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
