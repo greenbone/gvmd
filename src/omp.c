@@ -5088,9 +5088,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             if (find_attribute (attribute_names, attribute_values,
                                 "apply_overrides", &attribute))
-              get_results_data->apply_overrides = strcmp (attribute, "0");
+              get_reports_data->apply_overrides = strcmp (attribute, "0");
             else
-              get_results_data->apply_overrides = 0;
+              get_reports_data->apply_overrides = 0;
 
             append_attribute (attribute_names, attribute_values,
                               "min_cvss_base",

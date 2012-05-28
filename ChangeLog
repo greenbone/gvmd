@@ -1,5 +1,10 @@
 2012-05-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_start_element): Correct variable name in
+	GET_REPORTS attribute parsing.
+
+2012-05-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_result_iterator): Remove host case, as host is
 	always NULL.  Update callers.
 
