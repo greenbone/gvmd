@@ -1,5 +1,10 @@
 2012-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (column_auto_type): New function.
+	(report_count_filtered, report_scan_result_count): Use column_auto_type.
+
+2012-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_count_filtered): Fold host case into other
 	cases.
 	(report_counts_id): Doc typo.
