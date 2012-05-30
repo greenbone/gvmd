@@ -15756,30 +15756,6 @@ report_count_filtered (report_t report, const char *type, int override,
       sqlite3_finalize (stmt);
       return count;
     }
-  else if (host)
-    {
-      GString *autofp_sql = where_autofp (autofp, report);  // FIX?
-      GString *phrase_sql = where_search_phrase (search_phrase);
-      GString *cvss_sql = where_cvss_base (min_cvss_base);
-      gchar* quoted_host = sql_quote (host);
-      int count = sql_int (0, 0,
-                           "SELECT count(*) FROM results, report_results"
-                           " WHERE results.host = '%s' AND results.type = '%s'"
-                           " AND results.ROWID = report_results.result"
-                           " AND report_results.report = %llu"
-                           "%s%s%s;",
-                           quoted_host,
-                           type,
-                           report,
-                           autofp_sql ? autofp_sql->str : "",
-                           phrase_sql ? phrase_sql->str : "",
-                           cvss_sql ? cvss_sql->str : "");
-      g_free (quoted_host);
-      if (autofp_sql) g_string_free (autofp_sql, TRUE);
-      if (phrase_sql) g_string_free (phrase_sql, TRUE);
-      if (cvss_sql) g_string_free (cvss_sql, TRUE);
-      return count;
-    }
   else if (strcmp (type, "False Positive") == 0)
     {
       int count;
@@ -15858,10 +15834,14 @@ report_count_filtered (report_t report, const char *type, int override,
                        "SELECT count(*)%s FROM results, report_results"
                        " WHERE report_results.report = %llu"
                        " AND report_results.result = results.ROWID"
+                       "%s%s%s"
                        " AND (results.type = '%s' OR auto_type IS NOT NULL)"
                        "%s%s;",
                        auto_type_sql,
                        report,
+                       host ? " AND results.host = '" : "",
+                       host ? host : "",
+                       host ? "' AND " : "",
                        type,
                        phrase_sql ? phrase_sql->str : "",
                        cvss_sql ? cvss_sql->str : "");
@@ -15881,9 +15861,13 @@ report_count_filtered (report_t report, const char *type, int override,
                        "SELECT count(*) FROM results, report_results"
                        " WHERE report_results.report = %llu"
                        " AND report_results.result = results.ROWID"
+                       "%s%s%s"
                        " AND results.type = '%s'"
                        "%s%s%s;",
                        report,
+                       host ? " AND results.host = '" : "",
+                       host ? host : "",
+                       host ? "' AND " : "",
                        type,
                        autofp_sql ? autofp_sql->str : "",
                        phrase_sql ? phrase_sql->str : "",
@@ -16441,7 +16425,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
  * @param[out]  warnings  Number of warning messages.
  * @param[out]  false_positives  Number of false positive messages.
  * @param[in]   override  Whether to override the threat.
- * @param[in]   host      Host to which to limit the count.  NULL to allow all.#
+ * @param[in]   host      Host to which to limit the count.  NULL to allow all.
  * @param[in]   autofp    Whether to apply the auto FP filter.
  *
  * @return 0 on success, -1 on error.
