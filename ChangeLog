@@ -1,3 +1,16 @@
+2012-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Migrate alert method data to reflect report format UUID changes in
+	database version 55.  Hence increase database version to 59.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 59.
+
+	* src/manage_sql.c (migrate_58_to_59): New function.
+	(migrators): Add migrate_58_to_59.
+	(escalate_2): Align args.  Update TXT UUID.
+
+	* doc/db.png: Update for version change.
+
 2012-05-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_scan_result_count): Generate the autofp SQL

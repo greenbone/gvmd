@@ -5628,6 +5628,72 @@ migrate_57_to_58 ()
 }
 
 /**
+ * @brief Migrate the database from version 58 to version 59.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_58_to_59 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 58. */
+
+  if (manage_db_version () != 58)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Database version 55 introduced new UUIDs for the predefined report formats.
+     Update the alert method data to use these new UUIDs. */
+
+  sql ("UPDATE alert_method_data"
+       " SET data = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5'"
+       " WHERE data = 'a0704abb-2120-489f-959f-251c9f4ffebd';");
+
+  sql ("UPDATE alert_method_data"
+       " SET data = '6c248850-1f62-11e1-b082-406186ea4fc5'"
+       " WHERE data = 'b993b6f5-f9fb-4e6e-9c94-dd46c00e058d';");
+
+  sql ("UPDATE alert_method_data"
+       " SET data = '77bd6c4a-1f62-11e1-abf0-406186ea4fc5'"
+       " WHERE data = '929884c6-c2c4-41e7-befb-2f6aa163b458';");
+
+  sql ("UPDATE alert_method_data"
+       " SET data = '7fcc3a1a-1f62-11e1-86bf-406186ea4fc5'"
+       " WHERE data = '9f1ab17b-aaaa-411a-8c57-12df446f5588';");
+
+  sql ("UPDATE alert_method_data"
+       " SET data = '9ca6fe72-1f62-11e1-9e7c-406186ea4fc5'"
+       " WHERE data = 'f5c2a364-47d2-4700-b21d-0a7693daddab';");
+
+  sql ("UPDATE alert_method_data"
+       " SET data = 'a0b5bfb2-1f62-11e1-85db-406186ea4fc5'"
+       " WHERE data = '1a60a67e-97d0-4cbf-bc77-f71b08e7043d';");
+
+  sql ("UPDATE alert_method_data"
+       " SET data = 'a3810a62-1f62-11e1-9219-406186ea4fc5'"
+       " WHERE data = '19f6f1b3-7128-4433-888c-ccc764fe6ed5';");
+
+  sql ("UPDATE alert_method_data"
+       " SET data = 'a994b278-1f62-11e1-96ac-406186ea4fc5'"
+       " WHERE data = 'd5da9f67-8551-4e51-807b-b6a873d70e34';");
+
+  /* Set the database version to 59. */
+
+  set_db_version (59);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -5690,6 +5756,7 @@ static migrator_t database_migrators[]
     {56, migrate_55_to_56},
     {57, migrate_56_to_57},
     {58, migrate_57_to_58},
+    {59, migrate_58_to_59},
     /* End marker. */
     {-1, NULL}};
 
@@ -7410,14 +7477,14 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       }
 
                   format_uuid = alert_data (alert,
-                                                "method",
-                                                "notice_report_format");
+                                            "method",
+                                            "notice_report_format");
                   if (((format_uuid == NULL)
                        || find_report_format (format_uuid, &report_format)
                        || (report_format == 0))
                       /* Fallback to TXT. */
                       && (find_report_format
-                           ("19f6f1b3-7128-4433-888c-ccc764fe6ed5",
+                           ("a3810a62-1f62-11e1-9219-406186ea4fc5",
                             &report_format)
                           || (report_format == 0)))
                     {
@@ -7515,8 +7582,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       }
 
                   format_uuid = alert_data (alert,
-                                                "method",
-                                                "notice_attach_format");
+                                            "method",
+                                            "notice_attach_format");
                   if (((format_uuid == NULL)
                        || find_report_format (format_uuid, &report_format)
                        || (report_format == 0))
