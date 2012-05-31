@@ -1,5 +1,11 @@
 2012-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_debugs_size, task_false_positive_size)
+	(task_holes_size, task_infos_size, task_logs_size)
+	(task_warnings_size): Remove.  Old functions.
+
+2012-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Use 1 instead of 'False Positive' to mark autofp false positives in the
 	auto_type column, to work around some SQL complications with using a
 	string.
