@@ -19894,40 +19894,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                 }
               array_free (cves);
 
-              while (next (&details))
-                {
-                  const char *detail_name;
-                  detail_name = report_host_details_iterator_name (&details);
-                  if (strcmp (detail_name, "Closed CVE") == 0)
-                    {
-                      gchar **point, **split;
-                      point = split = g_strsplit (detail_name, ",", 0);
-                      while (*point)
-                        {
-                          g_strstrip (*point);
-                          if (array_find_string (cves, *point) == NULL)
-                            array_add (cves, *point);
-                          point++;
-                        }
-                      g_strfreev (split);
-                    }
-                  PRINT (out,
-                         "<detail>"
-                         "<name>%s</name>"
-                         "<value>%s</value>"
-                         "<source>"
-                         "<type>%s</type>"
-                         "<name>%s</name>"
-                         "<description>%s</description>"
-                         "</source>"
-                         "</detail>",
-                         report_host_details_iterator_name (&details),
-                         report_host_details_iterator_value (&details),
-                         report_host_details_iterator_source_type (&details),
-                         report_host_details_iterator_source_name (&details),
-                         report_host_details_iterator_source_desc (&details));
-                }
-
               PRINT (out,
                      "</host>");
 

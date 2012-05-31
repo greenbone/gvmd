@@ -1,5 +1,10 @@
 2012-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): Report extra loop left in earlier
+	today.
+
+2012-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_debugs_size, task_false_positive_size)
 	(task_holes_size, task_infos_size, task_logs_size)
 	(task_warnings_size): Remove.  Old functions.
