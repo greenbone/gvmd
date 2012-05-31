@@ -17993,6 +17993,37 @@ free_buffer (array_t *buffer)
 }
 
 /**
+ * @brief Buffer CVE for print_report_xml.
+ *
+ * @param[in]  cves     CVEs.
+ * @param[in]  details  Report host details iterator.
+ */
+static void
+buffer_cve (array_t *cves, iterator_t *details)
+{
+  const char *detail_name;
+  detail_name = report_host_details_iterator_name (details);
+  if (strcmp (detail_name, "Closed CVE") == 0)
+    {
+      gchar **point, **split;
+
+      /* Buffer each CVE. */
+      split = g_strsplit (report_host_details_iterator_value (details),
+                          ",",
+                          0);
+      point = split;
+      while (*point)
+        {
+          g_strstrip (*point);
+          if (array_find_string (cves, *point) == NULL)
+            array_add (cves, g_strdup (*point));
+          point++;
+        }
+      g_strfreev (split);
+    }
+}
+
+/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
@@ -19825,27 +19856,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                (&details, host_iterator_report_host (&hosts));
               while (next (&details))
                 {
-                  const char *detail_name;
-                  detail_name = report_host_details_iterator_name (&details);
-                  if (strcmp (detail_name, "Closed CVE") == 0)
-                    {
-                      gchar **point, **split;
+                  buffer_cve (cves, &details);
 
-                      /* Buffer each CVE. */
-                      split = g_strsplit (report_host_details_iterator_value
-                                           (&details),
-                                          ",",
-                                          0);
-                      point = split;
-                      while (*point)
-                        {
-                          g_strstrip (*point);
-                          if (array_find_string (cves, *point) == NULL)
-                            array_add (cves, g_strdup (*point));
-                          point++;
-                        }
-                      g_strfreev (split);
-                    }
                   PRINT (out,
                          "<detail>"
                          "<name>%s</name>"
@@ -19923,6 +19935,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       while (next (&hosts))
         {
           iterator_t details;
+          guint index;
+          array_t *cves;
+
+          cves = make_array ();
 
           PRINT (out,
                  "<host>"
@@ -19938,23 +19954,56 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           init_report_host_details_iterator
            (&details, host_iterator_report_host (&hosts));
           while (next (&details))
-            // FIX
-            PRINT (out,
-                   "<detail>"
-                   "<name>%s</name>"
-                   "<value>%s</value>"
-                   "<source>"
-                   "<type>%s</type>"
-                   "<name>%s</name>"
-                   "<description>%s</description>"
-                   "</source>"
-                   "</detail>",
-                   report_host_details_iterator_name (&details),
-                   report_host_details_iterator_value (&details),
-                   report_host_details_iterator_source_type (&details),
-                   report_host_details_iterator_source_name (&details),
-                   report_host_details_iterator_source_desc (&details));
+            {
+              buffer_cve (cves, &details);
+
+              PRINT (out,
+                     "<detail>"
+                     "<name>%s</name>"
+                     "<value>%s</value>"
+                     "<source>"
+                     "<type>%s</type>"
+                     "<name>%s</name>"
+                     "<description>%s</description>"
+                     "</source>"
+                     "</detail>",
+                     report_host_details_iterator_name (&details),
+                     report_host_details_iterator_value (&details),
+                     report_host_details_iterator_source_type (&details),
+                     report_host_details_iterator_source_name (&details),
+                     report_host_details_iterator_source_desc (&details));
+            }
           cleanup_iterator (&details);
+
+          if (cves->len > 0)
+            {
+              GString *detail_cves;
+
+              /* Combine all buffered CVEs into one host detail. */
+
+              g_ptr_array_sort (cves, compare_strings);
+
+              detail_cves = g_string_new ((gchar*) g_ptr_array_index (cves,
+                                                                      0));
+              for (index = 1; index < cves->len; index++)
+                g_string_append_printf
+                 (detail_cves,
+                  ", %s",
+                  (gchar*) g_ptr_array_index (cves, index));
+              PRINT (out,
+                     "<detail>"
+                     "<name>Closed CVEs</name>"
+                     "<value>%s</value>"
+                     "<source>"
+                     "<type>openvasmd</type>"
+                     "<name></name>"
+                     "<description></description>"
+                     "</source>"
+                     "</detail>",
+                     detail_cves->str);
+              g_string_free (detail_cves, TRUE);
+            }
+          array_free (cves);
 
           PRINT (out,
                  "</host>");
