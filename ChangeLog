@@ -1,5 +1,12 @@
 2012-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (array_find_string): Move up in file.
+	(compare_strings): New functions.
+	(print_report_xml): Add a "Closed CVEs" host details listing all closed
+	CVEs.
+
+2012-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_report_host_details_iterator): Add the NVT name
 	as the description of the Closed CVE details.
 
