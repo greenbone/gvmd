@@ -1,5 +1,16 @@
 2012-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Use 1 instead of 'False Positive' to mark autofp false positives in the
+	auto_type column, to work around some SQL complications with using a
+	string.
+
+	* src/manage_sql.c (where_levels_auto, result_iterator_type): Test
+	auto_type for 1 instead of a string.
+	(init_result_iterator, column_auto_type): Set auto_type to 1 for false
+	positives.
+
+2012-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (array_find_string): Move up in file.
 	(compare_strings): New functions.
 	(print_report_xml): Add a "Closed CVEs" host details listing all closed

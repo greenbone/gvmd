@@ -13141,10 +13141,10 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'f'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'False Positive')) OR auto_type = 'False_Positive')");
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'False Positive')) OR auto_type = 1)");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type = 'False Positive')) OR auto_type = 'False Positive')");
+                                      " OR new_type = 'False Positive')) OR auto_type = 1)");
       count++;
     }
   else if (count)
@@ -13529,7 +13529,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                "                                  AND value = 'EXIT_NOTVULN')"
                "                    AND family IN (" LSC_FAMILY_LIST ")))))"
                " THEN NULL"
-               " ELSE 'False Positive' END)",
+               " ELSE 1 END)",
                report);
             break;
 
@@ -13558,7 +13558,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                "         AND family IN (" LSC_FAMILY_LIST ")"
                "         AND nvts.cve LIKE ('%%' || outer_nvts.cve || '%%')))))"
                " THEN NULL"
-               " ELSE 'False Positive' END)",
+               " ELSE 1 END)",
                report);
              break;
 
@@ -13721,7 +13721,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                "                          AND value = 'EXIT_NOTVULN')"
                "         AND family IN (" LSC_FAMILY_LIST ")))))"
                " THEN NULL"
-               " ELSE 'False Positive' END)",
+               " ELSE 1 END)",
                result);
             break;
 
@@ -13752,7 +13752,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                "         AND family IN (" LSC_FAMILY_LIST ")"
                "         AND nvts.cve LIKE ('%%' || outer_nvts.cve || '%%')))))"
                " THEN NULL"
-               " ELSE 'False Positive' END)",
+               " ELSE 1 END)",
                result);
              break;
 
@@ -14002,14 +14002,12 @@ DEF_ACCESS (original_type, 5);
 const char*
 result_iterator_type (iterator_t *iterator)
 {
-  const char *ret;
   if (iterator->done) return NULL;
   /* auto_type */
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 7);
-  if (ret == NULL)
-    /* new_type */
-    ret = (const char*) sqlite3_column_text (iterator->stmt, 6);
-  return ret;
+  if (sqlite3_column_int (iterator->stmt, 7))
+    return "False Positive";
+  /* new_type */
+  return (const char*) sqlite3_column_text (iterator->stmt, 6);
 }
 
 /**
@@ -14863,7 +14861,7 @@ column_auto_type (report_t report, int autofp)
            "                                   AND value = 'EXIT_NOTVULN')"
            "                     AND family IN (" LSC_FAMILY_LIST ")))))"
            "   THEN NULL"
-           "   ELSE 'False Positive' END)"
+           "   ELSE 1 END)"
            "   AS auto_type",
            report);
          break;
@@ -14894,7 +14892,7 @@ column_auto_type (report_t report, int autofp)
            "          AND nvts.cve"
            "          LIKE ('%%' || outer_nvts.cve || '%%')))))"
            "   THEN NULL"
-           "   ELSE 'False Positive' END)"
+           "   ELSE 1 END)"
            "   AS auto_type",
            report);
          break;
