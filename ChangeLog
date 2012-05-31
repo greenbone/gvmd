@@ -1,3 +1,7 @@
+2012-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_result_iterator): Shorten long lines.
+
 2012-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (column_auto_type): New function.
