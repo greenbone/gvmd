@@ -14234,7 +14234,7 @@ init_report_host_details_iterator (iterator_t* iterator,
                  " FROM report_host_details WHERE report_host = %llu"
                  " AND NOT name IN ('detected_at', 'detected_by')"
                  " UNION"
-                 " SELECT 0, 'Closed CVE', cve, 'openvasmd', oid, ''"
+                 " SELECT 0, 'Closed CVE', cve, 'openvasmd', oid, name"
                  " FROM nvts"
                  " WHERE cve != 'NOCVE'"
                  " AND family IN (" LSC_FAMILY_LIST ")"

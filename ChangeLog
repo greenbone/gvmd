@@ -1,5 +1,10 @@
 2012-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_report_host_details_iterator): Add the NVT name
+	as the description of the Closed CVE details.
+
+2012-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_result_iterator): Shorten long lines.
 
 2012-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
