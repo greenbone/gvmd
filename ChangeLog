@@ -1,3 +1,11 @@
+2012-06-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+    Make the date formats of the LaTeX based reports nicer.
+
+	* src/report_formats/LaTeX/latex.xsl (scan_start, scan_end): New
+	templates.
+	(abstract, results-per-host-single-host): Call new templates for dates.
+
 2012-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (buffer_cve): New function.
