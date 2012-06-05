@@ -535,6 +535,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:otherwise>
         <p>
           <xsl:choose>
+            <xsl:when test="filters/autofp/text()='1'">
+              Vendor security updates are trusted, using full CVE matching.
+            </xsl:when>
+            <xsl:when test="filters/autofp/text()='2'">
+              Vendor security updates are trusted, using partial CVE matching.
+            </xsl:when>
+            <xsl:otherwise>
+              Vendor security updates are not trusted.
+            </xsl:otherwise>
+          </xsl:choose>
+        </p>
+
+        <p>
+          <xsl:choose>
             <xsl:when test="filters/apply_overrides/text()='1'">
               Overrides are on.  When a result has an override, this report uses the threat of the override.
             </xsl:when>
@@ -743,6 +757,38 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </tr>
       <!-- Number of results: <xsl:value-of select="count(key('host_results', $current_host))"/> -->
       </table>
+
+      <xsl:variable name="cves" select="str:split(detail[name = 'Closed CVEs']/value, ',')"/>
+      <xsl:choose>
+        <xsl:when test="$report/@type = 'delta'">
+        </xsl:when>
+        <xsl:when test="$report/filters/show_closed_cves = 1">
+          <h2>
+            CVEs closed by vendor security updates for <xsl:value-of select="$current_host"/>
+          </h2>
+          <table class="gbntable" cellspacing="2" cellpadding="4">
+            <tr style="background-color: #d5d5d5;">
+              <td>CVE</td>
+              <td>NVT</td>
+            </tr>
+            <xsl:variable name="host" select="."/>
+            <xsl:for-each select="$cves">
+              <tr>
+                <td>
+                  <xsl:variable name="token" select="/envelope/token"/>
+                  <xsl:value-of select="."/>
+                </td>
+                <td>
+                  <xsl:variable name="cve" select="normalize-space(.)"/>
+                  <xsl:variable name="closed_cve"
+                                select="$host/detail[name = 'Closed CVE' and contains(value, $cve)]"/>
+                  <xsl:value-of select="$closed_cve/source/description"/>
+                </td>
+              </tr>
+            </xsl:for-each>
+          </table>
+        </xsl:when>
+      </xsl:choose>
 
       <xsl:choose>
         <xsl:when test="$report/@type = 'prognostic'">

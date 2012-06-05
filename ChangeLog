@@ -1,5 +1,10 @@
 2012-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/HTML/HTML.xsl (real-report): Note whether vendor
+	updates are trusted.  Add Closed CVEs table.
+
+2012-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add show_closed_cves attribute to GET_REPORTS to control the presence
 	of the Closed CVEs host detail.
 
