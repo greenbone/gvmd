@@ -1,6 +1,24 @@
+2012-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add show_closed_cves attribute to GET_REPORTS to control the presence
+	of the Closed CVEs host detail.
+
+	* src/manage_sql.c (escalate_2): Add show_closed_cves arg.
+	(escalate_1): Pass 0 for show_closed_cves.
+	(print_report_xml): Add show_closed_cves arg.  Add value to filters.
+	Pass to alert.  Only include Closed CVEs host detail when true.
+	(manage_report, manage_send_report): Add show_closed_cves arg.  Pass
+	through to print_report_xml.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (get_reports_data_t): Add show_closed_cves.
+	(omp_xml_handle_start_element): Parse show_closed_cves.
+	(omp_xml_handle_end_element): Pass show_closed_cves to report functions.
+
 2012-06-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
-    Make the date formats of the LaTeX based reports nicer.
+	Make the date formats of the LaTeX based reports nicer.
 
 	* src/report_formats/LaTeX/latex.xsl (scan_start, scan_end): New
 	templates.
