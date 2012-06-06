@@ -1,5 +1,10 @@
 2012-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/TXT/TXT.xsl (real-report): Note whether vendor
+	updates are trusted.  Add Closed CVEs table.
+
+2012-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/LaTeX/latex.xsl (results-overview): Note whether
 	vendor updates are trusted.
 	(results-per-host-single-host-closed-cves): New template.

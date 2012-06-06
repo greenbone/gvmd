@@ -502,6 +502,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:when>
       <xsl:otherwise>
         <xsl:choose>
+          <xsl:when test="filters/autofp/text()='1'">
+            <xsl:text>Vendor security updates are trusted, using full CVE matching.</xsl:text>
+          </xsl:when>
+          <xsl:when test="filters/autofp/text()='2'">
+            <xsl:text>Vendor security updates are trusted, using partial CVE matching.</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>Vendor security updates are not trusted.</xsl:text>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:call-template name="newline"/>
+        <xsl:call-template name="newline"/>
+
+        <xsl:choose>
           <xsl:when test="filters/apply_overrides/text()='1'">
             <xsl:text>Overrides are on.  When a result has an override, this report uses the</xsl:text>
             <xsl:call-template name="newline"/>
@@ -763,6 +777,39 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <xsl:call-template name="newline"/>
           </xsl:for-each>
           <xsl:call-template name="newline"/>
+
+          <xsl:variable name="cves" select="str:split(detail[name = 'Closed CVEs']/value, ',')"/>
+          <xsl:choose>
+            <xsl:when test="$report/@type = 'delta'">
+            </xsl:when>
+            <xsl:when test="$report/filters/show_closed_cves = 1">
+              <xsl:call-template name="subsection">
+                <xsl:with-param name="name">Closed CVEs for Host <xsl:value-of select="$current_host" /></xsl:with-param>
+              </xsl:call-template>
+              <xsl:call-template name="newline"/>
+
+              <xsl:variable name="t3-col1-width" select="24"/>
+              <xsl:call-template name="text-align-left">
+                <xsl:with-param name="width" select="$t3-col1-width"/>
+                <xsl:with-param name="content">CVE</xsl:with-param>
+              </xsl:call-template>
+              <xsl:text>NVT</xsl:text>
+              <xsl:call-template name="newline"/>
+              <xsl:variable name="host" select="."/>
+              <xsl:for-each select="$cves">
+                <xsl:variable name="cve" select="normalize-space(.)"/>
+                <xsl:call-template name="text-align-left">
+                  <xsl:with-param name="width" select="$t3-col1-width"/>
+                  <xsl:with-param name="content" select="$cve"/>
+                </xsl:call-template>
+                <xsl:variable name="closed_cve"
+                              select="$host/detail[name = 'Closed CVE' and contains(value, $cve)]"/>
+                <xsl:value-of select="$closed_cve/source/description"/>
+                <xsl:call-template name="newline"/>
+              </xsl:for-each>
+              <xsl:call-template name="newline"/>
+            </xsl:when>
+          </xsl:choose>
 
           <xsl:call-template name="subsection">
             <xsl:with-param name="name">Security Issues for Host <xsl:value-of select="$current_host" /></xsl:with-param>
