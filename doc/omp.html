@@ -1604,6 +1604,17 @@ result_detection_result
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>autofp</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether to trust vendor security updates. 1 full match, 2 partial.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>show_closed_cves</b>&gt;
+              <div style="margin-left: 15px; display: inline;">(<a href="#element_boolean">boolean</a>)</div>
+<div style="margin-left: 15px; display: inline;">Whether to include the Closed CVEs host detail in the report.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>filter</b>&gt;
               *<div style="margin-left: 15px; display: inline;">Level filter.</div>
 <ul style="list-style: none"></ul>
@@ -2032,6 +2043,8 @@ report_report_filters
        &amp; report_report_filters_apply_overrides
        &amp; report_report_filters_result_hosts_only
        &amp; report_report_filters_min_cvss_base
+       &amp; report_report_filters_autofp
+       &amp; report_report_filters_show_closed_cves
        &amp; report_report_filters_filter*
        &amp; report_report_filters_host?
        &amp; report_report_filters_delta?
@@ -2071,6 +2084,17 @@ report_report_filters_min_cvss_base
  = element min_cvss_base
      {
        text
+     }
+
+report_report_filters_autofp
+ = element autofp
+     {
+       xsd:token { pattern = "0|1|2" }
+     }
+
+report_report_filters_show_closed_cves
+ = element show_closed_cves    # type boolean
+     {
      }
 
 report_report_filters_filter
@@ -10542,6 +10566,16 @@ get_preferences_response_preference_value
           ()
           Letters for results to include: c)hanged, g)one, n)ew, s)ame.
           </li>
+<li>
+          @<b>autofp</b>
+          ()
+          Whether to trust vendor security updates. 1 full match, 2 partial..
+          </li>
+<li>
+          @<b>show_closed_cves</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include the Closed CVEs host detail in the report.
+          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -10591,6 +10625,8 @@ get_preferences_response_preference_value
        &amp; attribute pos { integer }?
        &amp; attribute delta_report_id { uuid }?
        &amp; attribute delta_states {  }?
+       &amp; attribute autofp {  }?
+       &amp; attribute show_closed_cves { boolean }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_reports_response
@@ -10653,6 +10689,8 @@ get_reports_response_report
          &lt;apply_overrides&gt;0&lt;/apply_overrides&gt;
          &lt;result_hosts_only&gt;1&lt;/result_hosts_only&gt;
          &lt;min_cvss_base/&gt;
+         &lt;autofp&gt;0&lt;/autofp&gt;
+         &lt;show_closed_cves&gt;0&lt;/show_closed_cves&gt;
          &lt;filter&gt;High&lt;/filter&gt;
          &lt;filter&gt;Medium&lt;/filter&gt;
          &lt;filter&gt;Low&lt;/filter&gt;

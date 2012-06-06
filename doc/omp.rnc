@@ -696,6 +696,8 @@ report_report_filters
        & report_report_filters_apply_overrides
        & report_report_filters_result_hosts_only
        & report_report_filters_min_cvss_base
+       & report_report_filters_autofp
+       & report_report_filters_show_closed_cves
        & report_report_filters_filter*
        & report_report_filters_host?
        & report_report_filters_delta?
@@ -741,6 +743,19 @@ report_report_filters_min_cvss_base
  = element min_cvss_base
      {
        text
+     }
+
+# Whether to trust vendor security updates. 1 full match, 2 partial.
+report_report_filters_autofp
+ = element autofp
+     {
+       xsd:token { pattern = "0|1|2" }
+     }
+
+# Whether to include the Closed CVEs host detail in the report.
+report_report_filters_show_closed_cves
+ = element show_closed_cves    # type boolean
+     {
      }
 
 # Level filter.
@@ -2655,6 +2670,10 @@ get_reports
        attribute delta_report_id { uuid }?
        & # Letters for results to include: c)hanged, g)one, n)ew, s)ame.
        attribute delta_states {  }?
+       & # Whether to trust vendor security updates. 1 full match, 2 partial..
+       attribute autofp {  }?
+       & # Whether to include the Closed CVEs host detail in the report.
+       attribute show_closed_cves { boolean }?
      }
 
 ## Command get_report_formats

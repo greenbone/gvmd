@@ -638,6 +638,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>apply_overrides</e>
           <e>result_hosts_only</e>
           <e>min_cvss_base</e>
+          <e>autofp</e>
+          <e>show_closed_cves</e>
           <any><e>filter</e></any>
           <o><e>host</e></o>
           <o><e>delta</e></o>
@@ -685,6 +687,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             text
           </pattern>
+        </ele>
+        <ele>
+          <name>autofp</name>
+          <summary>
+            Whether to trust vendor security updates.  1 full match, 2 partial
+          </summary>
+          <pattern>xsd:token { pattern = "0|1|2" }</pattern>
+        </ele>
+        <ele>
+          <name>show_closed_cves</name>
+          <summary>
+            Whether to include the Closed CVEs host detail in the report
+          </summary>
+          <type>boolean</type>
         </ele>
         <ele>
           <name>filter</name>
@@ -6456,6 +6472,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </summary>
         <pattern>xsd:token { pattern = "c?g?n?s?" }</pattern>
       </attrib>
+      <attrib>
+        <name>autofp</name>
+        <summary>
+          Whether to trust vendor security updates.  1 full match, 2 partial.
+        </summary>
+        <pattern>xsd:token { pattern = "0|1|2" }</pattern>
+      </attrib>
+      <attrib>
+        <name>show_closed_cves</name>
+        <summary>
+          Whether to include the Closed CVEs host detail in the report
+        </summary>
+        <type>boolean</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -6522,6 +6552,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <apply_overrides>0</apply_overrides>
                 <result_hosts_only>1</result_hosts_only>
                 <min_cvss_base></min_cvss_base>
+                <autofp>0</autofp>
+                <show_closed_cves>0</show_closed_cves>
                 <filter>High</filter>
                 <filter>Medium</filter>
                 <filter>Low</filter>

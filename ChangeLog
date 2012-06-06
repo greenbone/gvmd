@@ -1,5 +1,12 @@
 2012-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (report, get_reports): Add GET_REPORTS
+	autofp and show_closed_cves.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2012-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/TXT/TXT.xsl (real-report): Note whether vendor
 	updates are trusted.  Add Closed CVEs table.
 
