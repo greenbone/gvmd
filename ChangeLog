@@ -1,3 +1,10 @@
+2012-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/LaTeX/latex.xsl (results-overview): Note whether
+	vendor updates are trusted.
+	(results-per-host-single-host-closed-cves): New template.
+	(results-per-host-single-host): Add Closed CVEs table.
+
 2012-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl (real-report): Note whether vendor
@@ -300,7 +307,7 @@
 	* src/omp.c (omp_xml_handle_end_element): Remove extra arg from
 	manage_schema call, leftover from experiment.
 
-2012-04-30  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-05-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add --disabled-cmds to disable a list of OMP commands.  Adjust HELP
 	to skip disabled commands.

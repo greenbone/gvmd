@@ -664,6 +664,18 @@ advice given in each description, in order to rectify the issue.
       </xsl:when>
       <xsl:otherwise>
         <xsl:choose>
+          <xsl:when test="openvas:report()/filters/autofp/text()='1'">
+            <xsl:text>Vendor security updates are trusted, using full CVE matching.</xsl:text>
+          </xsl:when>
+          <xsl:when test="openvas:report()/filters/autofp/text()='2'">
+            <xsl:text>Vendor security updates are trusted, using partial CVE matching.</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>Vendor security updates are not trusted.</xsl:text>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:call-template name="latex-newline"/>
+        <xsl:choose>
           <xsl:when test="openvas:report()/filters/apply_overrides/text()='1'">
             <xsl:text>Overrides are on.  When a result has an override, this report uses the threat of the override.</xsl:text>
             <xsl:call-template name="latex-newline"/>
@@ -810,6 +822,36 @@ advice given in each description, in order to rectify the issue.
       <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
     </xsl:call-template>
     <xsl:text>\end{longtable}</xsl:text><xsl:call-template name="newline"/>
+  </xsl:template>
+
+  <!-- Table of Closed CVEs for a single host. -->
+  <xsl:template name="results-per-host-single-host-closed-cves">
+    <xsl:variable name="cves" select="str:split(detail[name = 'Closed CVEs']/value, ',')"/>
+    <xsl:choose>
+      <xsl:when test="openvas:report()/@type = 'delta'">
+      </xsl:when>
+      <xsl:when test="openvas:report()/filters/show_closed_cves = 1">
+        <xsl:text>\begin{longtable}{|l|l|}</xsl:text><xsl:call-template name="newline"/>
+        <xsl:call-template name="latex-hline"/>
+        <xsl:call-template name="longtable-continue-block">
+          <xsl:with-param name="number-of-columns">2</xsl:with-param>
+          <xsl:with-param name="header-color">openvas_report</xsl:with-param>
+          <xsl:with-param name="header-text">Closed CVE&amp;NVT</xsl:with-param>
+        </xsl:call-template>
+        <xsl:variable name="host" select="."/>
+        <xsl:for-each select="$cves">
+          <xsl:value-of select="."/>
+          <xsl:text>&amp;</xsl:text>
+          <xsl:variable name="cve" select="normalize-space(.)"/>
+          <xsl:variable name="closed_cve"
+                        select="$host/detail[name = 'Closed CVE' and contains(value, $cve)]"/>
+          <xsl:value-of select="$closed_cve/source/description"/>
+          <xsl:call-template name="latex-newline"/>
+          <xsl:call-template name="latex-hline"/>
+        </xsl:for-each>
+        <xsl:text>\end{longtable}</xsl:text><xsl:call-template name="newline"/>
+      </xsl:when>
+    </xsl:choose>
   </xsl:template>
 
   <!-- Colors for threats. -->
@@ -1307,6 +1349,8 @@ advice given in each description, in order to rectify the issue.
         <xsl:text>\end{tabular}</xsl:text><xsl:call-template name="newline"/>
         <xsl:call-template name="newline"/>
         <xsl:call-template name="results-per-host-single-host-port-findings"/>
+        <xsl:call-template name="newline"/>
+        <xsl:call-template name="results-per-host-single-host-closed-cves"/>
         <xsl:call-template name="newline"/>
       </xsl:otherwise>
     </xsl:choose>
