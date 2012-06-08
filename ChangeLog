@@ -1,3 +1,8 @@
+2012-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_counts_id_filt): Set filtered_debugs if given.
+	Backport from trunk r13498.
+
 2012-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS brief case use the
