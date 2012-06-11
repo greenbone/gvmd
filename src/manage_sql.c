@@ -9587,9 +9587,16 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0, "SELECT count(*) FROM targets WHERE name = 'Localhost';")
       == 0)
-    sql ("INSERT into targets (uuid, owner, name, hosts)"
+    sql ("INSERT into targets (uuid, owner, name, hosts, port_range)"
          " VALUES ('" TARGET_UUID_LOCALHOST "', NULL, 'Localhost',"
-         " 'localhost');");
+         " 'localhost',"
+         " (SELECT ROWID FROM port_lists"
+         "  WHERE uuid = '" PORT_LIST_UUID_DEFAULT "'));");
+  else
+    /* The port list was wrong for a while, so make sure it's correct. */
+    sql ("UPDATE targets SET port_range = "
+         " (SELECT ROWID FROM port_lists"
+         "  WHERE uuid = '" PORT_LIST_UUID_DEFAULT "')");
 
   /* Ensure the predefined example task and report exists. */
 

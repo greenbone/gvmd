@@ -1,3 +1,9 @@
+2012-06-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Set port list when creating predefined
+	target.  Ensure that list is correct if target exists already.  Backport
+	from trunk r13568.
+
 2012-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_counts_id_filt): Set filtered_debugs if given.
