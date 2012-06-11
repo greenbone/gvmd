@@ -1,5 +1,10 @@
 2012-06-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Set port list when creating predefined
+	target.  Ensure that list is correct if target exists already.
+
+2012-06-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_counts_autofp_match): Remove extra SQL paren.
 
 2012-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
