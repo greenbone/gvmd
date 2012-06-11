@@ -15384,7 +15384,7 @@ report_counts_autofp_match (iterator_t *results, int autofp)
                      "                               AND name = 'EXIT_CODE'"
                      "                               AND value"
                      "                               = 'EXIT_NOTVULN')"
-                     "                 AND family IN (" LSC_FAMILY_LIST "))));",
+                     "                 AND family IN (" LSC_FAMILY_LIST ")));",
                      (const char*) sqlite3_column_text (results->stmt, 1),
                      sqlite3_column_int64 (results->stmt, 6),
                      (const char*) sqlite3_column_text (results->stmt, 3)))

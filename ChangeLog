@@ -1,3 +1,7 @@
+2012-06-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_counts_autofp_match): Remove extra SQL paren.
+
 2012-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (report, get_reports): Add GET_REPORTS
