@@ -15367,7 +15367,7 @@ report_count (report_t report, const char *type, int override, const char *host)
 static int
 report_counts_autofp_match (iterator_t *results, int autofp)
 {
-  if (strcmp (result_iterator_nvt_oid (results), "0") == 0)
+  if (strcmp ((const char *) sqlite3_column_text (results->stmt, 1), "0") == 0)
     /* Open port special case. */
     return 1;
 
@@ -15786,7 +15786,10 @@ report_count_filtered (report_t report, const char *type, int override,
                   && report_counts_match (&results,
                                           search_phrase,
                                           min_cvss_base,
-                                          autofp))
+                                          (strcmp (new_type, "False Positive")
+                                           && strcmp (new_type, "Log Message"))
+                                            ? autofp
+                                            : 0))
                 count++;
 
               /* Reset the full inner statement. */
@@ -16332,7 +16335,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                               && report_counts_match (&results,
                                                       search_phrase,
                                                       min_cvss_base,
-                                                      autofp))
+                                                      0))
                             (*filtered_logs)++;
                         }
                       else if (strcmp (new_type, "False Positive") == 0)
@@ -16342,7 +16345,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                               && report_counts_match (&results,
                                                       search_phrase,
                                                       min_cvss_base,
-                                                      autofp))
+                                                      0))
                             (*filtered_false_positives)++;
                         }
                     }

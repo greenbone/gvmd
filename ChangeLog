@@ -1,3 +1,10 @@
+2012-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_count): Access column by hand to get position
+	right.
+	(report_count_filtered, report_counts_id_filt): Skip the autofp test for
+	Logs and False Positives.
+
 2012-06-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Set port list when creating predefined
