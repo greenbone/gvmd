@@ -1,5 +1,13 @@
 2012-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (update_report_format_uuid)
+	(update_report_format_uuids): New functions.  Mechanism for updating the
+	report format UUIDs on startup.  This first version does that same work as
+	migrate_58_to_59.
+	(init_manage): Call update_report_format_uuids.
+
+2012-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_count): Access column by hand to get position
 	right.
 	(report_count_filtered, report_counts_id_filt): Skip the autofp test for

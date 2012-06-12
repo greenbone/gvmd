@@ -9616,6 +9616,77 @@ ensure_predefined_port_lists_exist ()
 }
 
 /**
+ * @brief Bring UUIDs for single report format up to date.
+ *
+ * @param[in]  old  Old UUID.
+ * @param[in]  new  New UUID.
+ */
+static void
+update_report_format_uuid (const char *old, const char *new)
+{
+  gchar *dir;
+
+  dir = g_build_filename (OPENVAS_DATA_DIR,
+                          "openvasmd",
+                          "global_report_formats",
+                          old,
+                          NULL);
+
+  if (g_file_test (dir, G_FILE_TEST_EXISTS))
+    file_utils_rmdir_rf (dir);
+  g_free (dir);
+
+  sql ("UPDATE report_formats"
+       " SET uuid = '%s'"
+       " WHERE uuid = '%s';",
+       new,
+       old);
+
+  sql ("UPDATE alert_method_data"
+       " SET data = '%s'"
+       " WHERE data = '%s';",
+       new,
+       old);
+}
+
+/**
+ * @brief Bring report format UUIDs in database up to date.
+ */
+static void
+update_report_format_uuids ()
+{
+  /* Same as migrate_58_to_59, to enable backporting r13519 to OpenVAS-5
+   * without backporting the 58 to 59 migrator.  In future these should be
+   * done here instead of in a migrator. */
+
+  update_report_format_uuid ("a0704abb-2120-489f-959f-251c9f4ffebd",
+                             "5ceff8ba-1f62-11e1-ab9f-406186ea4fc5");
+
+  update_report_format_uuid ("b993b6f5-f9fb-4e6e-9c94-dd46c00e058d",
+                             "6c248850-1f62-11e1-b082-406186ea4fc5");
+
+  update_report_format_uuid ("929884c6-c2c4-41e7-befb-2f6aa163b458",
+                             "77bd6c4a-1f62-11e1-abf0-406186ea4fc5");
+
+  update_report_format_uuid ("9f1ab17b-aaaa-411a-8c57-12df446f5588",
+                             "7fcc3a1a-1f62-11e1-86bf-406186ea4fc5");
+
+  update_report_format_uuid ("f5c2a364-47d2-4700-b21d-0a7693daddab",
+                             "9ca6fe72-1f62-11e1-9e7c-406186ea4fc5");
+
+  update_report_format_uuid ("1a60a67e-97d0-4cbf-bc77-f71b08e7043d",
+                             "a0b5bfb2-1f62-11e1-85db-406186ea4fc5");
+
+  update_report_format_uuid ("19f6f1b3-7128-4433-888c-ccc764fe6ed5",
+                             "a3810a62-1f62-11e1-9219-406186ea4fc5");
+
+  update_report_format_uuid ("d5da9f67-8551-4e51-807b-b6a873d70e34",
+                             "a994b278-1f62-11e1-96ac-406186ea4fc5");
+
+  /* New updates go here.  Oldest must come first, so add at the end. */
+}
+
+/**
  * @brief Initialize the manage library.
  *
  * Ensure all tasks are in a clean initial state.
@@ -10240,6 +10311,10 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
          " ('5f5a8712-8017-11e1-8556-406186ea4fc5', NULL, 'Rows Per Page',"
          "  'The default number of rows displayed in any listing.',"
          "  10);");
+
+  /* Bring report format UUIDs in database up to date. */
+
+  update_report_format_uuids ();
 
   if (nvt_cache_mode == 0)
     {
