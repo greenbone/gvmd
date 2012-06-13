@@ -1,3 +1,13 @@
+2012-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport from trunk r13575.
+
+	* src/manage_sql.c (update_report_format_uuid)
+	(update_report_format_uuids): New functions.  Mechanism for updating the
+	report format UUIDs on startup.  This first version does that same work as
+	migrate_58_to_59.
+	(init_manage): Call update_report_format_uuids.
+
 2012-06-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Set port list when creating predefined
