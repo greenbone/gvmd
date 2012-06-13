@@ -1,3 +1,10 @@
+2012-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* CMakeLists.txt: Update LaTeX based report format UUIDs for 2012-06-01
+	date format commit.
+
+	* src/manage_sql.c: Update LaTeX based report format UUIDs in database.
+
 2012-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (update_report_format_uuid)

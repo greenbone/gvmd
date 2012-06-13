@@ -9684,6 +9684,12 @@ update_report_format_uuids ()
                              "a994b278-1f62-11e1-96ac-406186ea4fc5");
 
   /* New updates go here.  Oldest must come first, so add at the end. */
+
+  update_report_format_uuid ("7fcc3a1a-1f62-11e1-86bf-406186ea4fc5",
+                             "a684c02c-b531-11e1-bdc2-406186ea4fc5");
+
+  update_report_format_uuid ("a0b5bfb2-1f62-11e1-85db-406186ea4fc5",
+                             "c402cc3e-b531-11e1-9163-406186ea4fc5");
 }
 
 /**
