@@ -402,7 +402,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>port</e>
       <e>nvt</e>
       <e>threat</e>
+      <o><e>original_threat</e></o>
       <e>description</e>
+      <o><e>delta</e></o>
       <e>details</e>
       <e>detection</e>
     </pattern>
@@ -430,6 +432,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>name</e>
         <e>cvss_base</e>
         <e>risk_factor</e>
+        <e>cve</e>
+        <e>bid</e>
+        <e>xref</e>
       </pattern>
       <ele>
         <name>name</name>
@@ -446,15 +451,54 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Risk factor associated with the NVT</summary>
         <pattern><t>integer</t></pattern>
       </ele>
+      <ele>
+        <name>cve</name>
+        <summary>CVE associated with the NVT</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>bid</name>
+        <summary>BID associated with the NVT</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>xref</name>
+        <summary>XREFs associated with the NVT</summary>
+        <pattern>text</pattern>
+      </ele>
     </ele>
     <ele>
       <name>threat</name>
       <pattern><t>threat</t></pattern>
     </ele>
     <ele>
+      <name>original_threat</name>
+      <summary>Threat when overridden</summary>
+      <pattern><t>threat</t></pattern>
+    </ele>
+    <ele>
       <name>description</name>
       <summary>Description of the result</summary>
       <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>delta</name>
+      <summary>Delta state</summary>
+      <pattern>
+        <o><e>result</e></o>
+        <o><e>diff</e></o>
+        text
+      </pattern>
+      <ele>
+        <name>result</name>
+        <summary>Delta result</summary>
+        <type>result</type>
+      </ele>
+      <ele>
+        <name>diff</name>
+        <summary>Comparison between descriptions</summary>
+        <type>text</type>
+      </ele>
     </ele>
     <ele>
       <name>details</name>

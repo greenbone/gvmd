@@ -1328,6 +1328,21 @@ command_definition_ele
               <div style="margin-left: 15px; display: inline;">Risk factor associated with the NVT.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>cve</b>&gt;
+              <div style="margin-left: 15px; display: inline;">CVE associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>bid</b>&gt;
+              <div style="margin-left: 15px; display: inline;">BID associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>xref</b>&gt;
+              <div style="margin-left: 15px; display: inline;">XREFs associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -1335,9 +1350,32 @@ command_definition_ele
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>original_threat</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Threat when overridden.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>description</b>&gt;
               <div style="margin-left: 15px; display: inline;">Description of the result.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>delta</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Delta state.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>result</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_result">result</a>)</div>
+<div style="margin-left: 15px; display: inline;">Delta result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>diff</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">(text)</div>
+<div style="margin-left: 15px; display: inline;">Comparison between descriptions.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>details</b>&gt;
@@ -1380,7 +1418,9 @@ command_definition_ele
        &amp; result_port
        &amp; result_nvt
        &amp; result_threat
+       &amp; result_original_threat?
        &amp; result_description
+       &amp; result_delta?
        &amp; result_details
        &amp; result_detection
      }
@@ -1410,6 +1450,9 @@ result_nvt
        &amp; result_nvt_name
        &amp; result_nvt_cvss_base
        &amp; result_nvt_risk_factor
+       &amp; result_nvt_cve
+       &amp; result_nvt_bid
+       &amp; result_nvt_xref
      }
 
 result_nvt_name
@@ -1430,8 +1473,32 @@ result_nvt_risk_factor
        integer
      }
 
+result_nvt_cve
+ = element cve
+     {
+       text
+     }
+
+result_nvt_bid
+ = element bid
+     {
+       text
+     }
+
+result_nvt_xref
+ = element xref
+     {
+       text
+     }
+
 result_threat
  = element threat
+     {
+       threat
+     }
+
+result_original_threat
+ = element original_threat
      {
        threat
      }
@@ -1440,6 +1507,35 @@ result_description
  = element description
      {
        text
+     }
+
+result_delta
+ = element delta
+     {
+       text
+       &amp; result_delta_result?
+       &amp; result_delta_diff?
+     }
+
+result_delta_result
+ = element result    # type result
+     {
+       attribute id { uuid }
+       &amp; result_subnet
+       &amp; result_host
+       &amp; result_port
+       &amp; result_nvt
+       &amp; result_threat
+       &amp; result_original_threat?
+       &amp; result_description
+       &amp; result_delta?
+       &amp; result_details
+       &amp; result_detection
+     }
+
+result_delta_diff
+ = element diff    # type text
+     {
      }
 
 result_details
@@ -1482,7 +1578,9 @@ result_detection_result
        &amp; result_port
        &amp; result_nvt
        &amp; result_threat
+       &amp; result_original_threat?
        &amp; result_description
+       &amp; result_delta?
        &amp; result_details
        &amp; result_detection
      }
@@ -2366,7 +2464,9 @@ report_report_results_result
        &amp; result_port
        &amp; result_nvt
        &amp; result_threat
+       &amp; result_original_threat?
        &amp; result_description
+       &amp; result_delta?
        &amp; result_details
        &amp; result_detection
      }

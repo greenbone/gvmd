@@ -470,7 +470,9 @@ result
        & result_port
        & result_nvt
        & result_threat
+       & result_original_threat?
        & result_description
+       & result_delta?
        & result_details
        & result_detection
      }
@@ -501,6 +503,9 @@ result_nvt
        & result_nvt_name
        & result_nvt_cvss_base
        & result_nvt_risk_factor
+       & result_nvt_cve
+       & result_nvt_bid
+       & result_nvt_xref
      }
 
 # The name of the NVT.
@@ -524,8 +529,36 @@ result_nvt_risk_factor
        integer
      }
 
+# CVE associated with the NVT.
+result_nvt_cve
+ = element cve
+     {
+       text
+     }
+
+# BID associated with the NVT.
+result_nvt_bid
+ = element bid
+     {
+       text
+     }
+
+# XREFs associated with the NVT.
+result_nvt_xref
+ = element xref
+     {
+       text
+     }
+
 result_threat
  = element threat
+     {
+       threat
+     }
+
+# Threat when overridden.
+result_original_threat
+ = element original_threat
      {
        threat
      }
@@ -535,6 +568,38 @@ result_description
  = element description
      {
        text
+     }
+
+# Delta state.
+result_delta
+ = element delta
+     {
+       text
+       & result_delta_result?
+       & result_delta_diff?
+     }
+
+# Delta result.
+result_delta_result
+ = element result    # type result
+     {
+       attribute id { uuid }
+       & result_subnet
+       & result_host
+       & result_port
+       & result_nvt
+       & result_threat
+       & result_original_threat?
+       & result_description
+       & result_delta?
+       & result_details
+       & result_detection
+     }
+
+# Comparison between descriptions.
+result_delta_diff
+ = element diff    # type text
+     {
      }
 
 # Any details associated with the result.
@@ -583,7 +648,9 @@ result_detection_result
        & result_port
        & result_nvt
        & result_threat
+       & result_original_threat?
        & result_description
+       & result_delta?
        & result_details
        & result_detection
      }
@@ -1059,7 +1126,9 @@ report_report_results_result
        & result_port
        & result_nvt
        & result_threat
+       & result_original_threat?
        & result_description
+       & result_delta?
        & result_details
        & result_detection
      }
