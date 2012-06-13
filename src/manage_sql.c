@@ -10076,6 +10076,10 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       current_credentials.uuid = NULL;
     }
 
+  /* Bring report format UUIDs in database up to date. */
+
+  update_report_format_uuids ();
+
   /* Ensure the predefined report formats exist. */
 
   if (sql_int (0, 0,
@@ -10317,10 +10321,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
          " ('5f5a8712-8017-11e1-8556-406186ea4fc5', NULL, 'Rows Per Page',"
          "  'The default number of rows displayed in any listing.',"
          "  10);");
-
-  /* Bring report format UUIDs in database up to date. */
-
-  update_report_format_uuids ();
 
   if (nvt_cache_mode == 0)
     {
