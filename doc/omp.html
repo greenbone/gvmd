@@ -141,6 +141,14 @@
 <td id="index"><div style="margin-left: 15px;">Definition of a command in OMP describing HELP command.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#element_result_notes">result_notes</a></td>
+<td id="index"><div style="margin-left: 15px;">Notes on a result.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#element_result_overrides">result_overrides</a></td>
+<td id="index"><div style="margin-left: 15px;">Overrides on a result.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#element_result">result</a></td>
 <td id="index"><div style="margin-left: 15px;">A result.</div></td>
 </tr>
@@ -1283,11 +1291,193 @@ command_definition_ele
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_result">6.9
+<div><h3 id="element_result_notes">6.9
+        Element <tt>result_notes</tt>
+</h3></div>
+<p>In short: Notes on a result.</p>
+<h4>6.9.1 Structure</h4>
+<ul style="list-style: none"><li><ul style="list-style: none"><li>
+              &lt;<b>note</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>nvt</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>text</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The text of the note.</div>
+<ul style="list-style: none"><li>
+          @<b>excerpt</b>
+          (<a href="#type_boolean">boolean</a>)
+          </li></ul>
+</li>
+<li>
+              &lt;<b>orphan</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the note is an orphan.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul></li></ul>
+<h4>6.9.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>result_notes
+ = element result_notes
+     {
+       result_notes_note*
+     }
+
+result_notes_note
+ = element note
+     {
+       result_notes_note_nvt
+       &amp; result_notes_note_text
+       &amp; result_notes_note_orphan
+     }
+
+result_notes_note_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       &amp; result_notes_note_nvt_name
+     }
+
+result_notes_note_nvt_name
+ = element name
+     {
+       name
+     }
+
+result_notes_note_text
+ = element text
+     {
+       text
+       &amp; attribute excerpt { boolean }
+     }
+
+result_notes_note_orphan
+ = element orphan
+     {
+       boolean
+     }
+</pre></div></div>
+</div>
+<div>
+<div><h3 id="element_result_overrides">6.10
+        Element <tt>result_overrides</tt>
+</h3></div>
+<p>In short: Overrides on a result.</p>
+<h4>6.10.1 Structure</h4>
+<ul style="list-style: none"><li><ul style="list-style: none"><li>
+              &lt;<b>override</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>nvt</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>text</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The text of the override.</div>
+<ul style="list-style: none"><li>
+          @<b>excerpt</b>
+          (<a href="#type_boolean">boolean</a>)
+          </li></ul>
+</li>
+<li>
+              &lt;<b>threat</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Threat level to which override applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>new_threat</b>&gt;
+              <div style="margin-left: 15px; display: inline;">New threat for result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>orphan</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the override is an orphan.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul></li></ul>
+<h4>6.10.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>result_overrides
+ = element result_overrides
+     {
+       result_overrides_override*
+     }
+
+result_overrides_override
+ = element override
+     {
+       result_overrides_override_nvt
+       &amp; result_overrides_override_text
+       &amp; result_overrides_override_threat
+       &amp; result_overrides_override_new_threat
+       &amp; result_overrides_override_orphan
+     }
+
+result_overrides_override_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       &amp; result_overrides_override_nvt_name
+     }
+
+result_overrides_override_nvt_name
+ = element name
+     {
+       name
+     }
+
+result_overrides_override_text
+ = element text
+     {
+       text
+       &amp; attribute excerpt { boolean }
+     }
+
+result_overrides_override_threat
+ = element threat
+     {
+       threat
+     }
+
+result_overrides_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+result_overrides_override_orphan
+ = element orphan
+     {
+       boolean
+     }
+</pre></div></div>
+</div>
+<div>
+<div><h3 id="element_result">6.11
         Element <tt>result</tt>
 </h3></div>
 <p>In short: A result.</p>
-<h4>6.9.1 Structure</h4>
+<h4>6.11.1 Structure</h4>
 <ul style="list-style: none"><li><ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -1375,6 +1565,16 @@ command_definition_ele
 <div style="margin-left: 15px; display: inline;">Comparison between descriptions.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>notes</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_result_notes">result_notes</a>)</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>overrides</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_result_overrides">result_overrides</a>)</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -1407,8 +1607,18 @@ command_definition_ele
 <ul style="list-style: none"></ul>
 </li></ul>
 </li>
+<li>
+              &lt;<b>notes</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_result_notes">result_notes</a>)</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>overrides</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_result_overrides">result_overrides</a>)</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul></li></ul>
-<h4>6.9.2 RNC</h4>
+<h4>6.11.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>result
  = element result
      {
@@ -1423,6 +1633,8 @@ command_definition_ele
        &amp; result_delta?
        &amp; result_details
        &amp; result_detection
+       &amp; result_notes?
+       &amp; result_overrides?
      }
 
 result_subnet
@@ -1515,6 +1727,8 @@ result_delta
        text
        &amp; result_delta_result?
        &amp; result_delta_diff?
+       &amp; result_delta_notes?
+       &amp; result_delta_overrides?
      }
 
 result_delta_result
@@ -1531,11 +1745,25 @@ result_delta_result
        &amp; result_delta?
        &amp; result_details
        &amp; result_detection
+       &amp; result_notes?
+       &amp; result_overrides?
      }
 
 result_delta_diff
  = element diff    # type text
      {
+     }
+
+result_delta_notes
+ = element notes    # type result_notes
+     {
+       result_notes_note*
+     }
+
+result_delta_overrides
+ = element overrides    # type result_overrides
+     {
+       result_overrides_override*
      }
 
 result_details
@@ -1583,15 +1811,29 @@ result_detection_result
        &amp; result_delta?
        &amp; result_details
        &amp; result_detection
+       &amp; result_notes?
+       &amp; result_overrides?
+     }
+
+result_notes
+ = element notes    # type result_notes
+     {
+       result_notes_note*
+     }
+
+result_overrides
+ = element overrides    # type result_overrides
+     {
+       result_overrides_override*
      }
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_report">6.10
+<div><h3 id="element_report">6.12
         Element <tt>report</tt>
 </h3></div>
 <p>In short: Actually attributes and either base64 or a report.</p>
-<h4>6.10.1 Structure</h4>
+<h4>6.12.1 Structure</h4>
 <ul style="list-style: none"><li><ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -2044,7 +2286,7 @@ result_detection_result
 </ul>
 </li>
 </ul></li></ul>
-<h4>6.10.2 RNC</h4>
+<h4>6.12.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>report
  = element report
      {
@@ -2469,6 +2711,8 @@ report_report_results_result
        &amp; result_delta?
        &amp; result_details
        &amp; result_detection
+       &amp; result_notes?
+       &amp; result_overrides?
      }
 
 report_report_hosts
@@ -11414,83 +11658,13 @@ get_report_formats_response_report_format_active
 </li>
 <li>
               &lt;<b>notes</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Notes on the result.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>note</b>&gt;
-              *<ul style="list-style: none">
-<li>
-              &lt;<b>nvt</b>&gt;
-              <ul style="list-style: none">
-<li>
-          @<b>oid</b>
-          (<a href="#type_oid">oid</a>)
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>text</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The text of the note.</div>
-<ul style="list-style: none"><li>
-          @<b>excerpt</b>
-          (<a href="#type_boolean">boolean</a>)
-          </li></ul>
-</li>
-<li>
-              &lt;<b>orphan</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether the note is an orphan.</div>
+              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_result_notes">result_notes</a>)</div>
 <ul style="list-style: none"></ul>
-</li>
-</ul>
-</li></ul>
 </li>
 <li>
               &lt;<b>overrides</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Overrides on the result.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>override</b>&gt;
-              *<ul style="list-style: none">
-<li>
-              &lt;<b>nvt</b>&gt;
-              <ul style="list-style: none">
-<li>
-          @<b>oid</b>
-          (<a href="#type_oid">oid</a>)
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>text</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The text of the override.</div>
-<ul style="list-style: none"><li>
-          @<b>excerpt</b>
-          (<a href="#type_boolean">boolean</a>)
-          </li></ul>
-</li>
-<li>
-              &lt;<b>threat</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Threat level to which override applies.</div>
+              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_result_overrides">result_overrides</a>)</div>
 <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>new_threat</b>&gt;
-              <div style="margin-left: 15px; display: inline;">New threat for result.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>orphan</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether the override is an orphan.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li></ul>
 </li>
 </ul>
 </li></ul>
@@ -11612,97 +11786,15 @@ get_results_response_results_result_description
      }
 
 get_results_response_results_result_notes
- = element notes
+ = element notes    # type result_notes
      {
-       get_results_response_results_result_notes_note*
-     }
-
-get_results_response_results_result_notes_note
- = element note
-     {
-       get_results_response_results_result_notes_note_nvt
-       &amp; get_results_response_results_result_notes_note_text
-       &amp; get_results_response_results_result_notes_note_orphan
-     }
-
-get_results_response_results_result_notes_note_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       &amp; get_results_response_results_result_notes_note_nvt_name
-     }
-
-get_results_response_results_result_notes_note_nvt_name
- = element name
-     {
-       name
-     }
-
-get_results_response_results_result_notes_note_text
- = element text
-     {
-       text
-       &amp; attribute excerpt { boolean }
-     }
-
-get_results_response_results_result_notes_note_orphan
- = element orphan
-     {
-       boolean
+       result_notes_note*
      }
 
 get_results_response_results_result_overrides
- = element overrides
+ = element overrides    # type result_overrides
      {
-       get_results_response_results_result_overrides_override*
-     }
-
-get_results_response_results_result_overrides_override
- = element override
-     {
-       get_results_response_results_result_overrides_override_nvt
-       &amp; get_results_response_results_result_overrides_override_text
-       &amp; get_results_response_results_result_overrides_override_threat
-       &amp; get_results_response_results_result_overrides_override_new_threat
-       &amp; get_results_response_results_result_overrides_override_orphan
-     }
-
-get_results_response_results_result_overrides_override_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       &amp; get_results_response_results_result_overrides_override_nvt_name
-     }
-
-get_results_response_results_result_overrides_override_nvt_name
- = element name
-     {
-       name
-     }
-
-get_results_response_results_result_overrides_override_text
- = element text
-     {
-       text
-       &amp; attribute excerpt { boolean }
-     }
-
-get_results_response_results_result_overrides_override_threat
- = element threat
-     {
-       threat
-     }
-
-get_results_response_results_result_overrides_override_new_threat
- = element new_threat
-     {
-       threat
-     }
-
-get_results_response_results_result_overrides_override_orphan
- = element orphan
-     {
-       boolean
+       result_overrides_override*
      }
 </pre></div>
 </div>

@@ -1,5 +1,14 @@
 2012-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (result_notes, result_overrides): New
+	elements.
+	(result): Add NOTES and OVERRIDES to RESULT and DELTA.
+	(get_results): Move notes and overrides to new element.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2012-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (result): Add ORIGINAL_THREAT and DELTA.
 	Add missing NVT elements.
 

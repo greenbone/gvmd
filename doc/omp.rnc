@@ -457,6 +457,114 @@ command_definition_ele
        & command_definition_example*
      }
 
+## Element Type result_notes
+##
+## Notes on a result.
+
+result_notes
+ = element result_notes
+     {
+       result_notes_note*
+     }
+
+result_notes_note
+ = element note
+     {
+       result_notes_note_nvt
+       & result_notes_note_text
+       & result_notes_note_orphan
+     }
+
+result_notes_note_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & result_notes_note_nvt_name
+     }
+
+result_notes_note_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The text of the note.
+result_notes_note_text
+ = element text
+     {
+       text
+       & attribute excerpt { boolean }
+     }
+
+# Whether the note is an orphan.
+result_notes_note_orphan
+ = element orphan
+     {
+       boolean
+     }
+
+## Element Type result_overrides
+##
+## Overrides on a result.
+
+result_overrides
+ = element result_overrides
+     {
+       result_overrides_override*
+     }
+
+result_overrides_override
+ = element override
+     {
+       result_overrides_override_nvt
+       & result_overrides_override_text
+       & result_overrides_override_threat
+       & result_overrides_override_new_threat
+       & result_overrides_override_orphan
+     }
+
+result_overrides_override_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & result_overrides_override_nvt_name
+     }
+
+result_overrides_override_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The text of the override.
+result_overrides_override_text
+ = element text
+     {
+       text
+       & attribute excerpt { boolean }
+     }
+
+# Threat level to which override applies.
+result_overrides_override_threat
+ = element threat
+     {
+       threat
+     }
+
+# New threat for result.
+result_overrides_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+# Whether the override is an orphan.
+result_overrides_override_orphan
+ = element orphan
+     {
+       boolean
+     }
+
 ## Element Type result
 ##
 ## A result.
@@ -475,6 +583,8 @@ result
        & result_delta?
        & result_details
        & result_detection
+       & result_notes?
+       & result_overrides?
      }
 
 result_subnet
@@ -577,6 +687,8 @@ result_delta
        text
        & result_delta_result?
        & result_delta_diff?
+       & result_delta_notes?
+       & result_delta_overrides?
      }
 
 # Delta result.
@@ -594,12 +706,26 @@ result_delta_result
        & result_delta?
        & result_details
        & result_detection
+       & result_notes?
+       & result_overrides?
      }
 
 # Comparison between descriptions.
 result_delta_diff
  = element diff    # type text
      {
+     }
+
+result_delta_notes
+ = element notes    # type result_notes
+     {
+       result_notes_note*
+     }
+
+result_delta_overrides
+ = element overrides    # type result_overrides
+     {
+       result_overrides_override*
      }
 
 # Any details associated with the result.
@@ -653,6 +779,20 @@ result_detection_result
        & result_delta?
        & result_details
        & result_detection
+       & result_notes?
+       & result_overrides?
+     }
+
+result_notes
+ = element notes    # type result_notes
+     {
+       result_notes_note*
+     }
+
+result_overrides
+ = element overrides    # type result_overrides
+     {
+       result_overrides_override*
      }
 
 ## Element Type report
@@ -1131,6 +1271,8 @@ report_report_results_result
        & result_delta?
        & result_details
        & result_detection
+       & result_notes?
+       & result_overrides?
      }
 
 report_report_hosts
@@ -5619,106 +5761,16 @@ get_results_response_results_result_description
        text
      }
 
-# Notes on the result.
 get_results_response_results_result_notes
- = element notes
+ = element notes    # type result_notes
      {
-       get_results_response_results_result_notes_note*
+       result_notes_note*
      }
 
-get_results_response_results_result_notes_note
- = element note
-     {
-       get_results_response_results_result_notes_note_nvt
-       & get_results_response_results_result_notes_note_text
-       & get_results_response_results_result_notes_note_orphan
-     }
-
-get_results_response_results_result_notes_note_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       & get_results_response_results_result_notes_note_nvt_name
-     }
-
-get_results_response_results_result_notes_note_nvt_name
- = element name
-     {
-       name
-     }
-
-# The text of the note.
-get_results_response_results_result_notes_note_text
- = element text
-     {
-       text
-       & attribute excerpt { boolean }
-     }
-
-# Whether the note is an orphan.
-get_results_response_results_result_notes_note_orphan
- = element orphan
-     {
-       boolean
-     }
-
-# Overrides on the result.
 get_results_response_results_result_overrides
- = element overrides
+ = element overrides    # type result_overrides
      {
-       get_results_response_results_result_overrides_override*
-     }
-
-get_results_response_results_result_overrides_override
- = element override
-     {
-       get_results_response_results_result_overrides_override_nvt
-       & get_results_response_results_result_overrides_override_text
-       & get_results_response_results_result_overrides_override_threat
-       & get_results_response_results_result_overrides_override_new_threat
-       & get_results_response_results_result_overrides_override_orphan
-     }
-
-get_results_response_results_result_overrides_override_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       & get_results_response_results_result_overrides_override_nvt_name
-     }
-
-get_results_response_results_result_overrides_override_nvt_name
- = element name
-     {
-       name
-     }
-
-# The text of the override.
-get_results_response_results_result_overrides_override_text
- = element text
-     {
-       text
-       & attribute excerpt { boolean }
-     }
-
-# Threat level to which override applies.
-get_results_response_results_result_overrides_override_threat
- = element threat
-     {
-       threat
-     }
-
-# New threat for result.
-get_results_response_results_result_overrides_override_new_threat
- = element new_threat
-     {
-       threat
-     }
-
-# Whether the override is an orphan.
-get_results_response_results_result_overrides_override_orphan
- = element orphan
-     {
-       boolean
+       result_overrides_override*
      }
 
 ## Response to get_schedules

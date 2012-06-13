@@ -389,6 +389,118 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
   </element>
   <element>
+    <name>result_notes</name>
+    <summary>Notes on a result</summary>
+    <pattern>
+      <any><e>note</e></any>
+    </pattern>
+    <ele>
+      <name>note</name>
+      <pattern>
+        <e>nvt</e>
+        <e>text</e>
+        <e>orphan</e>
+      </pattern>
+      <ele>
+        <name>nvt</name>
+        <pattern>
+          <attrib>
+            <name>oid</name>
+            <type>oid</type>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <pattern><t>name</t></pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>text</name>
+        <summary>The text of the note</summary>
+        <pattern>
+          <attrib>
+            <name>excerpt</name>
+            <name>Whether the contents is an excerpt of the full text</name>
+            <type>boolean</type>
+            <required>1</required>
+          </attrib>
+          text
+        </pattern>
+      </ele>
+      <ele>
+        <name>orphan</name>
+        <summary>Whether the note is an orphan</summary>
+        <pattern><t>boolean</t></pattern>
+      </ele>
+    </ele>
+  </element>
+  <element>
+    <name>result_overrides</name>
+    <summary>Overrides on a result</summary>
+    <pattern>
+      <any><e>override</e></any>
+    </pattern>
+    <ele>
+      <name>override</name>
+      <pattern>
+        <e>nvt</e>
+        <e>text</e>
+        <e>threat</e>
+        <e>new_threat</e>
+        <e>orphan</e>
+      </pattern>
+      <ele>
+        <name>nvt</name>
+        <pattern>
+          <attrib>
+            <name>oid</name>
+            <type>oid</type>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <pattern><t>name</t></pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>text</name>
+        <summary>The text of the override</summary>
+        <pattern>
+          <attrib>
+            <name>excerpt</name>
+            <name>Whether the contents is an excerpt of the full text</name>
+            <type>boolean</type>
+            <required>1</required>
+          </attrib>
+          text
+        </pattern>
+      </ele>
+      <ele>
+        <name>threat</name>
+        <summary>Threat level to which override applies</summary>
+        <pattern>
+          <t>threat</t>
+        </pattern>
+      </ele>
+      <ele>
+        <name>new_threat</name>
+        <summary>New threat for result</summary>
+        <pattern>
+          <t>threat</t>
+        </pattern>
+      </ele>
+      <ele>
+        <name>orphan</name>
+        <summary>Whether the override is an orphan</summary>
+        <pattern><t>boolean</t></pattern>
+      </ele>
+    </ele>
+  </element>
+  <element>
     <name>result</name>
     <summary>A result</summary>
     <pattern>
@@ -407,6 +519,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>delta</e></o>
       <e>details</e>
       <e>detection</e>
+      <o><e>notes</e></o>
+      <o><e>overrides</e></o>
     </pattern>
     <ele>
       <name>subnet</name>
@@ -487,6 +601,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>
         <o><e>result</e></o>
         <o><e>diff</e></o>
+        <o><e>notes</e></o>
+        <o><e>overrides</e></o>
         text
       </pattern>
       <ele>
@@ -498,6 +614,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>diff</name>
         <summary>Comparison between descriptions</summary>
         <type>text</type>
+      </ele>
+      <ele>
+        <name>notes</name>
+        <type>result_notes</type>
+      </ele>
+      <ele>
+        <name>overrides</name>
+        <type>result_overrides</type>
       </ele>
     </ele>
     <ele>
@@ -534,6 +658,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Detection result</summary>
         <type>result</type>
       </ele>
+    </ele>
+    <ele>
+      <name>notes</name>
+      <type>result_notes</type>
+    </ele>
+    <ele>
+      <name>overrides</name>
+      <type>result_overrides</type>
     </ele>
   </element>
   <element>
@@ -7096,115 +7228,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
           <ele>
             <name>notes</name>
-            <summary>Notes on the result</summary>
-            <pattern>
-              <any><e>note</e></any>
-            </pattern>
-            <ele>
-              <name>note</name>
-              <pattern>
-                <e>nvt</e>
-                <e>text</e>
-                <e>orphan</e>
-              </pattern>
-              <ele>
-                <name>nvt</name>
-                <pattern>
-                  <attrib>
-                    <name>oid</name>
-                    <type>oid</type>
-                    <required>1</required>
-                  </attrib>
-                  <e>name</e>
-                </pattern>
-                <ele>
-                  <name>name</name>
-                  <pattern><t>name</t></pattern>
-                </ele>
-              </ele>
-              <ele>
-                <name>text</name>
-                <summary>The text of the note</summary>
-                <pattern>
-                  <attrib>
-                    <name>excerpt</name>
-                    <name>Whether the contents is an excerpt of the full text</name>
-                    <type>boolean</type>
-                    <required>1</required>
-                  </attrib>
-                  text
-                </pattern>
-              </ele>
-              <ele>
-                <name>orphan</name>
-                <summary>Whether the note is an orphan</summary>
-                <pattern><t>boolean</t></pattern>
-              </ele>
-            </ele>
+            <type>result_notes</type>
           </ele>
           <ele>
             <name>overrides</name>
-            <summary>Overrides on the result</summary>
-            <pattern>
-              <any><e>override</e></any>
-            </pattern>
-            <ele>
-              <name>override</name>
-              <pattern>
-                <e>nvt</e>
-                <e>text</e>
-                <e>threat</e>
-                <e>new_threat</e>
-                <e>orphan</e>
-              </pattern>
-              <ele>
-                <name>nvt</name>
-                <pattern>
-                  <attrib>
-                    <name>oid</name>
-                    <type>oid</type>
-                    <required>1</required>
-                  </attrib>
-                  <e>name</e>
-                </pattern>
-                <ele>
-                  <name>name</name>
-                  <pattern><t>name</t></pattern>
-                </ele>
-              </ele>
-              <ele>
-                <name>text</name>
-                <summary>The text of the override</summary>
-                <pattern>
-                  <attrib>
-                    <name>excerpt</name>
-                    <name>Whether the contents is an excerpt of the full text</name>
-                    <type>boolean</type>
-                    <required>1</required>
-                  </attrib>
-                  text
-                </pattern>
-              </ele>
-              <ele>
-                <name>threat</name>
-                <summary>Threat level to which override applies</summary>
-                <pattern>
-                  <t>threat</t>
-                </pattern>
-              </ele>
-              <ele>
-                <name>new_threat</name>
-                <summary>New threat for result</summary>
-                <pattern>
-                  <t>threat</t>
-                </pattern>
-              </ele>
-              <ele>
-                <name>orphan</name>
-                <summary>Whether the override is an orphan</summary>
-                <pattern><t>boolean</t></pattern>
-              </ele>
-            </ele>
+            <type>result_overrides</type>
           </ele>
         </ele>
       </ele>
