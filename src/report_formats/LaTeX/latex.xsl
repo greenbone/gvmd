@@ -34,7 +34,8 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     xmlns:func = "http://exslt.org/functions"
     xmlns:str="http://exslt.org/strings"
     xmlns:openvas="http://openvas.org"
-    extension-element-prefixes="str func">
+    xmlns:date="http://exslt.org/dates-and-times"
+    extension-element-prefixes="str func date">
   <xsl:output method="text" encoding="string" indent="no"/>
   <xsl:strip-space elements="*"/>
 
@@ -48,6 +49,34 @@ TODOS: Solve Whitespace/Indentation problem of this file.
       </xsl:otherwise>
     </xsl:choose>
   </func:function>
+
+  <xsl:template match="scan_start" name="format-date">
+    <xsl:param name="date" select="."/>
+    <xsl:if test="string-length ($date)">
+      <xsl:choose>
+        <xsl:when test="contains($date, '+')">
+          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', substring-after ($date, '+'))"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' UTC')"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:if>
+  </xsl:template>
+
+  <xsl:template match="scan_end">
+    <xsl:param name="date" select="."/>
+    <xsl:if test="string-length ($date)">
+      <xsl:choose>
+        <xsl:when test="contains($date, '+')">
+          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', substring-after ($date, '+'))"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' UTC')"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:if>
+  </xsl:template>
 
   <!-- A newline, after countless failed tries to define a newline-entity. -->
   <xsl:template name="newline">
@@ -522,14 +551,14 @@ advice given in each description, in order to rectify the issue.
 \begin{abstract}
 This document compares the results of two security scans.
 The first scan started at </xsl:text>
-        <xsl:value-of select="scan_start"/>
+        <xsl:apply-templates select="scan_start"/>
 <xsl:text> and ended at </xsl:text>
           <xsl:value-of select="scan_end"/>
 <xsl:text>.
 The second scan started at </xsl:text>
-        <xsl:value-of select="delta/report/scan_start"/>
+        <xsl:apply-templates select="delta/report/scan_start"/>
 <xsl:text> and ended at </xsl:text>
-          <xsl:value-of select="delta/report/scan_end"/>
+        <xsl:apply-templates select="delta/report/scan_start"/>
 <xsl:text>.
 The report first summarises the hosts found.  Then, for each host,
 the report describes the changes that occurred between the two scans.
@@ -542,9 +571,9 @@ the report describes the changes that occurred between the two scans.
 \begin{abstract}
 This document reports on the results of an automatic security scan.
 The scan started at </xsl:text>
-        <xsl:value-of select="scan_start"/>
+        <xsl:apply-templates select="scan_start"/>
 <xsl:text> and ended at </xsl:text>
-          <xsl:value-of select="scan_end"/>
+        <xsl:apply-templates select="scan_end"/>
 <xsl:text>.  The
 report first summarises the results found.  Then, for each host,
 the report describes every issue found.  Please consider the
@@ -1266,10 +1295,14 @@ advice given in each description, in order to rectify the issue.
       <xsl:otherwise>
         <xsl:text>\begin{tabular}{ll}</xsl:text><xsl:call-template name="newline"/>
         <xsl:text>Host scan start&amp;</xsl:text>
-        <xsl:value-of select="start"/>
+        <xsl:call-template name="format-date">
+          <xsl:with-param name="date" select="start"/>
+        </xsl:call-template>
         <xsl:call-template name="latex-newline"/>
         <xsl:text>Host scan end&amp;</xsl:text>
-        <xsl:value-of select="end"/>
+        <xsl:call-template name="format-date">
+          <xsl:with-param name="date" select="end"/>
+        </xsl:call-template>
         <xsl:call-template name="latex-newline"/>
         <xsl:text>\end{tabular}</xsl:text><xsl:call-template name="newline"/>
         <xsl:call-template name="newline"/>

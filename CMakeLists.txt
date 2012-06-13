@@ -282,7 +282,7 @@ install (FILES src/report_formats/ITG/generate
 
 install (FILES src/report_formats/LaTeX/generate
                src/report_formats/LaTeX/latex.xsl
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/7fcc3a1a-1f62-11e1-86bf-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/a684c02c-b531-11e1-bdc2-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/NBE/generate
@@ -292,7 +292,7 @@ install (FILES src/report_formats/NBE/generate
 
 install (FILES src/report_formats/PDF/generate
                src/report_formats/LaTeX/latex.xsl
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/a0b5bfb2-1f62-11e1-85db-406186ea4fc5/
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/c402cc3e-b531-11e1-9163-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/TXT/generate src/report_formats/TXT/TXT.xsl

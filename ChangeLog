@@ -1,3 +1,21 @@
+2012-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport from trunk r13577.
+
+	* CMakeLists.txt: Update LaTeX based report format UUIDs for 2012-06-13
+	date format commit.
+
+	* src/manage_sql.c: Update LaTeX based report format UUIDs in database.
+
+2012-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Make the date formats of the LaTeX based reports nicer.  Backport from
+	trunk r13536.
+
+	* src/report_formats/LaTeX/latex.xsl (scan_start, scan_end): New
+	templates.
+	(abstract, results-per-host-single-host): Call new templates for dates.
+
 2012-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport from trunk r13575.
