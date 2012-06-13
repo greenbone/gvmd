@@ -1,5 +1,12 @@
 2012-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Update report format UUIDs before
+	predefined check.  Backport from trunk r13584.
+	(init_manage, report_format_predefined): Update LaTeX report format UUID
+	everywhere.  Backport from trunk r13583.
+
+2012-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport from trunk r13577.
 
 	* CMakeLists.txt: Update LaTeX based report format UUIDs for 2012-06-13
