@@ -1,5 +1,10 @@
 2012-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage, report_format_predefined): Update LaTeX
+	report format UUID everywhere.
+
+2012-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (result_notes, result_overrides): New
 	elements.
 	(result): Add NOTES and OVERRIDES to RESULT and DELTA.

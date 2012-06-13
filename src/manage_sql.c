@@ -10145,13 +10145,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM report_formats"
-               " WHERE uuid = '7fcc3a1a-1f62-11e1-86bf-406186ea4fc5';")
+               " WHERE uuid = 'a684c02c-b531-11e1-bdc2-406186ea4fc5';")
       == 0)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('7fcc3a1a-1f62-11e1-86bf-406186ea4fc5', NULL, 'LaTeX',"
+           " VALUES ('a684c02c-b531-11e1-bdc2-406186ea4fc5', NULL, 'LaTeX',"
            " 'LaTeX source file.',"
            " 'Report as LaTeX source file for further processing.\n',"
            " 'tex', 'text/plain', '', %i, %i, 1);",
@@ -10181,13 +10181,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM report_formats"
-               " WHERE uuid = 'a0b5bfb2-1f62-11e1-85db-406186ea4fc5';")
+               " WHERE uuid = 'c402cc3e-b531-11e1-9163-406186ea4fc5';")
       == 0)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time, flags)"
-           " VALUES ('a0b5bfb2-1f62-11e1-85db-406186ea4fc5', NULL, 'PDF',"
+           " VALUES ('c402cc3e-b531-11e1-9163-406186ea4fc5', NULL, 'PDF',"
            " 'Portable Document Format report.',"
            " 'Scan results in Portable Document Format (PDF).',"
            "'pdf', 'application/pdf', '', %i, %i, 1);",
@@ -34967,9 +34967,9 @@ report_format_predefined (report_format_t report_format)
                   "SELECT uuid = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5'"
                   " OR uuid = '6c248850-1f62-11e1-b082-406186ea4fc5'"
                   " OR uuid = '77bd6c4a-1f62-11e1-abf0-406186ea4fc5'"
-                  " OR uuid = '7fcc3a1a-1f62-11e1-86bf-406186ea4fc5'"
+                  " OR uuid = 'a684c02c-b531-11e1-bdc2-406186ea4fc5'"
                   " OR uuid = '9ca6fe72-1f62-11e1-9e7c-406186ea4fc5'"
-                  " OR uuid = 'a0b5bfb2-1f62-11e1-85db-406186ea4fc5'"
+                  " OR uuid = 'c402cc3e-b531-11e1-9163-406186ea4fc5'"
                   " OR uuid = 'a3810a62-1f62-11e1-9219-406186ea4fc5'"
                   " OR uuid = 'a994b278-1f62-11e1-96ac-406186ea4fc5'"
                   " FROM report_formats"
