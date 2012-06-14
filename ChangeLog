@@ -1,5 +1,10 @@
 2012-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_PORT_LIST
+	add g_log to case 3.
+
+2012-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (report): Add REPORT_FORMAT.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.

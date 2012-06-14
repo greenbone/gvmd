@@ -9954,6 +9954,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("delete_port_list",
                                     "Attempt to delete a predefined port"
                                     " list"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port list %s could not be deleted",
+                       delete_port_list_data->port_list_id);
                 break;
               default:
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_port_list"));
