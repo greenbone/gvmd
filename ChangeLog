@@ -1,5 +1,15 @@
 2012-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (commands): Add GET_SETTINGS.  Correct
+	MODIFY_SETTING.
+	(get_settings): New command.
+	(help): Add GET_SETTINGS.
+	(modify_settings): Add UUID param.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2012-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_PORT_LIST
 	add g_log to case 3.
 

@@ -57,6 +57,7 @@ command
     | get_report_formats
     | get_results
     | get_schedules
+    | get_settings
     | get_slaves
     | get_system_reports
     | get_target_locators
@@ -132,6 +133,7 @@ response
     | get_report_formats_response
     | get_results_response
     | get_schedules_response
+    | get_settings_response
     | get_slaves_response
     | get_system_reports_response
     | get_target_locators_response
@@ -1523,6 +1525,7 @@ commands
            | get_report_formats
            | get_results
            | get_schedules
+           | get_settings
            | get_slaves
            | get_system_reports
            | get_target_locators
@@ -1535,7 +1538,7 @@ commands
            | modify_note
            | modify_override
            | modify_report
-           | modify_settings
+           | modify_setting
            | modify_task
            | pause_task
            | restore
@@ -2975,6 +2978,25 @@ get_schedules
        & attribute sort_field { text }?
      }
 
+## Command get_settings
+##
+## Get all settings.
+
+get_settings
+ = element get_settings
+     {
+       # ID of single setting to get.
+       attribute setting_id { uuid }?
+       & # Filter term.
+       attribute filter { text }?
+       & # First result.
+       attribute first { integer }?
+       & # Maximum number of results in response.
+       attribute max { integer }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
 ## Command get_slaves
 ##
 ## Get all slaves.
@@ -3471,7 +3493,8 @@ modify_report_format_param_value
 modify_setting
  = element modify_setting
      {
-       modify_setting_name
+       attribute setting_id { uuid }?
+       & modify_setting_name
        & modify_setting_value
      }
 
@@ -3773,6 +3796,7 @@ commands_response
            | get_results_response
            | get_slaves_response
            | get_schedules_response
+           | get_settings_response
            | get_system_reports_response
            | get_target_locators_response
            | get_targets_response
@@ -3784,7 +3808,7 @@ commands_response
            | modify_note_response
            | modify_override_response
            | modify_report_response
-           | modify_settings_response
+           | modify_setting_response
            | modify_task_response
            | pause_task_response
            | restore_response
@@ -5901,6 +5925,55 @@ get_schedules_response_schedule_tasks_task_name
  = element name
      {
        name
+     }
+
+## Response to get_settings
+
+get_settings_response
+ = element get_settings_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_settings_response_filters
+       & get_settings_response_settings
+     }
+
+get_settings_response_filters
+ = element filters
+     {
+       get_settings_response_filters_term
+     }
+
+# Filter term.
+get_settings_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_settings_response_settings
+ = element settings
+     {
+       get_settings_response_settings_setting
+     }
+
+get_settings_response_settings_setting
+ = element setting
+     {
+       get_settings_response_settings_setting_name
+       & get_settings_response_settings_setting_value
+     }
+
+get_settings_response_settings_setting_name
+ = element name
+     {
+       text
+     }
+
+get_settings_response_settings_setting_value
+ = element value
+     {
+       text
      }
 
 ## Response to get_slaves

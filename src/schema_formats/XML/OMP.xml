@@ -1501,6 +1501,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_report_formats</c>
           <c>get_results</c>
           <c>get_schedules</c>
+          <c>get_settings</c>
           <c>get_slaves</c>
           <c>get_system_reports</c>
           <c>get_target_locators</c>
@@ -1513,7 +1514,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_note</c>
           <c>modify_override</c>
           <c>modify_report</c>
-          <c>modify_settings</c>
+          <c>modify_setting</c>
           <c>modify_task</c>
           <c>pause_task</c>
           <c>restore</c>
@@ -1587,6 +1588,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_results</r>
             <r>get_slaves</r>
             <r>get_schedules</r>
+            <r>get_settings</r>
             <r>get_system_reports</r>
             <r>get_target_locators</r>
             <r>get_targets</r>
@@ -1598,7 +1600,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_note</r>
             <r>modify_override</r>
             <r>modify_report</r>
-            <r>modify_settings</r>
+            <r>modify_setting</r>
             <r>modify_task</r>
             <r>pause_task</r>
             <r>restore</r>
@@ -7514,6 +7516,109 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>get_settings</name>
+    <summary>Get all settings</summary>
+    <description>
+      <p>
+        The client uses the get_settings command to get the settings.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>setting_id</name>
+        <summary>ID of single setting to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>first</name>
+        <summary>First result</summary>
+        <type>integer</type>
+      </attrib>
+      <attrib>
+        <name>max</name>
+        <summary>Maximum number of results in response</summary>
+        <type>integer</type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>filters</e>
+        <e>settings</e>
+      </pattern>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <e>term</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>settings</name>
+        <pattern>
+          <e>setting</e>
+        </pattern>
+        <ele>
+          <name>setting</name>
+          <pattern>
+            <e>name</e>
+            <e>value</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>value</name>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all settings</summary>
+      <request>
+        <get_settings></get_settings>
+      </request>
+      <response>
+        <get_settings_response status="200" status_text="OK">
+          <settings>
+            <setting id="5f5a8712-8017-11e1-8556-406186ea4fc5">
+              <name>Rows Per Page</name>
+              <value>15</value>
+            </setting>
+          </settings>
+        </get_settings_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_slaves</name>
     <summary>Get all slaves</summary>
     <description>
@@ -9067,6 +9172,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_REPORT_FORMATS     Get all report formats.
             GET_RESULTS            Get results.
             GET_SCHEDULES          Get all schedules.
+            GET_SETTINGS           Get all settings.
             GET_SLAVES             Get all slaves.
             GET_SYSTEM_REPORTS     Get all system reports.
             GET_TARGET_LOCATORS    Get configured target locators.
@@ -9912,10 +10018,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         The client uses the modify_setting command to change an existing
         setting.  These are user settings that can be controlled via OMP.
-        Currently this includes "Password" and "Timezone".
+        The settings "Password" and "Timezone" can be modified by name or UUID,
+        the rest by UUID.
       </p>
     </description>
     <pattern>
+      <attrib>
+        <name>setting_id</name>
+        <type>uuid</type>
+      </attrib>
       <e>name</e>
       <e>value</e>
     </pattern>
