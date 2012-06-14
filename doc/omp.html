@@ -1867,6 +1867,25 @@ result_overrides
           ("scan" or "assets")
           </li>
 <li>
+              &lt;<b>report_format</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>param</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Report format parameter.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Parameter name.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Parameter value.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>delta</b>&gt;
               ?<ul style="list-style: none"><li>
               &lt;<b>report</b>&gt;
@@ -2304,6 +2323,7 @@ report_report
      {
        attribute id { uuid }
        &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
+       &amp; report_report_report_format
        &amp; report_report_delta?
        &amp; ( report_report_sort
            &amp; report_report_filters
@@ -2319,6 +2339,31 @@ report_report
            &amp; report_report_host_start*
            &amp; report_report_host_end*
            &amp; report_report_scan_end )?
+     }
+
+report_report_report_format
+ = element report_format
+     {
+       report_report_report_format_param
+     }
+
+report_report_report_format_param
+ = element param
+     {
+       report_report_report_format_param_name
+       &amp; report_report_report_format_param_value
+     }
+
+report_report_report_format_param_name
+ = element name
+     {
+       text
+     }
+
+report_report_report_format_param_value
+ = element value
+     {
+       text
      }
 
 report_report_delta

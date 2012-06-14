@@ -721,6 +721,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </alts>
           </type>
         </attrib>
+        <e>report_format</e>
         <o><e>delta</e></o>
         <o>
           <g>
@@ -741,6 +742,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </g>
         </o>
       </pattern>
+      <ele>
+        <name>report_format</name>
+        <pattern>
+          <e>param</e>
+        </pattern>
+        <ele>
+          <name>param</name>
+          <summary>Report format parameter</summary>
+          <pattern>
+            <e>name</e>
+            <e>value</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Parameter name</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>value</name>
+            <summary>Parameter value</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
       <ele>
         <name>delta</name>
         <pattern>

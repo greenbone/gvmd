@@ -816,6 +816,7 @@ report_report
      {
        attribute id { uuid }
        & attribute type { xsd:token { pattern = "scan|assets" } }?
+       & report_report_report_format
        & report_report_delta?
        & ( report_report_sort
            & report_report_filters
@@ -831,6 +832,34 @@ report_report
            & report_report_host_start*
            & report_report_host_end*
            & report_report_scan_end )?
+     }
+
+report_report_report_format
+ = element report_format
+     {
+       report_report_report_format_param
+     }
+
+# Report format parameter.
+report_report_report_format_param
+ = element param
+     {
+       report_report_report_format_param_name
+       & report_report_report_format_param_value
+     }
+
+# Parameter name.
+report_report_report_format_param_name
+ = element name
+     {
+       text
+     }
+
+# Parameter value.
+report_report_report_format_param_value
+ = element value
+     {
+       text
      }
 
 report_report_delta
