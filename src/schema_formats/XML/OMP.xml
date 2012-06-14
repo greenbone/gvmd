@@ -10018,8 +10018,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         The client uses the modify_setting command to change an existing
         setting.  These are user settings that can be controlled via OMP.
-        The settings "Password" and "Timezone" can be modified by name or UUID,
-        the rest by UUID.
+        The settings "Password" and "Timezone" can be modified by name, the
+        rest by UUID.
       </p>
     </description>
     <pattern>
