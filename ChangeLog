@@ -1,5 +1,10 @@
 2012-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_PORT_LIST
+	add g_log to case 3.  Backport from trunk r13592.
+
+2012-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Init some vars to prevent warnings
 	from older compilers.  Backport from trunk r13586.
 
