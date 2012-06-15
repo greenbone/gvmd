@@ -1,5 +1,13 @@
 2012-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport from trunk r13603.
+
+	* src/manage.c (send_user_rules_empty): New function.
+	(send_user_rules): Skip over empty lines.  Also send the rules when the
+	file contained only newlines and/or empty lines.
+
+2012-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_PORT_LIST
 	add g_log to case 3.  Backport from trunk r13592.
 
