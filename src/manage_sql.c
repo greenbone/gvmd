@@ -17321,6 +17321,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   int orig_f_debugs, orig_f_holes, orig_f_infos, orig_f_logs;
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
 
+  /* Init some vars to prevent warnings from older compilers. */
+  orig_filtered_result_count = 0;
+  orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
+  orig_f_holes = orig_f_debugs = 0;
+
   /** @todo Leaks on error in PRINT.  The process normally exits then anyway. */
 
   /* run_status is set by report_scan_run_status when either of "delta" and

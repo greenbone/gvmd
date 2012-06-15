@@ -1,3 +1,8 @@
+2012-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Init some vars to prevent warnings
+	from older compilers.  Backport from trunk r13586.
+
 2012-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Update report format UUIDs before
