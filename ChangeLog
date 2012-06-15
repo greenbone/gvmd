@@ -1,5 +1,11 @@
 2012-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (send_user_rules_empty): New function.
+	(send_user_rules): Skip over empty lines.  Also send the rules when the
+	file contained only newlines and/or empty lines.
+
+2012-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (modify_setting): Correct description.
 
 	* doc/omp.html: Update from source.

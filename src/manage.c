@@ -854,12 +854,44 @@ send_config_rules (const char* config)
  * @return 0 on success, -1 on failure.
  */
 static int
+send_user_rules_empty (report_t stopped_report)
+{
+  iterator_t hosts;
+
+  /* Empty rules file.  Send rules to deny all finished hosts. */
+
+  init_host_iterator (&hosts, stopped_report, NULL, 0);
+  while (next (&hosts))
+    if (host_iterator_end_time (&hosts)
+        && strlen (host_iterator_end_time (&hosts))
+        && sendf_to_server ("deny %s\n",
+                            host_iterator_host (&hosts)))
+      {
+        cleanup_iterator (&hosts);
+        return -1;
+      }
+  cleanup_iterator (&hosts);
+
+  return send_to_server ("default accept\n") ? -1 : 0;
+}
+
+/**
+ * @brief Send the rules listed in the users directory.
+ *
+ * @param[in]  stopped_report  Report whose finished hosts to deny.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
 send_user_rules (report_t stopped_report)
 {
   gchar *rules;
   gchar **rule, **split;
+  int empty;
 
   assert (current_credentials.username);
+
+  empty = 1;
 
   if (openvas_auth_user_uuid_rules (current_credentials.username,
                                     current_credentials.uuid,
@@ -875,26 +907,10 @@ send_user_rules (report_t stopped_report)
 
   if (stopped_report && (*rule == NULL))
     {
-      iterator_t hosts;
-
-      /* Empty rules file.  Send rules to deny all finished hosts. */
-
-      init_host_iterator (&hosts, stopped_report, NULL, 0);
-      while (next (&hosts))
-        if (host_iterator_end_time (&hosts)
-            && strlen (host_iterator_end_time (&hosts))
-            && sendf_to_server ("deny %s\n",
-                                host_iterator_host (&hosts)))
-          {
-            cleanup_iterator (&hosts);
-            g_strfreev (split);
-            return -1;
-          }
-      cleanup_iterator (&hosts);
-
+      int ret;
+      ret = send_user_rules_empty (stopped_report);
       g_strfreev (split);
-
-      return send_to_server ("default accept\n") ? -1 : 0;
+      return ret;
     }
 
   /** @todo Code to access the rules also occurs in openvas-administrator and
@@ -903,11 +919,13 @@ send_user_rules (report_t stopped_report)
   while (*rule)
     {
       *rule = g_strstrip (*rule);
-      if (**rule == '#')
+      if (**rule == '#' || **rule == '\0')
         {
           rule++;
           continue;
         }
+
+      empty = 0;
 
       /* Presume the rule is correctly formatted. */
 
@@ -978,6 +996,9 @@ send_user_rules (report_t stopped_report)
       rule++;
     }
   g_strfreev (split);
+
+  if (stopped_report && empty)
+    return send_user_rules_empty (stopped_report);
 
   return 0;
 }
