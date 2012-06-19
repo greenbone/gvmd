@@ -1,3 +1,8 @@
+2012-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (init_task_schedule_iterator): Skip trashcan tasks and
+	example task.  Backport from trunk r13615.
+
 2012-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport from trunk r13603.
