@@ -24060,32 +24060,39 @@ get_join (int first, int last_was_and, int last_was_not)
  * @param[in]  type     Resource type.
  * @param[in]  filter   Filter term.
  * @param[in]  columns  Columns in the SQL statement.
+ * @param[out] order    If given then order clause.
  *
  * @return WHERE clause for filter if one is required, else NULL.
  */
 static gchar *
-filter_clause (const char* type, const char* filter, const char **columns)
+filter_clause (const char* type, const char* filter, const char **columns,
+               gchar **order_return)
 {
   if (filter)
     {
-      GString *clause;
+      GString *clause, *order;
       keyword_t **point;
-      int first, last_was_and, last_was_not;
+      int first, first_order, last_was_and, last_was_not;
       array_t *split;
 
       while (*filter && isspace (*filter)) filter++;
 
       if (strlen (filter) == 0)
-        return NULL;
+        {
+          if (order_return) *order_return = g_strdup ("");
+          return NULL;
+        }
 
       /* Add SQL to the clause for each keyword or phrase. */
 
       clause = g_string_new ("");
+      order = g_string_new ("");
       split = split_filter (filter);
       point = (keyword_t**) split->pdata;
       first = 1;
       last_was_and = 0;
       last_was_not = 0;
+      first_order = 1;
       while (*point)
         {
           gchar *quoted_keyword, *quoted_column;
@@ -24116,6 +24123,52 @@ filter_clause (const char* type, const char* filter, const char **columns)
           if (strcasecmp (keyword->string, "not") == 0)
             {
               last_was_not = 1;
+              point++;
+              continue;
+            }
+
+          /* Check for ordering parts, like asc=name or desc=string. */
+
+          if (keyword->column && (strcasecmp (keyword->column, "asc") == 0))
+            {
+              if (strcmp (keyword->string, "ROWID")
+                  && (vector_find_string (columns, keyword->string) == 0))
+                {
+                  point++;
+                  continue;
+                }
+
+              if (first_order)
+                {
+                  g_string_append_printf (order, " ORDER BY %s ASC",
+                                          keyword->string);
+                  first_order = 0;
+                }
+              else
+                g_string_append_printf (order, ", %s ASC",
+                                        keyword->string);
+              point++;
+              continue;
+            }
+          else if (keyword->column
+                   && (strcasecmp (keyword->column, "desc") == 0))
+            {
+              if (strcmp (keyword->string, "ROWID")
+                  && (vector_find_string (columns, keyword->string) == 0))
+                {
+                  point++;
+                  continue;
+                }
+
+              if (first_order)
+                {
+                  g_string_append_printf (order, " ORDER BY %s DESC",
+                                          keyword->string);
+                  first_order = 0;
+                }
+              else
+                g_string_append_printf (order, ", %s DESC",
+                                        keyword->string);
               point++;
               continue;
             }
@@ -24273,12 +24326,17 @@ filter_clause (const char* type, const char* filter, const char **columns)
         keyword_free (*point);
       array_free (split);
 
+      if (order_return)
+        *order_return = g_string_free (order, FALSE);
+
       if (strlen (clause->str))
         return g_string_free (clause, FALSE);
 
       g_string_free (clause, TRUE);
       return NULL;
     }
+  if (order_return)
+    *order_return = g_strdup ("");
   return NULL;
 }
 
@@ -24369,7 +24427,7 @@ count (const char *type, const char *filter, const char *actions_string,
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause (type, filter, extra_columns);
+  clause = filter_clause (type, filter, extra_columns, NULL);
 
   if (actions_string == NULL
       || strlen (actions_string) == 0
@@ -24456,11 +24514,11 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
                         const char *trash_columns, const char **filter_columns,
                         resource_t resource, int first, int max)
 {
-  gchar *clause;
+  gchar *clause, *order;
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause (type, get->filter, filter_columns);
+  clause = filter_clause (type, get->filter, filter_columns, &order);
 
   if (resource && get->trash)
     init_iterator (iterator,
@@ -24469,25 +24527,23 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
+                   "%s;",
                    trash_columns ? trash_columns : columns,
                    type,
                    resource,
                    current_credentials.uuid,
-                   get->sort_field ? get->sort_field : "ROWID",
-                   get->sort_order ? "ASC" : "DESC");
+                   order);
   else if (get->trash)
     init_iterator (iterator,
                    "SELECT %s"
                    " FROM %ss_trash"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
+                   "%s;",
                    trash_columns ? trash_columns : columns,
                    type,
                    current_credentials.uuid,
-                   get->sort_field ? get->sort_field : "ROWID",
-                   get->sort_order ? "ASC" : "DESC");
+                   order);
   else if (resource)
     init_iterator (iterator,
                    "SELECT %s"
@@ -24495,29 +24551,26 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
+                   "%s;",
                    columns,
                    type,
                    resource,
                    current_credentials.uuid,
-                   get->sort_field ? get->sort_field : "ROWID",
-                   get->sort_order ? "ASC" : "DESC");
+                   order);
   else
     init_iterator (iterator,
                    "SELECT %s"
                    " FROM %ss"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s%s"
-                   " ORDER BY %s %s"
+                   "%s%s%s"
                    " LIMIT %i OFFSET %i;",
                    columns,
                    type,
                    current_credentials.uuid,
                    clause ? " AND " : "",
                    clause ? clause : "",
-                   get->sort_field ? get->sort_field : "ROWID",
-                   get->sort_order ? "ASC" : "DESC",
+                   order,
                    max,
                    first);
 
@@ -24543,7 +24596,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    const char *trash_columns, const char **filter_columns)
 {
   int actions, first, max;
-  gchar *clause;
+  gchar *clause, *order;
   resource_t resource = 0;
 
   assert (current_credentials.uuid);
@@ -24590,7 +24643,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
       return 0;
     }
 
-  clause = filter_clause ("target", get->filter, filter_columns);
+  clause = filter_clause ("target", get->filter, filter_columns, &order);
 
   if (resource && get->trash)
     init_iterator (iterator,
@@ -24608,7 +24661,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    "   (SELECT ROWID FROM users"
                    "    WHERE users.uuid = '%s')"
                    "   AND actions & %u = %u))"
-                   " ORDER BY %s %s;",
+                   "%s;",
                    trash_columns ? trash_columns : columns,
                    type,
                    resource,
@@ -24616,8 +24669,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    current_credentials.uuid,
                    actions,
                    actions,
-                   get->sort_field ? get->sort_field : "ROWID",
-                   get->sort_order ? "ASC" : "DESC");
+                   order);
   else if (get->trash)
     init_iterator (iterator,
                    "SELECT %s"
@@ -24633,15 +24685,14 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    "   (SELECT ROWID FROM users"
                    "    WHERE users.uuid = '%s')"
                    "   AND actions & %u = %u))"
-                   " ORDER BY %s %s;",
+                   "%s;",
                    trash_columns ? trash_columns : columns,
                    type,
                    current_credentials.uuid,
                    current_credentials.uuid,
                    actions,
                    actions,
-                   get->sort_field ? get->sort_field : "ROWID",
-                   get->sort_order ? "ASC" : "DESC");
+                   order);
   else if (resource)
     init_iterator (iterator,
                    "SELECT %s"
@@ -24658,7 +24709,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    "   (SELECT ROWID FROM users"
                    "    WHERE users.uuid = '%s')"
                    "   AND actions & %u = %u))"
-                   " ORDER BY %s %s;",
+                   "%s;",
                    columns,
                    type,
                    resource,
@@ -24666,8 +24717,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    current_credentials.uuid,
                    actions,
                    actions,
-                   get->sort_field ? get->sort_field : "ROWID",
-                   get->sort_order ? "ASC" : "DESC");
+                   order);
   else
     init_iterator (iterator,
                    "SELECT %s"
@@ -24683,8 +24733,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    "   (SELECT ROWID FROM users"
                    "    WHERE users.uuid = '%s')"
                    "   AND actions & %u = %u))"
-                   "%s%s"
-                   " ORDER BY %s %s"
+                   "%s%s%s"
                    " LIMIT %i OFFSET %i;",
                    columns,
                    type,
@@ -24694,11 +24743,11 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    actions,
                    clause ? " AND " : "",
                    clause ? clause : "",
-                   get->sort_field ? get->sort_field : "ROWID",
-                   get->sort_order ? "ASC" : "DESC",
+                   order,
                    max,
                    first);
 
+  g_free (order);
   g_free (clause);
   return 0;
 }
@@ -24712,20 +24761,15 @@ init_get_iterator (iterator_t* iterator, const char *type,
  * @param[in]  filter      Filter term.
  * @param[in]  first       First target.
  * @param[in]  max         Maximum number of targets returned.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
 init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
-                           const char *filter, int first, int max,
-                           int ascending, const char* sort_field)
+                           const char *filter, int first, int max)
 {
   static const char *filter_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
   get_data_t get;
   get.trash = trash;
   get.filter = (char*) filter;
-  get.sort_order = ascending;
-  get.sort_field = (char*) sort_field;
   init_user_get_iterator (iterator, "target", &get, TARGET_ITERATOR_COLUMNS,
                           TARGET_ITERATOR_TRASH_COLUMNS, filter_columns, target,
                           first, max);
@@ -25285,8 +25329,7 @@ trash_target_writable (target_t target)
  * @param[in]  ascending  Whether to sort ascending or descending.
  */
 void
-init_target_task_iterator (iterator_t* iterator, target_t target,
-                           int ascending)
+init_target_task_iterator (iterator_t* iterator, target_t target)
 {
   assert (current_credentials.uuid);
 
@@ -25296,10 +25339,9 @@ init_target_task_iterator (iterator_t* iterator, target_t target,
                  " AND hidden = 0"
                  " AND ((owner IS NULL) OR (owner ="
                  " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                 " ORDER BY name %s;",
+                 " ORDER BY name ASC;",
                  target,
-                 current_credentials.uuid,
-                 ascending ? "ASC" : "DESC");
+                 current_credentials.uuid);
 }
 
 /**
@@ -31396,7 +31438,7 @@ verify_agent (agent_t agent)
   sql ("BEGIN IMMEDIATE;");
 
   memset (&get, 0, sizeof (get));
-  get.sort_order = 1;
+  get.filter = "asc=ROWID";
   init_agent_iterator (&agents, &get);
   if (next (&agents))
     {
@@ -38724,7 +38766,7 @@ setting_count (const char *filter)
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause ("setting", filter, extra_columns);
+  clause = filter_clause ("setting", filter, extra_columns, NULL);
 
   ret = sql_int (0, 0,
                  "SELECT count (*)"
@@ -38773,7 +38815,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
   if (max < 1)
     max = -1;
 
-  clause = filter_clause ("setting", filter, extra_columns);
+  clause = filter_clause ("setting", filter, extra_columns, NULL);
 
   quoted_uuid = uuid ? sql_quote (uuid) : NULL;
 

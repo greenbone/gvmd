@@ -1725,7 +1725,6 @@ get_data_reset (get_data_t *data)
   free (data->actions);
   free (data->id);
   free (data->filter);
-  free (data->sort_field);
 
   memset (data, 0, sizeof (get_data_t));
 }
@@ -1775,15 +1774,6 @@ get_data_parse_attributes (get_data_t *data, const gchar *type,
     data->max = -1;
   if (data->max == 0)
     data->max = -1;
-
-  append_attribute (attribute_names, attribute_values, "sort_field",
-                    &data->sort_field);
-
-  if (find_attribute (attribute_names, attribute_values,
-                      "sort_order", &attribute))
-    data->sort_order = strcmp (attribute, "descending");
-  else
-    data->sort_order = 1;
 
   if (find_attribute (attribute_names, attribute_values,
                       "trash", &attribute))
@@ -15861,8 +15851,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                       init_target_task_iterator (&tasks,
                                                  target_iterator_target
-                                                  (&targets),
-                                                 get_targets_data->get.sort_order);
+                                                  (&targets));
                       while (next (&tasks))
                         SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
                                                  "<name>%s</name>"

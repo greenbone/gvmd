@@ -647,8 +647,6 @@ typedef struct
   int first;           ///< Skip over items before this number.
   char *id;            ///< ID of single item to get.
   int max;             ///< Maximum number of items returned.
-  char *sort_field;    ///< Field to sort results on.
-  int sort_order;      ///< Result sort order: 0 descending, else ascending.
   int trash;           ///< Boolean.  Whether to return from trashcan.
 } get_data_t;
 
@@ -947,8 +945,7 @@ int
 target_count (const char *, const char *);
 
 void
-init_user_target_iterator (iterator_t*, target_t, int, const char*, int, int,
-                           int, const char*);
+init_user_target_iterator (iterator_t*, target_t, int, const char*, int, int);
 
 int
 init_target_iterator (iterator_t*, const get_data_t *);
@@ -1032,7 +1029,7 @@ char*
 target_lsc_credential_name (const char *);
 
 void
-init_target_task_iterator (iterator_t*, target_t, int);
+init_target_task_iterator (iterator_t*, target_t);
 
 const char*
 target_task_iterator_name (iterator_t*);
