@@ -33545,6 +33545,7 @@ init_task_schedule_iterator (iterator_t* iterator)
                  " users.uuid, users.name"
                  " FROM tasks, schedules, users"
                  " WHERE tasks.schedule = schedules.ROWID"
+                 " AND tasks.hidden = 0"
                  " AND tasks.owner = users.ROWID;");
 }
 

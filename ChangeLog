@@ -1,3 +1,8 @@
+2012-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (init_task_schedule_iterator): Skip trashcan tasks and
+	example task.
+
 2012-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (send_user_rules_empty): New function.
