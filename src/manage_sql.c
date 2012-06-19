@@ -21521,7 +21521,7 @@ end_char (const char *string)
 static int
 validate_host (const char *string)
 {
-  gchar **split, **point;
+  gchar **split, **point, **last;
   int numeric;
   const char *host;
 
@@ -21538,11 +21538,19 @@ validate_host (const char *string)
   if (*host)
     return 1;
 
-  /* Check number of octets for IPv4. */
+  /* Check number of octets for IPv4 in numeric form. */
 
   split = g_strsplit (string, ".", 0);
-  if (g_strv_length (split) > 4)
-    return 1;
+  point = last = split;
+  while (*point) last = point++;
+  if (*last)
+    {
+      const char *octet;
+      octet = *last;
+      while (*octet && isdigit (*octet)) octet++;
+      if (*octet == '\0' && g_strv_length (split) > 4)
+        return 1;
+    }
 
   point = split;
   numeric = -1;

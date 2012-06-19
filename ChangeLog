@@ -1,5 +1,11 @@
 2012-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (validate_host): Only do the length check when the last
+	octet is a number, because hostnames can have any number of parts.
+	Backport from trunk r13492.
+
+2012-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (init_task_schedule_iterator): Skip trashcan tasks and
 	example task.  Backport from trunk r13615.
 
