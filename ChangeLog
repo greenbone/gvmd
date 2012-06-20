@@ -1,5 +1,10 @@
 2012-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Add column checks to the operator
+	checks, otherwise "column=and" is treated as plain "and".
+
+2012-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): Clear last_was_not if the column is
 	not found for the equal relation, to match the other relations.
 

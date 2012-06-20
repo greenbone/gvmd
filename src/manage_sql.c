@@ -24107,20 +24107,23 @@ filter_clause (const char* type, const char* filter, const char **columns,
               continue;
             }
 
-          if (strcasecmp (keyword->string, "or") == 0)
+          if ((keyword->column == NULL)
+              && (strcasecmp (keyword->string, "or") == 0))
             {
               point++;
               continue;
             }
 
-          if (strcasecmp (keyword->string, "and") == 0)
+          if ((keyword->column == NULL)
+              && (strcasecmp (keyword->string, "and") == 0))
             {
               last_was_and = 1;
               point++;
               continue;
             }
 
-          if (strcasecmp (keyword->string, "not") == 0)
+          if ((keyword->column == NULL)
+              && (strcasecmp (keyword->string, "not") == 0))
             {
               last_was_not = 1;
               point++;
