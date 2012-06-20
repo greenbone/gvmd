@@ -24180,6 +24180,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
               if (vector_find_string (columns, keyword->column) == 0)
                 {
                   last_was_and = 0;
+                  last_was_not = 0;
                   point++;
                   continue;
                 }
