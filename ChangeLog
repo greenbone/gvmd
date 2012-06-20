@@ -1,3 +1,8 @@
+2012-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Rename asc and desc to sort and
+	sort-reverse.
+
 2012-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move GET_TARGETS sorting into filter.

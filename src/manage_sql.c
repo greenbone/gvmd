@@ -24127,9 +24127,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
               continue;
             }
 
-          /* Check for ordering parts, like asc=name or desc=string. */
+          /* Check for ordering parts, like sort=name or sort-reverse=string. */
 
-          if (keyword->column && (strcasecmp (keyword->column, "asc") == 0))
+          if (keyword->column && (strcasecmp (keyword->column, "sort") == 0))
             {
               if (strcmp (keyword->string, "ROWID")
                   && (vector_find_string (columns, keyword->string) == 0))
@@ -24151,7 +24151,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
               continue;
             }
           else if (keyword->column
-                   && (strcasecmp (keyword->column, "desc") == 0))
+                   && (strcasecmp (keyword->column, "sort-reverse") == 0))
             {
               if (strcmp (keyword->string, "ROWID")
                   && (vector_find_string (columns, keyword->string) == 0))
