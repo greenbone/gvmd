@@ -1,3 +1,9 @@
+2012-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (keyword_applies): New function.
+	(split_filter): Check if keyword applies before adding.  This skips all
+	sort= keywords after the first.
+
 2012-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (filter_clause): Add column checks to the operator

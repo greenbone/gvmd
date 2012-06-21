@@ -23859,6 +23859,40 @@ parse_keyword (keyword_t* keyword)
 }
 
 /**
+ * @brief Check whether a keyword has any effect in the filter.
+ *
+ * Some keywords are redundant, like a second sort= keyword.
+ *
+ * @param[in]  array    Array of existing keywords.
+ * @param[in]  keyword  Keyword under consideration.
+ *
+ * @return 0 no, 1 yes.
+ */
+static int
+keyword_applies (array_t *array, const keyword_t *keyword)
+{
+  if (keyword->column
+      && ((strcmp (keyword->column, "sort") == 0)
+          || (strcmp (keyword->column, "sort-reverse") == 0))
+      && (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL))
+    {
+      int index;
+
+      index = array->len;
+      while (index--)
+        {
+          keyword_t *item;
+          item = (keyword_t*) g_ptr_array_index (array, index);
+          if (item->column
+              && ((strcmp (item->column, "sort") == 0)
+                  || (strcmp (item->column, "sort-reverse") == 0)))
+            return 0;
+        }
+    }
+  return 1;
+}
+
+/**
  * @brief Split the filter term into parts.
  *
  * @param[in]  filter         Filter term.
@@ -23943,7 +23977,8 @@ split_filter (const gchar* filter)
               }
             keyword->string = g_strndup (current_part, filter - current_part);
             parse_keyword (keyword);
-            array_add (parts, keyword);
+            if (keyword_applies (parts, keyword))
+              array_add (parts, keyword);
             keyword = NULL;
             between = 1;
             break;
@@ -23961,7 +23996,8 @@ split_filter (const gchar* filter)
                 keyword->string = g_strndup (current_part,
                                              filter - current_part);
                 parse_keyword (keyword);
-                array_add (parts, keyword);
+                if (keyword_applies (parts, keyword))
+                  array_add (parts, keyword);
                 keyword = NULL;
                 in_quote = 0;
                 between = 1;
@@ -24004,7 +24040,8 @@ split_filter (const gchar* filter)
           keyword->quoted = in_quote;
           keyword->string = g_strdup (current_part);
           parse_keyword (keyword);
-          array_add (parts, keyword);
+          if (keyword_applies (parts, keyword))
+            array_add (parts, keyword);
           keyword = NULL;
         }
     }
