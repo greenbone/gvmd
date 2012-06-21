@@ -23911,6 +23911,7 @@ split_filter (const gchar* filter)
   in_quote = 0;
   between = 1;
   keyword = NULL;
+  current_part = filter;  /* To silence compiler warning. */
   while (*filter)
     {
       switch (*filter)
@@ -24049,6 +24050,70 @@ split_filter (const gchar* filter)
 
   array_add (parts, NULL);
   return parts;
+}
+
+/**
+ * @brief Clean a filter.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return Cleaned filter.
+ */
+gchar *
+manage_clean_filter (const gchar *filter)
+{
+  GString *clean;
+  keyword_t **point;
+  array_t *split;
+
+  if (filter == NULL)
+    return g_strdup ("");
+
+  clean = g_string_new ("");
+  split = split_filter (filter);
+  point = (keyword_t**) split->pdata;
+  while (*point)
+    {
+      keyword_t *keyword;
+
+      keyword = *point;
+      if (keyword->column)
+        switch (keyword->relation)
+          {
+            case KEYWORD_RELATION_COLUMN_EQUAL:
+              g_string_append_printf (clean,
+                                      " %s=%s",
+                                      keyword->column,
+                                      keyword->string);
+              break;
+            case KEYWORD_RELATION_COLUMN_APPROX:
+              g_string_append_printf (clean,
+                                      " %s~%s",
+                                      keyword->column,
+                                      keyword->string);
+              break;
+            case KEYWORD_RELATION_COLUMN_ABOVE:
+              g_string_append_printf (clean,
+                                      " %s>%s",
+                                      keyword->column,
+                                      keyword->string);
+              break;
+            case KEYWORD_RELATION_COLUMN_BELOW:
+              g_string_append_printf (clean,
+                                      " %s<%s",
+                                      keyword->column,
+                                      keyword->string);
+              break;
+
+            case KEYWORD_RELATION_APPROX:
+              g_string_append_printf (clean, " %s", keyword->string);
+              break;
+          }
+      else
+        g_string_append_printf (clean, " %s", keyword->string);
+      point++;
+    }
+  return g_strstrip (g_string_free (clean, FALSE));
 }
 
 /**

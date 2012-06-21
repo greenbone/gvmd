@@ -4178,7 +4178,9 @@ send_get_start (const char *type, get_data_t *get,
                                  "</filters>"
                                  "<%ss start=\"%i\" max=\"%i\"/>",
                                  type,
-                                 get->filter ? get->filter : "",
+                                 get->filter
+                                  ? manage_clean_filter (get->filter)
+                                  : "",
                                  type,
                                  /* Add 1 for 1 indexing. */
                                  get->first + 1,

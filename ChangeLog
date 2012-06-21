@@ -1,5 +1,14 @@
 2012-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (split_filter): Silence compiler warning suddenly
+	appearing with this patch.
+	(manage_clean_filter): New function.
+
+	* src/omp.c (send_get_start): Send cleaned filter, with redundant terms
+	removed.
+
+2012-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (keyword_applies): New function.
 	(split_filter): Check if keyword applies before adding.  This skips all
 	sort= keywords after the first.
