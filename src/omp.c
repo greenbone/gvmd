@@ -1753,27 +1753,10 @@ get_data_parse_attributes (get_data_t *data, const gchar *type,
   append_attribute (attribute_names, attribute_values, "filter",
                     &data->filter);
 
-  if (find_attribute (attribute_names, attribute_values,
-                      "first", &attribute))
-    /* Subtract 1 to switch from 1 to 0 indexing. */
-    data->first = atoi (attribute) - 1;
-  else
-    data->first = 0;
-  if (data->first < 0)
-    data->first = 0;
-
   name = g_strdup_printf ("%s_id", type);
   append_attribute (attribute_names, attribute_values, name,
                     &data->id);
   g_free (name);
-
-  if (find_attribute (attribute_names, attribute_values,
-                      "max", &attribute))
-    data->max = atoi (attribute);
-  else
-    data->max = -1;
-  if (data->max == 0)
-    data->max = -1;
 
   if (find_attribute (attribute_names, attribute_values,
                       "trash", &attribute))

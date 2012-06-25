@@ -1,5 +1,10 @@
 2012-06-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (get_data_parse_attributes): Remove first and max as they are
+	in the filter now.
+
+2012-06-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move GET_TARGETS rows and max into the filter, and make it easier for the
 	client to handle the sorting being in the filter.
 
