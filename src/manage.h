@@ -916,6 +916,9 @@ rc_preference (const char*, const char*);
  */
 #define MANAGE_MAX_HOSTS 4095
 
+void
+manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
+
 gchar *
 manage_clean_filter (const gchar *);
 

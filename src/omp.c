@@ -4164,11 +4164,14 @@ int
 send_get_start (const char *type, get_data_t *get,
                 int (*write_to_client) (void*), void* write_to_client_data)
 {
-  gchar* msg;
+  gchar *msg, *sort_field;
+  int first, max, sort_order;
 
   if (get->max == -2)
     setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
                        &get->max);
+
+  manage_filter_controls (get->filter, &first, &max, &sort_field, &sort_order);
 
   msg = g_markup_printf_escaped ("<get_%ss_response"
                                  " status=\"" STATUS_OK "\""
@@ -4176,15 +4179,20 @@ send_get_start (const char *type, get_data_t *get,
                                  "<filters>"
                                  "<term>%s</term>"
                                  "</filters>"
+                                 "<sort>"
+                                 "<field>%s<order>%s</order></field>"
+                                 "</sort>"
                                  "<%ss start=\"%i\" max=\"%i\"/>",
                                  type,
                                  get->filter
                                   ? manage_clean_filter (get->filter)
                                   : "",
+                                 sort_field,
+                                 sort_order ? "ascending" : "descending",
                                  type,
-                                 /* Add 1 for 1 indexing. */
-                                 get->first + 1,
-                                 get->max);
+                                 first,
+                                 max);
+  g_free (sort_field);
 
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {

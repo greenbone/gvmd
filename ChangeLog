@@ -1,8 +1,27 @@
+2012-06-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move GET_TARGETS rows and max into the filter, and make it easier for the
+	client to handle the sorting being in the filter.
+
+	* src/manage_sql.c (keyword_applies, split_filter): Add first and rows.
+	(manage_filter_controls): New function.
+	(filter_clause): Add first and max args.  As a result reindent entire
+	function.  Update callers.
+	(init_get_iterator, init_user_get_iterator): Get first and max from first=
+	and max= in filter, instead of from params.  Update caller.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (send_get_start): Get the "filter controls" from the filter
+	instead of from params.  Add SORT to response.
+
 2012-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (split_filter): Silence compiler warning suddenly
 	appearing with this patch.
 	(manage_clean_filter): New function.
+
+	* src/manage.h: Add header accordingly.
 
 	* src/omp.c (send_get_start): Send cleaned filter, with redundant terms
 	removed.

@@ -23889,6 +23889,37 @@ keyword_applies (array_t *array, const keyword_t *keyword)
             return 0;
         }
     }
+
+  if (keyword->column
+      && (strcmp (keyword->column, "first") == 0))
+    {
+      int index;
+
+      index = array->len;
+      while (index--)
+        {
+          keyword_t *item;
+          item = (keyword_t*) g_ptr_array_index (array, index);
+          if (item->column && (strcmp (item->column, "first") == 0))
+            return 0;
+        }
+    }
+
+  if (keyword->column
+      && (strcmp (keyword->column, "rows") == 0))
+    {
+      int index;
+
+      index = array->len;
+      while (index--)
+        {
+          keyword_t *item;
+          item = (keyword_t*) g_ptr_array_index (array, index);
+          if (item->column && (strcmp (item->column, "rows") == 0))
+            return 0;
+        }
+    }
+
   return 1;
 }
 
@@ -24048,8 +24079,171 @@ split_filter (const gchar* filter)
     }
   assert (keyword == NULL);
 
+  {
+    int index, first, max, sort;
+    keyword_t *keyword;
+
+    index = parts->len;
+    first = max = sort = 0;
+    while (index--)
+      {
+        keyword_t *item;
+        item = (keyword_t*) g_ptr_array_index (parts, index);
+        if (item->column && (strcmp (item->column, "first") == 0))
+          first = 1;
+        else if (item->column && (strcmp (item->column, "rows") == 0))
+          max = 1;
+        else if (item->column
+                 && ((strcmp (item->column, "sort") == 0)
+                     || (strcmp (item->column, "sort-reverse") == 0)))
+          sort = 1;
+      }
+
+    if (first == 0)
+      {
+        keyword = g_malloc0 (sizeof (keyword_t));
+        keyword->column = g_strdup ("first");
+        keyword->string = g_strdup ("1");
+        keyword->type = KEYWORD_TYPE_STRING;
+        keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+        array_add (parts, keyword);
+      }
+
+    if (max == 0)
+      {
+        int max;
+        keyword = g_malloc0 (sizeof (keyword_t));
+        keyword->column = g_strdup ("rows");
+        setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5", &max);
+        keyword->string = g_strdup_printf ("%i", max);
+        keyword->type = KEYWORD_TYPE_STRING;
+        keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+        array_add (parts, keyword);
+      }
+
+    if (sort == 0)
+      {
+        keyword = g_malloc0 (sizeof (keyword_t));
+        keyword->column = g_strdup ("sort");
+        keyword->string = g_strdup ("name");
+        keyword->type = KEYWORD_TYPE_STRING;
+        keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
+        array_add (parts, keyword);
+      }
+  }
+
   array_add (parts, NULL);
+
   return parts;
+}
+
+/**
+ * @brief Clean a filter.
+ *
+ * @param[in]   filter      Filter.
+ * @param[out]  first       Number of first item.
+ * @param[out]  max         Max number of rows.
+ * @param[out]  sort_field  Sort field.
+ * @param[out]  sort_order  Sort order.
+ */
+void
+manage_filter_controls (const gchar *filter, int *first, int *max,
+                        gchar **sort_field, int *sort_order)
+{
+  GString *clean;
+  keyword_t **point;
+  array_t *split;
+
+  if (filter == NULL)
+    {
+      if (first)
+        *first = 1;
+      if (max)
+        setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5", max);
+      if (sort_field)
+        *sort_field = g_strdup ("name");
+      if (sort_order)
+        *sort_order = 1;
+      return;
+    }
+
+  clean = g_string_new ("");
+  split = split_filter (filter);
+  point = (keyword_t**) split->pdata;
+  if (first)
+    {
+      *first = 1;
+      while (*point)
+        {
+          keyword_t *keyword;
+
+          keyword = *point;
+          if (keyword->column && (strcmp (keyword->column, "first") == 0))
+            {
+              *first = atoi (keyword->string);
+              if (*first < 0)
+                *first = 0;
+              break;
+            }
+          point++;
+        }
+    }
+
+  point = (keyword_t**) split->pdata;
+  if (max)
+    {
+      setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5", max);
+      while (*point)
+        {
+          keyword_t *keyword;
+
+          keyword = *point;
+          if (keyword->column && (strcmp (keyword->column, "rows") == 0))
+            {
+              *max = atoi (keyword->string);
+              if (*max == -2)
+                setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
+                                   max);
+              else if (*max < 1)
+                *max = -1;
+              break;
+            }
+          point++;
+        }
+    }
+
+  point = (keyword_t**) split->pdata;
+  if (sort_field || sort_order)
+    {
+      if (sort_field) *sort_field = NULL;
+      if (sort_order) *sort_order = 1;
+      while (*point)
+        {
+          keyword_t *keyword;
+
+          keyword = *point;
+          if (keyword->column
+              && (strcmp (keyword->column, "sort") == 0))
+            {
+              if (sort_field) *sort_field = g_strdup (keyword->string);
+              if (sort_order) *sort_order = 1;
+              break;
+            }
+          if (keyword->column
+              && (strcmp (keyword->column, "sort-reverse") == 0))
+            {
+              if (sort_field) *sort_field = g_strdup (keyword->string);
+              if (sort_order) *sort_order = 0;
+              break;
+            }
+          point++;
+        }
+      if (sort_field && (*sort_field == NULL))
+        *sort_field = g_strdup ("name");
+    }
+
+  array_free (split);
+  return;
 }
 
 /**
@@ -24168,281 +24362,304 @@ get_join (int first, int last_was_and, int last_was_not)
  */
 static gchar *
 filter_clause (const char* type, const char* filter, const char **columns,
-               gchar **order_return)
+               gchar **order_return, int *first_return, int *max_return)
 {
-  if (filter)
+  GString *clause, *order;
+  keyword_t **point;
+  int first_keyword, first_order, last_was_and, last_was_not;
+  array_t *split;
+
+  if (filter == NULL)
+    filter = "";
+
+  while (*filter && isspace (*filter)) filter++;
+
+  /* Add SQL to the clause for each keyword or phrase. */
+
+  clause = g_string_new ("");
+  order = g_string_new ("");
+  split = split_filter (filter);
+  point = (keyword_t**) split->pdata;
+  first_keyword = 1;
+  last_was_and = 0;
+  last_was_not = 0;
+  first_order = 1;
+  while (*point)
     {
-      GString *clause, *order;
-      keyword_t **point;
-      int first, first_order, last_was_and, last_was_not;
-      array_t *split;
+      gchar *quoted_keyword, *quoted_column;
+      int index;
+      keyword_t *keyword;
 
-      while (*filter && isspace (*filter)) filter++;
+      keyword = *point;
 
-      if (strlen (filter) == 0)
+      if (strlen (keyword->string) == 0)
         {
-          if (order_return) *order_return = g_strdup ("");
-          return NULL;
+          point++;
+          continue;
         }
 
-      /* Add SQL to the clause for each keyword or phrase. */
-
-      clause = g_string_new ("");
-      order = g_string_new ("");
-      split = split_filter (filter);
-      point = (keyword_t**) split->pdata;
-      first = 1;
-      last_was_and = 0;
-      last_was_not = 0;
-      first_order = 1;
-      while (*point)
+      if ((keyword->column == NULL)
+          && (strcasecmp (keyword->string, "or") == 0))
         {
-          gchar *quoted_keyword, *quoted_column;
-          int index;
-          keyword_t *keyword;
+          point++;
+          continue;
+        }
 
-          keyword = *point;
+      if ((keyword->column == NULL)
+          && (strcasecmp (keyword->string, "and") == 0))
+        {
+          last_was_and = 1;
+          point++;
+          continue;
+        }
 
-          if (strlen (keyword->string) == 0)
+      if ((keyword->column == NULL)
+          && (strcasecmp (keyword->string, "not") == 0))
+        {
+          last_was_not = 1;
+          point++;
+          continue;
+        }
+
+      /* Check for ordering parts, like sort=name or sort-reverse=string. */
+
+      if (keyword->column && (strcasecmp (keyword->column, "sort") == 0))
+        {
+          if (strcmp (keyword->string, "ROWID")
+              && (vector_find_string (columns, keyword->string) == 0))
             {
               point++;
               continue;
             }
 
-          if ((keyword->column == NULL)
-              && (strcasecmp (keyword->string, "or") == 0))
+          if (first_order)
             {
-              point++;
-              continue;
-            }
-
-          if ((keyword->column == NULL)
-              && (strcasecmp (keyword->string, "and") == 0))
-            {
-              last_was_and = 1;
-              point++;
-              continue;
-            }
-
-          if ((keyword->column == NULL)
-              && (strcasecmp (keyword->string, "not") == 0))
-            {
-              last_was_not = 1;
-              point++;
-              continue;
-            }
-
-          /* Check for ordering parts, like sort=name or sort-reverse=string. */
-
-          if (keyword->column && (strcasecmp (keyword->column, "sort") == 0))
-            {
-              if (strcmp (keyword->string, "ROWID")
-                  && (vector_find_string (columns, keyword->string) == 0))
-                {
-                  point++;
-                  continue;
-                }
-
-              if (first_order)
-                {
-                  g_string_append_printf (order, " ORDER BY %s ASC",
-                                          keyword->string);
-                  first_order = 0;
-                }
-              else
-                g_string_append_printf (order, ", %s ASC",
-                                        keyword->string);
-              point++;
-              continue;
-            }
-          else if (keyword->column
-                   && (strcasecmp (keyword->column, "sort-reverse") == 0))
-            {
-              if (strcmp (keyword->string, "ROWID")
-                  && (vector_find_string (columns, keyword->string) == 0))
-                {
-                  point++;
-                  continue;
-                }
-
-              if (first_order)
-                {
-                  g_string_append_printf (order, " ORDER BY %s DESC",
-                                          keyword->string);
-                  first_order = 0;
-                }
-              else
-                g_string_append_printf (order, ", %s DESC",
-                                        keyword->string);
-              point++;
-              continue;
-            }
-
-          /* Add SQL to the clause for each column name. */
-
-          if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL)
-            {
-              if (vector_find_string (columns, keyword->column) == 0)
-                {
-                  last_was_and = 0;
-                  last_was_not = 0;
-                  point++;
-                  continue;
-                }
-
-              quoted_keyword = sql_quote (keyword->string);
-              quoted_column = sql_quote (keyword->column);
-              g_string_append_printf (clause,
-                                      "%s(CAST (%s AS TEXT) IS '%s'",
-                                      get_join (first, last_was_and,
-                                                last_was_not),
-                                      quoted_column,
-                                      quoted_keyword);
-              g_free (quoted_column);
-            }
-          else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
-            {
-              if (vector_find_string (columns, keyword->column) == 0)
-                {
-                  last_was_and = 0;
-                  last_was_not = 0;
-                  point++;
-                  continue;
-                }
-
-              quoted_keyword = sql_quote (keyword->string);
-              quoted_column = sql_quote (keyword->column);
-              g_string_append_printf (clause,
-                                      "%s(CAST (%s AS TEXT) LIKE '%%%%%s%%%%'",
-                                      get_join (first, last_was_and,
-                                                last_was_not),
-                                      quoted_column,
-                                      quoted_keyword);
-              g_free (quoted_column);
-            }
-          else if (keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE)
-            {
-              if (vector_find_string (columns, keyword->column) == 0)
-                {
-                  last_was_and = 0;
-                  last_was_not = 0;
-                  point++;
-                  continue;
-                }
-
-              quoted_keyword = sql_quote (keyword->string);
-              quoted_column = sql_quote (keyword->column);
-              if (keyword->type == KEYWORD_TYPE_NUMBER)
-                g_string_append_printf (clause,
-                                        "%s(CAST (%s AS INTEGER) > %i",
-                                        get_join (first, last_was_and,
-                                                  last_was_not),
-                                        quoted_column,
-                                        keyword->number);
-              else
-                g_string_append_printf (clause,
-                                        "%s(CAST (%s AS TEST) > '%s'",
-                                        get_join (first, last_was_and,
-                                                  last_was_not),
-                                        quoted_column,
-                                        quoted_keyword);
-              g_free (quoted_column);
-            }
-          else if (keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
-            {
-              if (vector_find_string (columns, keyword->column) == 0)
-                {
-                  last_was_and = 0;
-                  last_was_not = 0;
-                  point++;
-                  continue;
-                }
-
-              quoted_keyword = sql_quote (keyword->string);
-              quoted_column = sql_quote (keyword->column);
-              if (keyword->type == KEYWORD_TYPE_NUMBER)
-                g_string_append_printf (clause,
-                                        "%s(CAST (%s AS INTEGER) < %i",
-                                        get_join (first, last_was_and,
-                                                  last_was_not),
-                                        quoted_column,
-                                        keyword->number);
-              else
-                g_string_append_printf (clause,
-                                        "%s(CAST (%s AS TEXT) > '%s'",
-                                        get_join (first, last_was_and,
-                                                  last_was_not),
-                                        quoted_column,
-                                        quoted_keyword);
-              g_free (quoted_column);
+              g_string_append_printf (order, " ORDER BY %s ASC",
+                                      keyword->string);
+              first_order = 0;
             }
           else
+            g_string_append_printf (order, ", %s ASC",
+                                    keyword->string);
+          point++;
+          continue;
+        }
+      else if (keyword->column
+               && (strcasecmp (keyword->column, "sort-reverse") == 0))
+        {
+          if (strcmp (keyword->string, "ROWID")
+              && (vector_find_string (columns, keyword->string) == 0))
             {
-              const char *column;
-
-              g_string_append_printf (clause,
-                                      "%s(",
-                                      (first
-                                        ? ""
-                                        : (last_was_and ? " AND " : " OR ")));
-
-              quoted_keyword = sql_quote (keyword->string);
-              if (last_was_not)
-                for (index = 0;
-                     (column = columns[index]) != NULL;
-                     index++)
-                  {
-                    quoted_column = sql_quote (column);
-                    g_string_append_printf (clause,
-                                            "%s"
-                                            "(%s IS NULL"
-                                            " OR CAST (%s AS TEXT)"
-                                            " NOT LIKE '%%%%%s%%%%')",
-                                            (index ? " AND " : ""),
-                                            quoted_column,
-                                            quoted_column,
-                                            quoted_keyword);
-                    g_free (quoted_column);
-                  }
-              else
-                for (index = 0;
-                     (column = columns[index]) != NULL;
-                     index++)
-                  {
-                    quoted_column = sql_quote (column);
-                    g_string_append_printf (clause,
-                                            "%sCAST (%s AS TEXT)"
-                                            " LIKE '%%%%%s%%%%'",
-                                            (index ? " OR " : ""),
-                                            quoted_column,
-                                            quoted_keyword);
-                    g_free (quoted_column);
-                  }
+              point++;
+              continue;
             }
 
-          g_string_append (clause, ")");
-          g_free (quoted_keyword);
-          first = 0;
-
-          last_was_and = 0;
-          last_was_not = 0;
+          if (first_order)
+            {
+              g_string_append_printf (order, " ORDER BY %s DESC",
+                                      keyword->string);
+              first_order = 0;
+            }
+          else
+            g_string_append_printf (order, ", %s DESC",
+                                    keyword->string);
           point++;
+          continue;
         }
-      for (point = (keyword_t**) split->pdata; *point; point++)
-        keyword_free (*point);
-      array_free (split);
+      else if (keyword->column
+               && (strcasecmp (keyword->column, "first") == 0))
+        {
+          if (first_return)
+            {
+              /* Subtract 1 to switch from 1 to 0 indexing. */
+              *first_return = atoi (keyword->string) - 1;
+              if (*first_return < 0)
+                *first_return = 0;
+            }
 
-      if (order_return)
-        *order_return = g_string_free (order, FALSE);
+          point++;
+          continue;
+        }
+      else if (keyword->column
+               && (strcasecmp (keyword->column, "rows") == 0))
+        {
+          if (max_return)
+            *max_return = atoi (keyword->string);
 
-      if (strlen (clause->str))
-        return g_string_free (clause, FALSE);
+          point++;
+          continue;
+        }
 
-      g_string_free (clause, TRUE);
-      return NULL;
+      /* Add SQL to the clause for each column name. */
+
+      if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL)
+        {
+          if (vector_find_string (columns, keyword->column) == 0)
+            {
+              last_was_and = 0;
+              last_was_not = 0;
+              point++;
+              continue;
+            }
+
+          quoted_keyword = sql_quote (keyword->string);
+          quoted_column = sql_quote (keyword->column);
+          g_string_append_printf (clause,
+                                  "%s(CAST (%s AS TEXT) IS '%s'",
+                                  get_join (first_keyword, last_was_and,
+                                            last_was_not),
+                                  quoted_column,
+                                  quoted_keyword);
+          g_free (quoted_column);
+        }
+      else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
+        {
+          if (vector_find_string (columns, keyword->column) == 0)
+            {
+              last_was_and = 0;
+              last_was_not = 0;
+              point++;
+              continue;
+            }
+
+          quoted_keyword = sql_quote (keyword->string);
+          quoted_column = sql_quote (keyword->column);
+          g_string_append_printf (clause,
+                                  "%s(CAST (%s AS TEXT) LIKE '%%%%%s%%%%'",
+                                  get_join (first_keyword, last_was_and,
+                                            last_was_not),
+                                  quoted_column,
+                                  quoted_keyword);
+          g_free (quoted_column);
+        }
+      else if (keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE)
+        {
+          if (vector_find_string (columns, keyword->column) == 0)
+            {
+              last_was_and = 0;
+              last_was_not = 0;
+              point++;
+              continue;
+            }
+
+          quoted_keyword = sql_quote (keyword->string);
+          quoted_column = sql_quote (keyword->column);
+          if (keyword->type == KEYWORD_TYPE_NUMBER)
+            g_string_append_printf (clause,
+                                    "%s(CAST (%s AS INTEGER) > %i",
+                                    get_join (first_keyword, last_was_and,
+                                              last_was_not),
+                                    quoted_column,
+                                    keyword->number);
+          else
+            g_string_append_printf (clause,
+                                    "%s(CAST (%s AS TEST) > '%s'",
+                                    get_join (first_keyword, last_was_and,
+                                              last_was_not),
+                                    quoted_column,
+                                    quoted_keyword);
+          g_free (quoted_column);
+        }
+      else if (keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
+        {
+          if (vector_find_string (columns, keyword->column) == 0)
+            {
+              last_was_and = 0;
+              last_was_not = 0;
+              point++;
+              continue;
+            }
+
+          quoted_keyword = sql_quote (keyword->string);
+          quoted_column = sql_quote (keyword->column);
+          if (keyword->type == KEYWORD_TYPE_NUMBER)
+            g_string_append_printf (clause,
+                                    "%s(CAST (%s AS INTEGER) < %i",
+                                    get_join (first_keyword, last_was_and,
+                                              last_was_not),
+                                    quoted_column,
+                                    keyword->number);
+          else
+            g_string_append_printf (clause,
+                                    "%s(CAST (%s AS TEXT) > '%s'",
+                                    get_join (first_keyword, last_was_and,
+                                              last_was_not),
+                                    quoted_column,
+                                    quoted_keyword);
+          g_free (quoted_column);
+        }
+      else
+        {
+          const char *column;
+
+          g_string_append_printf (clause,
+                                  "%s(",
+                                  (first_keyword
+                                    ? ""
+                                    : (last_was_and ? " AND " : " OR ")));
+
+          quoted_keyword = sql_quote (keyword->string);
+          if (last_was_not)
+            for (index = 0;
+                 (column = columns[index]) != NULL;
+                 index++)
+              {
+                quoted_column = sql_quote (column);
+                g_string_append_printf (clause,
+                                        "%s"
+                                        "(%s IS NULL"
+                                        " OR CAST (%s AS TEXT)"
+                                        " NOT LIKE '%%%%%s%%%%')",
+                                        (index ? " AND " : ""),
+                                        quoted_column,
+                                        quoted_column,
+                                        quoted_keyword);
+                g_free (quoted_column);
+              }
+          else
+            for (index = 0;
+                 (column = columns[index]) != NULL;
+                 index++)
+              {
+                quoted_column = sql_quote (column);
+                g_string_append_printf (clause,
+                                        "%sCAST (%s AS TEXT)"
+                                        " LIKE '%%%%%s%%%%'",
+                                        (index ? " OR " : ""),
+                                        quoted_column,
+                                        quoted_keyword);
+                g_free (quoted_column);
+              }
+        }
+
+      g_string_append (clause, ")");
+      g_free (quoted_keyword);
+      first_keyword = 0;
+
+      last_was_and = 0;
+      last_was_not = 0;
+      point++;
     }
+  for (point = (keyword_t**) split->pdata; *point; point++)
+    keyword_free (*point);
+  array_free (split);
+
   if (order_return)
-    *order_return = g_strdup ("");
+    *order_return = g_string_free (order, FALSE);
+
+  if (max_return)
+    {
+      if (*max_return == -2)
+        setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
+                           max_return);
+      else if (*max_return < 1)
+        *max_return = -1;
+    }
+
+  if (strlen (clause->str))
+    return g_string_free (clause, FALSE);
+
+  g_string_free (clause, TRUE);
   return NULL;
 }
 
@@ -24533,7 +24750,7 @@ count (const char *type, const char *filter, const char *actions_string,
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause (type, filter, extra_columns, NULL);
+  clause = filter_clause (type, filter, extra_columns, NULL, NULL, NULL);
 
   if (actions_string == NULL
       || strlen (actions_string) == 0
@@ -24609,8 +24826,6 @@ target_count (const char *filter, const char *actions_string)
  * @param[in]  trash_columns   Columns for SQL trash case.
  * @param[in]  filter_columns  Columns for filter.
  * @param[in]  resource        Resource.
- * @param[in]  first           First row.
- * @param[in]  max             Max rows.
  *
  * @return 0 success.
  */
@@ -24618,13 +24833,15 @@ static int
 init_user_get_iterator (iterator_t* iterator, const char *type,
                         const get_data_t *get, const char *columns,
                         const char *trash_columns, const char **filter_columns,
-                        resource_t resource, int first, int max)
+                        resource_t resource)
 {
   gchar *clause, *order;
+  int first, max;
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause (type, get->filter, filter_columns, &order);
+  clause = filter_clause (type, get->filter, filter_columns, &order, &first,
+                          &max);
 
   if (resource && get->trash)
     init_iterator (iterator,
@@ -24721,22 +24938,10 @@ init_get_iterator (iterator_t* iterator, const char *type,
         return 1;
     }
 
-  if (get->first < 0)
-    first = 0;
-  else
-    first = get->first;
-
-  if (get->max == -2)
-    setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5", &max);
-  else if (get->max < 1)
-    max = -1;
-  else
-    max = get->max;
-
   if (get->actions == NULL || strlen (get->actions) == 0)
     {
       init_user_get_iterator (iterator, type, get, columns, trash_columns,
-                              filter_columns, resource, first, max);
+                              filter_columns, resource);
       return 0;
     }
 
@@ -24745,11 +24950,12 @@ init_get_iterator (iterator_t* iterator, const char *type,
   if (actions == 0)
     {
       init_user_get_iterator (iterator, type, get, columns, trash_columns,
-                              filter_columns, resource, first, max);
+                              filter_columns, resource);
       return 0;
     }
 
-  clause = filter_clause ("target", get->filter, filter_columns, &order);
+  clause = filter_clause ("target", get->filter, filter_columns, &order, &first,
+                          &max);
 
   if (resource && get->trash)
     init_iterator (iterator,
@@ -24877,8 +25083,8 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
   get.trash = trash;
   get.filter = (char*) filter;
   init_user_get_iterator (iterator, "target", &get, TARGET_ITERATOR_COLUMNS,
-                          TARGET_ITERATOR_TRASH_COLUMNS, filter_columns, target,
-                          first, max);
+                          TARGET_ITERATOR_TRASH_COLUMNS, filter_columns,
+                          target);
 }
 
 /**
@@ -38872,7 +39078,7 @@ setting_count (const char *filter)
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause ("setting", filter, extra_columns, NULL);
+  clause = filter_clause ("setting", filter, extra_columns, NULL, NULL, NULL);
 
   ret = sql_int (0, 0,
                  "SELECT count (*)"
@@ -38921,7 +39127,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
   if (max < 1)
     max = -1;
 
-  clause = filter_clause ("setting", filter, extra_columns, NULL);
+  clause = filter_clause ("setting", filter, extra_columns, NULL, NULL, NULL);
 
   quoted_uuid = uuid ? sql_quote (uuid) : NULL;
 
