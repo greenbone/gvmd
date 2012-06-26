@@ -23924,6 +23924,20 @@ keyword_applies (array_t *array, const keyword_t *keyword)
 }
 
 /**
+ * @brief Free a split filter.
+ *
+ * @param[in]  filter  Split filter.
+ */
+static void
+filter_free (array_t *split)
+{
+  keyword_t **point;
+  for (point = (keyword_t**) split->pdata; *point; point++)
+    keyword_free (*point);
+  array_free (split);
+}
+
+/**
  * @brief Split the filter term into parts.
  *
  * @param[in]  filter         Filter term.
@@ -24242,7 +24256,7 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
         *sort_field = g_strdup ("name");
     }
 
-  array_free (split);
+  filter_free (split);
   return;
 }
 
@@ -24307,6 +24321,7 @@ manage_clean_filter (const gchar *filter)
         g_string_append_printf (clean, " %s", keyword->string);
       point++;
     }
+  filter_free (split);
   return g_strstrip (g_string_free (clean, FALSE));
 }
 
@@ -24640,9 +24655,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
       last_was_not = 0;
       point++;
     }
-  for (point = (keyword_t**) split->pdata; *point; point++)
-    keyword_free (*point);
-  array_free (split);
+  filter_free (split);
 
   if (order_return)
     *order_return = g_string_free (order, FALSE);

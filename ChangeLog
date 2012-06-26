@@ -1,5 +1,11 @@
 2012-06-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_free): New function.
+	(manage_filter_controls, manage_clean_filter, filter_clause): Free split
+	filter with filter_free.
+
+2012-06-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/otp.c (blank_control_chars): Skip newlines.
 	(process_otp_scanner_input): g_strcompress the field from the scanner
 	before converting it to UTF8, because since r13022 the scanner
