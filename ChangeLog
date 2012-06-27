@@ -1,3 +1,15 @@
+2012-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage_process): Create common_cve.
+	(where_autofp, init_result_iterator, column_auto_type)
+	(report_counts_autofp_match): Use common_cve to check for the partial CVE
+	match, because both CVEs could be lists and a pattern match fails if they
+	are.
+
+	* src/sql.c (sql_common_cve): New function.
+
+	* src/sql.h: Add header accordingly.
+
 2012-06-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (filter_free): New function.

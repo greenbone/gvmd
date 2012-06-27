@@ -8646,6 +8646,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           g_warning ("%s: failed to create max_hosts", __FUNCTION__);
           abort ();
         }
+
+      if (sqlite3_create_function (task_db,
+                                   "common_cve",
+                                   2,               /* Number of args. */
+                                   SQLITE_UTF8,
+                                   NULL,            /* Callback data. */
+                                   sql_common_cve,
+                                   NULL,            /* xStep. */
+                                   NULL)            /* xFinal. */
+          != SQLITE_OK)
+        {
+          g_warning ("%s: failed to create common_cve", __FUNCTION__);
+          abort ();
+        }
     }
 }
 
@@ -13492,7 +13506,10 @@ where_autofp (int autofp, report_t report)
           "                      AND name = 'EXIT_CODE'"
           "                      AND value = 'EXIT_NOTVULN')"
           "        AND family IN (" LSC_FAMILY_LIST ")"
-          "        AND nvts.cve LIKE ('%%' || outer_nvts.cve || '%%')))))",
+          /* The CVE of the result NVT is outer_nvts.cve.  The CVE of the
+           * NVT that has registered the "closed" host detail is nvts.cve.
+           * Either can be a list of CVEs. */
+          "        AND common_cve (nvts.cve, outer_nvts.cve)))))",
           report);
         break;
       default:
@@ -13649,7 +13666,10 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                "                       AND name = 'EXIT_CODE'"
                "                       AND value = 'EXIT_NOTVULN')"
                "         AND family IN (" LSC_FAMILY_LIST ")"
-               "         AND nvts.cve LIKE ('%%' || outer_nvts.cve || '%%')))))"
+               /* The CVE of the result NVT is outer_nvts.cve.  The CVE of the
+                * NVT that has registered the "closed" host detail is nvts.cve.
+                * Either can be a list of CVEs. */
+               "         AND common_cve (nvts.cve, outer_nvts.cve)))))"
                " THEN NULL"
                " ELSE 1 END)",
                report);
@@ -13843,7 +13863,10 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                "                       AND name = 'EXIT_CODE'"
                "                       AND value = 'EXIT_NOTVULN')"
                "         AND family IN (" LSC_FAMILY_LIST ")"
-               "         AND nvts.cve LIKE ('%%' || outer_nvts.cve || '%%')))))"
+               /* The CVE of the result NVT is outer_nvts.cve.  The CVE of the
+                * NVT that has registered the "closed" host detail is nvts.cve.
+                * Either can be a list of CVEs. */
+               "         AND common_cve (nvts.cve, outer_nvts.cve)))))"
                " THEN NULL"
                " ELSE 1 END)",
                result);
@@ -14982,8 +15005,10 @@ column_auto_type (report_t report, int autofp)
            "                        AND name = 'EXIT_CODE'"
            "                        AND value = 'EXIT_NOTVULN')"
            "          AND family IN (" LSC_FAMILY_LIST ")"
-           "          AND nvts.cve"
-           "          LIKE ('%%' || outer_nvts.cve || '%%')))))"
+           /* The CVE of the result NVT is outer_nvts.cve.  The CVE of the
+            * NVT that has registered the "closed" host detail is nvts.cve.
+            * Either can be a list of CVEs. */
+           "          AND common_cve (nvts.cve, outer_nvts.cve)))))"
            "   THEN NULL"
            "   ELSE 1 END)"
            "   AS auto_type",
@@ -15496,8 +15521,10 @@ report_counts_autofp_match (iterator_t *results, int autofp)
                      "                    AND name = 'EXIT_CODE'"
                      "                    AND value = 'EXIT_NOTVULN')"
                      "      AND family IN (" LSC_FAMILY_LIST ")"
-                     "      AND nvts.cve"
-                     "      LIKE ('%%' || outer_nvts.cve || '%%')));",
+                     /* The CVE of the result NVT is outer_nvts.cve.  The CVE
+                      * of the NVT that has registered the "closed" host
+                      * detail is nvts.cve.  Either can be a list of CVEs. */
+                     "      AND common_cve (nvts.cve, outer_nvts.cve)));",
                      (const char*) sqlite3_column_text (results->stmt, 1),
                      sqlite3_column_int64 (results->stmt, 6),
                      (const char*) sqlite3_column_text (results->stmt, 3)))

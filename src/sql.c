@@ -774,6 +774,65 @@ sql_rename_column (const char *old_table, const char *new_table,
     cleanup_iterator (&rows);
 }
 
+/**
+ * @brief Check if a host list contains a host
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_common_cve (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  gchar **split_1, **split_2, **point_1, **point_2;
+  const unsigned char *cve1, *cve2;
+
+  assert (argc == 2);
+
+  tracef ("   %s: top\n", __FUNCTION__);
+
+  cve1 = sqlite3_value_text (argv[0]);
+  if (cve1 == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get first CVE argument", -1);
+      return;
+    }
+
+  cve2 = sqlite3_value_text (argv[1]);
+  if (cve2 == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get second CVE argument", -1);
+      return;
+    }
+
+  split_1 = g_strsplit ((gchar*) cve1, ",", 0);
+  split_2 = g_strsplit ((gchar*) cve2, ",", 0);
+  point_1 = split_1;
+  point_2 = split_2;
+  while (*point_1)
+    {
+      while (*point_2)
+        {
+          tracef ("   %s: %s vs %s\n", __FUNCTION__, g_strstrip (*point_1), g_strstrip (*point_2));
+          if (strcmp (g_strstrip (*point_1), g_strstrip (*point_2)) == 0)
+            {
+              g_strfreev (split_1);
+              g_strfreev (split_2);
+              sqlite3_result_int (context, 1);
+              return;
+            }
+          point_2++;
+        }
+      point_1++;
+    }
+  g_strfreev (split_1);
+  g_strfreev (split_2);
+
+  sqlite3_result_int (context, 0);
+}
+
 
 /* Iterators. */
 

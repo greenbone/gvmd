@@ -85,6 +85,9 @@ sql_max_hosts (sqlite3_context *, int, sqlite3_value **);
 void
 sql_rename_column (const char *, const char *, const char *, const char *);
 
+void
+sql_common_cve (sqlite3_context *, int argc, sqlite3_value **);
+
 
 /* Iterators. */
 
