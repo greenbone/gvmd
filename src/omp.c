@@ -4147,35 +4147,12 @@ int
 send_get_start (const char *type, get_data_t *get,
                 int (*write_to_client) (void*), void* write_to_client_data)
 {
-  gchar *msg, *sort_field;
-  int first, max, sort_order;
-
-  if (get->max == -2)
-    setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
-                       &get->max);
-
-  manage_filter_controls (get->filter, &first, &max, &sort_field, &sort_order);
+  gchar *msg;
 
   msg = g_markup_printf_escaped ("<get_%ss_response"
                                  " status=\"" STATUS_OK "\""
-                                 " status_text=\"" STATUS_OK_TEXT "\">"
-                                 "<filters>"
-                                 "<term>%s</term>"
-                                 "</filters>"
-                                 "<sort>"
-                                 "<field>%s<order>%s</order></field>"
-                                 "</sort>"
-                                 "<%ss start=\"%i\" max=\"%i\"/>",
-                                 type,
-                                 get->filter
-                                  ? manage_clean_filter (get->filter)
-                                  : "",
-                                 sort_field,
-                                 sort_order ? "ascending" : "descending",
-                                 type,
-                                 first,
-                                 max);
-  g_free (sort_field);
+                                 " status_text=\"" STATUS_OK_TEXT "\">",
+                                 type);
 
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
@@ -4236,18 +4213,41 @@ int
 send_get_end (const char *type, get_data_t *get, int count, int filtered,
               int (*write_to_client) (void*), void* write_to_client_data)
 {
-  gchar* msg;
+  gchar *msg, *sort_field;
+  int first, max, sort_order;
 
-  msg = g_markup_printf_escaped ("<%s_count>"
+  if (get->max == -2)
+    setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
+                       &get->max);
+
+  manage_filter_controls (get->filter, &first, &max, &sort_field, &sort_order);
+
+  msg = g_markup_printf_escaped ("<filters>"
+                                 "<term>%s</term>"
+                                 "</filters>"
+                                 "<sort>"
+                                 "<field>%s<order>%s</order></field>"
+                                 "</sort>"
+                                 "<%ss start=\"%i\" max=\"%i\"/>"
+                                 "<%s_count>"
                                  "<filtered>%i</filtered>"
                                  "<page>%i</page>"
                                  "</%s_count>"
                                  "</get_%ss_response>",
+                                 get->filter
+                                  ? manage_clean_filter (get->filter)
+                                  : "",
+                                 sort_field,
+                                 sort_order ? "ascending" : "descending",
+                                 type,
+                                 first,
+                                 max,
                                  type,
                                  filtered,
                                  count,
                                  type,
                                  type);
+  g_free (sort_field);
 
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
@@ -7871,6 +7871,45 @@ convert_to_manage_ranges (array_t *ranges)
     omp_parser->read_over = 0;                                           \
     set_client_state (parent);                                           \
     break
+
+/**
+ * @brief Handle the end of an OMP XML element.
+ *
+ * @param[in]  targets  Resource iterator.
+ * @param[in]  get      GET command data.
+ * @param[out] first    First.
+ * @param[out] count    Count.
+ *
+ * @return What to do next: 0 continue, 1 end, -1 fail.
+ */
+static int
+get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
+          int (*init) (iterator_t*, const get_data_t *))
+{
+  if (next (resources) == FALSE)
+   {
+     gchar *new_filter;
+
+     if (*first == 0)
+       return 1;
+
+     if (*first == 1 || *count > 0)
+       return 1;
+
+     /* Reset the iterator with first 1, and start again. */
+     cleanup_iterator (resources);
+     new_filter = g_strdup_printf ("first=1 %s", get->filter);
+     g_free (get->filter);
+     get->filter = new_filter;
+     if (init (resources, get))
+       return -1;
+     *count = 0;
+     *first = 1;
+     if (next (resources) == FALSE)
+       return 1;
+   }
+ return 0;
+}
 
 /**
  * @brief Handle the end of an OMP XML element.
@@ -14707,7 +14746,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             {
               iterator_t agents;
-              int ret, count, filtered;
+              int ret, count, filtered, first;
+              get_data_t * get;
 
               ret = init_agent_iterator (&agents,
                                          &get_agents_data->get);
@@ -14737,10 +14777,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
 
               count = 0;
+              get = &get_agents_data->get;
+              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
               SEND_GET_START ("agent", &get_agents_data->get);
 
-              while (next (&agents))
+              while (1)
                 {
+                  ret = get_next (&agents, &get_agents_data->get, &first,
+                                  &count, init_agent_iterator);
+                  if (ret == 1)
+                    break;
+                  if (ret == -1)
+                    {
+                      internal_error_send_to_client (error);
+                      return;
+                    }
+
                   switch (format)
                     {
                       case 1: /* installer */
@@ -15715,7 +15767,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             {
               iterator_t targets;
-              int count, filtered, ret;
+              int count, filtered, ret, first;
+              get_data_t * get;
 
               ret = init_target_iterator (&targets, &get_targets_data->get);
               if (ret)
@@ -15744,14 +15797,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
 
               count = 0;
+              get = &get_targets_data->get;
+              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
               SEND_GET_START ("target", &get_targets_data->get);
-              while (next (&targets))
+              while (1)
                 {
                   char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
                   const char *port_list_uuid, *port_list_name, *ssh_port;
                   lsc_credential_t ssh_credential, smb_credential;
                   int port_list_trash;
                   char *port_range;
+
+                  ret = get_next (&targets, get, &first, &count,
+                                  init_target_iterator);
+                  if (ret == 1)
+                    break;
+                  if (ret == -1)
+                    {
+                      internal_error_send_to_client (error);
+                      return;
+                    }
 
                   ssh_credential = target_iterator_ssh_credential (&targets);
                   smb_credential = target_iterator_smb_credential (&targets);

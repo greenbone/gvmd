@@ -1,5 +1,20 @@
 2012-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	When the GET filter defines an empty set and "first" is above 1, then
+	respond with "first" equal 1.  This prevents the user from jumping into
+	blank space after the rows.
+
+	* src/omp.c (send_get_start): Just send start tag.
+	(send_get_end): Move fields from send_get_start into here so that they're
+	sent after the iteration.
+	(get_next): New function.  Does next check for GET operation iteration,
+	resetting the iteration to the beginning with first=1 in the filter if the
+	result set is empty.
+	(omp_xml_handle_end_element): Use get_next to do next check while sending
+	rows.
+
+2012-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage_process): Create common_cve.
 	(where_autofp, init_result_iterator, column_auto_type)
 	(report_counts_autofp_match): Use common_cve to check for the partial CVE
