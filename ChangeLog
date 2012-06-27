@@ -1,3 +1,11 @@
+2012-06-27  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/otp.c (blank_control_chars): Skip newlines.
+	(process_otp_scanner_input): g_strcompress the field from the scanner
+	before converting it to UTF8, because since r13022 the scanner
+	g_strescapes messages instead of doing simple escaping. Backport from
+	trunk r13651, initial commit by Matthew Mundell.
+
 2012-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (validate_host): Only do the length check when the last

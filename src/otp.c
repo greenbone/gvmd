@@ -114,7 +114,8 @@ category_number (const char *category)
 static void
 blank_control_chars (char *string)
 {
-  for (; *string; string++) if (iscntrl (*string)) *string = ' ';
+  for (; *string; string++)
+    if (iscntrl (*string) && *string != '\n') *string = ' ';
 }
 
 
@@ -1545,11 +1546,16 @@ process_otp_scanner_input ()
           /* ISO-8859-1 input to UTF-8 hack. */
           {
             gsize size_dummy;
-            char* iso_field = openvas_strip_space (message, match);
-            blank_control_chars (iso_field);
-            field = g_convert (iso_field, match - message - 1,
+            gchar *compressed;
+            char* iso_field;
+
+            iso_field = openvas_strip_space (message, match);
+            compressed = g_strcompress (iso_field);
+            blank_control_chars (compressed);
+            field = g_convert (compressed, match - message - 1,
                                "UTF-8", "ISO_8859-1",
                                NULL, &size_dummy, NULL);
+            g_free (compressed);
             if (field == NULL) abort ();
           }
 #endif
