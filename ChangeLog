@@ -1,5 +1,9 @@
 2012-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_filter_controls): Correct doc brief.
+
+2012-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	When the GET filter defines an empty set and "first" is above 1, then
 	respond with "first" equal 1.  This prevents the user from jumping into
 	blank space after the rows.

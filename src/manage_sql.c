@@ -24179,7 +24179,7 @@ split_filter (const gchar* filter)
 }
 
 /**
- * @brief Clean a filter.
+ * @brief Get info from a filter.
  *
  * @param[in]   filter      Filter.
  * @param[out]  first       Number of first item.
