@@ -1,3 +1,8 @@
+2012-07-06  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/tests/CMakeLists.txt: Ensure that linking with modern gccs works
+	by moving linker flags from LINK_FLAGS to target_link_libraries.
+
 2012-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_filter_controls): Correct doc brief.
