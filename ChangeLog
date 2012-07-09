@@ -1,3 +1,8 @@
+2012-07-09  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Remove assigned but unused
+	variable to address compiler warning. Backport from trunk r13699.
+
 2012-06-27  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/otp.c (blank_control_chars): Skip newlines.

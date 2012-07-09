@@ -17855,11 +17855,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               if (next (&report_hosts))
                 {
                   iterator_t prognosis;
-                  report_t report;
                   int buffered;
 
                   buffered = 0;
-                  report = host_iterator_report (&report_hosts);
 
                   init_host_prognosis_iterator (&prognosis, report_host,
                                                 0, -1,
