@@ -1,5 +1,11 @@
 2012-07-09  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/manage.c (manage_read_info): Replace g_strcasecmp with
+	g_ascii_strcasecmp. The g_strcasecmp function has been deprecated
+	since glib 2.2 and is no longer available in recent glib versions.
+
+2012-07-09  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml, manage_filter_controls): Remove
 	assigned but unused variables to address compiler warnings.
 
