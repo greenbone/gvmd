@@ -18755,11 +18755,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               if (next (&report_hosts))
                 {
                   iterator_t prognosis;
-                  report_t report;
                   int buffered;
 
                   buffered = 0;
-                  report = host_iterator_report (&report_hosts);
 
                   init_host_prognosis_iterator (&prognosis, report_host,
                                                 0, -1,
@@ -24191,7 +24189,6 @@ void
 manage_filter_controls (const gchar *filter, int *first, int *max,
                         gchar **sort_field, int *sort_order)
 {
-  GString *clean;
   keyword_t **point;
   array_t *split;
 
@@ -24208,7 +24205,6 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
       return;
     }
 
-  clean = g_string_new ("");
   split = split_filter (filter);
   point = (keyword_t**) split->pdata;
   if (first)

@@ -1,3 +1,8 @@
+2012-07-09  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml, manage_filter_controls): Remove
+	assigned but unused variables to address compiler warnings.
+
 2012-07-06  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/tests/CMakeLists.txt: Ensure that linking with modern gccs works
