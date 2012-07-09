@@ -4320,7 +4320,7 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
   assert (result != NULL);
   *result = NULL;
 
-  if (g_strcasecmp ("CPE", type) == 0)
+  if (g_ascii_strcasecmp ("CPE", type) == 0)
     {
       fname = get_cpe_filename ();
       if (fname)
@@ -4374,7 +4374,7 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
           g_free (cpe);
         }
     }
-  else if (g_strcasecmp ("CVE", type) == 0)
+  else if (g_ascii_strcasecmp ("CVE", type) == 0)
     {
       fname = get_cve_filename (name);
       if (fname)
@@ -4414,7 +4414,7 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
           g_free (cve);
         }
     }
-  else if (g_strcasecmp ("NVT", type) == 0)
+  else if (g_ascii_strcasecmp ("NVT", type) == 0)
     {
       iterator_t nvts;
       nvt_t nvt;
