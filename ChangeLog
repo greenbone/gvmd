@@ -1,5 +1,17 @@
 2012-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (split_filter, manage_filter_controls): When "rows" is
+	left out, include all rows instead of including "Rows Per Page" rows.
+	This keeps OMP backwards compatibility.
+	(append_relation): New function.
+	(manage_clean_filter): Append with append_relation, which converts the
+	"rows" value to "Rows Per Page" if "rows" is -2.  This is convenient for
+	client because they can request Rows Per Page and still get the actual
+	value back in the filter.  Previous they just left out "rows" and this
+	would happen.
+
+2012-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OTP 1.1 handling.
 
 	* src/ompd.c (write_to_scanner): Send OTP/1.1 for normal mode, OTP/1.0 for

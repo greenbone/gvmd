@@ -24150,11 +24150,9 @@ split_filter (const gchar* filter)
 
     if (max == 0)
       {
-        int max;
         keyword = g_malloc0 (sizeof (keyword_t));
         keyword->column = g_strdup ("rows");
-        setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5", &max);
-        keyword->string = g_strdup_printf ("%i", max);
+        keyword->string = g_strdup ("-1");
         keyword->type = KEYWORD_TYPE_STRING;
         keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
         array_add (parts, keyword);
@@ -24197,7 +24195,7 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
       if (first)
         *first = 1;
       if (max)
-        setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5", max);
+        *max = -1;
       if (sort_field)
         *sort_field = g_strdup ("name");
       if (sort_order)
@@ -24229,7 +24227,7 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
   point = (keyword_t**) split->pdata;
   if (max)
     {
-      setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5", max);
+      *max = -1;
       while (*point)
         {
           keyword_t *keyword;
@@ -24284,6 +24282,36 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
 }
 
 /**
+ * @brief Append relation to filter.
+ *
+ * @param[in]  clean     Filter.
+ * @param[in]  keyword   Keyword
+ * @param[in]  relation  Relation char.
+ */
+static void
+append_relation (GString *clean, keyword_t *keyword, const char relation)
+{
+  if ((strcmp (keyword->column, "rows") == 0)
+      && (strcmp (keyword->string, "-2") == 0))
+    {
+      int max;
+      setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
+                         &max);
+      g_string_append_printf (clean,
+                              " %s%c%i",
+                              keyword->column,
+                              relation,
+                              max);
+    }
+  else
+    g_string_append_printf (clean,
+                            " %s%c%s",
+                            keyword->column,
+                            relation,
+                            keyword->string);
+}
+
+/**
  * @brief Clean a filter.
  *
  * @param[in]  filter  Filter.
@@ -24312,28 +24340,16 @@ manage_clean_filter (const gchar *filter)
         switch (keyword->relation)
           {
             case KEYWORD_RELATION_COLUMN_EQUAL:
-              g_string_append_printf (clean,
-                                      " %s=%s",
-                                      keyword->column,
-                                      keyword->string);
+              append_relation (clean, keyword, '=');
               break;
             case KEYWORD_RELATION_COLUMN_APPROX:
-              g_string_append_printf (clean,
-                                      " %s~%s",
-                                      keyword->column,
-                                      keyword->string);
+              append_relation (clean, keyword, '~');
               break;
             case KEYWORD_RELATION_COLUMN_ABOVE:
-              g_string_append_printf (clean,
-                                      " %s>%s",
-                                      keyword->column,
-                                      keyword->string);
+              append_relation (clean, keyword, '>');
               break;
             case KEYWORD_RELATION_COLUMN_BELOW:
-              g_string_append_printf (clean,
-                                      " %s<%s",
-                                      keyword->column,
-                                      keyword->string);
+              append_relation (clean, keyword, '<');
               break;
 
             case KEYWORD_RELATION_APPROX:
