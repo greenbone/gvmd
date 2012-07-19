@@ -1,3 +1,15 @@
+2012-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OTP 1.1 handling.
+
+	* src/ompd.c (write_to_scanner): Send OTP/1.1 for normal mode, OTP/1.0 for
+	NVT cache mode.  In normal mode go to DONE state after sending password.
+
+	* src/otp.c (process_otp_scanner_input): Also check for OTP/1.1.
+
+	* src/oxpd.c (OTP_INIT_STRING_2): New define.
+	(read_protocol): Also compare OTP 1.1 string.
+
 2012-07-09  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/manage.c (manage_read_info): Replace g_strcasecmp with

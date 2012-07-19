@@ -1344,9 +1344,11 @@ process_otp_scanner_input ()
             if (sync_buffer ()) return -1;
             return 0;
           }
-        if (strncasecmp ("< OTP/1.0 >\n", messages, 12))
+        if (strncasecmp ("< OTP/1.0 >\n", messages, 12)
+            && strncasecmp ("< OTP/1.1 >\n", messages, 12))
           {
-            tracef ("   scanner fail: expected \"< OTP/1.0 >, got \"%.12s\"\n\"\n",
+            tracef ("   scanner fail: expected \"< OTP/1.0 >\""
+                    " or \"< OTP/1.1 >\", got \"%.12s\"\n\n",
                     messages);
             return -1;
           }

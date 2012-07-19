@@ -342,7 +342,18 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
         /*@fallthrough@*/
       case SCANNER_INIT_CONNECTED:
         {
-          char* string = "< OTP/1.0 >\n";
+          char* string;
+
+          if (ompd_nvt_cache_mode)
+            /* Request OTP 1.0 only in cache mode, because in this case Scanner
+             * sends extra info that we use, like plugins MD5 sum and
+             * preferences. */
+            string = "< OTP/1.0 >\n";
+          else
+            /* Normal mode, request OTP 1.1, to skip extra info, for faster
+             * init with Scanner. */
+            string = "< OTP/1.1 >\n";
+
           scanner_init_offset = write_string_to_server (scanner_session,
                                                         string
                                                         + scanner_init_offset);
@@ -387,8 +398,13 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
           scanner_init_offset = write_string_to_server (scanner_session,
                                                         password + scanner_init_offset);
           if (scanner_init_offset == 0)
-            set_scanner_init_state (SCANNER_INIT_SENT_PASSWORD);
-            /* Fall through to send any available output. */
+            {
+              if (ompd_nvt_cache_mode)
+                set_scanner_init_state (SCANNER_INIT_SENT_PASSWORD);
+              else
+                set_scanner_init_state (SCANNER_INIT_DONE);
+              /* Fall through to send any available output. */
+            }
           else if (scanner_init_offset == -1)
             {
               scanner_init_offset = 0;

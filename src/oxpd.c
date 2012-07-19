@@ -91,6 +91,11 @@ struct sockaddr_in scanner_address;
 #define OTP_INIT_STRING "< OTP/1.0 >\n"
 
 /**
+ * @brief The OTP initialisation string.
+ */
+#define OTP_INIT_STRING_2 "< OTP/1.1 >\n"
+
+/**
  * @brief Read and return the type of protocol from the client.
  *
  * For OMP, this may read in OMP commands while determining the protocol,
@@ -262,6 +267,8 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
               if (left == 0)
                 {
                   if (strstr (from_client, OTP_INIT_STRING))
+                    ret = PROTOCOL_OTP;
+                  else if (strstr (from_client, OTP_INIT_STRING_2))
                     ret = PROTOCOL_OTP;
                   else
                     ret = PROTOCOL_OMP;
