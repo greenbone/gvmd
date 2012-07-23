@@ -1,3 +1,19 @@
+2012-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Import host details when importing reports.
+
+	* src/manage_sql.c (host_detail_free): New function.
+	(create_report): Add details arg.
+
+	* src/manage.h: Update headers accordingly.
+	(host_detail_t): New type.
+
+	* src/omp.c (create_report_data_t, create_report_data_reset)
+	(client_state_t): Add host details.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Parse and store host details for CREATE_REPORT,
+	and hand over to create_report function.
+
 2012-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (split_filter, manage_filter_controls): When "rows" is

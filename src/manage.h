@@ -713,9 +713,25 @@ typedef struct
   char *threat;            ///< Threat.
 } create_report_result_t;
 
+/**
+ * @brief A host detail for create_report.
+ */
+typedef struct
+{
+  char *ip;           ///< IP.
+  char *name;         ///< Detail name.
+  char *source_desc;  ///< Source description.
+  char *source_name;  ///< Source name.
+  char *source_type;  ///< Source type.
+  char *value;        ///< Detail value.
+} host_detail_t;
+
+void
+host_detail_free (host_detail_t *);
+
 int
 create_report (array_t*, const char *, const char *, const char *, const char *,
-               const char *, array_t*, array_t*, char **);
+               const char *, array_t*, array_t*, array_t*, char **);
 
 void
 report_add_result (report_t, result_t);

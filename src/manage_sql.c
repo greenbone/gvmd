@@ -12704,6 +12704,22 @@ create_current_report (task_t task, char **report_id, task_status_t status)
 }
 
 /**
+ * @brief Free a host detail.
+ *
+ * @param[in]  detail  Host detail.
+ */
+void
+host_detail_free (host_detail_t *detail)
+{
+  g_free (detail->ip);
+  g_free (detail->name);
+  g_free (detail->source_desc);
+  g_free (detail->source_name);
+  g_free (detail->source_type);
+  g_free (detail->value);
+}
+
+/**
  * @brief Create a report from an array of results.
  *
  * @param[in]   results       Array of create_report_result_t pointers.
@@ -12716,6 +12732,7 @@ create_current_report (task_t task, char **report_id, task_status_t status)
  *                            name in host, time in description.
  * @param[in]   host_ends     Array of create_report_result_t pointers.  Host
  *                            name in host, time in description.
+ * @param[in]   details       Array of host_detail_t pointers.
  * @param[out]  report_id     Report ID.
  *
  * @return 0 success, -1 error, -2 failed to generate ID, -3 task_name is NULL,
@@ -12725,13 +12742,14 @@ int
 create_report (array_t *results, const char *task_id, const char *task_name,
                const char *task_comment, const char *scan_start,
                const char *scan_end, array_t *host_starts,
-               array_t *host_ends, char **report_id)
+               array_t *host_ends, array_t *details, char **report_id)
 {
   int index;
   create_report_result_t *result, *end, *start;
   report_t report;
   task_t task;
   pid_t pid;
+  host_detail_t *detail;
 
   if (task_id == NULL && task_name == NULL)
     return -3;
@@ -12898,6 +12916,43 @@ create_report (array_t *results, const char *task_id, const char *task_name,
                quoted_host);
 
         g_free (quoted_host);
+      }
+
+  index = 0;
+  while ((detail = (host_detail_t*) g_ptr_array_index (details, index++)))
+    if (detail->ip && detail->name)
+      {
+        gchar *quoted_ip, *quoted_source_type, *quoted_source_name;
+        gchar *quoted_source_desc, *quoted_name, *quoted_value;
+
+        quoted_ip = sql_quote (detail->ip);
+        quoted_source_type = sql_quote (detail->source_type ?: "");
+        quoted_source_name = sql_quote (detail->source_name ?: "");
+        quoted_source_desc = sql_quote (detail->source_desc ?: "");
+        quoted_name = sql_quote (detail->name);
+        quoted_value = sql_quote (detail->value ?: "");
+
+        sql ("INSERT INTO report_host_details"
+             " (report_host, source_type, source_name, source_description,"
+             "  name, value)"
+             " VALUES"
+             " ((SELECT ROWID FROM report_hosts"
+             "   WHERE report = %llu AND host = '%s'),"
+             "  '%s', '%s', '%s', '%s', '%s');",
+             report,
+             quoted_ip,
+             quoted_source_type,
+             quoted_source_name,
+             quoted_source_desc,
+             quoted_name,
+             quoted_value);
+
+        g_free (quoted_ip);
+        g_free (quoted_source_type);
+        g_free (quoted_source_name);
+        g_free (quoted_source_desc);
+        g_free (quoted_name);
+        g_free (quoted_value);
       }
 
 #if 0

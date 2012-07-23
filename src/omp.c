@@ -1099,12 +1099,19 @@ create_port_range_data_reset (create_port_range_data_t *data)
  */
 typedef struct
 {
+  char *detail_name;              ///< Name of current host detail.
+  char *detail_value;             ///< Value of current host detail.
+  char *detail_source_name;       ///< Name of source of current host detail.
+  char *detail_source_type;       ///< Type of source of current host detail.
+  char *detail_source_desc;       ///< Description of source of current detail.
+  array_t *details;               ///< Host details.
   char *host_end;                 ///< End time for a host.
   char *host_end_host;            ///< Host name for end time.
   array_t *host_ends;             ///< All host ends.
   char *host_start;               ///< Start time for a host.
   char *host_start_host;          ///< Host name for start time.
   array_t *host_starts;           ///< All host starts.
+  char *ip;                       ///< Current host for host details.
   char *result_description;       ///< Description of NVT for current result.
   char *result_host;              ///< Host for current result.
   char *result_nvt_oid;           ///< OID of NVT for current result.
@@ -1129,8 +1136,21 @@ typedef struct
 static void
 create_report_data_reset (create_report_data_t *data)
 {
+  if (data->details)
+    {
+      guint index = data->details->len;
+      while (index--)
+        {
+          host_detail_t *detail;
+          detail = (host_detail_t*) g_ptr_array_index (data->details, index);
+          if (detail)
+            host_detail_free (detail);
+        }
+      array_free (data->details);
+    }
   free (data->host_end);
   free (data->host_start);
+  free (data->ip);
   free (data->result_description);
   free (data->result_host);
   free (data->result_nvt_oid);
@@ -3617,7 +3637,18 @@ typedef enum
   CLIENT_CREATE_REPORT_REPORT,
   CLIENT_CREATE_REPORT_RR,
   CLIENT_CREATE_REPORT_RR_FILTERS,
-  CLIENT_CREATE_REPORT_RR_HOST,
+  /* RR_H is for RR_HOST because it clashes with entities like HOST_START. */
+  CLIENT_CREATE_REPORT_RR_H,
+  CLIENT_CREATE_REPORT_RR_H_DETAIL,
+  CLIENT_CREATE_REPORT_RR_H_DETAIL_NAME,
+  CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE,
+  CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_DESC,
+  CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_NAME,
+  CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_TYPE,
+  CLIENT_CREATE_REPORT_RR_H_DETAIL_VALUE,
+  CLIENT_CREATE_REPORT_RR_H_END,
+  CLIENT_CREATE_REPORT_RR_H_IP,
+  CLIENT_CREATE_REPORT_RR_H_START,
   CLIENT_CREATE_REPORT_RR_HOST_COUNT,
   CLIENT_CREATE_REPORT_RR_HOST_END,
   CLIENT_CREATE_REPORT_RR_HOST_END_HOST,
@@ -6161,6 +6192,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 /* Assume the report is immediately inside the CREATE_REPORT. */
                 create_report_data->wrapper = 0;
+                create_report_data->details = make_array ();
                 create_report_data->host_ends = make_array ();
                 create_report_data->host_starts = make_array ();
                 create_report_data->results = make_array ();
@@ -6178,6 +6210,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_REPORT_REPORT:
         if (strcasecmp ("REPORT", element_name) == 0)
           {
+            create_report_data->details = make_array ();
             create_report_data->host_ends = make_array ();
             create_report_data->host_starts = make_array ();
             create_report_data->results = make_array ();
@@ -6193,8 +6226,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("HOST", element_name) == 0)
           {
-            omp_parser->read_over = 1;
-            set_client_state (CLIENT_CREATE_REPORT_RR_HOST);
+            set_client_state (CLIENT_CREATE_REPORT_RR_H);
           }
         else if (strcasecmp ("HOST_COUNT", element_name) == 0)
           {
@@ -6261,6 +6293,55 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_REPORT_RR_HOST_START:
         if (strcasecmp ("HOST", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_HOST_START_HOST);
+        ELSE_ERROR ("create_report");
+
+      case CLIENT_CREATE_REPORT_RR_H:
+        if (strcasecmp ("IP", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_REPORT_RR_H_IP);
+          }
+        else if (strcasecmp ("DETAIL", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_REPORT_RR_H_DETAIL);
+          }
+        else if (strcasecmp ("END", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_REPORT_RR_H_END);
+          }
+        else if (strcasecmp ("START", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_REPORT_RR_H_START);
+          }
+        ELSE_ERROR ("create_report");
+
+      case CLIENT_CREATE_REPORT_RR_H_DETAIL:
+        if (strcasecmp ("NAME", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_REPORT_RR_H_DETAIL_NAME);
+          }
+        else if (strcasecmp ("VALUE", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_REPORT_RR_H_DETAIL_VALUE);
+          }
+        else if (strcasecmp ("SOURCE", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE);
+          }
+        ELSE_ERROR ("create_report");
+
+      case CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE:
+        if (strcasecmp ("DESCRIPTION", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_DESC);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_NAME);
+          }
+        else if (strcasecmp ("TYPE", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_TYPE);
+          }
         ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR_RESULTS:
@@ -12390,6 +12471,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           array_terminate (create_report_data->results);
           array_terminate (create_report_data->host_ends);
           array_terminate (create_report_data->host_starts);
+          array_terminate (create_report_data->details);
 
           if (openvas_is_user_observer (current_credentials.username))
             {
@@ -12415,6 +12497,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          create_report_data->scan_end,
                          create_report_data->host_starts,
                          create_report_data->host_ends,
+                         create_report_data->details,
                          &uuid))
             {
               case -1:
@@ -12478,7 +12561,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT);
         break;
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, FILTERS);
-      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, HOST);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR, HOST_COUNT);
       case CLIENT_CREATE_REPORT_RR_HOST_END:
         assert (strcasecmp ("HOST_END", element_name) == 0);
@@ -12542,6 +12624,58 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       CLOSE (CLIENT_CREATE_REPORT_RR_HOST_END, HOST);
       CLOSE (CLIENT_CREATE_REPORT_RR_HOST_START, HOST);
+
+      case CLIENT_CREATE_REPORT_RR_H:
+        {
+          openvas_free_string_var (&create_report_data->ip);
+          set_client_state (CLIENT_CREATE_REPORT_RR);
+          break;
+        }
+
+      CLOSE (CLIENT_CREATE_REPORT_RR_H, IP);
+      CLOSE (CLIENT_CREATE_REPORT_RR_H, START);
+      CLOSE (CLIENT_CREATE_REPORT_RR_H, END);
+
+      case CLIENT_CREATE_REPORT_RR_H_DETAIL:
+        {
+          assert (strcasecmp ("DETAIL", element_name) == 0);
+          assert (create_report_data->details);
+
+          if (create_report_data->ip)
+            {
+              host_detail_t *detail;
+
+              detail = g_malloc (sizeof (host_detail_t));
+              detail->ip = g_strdup (create_report_data->ip);
+              detail->name = create_report_data->detail_name;
+              detail->source_desc = create_report_data->detail_source_desc;
+              detail->source_name = create_report_data->detail_source_name;
+              detail->source_type = create_report_data->detail_source_type;
+              detail->value = create_report_data->detail_value;
+
+              array_add (create_report_data->details, detail);
+
+              create_report_data->detail_name = NULL;
+              create_report_data->detail_source_desc = NULL;
+              create_report_data->detail_source_name = NULL;
+              create_report_data->detail_source_type = NULL;
+              create_report_data->detail_value = NULL;
+            }
+
+          set_client_state (CLIENT_CREATE_REPORT_RR_H);
+          break;
+        }
+
+      CLOSE (CLIENT_CREATE_REPORT_RR_H_DETAIL, NAME);
+      CLOSE (CLIENT_CREATE_REPORT_RR_H_DETAIL, VALUE);
+      CLOSE (CLIENT_CREATE_REPORT_RR_H_DETAIL, SOURCE);
+
+      CLOSE (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE, TYPE);
+      CLOSE (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE, NAME);
+      case CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_DESC:
+        assert (strcasecmp ("DESCRIPTION", element_name) == 0);
+        set_client_state (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE);
+        break;
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT:
         {
@@ -17390,6 +17524,25 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT,
               &create_report_data->result_threat);
+
+
+      APPEND (CLIENT_CREATE_REPORT_RR_H_DETAIL_NAME,
+              &create_report_data->detail_name);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_H_DETAIL_VALUE,
+              &create_report_data->detail_value);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_DESC,
+              &create_report_data->detail_source_desc);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_NAME,
+              &create_report_data->detail_source_name);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_H_DETAIL_SOURCE_TYPE,
+              &create_report_data->detail_source_type);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_H_IP,
+              &create_report_data->ip);
 
 
       APPEND (CLIENT_CREATE_REPORT_TASK_NAME,
