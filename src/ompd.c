@@ -761,13 +761,13 @@ serve_omp (gnutls_session_t* client_session,
     {
       int ret;
       struct timeval timeout;
-      uint8_t fds;  /* What `select' is going to watch. */
+      uint8_t fd_info;  /* What `select' is going to watch. */
 
       /* Setup for select. */
 
       /** @todo nfds must only include a socket if it's in >= one set. */
 
-      fds = 0;
+      fd_info = 0;
       FD_ZERO (&exceptfds);
       FD_ZERO (&readfds);
       FD_ZERO (&writefds);
@@ -794,19 +794,22 @@ serve_omp (gnutls_session_t* client_session,
           else
             {
               FD_SET (client_socket, &exceptfds);
+              /* See whether to read from the client.  */
               if (from_client_end < from_buffer_size)
                 {
                   FD_SET (client_socket, &readfds);
-                  fds |= FD_CLIENT_READ;
+                  fd_info |= FD_CLIENT_READ;
                 }
+              /* See whether tow rite to the client.  */
               if (to_client_start < to_client_end)
                 {
                   FD_SET (client_socket, &writefds);
-                  fds |= FD_CLIENT_WRITE;
+                  fd_info |= FD_CLIENT_WRITE;
                 }
             }
         }
 
+      /* See whether we need to read from the scannner.  */
       if ((scanner_init_state == SCANNER_INIT_DONE
            || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
            || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE
@@ -819,9 +822,10 @@ serve_omp (gnutls_session_t* client_session,
           && from_scanner_end < from_buffer_size)
         {
           FD_SET (scanner_socket, &readfds);
-          fds |= FD_SCANNER_READ;
+          fd_info |= FD_SCANNER_READ;
         }
 
+      /* See whether we need to write to the scanner.  */
       if (((scanner_init_state == SCANNER_INIT_TOP
             || scanner_init_state == SCANNER_INIT_DONE
             || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
@@ -835,7 +839,7 @@ serve_omp (gnutls_session_t* client_session,
           || scanner_init_state == SCANNER_INIT_GOT_USER)
         {
           FD_SET (scanner_socket, &writefds);
-          fds |= FD_SCANNER_WRITE;
+          fd_info |= FD_SCANNER_WRITE;
         }
 
       /* Select, then handle result. */
@@ -879,11 +883,13 @@ serve_omp (gnutls_session_t* client_session,
           continue;
         }
 
+      /* Check for exceptions on the client socket.  */
       if (client_active && FD_ISSET (client_socket, &exceptfds))
         {
           char ch;
           if (recv (client_socket, &ch, 1, MSG_OOB) < 1)
             {
+              /* FIXME: Check for EINTR.  */
               g_warning ("%s: after exception on client in child select:"
                          " recv failed\n",
                          __FUNCTION__);
@@ -898,11 +904,13 @@ serve_omp (gnutls_session_t* client_session,
                      ch);
         }
 
+      /* Check for exceptions on the scanner socket.  */
       if (FD_ISSET (scanner_socket, &exceptfds))
         {
           char ch;
           if (recv (scanner_socket, &ch, 1, MSG_OOB) < 1)
             {
+              /* FIXME: Check for EINTR.  */
               g_warning ("%s: after exception on scanner in child select:"
                          " recv failed\n",
                          __FUNCTION__);
@@ -917,7 +925,8 @@ serve_omp (gnutls_session_t* client_session,
                      ch);
         }
 
-      if ((fds & FD_CLIENT_READ) == FD_CLIENT_READ
+      /* Read data from the client.  */
+      if ((fd_info & FD_CLIENT_READ) == FD_CLIENT_READ
           && FD_ISSET (client_socket, &readfds))
         {
 #if TRACE || LOG
@@ -1080,7 +1089,8 @@ serve_omp (gnutls_session_t* client_session,
             }
         }
 
-      if ((fds & FD_SCANNER_READ) == FD_SCANNER_READ
+      /* Read data from the scanner.  */
+      if ((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ
           && FD_ISSET (scanner_socket, &readfds))
         {
 #if TRACE || LOG
@@ -1193,7 +1203,8 @@ serve_omp (gnutls_session_t* client_session,
             assert (0);
         }
 
-      if ((fds & FD_SCANNER_WRITE) == FD_SCANNER_WRITE
+      /* Write data to the scanner.  */
+      if ((fd_info & FD_SCANNER_WRITE) == FD_SCANNER_WRITE
           && FD_ISSET (scanner_socket, &writefds))
         {
           /* Write as much as possible to the scanner. */
@@ -1219,7 +1230,8 @@ serve_omp (gnutls_session_t* client_session,
             }
         }
 
-      if ((fds & FD_CLIENT_WRITE) == FD_CLIENT_WRITE
+      /* Write data to the client.  */
+      if ((fd_info & FD_CLIENT_WRITE) == FD_CLIENT_WRITE
           && FD_ISSET (client_socket, &writefds))
         {
           /* Write as much as possible to the client. */
