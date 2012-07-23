@@ -1,3 +1,7 @@
+2012-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/ompd.c (serve_omp): Correct comment typo.
+
 2012-07-23  Werner Koch  <wk@gnupg.org>
 
 	Documentation update.

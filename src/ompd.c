@@ -800,7 +800,7 @@ serve_omp (gnutls_session_t* client_session,
                   FD_SET (client_socket, &readfds);
                   fd_info |= FD_CLIENT_READ;
                 }
-              /* See whether tow rite to the client.  */
+              /* See whether to write to the client.  */
               if (to_client_start < to_client_end)
                 {
                   FD_SET (client_socket, &writefds);
