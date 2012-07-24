@@ -1,3 +1,11 @@
+2012-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS cleanup
+	the iterator early when a particular report was requested.  This allows
+	the main manager process to lock the database for task scheduling during
+	generation of large reports.  Also remove two stray cleanup_iterator
+	calls.
+
 2012-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ompd.c (serve_omp): Correct comment typo.

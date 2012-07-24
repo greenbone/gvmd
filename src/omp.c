@@ -9276,7 +9276,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (ret)
               {
                 internal_error_send_to_client (error);
-                cleanup_iterator (&reports);
                 get_reports_data_reset (get_reports_data);
                 set_client_state (CLIENT_AUTHENTIC);
                 return;
@@ -9352,7 +9351,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (ret)
               {
                 internal_error_send_to_client (error);
-                cleanup_iterator (&reports);
                 get_reports_data_reset (get_reports_data);
                 set_client_state (CLIENT_AUTHENTIC);
                 return;
@@ -9392,6 +9390,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
             g_free (extension);
             g_free (content_type);
+
+            /* If there's just one report then cleanup the iterator early.  This
+             * closes the iterator transaction, allowing manage_schedule to lock
+             * the db during generation of large reports. */
+            if (request_report)
+              cleanup_iterator (&reports);
 
             ret = manage_send_report (report,
                                       delta_report,
@@ -9441,7 +9445,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             return;
                           }
                         internal_error_send_to_client (error);
-                        cleanup_iterator (&reports);
+                        if (request_report == 0)
+                          cleanup_iterator (&reports);
                         get_reports_data_reset (get_reports_data);
                         set_client_state (CLIENT_AUTHENTIC);
                         return;
@@ -9451,7 +9456,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_INTERNAL_ERROR ("get_reports"));
                         internal_error_send_to_client (error);
-                        cleanup_iterator (&reports);
+                        if (request_report == 0)
+                          cleanup_iterator (&reports);
                         get_reports_data_reset (get_reports_data);
                         set_client_state (CLIENT_AUTHENTIC);
                         return;
@@ -9460,7 +9466,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 else
                   {
                     internal_error_send_to_client (error);
-                    cleanup_iterator (&reports);
+                    if (request_report == 0)
+                      cleanup_iterator (&reports);
                     get_reports_data_reset (get_reports_data);
                     set_client_state (CLIENT_AUTHENTIC);
                     return;
@@ -9468,8 +9475,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             if (get_reports_data->alert_id == NULL)
               SEND_TO_CLIENT_OR_FAIL ("</report>");
+
+            if (request_report)
+              /* Just to be safe, because iterator has been freed. */
+              break;
           }
-        cleanup_iterator (&reports);
+        if (request_report == 0)
+          cleanup_iterator (&reports);
 
         if (get_reports_data->alert_id)
           SEND_TO_CLIENT_OR_FAIL (XML_OK ("get_reports"));
