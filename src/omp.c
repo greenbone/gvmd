@@ -16554,8 +16554,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          write_to_client_data);
 
                     {
-                      gchar *max_checks, *max_hosts;
+                      gchar *in_assets, *max_checks, *max_hosts;
 
+                      in_assets = task_preference_value (task, "in_assets");
                       max_checks = task_preference_value (task, "max_checks");
                       max_hosts = task_preference_value (task, "max_hosts");
 
@@ -16575,11 +16576,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         "<scanner_name>max_hosts</scanner_name>"
                         "<value>%s</value>"
                         "</preference>"
+                        "<preference>"
+                        "<name>"
+                        "Add results to Asset Management"
+                        "</name>"
+                        "<scanner_name>in_assets</scanner_name>"
+                        "<value>%s</value>"
+                        "</preference>"
                         "</preferences>"
                         "</task>",
                         max_checks ? max_checks : "4",
-                        max_hosts ? max_hosts : "20");
+                        max_hosts ? max_hosts : "20",
+                        in_assets ? in_assets : "yes");
 
+                      g_free (in_assets);
                       g_free (max_checks);
                       g_free (max_hosts);
                     }
@@ -17021,8 +17031,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (line);
 
                     {
-                      gchar *max_checks, *max_hosts;
+                      gchar *in_assets, *max_checks, *max_hosts;
 
+                      in_assets = task_preference_value (index, "in_assets");
                       max_checks = task_preference_value (index, "max_checks");
                       max_hosts = task_preference_value (index, "max_hosts");
 
@@ -17042,11 +17053,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         "<scanner_name>max_hosts</scanner_name>"
                         "<value>%s</value>"
                         "</preference>"
+                        "<preference>"
+                        "<name>"
+                        "Add results to Asset Management"
+                        "</name>"
+                        "<scanner_name>in_assets</scanner_name>"
+                        "<value>%s</value>"
+                        "</preference>"
                         "</preferences>"
                         "</task>",
                         max_checks ? max_checks : "4",
-                        max_hosts ? max_hosts : "20");
+                        max_hosts ? max_hosts : "20",
+                        in_assets ? in_assets : "yes");
 
+                      g_free (in_assets);
                       g_free (max_checks);
                       g_free (max_hosts);
                     }

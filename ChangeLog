@@ -1,5 +1,25 @@
 2012-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add task preference "in_assets" which controls whether the task is
+	considered by the asset management.  Hence increase database version to
+	60.  Add database migration from version 59 to 60.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 60.
+
+	* src/manage_sql.c (migrate_59_to_60): New function.  Ensures each task
+	has an in_assets preference.
+	(migrators): Add migrate_59_to_60.
+	(init_asset_iterator, host_nthlast_report_host): Add the condition that
+	the task's in_assets preference must be "yes", to the SQL.
+	(make_task): Add in_assets task preference for the task.
+
+	* src/omp.c (omp_xml_handle_end_element): Send in_assets preference with
+	task preferences.
+
+	* doc/db.png: Update for version change.
+
+2012-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS cleanup
 	the iterator early when a particular report was requested.  This allows
 	the main manager process to lock the database for task scheduling during

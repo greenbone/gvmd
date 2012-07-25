@@ -5733,6 +5733,42 @@ migrate_58_to_59 ()
 }
 
 /**
+ * @brief Migrate the database from version 59 to version 60.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_59_to_60 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 59. */
+
+  if (manage_db_version () != 59)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Every task must now have an in_assets task preference. */
+
+  sql ("INSERT INTO task_preferences (task, name, value)"
+       " SELECT ROWID, 'in_assets', 'yes' FROM tasks;");
+
+  /* Set the database version to 60. */
+
+  set_db_version (60);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -5796,6 +5832,7 @@ static migrator_t database_migrators[]
     {57, migrate_56_to_57},
     {58, migrate_57_to_58},
     {59, migrate_58_to_59},
+    {60, migrate_59_to_60},
     /* End marker. */
     {-1, NULL}};
 
@@ -14547,6 +14584,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                  "  WHERE users.uuid = '%s')))"
                  " AND ((overrides.end_time = 0)"
                  "      OR (overrides.end_time >= now ()))"
+                 /** @todo Include tasks.hidden and task pref in_assets? */
                  " AND (overrides.task ="
                  "      (SELECT reports.task FROM reports, report_results"
                  "       WHERE report_results.result = results.ROWID"
@@ -14591,6 +14629,13 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        "      WHERE reports.task = tasks.ROWID"
                        "      AND reports.ROWID = report_hosts.report)"
                        "     = 0"
+                       " AND (SELECT value FROM task_preferences, tasks,"
+                       "                        reports"
+                       "      WHERE reports.task = tasks.ROWID"
+                       "      AND reports.ROWID = report_hosts.report"
+                       "      AND task_preferences.task = tasks.ROWID"
+                       "      AND task_preferences.name = 'in_assets')"
+                       "     = 'yes'"
                        " AND (report_hosts.end_time IS NOT NULL"
                        "      AND report_hosts.end_time != '')"
                        " GROUP BY host"
@@ -14635,6 +14680,13 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        "      WHERE reports.task = tasks.ROWID"
                        "      AND reports.ROWID = report_hosts.report)"
                        "     = 0"
+                       " AND (SELECT value FROM task_preferences, tasks,"
+                       "                        reports"
+                       "      WHERE reports.task = tasks.ROWID"
+                       "      AND reports.ROWID = report_hosts.report"
+                       "      AND task_preferences.task = tasks.ROWID"
+                       "      AND task_preferences.name = 'in_assets')"
+                       "     = 'yes'"
                        " AND (report_hosts.end_time IS NOT NULL"
                        "      AND report_hosts.end_time != '')"
                        " GROUP BY host"
@@ -14671,6 +14723,13 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                      "      WHERE reports.task = tasks.ROWID"
                      "      AND reports.ROWID = report_hosts.report)"
                      "     = 0"
+                     " AND (SELECT value FROM task_preferences, tasks,"
+                     "                        reports"
+                     "      WHERE reports.task = tasks.ROWID"
+                     "      AND reports.ROWID = report_hosts.report"
+                     "      AND task_preferences.task = tasks.ROWID"
+                     "      AND task_preferences.name = 'in_assets')"
+                     "     = 'yes'"
                      " AND (report_hosts.end_time IS NOT NULL"
                      "      AND report_hosts.end_time != '')"
                      " GROUP BY host"
@@ -14702,6 +14761,13 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                    "      WHERE reports.task = tasks.ROWID"
                    "      AND reports.ROWID = report_hosts.report)"
                    "     = 0"
+                   " AND (SELECT value FROM task_preferences, tasks,"
+                   "                        reports"
+                   "      WHERE reports.task = tasks.ROWID"
+                   "      AND reports.ROWID = report_hosts.report"
+                   "      AND task_preferences.task = tasks.ROWID"
+                   "      AND task_preferences.name = 'in_assets')"
+                   "     = 'yes'"
                    " AND (report_hosts.end_time IS NOT NULL"
                    "      AND report_hosts.end_time != '')"
                    " ORDER BY host COLLATE collate_ip"
@@ -17869,6 +17935,13 @@ host_nthlast_report_host (const char *host, report_host_t *report_host,
                      "      WHERE reports.task = tasks.ROWID"
                      "      AND reports.ROWID = report_hosts.report)"
                      "     = 0"
+                     " AND (SELECT value FROM task_preferences, tasks,"
+                     "                        reports"
+                     "      WHERE reports.task = tasks.ROWID"
+                     "      AND reports.ROWID = report_hosts.report"
+                     "      AND task_preferences.task = tasks.ROWID"
+                     "      AND task_preferences.name = 'in_assets')"
+                     "     = 'yes'"
                      " AND (report_hosts.end_time IS NOT NULL"
                      "      AND report_hosts.end_time != '')"
                      " ORDER BY ROWID DESC LIMIT %i;",
@@ -21397,6 +21470,9 @@ make_task (char* name, unsigned int time, char* comment)
        quoted_comment ? quoted_comment : "");
   task = sqlite3_last_insert_rowid (task_db);
   set_task_run_status (task, TASK_STATUS_NEW);
+  sql ("INSERT INTO task_preferences (task, name, value)"
+       " VALUES (%llu, 'in_assets', 'yes')",
+       task);
   free (uuid);
   free (name);
   free (comment);
