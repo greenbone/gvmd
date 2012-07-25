@@ -18534,10 +18534,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   if (task && tsk_uuid)
     {
-      char *tsk_name, *task_target_uuid;
+      char *tsk_name, *task_target_uuid, *comment;
       target_t target;
 
       tsk_name = task_name (task);
+
+      comment = task_comment (task);
 
       target = task_target (task);
       if (task_target_in_trash (task))
@@ -18548,14 +18550,17 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       PRINT (out,
              "<task id=\"%s\">"
              "<name>%s</name>"
+             "<comment>%s</comment>"
              "<target id=\"%s\">"
              "<trash>%i</trash>"
              "</target>"
              "</task>",
              tsk_uuid,
              tsk_name ? tsk_name : "",
+             comment ? comment : "",
              task_target_uuid ? task_target_uuid : "",
              task_target_in_trash (task));
+      free (comment);
       free (tsk_name);
       free (tsk_uuid);
     }

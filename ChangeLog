@@ -1,4 +1,8 @@
-2012-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-07-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Add COMMENT to TASK.
+
+2012-07-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add task preference "in_assets" which controls whether the task is
 	considered by the asset management.  Hence increase database version to
