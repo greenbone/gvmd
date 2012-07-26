@@ -102,7 +102,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <type>
     <name>type_name</name>
     <summary>A name of a data type</summary>
-    <pattern>xsd:string - xsd:whitespace</pattern>
+    <pattern>xsd:Name</pattern>
   </type>
   <type>
     <name>integer</name>

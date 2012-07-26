@@ -173,7 +173,7 @@ boolean_atoi = text
 # A date and time, in the C `ctime' format.
 ctime = text
 # A name of a data type.
-type_name = xsd:string - xsd:whitespace
+type_name = xsd:Name
 # An integer.
 integer = xsd:integer
 # A date and time, in ISO 8601 format.
