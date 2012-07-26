@@ -14848,7 +14848,7 @@ help_response_schema_protocol_command
         If the preference includes an NVT, then the preference is an NVT preference,
         otherwise the preference is a scanner preference.  If the preference includes
         a value then the manager updates the value of the preference, otherwise the
-        manager removes the preference.
+        manager removes the preference.  The value must be base64 encoded.
       </p>
 <p>
         The second form, with a family selection, lets the client modify the
@@ -15110,13 +15110,26 @@ modify_config_nvt_selection_nvt
      }
 </pre></div>
 </div>
-<h4>7.57.3 Example: Modify a config preference</h4>
+<h4>7.57.3 Example: Modify a config NVT preference</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;preference&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.14259"/&gt;
      &lt;name&gt;Nmap (NASL wrapper)[checkbox]:UDP port scan&lt;/name&gt;
      &lt;value&gt;eWVz&lt;/value&gt;
+   &lt;/preference&gt;
+ &lt;/modify_config&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config_response status="200"
+                         status_text="OK"/&gt;
+</pre></div>
+</div>
+<h4>7.57.3 Example: Modify a config Scanner preference</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
+   &lt;preference&gt;
+     &lt;name&gt;scanner[scanner]:vhosts&lt;/name&gt;
+     &lt;value&gt;ZXhhbXBsZQ==&lt;/value&gt;
    &lt;/preference&gt;
  &lt;/modify_config&gt;
 </pre></div>

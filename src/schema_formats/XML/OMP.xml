@@ -9312,7 +9312,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         If the preference includes an NVT, then the preference is an NVT preference,
         otherwise the preference is a scanner preference.  If the preference includes
         a value then the manager updates the value of the preference, otherwise the
-        manager removes the preference.
+        manager removes the preference.  The value must be base64 encoded.
       </p>
 
       <p>
@@ -9486,13 +9486,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </response>
     <example>
-      <summary>Modify a config preference</summary>
+      <summary>Modify a config NVT preference</summary>
       <request>
         <modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
           <preference>
             <nvt oid="1.3.6.1.4.1.25623.1.0.14259"></nvt>
             <name>Nmap (NASL wrapper)[checkbox]:UDP port scan</name>
             <value>eWVz</value>
+          </preference>
+        </modify_config>
+      </request>
+      <response>
+        <modify_config_response status="200" status_text="OK">
+        </modify_config_response>
+      </response>
+    </example>
+    <example>
+      <summary>Modify a config Scanner preference</summary>
+      <request>
+        <modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <preference>
+            <name>scanner[scanner]:vhosts</name>
+            <value>ZXhhbXBsZQ==</value>
           </preference>
         </modify_config>
       </request>
