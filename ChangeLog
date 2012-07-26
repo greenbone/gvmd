@@ -1,5 +1,11 @@
 2012-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_otp_pref_iterator): Include the special
+	timeout.OID preferences, so that these user-defined NVT timeouts
+	are sent to the scanner.
+
+2012-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (type_name): Use xsd:Name.
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
