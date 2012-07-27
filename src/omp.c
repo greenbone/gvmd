@@ -5627,7 +5627,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
           }
         else if (strcasecmp ("PREFERENCE", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
+          {
+            openvas_free_string_var (&modify_config_data->preference_name);
+            openvas_free_string_var (&modify_config_data->preference_nvt_oid);
+            openvas_free_string_var (&modify_config_data->preference_value);
+            set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
+          }
         ELSE_ERROR ("modify_config");
 
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION:

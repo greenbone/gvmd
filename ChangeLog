@@ -1,3 +1,8 @@
+2012-07-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (omp_xml_handle_start_element): Clear preference data
+	in case there are multiple preferences.
+
 2012-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_otp_pref_iterator): Include the special
