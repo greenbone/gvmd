@@ -13085,8 +13085,16 @@ init_report_iterator (iterator_t* iterator, task_t task, report_t report)
                    "SELECT ROWID, uuid FROM reports WHERE task = %llu;",
                    task);
   else
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid FROM reports;");
+    {
+      assert (current_credentials.uuid);
+      init_iterator (iterator,
+                     "SELECT ROWID, uuid FROM reports"
+                     " WHERE ((owner IS NULL) OR owner ="
+                     " (SELECT ROWID FROM users"
+                     "  WHERE users.uuid = '%s'))"
+                     " AND hidden = 0;",
+                     current_credentials.uuid);
+    }
 }
 
 #if 0
