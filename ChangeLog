@@ -1,3 +1,9 @@
+2012-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_report_iterator): When getting all reports, get
+	only the visible reports for the current user.  Backport from trunk
+	r13802.
+
 2011-05-30  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
