@@ -1,3 +1,9 @@
+2012-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_report_iterator): When getting all reports, get
+	only the visible reports for the current user.  Backport from trunk
+	r13802.
+
 2012-07-25  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS cleanup
