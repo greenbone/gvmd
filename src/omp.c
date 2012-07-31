@@ -1387,7 +1387,7 @@ typedef struct
 typedef struct
 {
   char *config_id;      ///< ID of task config.
-  char *alert_id;       ///< ID of task alert.
+  array_t *alerts;      ///< IDs of alerts.
   char *observers;      ///< Space separated names of observer users.
   name_value_t *preference;  ///< Current preference.
   array_t *preferences; ///< Preferences.
@@ -1406,7 +1406,7 @@ static void
 create_task_data_reset (create_task_data_t *data)
 {
   free (data->config_id);
-  free (data->alert_id);
+  array_free (data->alerts);
   free (data->observers);
   if (data->preferences)
     {
@@ -2624,7 +2624,7 @@ typedef struct
 {
   char *action;        ///< What to do to file: "update" or "remove".
   char *comment;       ///< Comment.
-  char *alert_id;      ///< ID of new alert for task.
+  array_t *alerts;     ///< IDs of new alerts for task.
   char *file;          ///< File to attach to task.
   char *file_name;     ///< Name of file to attach to task.
   char *name;          ///< New name for task.
@@ -2646,8 +2646,8 @@ static void
 modify_task_data_reset (modify_task_data_t *data)
 {
   free (data->action);
+  array_free (data->alerts);
   free (data->comment);
-  free (data->alert_id);
   free (data->file);
   free (data->file_name);
   free (data->name);
@@ -4583,6 +4583,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("CREATE_TASK", element_name) == 0)
           {
             create_task_data->task = make_task (NULL, 0, NULL);
+            create_task_data->alerts = make_array ();
             set_client_state (CLIENT_CREATE_TASK);
           }
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
@@ -5472,6 +5473,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             append_attribute (attribute_names, attribute_values, "task_id",
                               &modify_task_data->task_id);
+            modify_task_data->alerts = make_array ();
             set_client_state (CLIENT_MODIFY_TASK);
           }
         else if (strcasecmp ("PAUSE_TASK", element_name) == 0)
@@ -5784,8 +5786,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("ALERT", element_name) == 0)
           {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &modify_task_data->alert_id);
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values, "id",
+                                &attribute))
+              array_add (modify_task_data->alerts, g_strdup (attribute));
             set_client_state (CLIENT_MODIFY_TASK_ALERT);
           }
         else if (strcasecmp ("NAME", element_name) == 0)
@@ -6653,8 +6657,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("ALERT", element_name) == 0)
           {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &create_task_data->alert_id);
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values, "id",
+                                &attribute))
+              array_add (create_task_data->alerts, g_strdup (attribute));
             set_client_state (CLIENT_CREATE_TASK_ALERT);
           }
         else if (strcasecmp ("OBSERVERS", element_name) == 0)
@@ -11025,7 +11031,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
               }
             else if ((modify_task_data->action
-                      || modify_task_data->alert_id
+                      || (modify_task_data->alerts->len < 1)
                       || modify_task_data->name
                       || modify_task_data->rcfile)
                      == 0)
@@ -11034,7 +11040,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "Too few parameters"));
             else if (modify_task_data->action
                      && (modify_task_data->comment
-                         || modify_task_data->alert_id
+                         || modify_task_data->alerts->len
                          || modify_task_data->name
                          || modify_task_data->rcfile))
               SEND_TO_CLIENT_OR_FAIL
@@ -11042,7 +11048,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "Too many parameters at once"));
             else if ((task_target (task) == 0)
                      && (modify_task_data->rcfile
-                         || modify_task_data->alert_id
+                         || modify_task_data->alerts->len
                          || modify_task_data->schedule_id
                          || modify_task_data->slave_id))
               SEND_TO_CLIENT_OR_FAIL
@@ -11173,36 +11179,38 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
 
-                if (fail == 0 && modify_task_data->alert_id)
+                if (fail == 0 && modify_task_data->alerts->len)
                   {
-                    alert_t alert = 0;
-
-                    if (strcmp (modify_task_data->alert_id, "0") == 0)
+                    gchar *fail_alert_id;
+                    switch ((fail = set_task_alerts (task,
+                                                     modify_task_data->alerts,
+                                                     &fail_alert_id)))
                       {
-                        set_task_alert (task, 0);
-                      }
-                    else if ((fail = find_alert
-                                      (modify_task_data->alert_id,
-                                       &alert)))
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_task"));
-                    else if (alert == 0)
-                      {
-                        if (send_find_error_to_client
-                             ("modify_task",
-                              "alert",
-                              modify_task_data->alert_id,
-                              write_to_client,
-                              write_to_client_data))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        fail = 1;
-                      }
-                    else
-                      {
-                        set_task_alert (task, alert);
+                        case 0:
+                          break;
+                        case 1:
+                          if (send_find_error_to_client
+                               ("modify_task",
+                                "alert",
+                                fail_alert_id,
+                                write_to_client,
+                                write_to_client_data))
+                            {
+                              error_send_to_client (error);
+                              return;
+                            }
+                          fail = 1;
+                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                                 "Task %s could not be modified",
+                                 modify_task_data->task_id);
+                          break;
+                        case -1:
+                        default:
+                          SEND_TO_CLIENT_OR_FAIL
+                            (XML_INTERNAL_ERROR ("modify_task"));
+                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                                 "Task %s could not be modified",
+                                 modify_task_data->task_id);
                       }
                   }
 
@@ -13429,6 +13437,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           target_t target = 0;
           slave_t slave = 0;
           char *tsk_uuid, *name, *description;
+          guint index;
 
           /* @todo Buffer the entire task creation and pass everything to a
            *       libmanage function, so that libmanage can do the locking
@@ -13495,10 +13504,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           /* Set any alert. */
 
-          if (create_task_data->alert_id)
+          assert (create_task_data->alerts);
+          index = create_task_data->alerts->len;
+          while (index--)
             {
               alert_t alert;
-              if (find_alert (create_task_data->alert_id, &alert))
+              gchar *alert_id;
+
+              alert_id = (gchar*) g_ptr_array_index (create_task_data->alerts,
+                                                     index);
+              if (find_alert (alert_id, &alert))
                 {
                   request_delete_task (&create_task_data->task);
                   free (tsk_uuid);
@@ -16168,7 +16183,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     target_t target;
                     slave_t slave;
                     char *name, *config, *config_uuid;
-                    char *alert, *alert_uuid;
                     char *task_target_uuid, *task_target_name, *hosts;
                     char *task_slave_uuid, *task_slave_name;
                     char *task_schedule_uuid, *task_schedule_name, *comment;
@@ -16180,6 +16194,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     schedule_t schedule;
                     time_t next_time;
                     task_t task = task_iterator_task (&tasks);
+                    iterator_t alerts;
 
                     target = task_target (task);
                     hosts = target ? target_hosts (target) : NULL;
@@ -16439,8 +16454,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     comment = task_comment (task);
                     owner = task_owner_name (task);
                     observers = task_observers (task);
-                    alert = task_alert_name (task);
-                    alert_uuid = task_alert_uuid (task);
                     config = task_config_name (task);
                     config_uuid = task_config_uuid (task);
                     task_target_uuid = target_uuid (target);
@@ -16468,9 +16481,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<config id=\"%s\">"
                                  "<name>%s</name>"
                                  "</config>"
-                                 "<alert id=\"%s\">"
-                                 "<name>%s</name>"
-                                 "</alert>"
                                  "<target id=\"%s\">"
                                  "<name>%s</name>"
                                  "</target>"
@@ -16499,8 +16509,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    : observers,
                                  config_uuid ? config_uuid : "",
                                  config ? config : "",
-                                 alert_uuid ? alert_uuid : "",
-                                 alert ? alert : "",
                                  task_target_uuid ? task_target_uuid : "",
                                  task_target_name ? task_target_name : "",
                                  task_slave_uuid ? task_slave_uuid : "",
@@ -16521,7 +16529,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  last_report,
                                  second_last_report);
                     free (config);
-                    free (alert);
                     free (task_target_name);
                     free (task_target_uuid);
                     g_free (progress_xml);
@@ -16547,6 +16554,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         error_send_to_client (error);
                         return;
                       }
+
+                    init_alert_iterator (&alerts, 0, task, 0, 0, 1, NULL);
+                    while (next (&alerts))
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<alert id=\"%s\">"
+                        "<name>%s</name>"
+                        "</alert>",
+                        alert_iterator_uuid (&alerts),
+                        alert_iterator_name (&alerts));
+                    cleanup_iterator (&alerts);
+
                     /** @todo Handle error cases.
                      *
                      * The errors are either SQL errors or out of space in

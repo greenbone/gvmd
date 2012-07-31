@@ -449,8 +449,8 @@ task_alert_in_trash (task_t);
 void
 add_task_alert (task_t, alert_t);
 
-void
-set_task_alert (task_t, alert_t);
+int
+set_task_alerts (task_t, array_t*, gchar**);
 
 int
 set_task_schedule (task_t, schedule_t);

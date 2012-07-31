@@ -6675,7 +6675,7 @@ init_alert_iterator (iterator_t *iterator, alert_t alert,
                    current_credentials.uuid,
                    sort_field ? sort_field : "alerts.ROWID",
                    ascending ? "ASC" : "DESC");
-  else if (task)
+  else if (task && event)
     init_iterator (iterator,
                    "SELECT alerts.ROWID, uuid, name, comment,"
                    " task_alerts.task, event, condition, method, 1"
@@ -6687,6 +6687,20 @@ init_alert_iterator (iterator_t *iterator, alert_t alert,
                    " ORDER BY %s %s;",
                    task,
                    event,
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "alerts.ROWID",
+                   ascending ? "ASC" : "DESC");
+  else if (task)
+    init_iterator (iterator,
+                   "SELECT alerts.ROWID, uuid, name, comment,"
+                   " task_alerts.task, event, condition, method, 1"
+                   " FROM alerts, task_alerts"
+                   " WHERE task_alerts.alert = alerts.ROWID"
+                   " AND task_alerts.task = %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   task,
                    current_credentials.uuid,
                    sort_field ? sort_field : "alerts.ROWID",
                    ascending ? "ASC" : "DESC");
@@ -11467,19 +11481,54 @@ add_task_alert (task_t task, alert_t alert)
 }
 
 /**
- * @brief Add an alert to a task, removing any existing ones.
+ * @brief Set the alerts on a task, removing any previous alerts.
  *
- * @param[in]  task       Task.
- * @param[in]  alert  Alert.
+ * @param[in]  task    Task.
+ * @param[in]  alerts  Alerts.
+ * @param[out] alert_id_return  ID of alert on "failed to find" error.
+ *
+ * @return 0 success, -1 error, 1 failed to find alert.
  */
-void
-set_task_alert (task_t task, alert_t alert)
+int
+set_task_alerts (task_t task, array_t *alerts, gchar **alert_id_return)
 {
+  alert_t alert = 0;
+  guint index;
+
+  sql ("BEGIN IMMEDIATE;");
+
   sql ("DELETE FROM task_alerts where task = %llu;", task);
-  sql ("INSERT INTO task_alerts (task, alert, alert_location)"
-       " VALUES (%llu, %llu, " G_STRINGIFY (LOCATION_TABLE) ");",
-       task,
-       alert);
+
+  index = alerts->len;
+  while (index--)
+    {
+      gchar *alert_id;
+
+      alert_id = (gchar*) g_ptr_array_index (alerts, index);
+      if (strcmp (alert_id, "0") == 0)
+        continue;
+
+      if (find_alert (alert_id, &alert))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (alert == 0)
+        {
+          sql ("ROLLBACK;");
+          if (alert_id_return) *alert_id_return = alert_id;
+          return 1;
+        }
+
+      sql ("INSERT INTO task_alerts (task, alert, alert_location)"
+           " VALUES (%llu, %llu, " G_STRINGIFY (LOCATION_TABLE) ");",
+           task,
+           alert);
+    }
+
+  sql ("COMMIT;");
+  return 0;
 }
 
 /**

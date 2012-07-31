@@ -2388,7 +2388,7 @@ create_task
        & create_task_comment?
        & create_task_config
        & create_task_target
-       & create_task_alert?
+       & create_task_alert*
        & create_task_schedule?
        & create_task_slave?
        & create_task_observers?
@@ -3522,7 +3522,7 @@ modify_task
        # ID of task to modify.
        attribute task_id { uuid }
        & ( modify_task_comment
-           | modify_task_alert
+           | modify_task_alert*
            | modify_task_name
            | modify_task_observers
            | modify_task_preferences

@@ -3097,7 +3097,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>comment</e></o>
       <e>config</e>
       <e>target</e>
-      <o><e>alert</e></o>
+      <any><e>alert</e></any>
       <o><e>schedule</e></o>
       <o><e>slave</e></o>
       <o><e>observers</e></o>
@@ -10105,7 +10105,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <or>
         <e>comment</e>
-        <e>alert</e>
+        <!-- Actually at least one, else command is empty. -->
+        <any><e>alert</e></any>
         <e>name</e>
         <e>observers</e>
         <e>preferences</e>

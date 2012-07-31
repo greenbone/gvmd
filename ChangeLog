@@ -1,3 +1,24 @@
+2012-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Expose the already implemented multiple alert feature in OMP.
+
+	* src/omp.c (create_task_data_t, create_task_data_reset)
+	(modify_task_data_t, modify_task_data_reset): Replace alert with array
+	of alerts.
+	(omp_xml_handle_start_element, omp_xml_handle_end): In CREATE_TASK,
+	GET_TASKS and MODIFY_TASK handle multiple ALERTs instead of just one.
+
+	* src/manage_sql.c (init_alert_iterator): Add separate case for when
+	event is 0.
+	(set_task_alert): Remove.  Now set_task_alerts.
+	(set_task_alerts): New function.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/schema_formats/XML/OMP.xml (create_task): Add multiple alerts.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2012-07-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_report_iterator): When getting all reports, get

@@ -6002,7 +6002,7 @@ create_target_port_list
 </li>
 <li>
               &lt;<b>alert</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">An alert that applies to the task.</div>
+              *<div style="margin-left: 15px; display: inline;">An alert that applies to the task.</div>
 <ul style="list-style: none"><li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -6079,7 +6079,7 @@ create_target_port_list
        &amp; create_task_comment?
        &amp; create_task_config
        &amp; create_task_target
-       &amp; create_task_alert?
+       &amp; create_task_alert*
        &amp; create_task_schedule?
        &amp; create_task_slave?
        &amp; create_task_observers?
@@ -15947,7 +15947,7 @@ modify_setting_value
 </li>
 <li>
               &lt;<b>alert</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Task alert.</div>
+              *<div style="margin-left: 15px; display: inline;">Task alert.</div>
 <ul style="list-style: none"><li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -16039,7 +16039,7 @@ modify_setting_value
      {
        attribute task_id { uuid }
        &amp; ( modify_task_comment
-           | modify_task_alert
+           | modify_task_alert*
            | modify_task_name
            | modify_task_observers
            | modify_task_preferences
