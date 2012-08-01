@@ -1,14 +1,14 @@
 #!/bin/sh
 #
 # OpenVAS
-# $Id$
+# $Id: generate 12496 2012-01-18 08:41:55Z hdoreau $
 # Description: Report generator script: ARF
 #
 # This report generates an Asset Reporting Format compliant document.
 #
 # Authors:
 # Henri Doreau <henri.doreau@greenbone.net>
-# 
+#
 # Copyright:
 # Copyright (C) 2012 Greenbone Networks GmbH
 #
@@ -26,4 +26,4 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-xsltproc ./arf.xsl $1
+xsltproc ./ARF.xsl $1

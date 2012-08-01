@@ -268,6 +268,11 @@ install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${OPENVAS_STATE_DIR}/openvasmd
 install (FILES ${CMAKE_BINARY_DIR}/src/openvasmd_log.conf
          DESTINATION ${OPENVAS_SYSCONF_DIR})
 
+install (FILES src/report_formats/ARF/generate
+               src/report_formats/ARF/ARF.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/910200ca-dc05-11e1-954f-406186ea4fc5/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
 install (FILES src/report_formats/CPE/generate
                src/report_formats/CPE/CPE.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/5ceff8ba-1f62-11e1-ab9f-406186ea4fc5/

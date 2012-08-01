@@ -1,3 +1,17 @@
+2012-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Make the ARF report format predefined.
+
+	* CMakeLists.txt: Install predefined ARF.
+
+	* src/manage_sql.c (init_manage): Ensure predefined ARF exists.
+	(report_format_predefined): Add predefined ARF.
+
+	* src/report_formats/ARF/, src/report_formats/ARF/ARF.xsl,
+	src/report_formats/ARF/generate: New directory and files.
+
+	* report_formats/arf: Remove.
+
 2012-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Expose the already implemented multiple alert feature in OMP.

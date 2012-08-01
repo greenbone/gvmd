@@ -10149,6 +10149,24 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM report_formats"
+               " WHERE uuid = '910200ca-dc05-11e1-954f-406186ea4fc5';")
+      == 0)
+    {
+      report_format_t report_format;
+      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+           " extension, content_type, signature, trust, trust_time, flags)"
+           " VALUES ('910200ca-dc05-11e1-954f-406186ea4fc5', NULL, 'ARF',"
+           " 'Asset Reporting Format v1.0.0.',"
+           " 'NIST Asset Reporting Format 1.1 compliant document.\n',"
+           " 'xml', 'text/xml', '', %i, %i, 1);",
+           TRUST_YES,
+           time (NULL));
+      report_format = sqlite3_last_insert_rowid (task_db);
+      verify_report_format (report_format);
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM report_formats"
                " WHERE uuid = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5';")
       == 0)
     {
@@ -35570,7 +35588,8 @@ int
 report_format_predefined (report_format_t report_format)
 {
   return sql_int (0, 0,
-                  "SELECT uuid = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5'"
+                  "SELECT uuid = '910200ca-dc05-11e1-954f-406186ea4fc5'"
+                  " OR uuid = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5'"
                   " OR uuid = '6c248850-1f62-11e1-b082-406186ea4fc5'"
                   " OR uuid = '77bd6c4a-1f62-11e1-abf0-406186ea4fc5'"
                   " OR uuid = 'a684c02c-b531-11e1-bdc2-406186ea4fc5'"

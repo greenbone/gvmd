@@ -16,7 +16,7 @@
 
 <!--
 OpenVAS Manager
-$Id$
+$Id: arf.xsl 13067 2012-03-15 16:06:29Z mattm $
 Description: Stylesheet for generating NIST ARF-compatible reports.
 
 Authors:
