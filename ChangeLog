@@ -1,3 +1,9 @@
+2012-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_otp_pref_iterator): Include the special
+	timeout.OID preferences, so that these user-defined NVT timeouts
+	are sent to the scanner.  Backport from trunk r13796.
+
 2012-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_report_iterator): When getting all reports, get
