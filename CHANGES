@@ -1,3 +1,19 @@
+openvas-manager 2.0.5 (2012-08-02)
+
+This is the fifth maintenance release of the openvas-manager 2.0 module for the
+Open Vulnerability Assessment System release 4 (OpenVAS-4). The OpenVAS Manager
+is the central management service between the actual security scanner and
+various user clients.
+
+This release fixes a security issue.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell.
+
+Main changes since 2.0.4:
+* When getting all reports, get only the visible reports for the current user.
+
+
 openvas-manager 2.0.4 (2011-05-30)
 
 This is the fourth maintenance release of the openvas-manager 2.0 module for the
