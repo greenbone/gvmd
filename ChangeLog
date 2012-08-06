@@ -1,3 +1,8 @@
+2012-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_asset_iterator, filtered_host_count): Quote
+	search phrase for SQL.  Backport from trunk r13846.
+
 2012-08-02  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Post release version bump.

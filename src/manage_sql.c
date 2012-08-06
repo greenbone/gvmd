@@ -13872,49 +13872,55 @@ init_asset_iterator (iterator_t* iterator, int first_result,
       levels_sql = where_levels (levels);
 
       if (search_phrase && strlen (search_phrase))
-        init_iterator (iterator,
-                       "SELECT host"
-                       " FROM report_hosts"
-                       " WHERE (SELECT reports.owner FROM reports"
-                       "        WHERE reports.ROWID = report_hosts.report)"
-                       "       = (SELECT ROWID FROM users"
-                       "          WHERE users.uuid = '%s')"
-                       " AND (SELECT tasks.hidden FROM tasks, reports"
-                       "      WHERE reports.task = tasks.ROWID"
-                       "      AND reports.ROWID = report_hosts.report)"
-                       "     = 0"
-                       " AND (report_hosts.end_time IS NOT NULL"
-                       "      AND report_hosts.end_time != '')"
-                       " GROUP BY host"
-                       " HAVING"
-                       /* Search IP. */
-                       " (host LIKE '%%%s%%%'"
-                       /* Search hostname. */
-                       "  OR EXISTS"
-                       "  (SELECT * FROM report_host_details"
-                       "   WHERE report_hosts.ROWID = report_host"
-                       "   AND (name = 'hostname' OR name = 'best_os_txt'"
-                       "        OR name = 'best_os_cpe' OR name = 'App'"
-                       "        OR name = 'ports')"
-                       "   AND source_type = 'nvt'"
-                       "   AND value LIKE '%%%s%%')) AND"
-                       /* Levels. */
-                       " EXISTS"
-                       " (SELECT results.ROWID, %s AS new_type"
-                       "  FROM results, report_results"
-                       "  WHERE results.host = report_hosts.host"
-                       "  %s"
-                       "  AND results.ROWID = report_results.result"
-                       "  AND report_results.report = report_hosts.report)"
-                       " ORDER BY host COLLATE collate_ip"
-                       " LIMIT %i OFFSET %i;",
-                       current_credentials.uuid,
-                       search_phrase,
-                       search_phrase,
-                       new_type_sql,
-                       levels_sql ? levels_sql->str : "",
-                       max_results,
-                       first_result);
+        {
+          gchar *quoted_search_phrase;
+
+          quoted_search_phrase = sql_quote (search_phrase);
+          init_iterator (iterator,
+                         "SELECT host"
+                         " FROM report_hosts"
+                         " WHERE (SELECT reports.owner FROM reports"
+                         "        WHERE reports.ROWID = report_hosts.report)"
+                         "       = (SELECT ROWID FROM users"
+                         "          WHERE users.uuid = '%s')"
+                         " AND (SELECT tasks.hidden FROM tasks, reports"
+                         "      WHERE reports.task = tasks.ROWID"
+                         "      AND reports.ROWID = report_hosts.report)"
+                         "     = 0"
+                         " AND (report_hosts.end_time IS NOT NULL"
+                         "      AND report_hosts.end_time != '')"
+                         " GROUP BY host"
+                         " HAVING"
+                         /* Search IP. */
+                         " (host LIKE '%%%s%%%'"
+                         /* Search hostname. */
+                         "  OR EXISTS"
+                         "  (SELECT * FROM report_host_details"
+                         "   WHERE report_hosts.ROWID = report_host"
+                         "   AND (name = 'hostname' OR name = 'best_os_txt'"
+                         "        OR name = 'best_os_cpe' OR name = 'App'"
+                         "        OR name = 'ports')"
+                         "   AND source_type = 'nvt'"
+                         "   AND value LIKE '%%%s%%')) AND"
+                         /* Levels. */
+                         " EXISTS"
+                         " (SELECT results.ROWID, %s AS new_type"
+                         "  FROM results, report_results"
+                         "  WHERE results.host = report_hosts.host"
+                         "  %s"
+                         "  AND results.ROWID = report_results.result"
+                         "  AND report_results.report = report_hosts.report)"
+                         " ORDER BY host COLLATE collate_ip"
+                         " LIMIT %i OFFSET %i;",
+                         current_credentials.uuid,
+                         quoted_search_phrase,
+                         quoted_search_phrase,
+                         new_type_sql,
+                         levels_sql ? levels_sql->str : "",
+                         max_results,
+                         first_result);
+          g_free (quoted_search_phrase);
+        }
       else
         init_iterator (iterator,
                        "SELECT host"
@@ -13952,6 +13958,9 @@ init_asset_iterator (iterator_t* iterator, int first_result,
     }
   else if (search_phrase && strlen (search_phrase))
     {
+      gchar *quoted_search_phrase;
+
+      quoted_search_phrase = sql_quote (search_phrase);
       init_iterator (iterator,
                      "SELECT host"
                      " FROM report_hosts"
@@ -13978,10 +13987,11 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                      " ORDER BY host COLLATE collate_ip"
                      " LIMIT %i OFFSET %i;",
                      current_credentials.uuid,
-                     search_phrase,
-                     search_phrase,
+                     quoted_search_phrase,
+                     quoted_search_phrase,
                      max_results,
                      first_result);
+      g_free (quoted_search_phrase);
     }
   else
     init_iterator (iterator,
@@ -17101,46 +17111,52 @@ filtered_host_count (const char *levels, const char *search_phrase,
       levels_sql = where_levels (levels);
 
       if (search_phrase && strlen (search_phrase))
-        ret = sql_int (0, 0,
-                       "SELECT count(*) FROM"
-                       " (SELECT host"
-                       "  FROM report_hosts"
-                       "  WHERE (SELECT reports.owner FROM reports"
-                       "         WHERE reports.ROWID = report_hosts.report)"
-                       "        = (SELECT ROWID FROM users"
-                       "           WHERE users.uuid = '%s')"
-                       "  AND (SELECT tasks.hidden FROM tasks, reports"
-                       "       WHERE reports.task = tasks.ROWID"
-                       "       AND reports.ROWID = report_hosts.report)"
-                       "      = 0"
-                       " AND (report_hosts.end_time IS NOT NULL"
-                       "      AND report_hosts.end_time != '')"
-                       "  GROUP BY host"
-                       "  HAVING"
-                       /* Search IP. */
-                       "  (host LIKE '%%%s%%%'"
-                       /* Search hostname. */
-                       "   OR EXISTS"
-                       "   (SELECT * FROM report_host_details"
-                       "    WHERE report_hosts.ROWID = report_host"
-                       "    AND (name = 'hostname' OR name = 'best_os_txt'"
-                       "         OR name = 'best_os_cpe' OR name = 'App'"
-                       "         OR name = 'ports')"
-                       "    AND source_type = 'nvt'"
-                       "    AND value LIKE '%%%s%%')) AND"
-                       /* Levels. */
-                       "  EXISTS"
-                       "  (SELECT results.ROWID, %s AS new_type"
-                       "   FROM results, report_results"
-                       "   WHERE results.host = report_hosts.host"
-                       "   %s"
-                       "   AND results.ROWID = report_results.result"
-                       "   AND report_results.report = report_hosts.report));",
-                       current_credentials.uuid,
-                       search_phrase,
-                       search_phrase,
-                       new_type_sql,
-                       levels_sql ? levels_sql->str : "");
+        {
+          gchar *quoted_search_phrase;
+
+          quoted_search_phrase = sql_quote (search_phrase);
+          ret = sql_int (0, 0,
+                         "SELECT count(*) FROM"
+                         " (SELECT host"
+                         "  FROM report_hosts"
+                         "  WHERE (SELECT reports.owner FROM reports"
+                         "         WHERE reports.ROWID = report_hosts.report)"
+                         "        = (SELECT ROWID FROM users"
+                         "           WHERE users.uuid = '%s')"
+                         "  AND (SELECT tasks.hidden FROM tasks, reports"
+                         "       WHERE reports.task = tasks.ROWID"
+                         "       AND reports.ROWID = report_hosts.report)"
+                         "      = 0"
+                         " AND (report_hosts.end_time IS NOT NULL"
+                         "      AND report_hosts.end_time != '')"
+                         "  GROUP BY host"
+                         "  HAVING"
+                         /* Search IP. */
+                         "  (host LIKE '%%%s%%%'"
+                         /* Search hostname. */
+                         "   OR EXISTS"
+                         "   (SELECT * FROM report_host_details"
+                         "    WHERE report_hosts.ROWID = report_host"
+                         "    AND (name = 'hostname' OR name = 'best_os_txt'"
+                         "         OR name = 'best_os_cpe' OR name = 'App'"
+                         "         OR name = 'ports')"
+                         "    AND source_type = 'nvt'"
+                         "    AND value LIKE '%%%s%%')) AND"
+                         /* Levels. */
+                         "  EXISTS"
+                         "  (SELECT results.ROWID, %s AS new_type"
+                         "   FROM results, report_results"
+                         "   WHERE results.host = report_hosts.host"
+                         "   %s"
+                         "   AND results.ROWID = report_results.result"
+                         "   AND report_results.report = report_hosts.report));",
+                         current_credentials.uuid,
+                         quoted_search_phrase,
+                         quoted_search_phrase,
+                         new_type_sql,
+                         levels_sql ? levels_sql->str : "");
+          g_free (quoted_search_phrase);
+        }
       else
         ret = sql_int (0, 0,
                        "SELECT count(*) FROM"
@@ -17177,7 +17193,11 @@ filtered_host_count (const char *levels, const char *search_phrase,
     }
   else if (search_phrase && strlen (search_phrase))
     {
-      return sql_int (0, 0,
+      int retn;
+      gchar *quoted_search_phrase;
+
+      quoted_search_phrase = sql_quote (search_phrase);
+      retn = sql_int (0, 0,
                       "SELECT count(*) FROM"
                       " (SELECT host"
                       "  FROM report_hosts"
@@ -17203,8 +17223,10 @@ filtered_host_count (const char *levels, const char *search_phrase,
                       "   AND value LIKE '%%%s%%')"
                       "  ORDER BY host COLLATE collate_ip);",
                       current_credentials.uuid,
-                      search_phrase,
-                      search_phrase);
+                      quoted_search_phrase,
+                      quoted_search_phrase);
+      g_free (quoted_search_phrase);
+      return retn;
     }
 
   return sql_int (0, 0,
