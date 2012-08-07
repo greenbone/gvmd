@@ -1,3 +1,11 @@
+2012-08-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport from trunk 13863.
+
+	* src/manage.c (MAX_CHECKS_DEFAULT, MAX_HOSTS_DEFAULT): New defines.
+	(send_task_preferences): Use new defines.
+	(run_slave_task): Create task with max_checks and max_hosts preferences.
+
 2012-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_asset_iterator, filtered_host_count): Quote

@@ -103,6 +103,16 @@
 #define SCAP_TIMESTAMP_FILENAME SCAP_DATA_DIR "/timestamp"
 
 /**
+ * @brief Default for Scanner max_checks preference.
+ */
+#define MAX_CHECKS_DEFAULT "4"
+
+/**
+ * @brief Default for Scanner max_hosts preference.
+ */
+#define MAX_HOSTS_DEFAULT "20"
+
+/**
  * @brief Information about the scanner.
  */
 scanner_t scanner = { NULL, NULL, NULL, NULL, 0 };
@@ -795,7 +805,7 @@ send_task_preferences (task_t task)
 
   value = task_preference_value (task, "max_checks");
   if (sendf_to_server ("max_checks <|> %s\n",
-                       value ? value : "4"))
+                       value ? value : MAX_CHECKS_DEFAULT))
     {
       g_free (value);
       return -1;
@@ -804,7 +814,7 @@ send_task_preferences (task_t task)
 
   value = task_preference_value (task, "max_hosts");
   if (sendf_to_server ("max_hosts <|> %s\n",
-                       value ? value : "20"))
+                       value ? value : MAX_HOSTS_DEFAULT))
     {
       g_free (value);
       return -1;
@@ -1620,9 +1630,28 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
 
       /* Create the task on the slave. */
 
-      if (omp_create_task (&session, name, slave_config_uuid, slave_target_uuid,
-                           "Slave task created by Master", &slave_task_uuid))
-        goto fail_config;
+      {
+        gchar *max_checks, *max_hosts;
+        omp_create_task_opts_t opts;
+
+        opts = omp_create_task_opts_defaults;
+        opts.config_id = slave_config_uuid;
+        opts.target_id = slave_target_uuid;
+        opts.name = name;
+        opts.comment = "Slave task created by Master";
+
+        max_checks = task_preference_value (task, "max_checks");
+        max_hosts = task_preference_value (task, "max_hosts");
+
+        opts.max_checks = max_checks ? max_checks : MAX_CHECKS_DEFAULT;
+        opts.max_hosts = max_hosts ? max_hosts : MAX_HOSTS_DEFAULT;
+
+        ret = omp_create_task_ext (&session, opts, &slave_task_uuid);
+        g_free (max_checks);
+        g_free (max_hosts);
+        if (ret)
+          goto fail_config;
+      }
 
       /* Start the task on the slave. */
 
