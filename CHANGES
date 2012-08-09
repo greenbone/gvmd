@@ -1,3 +1,21 @@
+openvas-manager 3.0.3 (2012-08-09)
+
+This is the third maintenance release of the openvas-manager 3.0 module for the
+Open Vulnerability Assessment System release 5 (OpenVAS-5). The OpenVAS Manager
+is the central management service between the actual security scanner and
+various user clients.
+
+This release contains a security bugfix for filter search phrases and
+a bugfix to consider max_checks and max_hosts preferences for slave tasks.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell.
+
+Main changes since 3.0.2:
+* Security bugfix that quotes search phrases for SQL.
+* Bugfix to have Slave tasks consider max_checks and max_hosts preferences.
+
+
 openvas-manager 3.0.2 (2012-08-02)
 
 This is the second maintenance release of the openvas-manager 3.0 module for the

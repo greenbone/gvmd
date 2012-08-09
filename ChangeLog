@@ -1,3 +1,12 @@
+2012-08-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Preparing the openvas-manager 3.0.3 release.
+
+	* CHANGES: Updated.
+
+	* CMakeLists.txt: Increased minimum required version 5.0.3
+	for openvaslibraries.
+
 2012-08-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport from trunk 13863.
