@@ -337,6 +337,12 @@ install (FILES src/escalator_methods/Sourcefire/escalate
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_escalator_methods/cd1f5a34-6bdc-11e0-9827-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
+install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${OPENVAS_DATA_DIR}/openvasmd/wizards)")
+
+install (FILES src/wizards/quick_first_scan.xml
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/wizards/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
 install (FILES tools/db_init.sql tools/cpe_update.xsl
          tools/cpe_youngerthan.xsl tools/cve_update.xsl
          tools/cve_youngerthan.xsl tools/cpe_getbyname.xsl

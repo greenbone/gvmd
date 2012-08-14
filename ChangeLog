@@ -1,3 +1,41 @@
+2012-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add new OMP command RUN_WIZARD.  Add first wizard quick_first_scan.
+
+	* src/manage.c (xsl_transform): Export.
+
+	* src/manage_sql.c (manage_send_report): Add new arg to param types
+	of send function.
+
+	* src/omp.c (omp_commands, command_data_t, client_state_t): Add
+	RUN_WIZARD.
+	(omp_parser_t, omp_parser_new, send_element_error_to_client)
+	(send_find_error_to_client, send_get_start, send_get_common)
+	(send_get_end, send_requirement, send_dependency, send_nvt)
+	(send_reports, init_omp_process): Add new arg to type of send function.
+	(run_wizard_data_t): New type.
+	(run_wizard_data_reset): New function.
+	(run_wizard_data): New variable.
+	(send_to_client): Simply call through to the send function provided by
+	the caller, which now does all the work.  This allows process_omp to
+	use its own send function and have full control of what it does.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add new arg
+	to type of send function.  Handle RUN_WIZARD.
+	(omp_xml_handle_text): Handle RUN_WIZARD.
+	(process_omp_write, process_omp): New functions.  For processing an OMP
+	command during the processing of an OMP command.
+
+	* src/manage.h, src/omp.h: Update headers accordingly.
+
+	* src/ompd.c (ompd_send_to_client): New function.  Body from
+	omp.c send_to_client.
+	(serve_omp): Add new arg to type of send function.  Pass
+	ompd_send_to_client as this send function.
+
+	* src/wizards, src/wizards/quick_first_scan.xml: New files.
+
+	* CMakeLists.txt: Install wizard.
+
 2012-08-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (MAX_CHECKS_DEFAULT, MAX_HOSTS_DEFAULT): New defines.

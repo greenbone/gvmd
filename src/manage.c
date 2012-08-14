@@ -4078,8 +4078,9 @@ get_cve_filename (char *item_id)
  * @return A dynamically allocated (to be g_free'd) string containing the
  *         result of the operation of NULL on failure.
  */
-static gchar *
-xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names, gchar **param_values)
+gchar *
+xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names,
+               gchar **param_values)
 {
   int i, param_idx;
   gchar **cmd, *cmd_full;

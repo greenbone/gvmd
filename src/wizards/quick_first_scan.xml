@@ -1,0 +1,53 @@
+<wizard>
+  <!-- TODO param checking -->
+  <step>
+    <command>
+      <xsl:stylesheet
+          version="1.0"
+          xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+        <xsl:output
+          method="xml"
+          encoding="UTF-8"/>
+        <xsl:template match="/">
+          <create_target>
+            <!-- TODO name needs to be unique (could just fail if exists, could extend omp ensure_name_unique="1") -->
+            <name>Target for immediate scan of IP <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
+            <hosts><xsl:value-of select="/wizard/params/param[name='hosts']/value"/></hosts>
+          </create_target>
+        </xsl:template>
+      </xsl:stylesheet>
+    </command>
+  </step>
+  <step>
+    <command>
+      <xsl:stylesheet
+          version="1.0"
+          xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+        <xsl:output
+          method="xml"
+          encoding="UTF-8"/>
+        <xsl:template match="/">
+          <create_task>
+            <name>Immediate scan of IP <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
+            <target id="{/wizard/previous/response/create_target_response/@id}"/>
+            <config id="daba56c8-73ec-11df-a475-002264764cea"/>
+          </create_task>
+        </xsl:template>
+      </xsl:stylesheet>
+    </command>
+  </step>
+  <step>
+    <command>
+      <xsl:stylesheet
+          version="1.0"
+          xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+        <xsl:output
+          method="xml"
+          encoding="UTF-8"/>
+        <xsl:template match="/">
+          <start_task task_id="{/wizard/previous/response/create_task_response/@id}"/>
+        </xsl:template>
+      </xsl:stylesheet>
+    </command>
+  </step>
+</wizard>

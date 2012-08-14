@@ -307,6 +307,68 @@ write_to_client (gnutls_session_t* client_session)
 }
 
 /**
+ * @brief Send a response message to the client.
+ *
+ * Queue a message in \ref to_client.
+ *
+ * @param[in]  msg                   The message, a string.
+ * @param[in]  write_to_client_data  Argument to \p write_to_client.
+ *
+ * @return TRUE if write to client failed, else FALSE.
+ */
+gboolean
+ompd_send_to_client (const char* msg, void* write_to_client_data)
+{
+  assert (to_client_end <= TO_CLIENT_BUFFER_SIZE);
+  assert (msg);
+
+  while (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end
+         < strlen (msg))
+    {
+      buffer_size_t length;
+
+      /* Too little space in to_client buffer for message. */
+
+      switch (write_to_client (write_to_client_data))
+        {
+          case  0:      /* Wrote everything in to_client. */
+            break;
+          case -1:      /* Error. */
+            tracef ("   %s full (%i < %zu); client write failed\n",
+                    __FUNCTION__,
+                    ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
+                    strlen (msg));
+            return TRUE;
+          case -2:      /* Wrote as much as client was willing to accept. */
+            break;
+          default:      /* Programming error. */
+            assert (0);
+        }
+
+      length = ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end;
+
+      if (length > strlen (msg))
+        break;
+
+      memmove (to_client + to_client_end, msg, length);
+      tracef ("-> client: %.*s\n", (int) length, msg);
+      to_client_end += length;
+      msg += length;
+    }
+
+  if (strlen (msg))
+    {
+      assert (strlen (msg)
+              <= (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end));
+      memmove (to_client + to_client_end, msg, strlen (msg));
+      tracef ("-> client: %s\n", msg);
+      to_client_end += strlen (msg);
+    }
+
+  return FALSE;
+}
+
+/**
  * @brief Write as much as possible from the to_scanner buffer to the scanner.
  *
  * @param[in]  scanner_socket   The server socket.
@@ -599,7 +661,7 @@ serve_omp (gnutls_session_t* client_session,
   /* Initialise the XML parser and the manage library. */
   init_omp_process (ompd_nvt_cache_mode,
                     database,
-                    (int (*) (void*)) write_to_client,
+                    (int (*) (const char*, void*)) ompd_send_to_client,
                     (void*) client_session,
                     disable);
 #if 0

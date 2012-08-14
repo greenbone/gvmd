@@ -116,6 +116,7 @@
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/resource_request.h>
+#include <openvas/omp/xml.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -470,6 +471,7 @@ static command_t omp_commands[]
     {"RESUME_OR_START_TASK", "Resume task if stopped, else start task."},
     {"RESUME_PAUSED_TASK", "Resume a paused task."},
     {"RESUME_STOPPED_TASK", "Resume a stopped task."},
+    {"RUN_WIZARD", "Run a wizard."},
     {"START_TASK", "Manually start an existing task."},
     {"STOP_TASK", "Stop a running task."},
     {"TEST_ALERT", "Run an alert."},
@@ -613,11 +615,14 @@ static command_t omp_commands[]
  */
 typedef struct
 {
-  int (*client_writer) (void*);   ///< Function to write to the client.
+  int (*client_writer) (const char*, void*);  ///< Writes to the client.
   void* client_writer_data;       ///< Argument to client_writer.
   int read_over;                  ///< Read over any child elements.
   gchar **disabled_commands;      ///< Disabled commands.
 } omp_parser_t;
+
+static int
+process_omp (omp_parser_t *, const gchar *, gchar **);
 
 /**
  * @brief Create an OMP parser.
@@ -630,7 +635,7 @@ typedef struct
  * @return An OMP parser.
  */
 omp_parser_t *
-omp_parser_new (int (*write_to_client) (void*), void* write_to_client_data,
+omp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_client_data,
                 gchar **disable)
 {
   omp_parser_t *omp_parser = (omp_parser_t*) g_malloc (sizeof (omp_parser_t));
@@ -2965,6 +2970,44 @@ verify_report_format_data_reset (verify_report_format_data_t *data)
 }
 
 /**
+ * @brief Command data for the wizard command.
+ */
+typedef struct
+{
+  char *name;          ///< Name of the wizard.
+  name_value_t *param; ///< Current param.
+  array_t *params;     ///< Parameters.
+} run_wizard_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+run_wizard_data_reset (run_wizard_data_t *data)
+{
+  free (data->name);
+  if (data->params)
+    {
+      guint index = data->params->len;
+      while (index--)
+        {
+          name_value_t *pair;
+          pair = (name_value_t*) g_ptr_array_index (data->params, index);
+          if (pair)
+            {
+              g_free (pair->name);
+              g_free (pair->value);
+            }
+        }
+    }
+  array_free (data->params);
+
+  memset (data, 0, sizeof (run_wizard_data_t));
+}
+
+/**
  * @brief Command data, as passed between OMP parser callbacks.
  */
 typedef union
@@ -3037,6 +3080,7 @@ typedef union
   test_alert_data_t test_alert;                       ///< test_alert
   verify_agent_data_t verify_agent;                   ///< verify_agent
   verify_report_format_data_t verify_report_format;   ///< verify_report_format
+  run_wizard_data_t wizard;                           ///< run_wizard
 } command_data_t;
 
 /**
@@ -3483,6 +3527,12 @@ verify_report_format_data_t *verify_report_format_data
  = (verify_report_format_data_t*) &(command_data.verify_report_format);
 
 /**
+ * @brief Parser callback data for WIZARD.
+ */
+run_wizard_data_t *run_wizard_data
+ = (run_wizard_data_t*) &(command_data.wizard);
+
+/**
  * @brief Hack for returning forked process status from the callbacks.
  */
 int current_error;
@@ -3877,6 +3927,12 @@ typedef enum
   CLIENT_RESUME_OR_START_TASK,
   CLIENT_RESUME_PAUSED_TASK,
   CLIENT_RESUME_STOPPED_TASK,
+  CLIENT_RUN_WIZARD,
+  CLIENT_RUN_WIZARD_NAME,
+  CLIENT_RUN_WIZARD_PARAMS,
+  CLIENT_RUN_WIZARD_PARAMS_PARAM,
+  CLIENT_RUN_WIZARD_PARAMS_PARAM_NAME,
+  CLIENT_RUN_WIZARD_PARAMS_PARAM_VALUE,
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
   CLIENT_TEST_ALERT,
@@ -3905,64 +3961,19 @@ set_client_state (client_state_t state)
 /**
  * @brief Send a response message to the client.
  *
- * Queue a message in \ref to_client.
+ * @param[in]  msg                       The message, a string.
+ * @param[in]  user_send_to_client       Function to send to client.
+ * @param[in]  user_send_to_client_data  Argument to \p user_send_to_client.
  *
- * @param[in]  msg              The message, a string.
- * @param[in]  write_to_client       Function to write to client.
- * @param[in]  write_to_client_data  Argument to \p write_to_client.
- *
- * @return TRUE if write to client failed, else FALSE.
+ * @return TRUE if send to client failed, else FALSE.
  */
 static gboolean
-send_to_client (const char* msg, int (*write_to_client) (void*),
-                void* write_to_client_data)
+send_to_client (const char* msg,
+                int (*user_send_to_client) (const char*, void*),
+                void* user_send_to_client_data)
 {
-  assert (to_client_end <= TO_CLIENT_BUFFER_SIZE);
-  assert (msg);
-  assert (write_to_client);
-
-  while (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end
-         < strlen (msg))
-    {
-      buffer_size_t length;
-
-      /* Too little space in to_client buffer for message. */
-
-      switch (write_to_client (write_to_client_data))
-        {
-          case  0:      /* Wrote everything in to_client. */
-            break;
-          case -1:      /* Error. */
-            tracef ("   send_to_client full (%i < %zu); client write failed\n",
-                    ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
-                    strlen (msg));
-            return TRUE;
-          case -2:      /* Wrote as much as client was willing to accept. */
-            break;
-          default:      /* Programming error. */
-            assert (0);
-        }
-
-      length = ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end;
-
-      if (length > strlen (msg))
-        break;
-
-      memmove (to_client + to_client_end, msg, length);
-      tracef ("-> client: %.*s\n", (int) length, msg);
-      to_client_end += length;
-      msg += length;
-    }
-
-  if (strlen (msg))
-    {
-      assert (strlen (msg)
-              <= (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end));
-      memmove (to_client + to_client_end, msg, strlen (msg));
-      tracef ("-> client: %s\n", msg);
-      to_client_end += strlen (msg);
-    }
-
+  if (user_send_to_client && msg)
+    return user_send_to_client (msg, user_send_to_client_data);
   return FALSE;
 }
 
@@ -3978,7 +3989,7 @@ send_to_client (const char* msg, int (*write_to_client) (void*),
  */
 static gboolean
 send_element_error_to_client (const char* command, const char* element,
-                              int (*write_to_client) (void*),
+                              int (*write_to_client) (const char*, void*),
                               void* write_to_client_data)
 {
   gchar *msg;
@@ -4008,7 +4019,8 @@ send_element_error_to_client (const char* command, const char* element,
  */
 static gboolean
 send_find_error_to_client (const char* command, const char* type,
-                           const char* id, int (*write_to_client) (void*),
+                           const char* id,
+                           int (*write_to_client) (const char*, void*),
                            void* write_to_client_data)
 {
   gchar *msg;
@@ -4176,7 +4188,8 @@ internal_error_send_to_client (GError** error)
  */
 int
 send_get_start (const char *type, get_data_t *get,
-                int (*write_to_client) (void*), void* write_to_client_data)
+                int (*write_to_client) (const char*, void*),
+                void* write_to_client_data)
 {
   gchar *msg;
 
@@ -4205,7 +4218,8 @@ send_get_start (const char *type, get_data_t *get,
  */
 int
 send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
-                 int (*write_to_client) (void*), void* write_to_client_data)
+                 int (*write_to_client) (const char *, void*),
+                 void* write_to_client_data)
 {
   gchar* msg;
 
@@ -4242,7 +4256,8 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
  */
 int
 send_get_end (const char *type, get_data_t *get, int count, int filtered,
-              int (*write_to_client) (void*), void* write_to_client_data)
+              int (*write_to_client) (const char *, void*),
+              void* write_to_client_data)
 {
   gchar *msg, *sort_field;
   int first, max, sort_order;
@@ -4439,7 +4454,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               GError **error)
 {
   omp_parser_t *omp_parser = (omp_parser_t*) user_data;
-  int (*write_to_client) (void*) = (int (*) (void*)) omp_parser->client_writer;
+  int (*write_to_client) (const char *, void*)
+    = (int (*) (const char *, void*)) omp_parser->client_writer;
   void* write_to_client_data = (void*) omp_parser->client_writer_data;
 
   tracef ("   XML  start: %s (%i)\n", element_name, client_state);
@@ -5505,6 +5521,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "task_id",
                               &resume_paused_task_data->task_id);
             set_client_state (CLIENT_RESUME_STOPPED_TASK);
+          }
+        else if (strcasecmp ("RUN_WIZARD", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "name",
+                              &run_wizard_data->name);
+            set_client_state (CLIENT_RUN_WIZARD);
           }
         else if (strcasecmp ("START_TASK", element_name) == 0)
           {
@@ -6779,6 +6801,40 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_OVERRIDE_THREAT);
         ELSE_ERROR ("modify_override");
 
+      case CLIENT_RUN_WIZARD:
+        if (strcasecmp ("NAME", element_name) == 0)
+          {
+            set_client_state (CLIENT_RUN_WIZARD_NAME);
+          }
+        else if (strcasecmp ("PARAMS", element_name) == 0)
+          {
+            run_wizard_data->params = make_array ();
+            set_client_state (CLIENT_RUN_WIZARD_PARAMS);
+          }
+        ELSE_ERROR ("run_wizard");
+
+      case CLIENT_RUN_WIZARD_PARAMS:
+        if (strcasecmp ("PARAM", element_name) == 0)
+          {
+            assert (run_wizard_data->param == NULL);
+            run_wizard_data->param = g_malloc (sizeof (name_value_t));
+            run_wizard_data->param->name = NULL;
+            run_wizard_data->param->value = NULL;
+            set_client_state (CLIENT_RUN_WIZARD_PARAMS_PARAM);
+          }
+        ELSE_ERROR ("run_wizard");
+
+      case CLIENT_RUN_WIZARD_PARAMS_PARAM:
+        if (strcasecmp ("NAME", element_name) == 0)
+          {
+            set_client_state (CLIENT_RUN_WIZARD_PARAMS_PARAM_NAME);
+          }
+        else if (strcasecmp ("VALUE", element_name) == 0)
+          {
+            set_client_state (CLIENT_RUN_WIZARD_PARAMS_PARAM_VALUE);
+          }
+        ELSE_ERROR ("run_wizard");
+
       default:
         /* Send a generic response. */
         if (send_element_error_to_client ("omp", element_name,
@@ -6818,7 +6874,8 @@ send_requirement (gconstpointer element, gconstpointer data)
   gchar* msg = g_strdup_printf ("<nvt oid=\"%s\"><name>%s</name></nvt>",
                                 oid ? oid : "",
                                 text);
-  int (*write_to_client) (void*) = (int (*) (void*)) *((void**)data);
+  int (*write_to_client) (const char *, void*)
+    = (int (*) (const char *, void*)) *((void**)data);
   void* write_to_client_data = *(((void**)data) + 1);
 
   free (oid);
@@ -6847,7 +6904,8 @@ send_dependency (gpointer key, gpointer value, gpointer data)
   gchar* msg = g_strdup_printf ("<nvt oid=\"%s\"><name>%s</name><requires>",
                                 oid ? oid : "",
                                 key_text);
-  int (*write_to_client) (void*) = (int (*) (void*)) *((void**)data);
+  int (*write_to_client) (const char *, void*)
+    = (int (*) (const char *, void*)) *((void**)data);
   void* write_to_client_data = *(((void**)data) + 1);
 
   g_free (oid);
@@ -6893,7 +6951,8 @@ send_dependency (gpointer key, gpointer value, gpointer data)
  */
 static gboolean
 send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout,
-          int (*write_to_client) (void*), void* write_to_client_data)
+          int (*write_to_client) (const char *, void*),
+          void* write_to_client_data)
 {
   gchar *msg;
 
@@ -6919,7 +6978,8 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout,
  *         -5 failed to get report counts, -6 failed to get timestamp.
  */
 static int
-send_reports (task_t task, int apply_overrides, int (*write_to_client) (void*),
+send_reports (task_t task, int apply_overrides,
+              int (*write_to_client) (const char*, void*),
               void* write_to_client_data)
 {
   iterator_t iterator;
@@ -8027,7 +8087,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             GError **error)
 {
   omp_parser_t *omp_parser = (omp_parser_t*) user_data;
-  int (*write_to_client) (void*) = (int (*) (void*)) omp_parser->client_writer;
+  int (*write_to_client) (const char *, void*)
+    = (int (*) (const char *, void*)) omp_parser->client_writer;
   void* write_to_client_data = (void*) omp_parser->client_writer_data;
 
   tracef ("   XML    end: %s\n", element_name);
@@ -14700,6 +14761,363 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_RUN_WIZARD:
+        if (run_wizard_data->name)
+          {
+            gchar *file, *name, *response, *wizard;
+            gsize wizard_len;
+            GError *get_error;
+            entity_t entity, step;
+            entities_t steps;
+            int ret;
+
+            /* TODO some of this belongs in manage_sql.c. */
+
+            /* Read wizard from file. */
+
+            // FIX check name
+            name = g_strdup_printf ("%s.xml", run_wizard_data->name);
+            file = g_build_filename (OPENVAS_DATA_DIR,
+                                     "openvasmd",
+                                     "wizards",
+                                     name,
+                                     NULL);
+            g_free (name);
+
+            get_error = NULL;
+            g_file_get_contents (file,
+                                 &wizard,
+                                 &wizard_len,
+                                 &get_error);
+            g_free (file);
+            if (get_error)
+              {
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("run_wizard"));
+                g_warning ("%s: Failed to read wizard\n", __FUNCTION__);
+                g_error_free (get_error);
+                run_wizard_data_reset (run_wizard_data);
+                set_client_state (CLIENT_AUTHENTIC);
+                break;
+              }
+
+            /* Parse wizard. */
+
+            entity = NULL;
+            if (parse_entity (wizard, &entity))
+              {
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("run_wizard"));
+                g_free (wizard);
+                g_warning ("%s: Failed to parse wizard\n", __FUNCTION__);
+                run_wizard_data_reset (run_wizard_data);
+                set_client_state (CLIENT_AUTHENTIC);
+                break;
+              }
+            g_free (wizard);
+
+            /* Run each step of the wizard. */
+
+            response = NULL;
+            ret = 0;
+            steps = entity->entities;
+            while ((step = first_entity (steps)))
+              {
+                if (strcasecmp (entity_name (step), "step") == 0)
+                  {
+                    entity_t command;
+                    gchar *omp;
+
+                    /* Get the command element. */
+
+                    command = entity_child (step, "command");
+                    if (command == NULL)
+                      {
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("run_wizard"));
+                        free_entity (entity);
+                        g_warning ("%s: Wizard STEP missing COMMAND\n",
+                                   __FUNCTION__);
+                        run_wizard_data_reset (run_wizard_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        break;
+                      }
+
+                    /* Save the command XSL from the element to a file. */
+
+                    int xsl_fd;
+                    char xsl_file_name[] = "/tmp/openvasmd-xsl-XXXXXX";
+                    FILE *xsl_file;
+
+                    xsl_fd = mkstemp (xsl_file_name);
+                    if (xsl_fd == -1)
+                      {
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("run_wizard"));
+                        free_entity (entity);
+                        g_warning ("%s: Wizard XSL file create failed\n",
+                                   __FUNCTION__);
+                        run_wizard_data_reset (run_wizard_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        break;
+                      }
+
+                    xsl_file = fdopen (xsl_fd, "w");
+                    if (xsl_file == NULL)
+                      {
+                        close (xsl_fd);
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("run_wizard"));
+                        free_entity (entity);
+                        g_warning ("%s: Wizard XSL file open failed\n",
+                                   __FUNCTION__);
+                        run_wizard_data_reset (run_wizard_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        break;
+                      }
+
+                    if (first_entity (command->entities))
+                      print_entity (xsl_file, first_entity (command->entities));
+
+                    /* Write the params as XML to a file. */
+
+                    int xml_fd;
+                    char xml_file_name[] = "/tmp/openvasmd-xml-XXXXXX";
+                    FILE *xml_file;
+
+                    xml_fd = mkstemp (xml_file_name);
+                    if (xml_fd == -1)
+                      {
+                        fclose (xsl_file);
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("run_wizard"));
+                        free_entity (entity);
+                        g_warning ("%s: Wizard XML file create failed\n",
+                                   __FUNCTION__);
+                        run_wizard_data_reset (run_wizard_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        break;
+                      }
+
+                    xml_file = fdopen (xml_fd, "w");
+                    if (xml_file == NULL)
+                      {
+                        fclose (xsl_file);
+                        close (xml_fd);
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("run_wizard"));
+                        free_entity (entity);
+                        g_warning ("%s: Wizard XML file open failed\n",
+                                   __FUNCTION__);
+                        run_wizard_data_reset (run_wizard_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        break;
+                      }
+
+                    if (fprintf (xml_file, "<wizard><params>") < 0)
+                      {
+                        fclose (xsl_file);
+                        fclose (xml_file);
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("run_wizard"));
+                        free_entity (entity);
+                        g_warning ("%s: Wizard failed to write XML\n",
+                                   __FUNCTION__);
+                        run_wizard_data_reset (run_wizard_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        break;
+                      }
+
+                    if (run_wizard_data->params)
+                      {
+                        guint index = run_wizard_data->params->len;
+                        while (index--)
+                          {
+                            name_value_t *pair;
+                            pair = (name_value_t*) g_ptr_array_index
+                                                    (run_wizard_data->params,
+                                                     index);
+                            if (pair
+                                && (fprintf (xml_file,
+                                             "<param>"
+                                             "<name>%s</name>"
+                                             "<value>%s</value>"
+                                             "</param>",
+                                             pair->name ? pair->name : "",
+                                             pair->value ? pair->value : "")
+                                    < 0))
+                              {
+                                fclose (xsl_file);
+                                fclose (xml_file);
+                                SEND_TO_CLIENT_OR_FAIL
+                                  (XML_INTERNAL_ERROR ("run_wizard"));
+                                free_entity (entity);
+                                g_warning ("%s: Wizard failed to write XML\n",
+                                           __FUNCTION__);
+                                run_wizard_data_reset (run_wizard_data);
+                                set_client_state (CLIENT_AUTHENTIC);
+                                break;
+                              }
+                          }
+                      }
+
+                    if (fprintf (xml_file,
+                                 "</params>"
+                                 "<previous>"
+                                 "<response>%s</response>"
+                                 "</previous>"
+                                 "</wizard>\n",
+                                 response ? response : "")
+                        < 0)
+                      {
+                        fclose (xsl_file);
+                        fclose (xml_file);
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("run_wizard"));
+                        free_entity (entity);
+                        g_warning ("%s: Wizard failed to write XML\n",
+                                   __FUNCTION__);
+                        run_wizard_data_reset (run_wizard_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        break;
+                      }
+
+                    fflush (xml_file);
+
+                    /* Combine XSL and XML to get the OMP command. */
+
+                    omp = xsl_transform (xsl_file_name, xml_file_name, NULL,
+                                         NULL);
+                    fclose (xsl_file);
+                    if (omp == NULL)
+                      {
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("run_wizard"));
+                        free_entity (entity);
+                        g_warning ("%s: Wizard XSL transform failed\n",
+                                   __FUNCTION__);
+                        run_wizard_data_reset (run_wizard_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        break;
+                      }
+
+                    /* Run the OMP command. */
+
+                    g_free (response);
+                    ret = process_omp (omp_parser, omp, &response);
+                    if (ret == 3)
+                      {
+                        /* Parent after a start_task fork. */
+                        forked = 1;
+                      }
+                    else if (ret == 0)
+                      {
+                        /* Command succeeded. */
+                      }
+                    else if (ret == 2)
+                      {
+                        /* Process forked to run a task. */
+                        current_error = 2;
+                        g_set_error (error,
+                                     G_MARKUP_ERROR,
+                                     G_MARKUP_ERROR_INVALID_CONTENT,
+                                     "Dummy error for current_error");
+                        break;
+                      }
+                    else if (ret == -10)
+                      {
+                        /* Process forked to run a task.  Task start failed. */
+                        current_error = -10;
+                        g_set_error (error,
+                                     G_MARKUP_ERROR,
+                                     G_MARKUP_ERROR_INVALID_CONTENT,
+                                     "Dummy error for current_error");
+                        break;
+                      }
+                    else if (ret == -2)
+                      {
+                        gchar *msg;
+                        /* to_scanner buffer full. */
+                        msg = g_strdup_printf
+                               ("<run_wizard_response"
+                                " status=\"" STATUS_INTERNAL_ERROR "\""
+                                " status_text=\""
+                                STATUS_INTERNAL_ERROR_TEXT
+                                ": Wizard filled up to_scanner buffer\">"
+                                "<FIX>%s</FIX>"
+                                "</run_wizard_response>",
+                                response);
+                        g_free (response);
+                        if (send_to_client (msg,
+                                            write_to_client,
+                                            write_to_client_data))
+                          {
+                            g_free (msg);
+                            error_send_to_client (error);
+                            return;
+                          }
+                        g_free (msg);
+                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                               "Wizard failed to run: to_scanner buffer full");
+                        break;
+                      }
+                    else
+                      {
+                        /* Internal error. */
+                        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("run_wizard"));
+                        g_log ("event wizard", G_LOG_LEVEL_MESSAGE,
+                               "Wizard failed to run");
+                        break;
+                      }
+                  }
+                steps = next_entities (steps);
+              }
+
+            /* Respond with success if all the steps succeeded. */
+
+            if (ret == 0 || ret == 3)
+              {
+                gchar *msg;
+                msg = g_strdup_printf
+                       ("<run_wizard_response"
+                        " status=\"" STATUS_OK_REQUESTED "\""
+                        " status_text=\"" STATUS_OK_REQUESTED_TEXT "\">"
+                        "<FIX>%s</FIX>"
+                        "</run_wizard_response>",
+                        response ? response : "");
+                if (send_to_client (msg,
+                                    write_to_client,
+                                    write_to_client_data))
+                  {
+                    g_free (msg);
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_free (msg);
+                g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                       "Wizard ran");
+              }
+
+            g_free (response);
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("start_task",
+                                                    "START_TASK task_id"
+                                                    " attribute must be set"));
+        run_wizard_data_reset (run_wizard_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      CLOSE (CLIENT_RUN_WIZARD, NAME);
+      CLOSE (CLIENT_RUN_WIZARD, PARAMS);
+      CLOSE (CLIENT_RUN_WIZARD_PARAMS_PARAM, NAME);
+      CLOSE (CLIENT_RUN_WIZARD_PARAMS_PARAM, VALUE);
+
+      case CLIENT_RUN_WIZARD_PARAMS_PARAM:
+        assert (strcasecmp ("PARAM", element_name) == 0);
+        array_add (run_wizard_data->params, run_wizard_data->param);
+        run_wizard_data->param = NULL;
+        set_client_state (CLIENT_RUN_WIZARD_PARAMS);
+        break;
+
       case CLIENT_START_TASK:
         if (start_task_data->task_id)
           {
@@ -17819,6 +18237,16 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
               &modify_target_data->ssh_port);
 
 
+      APPEND (CLIENT_RUN_WIZARD_NAME,
+              &run_wizard_data->name);
+
+      APPEND (CLIENT_RUN_WIZARD_PARAMS_PARAM_NAME,
+              &run_wizard_data->param->name);
+
+      APPEND (CLIENT_RUN_WIZARD_PARAMS_PARAM_VALUE,
+              &run_wizard_data->param->value);
+
+
       default:
         /* Just pass over the text. */
         break;
@@ -17889,8 +18317,8 @@ init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database)
  */
 void
 init_omp_process (int update_nvt_cache, const gchar *database,
-                  int (*write_to_client) (void*), void* write_to_client_data,
-                  gchar **disable)
+                  int (*write_to_client) (const char*, void*),
+                  void* write_to_client_data, gchar **disable)
 {
   forked = 0;
   init_manage_process (update_nvt_cache, database);
@@ -17992,6 +18420,135 @@ process_omp_client_input ()
       return err;
     }
   from_client_end = from_client_start = 0;
+  if (forked)
+    return 3;
+  return 0;
+}
+
+/**
+ * @brief Buffer the response for process_omp.
+ *
+ * @param[in]  msg     OMP response.
+ * @param[in]  buffer  Buffer.
+ *
+ * @return TRUE if failed, else FALSE.
+ */
+int
+process_omp_write (const char* msg, void* buffer)
+{
+  g_string_append ((GString*) buffer, msg);
+  return FALSE;
+}
+
+/**
+ * @brief Process an XML string.
+ *
+ * \if STATIC
+ *
+ * Call the XML parser and let the callback functions do the work
+ * (\ref omp_xml_handle_start_element, \ref omp_xml_handle_end_element,
+ * \ref omp_xml_handle_text and \ref omp_xml_handle_error).
+ *
+ * The callback functions will queue any resulting scanner commands in
+ * \ref to_scanner (using \ref send_to_server) and any replies for
+ * the client in \ref to_client (using \ref send_to_client).
+ *
+ * \endif
+ *
+ * @todo The -2 return has been replaced by send_to_client trying to write
+ *       the to_client buffer to the client when it is full.  This is
+ *       necessary, as the to_client buffer may fill up halfway through the
+ *       processing of an OMP element.
+ *
+ * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
+ *         or the scanner output buffer (respectively), -4 XML syntax error.
+ */
+static int
+process_omp (omp_parser_t *parser, const gchar *command, gchar **response)
+{
+  gboolean success;
+  GError* error = NULL;
+  GString *buffer;
+  int (*client_writer) (const char*, void*);
+  void* client_writer_data;
+  GMarkupParseContext *old_xml_context;
+  client_state_t old_client_state;
+  command_data_t old_command_data;
+
+  /* Terminate any pending transaction. (force close = TRUE). */
+  manage_transaction_stop (TRUE);
+
+  if (response) *response = NULL;
+
+  old_xml_context = xml_context;
+  xml_context = g_markup_parse_context_new (&xml_parser, 0, parser, NULL);
+  if (xml_context == NULL)
+    {
+      xml_context = old_xml_context;
+      return -1;
+    }
+
+  old_command_data = command_data;
+  command_data_init (&command_data);
+  old_client_state = client_state;
+  client_state = CLIENT_AUTHENTIC;
+  buffer = g_string_new ("");
+  client_writer = parser->client_writer;
+  client_writer_data = parser->client_writer_data;
+  parser->client_writer = process_omp_write;
+  parser->client_writer_data = buffer;
+  current_error = 0;
+  success = g_markup_parse_context_parse (xml_context,
+                                          command,
+                                          strlen (command),
+                                          &error);
+  parser->client_writer = client_writer;
+  parser->client_writer_data = client_writer_data;
+  xml_context = old_xml_context;
+  client_state = old_client_state;
+  command_data = old_command_data;
+  if (success == FALSE)
+    {
+      int err;
+      if (error)
+        {
+          err = -4;
+          if (g_error_matches (error,
+                               G_MARKUP_ERROR,
+                               G_MARKUP_ERROR_UNKNOWN_ELEMENT))
+            tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ELEMENT\n");
+          else if (g_error_matches (error,
+                                    G_MARKUP_ERROR,
+                                    G_MARKUP_ERROR_INVALID_CONTENT))
+            {
+              if (current_error)
+                {
+                  /* This is the return status for a forked child. */
+                  forked = 2; /* Prevent further forking. */
+                  g_error_free (error);
+                  return current_error;
+                }
+              tracef ("   client error: G_MARKUP_ERROR_INVALID_CONTENT\n");
+            }
+          else if (g_error_matches (error,
+                                    G_MARKUP_ERROR,
+                                    G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
+            tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
+          else
+            err = -1;
+          infof ("   Failed to parse client XML: %s\n", error->message);
+          g_error_free (error);
+        }
+      else
+        err = -1;
+      return err;
+    }
+
+  if (response)
+    *response = g_string_free (buffer, FALSE);
+  else
+    g_string_free (buffer, TRUE);
+
   if (forked)
     return 3;
   return 0;
