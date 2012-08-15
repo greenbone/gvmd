@@ -1,5 +1,11 @@
 2012-08-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add setting Wizard Rows.
+
+	* src/manage_sql.c (init_manage): Ensure setting exists.
+
+2012-08-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In RUN_WIZARD add name check
 	and correct command in error message.
 

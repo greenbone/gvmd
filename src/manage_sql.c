@@ -10405,6 +10405,18 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
          "  'The default number of rows displayed in any listing.',"
          "  10);");
 
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM settings"
+               " WHERE uuid = '20f3034c-e709-11e1-87e7-406186ea4fc5'"
+               " AND owner IS NULL;")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('20f3034c-e709-11e1-87e7-406186ea4fc5', NULL, 'Wizard Rows',"
+         "  'If the number of rows in a listing is above this any wizard"
+         " be hidden.',"
+         "  3);");
+
   if (nvt_cache_mode == 0)
     {
       iterator_t tasks;
