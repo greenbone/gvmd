@@ -14833,11 +14833,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       {
                         SEND_TO_CLIENT_OR_FAIL
                           (XML_INTERNAL_ERROR ("run_wizard"));
-                        free_entity (entity);
                         g_warning ("%s: Wizard STEP missing COMMAND\n",
                                    __FUNCTION__);
-                        run_wizard_data_reset (run_wizard_data);
-                        set_client_state (CLIENT_AUTHENTIC);
+                        ret = -1;
                         break;
                       }
 
@@ -14852,11 +14850,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       {
                         SEND_TO_CLIENT_OR_FAIL
                           (XML_INTERNAL_ERROR ("run_wizard"));
-                        free_entity (entity);
                         g_warning ("%s: Wizard XSL file create failed\n",
                                    __FUNCTION__);
-                        run_wizard_data_reset (run_wizard_data);
-                        set_client_state (CLIENT_AUTHENTIC);
+                        ret = -1;
                         break;
                       }
 
@@ -14866,17 +14862,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         close (xsl_fd);
                         SEND_TO_CLIENT_OR_FAIL
                           (XML_INTERNAL_ERROR ("run_wizard"));
-                        free_entity (entity);
                         g_warning ("%s: Wizard XSL file open failed\n",
                                    __FUNCTION__);
-                        run_wizard_data_reset (run_wizard_data);
-                        set_client_state (CLIENT_AUTHENTIC);
+                        ret = -1;
                         break;
                       }
 
                     if (first_entity (command->entities))
                       print_entity (xsl_file, first_entity (command->entities));
-                    free_entity (entity);
 
                     /* Write the params as XML to a file. */
 
@@ -14892,8 +14885,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           (XML_INTERNAL_ERROR ("run_wizard"));
                         g_warning ("%s: Wizard XML file create failed\n",
                                    __FUNCTION__);
-                        run_wizard_data_reset (run_wizard_data);
-                        set_client_state (CLIENT_AUTHENTIC);
+                        ret = -1;
                         break;
                       }
 
@@ -14906,8 +14898,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           (XML_INTERNAL_ERROR ("run_wizard"));
                         g_warning ("%s: Wizard XML file open failed\n",
                                    __FUNCTION__);
-                        run_wizard_data_reset (run_wizard_data);
-                        set_client_state (CLIENT_AUTHENTIC);
+                        ret = -1;
                         break;
                       }
 
@@ -14919,8 +14910,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           (XML_INTERNAL_ERROR ("run_wizard"));
                         g_warning ("%s: Wizard failed to write XML\n",
                                    __FUNCTION__);
-                        run_wizard_data_reset (run_wizard_data);
-                        set_client_state (CLIENT_AUTHENTIC);
+                        ret = -1;
                         break;
                       }
 
@@ -14949,8 +14939,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   (XML_INTERNAL_ERROR ("run_wizard"));
                                 g_warning ("%s: Wizard failed to write XML\n",
                                            __FUNCTION__);
-                                run_wizard_data_reset (run_wizard_data);
-                                set_client_state (CLIENT_AUTHENTIC);
+                                ret = -1;
                                 break;
                               }
                           }
@@ -14971,8 +14960,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           (XML_INTERNAL_ERROR ("run_wizard"));
                         g_warning ("%s: Wizard failed to write XML\n",
                                    __FUNCTION__);
-                        run_wizard_data_reset (run_wizard_data);
-                        set_client_state (CLIENT_AUTHENTIC);
+                        ret = -1;
                         break;
                       }
 
@@ -14983,14 +14971,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     omp = xsl_transform (xsl_file_name, xml_file_name, NULL,
                                          NULL);
                     fclose (xsl_file);
+                    fclose (xml_file);
                     if (omp == NULL)
                       {
                         SEND_TO_CLIENT_OR_FAIL
                           (XML_INTERNAL_ERROR ("run_wizard"));
                         g_warning ("%s: Wizard XSL transform failed\n",
                                    __FUNCTION__);
-                        run_wizard_data_reset (run_wizard_data);
-                        set_client_state (CLIENT_AUTHENTIC);
+                        ret = -1;
                         break;
                       }
 
@@ -15038,9 +15026,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 " status_text=\""
                                 STATUS_INTERNAL_ERROR_TEXT
                                 ": Wizard filled up to_scanner buffer\">"
-                                "<FIX>%s</FIX>"
-                                "</run_wizard_response>",
-                                response);
+                                "</run_wizard_response>");
                         g_free (response);
                         if (send_to_client (msg,
                                             write_to_client,
@@ -15069,9 +15055,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (response)
                       {
                         const char *status;
+                        entity_t response_entity;
 
-                        entity = NULL;
-                        if (parse_entity (response, &entity))
+                        response_entity = NULL;
+                        if (parse_entity (response, &response_entity))
                           {
                             g_warning ("%s: Wizard failed to parse response\n",
                                        __FUNCTION__);
@@ -15081,7 +15068,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             break;
                           }
 
-                        status = entity_attribute (entity, "status");
+                        status = entity_attribute (response_entity, "status");
                         if ((status == NULL)
                             || (strlen (status) == 0)
                             || (status[0] != '2'))
@@ -15091,12 +15078,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    ("<run_wizard_response"
                                     " status=\"" STATUS_ERROR_SYNTAX "\""
                                     " status_text=\"%s\"/>",
-                                    entity_attribute (entity, "status_text"));
+                                    entity_attribute (response_entity, "status_text"));
                             if (send_to_client (msg,
                                                 write_to_client,
                                                 write_to_client_data))
                               {
                                 free_entity (entity);
+                                free_entity (response_entity);
                                 g_free (msg);
                                 error_send_to_client (error);
                                 return;
@@ -15104,15 +15092,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             g_free (msg);
                             g_log ("event wizard", G_LOG_LEVEL_MESSAGE,
                                    "Wizard failed to run");
-                            free_entity (entity);
+                            free_entity (response_entity);
+                            ret = -1;
                             break;
                           }
 
-                        free_entity (entity);
+                        free_entity (response_entity);
                       }
                   }
                 steps = next_entities (steps);
               }
+            free_entity (entity);
 
             /* Respond with success if all the steps succeeded. */
 
@@ -15123,9 +15113,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                        ("<run_wizard_response"
                         " status=\"" STATUS_OK_REQUESTED "\""
                         " status_text=\"" STATUS_OK_REQUESTED_TEXT "\">"
-                        "<FIX>%s</FIX>"
-                        "</run_wizard_response>",
-                        response ? response : "");
+                        "</run_wizard_response>");
                 if (send_to_client (msg,
                                     write_to_client,
                                     write_to_client_data))

@@ -1,3 +1,11 @@
+2012-08-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In RUN_WIZARD adjust the fail
+	cases because they break out of the while now, free 'entity' after
+	last use instead of inside the loop, close xml_file, remove testing
+	elements from responses and use a dedicated entity when checking the
+	response.
+
 2012-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In RUN_WIZARD free entity
