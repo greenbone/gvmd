@@ -14876,6 +14876,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     if (first_entity (command->entities))
                       print_entity (xsl_file, first_entity (command->entities));
+                    free_entity (entity);
 
                     /* Write the params as XML to a file. */
 
@@ -14889,7 +14890,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         fclose (xsl_file);
                         SEND_TO_CLIENT_OR_FAIL
                           (XML_INTERNAL_ERROR ("run_wizard"));
-                        free_entity (entity);
                         g_warning ("%s: Wizard XML file create failed\n",
                                    __FUNCTION__);
                         run_wizard_data_reset (run_wizard_data);
@@ -14904,7 +14904,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         close (xml_fd);
                         SEND_TO_CLIENT_OR_FAIL
                           (XML_INTERNAL_ERROR ("run_wizard"));
-                        free_entity (entity);
                         g_warning ("%s: Wizard XML file open failed\n",
                                    __FUNCTION__);
                         run_wizard_data_reset (run_wizard_data);
@@ -14918,7 +14917,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         fclose (xml_file);
                         SEND_TO_CLIENT_OR_FAIL
                           (XML_INTERNAL_ERROR ("run_wizard"));
-                        free_entity (entity);
                         g_warning ("%s: Wizard failed to write XML\n",
                                    __FUNCTION__);
                         run_wizard_data_reset (run_wizard_data);
@@ -14949,7 +14947,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 fclose (xml_file);
                                 SEND_TO_CLIENT_OR_FAIL
                                   (XML_INTERNAL_ERROR ("run_wizard"));
-                                free_entity (entity);
                                 g_warning ("%s: Wizard failed to write XML\n",
                                            __FUNCTION__);
                                 run_wizard_data_reset (run_wizard_data);
@@ -14972,7 +14969,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         fclose (xml_file);
                         SEND_TO_CLIENT_OR_FAIL
                           (XML_INTERNAL_ERROR ("run_wizard"));
-                        free_entity (entity);
                         g_warning ("%s: Wizard failed to write XML\n",
                                    __FUNCTION__);
                         run_wizard_data_reset (run_wizard_data);
@@ -14991,7 +14987,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       {
                         SEND_TO_CLIENT_OR_FAIL
                           (XML_INTERNAL_ERROR ("run_wizard"));
-                        free_entity (entity);
                         g_warning ("%s: Wizard XSL transform failed\n",
                                    __FUNCTION__);
                         run_wizard_data_reset (run_wizard_data);
@@ -15002,6 +14997,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     /* Run the OMP command. */
 
                     g_free (response);
+                    response = NULL;
                     ret = process_omp (omp_parser, omp, &response);
                     if (ret == 3)
                       {
@@ -15066,6 +15062,53 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         g_log ("event wizard", G_LOG_LEVEL_MESSAGE,
                                "Wizard failed to run");
                         break;
+                      }
+
+                    /* Exit if the command failed. */
+
+                    if (response)
+                      {
+                        const char *status;
+
+                        entity = NULL;
+                        if (parse_entity (response, &entity))
+                          {
+                            g_warning ("%s: Wizard failed to parse response\n",
+                                       __FUNCTION__);
+                            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("run_wizard"));
+                            g_log ("event wizard", G_LOG_LEVEL_MESSAGE,
+                                   "Wizard failed to run");
+                            break;
+                          }
+
+                        status = entity_attribute (entity, "status");
+                        if ((status == NULL)
+                            || (strlen (status) == 0)
+                            || (status[0] != '2'))
+                          {
+                            gchar *msg;
+                            msg = g_strdup_printf
+                                   ("<run_wizard_response"
+                                    " status=\"" STATUS_ERROR_SYNTAX "\""
+                                    " status_text=\"%s\"/>",
+                                    entity_attribute (entity, "status_text"));
+                            if (send_to_client (msg,
+                                                write_to_client,
+                                                write_to_client_data))
+                              {
+                                free_entity (entity);
+                                g_free (msg);
+                                error_send_to_client (error);
+                                return;
+                              }
+                            g_free (msg);
+                            g_log ("event wizard", G_LOG_LEVEL_MESSAGE,
+                                   "Wizard failed to run");
+                            free_entity (entity);
+                            break;
+                          }
+
+                        free_entity (entity);
                       }
                   }
                 steps = next_entities (steps);

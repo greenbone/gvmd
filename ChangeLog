@@ -1,5 +1,10 @@
 2012-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In RUN_WIZARD free entity
+	properly and exit if the command for any step fails.
+
+2012-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add new OMP command RUN_WIZARD.  Add first wizard quick_first_scan.
 
 	* src/manage.c (xsl_transform): Export.
