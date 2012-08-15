@@ -14764,18 +14764,30 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_RUN_WIZARD:
         if (run_wizard_data->name)
           {
-            gchar *file, *name, *response, *wizard;
+            gchar *file, *name, *response, *wizard, *point;
             gsize wizard_len;
             GError *get_error;
             entity_t entity, step;
             entities_t steps;
             int ret;
 
+            point = run_wizard_data->name;
+            while (*point && (isalnum (*point) || *point == '_')) point++;
+            if (*point)
+              {
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("run_wizard",
+                                    "NAME characters must be alphanumeric"
+                                    " or underscore"));
+                run_wizard_data_reset (run_wizard_data);
+                set_client_state (CLIENT_AUTHENTIC);
+                break;
+              }
+
             /* TODO some of this belongs in manage_sql.c. */
 
             /* Read wizard from file. */
 
-            // FIX check name
             name = g_strdup_printf ("%s.xml", run_wizard_data->name);
             file = g_build_filename (OPENVAS_DATA_DIR,
                                      "openvasmd",
@@ -15130,9 +15142,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             g_free (response);
           }
         else
-          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("start_task",
-                                                    "START_TASK task_id"
-                                                    " attribute must be set"));
+          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("run_wizard",
+                                                    "RUN_WIZARD requires a NAME"
+                                                    " element"));
         run_wizard_data_reset (run_wizard_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;

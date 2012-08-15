@@ -1,5 +1,10 @@
 2012-08-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In RUN_WIZARD add name check
+	and correct command in error message.
+
+2012-08-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In RUN_WIZARD adjust the fail
 	cases because they break out of the while now, free 'entity' after
 	last use instead of inside the loop, close xml_file, remove testing
