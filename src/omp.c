@@ -14893,6 +14893,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (xml_fd == -1)
                       {
                         fclose (xsl_file);
+                        unlink (xsl_file_name);
                         SEND_TO_CLIENT_OR_FAIL
                           (XML_INTERNAL_ERROR ("run_wizard"));
                         g_warning ("%s: Wizard XML file create failed\n",
@@ -14905,6 +14906,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (xml_file == NULL)
                       {
                         fclose (xsl_file);
+                        unlink (xsl_file_name);
                         close (xml_fd);
                         SEND_TO_CLIENT_OR_FAIL
                           (XML_INTERNAL_ERROR ("run_wizard"));
@@ -14917,6 +14919,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (fprintf (xml_file, "<wizard><params>") < 0)
                       {
                         fclose (xsl_file);
+                        unlink (xsl_file_name);
                         fclose (xml_file);
                         SEND_TO_CLIENT_OR_FAIL
                           (XML_INTERNAL_ERROR ("run_wizard"));
@@ -14963,7 +14966,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 g_free (pair_name);
                                 g_free (pair_value);
                                 fclose (xsl_file);
+                                unlink (xsl_file_name);
                                 fclose (xml_file);
+                                unlink (xml_file_name);
                                 SEND_TO_CLIENT_OR_FAIL
                                   (XML_INTERNAL_ERROR ("run_wizard"));
                                 g_warning ("%s: Wizard failed to write XML\n",
@@ -14986,7 +14991,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         < 0)
                       {
                         fclose (xsl_file);
+                        unlink (xsl_file_name);
                         fclose (xml_file);
+                        unlink (xml_file_name);
                         SEND_TO_CLIENT_OR_FAIL
                           (XML_INTERNAL_ERROR ("run_wizard"));
                         g_warning ("%s: Wizard failed to write XML\n",
@@ -15002,7 +15009,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     omp = xsl_transform (xsl_file_name, xml_file_name, NULL,
                                          NULL);
                     fclose (xsl_file);
+                    unlink (xsl_file_name);
                     fclose (xml_file);
+                    unlink (xml_file_name);
                     if (omp == NULL)
                       {
                         SEND_TO_CLIENT_OR_FAIL
