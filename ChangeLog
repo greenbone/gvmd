@@ -1,3 +1,8 @@
+2012-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (omp_xml_handle_end_element): Escape RUN_WIZARD
+	params for XML file.
+
 2012-08-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add setting Wizard Rows.

@@ -14932,19 +14932,36 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         while (index--)
                           {
                             name_value_t *pair;
+                            gchar *pair_name, *pair_value;
+
                             pair = (name_value_t*) g_ptr_array_index
                                                     (run_wizard_data->params,
                                                      index);
-                            if (pair
-                                && (fprintf (xml_file,
-                                             "<param>"
-                                             "<name>%s</name>"
-                                             "<value>%s</value>"
-                                             "</param>",
-                                             pair->name ? pair->name : "",
-                                             pair->value ? pair->value : "")
-                                    < 0))
+
+                            if (pair == NULL)
+                              continue;
+
+                            pair_name = pair->name
+                                         ? g_markup_escape_text
+                                            (pair->name, strlen (pair->name))
+                                         : "";
+
+                            pair_value = pair->value
+                                          ? g_markup_escape_text
+                                             (pair->value, strlen (pair->value))
+                                          : "";
+
+                            if (fprintf (xml_file,
+                                         "<param>"
+                                         "<name>%s</name>"
+                                         "<value>%s</value>"
+                                         "</param>",
+                                         pair_name,
+                                         pair_value)
+                                < 0)
                               {
+                                g_free (pair_name);
+                                g_free (pair_value);
                                 fclose (xsl_file);
                                 fclose (xml_file);
                                 SEND_TO_CLIENT_OR_FAIL
@@ -14954,6 +14971,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 ret = -1;
                                 break;
                               }
+                            g_free (pair_name);
+                            g_free (pair_value);
                           }
                       }
 
