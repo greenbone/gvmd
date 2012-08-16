@@ -1,5 +1,4 @@
 <wizard>
-  <!-- TODO param checking -->
   <step>
     <command>
       <xsl:stylesheet

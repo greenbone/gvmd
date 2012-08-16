@@ -1,5 +1,10 @@
 2012-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/wizards/quick_first_scan.xml: Remove TODO now that params are
+	escaped.
+
+2012-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (omp_xml_handle_end_element): Escape RUN_WIZARD
 	params for XML file.
 
