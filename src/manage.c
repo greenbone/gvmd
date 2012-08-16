@@ -45,6 +45,7 @@
 #include "tracef.h"
 
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <dirent.h>
 #include <glib.h>
@@ -4464,4 +4465,356 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
     return -1;
 
   return 1;
+}
+
+
+/* Wizards. */
+
+/**
+ * @brief Run a wizard.
+ *
+ * @param[in]  name              Wizard name.
+ * @param[in]  run_command       Function to run OMP command.
+ * @param[in]  run_command_data  Argument for run_command.
+ * @param[in]  params            Wizard params.  Array of name_value_t.
+ * @param[out] command_error     Address for error message from failed command
+ *                               when return is 4, or NULL.
+ *
+ * @return 0 success, 1 name error, 2 process forked to run task, -10 process
+ *         forked to run task where task start failed, -2 to_scanner buffer
+ *         full, 4 command in wizard failed, -1 internal error.
+ */
+int
+manage_run_wizard (const gchar *name,
+                   int (*run_command) (void*, gchar*, gchar**),
+                   void *run_command_data,
+                   array_t *params,
+                   gchar **command_error)
+{
+  gchar *file, *file_name, *response, *wizard;
+  gsize wizard_len;
+  GError *get_error;
+  entity_t entity, step;
+  entities_t steps;
+  int ret, forked;
+  const gchar *point;
+
+  forked = 0;
+
+  if (command_error)
+    *command_error = NULL;
+
+  point = name;
+  while (*point && (isalnum (*point) || *point == '_')) point++;
+  if (*point)
+    return 1;
+
+  /* Read wizard from file. */
+
+  file_name = g_strdup_printf ("%s.xml", name);
+  file = g_build_filename (OPENVAS_DATA_DIR,
+                           "openvasmd",
+                           "wizards",
+                           file_name,
+                           NULL);
+  g_free (file_name);
+
+  get_error = NULL;
+  g_file_get_contents (file,
+                       &wizard,
+                       &wizard_len,
+                       &get_error);
+  g_free (file);
+  if (get_error)
+    {
+      g_warning ("%s: Failed to read wizard: %s\n",
+                 __FUNCTION__,
+                 get_error->message);
+      g_error_free (get_error);
+      return -1;
+    }
+
+  /* Parse wizard. */
+
+  entity = NULL;
+  if (parse_entity (wizard, &entity))
+    {
+      g_warning ("%s: Failed to parse wizard\n", __FUNCTION__);
+      g_free (wizard);
+      return -1;
+    }
+  g_free (wizard);
+
+  /* Run each step of the wizard. */
+
+  response = NULL;
+  ret = 0;
+  steps = entity->entities;
+  while ((step = first_entity (steps)))
+    {
+      if (strcasecmp (entity_name (step), "step") == 0)
+        {
+          entity_t command;
+          gchar *omp;
+          int xsl_fd, xml_fd;
+          char xsl_file_name[] = "/tmp/openvasmd-xsl-XXXXXX";
+          FILE *xsl_file, *xml_file;
+          char xml_file_name[] = "/tmp/openvasmd-xml-XXXXXX";
+
+          /* Get the command element. */
+
+          command = entity_child (step, "command");
+          if (command == NULL)
+            {
+              g_warning ("%s: Wizard STEP missing COMMAND\n",
+                         __FUNCTION__);
+              free_entity (entity);
+              g_free (response);
+              return -1;
+            }
+
+          /* Save the command XSL from the element to a file. */
+
+          xsl_fd = mkstemp (xsl_file_name);
+          if (xsl_fd == -1)
+            {
+              g_warning ("%s: Wizard XSL file create failed\n",
+                         __FUNCTION__);
+              free_entity (entity);
+              g_free (response);
+              return -1;
+            }
+
+          xsl_file = fdopen (xsl_fd, "w");
+          if (xsl_file == NULL)
+            {
+              g_warning ("%s: Wizard XSL file open failed\n",
+                         __FUNCTION__);
+              close (xsl_fd);
+              free_entity (entity);
+              g_free (response);
+              return -1;
+            }
+
+          if (first_entity (command->entities))
+            print_entity (xsl_file, first_entity (command->entities));
+
+          /* Write the params as XML to a file. */
+
+          xml_fd = mkstemp (xml_file_name);
+          if (xml_fd == -1)
+            {
+              g_warning ("%s: Wizard XML file create failed\n",
+                         __FUNCTION__);
+              fclose (xsl_file);
+              unlink (xsl_file_name);
+              free_entity (entity);
+              g_free (response);
+              return -1;
+            }
+
+          xml_file = fdopen (xml_fd, "w");
+          if (xml_file == NULL)
+            {
+              g_warning ("%s: Wizard XML file open failed\n",
+                         __FUNCTION__);
+              fclose (xsl_file);
+              unlink (xsl_file_name);
+              close (xml_fd);
+              free_entity (entity);
+              g_free (response);
+              return -1;
+            }
+
+          if (fprintf (xml_file, "<wizard><params>") < 0)
+            {
+              fclose (xsl_file);
+              unlink (xsl_file_name);
+              fclose (xml_file);
+              free_entity (entity);
+              g_warning ("%s: Wizard failed to write XML\n",
+                         __FUNCTION__);
+              g_free (response);
+              return -1;
+            }
+
+          if (params)
+            {
+              guint index = params->len;
+              while (index--)
+                {
+                  name_value_t *pair;
+                  gchar *pair_name, *pair_value;
+
+                  pair = (name_value_t*) g_ptr_array_index (params, index);
+
+                  if (pair == NULL)
+                    continue;
+
+                  pair_name = pair->name
+                               ? g_markup_escape_text
+                                  (pair->name, strlen (pair->name))
+                               : "";
+
+                  pair_value = pair->value
+                                ? g_markup_escape_text
+                                   (pair->value, strlen (pair->value))
+                                : "";
+
+                  if (fprintf (xml_file,
+                               "<param>"
+                               "<name>%s</name>"
+                               "<value>%s</value>"
+                               "</param>",
+                               pair_name,
+                               pair_value)
+                      < 0)
+                    {
+                      g_free (pair_name);
+                      g_free (pair_value);
+                      fclose (xsl_file);
+                      unlink (xsl_file_name);
+                      fclose (xml_file);
+                      unlink (xml_file_name);
+                      free_entity (entity);
+                      g_warning ("%s: Wizard failed to write XML\n",
+                                 __FUNCTION__);
+                      g_free (response);
+                      return -1;
+                    }
+                  g_free (pair_name);
+                  g_free (pair_value);
+                }
+            }
+
+          if (fprintf (xml_file,
+                       "</params>"
+                       "<previous>"
+                       "<response>%s</response>"
+                       "</previous>"
+                       "</wizard>\n",
+                       response ? response : "")
+              < 0)
+            {
+              fclose (xsl_file);
+              unlink (xsl_file_name);
+              fclose (xml_file);
+              unlink (xml_file_name);
+              free_entity (entity);
+              g_warning ("%s: Wizard failed to write XML\n",
+                         __FUNCTION__);
+              g_free (response);
+              return -1;
+            }
+
+          fflush (xml_file);
+
+          /* Combine XSL and XML to get the OMP command. */
+
+          omp = xsl_transform (xsl_file_name, xml_file_name, NULL,
+                               NULL);
+          fclose (xsl_file);
+          unlink (xsl_file_name);
+          fclose (xml_file);
+          unlink (xml_file_name);
+          if (omp == NULL)
+            {
+              g_warning ("%s: Wizard XSL transform failed\n",
+                         __FUNCTION__);
+              free_entity (entity);
+              g_free (response);
+              return -1;
+            }
+
+          /* Run the OMP command. */
+
+          g_free (response);
+          response = NULL;
+          ret = run_command (run_command_data, omp, &response);
+          if (ret == 3)
+            {
+              /* Parent after a start_task fork. */
+              forked = 1;
+            }
+          else if (ret == 0)
+            {
+              /* Command succeeded. */
+            }
+          else if (ret == 2)
+            {
+              /* Process forked to run a task. */
+              free_entity (entity);
+              g_free (response);
+              return 2;
+            }
+          else if (ret == -10)
+            {
+              /* Process forked to run a task.  Task start failed. */
+              free_entity (entity);
+              g_free (response);
+              return -10;
+            }
+          else if (ret == -2)
+            {
+              /* to_scanner buffer full. */
+              free_entity (entity);
+              g_free (response);
+              return -2;
+            }
+          else
+            {
+              free_entity (entity);
+              g_free (response);
+              return -1;
+            }
+
+          /* Exit if the command failed. */
+
+          if (response)
+            {
+              const char *status;
+              entity_t response_entity;
+
+              response_entity = NULL;
+              if (parse_entity (response, &response_entity))
+                {
+                  g_warning ("%s: Wizard failed to parse response\n",
+                             __FUNCTION__);
+                  free_entity (entity);
+                  g_free (response);
+                  return -1;
+                }
+
+              status = entity_attribute (response_entity, "status");
+              if ((status == NULL)
+                  || (strlen (status) == 0)
+                  || (status[0] != '2'))
+                {
+                  tracef ("response was %s\n", response);
+                  if (command_error)
+                    {
+                      const char *text;
+                      text = entity_attribute (response_entity, "status_text");
+                      if (text)
+                        *command_error = g_strdup (text);
+                    }
+                  free_entity (response_entity);
+                  free_entity (entity);
+                  g_free (response);
+                  return 4;
+                }
+
+              free_entity (response_entity);
+            }
+        }
+      steps = next_entities (steps);
+    }
+  free_entity (entity);
+  g_free (response);
+
+  /* All the steps succeeded. */
+
+  if (forked)
+    return 3;
+  return 0;
 }

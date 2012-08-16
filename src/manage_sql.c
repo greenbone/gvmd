@@ -30428,15 +30428,6 @@ task_preference_value (task_t task, const char *name)
 }
 
 /**
- * @brief Name value pair.
- */
-typedef struct
-{
-  gchar *name;    ///< Name.
-  gchar *value;   ///< Param value.
-} name_value_t;
-
-/**
  * @brief Set the preferences of a task.
  *
  * Only the given preferences are affected.  A NULL value means to remove

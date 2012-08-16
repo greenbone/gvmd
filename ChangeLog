@@ -1,5 +1,22 @@
 2012-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move the RUN_WIZARD implementation out of the parser.
+
+	* src/manage.c (manage_run_wizard): New function.  Body from
+	omp_xml_handle_end_element RUN_WIZARD in omp.c
+
+	* src/omp.c (omp_xml_handle_end_element): Move RUN_WIZARD implementation
+	to manage_run_wizard.
+	(process_omp_write): Add a trace message similar to ompd_send_to_client.
+	(name_value_t): Remove.  Now in manage.h.
+
+	* src/manage.h: Add header accordingly.
+	(name_value_t): New type.  From manage_sql.c.
+
+	* src/manage_sql.c (name_value_t): Remove.  Now in manage.h.
+
+2012-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In RUN_WIZARD remove
 	temp files after use.
 

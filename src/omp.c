@@ -1378,15 +1378,6 @@ create_target_data_reset (create_target_data_t *data)
 }
 
 /**
- * @brief Name value pair.
- */
-typedef struct
-{
-  gchar *name;    ///< Name.
-  gchar *value;   ///< Param value.
-} name_value_t;
-
-/**
  * @brief Command data for the create_task command.
  */
 typedef struct
@@ -14764,410 +14755,130 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_RUN_WIZARD:
         if (run_wizard_data->name)
           {
-            gchar *file, *name, *response, *wizard, *point;
-            gsize wizard_len;
-            GError *get_error;
-            entity_t entity, step;
-            entities_t steps;
-            int ret;
-
-            point = run_wizard_data->name;
-            while (*point && (isalnum (*point) || *point == '_')) point++;
-            if (*point)
+            gchar *command_error;
+            switch (manage_run_wizard (run_wizard_data->name,
+                                       (int (*) (void *, gchar *, gchar **))
+                                         process_omp,
+                                       omp_parser,
+                                       run_wizard_data->params,
+                                       &command_error))
               {
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("run_wizard",
-                                    "NAME characters must be alphanumeric"
-                                    " or underscore"));
-                run_wizard_data_reset (run_wizard_data);
-                set_client_state (CLIENT_AUTHENTIC);
-                break;
-              }
-
-            /* TODO some of this belongs in manage_sql.c. */
-
-            /* Read wizard from file. */
-
-            name = g_strdup_printf ("%s.xml", run_wizard_data->name);
-            file = g_build_filename (OPENVAS_DATA_DIR,
-                                     "openvasmd",
-                                     "wizards",
-                                     name,
-                                     NULL);
-            g_free (name);
-
-            get_error = NULL;
-            g_file_get_contents (file,
-                                 &wizard,
-                                 &wizard_len,
-                                 &get_error);
-            g_free (file);
-            if (get_error)
-              {
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("run_wizard"));
-                g_warning ("%s: Failed to read wizard\n", __FUNCTION__);
-                g_error_free (get_error);
-                run_wizard_data_reset (run_wizard_data);
-                set_client_state (CLIENT_AUTHENTIC);
-                break;
-              }
-
-            /* Parse wizard. */
-
-            entity = NULL;
-            if (parse_entity (wizard, &entity))
-              {
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("run_wizard"));
-                g_free (wizard);
-                g_warning ("%s: Failed to parse wizard\n", __FUNCTION__);
-                run_wizard_data_reset (run_wizard_data);
-                set_client_state (CLIENT_AUTHENTIC);
-                break;
-              }
-            g_free (wizard);
-
-            /* Run each step of the wizard. */
-
-            response = NULL;
-            ret = 0;
-            steps = entity->entities;
-            while ((step = first_entity (steps)))
-              {
-                if (strcasecmp (entity_name (step), "step") == 0)
+                case 3:
+                  /* Parent after a start_task fork. */
+                  forked = 1;
+                case 0:
                   {
-                    entity_t command;
-                    gchar *omp;
-
-                    /* Get the command element. */
-
-                    command = entity_child (step, "command");
-                    if (command == NULL)
+                    gchar *msg;
+                    msg = g_strdup_printf
+                           ("<run_wizard_response"
+                            " status=\"" STATUS_OK_REQUESTED "\""
+                            " status_text=\"" STATUS_OK_REQUESTED_TEXT "\">"
+                            "</run_wizard_response>");
+                    if (send_to_client (msg,
+                                        write_to_client,
+                                        write_to_client_data))
                       {
-                        SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("run_wizard"));
-                        g_warning ("%s: Wizard STEP missing COMMAND\n",
-                                   __FUNCTION__);
-                        ret = -1;
-                        break;
-                      }
-
-                    /* Save the command XSL from the element to a file. */
-
-                    int xsl_fd;
-                    char xsl_file_name[] = "/tmp/openvasmd-xsl-XXXXXX";
-                    FILE *xsl_file;
-
-                    xsl_fd = mkstemp (xsl_file_name);
-                    if (xsl_fd == -1)
-                      {
-                        SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("run_wizard"));
-                        g_warning ("%s: Wizard XSL file create failed\n",
-                                   __FUNCTION__);
-                        ret = -1;
-                        break;
-                      }
-
-                    xsl_file = fdopen (xsl_fd, "w");
-                    if (xsl_file == NULL)
-                      {
-                        close (xsl_fd);
-                        SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("run_wizard"));
-                        g_warning ("%s: Wizard XSL file open failed\n",
-                                   __FUNCTION__);
-                        ret = -1;
-                        break;
-                      }
-
-                    if (first_entity (command->entities))
-                      print_entity (xsl_file, first_entity (command->entities));
-
-                    /* Write the params as XML to a file. */
-
-                    int xml_fd;
-                    char xml_file_name[] = "/tmp/openvasmd-xml-XXXXXX";
-                    FILE *xml_file;
-
-                    xml_fd = mkstemp (xml_file_name);
-                    if (xml_fd == -1)
-                      {
-                        fclose (xsl_file);
-                        unlink (xsl_file_name);
-                        SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("run_wizard"));
-                        g_warning ("%s: Wizard XML file create failed\n",
-                                   __FUNCTION__);
-                        ret = -1;
-                        break;
-                      }
-
-                    xml_file = fdopen (xml_fd, "w");
-                    if (xml_file == NULL)
-                      {
-                        fclose (xsl_file);
-                        unlink (xsl_file_name);
-                        close (xml_fd);
-                        SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("run_wizard"));
-                        g_warning ("%s: Wizard XML file open failed\n",
-                                   __FUNCTION__);
-                        ret = -1;
-                        break;
-                      }
-
-                    if (fprintf (xml_file, "<wizard><params>") < 0)
-                      {
-                        fclose (xsl_file);
-                        unlink (xsl_file_name);
-                        fclose (xml_file);
-                        SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("run_wizard"));
-                        g_warning ("%s: Wizard failed to write XML\n",
-                                   __FUNCTION__);
-                        ret = -1;
-                        break;
-                      }
-
-                    if (run_wizard_data->params)
-                      {
-                        guint index = run_wizard_data->params->len;
-                        while (index--)
-                          {
-                            name_value_t *pair;
-                            gchar *pair_name, *pair_value;
-
-                            pair = (name_value_t*) g_ptr_array_index
-                                                    (run_wizard_data->params,
-                                                     index);
-
-                            if (pair == NULL)
-                              continue;
-
-                            pair_name = pair->name
-                                         ? g_markup_escape_text
-                                            (pair->name, strlen (pair->name))
-                                         : "";
-
-                            pair_value = pair->value
-                                          ? g_markup_escape_text
-                                             (pair->value, strlen (pair->value))
-                                          : "";
-
-                            if (fprintf (xml_file,
-                                         "<param>"
-                                         "<name>%s</name>"
-                                         "<value>%s</value>"
-                                         "</param>",
-                                         pair_name,
-                                         pair_value)
-                                < 0)
-                              {
-                                g_free (pair_name);
-                                g_free (pair_value);
-                                fclose (xsl_file);
-                                unlink (xsl_file_name);
-                                fclose (xml_file);
-                                unlink (xml_file_name);
-                                SEND_TO_CLIENT_OR_FAIL
-                                  (XML_INTERNAL_ERROR ("run_wizard"));
-                                g_warning ("%s: Wizard failed to write XML\n",
-                                           __FUNCTION__);
-                                ret = -1;
-                                break;
-                              }
-                            g_free (pair_name);
-                            g_free (pair_value);
-                          }
-                      }
-
-                    if (fprintf (xml_file,
-                                 "</params>"
-                                 "<previous>"
-                                 "<response>%s</response>"
-                                 "</previous>"
-                                 "</wizard>\n",
-                                 response ? response : "")
-                        < 0)
-                      {
-                        fclose (xsl_file);
-                        unlink (xsl_file_name);
-                        fclose (xml_file);
-                        unlink (xml_file_name);
-                        SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("run_wizard"));
-                        g_warning ("%s: Wizard failed to write XML\n",
-                                   __FUNCTION__);
-                        ret = -1;
-                        break;
-                      }
-
-                    fflush (xml_file);
-
-                    /* Combine XSL and XML to get the OMP command. */
-
-                    omp = xsl_transform (xsl_file_name, xml_file_name, NULL,
-                                         NULL);
-                    fclose (xsl_file);
-                    unlink (xsl_file_name);
-                    fclose (xml_file);
-                    unlink (xml_file_name);
-                    if (omp == NULL)
-                      {
-                        SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("run_wizard"));
-                        g_warning ("%s: Wizard XSL transform failed\n",
-                                   __FUNCTION__);
-                        ret = -1;
-                        break;
-                      }
-
-                    /* Run the OMP command. */
-
-                    g_free (response);
-                    response = NULL;
-                    ret = process_omp (omp_parser, omp, &response);
-                    if (ret == 3)
-                      {
-                        /* Parent after a start_task fork. */
-                        forked = 1;
-                      }
-                    else if (ret == 0)
-                      {
-                        /* Command succeeded. */
-                      }
-                    else if (ret == 2)
-                      {
-                        /* Process forked to run a task. */
-                        current_error = 2;
-                        g_set_error (error,
-                                     G_MARKUP_ERROR,
-                                     G_MARKUP_ERROR_INVALID_CONTENT,
-                                     "Dummy error for current_error");
-                        break;
-                      }
-                    else if (ret == -10)
-                      {
-                        /* Process forked to run a task.  Task start failed. */
-                        current_error = -10;
-                        g_set_error (error,
-                                     G_MARKUP_ERROR,
-                                     G_MARKUP_ERROR_INVALID_CONTENT,
-                                     "Dummy error for current_error");
-                        break;
-                      }
-                    else if (ret == -2)
-                      {
-                        gchar *msg;
-                        /* to_scanner buffer full. */
-                        msg = g_strdup_printf
-                               ("<run_wizard_response"
-                                " status=\"" STATUS_INTERNAL_ERROR "\""
-                                " status_text=\""
-                                STATUS_INTERNAL_ERROR_TEXT
-                                ": Wizard filled up to_scanner buffer\">"
-                                "</run_wizard_response>");
-                        g_free (response);
-                        if (send_to_client (msg,
-                                            write_to_client,
-                                            write_to_client_data))
-                          {
-                            g_free (msg);
-                            error_send_to_client (error);
-                            return;
-                          }
                         g_free (msg);
-                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                               "Wizard failed to run: to_scanner buffer full");
-                        break;
+                        error_send_to_client (error);
+                        return;
                       }
-                    else
-                      {
-                        /* Internal error. */
-                        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("run_wizard"));
-                        g_log ("event wizard", G_LOG_LEVEL_MESSAGE,
-                               "Wizard failed to run");
-                        break;
-                      }
-
-                    /* Exit if the command failed. */
-
-                    if (response)
-                      {
-                        const char *status;
-                        entity_t response_entity;
-
-                        response_entity = NULL;
-                        if (parse_entity (response, &response_entity))
-                          {
-                            g_warning ("%s: Wizard failed to parse response\n",
-                                       __FUNCTION__);
-                            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("run_wizard"));
-                            g_log ("event wizard", G_LOG_LEVEL_MESSAGE,
-                                   "Wizard failed to run");
-                            break;
-                          }
-
-                        status = entity_attribute (response_entity, "status");
-                        if ((status == NULL)
-                            || (strlen (status) == 0)
-                            || (status[0] != '2'))
-                          {
-                            gchar *msg;
-                            msg = g_strdup_printf
-                                   ("<run_wizard_response"
-                                    " status=\"" STATUS_ERROR_SYNTAX "\""
-                                    " status_text=\"%s\"/>",
-                                    entity_attribute (response_entity, "status_text"));
-                            if (send_to_client (msg,
-                                                write_to_client,
-                                                write_to_client_data))
-                              {
-                                free_entity (entity);
-                                free_entity (response_entity);
-                                g_free (msg);
-                                error_send_to_client (error);
-                                return;
-                              }
-                            g_free (msg);
-                            g_log ("event wizard", G_LOG_LEVEL_MESSAGE,
-                                   "Wizard failed to run");
-                            free_entity (response_entity);
-                            ret = -1;
-                            break;
-                          }
-
-                        free_entity (response_entity);
-                      }
-                  }
-                steps = next_entities (steps);
-              }
-            free_entity (entity);
-
-            /* Respond with success if all the steps succeeded. */
-
-            if (ret == 0 || ret == 3)
-              {
-                gchar *msg;
-                msg = g_strdup_printf
-                       ("<run_wizard_response"
-                        " status=\"" STATUS_OK_REQUESTED "\""
-                        " status_text=\"" STATUS_OK_REQUESTED_TEXT "\">"
-                        "</run_wizard_response>");
-                if (send_to_client (msg,
-                                    write_to_client,
-                                    write_to_client_data))
-                  {
                     g_free (msg);
-                    error_send_to_client (error);
-                    return;
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Wizard ran");
+                    break;
                   }
-                g_free (msg);
-                g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                       "Wizard ran");
-              }
 
-            g_free (response);
+                case 1:
+                  {
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("run_wizard",
+                                        "NAME characters must be alphanumeric"
+                                        " or underscore"));
+                    run_wizard_data_reset (run_wizard_data);
+                    set_client_state (CLIENT_AUTHENTIC);
+                    break;
+                  }
+
+                case 2:
+                  {
+                    /* Process forked to run a task. */
+                    current_error = 2;
+                    g_set_error (error,
+                                 G_MARKUP_ERROR,
+                                 G_MARKUP_ERROR_INVALID_CONTENT,
+                                 "Dummy error for current_error");
+                    break;
+                  }
+
+                case 4:
+                  {
+                    gchar *msg;
+                    msg = g_strdup_printf
+                           ("<run_wizard_response"
+                            " status=\"" STATUS_ERROR_SYNTAX "\""
+                            " status_text=\"%s\"/>",
+                            command_error ? command_error : "Internal Error");
+                    if (command_error)
+                      g_free (command_error);
+                    if (send_to_client (msg,
+                                        write_to_client,
+                                        write_to_client_data))
+                      {
+                        g_free (msg);
+                        error_send_to_client (error);
+                        return;
+                      }
+                    g_free (msg);
+                    g_log ("event wizard", G_LOG_LEVEL_MESSAGE,
+                           "Wizard failed to run");
+                    break;
+                  }
+
+                case -1:
+                  {
+                    /* Internal error. */
+                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("run_wizard"));
+                    g_log ("event wizard", G_LOG_LEVEL_MESSAGE,
+                           "Wizard failed to run");
+                    break;
+                  }
+
+                case -2:
+                  {
+                    gchar *msg;
+                    /* to_scanner buffer full. */
+                    msg = g_strdup_printf
+                           ("<run_wizard_response"
+                            " status=\"" STATUS_INTERNAL_ERROR "\""
+                            " status_text=\""
+                            STATUS_INTERNAL_ERROR_TEXT
+                            ": Wizard filled up to_scanner buffer\">"
+                            "</run_wizard_response>");
+                    if (send_to_client (msg,
+                                        write_to_client,
+                                        write_to_client_data))
+                      {
+                        g_free (msg);
+                        error_send_to_client (error);
+                        return;
+                      }
+                    g_free (msg);
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Wizard failed to run: to_scanner buffer full");
+                    break;
+                  }
+
+                case -10:
+                  {
+                    /* Process forked to run a task.  Task start failed. */
+                    current_error = -10;
+                    g_set_error (error,
+                                 G_MARKUP_ERROR,
+                                 G_MARKUP_ERROR_INVALID_CONTENT,
+                                 "Dummy error for current_error");
+                    break;
+                  }
+              }
           }
         else
           SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("run_wizard",
@@ -18507,6 +18218,7 @@ process_omp_client_input ()
 int
 process_omp_write (const char* msg, void* buffer)
 {
+  tracef ("-> client internal: %s\n", msg);
   g_string_append ((GString*) buffer, msg);
   return FALSE;
 }

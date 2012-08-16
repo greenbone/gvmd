@@ -37,6 +37,15 @@
 #include <openvas/base/nvti.h> /* for nvti_t */
 
 /**
+ * @brief Name value pair.
+ */
+typedef struct
+{
+  gchar *name;    ///< Name.
+  gchar *value;   ///< Param value.
+} name_value_t;
+
+/**
  * @brief Structure of information about the scanner.
  */
 typedef struct
@@ -2260,6 +2269,13 @@ setting_value_int (const char *, int *);
 
 int
 manage_set_setting (const gchar *, const gchar *, const gchar *);
+
+
+/* Wizards. */
+
+int
+manage_run_wizard (const gchar *, int (*) (void*, gchar*, gchar**),
+                   void *, array_t *, gchar **);
 
 
 /* Helpers. */
