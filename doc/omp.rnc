@@ -78,6 +78,7 @@ command
     | resume_or_start_task
     | resume_paused_task
     | resume_stopped_task
+    | run_wizard
     | start_task
     | stop_task
     | test_alert
@@ -154,6 +155,7 @@ response
     | resume_or_start_task_response
     | resume_paused_task_response
     | resume_stopped_task_response
+    | run_wizard_response
     | start_task_response
     | stop_task_response
     | test_alert_response
@@ -1545,6 +1547,7 @@ commands
            | resume_or_start_task
            | resume_paused_task
            | resume_stopped_task
+           | run_wizard
            | start_task
            | stop_task
            | test_alert )*
@@ -3666,6 +3669,52 @@ resume_stopped_task
        attribute task_id { uuid }
      }
 
+## Command run_wizard
+##
+## Run a wizard.
+
+run_wizard
+ = element run_wizard
+     {
+       run_wizard_name
+       & run_wizard_params
+     }
+
+# The name of the wizard.
+run_wizard_name
+ = element name
+     {
+       name
+     }
+
+# Paramaters for the wizard.
+run_wizard_params
+ = element params
+     {
+       run_wizard_params_param*
+     }
+
+run_wizard_params_param
+ = element param
+     {
+       run_wizard_params_param_name
+       & run_wizard_params_param_value
+     }
+
+# Parameter name.
+run_wizard_params_param_name
+ = element name
+     {
+       text
+     }
+
+# Value of parameter.
+run_wizard_params_param_value
+ = element value
+     {
+       text
+     }
+
 ## Command start_task
 ##
 ## Manually start an existing task.
@@ -3815,6 +3864,7 @@ commands_response
            | resume_or_start_task_response
            | resume_paused_task_response
            | resume_stopped_task_response
+           | run_wizard_response
            | start_task_response
            | stop_task_response
            | test_alert_response )*
@@ -7107,6 +7157,15 @@ resume_paused_task_response
 
 resume_stopped_task_response
  = element resume_stopped_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to run_wizard
+
+run_wizard_response
+ = element run_wizard_response
      {
        attribute status { status }
        & attribute status_text { text }

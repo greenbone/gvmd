@@ -436,6 +436,10 @@
 <td id="index"><div style="margin-left: 15px;">Resume a stopped task.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#command_run_wizard">run_wizard</a></td>
+<td id="index"><div style="margin-left: 15px;">Run a wizard.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#command_start_task">start_task</a></td>
 <td id="index"><div style="margin-left: 15px;">Manually start an existing task.</div></td>
 </tr>
@@ -531,6 +535,7 @@ command
     | resume_or_start_task
     | resume_paused_task
     | resume_stopped_task
+    | run_wizard
     | start_task
     | stop_task
     | test_alert
@@ -607,6 +612,7 @@ response
     | resume_or_start_task_response
     | resume_paused_task_response
     | resume_stopped_task_response
+    | run_wizard_response
     | start_task_response
     | stop_task_response
     | test_alert_response
@@ -3373,6 +3379,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>run_wizard&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_run_wizard">run_wizard</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>start_task&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_start_task">start_task</a> command.
           </div>
@@ -3733,6 +3744,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>run_wizard_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_run_wizard">run_wizard</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>start_task_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_start_task">start_task</a> command.
           </div>
@@ -3824,6 +3840,7 @@ authenticate_response_timezone
            | resume_or_start_task
            | resume_paused_task
            | resume_stopped_task
+           | run_wizard
            | start_task
            | stop_task
            | test_alert )*
@@ -3900,6 +3917,7 @@ authenticate_response_timezone
            | resume_or_start_task_response
            | resume_paused_task_response
            | resume_stopped_task_response
+           | run_wizard_response
            | start_task_response
            | stop_task_response
            | test_alert_response )*
@@ -14729,6 +14747,7 @@ help_response_schema_protocol_command
             RESUME_OR_START_TASK   Resume task if stopped, else start task.
             RESUME_PAUSED_TASK     Resume a paused task.
             RESUME_STOPPED_TASK    Resume a stopped task.
+            RUN_WIZARD             Run a wizard.
             START_TASK             Manually start an existing task.
             STOP_TASK              Stop a running task.
             TEST_ALERT             Run an alert.
@@ -16418,21 +16437,42 @@ modify_task_file
 </div>
 </div>
 <div>
-<div><h3 id="command_start_task">7.70
-        Command <tt>start_task</tt>
+<div><h3 id="command_run_wizard">7.70
+        Command <tt>run_wizard</tt>
 </h3></div>
-<p>In short: Manually start an existing task.</p>
+<p>In short: Run a wizard.</p>
 <p>
-        The client uses the start_task command to manually start an
-        existing task.
+        The client uses the run_wizard command to run a wizard.
       </p>
 <h4>7.70.1 Structure</h4>
 <ul style="list-style: none">
 <li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
+<i>Command</i><ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the wizard.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>params</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Paramaters for the wizard.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>param</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Parameter name.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of parameter.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -16449,37 +16489,77 @@ modify_task_file
 </ul>
 <h4>7.70.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>start_task
- = element start_task
+<i>Command</i><div style="margin-left: 5%"><pre>run_wizard
+ = element run_wizard
      {
-       attribute task_id { uuid }
+       run_wizard_name
+       &amp; run_wizard_params
+     }
+
+run_wizard_name
+ = element name
+     {
+       name
+     }
+
+run_wizard_params
+ = element params
+     {
+       run_wizard_params_param*
+     }
+
+run_wizard_params_param
+ = element param
+     {
+       run_wizard_params_param_name
+       &amp; run_wizard_params_param_value
+     }
+
+run_wizard_params_param_name
+ = element name
+     {
+       text
+     }
+
+run_wizard_params_param_value
+ = element value
+     {
+       text
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>start_task_response
- = element start_task_response
+<i>Response</i><div style="margin-left: 5%"><pre>run_wizard_response
+ = element run_wizard_response
      {
        attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre></div>
 </div>
-<h4>7.70.3 Example: Start a task</h4>
+<h4>7.70.3 Example: Run the Quick Start wizard to scan localhost</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;run_wizard&gt;
+   &lt;name&gt;quick_first_scan&lt;/name&gt;
+   &lt;params&gt;
+     &lt;param&gt;
+       &lt;name&gt;hosts&lt;/name&gt;
+       &lt;value&gt;localhost&lt;/value&gt;
+     &lt;/param&gt;
+   &lt;/params&gt;
+ &lt;/run_wizard&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task_response status="200"
-                      status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;run_wizard_response status="202"
+                      status_text="OK, request submitted"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_stop_task">7.71
-        Command <tt>stop_task</tt>
+<div><h3 id="command_start_task">7.71
+        Command <tt>start_task</tt>
 </h3></div>
-<p>In short: Stop a running task.</p>
+<p>In short: Manually start an existing task.</p>
 <p>
-        The client uses the stop_task command to manually stop a
-        running task.
+        The client uses the start_task command to manually start an
+        existing task.
       </p>
 <h4>7.71.1 Structure</h4>
 <ul style="list-style: none">
@@ -16504,6 +16584,61 @@ modify_task_file
 </ul>
 <h4>7.71.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>start_task
+ = element start_task
+     {
+       attribute task_id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>start_task_response
+ = element start_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.71.3 Example: Start a task</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task_response status="200"
+                      status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_stop_task">7.72
+        Command <tt>stop_task</tt>
+</h3></div>
+<p>In short: Stop a running task.</p>
+<p>
+        The client uses the stop_task command to manually stop a
+        running task.
+      </p>
+<h4>7.72.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>task_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.72.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>stop_task
  = element stop_task
      {
@@ -16518,7 +16653,7 @@ modify_task_file
      }
 </pre></div>
 </div>
-<h4>7.71.3 Example: Stop a running task</h4>
+<h4>7.72.3 Example: Stop a running task</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -16528,7 +16663,7 @@ modify_task_file
 </div>
 </div>
 <div>
-<div><h3 id="command_test_alert">7.72
+<div><h3 id="command_test_alert">7.73
         Command <tt>test_alert</tt>
 </h3></div>
 <p>In short: Run an alert.</p>
@@ -16536,7 +16671,7 @@ modify_task_file
         The client uses the test_alert command to invoke a test run of
         an alert.
       </p>
-<h4>7.72.1 Structure</h4>
+<h4>7.73.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -16557,7 +16692,7 @@ modify_task_file
 </ul>
 </li>
 </ul>
-<h4>7.72.2 RNC</h4>
+<h4>7.73.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>test_alert
  = element test_alert
@@ -16573,7 +16708,7 @@ modify_task_file
      }
 </pre></div>
 </div>
-<h4>7.72.3 Example: Test an alert</h4>
+<h4>7.73.3 Example: Test an alert</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;test_alert alert_id="97390ade-e075-11df-9973-002264764cea"/&gt;
 </pre></div>
@@ -16583,7 +16718,7 @@ modify_task_file
 </div>
 </div>
 <div>
-<div><h3 id="command_verify_agent">7.73
+<div><h3 id="command_verify_agent">7.74
         Command <tt>verify_agent</tt>
 </h3></div>
 <p>In short: Verify an agent.</p>
@@ -16597,7 +16732,7 @@ modify_task_file
         The Manager searches for the signature first in the feed, then
         in the agent itself.
       </p>
-<h4>7.73.1 Structure</h4>
+<h4>7.74.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -16618,7 +16753,7 @@ modify_task_file
 </ul>
 </li>
 </ul>
-<h4>7.73.2 RNC</h4>
+<h4>7.74.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>verify_agent
  = element verify_agent
@@ -16634,7 +16769,7 @@ modify_task_file
      }
 </pre></div>
 </div>
-<h4>7.73.3 Example: Verify an agent</h4>
+<h4>7.74.3 Example: Verify an agent</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;verify_agent agent_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -16644,7 +16779,7 @@ modify_task_file
 </div>
 </div>
 <div>
-<div><h3 id="command_verify_report_format">7.74
+<div><h3 id="command_verify_report_format">7.75
         Command <tt>verify_report_format</tt>
 </h3></div>
 <p>In short: Verify a report format.</p>
@@ -16658,7 +16793,7 @@ modify_task_file
         to generate reports of this format.  The Manager searches for the
         signature first in the feed, then in the report format itself.
       </p>
-<h4>7.74.1 Structure</h4>
+<h4>7.75.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -16679,7 +16814,7 @@ modify_task_file
 </ul>
 </li>
 </ul>
-<h4>7.74.2 RNC</h4>
+<h4>7.75.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>verify_report_format
  = element verify_report_format
@@ -16695,7 +16830,7 @@ modify_task_file
      }
 </pre></div>
 </div>
-<h4>7.74.3 Example: Verify a report format</h4>
+<h4>7.75.3 Example: Verify a report format</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;verify_report_format report_format_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>

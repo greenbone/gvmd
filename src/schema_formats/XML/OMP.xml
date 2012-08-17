@@ -1521,6 +1521,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>resume_or_start_task</c>
           <c>resume_paused_task</c>
           <c>resume_stopped_task</c>
+          <c>run_wizard</c>
           <c>start_task</c>
           <c>stop_task</c>
           <c>test_alert</c>
@@ -1607,6 +1608,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>resume_or_start_task</r>
             <r>resume_paused_task</r>
             <r>resume_stopped_task</r>
+            <r>run_wizard</r>
             <r>start_task</r>
             <r>stop_task</r>
             <r>test_alert</r>
@@ -9194,6 +9196,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             RESUME_OR_START_TASK   Resume task if stopped, else start task.
             RESUME_PAUSED_TASK     Resume a paused task.
             RESUME_STOPPED_TASK    Resume a stopped task.
+            RUN_WIZARD             Run a wizard.
             START_TASK             Manually start an existing task.
             STOP_TASK              Stop a running task.
             TEST_ALERT             Run an alert.
@@ -10445,6 +10448,77 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <resume_stopped_task_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>run_wizard</name>
+    <summary>Run a wizard</summary>
+    <description>
+      <p>
+        The client uses the run_wizard command to run a wizard.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <e>params</e>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>The name of the wizard</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>params</name>
+      <summary>Paramaters for the wizard</summary>
+      <pattern><any><e>param</e></any></pattern>
+      <ele>
+        <name>param</name>
+        <pattern>
+          <e>name</e>
+          <e>value</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>Parameter name</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>Value of parameter</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Run the Quick Start wizard to scan localhost</summary>
+      <request>
+        <run_wizard>
+          <name>quick_first_scan</name>
+          <params>
+            <param>
+              <name>hosts</name>
+              <value>localhost</value>
+            </param>
+          </params>
+        </run_wizard>
+      </request>
+      <response>
+        <run_wizard_response status="202" status_text="OK, request submitted"/>
       </response>
     </example>
   </command>

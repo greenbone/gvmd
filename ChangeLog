@@ -1,3 +1,9 @@
+2012-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml: Add RUN_WIZARD.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2012-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move the RUN_WIZARD implementation out of the parser.
