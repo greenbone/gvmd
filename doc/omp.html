@@ -1521,6 +1521,11 @@ result_overrides_override_orphan
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>family</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The family the NVT is in.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>cvss_base</b>&gt;
               <div style="margin-left: 15px; display: inline;">CVSS base value associated with the NVT.</div>
 <ul style="list-style: none"></ul>
@@ -1672,6 +1677,7 @@ result_nvt
      {
        attribute oid { oid }
        &amp; result_nvt_name
+       &amp; result_nvt_family
        &amp; result_nvt_cvss_base
        &amp; result_nvt_risk_factor
        &amp; result_nvt_cve
@@ -1681,6 +1687,12 @@ result_nvt
 
 result_nvt_name
  = element name
+     {
+       name
+     }
+
+result_nvt_family
+ = element family
      {
        name
      }

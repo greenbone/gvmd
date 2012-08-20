@@ -544,6 +544,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
         <e>name</e>
+        <e>family</e>
         <e>cvss_base</e>
         <e>risk_factor</e>
         <e>cve</e>
@@ -553,6 +554,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>name</name>
         <summary>The name of the NVT</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
+      <ele>
+        <name>family</name>
+        <summary>The family the NVT is in</summary>
         <pattern><t>name</t></pattern>
       </ele>
       <ele>
