@@ -27734,13 +27734,17 @@ int
 manage_set_config_name (config_t config, const char* name)
 {
   gchar *quoted_name;
+  assert (current_credentials.uuid);
   sql ("BEGIN IMMEDIATE;");
   quoted_name = sql_quote (name);
   if (sql_int (0, 0,
                "SELECT count(*) FROM configs"
-               " WHERE name = '%s' AND ROWID != %llu;",
+               " WHERE name = '%s' AND ROWID != %llu"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
                quoted_name,
-               config))
+               config,
+               current_credentials.uuid))
     {
       sql ("ROLLBACK;");
       return 1;
@@ -27766,14 +27770,18 @@ manage_set_config_name_comment (config_t config, const char* name,
                                 const char* comment)
 {
   gchar *quoted_name, *quoted_comment;
+  assert (current_credentials.uuid);
   sql ("BEGIN IMMEDIATE;");
   quoted_name = sql_quote (name);
   quoted_comment = sql_quote (comment);
   if (sql_int (0, 0,
                "SELECT count(*) FROM configs"
-               " WHERE name = '%s' AND ROWID != %llu;",
+               " WHERE name = '%s' AND ROWID != %llu"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
                quoted_name,
-               config))
+               config,
+               current_credentials.uuid))
     {
       sql ("ROLLBACK;");
       return 1;
