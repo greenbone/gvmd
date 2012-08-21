@@ -1348,6 +1348,7 @@ typedef struct
   char *ssh_lsc_credential_id;   ///< SSH LSC credential for new target.
   char *ssh_port;                ///< Port for SSH LSC.
   char *smb_lsc_credential_id;   ///< SMB LSC credential for new target.
+  char *make_name_unique;        ///< Boolean.  Whether to make name unique.
   char *name;                    ///< Name of new target.
   char *target_locator;          ///< Target locator (source name).
   char *target_locator_password; ///< Target locator credentials: password.
@@ -3778,6 +3779,7 @@ typedef enum
   CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT,
   CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_NAME,
+  CLIENT_CREATE_TARGET_NAME_MAKE_UNIQUE,
   CLIENT_CREATE_TARGET_PORT_RANGE,
   CLIENT_CREATE_TARGET_PORT_LIST,
   CLIENT_CREATE_TARGET_TARGET_LOCATOR,
@@ -6631,6 +6633,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_NAME);
         else if (strcasecmp ("TARGET_LOCATOR", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR);
+        ELSE_ERROR ("create_target");
+
+      case CLIENT_CREATE_TARGET_NAME:
+        if (strcasecmp ("MAKE_UNIQUE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_NAME_MAKE_UNIQUE);
         ELSE_ERROR ("create_target");
 
       case CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL:
@@ -13396,6 +13403,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          create_target_data->target_locator,
                          create_target_data->target_locator_username,
                          create_target_data->target_locator_password,
+                         (create_target_data->make_name_unique
+                          && strcmp (create_target_data->make_name_unique, "0"))
+                           ? 1 : 0,
                          &new_target))
             {
               case 1:
@@ -13483,6 +13493,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET_TARGET_LOCATOR, PASSWORD);
       CLOSE (CLIENT_CREATE_TARGET, TARGET_LOCATOR);
       CLOSE (CLIENT_CREATE_TARGET_TARGET_LOCATOR, USERNAME);
+
+      CLOSE (CLIENT_CREATE_TARGET_NAME, MAKE_UNIQUE);
 
       CLOSE (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL, PORT);
 
@@ -13738,7 +13750,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
               if (create_target (target_name, hosts, NULL, NULL, NULL, 0, NULL,
-                                 0, NULL, NULL, NULL, &target))
+                                 0, NULL, NULL, NULL, 0, &target))
                 {
                   request_delete_task (&create_task_data->task);
                   g_free (target_name);
@@ -17923,6 +17935,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_TARGET_NAME,
               &create_target_data->name);
+
+      APPEND (CLIENT_CREATE_TARGET_NAME_MAKE_UNIQUE,
+              &create_target_data->make_name_unique);
 
       APPEND (CLIENT_CREATE_TARGET_PORT_RANGE,
               &create_target_data->port_range);

@@ -1,6 +1,28 @@
+2012-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add a flag to OMP CREATE_TARGET which indicates that the Manager must
+	make the target name unique.
+
+	* src/manage_sql.c (create_target): Add make_name_unique argument.
+	Update all callers.
+
+	* src/manage: Update header accordingly.
+
+	* src/omp.c (create_target_data_t, client_state_t)
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add MAKE_UNIQUE to TARGET/NAME.
+
+	* src/schema_formats/XML/OMP.xml (create_target): Add MAKE_UNIQUE to
+	TARGET/NAME.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+	* src/wizards/quick_first_scan.xml: Add MAKE_UNIQUE to CREATE_TARGET
+	command.
+
 2012-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Add family to NVT in results.
+	Add family to NVT in results.  Based on patch by Sebastien Aucouturier.
 
 	* src/manage_sql.c (result_iterator_nvt_family): New function.
 

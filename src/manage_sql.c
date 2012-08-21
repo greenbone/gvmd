@@ -23432,6 +23432,7 @@ validate_port_range (const char* port_range)
  *                              from.
  * @param[in]   username        Username to authenticate with against source.
  * @param[in]   password        Password for user \p username.
+ * @param[in]   make_name_unique  Whether to make name unique.
  * @param[out]  target          Created target.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
@@ -23444,7 +23445,8 @@ create_target (const char* name, const char* hosts, const char* comment,
                const char* port_list_id, const char* port_range,
                lsc_credential_t ssh_lsc_credential, const char* ssh_port,
                lsc_credential_t smb_lsc_credential, const char* target_locator,
-               const char* username, const char* password, target_t* target)
+               const char* username, const char* password,
+               int make_name_unique, target_t* target)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_comment, *quoted_ssh_port;
   gchar *port_list_comment;
@@ -23464,19 +23466,43 @@ create_target (const char* name, const char* hosts, const char* comment,
 
   assert (current_credentials.uuid);
 
-  /* Check whether a target with the same name exists already. */
-  quoted_name = sql_quote (name);
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM targets"
-               " WHERE name = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               current_credentials.uuid))
+  if (make_name_unique)
     {
-      g_free (quoted_name);
-      sql ("ROLLBACK;");
-      return 1;
+      int suffix;
+      /* Ensure the name is unique. */
+      quoted_name = sql_quote (name);
+      suffix = 1;
+      while (sql_int (0, 0,
+                      "SELECT COUNT(*) FROM targets"
+                       " WHERE name = '%s'"
+                       " AND ((owner IS NULL) OR (owner ="
+                       " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                       quoted_name,
+                       current_credentials.uuid))
+        {
+          gchar *new_name;
+          g_free (quoted_name);
+          new_name = g_strdup_printf ("%s %i", name, suffix++);
+          quoted_name = sql_quote (new_name);
+          g_free (new_name);
+        }
+    }
+  else
+    {
+      /* Check whether a target with the same name exists already. */
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM targets"
+                   " WHERE name = '%s'"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   current_credentials.uuid))
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 1;
+        }
     }
 
   /* Import targets from target locator. */

@@ -9,8 +9,7 @@
           encoding="UTF-8"/>
         <xsl:template match="/">
           <create_target>
-            <!-- TODO name needs to be unique (could just fail if exists, could extend omp ensure_name_unique="1") -->
-            <name>Target for immediate scan of IP <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
+            <name><make_unique>1</make_unique>Target for immediate scan of IP <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
             <hosts><xsl:value-of select="/wizard/params/param[name='hosts']/value"/></hosts>
           </create_target>
         </xsl:template>

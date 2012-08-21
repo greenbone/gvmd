@@ -5799,7 +5799,11 @@ create_slave_password
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">A name for the target.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>make_unique</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether to append a unique suffix if the name already exists.</div>
 <ul style="list-style: none"></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>comment</b>&gt;
@@ -5900,7 +5904,14 @@ create_slave_password
 create_target_name
  = element name
      {
-       name
+       text # RNC limitation: name
+       &amp; create_target_name_make_unique
+     }
+
+create_target_name_make_unique
+ = element make_unique
+     {
+       boolean
      }
 
 create_target_comment

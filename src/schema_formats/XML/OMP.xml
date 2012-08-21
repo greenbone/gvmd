@@ -2969,7 +2969,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>name</name>
       <summary>A name for the target</summary>
-      <pattern><t>name</t></pattern>
+      <pattern>
+        <t>name</t>
+        <e>make_unique</e>
+      </pattern>
+      <ele>
+        <name>make_unique</name>
+        <summary>
+          Whether to append a unique suffix if the name already exists
+        </summary>
+        <pattern>boolean</pattern>
+      </ele>
     </ele>
     <ele>
       <name>comment</name>

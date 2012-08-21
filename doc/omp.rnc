@@ -2313,7 +2313,15 @@ create_target
 create_target_name
  = element name
      {
-       name
+       text # RNC limitation: name
+       & create_target_name_make_unique
+     }
+
+# Whether to append a unique suffix if the name already exists.
+create_target_name_make_unique
+ = element make_unique
+     {
+       boolean
      }
 
 # A comment on the target.
