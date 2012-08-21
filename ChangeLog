@@ -1,5 +1,14 @@
 2012-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport from trunk r13948.
+
+	* src/manage_sql.c (end_char): Remove.
+	(contains_alpha): New function.
+	(manage_max_hosts): Check entire part for alphanumeric chars when
+	checking for a hostname.
+
+2012-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_set_config_name)
 	(manage_set_config_name_comment): Add missing owner clause.  Backport
 	from trunk r13945.
