@@ -22619,26 +22619,18 @@ strbchr (char *start, char *point, char ch)
 }
 
 /**
- * @brief Return last char of a string.
+ * @brief Return whether a string contains a hyphen.
  *
  * @param[in]  string  String.
  *
- * @return Last char in string.
+ * @return 1 yes, 0 no.
  */
-static char
-end_char (const char *string)
+static int
+contains_alpha (const char *string)
 {
-  char last;
   assert (string);
-  last = '\0';
-  while (1)
-    if (*string == '\0')
-      return last;
-    else
-      {
-        last = *string;
-        string++;
-      }
+  while (*string) if (isalpha (*string)) return 1; else string++;
+  return 0;
 }
 
 /**
@@ -22870,8 +22862,7 @@ manage_max_hosts (const char *given_hosts)
       else if (hyphen)
         {
           hyphen++;
-          /** @todo Check if any char is alpha (e.g. gta-04). */
-          if (*hyphen && isalpha (end_char (hyphen)))
+          if (*hyphen && (contains_alpha (*point)))
             {
               /* A hostname. */
               if (validate_host (*point))
