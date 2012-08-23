@@ -31806,6 +31806,23 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
             return TRUE;
         }
     }
+  else if (duration)
+    {
+      task_status_t run_status;
+
+      run_status = task_run_status (task_schedule_iterator_task (iterator));
+
+      if (run_status == TASK_STATUS_RUNNING
+          || run_status == TASK_STATUS_REQUESTED)
+        {
+          time_t now, start;
+
+          now = time (NULL);
+          start = task_schedule_iterator_first_time (iterator);
+          if ((start + duration) < now)
+            return TRUE;
+        }
+    }
 
   return FALSE;
 }

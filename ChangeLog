@@ -1,5 +1,11 @@
 2012-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_schedule_iterator_stop_due): Consider duration
+	even for once-off tasks, in case people want this.  Backport from trunk
+	r13957.
+
+2012-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (validate_host): Skip leading whitespace too.
 	Backport from trunk r13955.
 
