@@ -1,3 +1,7 @@
+2012-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (validate_host): Skip leading whitespace too.
+
 2012-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (end_char): Remove.
