@@ -21551,6 +21551,8 @@ validate_host (const char *string)
 
   /* Broadly check that the host has the right chars, and is free of space. */
 
+  while (*host && isspace (*host))
+    host++;
   while (*host && (isalnum (*host) || strchr ("-_.:\\", *host)))
     host++;
   while (*host && isspace (*host))
