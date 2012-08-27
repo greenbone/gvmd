@@ -11093,8 +11093,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
               }
             else if ((modify_task_data->action
-                      || (modify_task_data->alerts->len < 1)
+                      || (modify_task_data->alerts->len > 1)
                       || modify_task_data->name
+                      || modify_task_data->comment
                       || modify_task_data->rcfile)
                      == 0)
               SEND_TO_CLIENT_OR_FAIL

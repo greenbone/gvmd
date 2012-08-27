@@ -1,3 +1,9 @@
+2012-08-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (omp_xml_handle_end_element): In CLIENT_MODIFY_TASK
+	correct the direction of the alerts comparison and add the missing
+	comment check.
+
 2012-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_schedule_iterator_stop_due): Consider duration
