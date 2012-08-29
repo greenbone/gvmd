@@ -406,6 +406,7 @@ static command_t omp_commands[]
     {"CREATE_AGENT", "Create an agent."},
     {"CREATE_CONFIG", "Create a config."},
     {"CREATE_ALERT", "Create an alert."},
+    {"CREATE_FILTER", "Create a filter."},
     {"CREATE_LSC_CREDENTIAL", "Create a local security check credential."},
     {"CREATE_NOTE", "Create a note."},
     {"CREATE_OVERRIDE", "Create an override."},
@@ -420,6 +421,7 @@ static command_t omp_commands[]
     {"DELETE_AGENT", "Delete an agent."},
     {"DELETE_CONFIG", "Delete a config."},
     {"DELETE_ALERT", "Delete an alert."},
+    {"DELETE_FILTER", "Delete a filter."},
     {"DELETE_LSC_CREDENTIAL", "Delete a local security check credential."},
     {"DELETE_NOTE", "Delete a note."},
     {"DELETE_OVERRIDE", "Delete an override."},
@@ -436,6 +438,7 @@ static command_t omp_commands[]
     {"GET_CONFIGS", "Get all configs."},
     {"GET_DEPENDENCIES", "Get dependencies for all available NVTs."},
     {"GET_ALERTS", "Get all alerts."},
+    {"GET_FILTERS", "Get all filters."},
     {"GET_LSC_CREDENTIALS", "Get all local security check credentials."},
     {"GET_NOTES", "Get all notes."},
     {"GET_NVTS", "Get one or all available NVTs."},
@@ -459,6 +462,7 @@ static command_t omp_commands[]
     {"HELP", "Get this help text."},
     {"MODIFY_CONFIG", "Update an existing config."},
     {"MODIFY_LSC_CREDENTIAL", "Modify an existing LSC credential."},
+    {"MODIFY_FILTER", "Modify an existing filter."},
     {"MODIFY_NOTE", "Modify an existing note."},
     {"MODIFY_OVERRIDE", "Modify an existing override."},
     {"MODIFY_REPORT", "Modify an existing report."},
@@ -894,6 +898,37 @@ create_alert_data_reset (create_alert_data_t *data)
   free (data->part_name);
 
   memset (data, 0, sizeof (create_alert_data_t));
+}
+
+/**
+ * @brief Command data for the create_filter command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *copy;                    ///< UUID of resource to copy.
+  char *make_name_unique;        ///< Boolean.  Whether to make name unique.
+  char *name;                    ///< Name of new filter.
+  char *term;                    ///< Filter term.
+  char *type;                    ///< Type of new filter.
+} create_filter_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+create_filter_data_reset (create_filter_data_t *data)
+{
+  free (data->comment);
+  free (data->copy);
+  free (data->make_name_unique);
+  free (data->name);
+  free (data->term);
+  free (data->type);
+
+  memset (data, 0, sizeof (create_filter_data_t));
 }
 
 /**
@@ -1494,6 +1529,28 @@ delete_alert_data_reset (delete_alert_data_t *data)
 }
 
 /**
+ * @brief Command data for the delete_filter command.
+ */
+typedef struct
+{
+  char *filter_id;   ///< ID of filter to delete.
+  int ultimate;      ///< Boolean.  Whether to remove entirely or to trashcan.
+} delete_filter_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+delete_filter_data_reset (delete_filter_data_t *data)
+{
+  free (data->filter_id);
+
+  memset (data, 0, sizeof (delete_filter_data_t));
+}
+
+/**
  * @brief Command data for the delete_lsc_credential command.
  */
 typedef struct
@@ -1879,6 +1936,29 @@ get_alerts_data_reset (get_alerts_data_t *data)
   free (data->sort_field);
 
   memset (data, 0, sizeof (get_alerts_data_t));
+}
+
+/**
+ * @brief Command data for the get_filters command.
+ */
+typedef struct
+{
+  get_data_t get;    ///< Get args.
+  int tasks;         ///< Boolean.  Whether to include tasks that use filter.
+  char *type;        ///< Type of filter to get.
+} get_filters_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_filters_data_reset (get_filters_data_t *data)
+{
+  free (data->type);
+  get_data_reset (&data->get);
+  memset (data, 0, sizeof (get_filters_data_t));
 }
 
 /**
@@ -2466,6 +2546,35 @@ modify_config_data_reset (modify_config_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_filter command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *name;                    ///< Name of filter.
+  char *filter_id;               ///< Filter UUID.
+  char *term;                    ///< Term for filter.
+  char *type;                    ///< Type of filter.
+} modify_filter_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_filter_data_reset (modify_filter_data_t *data)
+{
+  free (data->comment);
+  free (data->name);
+  free (data->filter_id);
+  free (data->term);
+  free (data->type);
+
+  memset (data, 0, sizeof (modify_filter_data_t));
+}
+
+/**
  * @brief Command data for the modify_lsc_credential command.
  */
 typedef struct
@@ -3007,6 +3116,7 @@ typedef union
   create_agent_data_t create_agent;                   ///< create_agent
   create_config_data_t create_config;                 ///< create_config
   create_alert_data_t create_alert;                   ///< create_alert
+  create_filter_data_t create_filter;                 ///< create_filter
   create_lsc_credential_data_t create_lsc_credential; ///< create_lsc_credential
   create_note_data_t create_note;                     ///< create_note
   create_override_data_t create_override;             ///< create_override
@@ -3021,6 +3131,7 @@ typedef union
   delete_agent_data_t delete_agent;                   ///< delete_agent
   delete_config_data_t delete_config;                 ///< delete_config
   delete_alert_data_t delete_alert;                   ///< delete_alert
+  delete_filter_data_t delete_filter;                 ///< delete_filter
   delete_lsc_credential_data_t delete_lsc_credential; ///< delete_lsc_credential
   delete_note_data_t delete_note;                     ///< delete_note
   delete_override_data_t delete_override;             ///< delete_override
@@ -3036,6 +3147,7 @@ typedef union
   get_configs_data_t get_configs;                     ///< get_configs
   get_dependencies_data_t get_dependencies;           ///< get_dependencies
   get_alerts_data_t get_alerts;                       ///< get_alerts
+  get_filters_data_t get_filters;                     ///< get_filters
   get_info_data_t get_info;                           ///< get_info
   get_lsc_credentials_data_t get_lsc_credentials;     ///< get_lsc_credentials
   get_notes_data_t get_notes;                         ///< get_notes
@@ -3056,6 +3168,7 @@ typedef union
   get_tasks_data_t get_tasks;                         ///< get_tasks
   help_data_t help;                                   ///< help
   modify_config_data_t modify_config;                 ///< modify_config
+  modify_filter_data_t modify_filter;                 ///< modify_filter
   modify_lsc_credential_data_t modify_lsc_credential; ///< modify_lsc_credential
   modify_report_data_t modify_report;                 ///< modify_report
   modify_report_format_data_t modify_report_format;   ///< modify_report_format
@@ -3109,6 +3222,12 @@ create_config_data_t *create_config_data
  */
 create_alert_data_t *create_alert_data
  = (create_alert_data_t*) &(command_data.create_alert);
+
+/**
+ * @brief Parser callback data for CREATE_FILTER.
+ */
+create_filter_data_t *create_filter_data
+ = (create_filter_data_t*) &(command_data.create_filter);
 
 /**
  * @brief Parser callback data for CREATE_LSC_CREDENTIAL.
@@ -3193,6 +3312,12 @@ delete_config_data_t *delete_config_data
  */
 delete_alert_data_t *delete_alert_data
  = (delete_alert_data_t*) &(command_data.delete_alert);
+
+/**
+ * @brief Parser callback data for DELETE_FILTER.
+ */
+delete_filter_data_t *delete_filter_data
+ = (delete_filter_data_t*) &(command_data.delete_filter);
 
 /**
  * @brief Parser callback data for DELETE_LSC_CREDENTIAL.
@@ -3283,6 +3408,12 @@ get_dependencies_data_t *get_dependencies_data
  */
 get_alerts_data_t *get_alerts_data
  = &(command_data.get_alerts);
+
+/**
+ * @brief Parser callback data for GET_FILTERS.
+ */
+get_filters_data_t *get_filters_data
+ = &(command_data.get_filters);
 
 /**
  * @brief Parser callback data for GET_INFO.
@@ -3409,6 +3540,12 @@ import_config_data_t *import_config_data
  */
 modify_config_data_t *modify_config_data
  = &(command_data.modify_config);
+
+/**
+ * @brief Parser callback data for MODIFY_FILTER.
+ */
+modify_filter_data_t *modify_filter_data
+ = &(command_data.modify_filter);
 
 /**
  * @brief Parser callback data for MODIFY_LSC_CREDENTIAL.
@@ -3621,6 +3758,13 @@ typedef enum
   CLIENT_CREATE_ALERT_METHOD_DATA,
   CLIENT_CREATE_ALERT_METHOD_DATA_NAME,
   CLIENT_CREATE_ALERT_NAME,
+  CLIENT_CREATE_FILTER,
+  CLIENT_CREATE_FILTER_COMMENT,
+  CLIENT_CREATE_FILTER_COPY,
+  CLIENT_CREATE_FILTER_NAME,
+  CLIENT_CREATE_FILTER_NAME_MAKE_UNIQUE,
+  CLIENT_CREATE_FILTER_TERM,
+  CLIENT_CREATE_FILTER_TYPE,
   CLIENT_CREATE_LSC_CREDENTIAL,
   CLIENT_CREATE_LSC_CREDENTIAL_COMMENT,
   CLIENT_CREATE_LSC_CREDENTIAL_NAME,
@@ -3802,6 +3946,7 @@ typedef enum
   CLIENT_DELETE_AGENT,
   CLIENT_DELETE_CONFIG,
   CLIENT_DELETE_ALERT,
+  CLIENT_DELETE_FILTER,
   CLIENT_DELETE_LSC_CREDENTIAL,
   CLIENT_DELETE_NOTE,
   CLIENT_DELETE_OVERRIDE,
@@ -3818,6 +3963,7 @@ typedef enum
   CLIENT_GET_CONFIGS,
   CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_ALERTS,
+  CLIENT_GET_FILTERS,
   CLIENT_GET_LSC_CREDENTIALS,
   CLIENT_GET_NOTES,
   CLIENT_GET_NVTS,
@@ -3870,6 +4016,11 @@ typedef enum
   CLIENT_MODIFY_CONFIG_NVT_SELECTION,
   CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY,
   CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT,
+  CLIENT_MODIFY_FILTER,
+  CLIENT_MODIFY_FILTER_COMMENT,
+  CLIENT_MODIFY_FILTER_NAME,
+  CLIENT_MODIFY_FILTER_TERM,
+  CLIENT_MODIFY_FILTER_TYPE,
   CLIENT_MODIFY_NOTE,
   CLIENT_MODIFY_NOTE_ACTIVE,
   CLIENT_MODIFY_NOTE_HOSTS,
@@ -4208,11 +4359,12 @@ send_get_start (const char *type, get_data_t *get,
  * @param[in]  iterator              Iterator.
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
+ * @param[in]  writable              Whether the resource is writable.
  */
 int
 send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                  int (*write_to_client) (const char *, void*),
-                 void* write_to_client_data)
+                 void* write_to_client_data, int writable)
 {
   gchar* msg;
 
@@ -4220,13 +4372,15 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                                  "<name>%s</name>"
                                  "<comment>%s</comment>"
                                  "<creation_time>%s</creation_time>"
-                                 "<modification_time>%s</modification_time>",
+                                 "<modification_time>%s</modification_time>"
+                                 "<writable>%i</writable>",
                                  type,
                                  get_iterator_uuid (iterator),
                                  get_iterator_name (iterator),
                                  get_iterator_comment (iterator),
                                  get_iterator_creation_time (iterator),
-                                 get_iterator_modification_time (iterator));
+                                 get_iterator_modification_time (iterator),
+                                 writable);
 
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
@@ -4324,8 +4478,15 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
 #define SEND_GET_COMMON(type, get, iterator)                                   \
   do                                                                           \
     {                                                                          \
-      if (send_get_common (type, get, iterator,                                \
-                           write_to_client, write_to_client_data))             \
+      if (send_get_common (G_STRINGIFY (type), get, iterator,                  \
+                           write_to_client, write_to_client_data,              \
+                           (get)->trash                                        \
+                            ? trash_ ## type ## _writable                      \
+                               (get_iterator_resource                          \
+                                 (iterator))                                   \
+                            : type ## _writable                                \
+                               (get_iterator_resource                          \
+                                 (iterator))))                                 \
         {                                                                      \
           error_send_to_client (error);                                        \
           return;                                                              \
@@ -4555,6 +4716,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             set_client_state (CLIENT_CREATE_ALERT);
           }
+        else if (strcasecmp ("CREATE_FILTER", element_name) == 0)
+          {
+            openvas_append_string (&create_filter_data->comment, "");
+            openvas_append_string (&create_filter_data->term, "");
+            set_client_state (CLIENT_CREATE_FILTER);
+          }
         else if (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0)
           {
             openvas_append_string (&create_lsc_credential_data->comment, "");
@@ -4631,6 +4798,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               delete_alert_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_ALERT);
+          }
+        else if (strcasecmp ("DELETE_FILTER", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values, "filter_id",
+                              &delete_filter_data->filter_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_filter_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_filter_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_FILTER);
           }
         else if (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0)
           {
@@ -4816,6 +4995,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               get_alerts_data->sort_order = 1;
             set_client_state (CLIENT_GET_ALERTS);
+          }
+        else if (strcasecmp ("GET_FILTERS", element_name) == 0)
+          {
+            get_data_parse_attributes (&get_filters_data->get, "filter",
+                                       attribute_names,
+                                       attribute_values);
+            append_attribute (attribute_names, attribute_values, "type",
+                              &get_filters_data->type);
+            set_client_state (CLIENT_GET_FILTERS);
           }
         else if (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0)
           {
@@ -5433,6 +5621,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_config_data->config_id);
             set_client_state (CLIENT_MODIFY_CONFIG);
           }
+        else if (strcasecmp ("MODIFY_FILTER", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "filter_id",
+                              &modify_filter_data->filter_id);
+            set_client_state (CLIENT_MODIFY_FILTER);
+          }
         else if (strcasecmp ("MODIFY_LSC_CREDENTIAL", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values,
@@ -5699,6 +5893,28 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE);
         ELSE_ERROR ("modify_config");
+
+      case CLIENT_MODIFY_FILTER:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_append_string (&modify_filter_data->comment, "");
+            set_client_state (CLIENT_MODIFY_FILTER_COMMENT);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&modify_filter_data->name, "");
+            set_client_state (CLIENT_MODIFY_FILTER_NAME);
+          }
+        else if (strcasecmp ("TERM", element_name) == 0)
+          {
+            openvas_append_string (&modify_filter_data->term, "");
+            set_client_state (CLIENT_MODIFY_FILTER_TERM);
+          }
+        else if (strcasecmp ("TYPE", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_FILTER_TYPE);
+          }
+        ELSE_ERROR ("modify_filter");
 
       case CLIENT_MODIFY_LSC_CREDENTIAL:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -6023,6 +6239,27 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_METHOD_DATA_NAME);
         ELSE_ERROR ("create_alert");
+
+      case CLIENT_CREATE_FILTER:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_FILTER_COMMENT);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_FILTER_COPY);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&create_filter_data->name, "");
+            set_client_state (CLIENT_CREATE_FILTER_NAME);
+          }
+        else if (strcasecmp ("TERM", element_name) == 0)
+          set_client_state (CLIENT_CREATE_FILTER_TERM);
+        else if (strcasecmp ("TYPE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_FILTER_TYPE);
+        ELSE_ERROR ("create_filter");
+
+      case CLIENT_CREATE_FILTER_NAME:
+        if (strcasecmp ("MAKE_UNIQUE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_FILTER_NAME_MAKE_UNIQUE);
+        ELSE_ERROR ("create_filter");
 
       case CLIENT_CREATE_LSC_CREDENTIAL:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -10063,6 +10300,59 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_DELETE_FILTER:
+        assert (strcasecmp ("DELETE_FILTER", element_name) == 0);
+        if (delete_filter_data->filter_id)
+          switch (delete_filter (delete_filter_data->filter_id,
+                                 delete_filter_data->ultimate))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_filter"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter %s has been deleted",
+                       delete_filter_data->filter_id);
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_filter",
+                                                          "Filter is in use"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter %s could not be deleted",
+                       delete_filter_data->filter_id);
+                break;
+              case 2:
+                if (send_find_error_to_client ("delete_filter",
+                                               "filter",
+                                               delete_filter_data->filter_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter %s could not be deleted",
+                       delete_filter_data->filter_id);
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_filter",
+                                    "Attempt to delete a predefined"
+                                    " filter"));
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_filter"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter %s could not be deleted",
+                       delete_filter_data->filter_id);
+            }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_filter",
+                              "DELETE_FILTER requires a filter_id attribute"));
+        delete_filter_data_reset (delete_filter_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_DELETE_LSC_CREDENTIAL:
         assert (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0);
         if (delete_lsc_credential_data->lsc_credential_id)
@@ -11943,6 +12233,113 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_ALERT_METHOD_DATA, NAME);
+
+      case CLIENT_CREATE_FILTER:
+        {
+          filter_t new_filter;
+
+          assert (strcasecmp ("CREATE_FILTER", element_name) == 0);
+          assert (create_filter_data->term != NULL);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_filter",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (create_filter_data->copy)
+            /* TODO make_unique (same for targets). */
+            switch (copy_filter (create_filter_data->name,
+                                 create_filter_data->comment,
+                                 create_filter_data->copy,
+                                 &new_filter))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = filter_uuid (new_filter);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_filter"),
+                                             uuid);
+                    g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                           "Filter %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_filter",
+                                      "Filter exists already"));
+                  g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                         "Filter could not be created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_filter"));
+                  g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                         "Filter could not be created");
+                  break;
+              }
+          else if (create_filter_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_filter",
+                                "CREATE_FILTER requires a NAME"));
+          else if (strlen (create_filter_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_filter",
+                                "CREATE_FILTER name must be at"
+                                " least one character long"));
+          else switch (create_filter
+                        (create_filter_data->name,
+                         create_filter_data->comment,
+                         create_filter_data->type,
+                         create_filter_data->term,
+                         create_filter_data->make_name_unique
+                          && strcmp (create_filter_data->make_name_unique, "0"),
+                         &new_filter))
+            {
+              case 0:
+                {
+                  char *uuid = filter_uuid (new_filter);
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_filter"),
+                                           uuid);
+                  g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                         "Filter %s has been created", uuid);
+                  free (uuid);
+                  break;
+                }
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_filter",
+                                    "Filter exists already"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter could not be created");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_filter",
+                                    "Type must be a valid OMP type"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter could not be created");
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_filter"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter could not be created");
+                break;
+            }
+
+          create_filter_data_reset (create_filter_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_CREATE_FILTER, COMMENT);
+      CLOSE (CLIENT_CREATE_FILTER, COPY);
+      CLOSE (CLIENT_CREATE_FILTER, NAME);
+      CLOSE (CLIENT_CREATE_FILTER, TERM);
+      CLOSE (CLIENT_CREATE_FILTER, TYPE);
+
+      CLOSE (CLIENT_CREATE_FILTER_NAME, MAKE_UNIQUE);
 
       case CLIENT_CREATE_LSC_CREDENTIAL:
         {
@@ -13949,6 +14346,80 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_MODIFY_FILTER:
+        {
+          assert (strcasecmp ("MODIFY_FILTER", element_name) == 0);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_filter",
+                                  "MODIFY is forbidden for observer users"));
+            }
+          else switch (modify_filter
+                        (modify_filter_data->filter_id,
+                         modify_filter_data->name,
+                         modify_filter_data->comment,
+                         modify_filter_data->term,
+                         modify_filter_data->type))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_filter"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter %s has been modified",
+                       modify_filter_data->filter_id);
+                break;
+              case 1:
+                if (send_find_error_to_client ("modify_filter",
+                                               "filter",
+                                               modify_filter_data->filter_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter could not be modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_filter",
+                                    "Filter with new name exists already"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter could not be modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_filter",
+                                    "Error in type name"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter could not be modified");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_filter",
+                                    "MODIFY_FILTER requires a filter_id"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter could not be modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_filter"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter could not be modified");
+                break;
+            }
+
+          modify_filter_data_reset (modify_filter_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_FILTER, COMMENT);
+      CLOSE (CLIENT_MODIFY_FILTER, NAME);
+      CLOSE (CLIENT_MODIFY_FILTER, TYPE);
+      CLOSE (CLIENT_MODIFY_FILTER, TERM);
+
       case CLIENT_MODIFY_NOTE:
         {
           task_t task = 0;
@@ -15178,7 +15649,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   switch (format)
                     {
                       case 1: /* installer */
-                        SEND_GET_COMMON ("agent", &get_agents_data->get,
+                        SEND_GET_COMMON (agent, &get_agents_data->get,
                                          &agents);
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<package format=\"installer\">"
@@ -15191,7 +15662,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           agent_iterator_installer_64 (&agents));
                         break;
                       case 2: /* howto_install */
-                        SEND_GET_COMMON ("agent", &get_agents_data->get,
+                        SEND_GET_COMMON (agent, &get_agents_data->get,
                                          &agents);
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<package format=\"howto_install\">%s</package>"
@@ -15200,7 +15671,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           agent_iterator_howto_install (&agents));
                         break;
                       case 3: /* howto_use */
-                        SEND_GET_COMMON ("agent", &get_agents_data->get,
+                        SEND_GET_COMMON (agent, &get_agents_data->get,
                                          &agents);
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<package format=\"howto_use\">%s</package>"
@@ -15214,7 +15685,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                           trust_time = agent_iterator_trust_time (&agents);
 
-                          SEND_GET_COMMON ("agent", &get_agents_data->get,
+                          SEND_GET_COMMON (agent, &get_agents_data->get,
                                            &agents);
                           SENDF_TO_CLIENT_OR_FAIL
                            ("<in_use>0</in_use>"
@@ -15645,6 +16116,78 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL ("</get_alerts_response>");
             }
           get_alerts_data_reset (get_alerts_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
+      case CLIENT_GET_FILTERS:
+        {
+          iterator_t filters;
+          int count, filtered, ret, first;
+          get_data_t * get;
+
+          assert (strcasecmp ("GET_FILTERS", element_name) == 0);
+
+          ret = init_filter_iterator (&filters, &get_filters_data->get);
+          if (ret)
+            {
+              switch (ret)
+                {
+                  case 1:
+                    if (send_find_error_to_client ("get_filters",
+                                                   "filter",
+                                                   get_filters_data->get.id,
+                                                   write_to_client,
+                                                   write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("get_filters"));
+                    break;
+                }
+              get_filters_data_reset (get_filters_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          count = 0;
+          get = &get_filters_data->get;
+          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+          SEND_GET_START ("filter", &get_filters_data->get);
+          while (1)
+            {
+              ret = get_next (&filters, get, &first, &count,
+                              init_filter_iterator);
+              if (ret == 1)
+                break;
+              if (ret == -1)
+                {
+                  internal_error_send_to_client (error);
+                  return;
+                }
+
+              SEND_GET_COMMON (filter, &get_filters_data->get, &filters);
+
+              SENDF_TO_CLIENT_OR_FAIL ("<type>%s</type>"
+                                       "<term>%s</term>"
+                                       "</filter>",
+                                       filter_iterator_type (&filters),
+                                       filter_iterator_term (&filters));
+
+              count++;
+            }
+          cleanup_iterator (&filters);
+          filtered = get_filters_data->get.id
+                      ? 1
+                      : filter_count (get_filters_data->get.filter,
+                                      get_filters_data->get.actions);
+          SEND_GET_END ("filter", &get_filters_data->get, count, filtered);
+
+          get_filters_data_reset (get_filters_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -16231,12 +16774,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   port_range = target_port_range (target_iterator_target
                                                     (&targets));
 
-                  SEND_GET_COMMON ("target", &get_targets_data->get, &targets);
+                  SEND_GET_COMMON (target, &get_targets_data->get, &targets);
 
                   SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
                                            "<max_hosts>%i</max_hosts>"
                                            "<in_use>%i</in_use>"
-                                           "<writable>%i</writable>"
                                            "<port_range>%s</port_range>"
                                            "<port_list id=\"%s\">"
                                            "<name>%s</name>"
@@ -16259,13 +16801,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                (target_iterator_target
                                                  (&targets))
                                             : target_in_use
-                                               (target_iterator_target
-                                                 (&targets)),
-                                           get_targets_data->get.trash
-                                            ? trash_target_writable
-                                               (target_iterator_target
-                                                 (&targets))
-                                            : target_writable
                                                (target_iterator_target
                                                  (&targets)),
                                            port_range,
@@ -17684,6 +18219,25 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
               &create_alert_data->part_name);
 
 
+      APPEND (CLIENT_CREATE_FILTER_COMMENT,
+              &create_filter_data->comment);
+
+      APPEND (CLIENT_CREATE_FILTER_COPY,
+              &create_filter_data->copy);
+
+      APPEND (CLIENT_CREATE_FILTER_NAME,
+              &create_filter_data->name);
+
+      APPEND (CLIENT_CREATE_FILTER_NAME_MAKE_UNIQUE,
+              &create_filter_data->make_name_unique);
+
+      APPEND (CLIENT_CREATE_FILTER_TERM,
+              &create_filter_data->term);
+
+      APPEND (CLIENT_CREATE_FILTER_TYPE,
+              &create_filter_data->type);
+
+
       APPEND (CLIENT_CREATE_NOTE_ACTIVE,
               &create_note_data->active);
 
@@ -17979,6 +18533,19 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE,
               &create_task_data->preference->value);
+
+
+      APPEND (CLIENT_MODIFY_FILTER_COMMENT,
+              &modify_filter_data->comment);
+
+      APPEND (CLIENT_MODIFY_FILTER_NAME,
+              &modify_filter_data->name);
+
+      APPEND (CLIENT_MODIFY_FILTER_TERM,
+              &modify_filter_data->term);
+
+      APPEND (CLIENT_MODIFY_FILTER_TYPE,
+              &modify_filter_data->type);
 
 
       APPEND (CLIENT_MODIFY_NOTE_ACTIVE,

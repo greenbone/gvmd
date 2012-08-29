@@ -69,6 +69,8 @@ sql_nquote (const char* string, size_t length)
   const gchar *start, *end;
   int count = 0;
 
+  assert (string);
+
   /* Count number of apostrophes. */
 
   start = string;
@@ -108,6 +110,7 @@ sql_nquote (const char* string, size_t length)
 gchar*
 sql_quote (const char* string)
 {
+  assert (string);
   return sql_nquote (string, strlen (string));
 }
 

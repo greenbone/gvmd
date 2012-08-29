@@ -69,11 +69,6 @@
 /* Internal types and preprocessor definitions. */
 
 /**
- * @brief A user visible resource.
- */
-typedef long long int resource_t;
-
-/**
  * @brief A user.
  */
 typedef long long int user_t;
@@ -727,49 +722,6 @@ find_trash (const char *type, const char *uuid, resource_t *resource)
 }
 
 /**
- * @brief Find a resource for a set of actions, given a UUID.
- *
- * @param[in]   type       Type of resource.
- * @param[in]   uuid       UUID of resource.
- * @param[out]  resource   Resource return, 0 if succesfully failed to find resource.
- * @param[in]   actions    Actions.
- *
- * @return FALSE on success (including if failed to find resource), TRUE on error.
- */
-gboolean
-find_resource_for_actions (const char* type, const char* uuid,
-                           resource_t* resource, const char *actions)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid (type, quoted_uuid, actions) == 0)
-    {
-      g_free (quoted_uuid);
-      *resource = 0;
-      return FALSE;
-    }
-  // TODO should really check type
-  switch (sql_int64 (resource, 0, 0,
-                     "SELECT ROWID FROM %ss WHERE uuid = '%s';",
-                     type, quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *resource = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
-
-/**
  * @brief Convert an OTP time into seconds since epoch.
  *
  * Use UTC as timezone.
@@ -1020,6 +972,235 @@ compare_strings (gconstpointer arg_one, gconstpointer arg_two)
 }
 
 
+/* Resources. */
+
+/**
+ * @brief Check whether a resource type name is valid.
+ *
+ * @param[in]  type  Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+valid_type (const char* type)
+{
+  return (strcasecmp (type, "agent") == 0)
+         || (strcasecmp (type, "alert") == 0)
+         || (strcasecmp (type, "config") == 0)
+         || (strcasecmp (type, "lsc_credential") == 0)
+         || (strcasecmp (type, "note") == 0)
+         || (strcasecmp (type, "override") == 0)
+         || (strcasecmp (type, "port_list") == 0)
+         || (strcasecmp (type, "report") == 0)
+         || (strcasecmp (type, "result") == 0)
+         || (strcasecmp (type, "schedule") == 0)
+         || (strcasecmp (type, "slave") == 0)
+         || (strcasecmp (type, "target") == 0)
+         || (strcasecmp (type, "task") == 0);
+}
+
+/**
+ * @brief Find a resource given a UUID.
+ *
+ * @param[in]   type       Type of resource.
+ * @param[in]   uuid       UUID of resource.
+ * @param[out]  resource   Resource return, 0 if succesfully failed to find resource.
+ *
+ * @return FALSE on success (including if failed to find resource), TRUE on error.
+ */
+gboolean
+find_resource (const char* type, const char* uuid, resource_t* resource)
+{
+  gchar *quoted_uuid;
+  quoted_uuid = sql_quote (uuid);
+  if (user_owns_uuid (type, quoted_uuid) == 0)
+    {
+      g_free (quoted_uuid);
+      *resource = 0;
+      return FALSE;
+    }
+  // TODO should really check type
+  switch (sql_int64 (resource, 0, 0,
+                     "SELECT ROWID FROM %ss WHERE uuid = '%s';",
+                     type,
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *resource = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
+ * @brief Find a resource for a set of actions, given a UUID.
+ *
+ * @param[in]   type       Type of resource.
+ * @param[in]   uuid       UUID of resource.
+ * @param[out]  resource   Resource return, 0 if succesfully failed to find resource.
+ * @param[in]   actions    Actions.
+ *
+ * @return FALSE on success (including if failed to find resource), TRUE on error.
+ */
+gboolean
+find_resource_for_actions (const char* type, const char* uuid,
+                           resource_t* resource, const char *actions)
+{
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_has_access_uuid (type, quoted_uuid, actions) == 0)
+    {
+      g_free (quoted_uuid);
+      *resource = 0;
+      return FALSE;
+    }
+  // TODO should really check type
+  switch (sql_int64 (resource, 0, 0,
+                     "SELECT ROWID FROM %ss WHERE uuid = '%s';",
+                     type, quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *resource = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
+ * @brief Create a resource from an existing resource.
+ *
+ * @param[in]  name          Name of new resource.  NULL to copy from existing.
+ * @param[in]  comment       Comment on new resource.  NULL to copy from existing.
+ * @param[in]  resource_id   UUID of existing resource.
+ * @param[in]  columns       Extra columns in resource.
+ * @param[out] new_resource  New resource.
+ *
+ * @return 0 success, 1 resource exists already, 2 failed to find existing
+ *         resource, -1 error.
+ */
+int
+copy_resource (const char *type, const char *name, const char *comment,
+               const char *resource_id, const char *columns,
+               resource_t* new_resource)
+{
+  gchar *quoted_name, *quoted_uuid;
+
+  assert (current_credentials.uuid);
+
+  if (resource_id == NULL)
+    return -1;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (name && strlen (name))
+    {
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM %ss WHERE name = '%s'"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   type,
+                   quoted_name,
+                   current_credentials.uuid))
+        {
+          sql ("ROLLBACK;");
+          g_free (quoted_name);
+          return 1;
+        }
+    }
+  else
+    quoted_name = NULL;
+
+  quoted_uuid = sql_quote (resource_id);
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM %ss"
+               " WHERE uuid = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+               type,
+               quoted_uuid,
+               current_credentials.uuid)
+      == 0)
+    {
+      sql ("ROLLBACK;");
+      g_free (quoted_name);
+      return 2;
+    }
+
+  /* Copy the existing resource. */
+
+  if (comment && strlen (comment))
+    {
+      gchar *quoted_comment;
+      quoted_comment = sql_nquote (comment, strlen (comment));
+      sql ("INSERT INTO %ss"
+           " (uuid, owner, name, comment, creation_time, modification_time%s%s)"
+           " SELECT make_uuid (),"
+           " (SELECT ROWID FROM users where users.uuid = '%s'),"
+           " %s%s%s, '%s', now (), now ()%s%s"
+           " FROM %ss WHERE uuid = '%s';",
+           type,
+           columns ? ", " : "",
+           columns ? columns : "",
+           current_credentials.uuid,
+           quoted_name ? "'" : "uniquify ('",
+           quoted_name ? quoted_name : type,
+           quoted_name ? "'" : "', name, owner, ' Clone')",
+           quoted_comment,
+           columns ? ", " : "",
+           columns ? columns : "",
+           type,
+           quoted_uuid);
+      g_free (quoted_comment);
+    }
+  else
+    sql ("INSERT INTO %ss"
+         " (uuid, owner, name, comment, creation_time, modification_time%s%s)"
+         " SELECT make_uuid (),"
+         " (SELECT ROWID FROM users where users.uuid = '%s'),"
+         " %s%s%s, comment, now (), now ()%s%s"
+         " FROM %ss WHERE uuid = '%s';",
+         type,
+         columns ? ", " : "",
+         columns ? columns : "",
+         current_credentials.uuid,
+         quoted_name ? "'" : "uniquify ('",
+         quoted_name ? quoted_name : type,
+         quoted_name ? "'" : "', name, owner, ' Clone')",
+         columns ? ", " : "",
+         columns ? columns : "",
+         type,
+         quoted_uuid);
+
+  if (new_resource)
+    *new_resource = sqlite3_last_insert_rowid (task_db);
+
+  sql ("COMMIT;");
+  g_free (quoted_uuid);
+  g_free (quoted_name);
+  return 0;
+}
+
+
 /* Creation. */
 
 /**
@@ -1042,6 +1223,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS alert_method_data_trash (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS alerts_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS filters (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, type, term, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS filters_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, type, term, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY, name UNIQUE, value);");
@@ -32070,6 +32253,32 @@ delete_agent (const char *agent_id, int ultimate)
 }
 
 /**
+ * @brief Check whether a agent is writable.
+ *
+ * @param[in]  agent  Agent.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+agent_writable (agent_t agent)
+{
+  return 0;
+}
+
+/**
+ * @brief Check whether a trashcan agent is writable.
+ *
+ * @param[in]  agent  Agent.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_agent_writable (agent_t agent)
+{
+  return 0;
+}
+
+/**
  * @brief Verify an agent.
  *
  * @param[in]  agent  Agent.
@@ -38415,6 +38624,487 @@ DEF_ACCESS (port_list_target_iterator_uuid, 0);
 DEF_ACCESS (port_list_target_iterator_name, 1);
 
 
+/* Filters. */
+
+/**
+ * @brief Find a filter given a UUID.
+ *
+ * @param[in]   uuid    UUID of filter.
+ * @param[out]  filter  Filter return, 0 if succesfully failed to find filter.
+ *
+ * @return FALSE on success (including if failed to find filter), TRUE on error.
+ */
+gboolean
+find_filter (const char* uuid, filter_t* filter)
+{
+  return find_resource ("filter", uuid, filter);
+}
+
+/**
+ * @brief Find a filter for a set of actions, given a UUID.
+ *
+ * @param[in]   uuid     UUID of filter.
+ * @param[out]  filter   Filter return, 0 if succesfully failed to find filter.
+ * @param[in]   actions  Actions.
+ *
+ * @return FALSE on success (including if failed to find filter), TRUE on error.
+ */
+gboolean
+find_filter_for_actions (const char* uuid, filter_t* filter,
+                         const char *actions)
+{
+  return find_resource_for_actions ("filter", uuid, filter, actions);
+}
+
+/**
+ * @brief Return the UUID of a filter.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+filter_uuid (filter_t filter)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM filters WHERE ROWID = %llu;",
+                     filter);
+}
+
+/**
+ * @brief Create a filter.
+ *
+ * @param[in]   name            Name of filter.
+ * @param[in]   comment         Comment on filter.
+ * @param[in]   type            Type of resource.
+ * @param[in]   term            Filter term.
+ * @param[in]   make_name_unique  Whether to make name unique.
+ * @param[out]  filter          Created filter.
+ *
+ * @return 0 success, 1 filter exists already, 2 error in type.
+ */
+int
+create_filter (const char *name, const char *comment, const char *type,
+               const char *term, int make_name_unique, filter_t* filter)
+{
+  gchar *quoted_name, *quoted_comment, *quoted_term;
+
+  assert (current_credentials.uuid);
+
+  if (type && !valid_type (type))
+    return 2;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (make_name_unique)
+    {
+      int suffix;
+      /* Ensure the name is unique. */
+      quoted_name = sql_quote (name);
+      suffix = 1;
+      while (sql_int (0, 0,
+                      "SELECT COUNT(*) FROM filters"
+                       " WHERE name = '%s'"
+                       " AND ((owner IS NULL) OR (owner ="
+                       " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                       quoted_name,
+                       current_credentials.uuid))
+        {
+          gchar *new_name;
+          g_free (quoted_name);
+          new_name = g_strdup_printf ("%s %i", name, suffix++);
+          quoted_name = sql_quote (new_name);
+          g_free (new_name);
+        }
+    }
+  else
+    {
+      /* Check whether a filter with the same name exists already. */
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM filters"
+                   " WHERE name = '%s'"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   current_credentials.uuid))
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 1;
+        }
+    }
+
+  quoted_term = sql_quote (term ? term : "");
+
+  if (comment)
+    {
+      quoted_comment = sql_quote (comment);
+      sql ("INSERT INTO filters"
+           " (uuid, name, owner, comment, type, term, creation_time,"
+           "  modification_time)"
+           " VALUES (make_uuid (), '%s',"
+           " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+           " '%s', %s%s%s, '%s', now (), now ());",
+           quoted_name,
+           current_credentials.uuid,
+           quoted_comment,
+           type ? "lower ('" : "",
+           type ? type : "NULL",
+           type ? "')" : "",
+           quoted_term);
+      g_free (quoted_comment);
+    }
+  else
+    sql ("INSERT INTO filters"
+         " (uuid, name, owner, comment, type, term, creation_time,"
+         "  modification_time)"
+         " VALUES (make_uuid (), '%s',"
+         " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+         " '', %s%s%s, '%s', now (), now ());",
+         quoted_name,
+         current_credentials.uuid,
+         type ? "lower ('" : "",
+         type ? type : "NULL",
+         type ? "')" : "",
+         quoted_term);
+
+  if (filter)
+    *filter = sqlite3_last_insert_rowid (task_db);
+
+  g_free (quoted_name);
+  g_free (quoted_term);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Create a filter from an existing filter.
+ *
+ * @param[in]  name        Name of new filter.  NULL to copy from existing.
+ * @param[in]  comment     Comment on new filter.  NULL to copy from existing.
+ * @param[in]  filter_id   UUID of existing filter.
+ * @param[out] new_filter  New filter.
+ *
+ * @return 0 success, 1 filter exists already, 2 failed to find existing
+ *         filter, -1 error.
+ */
+int
+copy_filter (const char* name, const char* comment, const char *filter_id,
+             filter_t* new_filter)
+{
+  return copy_resource ("filter", name, comment, filter_id, "term, type",
+                        new_filter);
+}
+
+/**
+ * @brief Delete a filter.
+ *
+ * @param[in]  filter_id  UUID of filter.
+ * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 1 fail because a task refers to the filter, 2 failed
+ *         to find filter, 3 predefined filter, -1 error.
+ */
+int
+delete_filter (const char *filter_id, int ultimate)
+{
+  filter_t filter = 0;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (find_filter (filter_id, &filter))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (filter == 0)
+    {
+      if (find_trash ("filter", filter_id, &filter))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (filter == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+#if 0
+      // FIX
+      /* Check if it's in use by an alert in the trashcan. */
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE filter = %llu"
+                   " AND filter_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+                   filter))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+#endif
+
+      sql ("DELETE FROM filters_trash WHERE ROWID = %llu;", filter);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+#if 0
+  // FIX alert
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM tasks"
+               " WHERE filter = %llu"
+               " AND filter_location = " G_STRINGIFY (LOCATION_TABLE)
+               " AND (hidden = 0 OR hidden = 1);",
+               filter))
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+#endif
+
+  if (ultimate == 0)
+    {
+      sql ("INSERT INTO filters_trash"
+           " (uuid, owner, name, comment, type, term, creation_time,"
+           "  modification_time)"
+           " SELECT uuid, owner, name, comment, type, term, creation_time,"
+           "  modification_time"
+           " FROM filters WHERE ROWID = %llu;",
+           filter);
+
+#if 0
+      // FIX
+      /* Update the location of the filter in any trashcan alerts. */
+      sql ("UPDATE tasks"
+           " SET filter = %llu,"
+           "     filter_location = " G_STRINGIFY (LOCATION_TRASH)
+           " WHERE filter = %llu"
+           " AND filter_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           sqlite3_last_insert_rowid (task_db),
+           filter);
+#endif
+    }
+
+  sql ("DELETE FROM filters WHERE ROWID = %llu;", filter);
+
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
+ * @brief Check whether a filter is writable.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+filter_writable (filter_t filter)
+{
+  return 1;
+}
+
+/**
+ * @brief Check whether a trashcan filter is writable.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_filter_writable (filter_t filter)
+{
+  return 1;
+}
+
+/**
+ * @brief Filter columns for filter iterator.
+ */
+#define FILTER_ITERATOR_FILTER_COLUMNS                        \
+ { GET_ITERATOR_FILTER_COLUMNS, "type", "term", NULL }
+
+/**
+ * @brief Filter iterator columns.
+ */
+#define FILTER_ITERATOR_COLUMNS                               \
+  GET_ITERATOR_COLUMNS ", type, term"
+
+/**
+ * @brief Filter iterator columns for trash case.
+ */
+#define FILTER_ITERATOR_TRASH_COLUMNS                         \
+  GET_ITERATOR_COLUMNS ", type, term"
+
+/**
+ * @brief Count number of filters.
+ *
+ * @param[in]  filter           Filter term.
+ * @param[in]  actions_string   Actions.
+ *
+ * @return Total number of filters in filtered set.
+ */
+int
+filter_count (const char *filter, const char *actions_string)
+{
+  static const char *extra_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
+  return count ("filter", filter, actions_string, FILTER_ITERATOR_COLUMNS,
+                extra_columns);
+}
+
+/**
+ * @brief Initialise a filter iterator, including observed filters.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find filter, -1 error.
+ */
+int
+init_filter_iterator (iterator_t* iterator, const get_data_t *get)
+{
+  static const char *filter_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "filter",
+                            get,
+                            /* Columns. */
+                            FILTER_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            FILTER_ITERATOR_TRASH_COLUMNS,
+                            filter_columns);
+}
+
+/**
+ * @brief Get the type from a filter iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The type of the filter, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (filter_iterator_type, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the term from a filter iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The term of the filter, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (filter_iterator_term, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Modify a filter.
+ *
+ * @param[in]   filter_id       UUID of filter.
+ * @param[in]   name            Name of filter.
+ * @param[in]   comment         Comment on filter.
+ * @param[in]   term            Filter term.
+ * @param[in]   type            Type of filter.
+ *
+ * @return 0 success, 1 failed to find filter, 2 filter with new name exists,
+ *         3 error in type name, 4 filter_id required, -1 internal error.
+ */
+int
+modify_filter (const char *filter_id, const char *name, const char *comment,
+               const char *term, const char *type)
+{
+  gchar *quoted_name, *quoted_comment, *quoted_term, *quoted_type;
+  filter_t filter;
+
+  if (filter_id == NULL)
+    return 4;
+
+  if (type && !valid_type (type))
+    return 3;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+
+  filter = 0;
+  if (find_filter (filter_id, &filter))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (filter == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  /* Check whether a filter with the same name exists already. */
+  if (name)
+    {
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM filters"
+                   " WHERE name = '%s'"
+                   " AND ROWID != %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   filter,
+                   current_credentials.uuid))
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+    }
+  else
+    quoted_name = NULL;
+
+  quoted_term = term ? sql_quote (term) : NULL;
+  quoted_type = type ? sql_quote (type) : NULL;
+  quoted_comment = comment ? sql_quote (comment) : NULL;
+
+  sql ("UPDATE filters SET"
+       " name = %s%s%s,"
+       " comment = %s%s%s,"
+       " term = %s%s%s,"
+       " type = %s%s%s,"
+       " modification_time = now ()"
+       " WHERE ROWID = %llu;",
+       quoted_name ? "'" : "",
+       quoted_name ? quoted_name : "name",
+       quoted_name ? "'" : "",
+       quoted_comment ? "'" : "",
+       quoted_comment ? quoted_comment : "comment",
+       quoted_comment ? "'" : "",
+       quoted_term ? "'" : "",
+       quoted_term ? quoted_term : "term",
+       quoted_term ? "'" : "",
+       quoted_type ? "'" : "",
+       quoted_type ? quoted_type : "type",
+       quoted_type ? "'" : "",
+       filter);
+
+  g_free (quoted_comment);
+  g_free (quoted_name);
+  g_free (quoted_term);
+  g_free (quoted_type);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+
 /* Schema. */
 
 /**
@@ -38819,6 +39509,53 @@ manage_restore (const char *id)
            resource);
       sql ("DELETE FROM alerts_trash WHERE ROWID = %llu;",
            resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  /* Filter. */
+
+  if (find_trash ("filter", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM filters"
+                   " WHERE name ="
+                   " (SELECT name FROM filters_trash WHERE ROWID = %llu)"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   resource,
+                   current_credentials.uuid))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      sql ("INSERT INTO filters"
+           " (uuid, owner, name, comment, type, term, creation_time,"
+           "  modification_time)"
+           " SELECT uuid, owner, name, comment, type, term, creation_time,"
+           "        modification_time"
+           " FROM filters_trash WHERE ROWID = %llu;",
+           resource);
+
+#if 0
+      /* FIX Update the filter in any trashcan alerts. */
+      sql ("UPDATE tasks"
+           " SET filter = %llu,"
+           "     filter_location = " G_STRINGIFY (LOCATION_TABLE)
+           " WHERE filter = %llu"
+           " AND filter_location = " G_STRINGIFY (LOCATION_TRASH),
+           sqlite3_last_insert_rowid (task_db),
+           resource);
+#endif
+
+      sql ("DELETE FROM filters_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
       return 0;
     }
@@ -39281,6 +40018,7 @@ manage_empty_trashcan ()
   sql ("DELETE FROM alert_event_data_trash;");
   sql ("DELETE FROM alert_method_data_trash;");
   sql ("DELETE FROM alerts_trash;");
+  sql ("DELETE FROM filters_trash;");
   sql ("DELETE FROM lsc_credentials_trash;");
   sql ("DELETE FROM port_ranges_trash;");
   sql ("DELETE FROM port_lists_trash;");

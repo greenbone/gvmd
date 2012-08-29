@@ -1,3 +1,40 @@
+2012-08-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add filters, including OMP GET_FILTERS, CREATE_FILTER, DELETE_FILTER and
+	MODIFY_FILTER.
+
+	* src/manage_sql.c (resource_t): Remove.  Now in manage.h
+	(find_resource_for_actions): Move to Resources page.
+	(valid_type, find_resource, find_resource_for_actions)
+	(copy_resource, agent_writable, trash_agent_writable, find_filter)
+	(find_filter_for_actions, filter_uuid, create_filter, copy_filter)
+	(delete_filter, filter_writable, trash_filter_writable): New functions.
+	(create_tables): Add filters and filters_trash.
+	(FILTER_ITERATOR_FILTER_COLUMNS, FILTER_ITERATOR_COLUMNS)
+	(FILTER_ITERATOR_TRASH_COLUMNS): New defines.
+	(filter_count, init_filter_iterator, filter_iterator_type)
+	(filter_iterator_term, modify_filter): New functions.
+	(manage_restore, manage_empty_trashcan): Add filters.
+
+	* src/manage.h: Add headers accordingly.
+	(filter_t): New type.
+	(resource_t): New type.  From manage_sql.h.
+
+	* src/omp.c (omp_commands, command_data_t, client_state_t)
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add filter commands.
+	(create_filter_data_t, delete_filter_data_t, get_filters_data_t)
+	(modify_filter_data_t): New types.
+	(create_filter_data_reset, delete_filter_data_reset)
+	(get_filters_data_reset, modify_filter_data_reset): New functions.
+	(create_filter_data, delete_filter_data, get_filters_data)
+	(modify_filter_data): New variables.
+	(send_get_common): Add writable arg.
+	(SEND_GET_COMMON): Pass writable in generic way.  Convert type arg to
+	token.  Update callers.
+
+	* src/sql.c (sql_nquote, sql_quote): Assert string exists.
+
 2012-08-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (omp_xml_handle_end_element): In CLIENT_MODIFY_TASK

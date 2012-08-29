@@ -173,6 +173,7 @@ typedef enum
 typedef long long int agent_t;
 typedef long long int config_t;
 typedef long long int alert_t;
+typedef long long int filter_t;
 typedef long long int slave_t;
 typedef long long int target_t;
 typedef long long int task_t;
@@ -181,6 +182,7 @@ typedef long long int report_t;
 typedef long long int report_host_t;
 typedef long long int report_format_t;
 typedef long long int report_format_param_t;
+typedef long long int resource_t;
 typedef long long int note_t;
 typedef long long int nvt_t;
 typedef long long int override_t;
@@ -658,6 +660,9 @@ typedef struct
   int max;             ///< Maximum number of items returned.
   int trash;           ///< Boolean.  Whether to return from trashcan.
 } get_data_t;
+
+resource_t
+get_iterator_resource (iterator_t*);
 
 const char*
 get_iterator_uuid (iterator_t*);
@@ -1497,6 +1502,12 @@ int
 delete_agent (const char *, int);
 
 int
+trash_agent_writable (agent_t);
+
+int
+agent_writable (agent_t);
+
+int
 verify_agent (agent_t);
 
 int
@@ -2205,6 +2216,49 @@ port_list_target_iterator_uuid (iterator_t*);
 
 const char*
 port_list_target_iterator_name (iterator_t*);
+
+
+/* Filters. */
+
+gboolean
+find_filter (const char*, filter_t*);
+
+gboolean
+find_filter_for_actions (const char*, filter_t*, const char*);
+
+char*
+filter_uuid (filter_t);
+
+int
+create_filter (const char*, const char*, const char*, const char*, int,
+               filter_t*);
+
+int
+copy_filter (const char*, const char*, const char*, filter_t*);
+
+int
+delete_filter (const char *, int);
+
+int
+trash_filter_writable (filter_t);
+
+int
+filter_writable (filter_t);
+
+int
+init_filter_iterator (iterator_t*, const get_data_t*);
+
+int
+filter_count (const char*, const char*);
+
+const char*
+filter_iterator_type (iterator_t*);
+
+const char*
+filter_iterator_term (iterator_t*);
+
+int
+modify_filter (const char*, const char*, const char*, const char*, const char*);
 
 
 /* Schema. */
