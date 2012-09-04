@@ -1,3 +1,34 @@
+2012-09-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (valid_type): Add filter.
+	(filter_clause): Allow the keyword string to be empty if there's a
+	column specifier, like comment="".
+	(count): Take the GET info as a single param.  Use filter from ID if
+	there is one.
+	(target_count, agent_count, filter_count): Pass GET info as single
+	param.
+	(init_user_get_iterator): Use filter given by ID if there is one.
+	(init_get_iterator): Adjust for filter ID returns.  Use filter given by
+	ID if there is one.  Add used_by param so caller can control what type
+	the resource is used by.
+	(init_user_target_iterator): Clear get so filt_id is NULL.
+	(init_target_iterator, init_agent_iterator, init_filter_iterator): Add
+	used_by to calls.
+	(filter_term): New function.
+	(create_filter, modify_filter): Let type be "" instead of NULL to
+	indicate any type.
+	(filter_iterator_type): Return "" if NULL.
+
+	* src/manage.h: Update headers accordingly.
+	(get_data_t): Add filt_id.
+
+	* src/omp.c (get_data_reset, get_data_parse_attributes): Add filt_id.
+	(send_get_end): Remove max which was replaced by filters.  Get filter
+	from ID if one was given.  Add filter ID to XML.
+	(omp_xml_handle_start_element): Init MODIFY_FILTER type in case it's
+	empty.  Handle new returns from GET iterators.  Adjust GET op count
+	calls.
+
 2012-08-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add filters, including OMP GET_FILTERS, CREATE_FILTER, DELETE_FILTER and

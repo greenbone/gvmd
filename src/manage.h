@@ -654,6 +654,7 @@ typedef enum
 typedef struct
 {
   char *actions;       ///< Actions.
+  char *filt_id;       ///< Filter ID.  Overrides "filter".
   char *filter;        ///< Filter term.
   int first;           ///< Skip over items before this number.
   char *id;            ///< ID of single item to get.
@@ -984,7 +985,7 @@ int
 delete_target (const char*, int);
 
 int
-target_count (const char *, const char *);
+target_count (const get_data_t *);
 
 void
 init_user_target_iterator (iterator_t*, target_t, int, const char*, int, int);
@@ -1514,7 +1515,7 @@ int
 agent_uuid (agent_t, char **);
 
 int
-agent_count (const char *, const char *);
+agent_count (const get_data_t *);
 
 int
 init_agent_iterator (iterator_t*, const get_data_t *);
@@ -2229,6 +2230,9 @@ find_filter_for_actions (const char*, filter_t*, const char*);
 char*
 filter_uuid (filter_t);
 
+gchar*
+filter_term (const char *);
+
 int
 create_filter (const char*, const char*, const char*, const char*, int,
                filter_t*);
@@ -2249,7 +2253,7 @@ int
 init_filter_iterator (iterator_t*, const get_data_t*);
 
 int
-filter_count (const char*, const char*);
+filter_count (const get_data_t*);
 
 const char*
 filter_iterator_type (iterator_t*);

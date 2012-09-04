@@ -1799,6 +1799,7 @@ get_data_reset (get_data_t *data)
   free (data->actions);
   free (data->id);
   free (data->filter);
+  free (data->filt_id);
 
   memset (data, 0, sizeof (get_data_t));
 }
@@ -1831,6 +1832,9 @@ get_data_parse_attributes (get_data_t *data, const gchar *type,
   append_attribute (attribute_names, attribute_values, name,
                     &data->id);
   g_free (name);
+
+  append_attribute (attribute_names, attribute_values, "filt_id",
+                    &data->filt_id);
 
   if (find_attribute (attribute_names, attribute_values,
                       "trash", &attribute))
@@ -4406,16 +4410,22 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
               int (*write_to_client) (const char *, void*),
               void* write_to_client_data)
 {
-  gchar *msg, *sort_field;
+  gchar *msg, *sort_field, *filter;
   int first, max, sort_order;
 
-  if (get->max == -2)
-    setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
-                       &get->max);
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
 
-  manage_filter_controls (get->filter, &first, &max, &sort_field, &sort_order);
+  manage_filter_controls (filter ? filter : get->filter,
+                          &first, &max, &sort_field, &sort_order);
 
-  msg = g_markup_printf_escaped ("<filters>"
+  msg = g_markup_printf_escaped ("<filters id=\"%s\">"
                                  "<term>%s</term>"
                                  "</filters>"
                                  "<sort>"
@@ -4427,8 +4437,11 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
                                  "<page>%i</page>"
                                  "</%s_count>"
                                  "</get_%ss_response>",
-                                 get->filter
-                                  ? manage_clean_filter (get->filter)
+                                 get->filt_id,
+                                 filter || get->filter
+                                  ? manage_clean_filter (filter
+                                                          ? filter
+                                                          : get->filter)
                                   : "",
                                  sort_field,
                                  sort_order ? "ascending" : "descending",
@@ -4441,6 +4454,7 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
                                  type,
                                  type);
   g_free (sort_field);
+  g_free (filter);
 
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
@@ -5912,6 +5926,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("TYPE", element_name) == 0)
           {
+            openvas_append_string (&modify_filter_data->type, "");
             set_client_state (CLIENT_MODIFY_FILTER_TYPE);
           }
         ELSE_ERROR ("modify_filter");
@@ -15619,6 +15634,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             return;
                           }
                         break;
+                      case 2:
+                        if (send_find_error_to_client
+                             ("get_filters",
+                              "filter",
+                              get_filters_data->get.filt_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
                       case -1:
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_INTERNAL_ERROR ("get_agents"));
@@ -15703,8 +15730,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               cleanup_iterator (&agents);
               filtered = get_agents_data->get.id
                           ? 1
-                          : agent_count (get_agents_data->get.filter,
-                                         get_agents_data->get.actions);
+                          : agent_count (&get_agents_data->get);
               SEND_GET_END ("agent", &get_agents_data->get, count, filtered);
             }
           get_agents_data_reset (get_agents_data);
@@ -16128,6 +16154,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_FILTERS", element_name) == 0);
 
+          // FIX - type
           ret = init_filter_iterator (&filters, &get_filters_data->get);
           if (ret)
             {
@@ -16139,6 +16166,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                    get_filters_data->get.id,
                                                    write_to_client,
                                                    write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case 2:
+                    if (send_find_error_to_client
+                         ("get_filters",
+                          "filter",
+                          get_filters_data->get.filt_id,
+                          write_to_client,
+                          write_to_client_data))
                       {
                         error_send_to_client (error);
                         return;
@@ -16183,8 +16222,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           cleanup_iterator (&filters);
           filtered = get_filters_data->get.id
                       ? 1
-                      : filter_count (get_filters_data->get.filter,
-                                      get_filters_data->get.actions);
+                      : filter_count (&get_filters_data->get);
           SEND_GET_END ("filter", &get_filters_data->get, count, filtered);
 
           get_filters_data_reset (get_filters_data);
@@ -16711,6 +16749,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             return;
                           }
                         break;
+                      case 2:
+                        if (send_find_error_to_client
+                             ("get_filters",
+                              "filter",
+                              get_filters_data->get.filt_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
                       case -1:
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_INTERNAL_ERROR ("get_targets"));
@@ -16848,8 +16898,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               cleanup_iterator (&targets);
               filtered = get_targets_data->get.id
                           ? 1
-                          : target_count (get_targets_data->get.filter,
-                                          get_targets_data->get.actions);
+                          : target_count (&get_targets_data->get);
               SEND_GET_END ("target", &get_targets_data->get, count, filtered);
             }
           get_targets_data_reset (get_targets_data);

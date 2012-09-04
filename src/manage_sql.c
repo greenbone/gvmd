@@ -988,6 +988,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "alert") == 0)
          || (strcasecmp (type, "config") == 0)
          || (strcasecmp (type, "lsc_credential") == 0)
+         || (strcasecmp (type, "filter") == 0)
          || (strcasecmp (type, "note") == 0)
          || (strcasecmp (type, "override") == 0)
          || (strcasecmp (type, "port_list") == 0)
@@ -24913,7 +24914,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
       keyword = *point;
 
-      if (strlen (keyword->string) == 0)
+      if ((keyword->column == NULL)
+          && (strlen (keyword->string) == 0))
         {
           point++;
           continue;
@@ -25255,25 +25257,37 @@ filter_clause (const char* type, const char* filter, const char **columns,
 /**
  * @brief Count number of a particular resource.
  *
- * @param[in]  filter           Filter term.
- * @param[in]  actions_string   Actions.
+ * @param[in]  get               GET params.
+ * @param[in]  iterator_columns  Iterator columns.
+ * @param[in]  extra_columns     Extra columns.
  *
- * @return Total number of targets in filtered set.
+ * @return Total number of resources in filtered set.
  */
 static int
-count (const char *type, const char *filter, const char *actions_string,
+count (const char *type, const get_data_t *get,
        const char *iterator_columns, const char **extra_columns)
 {
   int actions, ret;
   gchar *clause;
+  gchar *filter;
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause (type, filter, extra_columns, NULL, NULL, NULL);
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return -1;
+    }
+  else
+    filter = NULL;
 
-  if (actions_string == NULL
-      || strlen (actions_string) == 0
-      || (actions = parse_actions (actions_string)) == 0)
+  clause = filter_clause (type, filter ? filter : get->filter, extra_columns,
+                          NULL, NULL, NULL);
+
+  if (get->actions == NULL
+      || strlen (get->actions) == 0
+      || (actions = parse_actions (get->actions)) == 0)
     {
       ret = sql_int (0, 0,
                      "SELECT count (*), %s"
@@ -25322,17 +25336,15 @@ count (const char *type, const char *filter, const char *actions_string,
 /**
  * @brief Count number of targets.
  *
- * @param[in]  filter           Filter term.
- * @param[in]  actions_string   Actions.
+ * @param[in]  get  GET params.
  *
  * @return Total number of targets in filtered set.
  */
 int
-target_count (const char *filter, const char *actions_string)
+target_count (const get_data_t *get)
 {
   static const char *extra_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
-  return count ("target", filter, actions_string, TARGET_ITERATOR_COLUMNS,
-                extra_columns);
+  return count ("target", get, TARGET_ITERATOR_COLUMNS, extra_columns);
 }
 
 /**
@@ -25346,7 +25358,7 @@ target_count (const char *filter, const char *actions_string)
  * @param[in]  filter_columns  Columns for filter.
  * @param[in]  resource        Resource.
  *
- * @return 0 success.
+ * @return 0 success, 2 failed to find filter.
  */
 static int
 init_user_get_iterator (iterator_t* iterator, const char *type,
@@ -25354,13 +25366,24 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
                         const char *trash_columns, const char **filter_columns,
                         resource_t resource)
 {
-  gchar *clause, *order;
+  gchar *clause, *order, *filter;
   int first, max;
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause (type, get->filter, filter_columns, &order, &first,
-                          &max);
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
+                          &order, &first, &max);
+
+  g_free (filter);
 
   if (resource && get->trash)
     init_iterator (iterator,
@@ -25429,16 +25452,19 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
  * @param[in]  columns         Columns for SQL.
  * @param[in]  trash_columns   Columns for SQL trash case.
  * @param[in]  filter_columns  Columns for filter.
+ * @param[in]  used_by         Type that uses these resources, or NULL.
  *
- * @return 0 success, 1 failed to find target, -1 error.
+ * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
+ *         error.
  */
 static int
 init_get_iterator (iterator_t* iterator, const char *type,
                    const get_data_t *get, const char *columns,
-                   const char *trash_columns, const char **filter_columns)
+                   const char *trash_columns, const char **filter_columns,
+                   const char *used_by)
 {
   int actions, first, max;
-  gchar *clause, *order;
+  gchar *clause, *order, *used_by_clause, *filter;
   resource_t resource = 0;
 
   assert (current_credentials.uuid);
@@ -25458,23 +25484,50 @@ init_get_iterator (iterator_t* iterator, const char *type,
     }
 
   if (get->actions == NULL || strlen (get->actions) == 0)
-    {
-      init_user_get_iterator (iterator, type, get, columns, trash_columns,
-                              filter_columns, resource);
-      return 0;
-    }
+    return init_user_get_iterator (iterator, type, get, columns, trash_columns,
+                                   filter_columns, resource);
 
   actions = parse_actions (get->actions);
 
   if (actions == 0)
-    {
-      init_user_get_iterator (iterator, type, get, columns, trash_columns,
-                              filter_columns, resource);
-      return 0;
-    }
+    return init_user_get_iterator (iterator, type, get, columns, trash_columns,
+                                   filter_columns, resource);
 
-  clause = filter_clause ("target", get->filter, filter_columns, &order, &first,
-                          &max);
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
+                          &order, &first, &max);
+
+  g_free (filter);
+
+  if (used_by)
+    used_by_clause = g_strdup_printf ("  OR"
+                                      "  (SELECT %ss.ROWID FROM %ss"
+                                      "   WHERE %s = %ss.ROWID)"
+                                      "  IN"
+                                      "  (SELECT %s FROM %s_users"
+                                      "   WHERE user ="
+                                      "   (SELECT ROWID FROM users"
+                                      "    WHERE users.uuid = '%s')"
+                                      "   AND actions & %u = %u)",
+                                      used_by,
+                                      used_by,
+                                      type,
+                                      type,
+                                      used_by,
+                                      used_by,
+                                      current_credentials.uuid,
+                                      actions,
+                                      actions);
+  else
+    used_by_clause = g_strdup ("");
 
   if (resource && get->trash)
     init_iterator (iterator,
@@ -25484,22 +25537,13 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    " AND"
                    " ((owner IS NULL) OR (owner ="
                    "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
-                   "  OR"
-                   "  (SELECT tasks.ROWID FROM tasks"
-                   "   WHERE target = targets.ROWID)"
-                   "  IN"
-                   "  (SELECT task FROM task_users WHERE user ="
-                   "   (SELECT ROWID FROM users"
-                   "    WHERE users.uuid = '%s')"
-                   "   AND actions & %u = %u))"
+                   "  %s)"
                    "%s;",
                    trash_columns ? trash_columns : columns,
                    type,
                    resource,
                    current_credentials.uuid,
-                   current_credentials.uuid,
-                   actions,
-                   actions,
+                   used_by_clause,
                    order);
   else if (get->trash)
     init_iterator (iterator,
@@ -25508,21 +25552,12 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    " WHERE"
                    " ((owner IS NULL) OR (owner ="
                    "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
-                   "  OR"
-                   "  (SELECT tasks.ROWID FROM tasks"
-                   "   WHERE target = targets.ROWID)"
-                   "  IN"
-                   "  (SELECT task FROM task_users WHERE user ="
-                   "   (SELECT ROWID FROM users"
-                   "    WHERE users.uuid = '%s')"
-                   "   AND actions & %u = %u))"
+                   "  %s)"
                    "%s;",
                    trash_columns ? trash_columns : columns,
                    type,
                    current_credentials.uuid,
-                   current_credentials.uuid,
-                   actions,
-                   actions,
+                   used_by_clause,
                    order);
   else if (resource)
     init_iterator (iterator,
@@ -25532,22 +25567,13 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    " AND"
                    " ((owner IS NULL) OR (owner ="
                    "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
-                   "  OR"
-                   "  (SELECT tasks.ROWID FROM tasks"
-                   "   WHERE target = targets.ROWID)"
-                   "  IN"
-                   "  (SELECT task FROM task_users WHERE user ="
-                   "   (SELECT ROWID FROM users"
-                   "    WHERE users.uuid = '%s')"
-                   "   AND actions & %u = %u))"
+                   "  %s)"
                    "%s;",
                    columns,
                    type,
                    resource,
                    current_credentials.uuid,
-                   current_credentials.uuid,
-                   actions,
-                   actions,
+                   used_by_clause,
                    order);
   else
     init_iterator (iterator,
@@ -25556,22 +25582,13 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    " WHERE"
                    " ((owner IS NULL) OR (owner ="
                    "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
-                   "  OR"
-                   "  (SELECT tasks.ROWID FROM tasks"
-                   "   WHERE target = targets.ROWID)"
-                   "  IN"
-                   "  (SELECT task FROM task_users WHERE user ="
-                   "   (SELECT ROWID FROM users"
-                   "    WHERE users.uuid = '%s')"
-                   "   AND actions & %u = %u))"
+                   "  %s)"
                    "%s%s%s"
                    " LIMIT %i OFFSET %i;",
                    columns,
                    type,
                    current_credentials.uuid,
-                   current_credentials.uuid,
-                   actions,
-                   actions,
+                   used_by_clause,
                    clause ? " AND " : "",
                    clause ? clause : "",
                    order,
@@ -25599,6 +25616,7 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
 {
   static const char *filter_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
   get_data_t get;
+  memset (&get, '\0', sizeof (get));
   get.trash = trash;
   get.filter = (char*) filter;
   init_user_get_iterator (iterator, "target", &get, TARGET_ITERATOR_COLUMNS,
@@ -25612,7 +25630,8 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find target, -1 error.
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
  */
 int
 init_target_iterator (iterator_t* iterator, const get_data_t *get)
@@ -25626,7 +25645,8 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
                             TARGET_ITERATOR_COLUMNS,
                             /* Columns for trashcan. */
                             TARGET_ITERATOR_TRASH_COLUMNS,
-                            filter_columns);
+                            filter_columns,
+                            "task");
 }
 
 /**
@@ -32501,7 +32521,7 @@ DEF_ACCESS (get_iterator_modification_time, 5);
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find agent, -1 error.
+ * @return 0 success, 1 failed to find agent, failed to find filter, -1 error.
  */
 int
 init_agent_iterator (iterator_t* iterator, const get_data_t *get)
@@ -32515,7 +32535,8 @@ init_agent_iterator (iterator_t* iterator, const get_data_t *get)
                             AGENT_ITERATOR_COLUMNS,
                             /* Columns for trashcan. */
                             AGENT_ITERATOR_TRASH_COLUMNS,
-                            filter_columns);
+                            filter_columns,
+                            NULL);
 }
 
 /**
@@ -32681,17 +32702,15 @@ DEF_ACCESS (agent_iterator_howto_use, GET_ITERATOR_COLUMN_COUNT + 7);
 /**
  * @brief Count number of agents.
  *
- * @param[in]  filter           Filter term.
- * @param[in]  actions_string   Actions.
+ * @param[in]  get  GET params.
  *
  * @return Total number of agents in filtered set.
  */
 int
-agent_count (const char *filter, const char *actions_string)
+agent_count (const get_data_t *get)
 {
   static const char *extra_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
-  return count ("agent", filter, actions_string, AGENT_ITERATOR_COLUMNS,
-                extra_columns);
+  return count ("agent", get, AGENT_ITERATOR_COLUMNS, extra_columns);
 }
 
 /**
@@ -38672,6 +38691,25 @@ filter_uuid (filter_t filter)
 }
 
 /**
+ * @brief Return the term of a filter.
+ *
+ * @param[in]  filter  Filter UUID.
+ *
+ * @return Newly allocated term if available, else NULL.
+ */
+gchar*
+filter_term (const char *uuid)
+{
+  gchar *quoted_uuid, *ret;
+  quoted_uuid = sql_quote (uuid);
+  ret = sql_string (0, 0,
+                    "SELECT term FROM filters WHERE uuid = '%s';",
+                    quoted_uuid);
+  g_free (quoted_uuid);
+  return ret;
+}
+
+/**
  * @brief Create a filter.
  *
  * @param[in]   name            Name of filter.
@@ -38691,7 +38729,7 @@ create_filter (const char *name, const char *comment, const char *type,
 
   assert (current_credentials.uuid);
 
-  if (type && !valid_type (type))
+  if (type && !((strcmp (type, "") == 0) || valid_type (type)))
     return 2;
 
   sql ("BEGIN IMMEDIATE;");
@@ -38750,7 +38788,7 @@ create_filter (const char *name, const char *comment, const char *type,
            current_credentials.uuid,
            quoted_comment,
            type ? "lower ('" : "",
-           type ? type : "NULL",
+           type ? type : "''",
            type ? "')" : "",
            quoted_term);
       g_free (quoted_comment);
@@ -38765,7 +38803,7 @@ create_filter (const char *name, const char *comment, const char *type,
          quoted_name,
          current_credentials.uuid,
          type ? "lower ('" : "",
-         type ? type : "NULL",
+         type ? type : "''",
          type ? "')" : "",
          quoted_term);
 
@@ -38949,17 +38987,15 @@ trash_filter_writable (filter_t filter)
 /**
  * @brief Count number of filters.
  *
- * @param[in]  filter           Filter term.
- * @param[in]  actions_string   Actions.
+ * @param[in]  get  GET params.
  *
  * @return Total number of filters in filtered set.
  */
 int
-filter_count (const char *filter, const char *actions_string)
+filter_count (const get_data_t *get)
 {
   static const char *extra_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
-  return count ("filter", filter, actions_string, FILTER_ITERATOR_COLUMNS,
-                extra_columns);
+  return count ("filter", get, FILTER_ITERATOR_COLUMNS, extra_columns);
 }
 
 /**
@@ -38968,7 +39004,8 @@ filter_count (const char *filter, const char *actions_string)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find filter, -1 error.
+ * @return 0 success, 1 failed to find filter, failed to find filter (filt_id),
+ *         -1 error.
  */
 int
 init_filter_iterator (iterator_t* iterator, const get_data_t *get)
@@ -38982,7 +39019,8 @@ init_filter_iterator (iterator_t* iterator, const get_data_t *get)
                             FILTER_ITERATOR_COLUMNS,
                             /* Columns for trashcan. */
                             FILTER_ITERATOR_TRASH_COLUMNS,
-                            filter_columns);
+                            filter_columns,
+                            NULL);
 }
 
 /**
@@ -38991,9 +39029,17 @@ init_filter_iterator (iterator_t* iterator, const get_data_t *get)
  * @param[in]  iterator  Iterator.
  *
  * @return The type of the filter, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
+ *         cleanup_iterator.  "" for any type.
  */
-DEF_ACCESS (filter_iterator_type, GET_ITERATOR_COLUMN_COUNT);
+const char*
+filter_iterator_type (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt,
+                                           GET_ITERATOR_COLUMN_COUNT);
+  return ret ? ret : "";
+}
 
 /**
  * @brief Get the term from a filter iterator.
@@ -39027,7 +39073,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   if (filter_id == NULL)
     return 4;
 
-  if (type && !valid_type (type))
+  if (type && !((strcmp (type, "") == 0) || valid_type (type)))
     return 3;
 
   sql ("BEGIN IMMEDIATE;");
@@ -39070,8 +39116,8 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
     quoted_name = NULL;
 
   quoted_term = term ? sql_quote (term) : NULL;
-  quoted_type = type ? sql_quote (type) : NULL;
   quoted_comment = comment ? sql_quote (comment) : NULL;
+  quoted_type = sql_quote (type ? type : "");
 
   sql ("UPDATE filters SET"
        " name = %s%s%s,"
