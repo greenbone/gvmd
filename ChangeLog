@@ -1,3 +1,17 @@
+2012-09-07  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Adding new report format plugin that produces XML output
+	for the Open Source ISMS Tool Verinice, specifically handling
+	content of a IT-Grundschutz Scan using the GSHB NVTs.
+
+	The plugin was implemented by Andre Heinecke and Michael Wiegand.
+
+	* report_formats/verinice-itg,
+	report_formats/verinice-itg/gsm_verinice_itg.xsl,
+	report_formats/verinice-itg/create_report_import,
+	report_formats/verinice-itg/generate,
+	report_formats/verinice-itg/README.txt: New.
+
 2012-09-06  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Adding new report format plugin that produces XML output
