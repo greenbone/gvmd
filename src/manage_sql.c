@@ -18586,12 +18586,79 @@ buffer_cve (array_t *cves, iterator_t *details)
 }
 
 /**
+ * @brief Get filter term corresponding to report filtering.
+ *
+ * @param[in]  sort_order  Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "type".
+ * @param[in]  result_hosts_only  Whether to show only hosts with results.
+ * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
+ *                                results if NULL.
+ * @param[in]  report_format  Format of report that will be created from XML.
+ * @param[in]  levels         String describing threat levels (message types)
+ *                            to include in count (for example, "hmlgd" for
+ *                            High, Medium, Low, loG and Debug).  All levels if
+ *                            NULL.
+ * @param[in]  delta_states   String describing delta states to include in count
+ *                            (for example, "sngc" Same, New, Gone and Changed).
+ *                            All levels if NULL.
+ * @param[in]  apply_overrides    Whether to apply overrides.
+ * @param[in]  search_phrase      Phrase that results must include.  All results
+ *                                if NULL or "".
+ * @param[in]  autofp             Whether to apply the auto FP filter.
+ * @param[in]  show_closed_cves   Whether to include the Closed CVEs host detail.
+ * @param[in]  notes              Whether to include notes.
+ * @param[in]  overrides          Whether to include overrides.
+ * @param[in]  first_result       The result to start from.  The results are 0
+ *                                indexed.
+ * @param[in]  max_results        The maximum number of results returned.
+ *
+ * @return Filter term.
+ */
+static gchar *
+report_filter_term (int sort_order, const char* sort_field,
+                    int result_hosts_only,
+                    const char *min_cvss_base,
+                    const char *levels, /* const char *delta_states, */
+                    int apply_overrides, const char *search_phrase, int autofp,
+                    int show_closed_cves, int notes, int overrides,
+                    int first_result, int max_results)
+{
+  return g_strdup_printf ("%s"
+                          "%s%s=%s"
+                          " result_hosts_only=%i"
+                          " min_cvss_base=%s"
+                          " levels=%s"
+                          " apply_overrides=%i"
+                          " autofp=%i"
+                          " show_closed_cves=%i"
+                          " notes=%i"
+                          " overrides=%i"
+                          " first=%i"
+                          " rows=%i",
+                          search_phrase ? search_phrase : "",
+                          search_phrase && strlen (search_phrase) ? " " : "",
+                          sort_order ? "sort" : "sort-reverse",
+                          sort_field ? sort_field : "ROWID",
+                          result_hosts_only,
+                          min_cvss_base ? min_cvss_base : "",
+                          levels ? levels : "hm",
+                          apply_overrides,
+                          autofp,
+                          show_closed_cves,
+                          notes,
+                          overrides,
+                          first_result,
+                          max_results);
+}
+
+/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
  * @param[in]  delta       Report to compare with the report.
  * @param[in]  task        Task associated with report.
  * @param[in]  xml_file    File name.
+ * @param[in]  get         GET command data.
  * @param[in]  sort_order  Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "type".
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
@@ -18635,6 +18702,7 @@ buffer_cve (array_t *cves, iterator_t *details)
  */
 static int
 print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
+                  const get_data_t *get,
                   int sort_order, const char* sort_field, int result_hosts_only,
                   const char *min_cvss_base, report_format_t report_format,
                   const char *levels, const char *delta_states,
@@ -18646,6 +18714,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   int host_first_result, int host_max_results)
 {
   FILE *out;
+  gchar *term;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
   int result_count, filtered_result_count, run_status;
   array_t *result_hosts;
@@ -18772,10 +18841,30 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                 &filtered_result_count);
       report_scan_run_status (report, &run_status);
     }
+
+  if ((get->filt_id && strcmp (get->filt_id, "0"))
+      || (get->filter && strlen (get->filter)))
+    {
+      term = NULL;
+      if (get->filt_id && strcmp (get->filt_id, "0"))
+        {
+          term = filter_term (get->filt_id);
+          assert (term); /* Caller checked this. */
+        }
+    }
+  else
+    /* Build the filter term from the old style GET attributes. */
+    term = report_filter_term (sort_order, sort_field, result_hosts_only,
+                               min_cvss_base, levels, /* delta_states, */
+                               apply_overrides, search_phrase, autofp,
+                               show_closed_cves, notes, overrides, first_result,
+                               max_results);
+
   PRINT
    (out,
     "<sort><field>%s<order>%s</order></field></sort>"
-    "<filters>"
+    "<filters id=\"%s\">"
+    "<term>%s</term>"
     "%s"
     "<phrase>%s</phrase>"
     "<autofp>%i</autofp>"
@@ -18787,6 +18876,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     "<min_cvss_base>%s</min_cvss_base>",
     sort_field ? sort_field : "type",
     sort_order ? "ascending" : "descending",
+    get->filt_id ? get->filt_id : "0",
+    term ? term : get->filter,
     levels,
     search_phrase ? search_phrase : "",
     autofp,
@@ -18796,6 +18887,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     apply_overrides ? 1 : 0,
     result_hosts_only ? 1 : 0,
     min_cvss_base ? min_cvss_base : "");
+
+  g_free (term);
 
   if (strchr (levels, 'h'))
     PRINT (out, "<filter>High</filter>");
@@ -20668,6 +20761,8 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
   if (type && strcmp (type, "scan"))
     return NULL;
 
+  // FIX filter as below
+
   /* Print the report as XML to a file. */
 
   if ((report_format_predefined (report_format) == 0)
@@ -20684,7 +20779,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
     }
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
-  if (print_report_xml (report, 0, task, xml_file, sort_order, sort_field,
+  if (print_report_xml (report, 0, task, xml_file, /* FIX get */ NULL, sort_order, sort_field,
                         result_hosts_only, min_cvss_base, report_format,
                         levels, NULL, apply_overrides, search_phrase, autofp,
                         show_closed_cves, notes, notes_details, overrides,
@@ -21066,6 +21161,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
  * @param[in]  report             Report.
  * @param[in]  delta_report       Report to compare with.
  * @param[in]  report_format      Report format.
+ * @param[in]  get                GET command data.
  * @param[in]  sort_order         Whether to sort ascending or descending.
  * @param[in]  sort_field         Field to sort on, or NULL for "type".
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
@@ -21111,15 +21207,16 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
  *                                 are 0 indexed.
  * @param[in]  host_max_results    The host maximum number of results returned.
  *
- * @return 0 success, -1 error, 1 failed to find alert.
+ * @return 0 success, -1 error, 1 failed to find alert, 2 failed to find filter.
  */
 int
 manage_send_report (report_t report, report_t delta_report,
                     report_format_t report_format,
-                    int sort_order, const char* sort_field,
-                    int result_hosts_only, const char *min_cvss_base,
-                    const char *levels, const char *delta_states,
-                    int apply_overrides, const char *search_phrase,
+                    const get_data_t *get,
+                    int sort_order, const char* given_sort_field,
+                    int result_hosts_only, const char *given_min_cvss_base,
+                    const char *given_levels, const char *delta_states,
+                    int apply_overrides, const char *given_search_phrase,
                     int autofp, int show_closed_cves, int notes,
                     int notes_details, int overrides, int overrides_details,
                     int first_result, int max_results, int base64,
@@ -21133,7 +21230,7 @@ manage_send_report (report_t report, report_t delta_report,
                     int host_max_results)
 {
   task_t task;
-  gchar *xml_file;
+  gchar *xml_file, *sort_field, *levels, *search_phrase, *min_cvss_base;
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
 
   if (type && (strcmp (type, "assets") == 0))
@@ -21144,6 +21241,36 @@ manage_send_report (report_t report, report_t delta_report,
     return -1;
   else if (report_task (report, &task))
     return -1;
+
+  /* Overwrite args with filter if one was given. */
+
+  if ((get->filt_id && strcmp (get->filt_id, "0"))
+      || (get->filter && strlen (get->filter)))
+    {
+      gchar *term;
+      term = NULL;
+      if (get->filt_id && strcmp (get->filt_id, "0"))
+        {
+          term = filter_term (get->filt_id);
+          if (term == NULL)
+            return 2;
+        }
+      manage_report_filter_controls (term ? term : get->filter,
+                                     &first_result, &max_results, &sort_field,
+                                     &sort_order, &result_hosts_only,
+                                     &min_cvss_base, &levels,
+                                     /* &delta_states, */
+                                     &search_phrase, &apply_overrides, &autofp,
+                                     &show_closed_cves, &notes, &overrides);
+    }
+  else
+    {
+      // FIX ugh, and free always
+      sort_field = g_strdup (given_sort_field);
+      levels = g_strdup (given_levels);
+      search_phrase = g_strdup (given_search_phrase);
+      min_cvss_base = g_strdup (given_min_cvss_base);
+    }
 
   /* Escalate instead, if requested. */
 
@@ -21181,11 +21308,12 @@ manage_send_report (report_t report, report_t delta_report,
   if (mkdtemp (xml_dir) == NULL)
     {
       g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
+      g_free (sort_field);
       return -1;
     }
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
-  if (print_report_xml (report, delta_report, task, xml_file, sort_order,
+  if (print_report_xml (report, delta_report, task, xml_file, get, sort_order,
                         sort_field, result_hosts_only, min_cvss_base,
                         report_format, levels, delta_states, apply_overrides,
                         search_phrase, autofp, show_closed_cves, notes,
@@ -21194,9 +21322,11 @@ manage_send_report (report_t report, report_t delta_report,
                         host, pos, host_search_phrase, host_levels,
                         host_first_result, host_max_results))
     {
+      g_free (sort_field);
       g_free (xml_file);
       return -1;
     }
+  g_free (sort_field);
 
   /* Pass the file to the report format generate script, sending the output
    * to a file. */
@@ -24744,6 +24874,242 @@ manage_filter_controls (const gchar *filter, int *first, int *max,
       if (sort_field && (*sort_field == NULL))
         *sort_field = g_strdup ("name");
     }
+
+  filter_free (split);
+  return;
+}
+
+/**
+ * @brief Get an int column from a filter split.
+ *
+ * @param[in]  point   Filter split.
+ * @param[in]  column  Name of column.
+ * @param[out] val     Value of column.
+ *
+ * @return 0 success, 1 fail.
+ */
+int
+filter_control_int (keyword_t **point, const char *column, int *val)
+{
+  if (val)
+    while (*point)
+      {
+        keyword_t *keyword;
+
+        keyword = *point;
+        if (keyword->column
+            && (strcmp (keyword->column, column) == 0))
+          {
+            *val = atoi (keyword->string);
+            return 0;
+          }
+        point++;
+      }
+  return 1;
+}
+
+/**
+ * @brief Get a string column from a filter split.
+ *
+ * @param[in]  point   Filter split.
+ * @param[in]  column  Name of column.
+ * @param[out] string  Value of column, freshly allocated.
+ *
+ * @return 0 success, 1 fail.
+ */
+int
+filter_control_str (keyword_t **point, const char *column, gchar **string)
+{
+  if (string)
+    while (*point)
+      {
+        keyword_t *keyword;
+
+        keyword = *point;
+        if (keyword->column
+            && (strcmp (keyword->column, column) == 0))
+          {
+            *string = g_strdup (keyword->string);
+            return 0;
+          }
+        point++;
+      }
+  return 1;
+}
+
+/**
+ * @brief Get info from a filter for report.
+ *
+ * @param[in]   filter      Filter.
+ * @param[out]  first       Number of first item.
+ * @param[out]  max         Max number of rows.
+ * @param[out]  sort_field  Sort field.
+ * @param[out]  sort_order  Sort order.
+ */
+void
+manage_report_filter_controls (const gchar *filter, int *first, int *max,
+                               gchar **sort_field, int *sort_order,
+                               int *result_hosts_only, gchar **min_cvss_base,
+                               gchar **levels, gchar **search_phrase,
+                               int *apply_overrides, int *autofp,
+                               int *show_closed_cves, int *notes,
+                               int *overrides)
+{
+  keyword_t **point;
+  array_t *split;
+  int val;
+  gchar *string;
+
+  if (filter == NULL)
+    return;
+
+  split = split_filter (filter);
+  point = (keyword_t**) split->pdata;
+  if (first)
+    {
+      *first = 1;
+      while (*point)
+        {
+          keyword_t *keyword;
+
+          keyword = *point;
+          if (keyword->column && (strcmp (keyword->column, "first") == 0))
+            {
+              *first = atoi (keyword->string);
+              if (*first < 0)
+                *first = 0;
+              break;
+            }
+          point++;
+        }
+    }
+
+  point = (keyword_t**) split->pdata;
+  if (max)
+    {
+      *max = -1;
+      while (*point)
+        {
+          keyword_t *keyword;
+
+          keyword = *point;
+          if (keyword->column && (strcmp (keyword->column, "rows") == 0))
+            {
+              *max = atoi (keyword->string);
+              if (*max == -2)
+                setting_value_int ("5f5a8712-8017-11e1-8556-406186ea4fc5",
+                                   max);
+              else if (*max < 1)
+                *max = -1;
+              break;
+            }
+          point++;
+        }
+    }
+
+  point = (keyword_t**) split->pdata;
+  if (sort_field || sort_order)
+    {
+      if (sort_field) *sort_field = NULL;
+      if (sort_order) *sort_order = 1;
+      while (*point)
+        {
+          keyword_t *keyword;
+
+          keyword = *point;
+          if (keyword->column
+              && (strcmp (keyword->column, "sort") == 0))
+            {
+              if (sort_field) *sort_field = g_strdup (keyword->string);
+              if (sort_order) *sort_order = 1;
+              break;
+            }
+          if (keyword->column
+              && (strcmp (keyword->column, "sort-reverse") == 0))
+            {
+              if (sort_field) *sort_field = g_strdup (keyword->string);
+              if (sort_order) *sort_order = 0;
+              break;
+            }
+          point++;
+        }
+      if (sort_field && (*sort_field == NULL))
+        *sort_field = g_strdup ("name");
+    }
+
+  if (search_phrase)
+    {
+      GString *phrase;
+      phrase = g_string_new ("");
+      point = (keyword_t**) split->pdata;
+      while (*point)
+        {
+          keyword_t *keyword;
+
+          keyword = *point;
+          if (keyword->column == NULL)
+            g_string_append_printf (phrase, "%s ", keyword->string);
+          point++;
+        }
+      *search_phrase = g_strchomp (phrase->str);
+      g_string_free (phrase, FALSE);
+    }
+
+  if (result_hosts_only
+      && (filter_control_int ((keyword_t **) split->pdata,
+                              "result_hosts_only",
+                              &val)
+          == 0))
+    *result_hosts_only = val;
+
+  if (apply_overrides
+      && (filter_control_int ((keyword_t **) split->pdata,
+                              "apply_overrides",
+                              &val)
+          == 0))
+    *apply_overrides = val;
+
+  if (autofp
+      && (filter_control_int ((keyword_t **) split->pdata,
+                              "autofp",
+                              &val)
+          == 0))
+    *autofp = val;
+
+  if (show_closed_cves
+      && (filter_control_int ((keyword_t **) split->pdata,
+                              "show_closed_cves",
+                              &val)
+          == 0))
+    *show_closed_cves = val;
+
+  if (notes
+      && (filter_control_int ((keyword_t **) split->pdata,
+                              "notes",
+                              &val)
+          == 0))
+    *notes = val;
+
+  if (overrides
+      && (filter_control_int ((keyword_t **) split->pdata,
+                              "overrides",
+                              &val)
+          == 0))
+    *overrides = val;
+
+  if (levels
+      && (filter_control_str ((keyword_t **) split->pdata,
+                              "levels",
+                              &string)
+          == 0))
+    *levels = string;
+
+  if (min_cvss_base
+      && (filter_control_str ((keyword_t **) split->pdata,
+                              "min_cvss_base",
+                              &string)
+          == 0))
+    *min_cvss_base = string;
 
   filter_free (split);
   return;

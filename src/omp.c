@@ -2205,6 +2205,7 @@ get_preferences_data_reset (get_preferences_data_t *data)
  */
 typedef struct
 {
+  get_data_t get;        ///< Get args.
   int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
   char *delta_report_id; ///< ID of report to compare single report to.
   char *delta_states;    ///< Delta states (Changed Gone New Same) to include.
@@ -2242,6 +2243,7 @@ typedef struct
 static void
 get_reports_data_reset (get_reports_data_t *data)
 {
+  get_data_reset (&data->get);
   free (data->delta_report_id);
   free (data->delta_states);
   free (data->format_id);
@@ -5216,6 +5218,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_REPORTS", element_name) == 0)
           {
             const gchar* attribute;
+
+            get_data_parse_attributes (&get_agents_data->get, "report",
+                                       attribute_names,
+                                       attribute_values);
+
             append_attribute (attribute_names, attribute_values, "report_id",
                               &get_reports_data->report_id);
 
@@ -9569,6 +9576,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             ret = manage_send_report (0,
                                       0,
                                       report_format,
+                                      &get_reports_data->get,
                                       get_reports_data->sort_order,
                                       get_reports_data->sort_field,
                                       get_reports_data->result_hosts_only,
@@ -9641,6 +9649,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             ret = manage_send_report (0,
                                       0,
                                       report_format,
+                                      &get_reports_data->get,
                                       get_reports_data->sort_order,
                                       get_reports_data->sort_field,
                                       get_reports_data->result_hosts_only,
@@ -9725,6 +9734,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             ret = manage_send_report (report,
                                       delta_report,
                                       report_format,
+                                      &get_reports_data->get,
                                       get_reports_data->sort_order,
                                       get_reports_data->sort_field,
                                       get_reports_data->result_hosts_only,

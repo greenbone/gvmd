@@ -1,3 +1,23 @@
+2012-09-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add new-style filtering to the existing GET_REPORTS filtering.
+
+	* src/manage_sql.c (report_filter_term): New function.
+	(print_report_xml): Add GET op data arg.  Set new-style filter from GET
+	args if given, otherwise generate the new-style filter term from the
+	old-style args.
+	(manage_send_report): Add GET op data arg.  Generate old-style args from
+	new-style filter if given.
+	(filter_control_int, filter_control_str)
+	(manage_report_filter_controls): New functions.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (get_reports_data_t, get_reports_data_reset): Add generic
+	GET arg.
+	(omp_xml_handle_start_element): Parse GET arg for GET_REPORTS and pass
+	on to manage_send_report.
+
 2012-09-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (valid_type): Add filter.
