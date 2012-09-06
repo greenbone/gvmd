@@ -1,3 +1,17 @@
+2012-09-06  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Adding new report format plugin that produces XML output
+	for the Open Source ISMS Tool Verinice.
+
+	The plugin was implemented by Andre Heinecke and Michael Wiegand.
+
+	* report_formats/verinice-ism,
+	report_formats/verinice-ism/classification-helpers.xsl,
+	report_formats/verinice-ism/gsm_verinice_ism.xsl,
+	report_formats/verinice-ism/create_report_import,
+	report_formats/verinice-ism/generate,
+	report_formats/verinice-ism/README.txt: New.
+
 2012-09-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add new-style filtering to the existing GET_REPORTS filtering.
