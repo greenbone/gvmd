@@ -1,5 +1,12 @@
 2012-09-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (get_filters_data_t, get_filters_data_reset)
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Remove
+	beginnings of implementation of type attribute for GET_FILTERS.  The
+	client can control the type via the "filter" attribute.
+
+2012-09-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add report filtering to email alerts.
 
 	* src/manage_sql.c (escalate_2): Pass filt_id to manage_report in email

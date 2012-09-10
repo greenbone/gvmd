@@ -1949,7 +1949,6 @@ typedef struct
 {
   get_data_t get;    ///< Get args.
   int tasks;         ///< Boolean.  Whether to include tasks that use filter.
-  char *type;        ///< Type of filter to get.
 } get_filters_data_t;
 
 /**
@@ -1960,7 +1959,6 @@ typedef struct
 static void
 get_filters_data_reset (get_filters_data_t *data)
 {
-  free (data->type);
   get_data_reset (&data->get);
   memset (data, 0, sizeof (get_filters_data_t));
 }
@@ -5017,8 +5015,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             get_data_parse_attributes (&get_filters_data->get, "filter",
                                        attribute_names,
                                        attribute_values);
-            append_attribute (attribute_names, attribute_values, "type",
-                              &get_filters_data->type);
             set_client_state (CLIENT_GET_FILTERS);
           }
         else if (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0)
@@ -16164,7 +16160,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_FILTERS", element_name) == 0);
 
-          // FIX - type
           ret = init_filter_iterator (&filters, &get_filters_data->get);
           if (ret)
             {
