@@ -1,3 +1,16 @@
+2012-09-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add report filtering to email alerts.
+
+	* src/manage_sql.c (escalate_2): Pass filt_id to manage_report in email
+	case.
+	(print_report_xml): Add NULL checks on "get".
+	(manage_report): Add filt_id arg.  Set filter controls according to this
+	filter if given.  Add NULL checks on "get".
+	(count, init_user_get_iterator, init_get_iterator): Add asserts.
+
+	* src/manage.h: Update header accordingly.
+
 2012-09-07  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Adding new report format plugin that produces XML output

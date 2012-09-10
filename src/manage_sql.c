@@ -7707,7 +7707,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             {
               int ret;
               gchar *body, *subject;
-              char *name, *notice, *from_address;
+              char *name, *notice, *from_address, *filt_id;
               gchar *base64, *type, *extension;
 
               base64 = NULL;
@@ -7719,6 +7719,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                              "from_address");
 
               notice = alert_data (alert, "method", "notice");
+              filt_id = alert_data (alert, "method", "filt_id");
               name = task_name (task);
               if (notice && strcmp (notice, "0") == 0)
                 {
@@ -7764,6 +7765,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                           || (report_format == 0)))
                     {
                       g_free (format_uuid);
+                      free (filt_id);
                       free (notice);
                       free (name);
                       free (to_address);
@@ -7779,7 +7781,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
+                  // FIX handle NULL return
                   report_content = manage_report (report, report_format,
+                                                  filt_id,
                                                   sort_order, sort_field,
                                                   result_hosts_only,
                                                   min_cvss_base, levels,
@@ -7870,6 +7874,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                           || (report_format == 0)))
                     {
                       g_free (format_uuid);
+                      free (filt_id);
                       free (notice);
                       free (name);
                       free (to_address);
@@ -7885,7 +7890,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
+                  // FIX handle NULL return
                   report_content = manage_report (report, report_format,
+                                                  filt_id,
                                                   sort_order, sort_field,
                                                   result_hosts_only,
                                                   min_cvss_base, levels,
@@ -7943,6 +7950,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (generic_desc);
                   g_free (condition_desc);
                 }
+              free (filt_id);
               free (name);
               free (notice);
               ret = email (to_address, from_address, subject, body, base64,
@@ -8056,6 +8064,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               }
 
           report_content = manage_report (report, report_format,
+                                          NULL,
                                           sort_order, sort_field,
                                           result_hosts_only,
                                           min_cvss_base, levels,
@@ -18842,8 +18851,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       report_scan_run_status (report, &run_status);
     }
 
-  if ((get->filt_id && strcmp (get->filt_id, "0"))
-      || (get->filter && strlen (get->filter)))
+  if (get
+      && ((get->filt_id && strcmp (get->filt_id, "0"))
+          || (get->filter && strlen (get->filter))))
     {
       term = NULL;
       if (get->filt_id && strcmp (get->filt_id, "0"))
@@ -18876,8 +18886,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     "<min_cvss_base>%s</min_cvss_base>",
     sort_field ? sort_field : "type",
     sort_order ? "ascending" : "descending",
-    get->filt_id ? get->filt_id : "0",
-    term ? term : get->filter,
+    get && get->filt_id ? get->filt_id : "0",
+    term ? term : (get && get->filter ? get->filter : ""),
     levels,
     search_phrase ? search_phrase : "",
     autofp,
@@ -20715,6 +20725,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  *
  * @param[in]  report             Report.
  * @param[in]  report_format      Report format.
+ * @param[in]  filt_id            ID of filter or NULL, overrides other args.
  * @param[in]  sort_order         Whether to sort ascending or descending.
  * @param[in]  sort_field         Field to sort on, or NULL for "type".
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
@@ -20745,23 +20756,45 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  * @return Contents of report on success, NULL on error.
  */
 gchar *
-manage_report (report_t report, report_format_t report_format, int sort_order,
-               const char* sort_field, int result_hosts_only,
-               const char *min_cvss_base, const char *levels,
-               int apply_overrides, const char *search_phrase, int autofp,
+manage_report (report_t report, report_format_t report_format,
+               const char *filt_id, int sort_order,
+               const char* given_sort_field, int result_hosts_only,
+               const char *given_min_cvss_base, const char *given_levels,
+               int apply_overrides, const char *given_search_phrase, int autofp,
                int show_closed_cves, int notes, int notes_details,
                int overrides, int overrides_details, int first_result,
                int max_results, const char *type, gsize *output_length,
                gchar **extension, gchar **content_type)
 {
   task_t task;
-  gchar *xml_file;
+  gchar *xml_file, *sort_field, *levels, *search_phrase, *min_cvss_base;
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
 
   if (type && strcmp (type, "scan"))
     return NULL;
 
-  // FIX filter as below
+  if (filt_id && strlen (filt_id) && strcmp (filt_id, "0"))
+    {
+      gchar *term;
+      term = filter_term (filt_id);
+      if (term == NULL)
+        return NULL;
+      manage_report_filter_controls (term,
+                                     &first_result, &max_results, &sort_field,
+                                     &sort_order, &result_hosts_only,
+                                     &min_cvss_base, &levels,
+                                     /* &delta_states, */
+                                     &search_phrase, &apply_overrides, &autofp,
+                                     &show_closed_cves, &notes, &overrides);
+    }
+  else
+    {
+      // FIX ugh, and free always
+      sort_field = g_strdup (given_sort_field);
+      levels = g_strdup (given_levels);
+      search_phrase = g_strdup (given_search_phrase);
+      min_cvss_base = g_strdup (given_min_cvss_base);
+    }
 
   /* Print the report as XML to a file. */
 
@@ -21244,8 +21277,9 @@ manage_send_report (report_t report, report_t delta_report,
 
   /* Overwrite args with filter if one was given. */
 
-  if ((get->filt_id && strcmp (get->filt_id, "0"))
-      || (get->filter && strlen (get->filter)))
+  if (get
+      && ((get->filt_id && strcmp (get->filt_id, "0"))
+          || (get->filter && strlen (get->filter))))
     {
       gchar *term;
       term = NULL;
@@ -25638,6 +25672,7 @@ count (const char *type, const get_data_t *get,
   gchar *filter;
 
   assert (current_credentials.uuid);
+  assert (get);
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -25736,6 +25771,7 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
   int first, max;
 
   assert (current_credentials.uuid);
+  assert (get);
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -25834,6 +25870,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
   resource_t resource = 0;
 
   assert (current_credentials.uuid);
+  assert (get);
 
   if (columns == NULL)
     {
