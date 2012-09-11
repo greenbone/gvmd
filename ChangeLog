@@ -1,3 +1,14 @@
+2012-09-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (send_to_sourcefire): Change script name "escalator"
+	to "alert".
+
+	* src/escalator_methods, src/escalator_methods/Sourcefire,
+	src/escalator_methods/Sourcefire/escalate: Remove.  Now name with alert.
+
+	* src/alert_methods, src/alert_methods/Sourcefire,
+	src/alert_methods/Sourcefire/alert: New.  Escalator rename.
+
 2012-09-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (get_filters_data_t, get_filters_data_reset)

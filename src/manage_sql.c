@@ -7468,7 +7468,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                                  "cd1f5a34-6bdc-11e0-9827-002264764cea",
                                  NULL);
 
-  script = g_build_filename (script_dir, "escalate", NULL);
+  script = g_build_filename (script_dir, "alert", NULL);
 
   if (!g_file_test (script, G_FILE_TEST_EXISTS))
     {
