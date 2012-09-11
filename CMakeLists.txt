@@ -333,8 +333,8 @@ install (FILES src/schema_formats/XML-brief/generate
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/d6cf255e-947c-11e1-829a-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
-install (FILES src/escalator_methods/Sourcefire/escalate
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_escalator_methods/cd1f5a34-6bdc-11e0-9827-002264764cea/
+install (FILES src/alert_methods/Sourcefire/alert
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_alert_methods/cd1f5a34-6bdc-11e0-9827-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${OPENVAS_DATA_DIR}/openvasmd/wizards)")
