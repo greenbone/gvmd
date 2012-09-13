@@ -239,9 +239,9 @@ typedef enum
 } alert_condition_t;
 
 int
-create_alert (const char*, const char*, event_t, GPtrArray*,
-                  alert_condition_t, GPtrArray*, alert_method_t,
-                  GPtrArray*, alert_t*);
+create_alert (const char*, const char*, const char*, event_t, GPtrArray*,
+              alert_condition_t, GPtrArray*, alert_method_t, GPtrArray*,
+              alert_t*);
 
 int
 delete_alert (const char *, int);
@@ -282,6 +282,15 @@ alert_iterator_condition (iterator_t*);
 
 int
 alert_iterator_method (iterator_t*);
+
+const char *
+alert_iterator_filter_id (iterator_t*);
+
+const char *
+alert_iterator_filter_name (iterator_t*);
+
+int
+alert_iterator_filter_trash (iterator_t*);
 
 const char*
 alert_condition_name (alert_condition_t);
@@ -1510,6 +1519,12 @@ int
 delete_agent (const char *, int);
 
 int
+agent_in_use (agent_t);
+
+int
+trash_agent_in_use (agent_t);
+
+int
 trash_agent_writable (agent_t);
 
 int
@@ -2249,6 +2264,12 @@ copy_filter (const char*, const char*, const char*, filter_t*);
 
 int
 delete_filter (const char *, int);
+
+int
+trash_filter_in_use (filter_t);
+
+int
+filter_in_use (filter_t);
 
 int
 trash_filter_writable (filter_t);

@@ -1,3 +1,41 @@
+2012-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Handle Alert filters explicitly, both at OMP and database level.  In the
+	process manage the trashcan dependency between Alert and Filter
+	properly.  This makes Alerts more consistent with other resource types.
+
+	Hence increase database version to 61.  Add database migration from
+	version 60 to 61.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 61.
+
+	* src/manage_sql.c (create_tables): Add filter columns to alerts and
+	alerts_trash.
+	(migrate_60_to_61): New function.
+	(migrators): Add migrate_60_to_61.
+	(create_alert): Add filter_id param.
+	(delete_alert): Insert alert filter into trashcan.
+	(init_alert_iterator): Add columns for filter ID, name and trash state.
+	(alert_iterator_filter_id, alert_iterator_filter_name)
+	(alert_iterator_filter_trash, agent_in_use, trash_agent_in_use): New
+	functions.
+	(delete_filter): Add in use checks.  Update filter location when moving
+	to trash.
+	(filter_in_use, trash_filter_in_use): New functions.
+	(manage_restore): Add in use check, and restore alert filter info.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (create_alert_data_t, create_alert_data_reset): Add
+	filter_id.
+	(send_get_common, SEND_GET_COMMON): Add in_use arg.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add FILTER
+	to OMP CREATE_ALERT.  Improve restore error message.  Add FILTER to ALERT
+	in OMP GET_ALERTS.  Remove IN_USE from CLIENT_GET_TARGETS case because
+	it's now generic in send_get_common.
+
+	* doc/db.png: Update for version change.
+
 2012-09-11  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt: Fix installation of renamed alert.

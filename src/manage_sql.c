@@ -1222,8 +1222,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS alert_event_data_trash (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS alert_method_data (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS alert_method_data_trash (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS alerts_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER, filter INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS alerts_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER, filter INTEGER, filter_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS filters (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, type, term, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS filters_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, type, term, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
@@ -5953,6 +5953,48 @@ migrate_59_to_60 ()
 }
 
 /**
+ * @brief Migrate the database from version 60 to version 61.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_60_to_61 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 60. */
+
+  if (manage_db_version () != 60)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* The alerts and alerts_trash tables got filter columns. */
+
+  sql ("ALTER TABLE alerts ADD COLUMN filter INTEGER;");
+  sql ("UPDATE alerts SET filter = 0;");
+
+  sql ("ALTER TABLE alerts_trash ADD COLUMN filter INTEGER;");
+  sql ("UPDATE alerts_trash SET filter = 0;");
+
+  sql ("ALTER TABLE alerts_trash ADD COLUMN filter_location INTEGER;");
+  sql ("UPDATE alerts_trash SET filter_location = 0;");
+
+  /* Set the database version to 61. */
+
+  set_db_version (61);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -6017,6 +6059,7 @@ static migrator_t database_migrators[]
     {58, migrate_57_to_58},
     {59, migrate_58_to_59},
     {60, migrate_59_to_60},
+    {61, migrate_60_to_61},
     /* End marker. */
     {-1, NULL}};
 
@@ -6524,6 +6567,7 @@ validate_email (const char* address)
  *
  * @param[in]  name            Name of alert.
  * @param[in]  comment         Comment on alert.
+ * @param[in]  filter_id       Filter.
  * @param[in]  event           Type of event.
  * @param[in]  event_data      Type-specific event data.
  * @param[in]  condition       Event condition.
@@ -6532,22 +6576,42 @@ validate_email (const char* address)
  * @param[in]  method_data     Data for escalation method.
  * @param[out] alert       Created alert on success.
  *
- * @return 0 success, 1 escalation exists already, 2 validation of email failed.
+ * @return 0 success, 1 escalation exists already, 2 validation of email failed,
+ *         3 failed to find filter, -1 error.
  */
 int
-create_alert (const char* name, const char* comment,
-                  event_t event, GPtrArray* event_data,
-                  alert_condition_t condition, GPtrArray* condition_data,
-                  alert_method_t method, GPtrArray* method_data,
-                  alert_t *alert)
+create_alert (const char* name, const char* comment, const char* filter_id,
+              event_t event, GPtrArray* event_data,
+              alert_condition_t condition, GPtrArray* condition_data,
+              alert_method_t method, GPtrArray* method_data,
+              alert_t *alert)
 {
   int index;
   gchar *item, *quoted_comment;
-  gchar *quoted_name = sql_quote (name);
+  gchar *quoted_name;
+  filter_t filter;
 
   assert (current_credentials.uuid);
 
   sql ("BEGIN IMMEDIATE;");
+
+  filter = 0;
+  if (filter_id && strcmp (filter_id, "0"))
+    {
+      if (find_filter (filter_id, &filter))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (filter == 0)
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+    }
+
+  quoted_name = sql_quote (name);
 
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM alerts WHERE name = '%s'"
@@ -6564,16 +6628,17 @@ create_alert (const char* name, const char* comment,
   quoted_comment = comment ? sql_quote (comment) : NULL;
 
   sql ("INSERT INTO alerts (uuid, owner, name, comment, event, condition,"
-       " method)"
+       " method, filter)"
        " VALUES (make_uuid (),"
        " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', %i, %i, %i);",
+       " '%s', '%s', %i, %i, %i, %llu);",
        current_credentials.uuid,
        quoted_name,
        quoted_comment ? quoted_comment : "",
        event,
        condition,
-       method);
+       method,
+       filter);
 
   g_free (quoted_comment);
   g_free (quoted_name);
@@ -6718,8 +6783,10 @@ delete_alert (const char *alert_id, int ultimate)
       alert_t trash_alert;
 
       sql ("INSERT INTO alerts_trash"
-           " (uuid, owner, name, comment, event, condition, method)"
-           " SELECT uuid, owner, name, comment, event, condition, method"
+           " (uuid, owner, name, comment, event, condition, method, filter,"
+           "  filter_location)"
+           " SELECT uuid, owner, name, comment, event, condition, method,"
+           "        filter, " G_STRINGIFY (LOCATION_TABLE)
            " FROM alerts WHERE ROWID = %llu;",
            alert);
 
@@ -6823,8 +6890,8 @@ alert_method (alert_t alert)
  */
 void
 init_alert_iterator (iterator_t *iterator, alert_t alert,
-                         task_t task, event_t event, int trash, int ascending,
-                         const char *sort_field)
+                     task_t task, event_t event, int trash, int ascending,
+                     const char *sort_field)
 {
   assert (alert ? task == 0 : (task ? alert == 0 : 1));
   assert (alert ? event == 0 : (event ? alert == 0 : 1));
@@ -6838,7 +6905,8 @@ init_alert_iterator (iterator_t *iterator, alert_t alert,
                    " 0, event, condition, method,"
                    " (SELECT count(*) > 0 FROM task_alerts"
                    "  WHERE task_alerts.alert = alerts%s.ROWID"
-                   "  %s)"
+                   "  %s),"
+                   "%s%s"
                    " FROM alerts%s"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -6854,6 +6922,42 @@ init_alert_iterator (iterator_t *iterator, alert_t alert,
                        "  AND (SELECT hidden FROM tasks"
                        "       WHERE ROWID = task_alerts.task)"
                        "      < 2"), /* Task in table. */
+                   trash
+                    ? " (CASE WHEN (filter IS NULL OR filter = 0)"
+                      "  THEN ''"
+                      "  ELSE (CASE WHEN (filter_location"
+                      "                   = " G_STRINGIFY (LOCATION_TABLE) ")"
+                      "        THEN (SELECT filters.uuid FROM filters"
+                      "              WHERE filters.ROWID = filter)"
+                      "        ELSE (SELECT filters_trash.uuid"
+                      "              FROM filters_trash"
+                      "              WHERE filters_trash.ROWID = filter)"
+                      "        END)"
+                      "  END),"
+                      " (CASE WHEN (filter IS NULL OR filter = 0)"
+                      "  THEN ''"
+                      "  ELSE (CASE WHEN (filter_location"
+                      "                   = " G_STRINGIFY (LOCATION_TABLE) ")"
+                      "        THEN (SELECT filters.name FROM filters"
+                      "              WHERE filters.ROWID = filter)"
+                      "        ELSE (SELECT filters_trash.name"
+                      "              FROM filters_trash"
+                      "              WHERE filters_trash.ROWID = filter)"
+                      "        END)"
+                      "  END),"
+                    : " (CASE WHEN (filter IS NULL OR filter = 0)"
+                      "  THEN ''"
+                      "  ELSE (SELECT filters.uuid FROM filters"
+                      "        WHERE filters.ROWID = filter)"
+                      "  END),"
+                      " (CASE WHEN (filter IS NULL OR filter = 0)"
+                      "  THEN ''"
+                      "  ELSE (SELECT filters.name FROM filters"
+                      "        WHERE filters.ROWID = filter)"
+                      "  END),",
+                   trash
+                    ? " filter_location = " G_STRINGIFY (LOCATION_TRASH)
+                    : " 0",
                    trash ? "_trash" : "",
                    alert,
                    current_credentials.uuid,
@@ -6862,13 +6966,27 @@ init_alert_iterator (iterator_t *iterator, alert_t alert,
   else if (task && event)
     init_iterator (iterator,
                    "SELECT alerts.ROWID, uuid, name, comment,"
-                   " task_alerts.task, event, condition, method, 1"
+                   " task_alerts.task, event, condition, method, 1,"
+                   " (CASE WHEN (filter IS NULL OR filter = 0)"
+                   "  THEN ''"
+                   "  ELSE (SELECT filters.uuid FROM filters"
+                   "        WHERE filters.ROWID = filter)"
+                   "  END),"
+                   " (CASE WHEN (filter IS NULL OR filter = 0)"
+                   "  THEN ''"
+                   "  ELSE (SELECT filters.name FROM filters"
+                   "        WHERE filters.ROWID = filter)"
+                   "  END),"
+                   "%s"
                    " FROM alerts, task_alerts"
                    " WHERE task_alerts.alert = alerts.ROWID"
                    " AND task_alerts.task = %llu AND event = %i"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash
+                    ? " filter_location = " G_STRINGIFY (LOCATION_TRASH)
+                    : " 0",
                    task,
                    event,
                    current_credentials.uuid,
@@ -6877,13 +6995,27 @@ init_alert_iterator (iterator_t *iterator, alert_t alert,
   else if (task)
     init_iterator (iterator,
                    "SELECT alerts.ROWID, uuid, name, comment,"
-                   " task_alerts.task, event, condition, method, 1"
+                   " task_alerts.task, event, condition, method, 1,"
+                   " (CASE WHEN (filter IS NULL OR filter = 0)"
+                   "  THEN ''"
+                   "  ELSE (SELECT filters.uuid FROM filters"
+                   "        WHERE filters.ROWID = filter)"
+                   "  END),"
+                   " (CASE WHEN (filter IS NULL OR filter = 0)"
+                   "  THEN ''"
+                   "  ELSE (SELECT filters.name FROM filters"
+                   "        WHERE filters.ROWID = filter)"
+                   "  END),"
+                   "%s"
                    " FROM alerts, task_alerts"
                    " WHERE task_alerts.alert = alerts.ROWID"
                    " AND task_alerts.task = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   trash
+                    ? " filter_location = " G_STRINGIFY (LOCATION_TRASH)
+                    : " 0",
                    task,
                    current_credentials.uuid,
                    sort_field ? sort_field : "alerts.ROWID",
@@ -6894,7 +7026,8 @@ init_alert_iterator (iterator_t *iterator, alert_t alert,
                    " 0, event, condition, method,"
                    " (SELECT count(*) > 0 FROM task_alerts"
                    "  WHERE task_alerts.alert = alerts%s.ROWID"
-                   "  %s)"
+                   "  %s),"
+                   "%s%s"
                    " FROM alerts%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -6909,6 +7042,42 @@ init_alert_iterator (iterator_t *iterator, alert_t alert,
                        "  AND (SELECT hidden FROM tasks"
                        "       WHERE ROWID = task_alerts.task)"
                        "      < 2"), /* Task in table. */
+                   trash
+                    ? " (CASE WHEN (filter IS NULL OR filter = 0)"
+                      "  THEN ''"
+                      "  ELSE (CASE WHEN (filter_location"
+                      "                   = " G_STRINGIFY (LOCATION_TABLE) ")"
+                      "        THEN (SELECT filters.uuid FROM filters"
+                      "              WHERE filters.ROWID = filter)"
+                      "        ELSE (SELECT filters_trash.uuid"
+                      "              FROM filters_trash"
+                      "              WHERE filters_trash.ROWID = filter)"
+                      "        END)"
+                      "  END),"
+                      " (CASE WHEN (filter IS NULL OR filter = 0)"
+                      "  THEN ''"
+                      "  ELSE (CASE WHEN (filter_location"
+                      "                   = " G_STRINGIFY (LOCATION_TABLE) ")"
+                      "        THEN (SELECT filters.name FROM filters"
+                      "              WHERE filters.ROWID = filter)"
+                      "        ELSE (SELECT filters_trash.name"
+                      "              FROM filters_trash"
+                      "              WHERE filters_trash.ROWID = filter)"
+                      "        END)"
+                      "  END),"
+                    : " (CASE WHEN (filter IS NULL OR filter = 0)"
+                      "  THEN ''"
+                      "  ELSE (SELECT filters.uuid FROM filters"
+                      "        WHERE filters.ROWID = filter)"
+                      "  END),"
+                      " (CASE WHEN (filter IS NULL OR filter = 0)"
+                      "  THEN ''"
+                      "  ELSE (SELECT filters.name FROM filters"
+                      "        WHERE filters.ROWID = filter)"
+                      "  END),",
+                   trash
+                    ? " filter_location = " G_STRINGIFY (LOCATION_TRASH)
+                    : " 0",
                    trash ? "_trash" : "",
                    current_credentials.uuid,
                    sort_field ? sort_field : "alerts.ROWID",
@@ -7030,7 +7199,7 @@ alert_iterator_method (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Use state of the alert or NULL if iteration is complete.
+ * @return Use state of the alert or -1 if iteration is complete.
  */
 int
 alert_iterator_in_use (iterator_t* iterator)
@@ -7038,6 +7207,42 @@ alert_iterator_in_use (iterator_t* iterator)
   int ret;
   if (iterator->done) return -1;
   ret = (int) sqlite3_column_int (iterator->stmt, 8);
+  return ret;
+}
+
+/**
+ * @brief Get the filter ID from an alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (alert_iterator_filter_id, 9);
+
+/**
+ * @brief Get the filter name from an alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (alert_iterator_filter_name, 10);
+
+/**
+ * @brief Return whether an alert filter is in the trashcan.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Filter trashcan state of the alert or -1 if iteration is complete.
+ */
+int
+alert_iterator_filter_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 11);
   return ret;
 }
 
@@ -32676,6 +32881,32 @@ delete_agent (const char *agent_id, int ultimate)
 }
 
 /**
+ * @brief Check whether an agent is in use.
+ *
+ * @param[in]  agent  Agent.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+agent_in_use (agent_t agent)
+{
+  return 0;
+}
+
+/**
+ * @brief Check whether a trashcan agent is writable.
+ *
+ * @param[in]  agent  Agent.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_agent_in_use (agent_t agent)
+{
+  return 0;
+}
+
+/**
  * @brief Check whether a agent is writable.
  *
  * @param[in]  agent  Agent.
@@ -39281,11 +39512,9 @@ delete_filter (const char *filter_id, int ultimate)
           return 0;
         }
 
-#if 0
-      // FIX
       /* Check if it's in use by an alert in the trashcan. */
       if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks"
+                   "SELECT count(*) FROM alerts_trash"
                    " WHERE filter = %llu"
                    " AND filter_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    filter))
@@ -39293,26 +39522,20 @@ delete_filter (const char *filter_id, int ultimate)
           sql ("ROLLBACK;");
           return 1;
         }
-#endif
 
       sql ("DELETE FROM filters_trash WHERE ROWID = %llu;", filter);
       sql ("COMMIT;");
       return 0;
     }
 
-#if 0
-  // FIX alert
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks"
-               " WHERE filter = %llu"
-               " AND filter_location = " G_STRINGIFY (LOCATION_TABLE)
-               " AND (hidden = 0 OR hidden = 1);",
+               "SELECT count(*) FROM alerts"
+               " WHERE filter = %llu;",
                filter))
     {
       sql ("ROLLBACK;");
       return 1;
     }
-#endif
 
   if (ultimate == 0)
     {
@@ -39324,23 +39547,53 @@ delete_filter (const char *filter_id, int ultimate)
            " FROM filters WHERE ROWID = %llu;",
            filter);
 
-#if 0
-      // FIX
       /* Update the location of the filter in any trashcan alerts. */
-      sql ("UPDATE tasks"
+      sql ("UPDATE alerts_trash"
            " SET filter = %llu,"
            "     filter_location = " G_STRINGIFY (LOCATION_TRASH)
            " WHERE filter = %llu"
            " AND filter_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            sqlite3_last_insert_rowid (task_db),
            filter);
-#endif
     }
 
   sql ("DELETE FROM filters WHERE ROWID = %llu;", filter);
 
   sql ("COMMIT;");
   return 0;
+}
+
+/**
+ * @brief Check whether a filter is in use.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+filter_in_use (filter_t filter)
+{
+  return sql_int (0, 0,
+                  "SELECT count (*) FROM alerts WHERE filter = %llu;",
+                  filter);
+}
+
+/**
+ * @brief Check whether a trashcan filter is in use.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_filter_in_use (filter_t filter)
+{
+  return sql_int (0, 0,
+                  "SELECT count (*) FROM alerts_trash"
+                  " WHERE filter = %llu"
+                  " AND filter_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+                  filter)
+         == 0;
 }
 
 /**
@@ -39912,9 +40165,20 @@ manage_restore (const char *id)
           return 3;
         }
 
+      /* Check if it uses a filter in the trashcan. */
+      if (sql_int (0, 0,
+                   "SELECT filter_location = " G_STRINGIFY (LOCATION_TRASH)
+                   " FROM alerts_trash WHERE ROWID = %llu;",
+                   resource))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
       sql ("INSERT INTO alerts"
-           " (uuid, owner, name, comment, event, condition, method)"
-           " SELECT uuid, owner, name, comment, event, condition, method"
+           " (uuid, owner, name, comment, event, condition, method, filter)"
+           " SELECT uuid, owner, name, comment, event, condition, method,"
+           "        filter"
            " FROM alerts_trash WHERE ROWID = %llu;",
            resource);
 
@@ -39993,16 +40257,14 @@ manage_restore (const char *id)
            " FROM filters_trash WHERE ROWID = %llu;",
            resource);
 
-#if 0
-      /* FIX Update the filter in any trashcan alerts. */
-      sql ("UPDATE tasks"
+      /* Update the filter in any trashcan alerts. */
+      sql ("UPDATE alerts_trash"
            " SET filter = %llu,"
            "     filter_location = " G_STRINGIFY (LOCATION_TABLE)
            " WHERE filter = %llu"
            " AND filter_location = " G_STRINGIFY (LOCATION_TRASH),
            sqlite3_last_insert_rowid (task_db),
            resource);
-#endif
 
       sql ("DELETE FROM filters_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
@@ -40377,7 +40639,7 @@ manage_restore (const char *id)
           return 3;
         }
 
-      /* Check if it's in use by a credential or port list in the trashcan. */
+      /* Check if it uses a credential or port list in the trashcan. */
       if (sql_int (0, 0,
                    "SELECT ssh_location = " G_STRINGIFY (LOCATION_TRASH)
                    " OR smb_location = " G_STRINGIFY (LOCATION_TRASH)

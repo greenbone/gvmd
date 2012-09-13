@@ -871,6 +871,7 @@ typedef struct
   array_t *condition_data;   ///< Array of pointers.  Extra data for condition.
   char *event;               ///< Event that will cause alert.
   array_t *event_data;       ///< Array of pointers.  Extra data for event.
+  char *filter_id;           ///< UUID of filter.
   char *method;              ///< Method of alert, e.g. "Email".
   array_t *method_data;      ///< Array of pointer.  Extra data for method.
   char *name;                ///< Name of alert.
@@ -891,6 +892,7 @@ create_alert_data_reset (create_alert_data_t *data)
   array_free (data->condition_data);
   free (data->event);
   array_free (data->event_data);
+  free (data->filter_id);
   free (data->method);
   array_free (data->method_data);
   free (data->name);
@@ -3758,6 +3760,7 @@ typedef enum
   CLIENT_CREATE_ALERT_EVENT,
   CLIENT_CREATE_ALERT_EVENT_DATA,
   CLIENT_CREATE_ALERT_EVENT_DATA_NAME,
+  CLIENT_CREATE_ALERT_FILTER,
   CLIENT_CREATE_ALERT_METHOD,
   CLIENT_CREATE_ALERT_METHOD_DATA,
   CLIENT_CREATE_ALERT_METHOD_DATA_NAME,
@@ -4364,11 +4367,12 @@ send_get_start (const char *type, get_data_t *get,
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
  * @param[in]  writable              Whether the resource is writable.
+ * @param[in]  in_use                Whether the resource is in use.
  */
 int
 send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                  int (*write_to_client) (const char *, void*),
-                 void* write_to_client_data, int writable)
+                 void* write_to_client_data, int writable, int in_use)
 {
   gchar* msg;
 
@@ -4377,14 +4381,16 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                                  "<comment>%s</comment>"
                                  "<creation_time>%s</creation_time>"
                                  "<modification_time>%s</modification_time>"
-                                 "<writable>%i</writable>",
+                                 "<writable>%i</writable>"
+                                 "<in_use>%i</in_use>",
                                  type,
                                  get_iterator_uuid (iterator),
                                  get_iterator_name (iterator),
                                  get_iterator_comment (iterator),
                                  get_iterator_creation_time (iterator),
                                  get_iterator_modification_time (iterator),
-                                 writable);
+                                 writable,
+                                 in_use);
 
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
@@ -4499,6 +4505,13 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
                                (get_iterator_resource                          \
                                  (iterator))                                   \
                             : type ## _writable                                \
+                               (get_iterator_resource                          \
+                                 (iterator)),                                  \
+                           (get)->trash                                        \
+                            ? trash_ ## type ## _in_use                        \
+                               (get_iterator_resource                          \
+                                 (iterator))                                   \
+                            : type ## _in_use                                  \
                                (get_iterator_resource                          \
                                  (iterator))))                                 \
         {                                                                      \
@@ -6222,6 +6235,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ALERT_CONDITION);
         else if (strcasecmp ("EVENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_EVENT);
+        else if (strcasecmp ("FILTER", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_alert_data->filter_id);
+            set_client_state (CLIENT_CREATE_ALERT_FILTER);
+          }
         else if (strcasecmp ("METHOD", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_METHOD);
         else if (strcasecmp ("NAME", element_name) == 0)
@@ -12123,14 +12142,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             {
               switch (create_alert (create_alert_data->name,
-                                        create_alert_data->comment,
-                                        event,
-                                        create_alert_data->event_data,
-                                        condition,
-                                        create_alert_data->condition_data,
-                                        method,
-                                        create_alert_data->method_data,
-                                        &new_alert))
+                                    create_alert_data->comment,
+                                    create_alert_data->filter_id,
+                                    event,
+                                    create_alert_data->event_data,
+                                    condition,
+                                    create_alert_data->condition_data,
+                                    method,
+                                    create_alert_data->method_data,
+                                    &new_alert))
                 {
                   case 0:
                     {
@@ -12157,6 +12177,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_log ("event alert", G_LOG_LEVEL_MESSAGE,
                            "Alert could not be created");
                     break;
+                  case 3:
+                    if (send_find_error_to_client ("create_alert",
+                                                   "filter",
+                                                   create_alert_data->filter_id,
+                                                   write_to_client,
+                                                   write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                           "Alert could not be created");
+                    break;
                   default:
                     assert (0);
                   case -1:
@@ -12174,6 +12207,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_ALERT, COMMENT);
       CLOSE (CLIENT_CREATE_ALERT, CONDITION);
       CLOSE (CLIENT_CREATE_ALERT, EVENT);
+      CLOSE (CLIENT_CREATE_ALERT, FILTER);
       CLOSE (CLIENT_CREATE_ALERT, METHOD);
       CLOSE (CLIENT_CREATE_ALERT, NAME);
 
@@ -14917,7 +14951,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 case 1:
                   SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("restore", "Resource is in use"));
+                   (XML_ERROR_SYNTAX ("restore",
+                                      "Resource refers into trashcan"));
                   break;
                 case 2:
                   if (send_find_error_to_client ("restore",
@@ -16046,10 +16081,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SENDF_TO_CLIENT_OR_FAIL ("<alert id=\"%s\">"
                                            "<name>%s</name>"
                                            "<comment>%s</comment>"
+                                           "<filter id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<trash>%i</trash>"
+                                           "</filter>"
                                            "<in_use>%i</in_use>",
                                            alert_iterator_uuid (&alerts),
                                            alert_iterator_name (&alerts),
                                            alert_iterator_comment (&alerts),
+                                           alert_iterator_filter_id (&alerts),
+                                           alert_iterator_filter_name (&alerts),
+                                           (get_alerts_data->trash
+                                             && alert_iterator_filter_trash
+                                                 (&alerts)),
                                            alert_iterator_in_use (&alerts));
 
                   /* Condition. */
@@ -16833,7 +16877,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
                                            "<max_hosts>%i</max_hosts>"
-                                           "<in_use>%i</in_use>"
                                            "<port_range>%s</port_range>"
                                            "<port_list id=\"%s\">"
                                            "<name>%s</name>"
@@ -16851,13 +16894,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            target_iterator_hosts (&targets),
                                            manage_max_hosts
                                             (target_iterator_hosts (&targets)),
-                                           get_targets_data->get.trash
-                                            ? trash_target_in_use
-                                               (target_iterator_target
-                                                 (&targets))
-                                            : target_in_use
-                                               (target_iterator_target
-                                                 (&targets)),
                                            port_range,
                                            port_list_uuid ? port_list_uuid : "",
                                            port_list_name ? port_list_name : "",
