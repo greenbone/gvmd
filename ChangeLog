@@ -1,5 +1,18 @@
 2012-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add ALERTS to GET_FILTERS response, governed by "alerts" attribute.
+
+	* src/manage_sql.c (init_filter_alert_iterator)
+	(filter_alert_iterator_name, filter_alert_iterator_uuid): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (get_filters_data_t): Rename tasks to alerts.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Send Alerts
+	in GET_FILTERS if requested.
+
+2012-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Handle Alert filters explicitly, both at OMP and database level.  In the
 	process manage the trashcan dependency between Alert and Filter
 	properly.  This makes Alerts more consistent with other resource types.

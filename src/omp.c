@@ -1950,7 +1950,7 @@ get_alerts_data_reset (get_alerts_data_t *data)
 typedef struct
 {
   get_data_t get;    ///< Get args.
-  int tasks;         ///< Boolean.  Whether to include tasks that use filter.
+  int alerts;        ///< Boolean.  Whether to include alerts that use filter.
 } get_filters_data_t;
 
 /**
@@ -5025,9 +5025,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_FILTERS", element_name) == 0)
           {
+            const gchar* attribute;
             get_data_parse_attributes (&get_filters_data->get, "filter",
                                        attribute_names,
                                        attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "alerts", &attribute))
+              get_filters_data->alerts = strcmp (attribute, "0");
+            else
+              get_filters_data->alerts = 0;
             set_client_state (CLIENT_GET_FILTERS);
           }
         else if (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0)
@@ -16261,10 +16267,30 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_GET_COMMON (filter, &get_filters_data->get, &filters);
 
               SENDF_TO_CLIENT_OR_FAIL ("<type>%s</type>"
-                                       "<term>%s</term>"
-                                       "</filter>",
+                                       "<term>%s</term>",
                                        filter_iterator_type (&filters),
                                        filter_iterator_term (&filters));
+
+              if (get_filters_data->alerts)
+                {
+                  iterator_t alerts;
+
+                  SEND_TO_CLIENT_OR_FAIL ("<alerts>");
+                  init_filter_alert_iterator (&alerts,
+                                              get_iterator_resource
+                                               (&filters));
+                  while (next (&alerts))
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<alert id=\"%s\">"
+                      "<name>%s</name>"
+                      "</alert>",
+                      filter_alert_iterator_uuid (&alerts),
+                      filter_alert_iterator_name (&alerts));
+                  cleanup_iterator (&alerts);
+                  SEND_TO_CLIENT_OR_FAIL ("</alerts>");
+                }
+
+              SEND_TO_CLIENT_OR_FAIL ("</filter>");
 
               count++;
             }

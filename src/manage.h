@@ -2278,16 +2278,25 @@ int
 filter_writable (filter_t);
 
 int
-init_filter_iterator (iterator_t*, const get_data_t*);
+filter_count (const get_data_t*);
 
 int
-filter_count (const get_data_t*);
+init_filter_iterator (iterator_t*, const get_data_t*);
 
 const char*
 filter_iterator_type (iterator_t*);
 
 const char*
 filter_iterator_term (iterator_t*);
+
+void
+init_filter_alert_iterator (iterator_t*, filter_t);
+
+const char*
+filter_alert_iterator_name (iterator_t*);
+
+const char*
+filter_alert_iterator_uuid (iterator_t*);
 
 int
 modify_filter (const char*, const char*, const char*, const char*, const char*);

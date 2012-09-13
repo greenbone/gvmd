@@ -39708,6 +39708,50 @@ filter_iterator_type (iterator_t* iterator)
 DEF_ACCESS (filter_iterator_term, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
+ * @brief Initialise a filter alert iterator.
+ *
+ * Iterates over all alerts that use the filter.
+ *
+ * @param[in]  iterator   Iterator.
+ * @param[in]  filter     Filter.
+ * @param[in]  ascending  Whether to sort ascending or descending.
+ */
+void
+init_filter_alert_iterator (iterator_t* iterator, filter_t filter)
+{
+  assert (current_credentials.uuid);
+
+  init_iterator (iterator,
+                 "SELECT name, uuid FROM alerts"
+                 " WHERE filter = %llu"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                 " ORDER BY name ASC;",
+                 filter,
+                 current_credentials.uuid);
+}
+
+/**
+ * @brief Get the name from a filter_alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the host, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (filter_alert_iterator_name, 0);
+
+/**
+ * @brief Get the UUID from a filter_alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The UUID of the host, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (filter_alert_iterator_uuid, 1);
+
+/**
  * @brief Modify a filter.
  *
  * @param[in]   filter_id       UUID of filter.
