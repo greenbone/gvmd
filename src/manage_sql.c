@@ -6830,10 +6830,10 @@ delete_alert (const char *alert_id, int ultimate)
 }
 
 /**
- * @brief Return the UUID of a alert.
+ * @brief Return the UUID of an alert.
  *
  * @param[in]   alert  Alert.
- * @param[out]  id         Pointer to a newly allocated string.
+ * @param[out]  id     Pointer to a newly allocated string.
  *
  * @return 0.
  */
@@ -6846,6 +6846,28 @@ alert_uuid (alert_t alert, char ** id)
   return 0;
 }
 
+/**
+ * @brief Return the UUID of the filter of an alert.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return UUID if there's a filter, else NULL.
+ */
+char *
+alert_filter_id (alert_t alert)
+{
+  return sql_string (0, 0,
+                     "SELECT"
+                     " (CASE WHEN (SELECT filter IS NULL OR filter = 0"
+                     "             FROM alerts WHERE ROWID = %llu)"
+                     "  THEN NULL"
+                     "  ELSE (SELECT uuid FROM filters"
+                     "        WHERE ROWID = (SELECT filter FROM alerts"
+                     "                       WHERE ROWID = %llu))"
+                     "  END);",
+                     alert,
+                     alert);
+}
 /**
  * @brief Return the condition associated with an alert.
  *
@@ -7924,7 +7946,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                              "from_address");
 
               notice = alert_data (alert, "method", "notice");
-              filt_id = alert_data (alert, "method", "filt_id");
+              filt_id = alert_filter_id (alert);
               name = task_name (task);
               if (notice && strcmp (notice, "0") == 0)
                 {
@@ -18935,10 +18957,10 @@ report_filter_term (int sort_order, const char* sort_field,
 static int
 print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   const get_data_t *get,
-                  int sort_order, const char* sort_field, int result_hosts_only,
-                  const char *min_cvss_base, report_format_t report_format,
-                  const char *levels, const char *delta_states,
-                  int apply_overrides, const char *search_phrase, int autofp,
+                  int sort_order, const char *given_sort_field, int result_hosts_only,
+                  const char *given_min_cvss_base, report_format_t report_format,
+                  const char *given_levels, const char *delta_states,
+                  int apply_overrides, const char *given_search_phrase, int autofp,
                   int show_closed_cves, int notes, int notes_details,
                   int overrides, int overrides_details, int first_result,
                   int max_results, const char *type, const char *host, int pos,
@@ -18946,7 +18968,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   int host_first_result, int host_max_results)
 {
   FILE *out;
-  gchar *term;
+  gchar *term, *sort_field, *levels, *search_phrase, *min_cvss_base;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
   int result_count, filtered_result_count, run_status;
   array_t *result_hosts;
@@ -18991,11 +19013,51 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       return -1;
     }
 
+  if (get
+      && ((get->filt_id && strlen (get->filt_id) && strcmp (get->filt_id, "0"))
+          || (get->filter && strlen (get->filter))))
+    {
+      term = NULL;
+      if (get->filt_id && strlen (get->filt_id) && strcmp (get->filt_id, "0"))
+        {
+          term = filter_term (get->filt_id);
+          if (term == NULL)
+            return -1;
+        }
+
+      /* Set the filter parameters from the filter term. */
+      manage_report_filter_controls (term,
+                                     &first_result, &max_results, &sort_field,
+                                     &sort_order, &result_hosts_only,
+                                     &min_cvss_base, &levels,
+                                     /* FIX &delta_states, */
+                                     &search_phrase, &apply_overrides, &autofp,
+                                     &show_closed_cves, &notes, &overrides);
+    }
+  else
+    {
+      sort_field = g_strdup (given_sort_field);
+      levels = g_strdup (given_levels);
+      search_phrase = g_strdup (given_search_phrase);
+      min_cvss_base = g_strdup (given_min_cvss_base);
+
+      /* Build the filter term from the old style GET attributes. */
+      term = report_filter_term (sort_order, sort_field, result_hosts_only,
+                                 min_cvss_base, levels, /* FIX delta_states, */
+                                 apply_overrides, search_phrase, autofp,
+                                 show_closed_cves, notes, overrides, first_result,
+                                 max_results);
+    }
+
   levels = levels ? levels : "hmlgd";
 
   if (task && task_uuid (task, &tsk_uuid))
     {
       fclose (out);
+      g_free (sort_field);
+      g_free (levels);
+      g_free (search_phrase);
+      g_free (min_cvss_base);
       return -1;
     }
 
@@ -19073,25 +19135,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                 &filtered_result_count);
       report_scan_run_status (report, &run_status);
     }
-
-  if (get
-      && ((get->filt_id && strcmp (get->filt_id, "0"))
-          || (get->filter && strlen (get->filter))))
-    {
-      term = NULL;
-      if (get->filt_id && strcmp (get->filt_id, "0"))
-        {
-          term = filter_term (get->filt_id);
-          assert (term); /* Caller checked this. */
-        }
-    }
-  else
-    /* Build the filter term from the old style GET attributes. */
-    term = report_filter_term (sort_order, sort_field, result_hosts_only,
-                               min_cvss_base, levels, /* delta_states, */
-                               apply_overrides, search_phrase, autofp,
-                               show_closed_cves, notes, overrides, first_result,
-                               max_results);
 
   PRINT
    (out,
@@ -19246,6 +19289,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             {
               if (host == NULL)
                 cleanup_iterator (&hosts);
+              g_free (sort_field);
+              g_free (levels);
+              g_free (search_phrase);
+              g_free (min_cvss_base);
               return -1;
             }
 
@@ -19448,6 +19495,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           g_warning ("%s: fclose failed: %s\n",
                      __FUNCTION__,
                      strerror (errno));
+          g_free (sort_field);
+          g_free (levels);
+          g_free (search_phrase);
+          g_free (min_cvss_base);
           return -1;
         }
 
@@ -19496,6 +19547,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               if (host == NULL)
                 cleanup_iterator (&hosts);
               free_buffer (buffer);
+              g_free (sort_field);
+              g_free (levels);
+              g_free (search_phrase);
+              g_free (min_cvss_base);
               return -1;
             }
 
@@ -19791,6 +19846,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              (strchr (levels, 'm') ? f_warnings : 0));
 
       PRINT (out, "</report>");
+
+      g_free (sort_field);
+      g_free (levels);
+      g_free (search_phrase);
+      g_free (min_cvss_base);
 
       if (fclose (out))
         {
@@ -20225,6 +20285,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             {
               g_warning ("%s: compare_and_buffer_results failed\n",
                          __FUNCTION__);
+              g_free (sort_field);
+              g_free (levels);
+              g_free (search_phrase);
+              g_free (min_cvss_base);
               return -1;
             }
           PRINT_XML (out, buffer->str);
@@ -20519,6 +20583,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             {
               g_warning ("%s: compare_and_buffer_results failed\n",
                          __FUNCTION__);
+              g_free (sort_field);
+              g_free (levels);
+              g_free (search_phrase);
+              g_free (min_cvss_base);
               return -1;
             }
 
@@ -20932,6 +21000,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   PRINT (out, "</report>");
 
+  g_free (sort_field);
+  g_free (levels);
+  g_free (search_phrase);
+  g_free (min_cvss_base);
+
   if (fclose (out))
     {
       g_warning ("%s: fclose failed: %s\n",
@@ -20981,43 +21054,22 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 gchar *
 manage_report (report_t report, report_format_t report_format,
                const char *filt_id, int sort_order,
-               const char* given_sort_field, int result_hosts_only,
-               const char *given_min_cvss_base, const char *given_levels,
-               int apply_overrides, const char *given_search_phrase, int autofp,
+               const char* sort_field, int result_hosts_only,
+               const char *min_cvss_base, const char *levels,
+               int apply_overrides, const char *search_phrase, int autofp,
                int show_closed_cves, int notes, int notes_details,
                int overrides, int overrides_details, int first_result,
                int max_results, const char *type, gsize *output_length,
                gchar **extension, gchar **content_type)
 {
   task_t task;
-  gchar *xml_file, *sort_field, *levels, *search_phrase, *min_cvss_base;
+  gchar *xml_file;
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
   int ret;
+  get_data_t get;
 
   if (type && strcmp (type, "scan"))
     return NULL;
-
-  if (filt_id && strlen (filt_id) && strcmp (filt_id, "0"))
-    {
-      gchar *term;
-      term = filter_term (filt_id);
-      if (term == NULL)
-        return NULL;
-      manage_report_filter_controls (term,
-                                     &first_result, &max_results, &sort_field,
-                                     &sort_order, &result_hosts_only,
-                                     &min_cvss_base, &levels,
-                                     /* FIX &delta_states, */
-                                     &search_phrase, &apply_overrides, &autofp,
-                                     &show_closed_cves, &notes, &overrides);
-    }
-  else
-    {
-      sort_field = g_strdup (given_sort_field);
-      levels = g_strdup (given_levels);
-      search_phrase = g_strdup (given_search_phrase);
-      min_cvss_base = g_strdup (given_min_cvss_base);
-    }
 
   /* Print the report as XML to a file. */
 
@@ -21025,35 +21077,25 @@ manage_report (report_t report, report_format_t report_format,
        && (report_format_trust (report_format) != TRUST_YES))
       || (report_task (report, &task)))
     {
-      g_free (sort_field);
-      g_free (levels);
-      g_free (search_phrase);
-      g_free (min_cvss_base);
       return NULL;
     }
 
   if (mkdtemp (xml_dir) == NULL)
     {
       g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
-      g_free (sort_field);
-      g_free (levels);
-      g_free (search_phrase);
-      g_free (min_cvss_base);
       return NULL;
     }
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
-  ret = print_report_xml (report, 0, task, xml_file, /* FIX get */ NULL,
+  get.filt_id = filt_id ? g_strdup (filt_id) : NULL;
+  ret = print_report_xml (report, 0, task, xml_file, &get,
                           sort_order, sort_field,
                           result_hosts_only, min_cvss_base, report_format,
                           levels, NULL, apply_overrides, search_phrase, autofp,
                           show_closed_cves, notes, notes_details, overrides,
                           overrides_details, first_result, max_results, type,
                           NULL, 0, NULL, NULL, 0, 0);
-  g_free (sort_field);
-  g_free (levels);
-  g_free (search_phrase);
-  g_free (min_cvss_base);
+  g_free (get.filt_id);
   if (ret)
     {
       g_free (xml_file);
@@ -21481,12 +21523,11 @@ manage_report (report_t report, report_format_t report_format,
  */
 int
 manage_send_report (report_t report, report_t delta_report,
-                    report_format_t report_format,
-                    const get_data_t *get,
-                    int sort_order, const char* given_sort_field,
-                    int result_hosts_only, const char *given_min_cvss_base,
-                    const char *given_levels, const char *delta_states,
-                    int apply_overrides, const char *given_search_phrase,
+                    report_format_t report_format, const get_data_t *get,
+                    int sort_order, const char* sort_field,
+                    int result_hosts_only, const char *min_cvss_base,
+                    const char *levels, const char *delta_states,
+                    int apply_overrides, const char *search_phrase,
                     int autofp, int show_closed_cves, int notes,
                     int notes_details, int overrides, int overrides_details,
                     int first_result, int max_results, int base64,
@@ -21500,7 +21541,7 @@ manage_send_report (report_t report, report_t delta_report,
                     int host_max_results)
 {
   task_t task;
-  gchar *xml_file, *sort_field, *levels, *search_phrase, *min_cvss_base;
+  gchar *xml_file;
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
   int ret;
 
@@ -21512,36 +21553,6 @@ manage_send_report (report_t report, report_t delta_report,
     return -1;
   else if (report_task (report, &task))
     return -1;
-
-  /* Overwrite args with filter if one was given. */
-
-  if (get
-      && ((get->filt_id && strcmp (get->filt_id, "0"))
-          || (get->filter && strlen (get->filter))))
-    {
-      gchar *term;
-      term = NULL;
-      if (get->filt_id && strcmp (get->filt_id, "0"))
-        {
-          term = filter_term (get->filt_id);
-          if (term == NULL)
-            return 2;
-        }
-      manage_report_filter_controls (term ? term : get->filter,
-                                     &first_result, &max_results, &sort_field,
-                                     &sort_order, &result_hosts_only,
-                                     &min_cvss_base, &levels,
-                                     /* FIX &delta_states, */
-                                     &search_phrase, &apply_overrides, &autofp,
-                                     &show_closed_cves, &notes, &overrides);
-    }
-  else
-    {
-      sort_field = g_strdup (given_sort_field);
-      levels = g_strdup (given_levels);
-      search_phrase = g_strdup (given_search_phrase);
-      min_cvss_base = g_strdup (given_min_cvss_base);
-    }
 
   /* Escalate instead, if requested. */
 
@@ -21568,10 +21579,6 @@ manage_send_report (report_t report, report_t delta_report,
                         search_phrase, autofp, show_closed_cves, notes,
                         notes_details, overrides, overrides_details,
                         first_result, max_results);
-      g_free (sort_field);
-      g_free (levels);
-      g_free (search_phrase);
-      g_free (min_cvss_base);
       return ret;
     }
 
@@ -21579,21 +21586,11 @@ manage_send_report (report_t report, report_t delta_report,
 
   if ((report_format_predefined (report_format) == 0)
       && (report_format_trust (report_format) != TRUST_YES))
-    {
-      g_free (sort_field);
-      g_free (levels);
-      g_free (search_phrase);
-      g_free (min_cvss_base);
-      return -1;
-    }
+    return -1;
 
   if (mkdtemp (xml_dir) == NULL)
     {
       g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
-      g_free (sort_field);
-      g_free (levels);
-      g_free (search_phrase);
-      g_free (min_cvss_base);
       return -1;
     }
 
@@ -21606,10 +21603,6 @@ manage_send_report (report_t report, report_t delta_report,
                           first_result, max_results, type,
                           host, pos, host_search_phrase, host_levels,
                           host_first_result, host_max_results);
-  g_free (sort_field);
-  g_free (levels);
-  g_free (search_phrase);
-  g_free (min_cvss_base);
   if (ret)
     {
       g_free (xml_file);
