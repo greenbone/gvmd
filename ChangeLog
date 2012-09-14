@@ -1,3 +1,8 @@
+2012-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_report, manage_send_report): Free filter
+	strings.
+
 2012-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add ALERTS to GET_FILTERS response, governed by "alerts" attribute.

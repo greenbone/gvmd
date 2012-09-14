@@ -20974,6 +20974,7 @@ manage_report (report_t report, report_format_t report_format,
   task_t task;
   gchar *xml_file, *sort_field, *levels, *search_phrase, *min_cvss_base;
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+  int ret;
 
   if (type && strcmp (type, "scan"))
     return NULL;
@@ -20988,13 +20989,12 @@ manage_report (report_t report, report_format_t report_format,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
                                      &min_cvss_base, &levels,
-                                     /* &delta_states, */
+                                     /* FIX &delta_states, */
                                      &search_phrase, &apply_overrides, &autofp,
                                      &show_closed_cves, &notes, &overrides);
     }
   else
     {
-      // FIX ugh, and free always
       sort_field = g_strdup (given_sort_field);
       levels = g_strdup (given_levels);
       search_phrase = g_strdup (given_search_phrase);
@@ -21003,26 +21003,40 @@ manage_report (report_t report, report_format_t report_format,
 
   /* Print the report as XML to a file. */
 
-  if ((report_format_predefined (report_format) == 0)
-      && (report_format_trust (report_format) != TRUST_YES))
-    return NULL;
-
-  if (report_task (report, &task))
-    return NULL;
+  if (((report_format_predefined (report_format) == 0)
+       && (report_format_trust (report_format) != TRUST_YES))
+      || (report_task (report, &task)))
+    {
+      g_free (sort_field);
+      g_free (levels);
+      g_free (search_phrase);
+      g_free (min_cvss_base);
+      return NULL;
+    }
 
   if (mkdtemp (xml_dir) == NULL)
     {
       g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
+      g_free (sort_field);
+      g_free (levels);
+      g_free (search_phrase);
+      g_free (min_cvss_base);
       return NULL;
     }
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
-  if (print_report_xml (report, 0, task, xml_file, /* FIX get */ NULL, sort_order, sort_field,
-                        result_hosts_only, min_cvss_base, report_format,
-                        levels, NULL, apply_overrides, search_phrase, autofp,
-                        show_closed_cves, notes, notes_details, overrides,
-                        overrides_details, first_result, max_results, type,
-                        NULL, 0, NULL, NULL, 0, 0))
+  ret = print_report_xml (report, 0, task, xml_file, /* FIX get */ NULL,
+                          sort_order, sort_field,
+                          result_hosts_only, min_cvss_base, report_format,
+                          levels, NULL, apply_overrides, search_phrase, autofp,
+                          show_closed_cves, notes, notes_details, overrides,
+                          overrides_details, first_result, max_results, type,
+                          NULL, 0, NULL, NULL, 0, 0);
+  g_free (sort_field);
+  g_free (levels);
+  g_free (search_phrase);
+  g_free (min_cvss_base);
+  if (ret)
     {
       g_free (xml_file);
       return NULL;
@@ -21470,6 +21484,7 @@ manage_send_report (report_t report, report_t delta_report,
   task_t task;
   gchar *xml_file, *sort_field, *levels, *search_phrase, *min_cvss_base;
   char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+  int ret;
 
   if (type && (strcmp (type, "assets") == 0))
     task = 0;
@@ -21498,13 +21513,12 @@ manage_send_report (report_t report, report_t delta_report,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
                                      &min_cvss_base, &levels,
-                                     /* &delta_states, */
+                                     /* FIX &delta_states, */
                                      &search_phrase, &apply_overrides, &autofp,
                                      &show_closed_cves, &notes, &overrides);
     }
   else
     {
-      // FIX ugh, and free always
       sort_field = g_strdup (given_sort_field);
       levels = g_strdup (given_levels);
       search_phrase = g_strdup (given_search_phrase);
@@ -21528,44 +21542,61 @@ manage_send_report (report_t report, report_t delta_report,
       condition = alert_condition (alert);
       method = alert_method (alert);
 
-      return escalate_2 (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
-                         (void*) TASK_STATUS_DONE, method, condition,
-                         /* Report filtering. */
-                         sort_order, sort_field, result_hosts_only,
-                         min_cvss_base, levels, apply_overrides,
-                         search_phrase, autofp, show_closed_cves, notes,
-                         notes_details, overrides, overrides_details,
-                         first_result, max_results);
+      ret = escalate_2 (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
+                        (void*) TASK_STATUS_DONE, method, condition,
+                        /* Report filtering. */
+                        sort_order, sort_field, result_hosts_only,
+                        min_cvss_base, levels, apply_overrides,
+                        search_phrase, autofp, show_closed_cves, notes,
+                        notes_details, overrides, overrides_details,
+                        first_result, max_results);
+      g_free (sort_field);
+      g_free (levels);
+      g_free (search_phrase);
+      g_free (min_cvss_base);
+      return ret;
     }
 
   /* Print the report as XML to a file. */
 
   if ((report_format_predefined (report_format) == 0)
       && (report_format_trust (report_format) != TRUST_YES))
-    return -1;
+    {
+      g_free (sort_field);
+      g_free (levels);
+      g_free (search_phrase);
+      g_free (min_cvss_base);
+      return -1;
+    }
 
   if (mkdtemp (xml_dir) == NULL)
     {
       g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
       g_free (sort_field);
+      g_free (levels);
+      g_free (search_phrase);
+      g_free (min_cvss_base);
       return -1;
     }
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
-  if (print_report_xml (report, delta_report, task, xml_file, get, sort_order,
-                        sort_field, result_hosts_only, min_cvss_base,
-                        report_format, levels, delta_states, apply_overrides,
-                        search_phrase, autofp, show_closed_cves, notes,
-                        notes_details, overrides, overrides_details,
-                        first_result, max_results, type,
-                        host, pos, host_search_phrase, host_levels,
-                        host_first_result, host_max_results))
+  ret = print_report_xml (report, delta_report, task, xml_file, get, sort_order,
+                          sort_field, result_hosts_only, min_cvss_base,
+                          report_format, levels, delta_states, apply_overrides,
+                          search_phrase, autofp, show_closed_cves, notes,
+                          notes_details, overrides, overrides_details,
+                          first_result, max_results, type,
+                          host, pos, host_search_phrase, host_levels,
+                          host_first_result, host_max_results);
+  g_free (sort_field);
+  g_free (levels);
+  g_free (search_phrase);
+  g_free (min_cvss_base);
+  if (ret)
     {
-      g_free (sort_field);
       g_free (xml_file);
       return -1;
     }
-  g_free (sort_field);
 
   /* Pass the file to the report format generate script, sending the output
    * to a file. */
