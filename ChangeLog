@@ -1,5 +1,13 @@
 2012-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_filter_term): Add delta_states.
+	(print_report_xml): Pass delta states to filter functions.
+	(manage_report_filter_controls): Add delta_states parsing.
+
+	* src/manage.h: Update header accordingly.
+
+2012-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_alert): Neaten doc.
 	(alert_filter_id): New function.
 	(escalate_2): Get filter from new location in database.

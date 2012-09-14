@@ -18872,7 +18872,7 @@ static gchar *
 report_filter_term (int sort_order, const char* sort_field,
                     int result_hosts_only,
                     const char *min_cvss_base,
-                    const char *levels, /* const char *delta_states, */
+                    const char *levels, const char *delta_states,
                     int apply_overrides, const char *search_phrase, int autofp,
                     int show_closed_cves, int notes, int overrides,
                     int first_result, int max_results)
@@ -18888,7 +18888,8 @@ report_filter_term (int sort_order, const char* sort_field,
                           " notes=%i"
                           " overrides=%i"
                           " first=%i"
-                          " rows=%i",
+                          " rows=%i"
+                          " delta_states=%s",
                           search_phrase ? search_phrase : "",
                           search_phrase && strlen (search_phrase) ? " " : "",
                           sort_order ? "sort" : "sort-reverse",
@@ -18902,7 +18903,8 @@ report_filter_term (int sort_order, const char* sort_field,
                           notes,
                           overrides,
                           first_result,
-                          max_results);
+                          max_results,
+                          delta_states ? delta_states : "");
 }
 
 /**
@@ -18959,7 +18961,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   const get_data_t *get,
                   int sort_order, const char *given_sort_field, int result_hosts_only,
                   const char *given_min_cvss_base, report_format_t report_format,
-                  const char *given_levels, const char *delta_states,
+                  const char *given_levels, const char *given_delta_states,
                   int apply_overrides, const char *given_search_phrase, int autofp,
                   int show_closed_cves, int notes, int notes_details,
                   int overrides, int overrides_details, int first_result,
@@ -18969,6 +18971,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 {
   FILE *out;
   gchar *term, *sort_field, *levels, *search_phrase, *min_cvss_base;
+  gchar *delta_states;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
   int result_count, filtered_result_count, run_status;
   array_t *result_hosts;
@@ -19029,8 +19032,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       manage_report_filter_controls (term,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
-                                     &min_cvss_base, &levels,
-                                     /* FIX &delta_states, */
+                                     &min_cvss_base, &levels, &delta_states,
                                      &search_phrase, &apply_overrides, &autofp,
                                      &show_closed_cves, &notes, &overrides);
     }
@@ -19040,10 +19042,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       levels = g_strdup (given_levels);
       search_phrase = g_strdup (given_search_phrase);
       min_cvss_base = g_strdup (given_min_cvss_base);
+      delta_states = g_strdup (given_delta_states);
 
       /* Build the filter term from the old style GET attributes. */
       term = report_filter_term (sort_order, sort_field, result_hosts_only,
-                                 min_cvss_base, levels, /* FIX delta_states, */
+                                 min_cvss_base, levels, delta_states,
                                  apply_overrides, search_phrase, autofp,
                                  show_closed_cves, notes, overrides, first_result,
                                  max_results);
@@ -19058,6 +19061,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       g_free (levels);
       g_free (search_phrase);
       g_free (min_cvss_base);
+      g_free (delta_states);
       return -1;
     }
 
@@ -19293,6 +19297,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               g_free (levels);
               g_free (search_phrase);
               g_free (min_cvss_base);
+              g_free (delta_states);
               return -1;
             }
 
@@ -19499,6 +19504,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           g_free (levels);
           g_free (search_phrase);
           g_free (min_cvss_base);
+          g_free (delta_states);
           return -1;
         }
 
@@ -19551,6 +19557,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               g_free (levels);
               g_free (search_phrase);
               g_free (min_cvss_base);
+              g_free (delta_states);
               return -1;
             }
 
@@ -19851,6 +19858,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       g_free (levels);
       g_free (search_phrase);
       g_free (min_cvss_base);
+      g_free (delta_states);
 
       if (fclose (out))
         {
@@ -20289,6 +20297,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               g_free (levels);
               g_free (search_phrase);
               g_free (min_cvss_base);
+              g_free (delta_states);
               return -1;
             }
           PRINT_XML (out, buffer->str);
@@ -20587,6 +20596,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               g_free (levels);
               g_free (search_phrase);
               g_free (min_cvss_base);
+              g_free (delta_states);
               return -1;
             }
 
@@ -21004,6 +21014,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   g_free (levels);
   g_free (search_phrase);
   g_free (min_cvss_base);
+  g_free (delta_states);
 
   if (fclose (out))
     {
@@ -25231,9 +25242,9 @@ void
 manage_report_filter_controls (const gchar *filter, int *first, int *max,
                                gchar **sort_field, int *sort_order,
                                int *result_hosts_only, gchar **min_cvss_base,
-                               gchar **levels, gchar **search_phrase,
-                               int *apply_overrides, int *autofp,
-                               int *show_closed_cves, int *notes,
+                               gchar **levels, gchar **delta_states,
+                               gchar **search_phrase, int *apply_overrides,
+                               int *autofp, int *show_closed_cves, int *notes,
                                int *overrides)
 {
   keyword_t **point;
@@ -25377,6 +25388,13 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
                               &val)
           == 0))
     *overrides = val;
+
+  if (delta_states
+      && (filter_control_str ((keyword_t **) split->pdata,
+                              "delta_states",
+                              &string)
+          == 0))
+    *delta_states = string;
 
   if (levels
       && (filter_control_str ((keyword_t **) split->pdata,
