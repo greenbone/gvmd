@@ -7978,15 +7978,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       return -1;
                     }
                   g_free (format_uuid);
-                  format_name = report_format_name (report_format);
 
                   event_desc = event_description (event, event_data, NULL);
-                  condition_desc = alert_condition_description (condition,
-                                                                    alert);
-                  subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
-                                             name ? name : "Internal Error",
-                                             event_desc);
-                  // FIX handle NULL return
                   report_content = manage_report (report, report_format,
                                                   filt_id,
                                                   sort_order, sort_field,
@@ -8002,6 +7995,22 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   &content_length,
                                                   NULL,    /* Extension. */
                                                   NULL);   /* Content type. */
+                  if (report_content == NULL)
+                    {
+                      free (event_desc);
+                      free (filt_id);
+                      free (notice);
+                      free (name);
+                      free (to_address);
+                      free (from_address);
+                      return -1;
+                    }
+                  format_name = report_format_name (report_format);
+                  condition_desc = alert_condition_description (condition,
+                                                                alert);
+                  subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
+                                             name ? name : "Internal Error",
+                                             event_desc);
                   body = g_strdup_printf (REPORT_NOTICE_FORMAT,
                                           name,
                                           event_desc,
@@ -8087,15 +8096,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       return -1;
                     }
                   g_free (format_uuid);
-                  format_name = report_format_name (report_format);
 
                   event_desc = event_description (event, event_data, NULL);
-                  condition_desc = alert_condition_description (condition,
-                                                                    alert);
-                  subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
-                                             name ? name : "Internal Error",
-                                             event_desc);
-                  // FIX handle NULL return
                   report_content = manage_report (report, report_format,
                                                   filt_id,
                                                   sort_order, sort_field,
@@ -8111,6 +8113,22 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   &content_length,
                                                   &extension,
                                                   &type);
+                  if (report_content == NULL)
+                    {
+                      g_free (event_desc);
+                      free (filt_id);
+                      free (notice);
+                      free (name);
+                      free (to_address);
+                      free (from_address);
+                      return -1;
+                    }
+                  format_name = report_format_name (report_format);
+                  condition_desc = alert_condition_description (condition,
+                                                                    alert);
+                  subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
+                                             name ? name : "Internal Error",
+                                             event_desc);
                   if (content_length <= MAX_ATTACH_LENGTH)
                     base64 = g_base64_encode ((guchar*) report_content,
                                               content_length);

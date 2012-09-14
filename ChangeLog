@@ -1,5 +1,9 @@
 2012-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (escalate_2): Check manage_report return.
+
+2012-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_report, manage_send_report): Free filter
 	strings.
 
