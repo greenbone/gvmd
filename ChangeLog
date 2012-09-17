@@ -1,5 +1,10 @@
 2012-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (escalate_2): Use associated filter in Sourcefire
+	method.
+
+2012-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_filter_term, print_report_xml)
 	(manage_report_filter_controls): Remove apply_overrides from filtering
 	to match the GSA report behaviour.

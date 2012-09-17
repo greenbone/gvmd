@@ -8280,7 +8280,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         }
       case ALERT_METHOD_SOURCEFIRE:
         {
-          char *ip, *port, *pkcs12;
+          char *ip, *port, *pkcs12, *filt_id;
           gchar *report_content;
           gsize content_length;
           report_format_t report_format;
@@ -8308,8 +8308,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   return -1;
               }
 
+          filt_id = alert_filter_id (alert);
+
           report_content = manage_report (report, report_format,
-                                          NULL,
+                                          filt_id,
                                           sort_order, sort_field,
                                           result_hosts_only,
                                           min_cvss_base, levels,
@@ -8338,6 +8340,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           ret = send_to_sourcefire (ip, port, pkcs12, report_content);
 
+          free (filt_id);
           free (ip);
           free (port);
           free (pkcs12);
