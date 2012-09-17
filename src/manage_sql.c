@@ -18855,7 +18855,6 @@ buffer_cve (array_t *cves, iterator_t *details)
  * @param[in]  delta_states   String describing delta states to include in count
  *                            (for example, "sngc" Same, New, Gone and Changed).
  *                            All levels if NULL.
- * @param[in]  apply_overrides    Whether to apply overrides.
  * @param[in]  search_phrase      Phrase that results must include.  All results
  *                                if NULL or "".
  * @param[in]  autofp             Whether to apply the auto FP filter.
@@ -18873,7 +18872,7 @@ report_filter_term (int sort_order, const char* sort_field,
                     int result_hosts_only,
                     const char *min_cvss_base,
                     const char *levels, const char *delta_states,
-                    int apply_overrides, const char *search_phrase, int autofp,
+                    const char *search_phrase, int autofp,
                     int show_closed_cves, int notes, int overrides,
                     int first_result, int max_results)
 {
@@ -18882,7 +18881,6 @@ report_filter_term (int sort_order, const char* sort_field,
                           " result_hosts_only=%i"
                           " min_cvss_base=%s"
                           " levels=%s"
-                          " apply_overrides=%i"
                           " autofp=%i"
                           " show_closed_cves=%i"
                           " notes=%i"
@@ -18897,7 +18895,6 @@ report_filter_term (int sort_order, const char* sort_field,
                           result_hosts_only,
                           min_cvss_base ? min_cvss_base : "",
                           levels ? levels : "hm",
-                          apply_overrides,
                           autofp,
                           show_closed_cves,
                           notes,
@@ -19033,7 +19030,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
                                      &min_cvss_base, &levels, &delta_states,
-                                     &search_phrase, &apply_overrides, &autofp,
+                                     &search_phrase, &autofp,
                                      &show_closed_cves, &notes, &overrides);
     }
   else
@@ -19047,9 +19044,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       /* Build the filter term from the old style GET attributes. */
       term = report_filter_term (sort_order, sort_field, result_hosts_only,
                                  min_cvss_base, levels, delta_states,
-                                 apply_overrides, search_phrase, autofp,
-                                 show_closed_cves, notes, overrides, first_result,
-                                 max_results);
+                                 search_phrase, autofp, show_closed_cves,
+                                 notes, overrides, first_result, max_results);
     }
 
   levels = levels ? levels : "hmlgd";
@@ -25243,8 +25239,8 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
                                gchar **sort_field, int *sort_order,
                                int *result_hosts_only, gchar **min_cvss_base,
                                gchar **levels, gchar **delta_states,
-                               gchar **search_phrase, int *apply_overrides,
-                               int *autofp, int *show_closed_cves, int *notes,
+                               gchar **search_phrase, int *autofp,
+                               int *show_closed_cves, int *notes,
                                int *overrides)
 {
   keyword_t **point;
@@ -25355,16 +25351,6 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
         *result_hosts_only = 1;
       else
         *result_hosts_only = val;
-    }
-
-  if (apply_overrides)
-    {
-      if (filter_control_int ((keyword_t **) split->pdata,
-                              "apply_overrides",
-                              &val))
-        *apply_overrides = 1;
-      else
-        *apply_overrides = val;
     }
 
   if (autofp)

@@ -1,5 +1,13 @@
 2012-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_filter_term, print_report_xml)
+	(manage_report_filter_controls): Remove apply_overrides from filtering
+	to match the GSA report behaviour.
+
+	* src/manage.h: Update header accordingly.
+
+2012-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Pass the filter instead of the
 	NULL term to manage_report_filter_controls when the filter is given as
 	a string in the GET params.
