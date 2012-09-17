@@ -19029,7 +19029,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         }
 
       /* Set the filter parameters from the filter term. */
-      manage_report_filter_controls (term,
+      manage_report_filter_controls (term ? term : get->filter,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
                                      &min_cvss_base, &levels, &delta_states,
@@ -25347,68 +25347,95 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
       g_string_free (phrase, FALSE);
     }
 
-  if (result_hosts_only
-      && (filter_control_int ((keyword_t **) split->pdata,
+  if (result_hosts_only)
+    {
+      if (filter_control_int ((keyword_t **) split->pdata,
                               "result_hosts_only",
-                              &val)
-          == 0))
-    *result_hosts_only = val;
+                              &val))
+        *result_hosts_only = 1;
+      else
+        *result_hosts_only = val;
+    }
 
-  if (apply_overrides
-      && (filter_control_int ((keyword_t **) split->pdata,
+  if (apply_overrides)
+    {
+      if (filter_control_int ((keyword_t **) split->pdata,
                               "apply_overrides",
-                              &val)
-          == 0))
-    *apply_overrides = val;
+                              &val))
+        *apply_overrides = 1;
+      else
+        *apply_overrides = val;
+    }
 
-  if (autofp
-      && (filter_control_int ((keyword_t **) split->pdata,
+  if (autofp)
+    {
+      if (filter_control_int ((keyword_t **) split->pdata,
                               "autofp",
-                              &val)
-          == 0))
-    *autofp = val;
+                              &val))
+        *autofp = 0;
+      else
+        *autofp = val;
+    }
 
-  if (show_closed_cves
-      && (filter_control_int ((keyword_t **) split->pdata,
+  if (show_closed_cves)
+    {
+      if (filter_control_int ((keyword_t **) split->pdata,
                               "show_closed_cves",
-                              &val)
-          == 0))
-    *show_closed_cves = val;
+                              &val))
+        *show_closed_cves = 0;
+      else
+        *show_closed_cves = val;
+    }
 
-  if (notes
-      && (filter_control_int ((keyword_t **) split->pdata,
+  if (notes)
+    {
+      if (filter_control_int ((keyword_t **) split->pdata,
                               "notes",
-                              &val)
-          == 0))
-    *notes = val;
+                              &val))
+        *notes = 1;
+      else
+        *notes = val;
+    }
 
-  if (overrides
-      && (filter_control_int ((keyword_t **) split->pdata,
+  if (overrides)
+    {
+      if (filter_control_int ((keyword_t **) split->pdata,
                               "overrides",
-                              &val)
-          == 0))
-    *overrides = val;
+                              &val))
+        *overrides = 1;
+      else
+        *overrides = val;
+    }
 
-  if (delta_states
-      && (filter_control_str ((keyword_t **) split->pdata,
+  if (delta_states)
+    {
+      if (filter_control_str ((keyword_t **) split->pdata,
                               "delta_states",
-                              &string)
-          == 0))
-    *delta_states = string;
+                              &string))
+        *delta_states = NULL;
+      else
+        *delta_states = string;
+    }
 
-  if (levels
-      && (filter_control_str ((keyword_t **) split->pdata,
+  if (levels)
+    {
+      if (filter_control_str ((keyword_t **) split->pdata,
                               "levels",
-                              &string)
-          == 0))
-    *levels = string;
+                              &string))
+        *levels = NULL;
+      else
+        *levels = string;
+    }
 
-  if (min_cvss_base
-      && (filter_control_str ((keyword_t **) split->pdata,
+  if (min_cvss_base)
+    {
+      if (filter_control_str ((keyword_t **) split->pdata,
                               "min_cvss_base",
-                              &string)
-          == 0))
-    *min_cvss_base = string;
+                              &string))
+        *min_cvss_base = NULL;
+      else
+        *min_cvss_base = string;
+    }
 
   filter_free (split);
   return;

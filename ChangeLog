@@ -1,3 +1,11 @@
+2012-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Pass the filter instead of the
+	NULL term to manage_report_filter_controls when the filter is given as
+	a string in the GET params.
+	(manage_report_filter_controls): Add default values, to prevent memory
+	errors in the caller.
+
 2012-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_filter_term): Add delta_states.
