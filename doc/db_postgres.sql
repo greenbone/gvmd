@@ -16,7 +16,9 @@ CREATE TABLE agents (
 	installer_trust integer,
 	installer_trust_time date,
 	howto_install text,
-	howto_use text);
+	howto_use text,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE agents_trash (
 	id integer PRIMARY KEY,
@@ -31,7 +33,9 @@ CREATE TABLE agents_trash (
 	installer_trust integer,
 	installer_trust_time date,
 	howto_install text,
-	howto_use text);
+	howto_use text,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE alert_condition_data (
 	id integer PRIMARY KEY,
@@ -77,7 +81,8 @@ CREATE TABLE alerts (
 	comment text,
 	event integer,
 	condition integer,
-	method integer);
+	method integer,
+	filter integer);
 
 CREATE TABLE alerts_trash (
 	id integer PRIMARY KEY,
@@ -87,7 +92,31 @@ CREATE TABLE alerts_trash (
 	comment text,
 	event integer,
 	condition integer,
-	method integer);
+	method integer,
+	filter integer,
+	filter_location integer);
+
+CREATE TABLE filters (
+	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	comment text,
+	type text,
+	term text,
+	creation_time date,
+	modification_time date);
+
+CREATE TABLE filters_trash (
+	id integer PRIMARY KEY,
+	uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	comment text,
+	type text,
+	term text,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE users (
 	id integer PRIMARY KEY,
@@ -148,7 +177,9 @@ CREATE TABLE targets (
 	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
 	ssh_port text,
 	smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,
-	port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT);
+	port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE targets_trash (
 	id integer PRIMARY KEY,
@@ -162,7 +193,9 @@ CREATE TABLE targets_trash (
 	port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,
 	ssh_location integer,
 	smb_location integer,
-	port_list_location integer);
+	port_list_location integer,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE configs (
 	id integer PRIMARY KEY,
@@ -457,6 +490,14 @@ CREATE TABLE schedules_trash (
 	period integer,
 	period_months integer,
 	duration integer);
+
+CREATE TABLE settings (
+	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	comment text,
+	value text);
 
 CREATE TABLE slaves (
 	id integer PRIMARY KEY,

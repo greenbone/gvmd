@@ -1,3 +1,12 @@
+2012-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* doc/db_postgres.sql (agents, agents_trash, targets, targets_trash): Add
+	times.
+	(alerts, alerts_trash): Add filters.
+	(filters, filters_trash, settings): New tables.
+
+	* doc/db.png: Update from source.
+
 2012-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (escalate_2): Use associated filter in Sourcefire
