@@ -14,6 +14,7 @@ command
     | create_agent
     | create_config
     | create_alert
+    | create_filter
     | create_lsc_credential
     | create_note
     | create_override
@@ -28,6 +29,7 @@ command
     | delete_agent
     | delete_config
     | delete_alert
+    | delete_filter
     | delete_lsc_credential
     | delete_note
     | delete_override
@@ -44,6 +46,7 @@ command
     | get_configs
     | get_dependencies
     | get_alerts
+    | get_filters
     | get_info
     | get_lsc_credentials
     | get_notes
@@ -66,6 +69,7 @@ command
     | get_version
     | help
     | modify_config
+    | modify_filter
     | modify_lsc_credential
     | modify_note
     | modify_override
@@ -91,6 +95,7 @@ response
     | create_agent_response
     | create_config_response
     | create_alert_response
+    | create_filter_response
     | create_lsc_credential_response
     | create_note_response
     | create_override_response
@@ -105,6 +110,7 @@ response
     | delete_agent_response
     | delete_config_response
     | delete_alert_response
+    | delete_filter_response
     | delete_lsc_credential_response
     | delete_note_response
     | delete_override_response
@@ -121,6 +127,7 @@ response
     | get_configs_response
     | get_dependencies_response
     | get_alerts_response
+    | get_filters_response
     | get_info_response
     | get_lsc_credentials_response
     | get_notes_response
@@ -143,6 +150,7 @@ response
     | get_version_response
     | help_response
     | modify_config_response
+    | modify_filter_response
     | modify_lsc_credential_response
     | modify_note_response
     | modify_override_response
@@ -938,6 +946,9 @@ report_report_filters
  = element filters
      {
        text # RNC limitation: levels
+       & # Filter used if any, else 0.
+       attribute id { uuid }?
+       & report_report_filters_term
        & report_report_filters_phrase
        & report_report_filters_notes
        & report_report_filters_overrides
@@ -949,6 +960,13 @@ report_report_filters
        & report_report_filters_filter*
        & report_report_filters_host?
        & report_report_filters_delta?
+     }
+
+# Filter term.
+report_report_filters_term
+ = element term
+     {
+       text
      }
 
 # Search phrase.
@@ -1493,6 +1511,7 @@ commands
            | create_agent
            | create_alert
            | create_config
+           | create_filter
            | create_lsc_credential
            | create_note
            | create_override
@@ -1506,6 +1525,7 @@ commands
            | delete_agent
            | delete_alert
            | delete_config
+           | delete_filter
            | delete_lsc_credential
            | delete_note
            | delete_override
@@ -1522,6 +1542,7 @@ commands
            | get_alerts
            | get_configs
            | get_dependencies
+           | get_filters
            | get_info
            | get_lsc_credentials
            | get_notes
@@ -1544,6 +1565,7 @@ commands
            | get_version
            | help
            | modify_config
+           | modify_filter
            | modify_lsc_credential
            | modify_note
            | modify_override
@@ -1672,6 +1694,7 @@ create_alert
        & create_alert_condition
        & create_alert_event
        & create_alert_method
+       & create_alert_filter
      }
 
 # A name for the alert.
@@ -1753,6 +1776,70 @@ create_alert_method_data
 # The name of the method data.
 create_alert_method_data_name
  = element name
+     {
+       text
+     }
+
+# Filter to apply when executing alert.
+create_alert_filter
+ = element filter
+     {
+       attribute id { uuid }
+     }
+
+## Command create_filter
+##
+## Create a filter.
+
+create_filter
+ = element create_filter
+     {
+       create_filter_name
+       & create_filter_comment?
+       & create_filter_copy?
+       & create_filter_term?
+       & create_filter_type?
+     }
+
+# A name for the filter.
+create_filter_name
+ = element name
+     {
+       text # RNC limitation: name
+       & create_filter_name_make_unique
+     }
+
+# Whether to append a unique suffix if the name already exists.
+create_filter_name_make_unique
+ = element make_unique
+     {
+       boolean
+     }
+
+# A comment on the filter.
+create_filter_comment
+ = element comment
+     {
+       text
+     }
+
+# The UUID of an existing filter.
+create_filter_copy
+ = element copy
+     {
+       uuid
+     }
+
+# Filter term.
+create_filter_term
+ = element term
+     {
+       text
+     }
+
+# Resource type.
+create_filter_type
+ = element type
      {
        text
      }
@@ -2540,6 +2627,18 @@ delete_alert
        attribute ultimate { boolean }
      }
 
+## Command delete_filter
+##
+## Delete a filter.
+
+delete_filter
+ = element delete_filter
+     {
+       attribute filter_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
+     }
+
 ## Command delete_lsc_credential
 ##
 ## Delete an LSC credential.
@@ -2685,6 +2784,10 @@ get_agents
      {
        # ID of single agent to get.
        attribute agent_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
        & # Whether to get the trashcan agents instead.
        attribute trash { boolean }?
        & attribute format { xsd:token { pattern = "installer|howto_install|howto_use" } }?
@@ -2734,8 +2837,31 @@ get_alerts
        attribute alert_id { uuid }?
        & # Whether to get the trashcan alerts instead.
        attribute trash { boolean }?
+       & # Whether to get the alerts filters.
+       attribute filter { boolean }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
+     }
+
+## Command get_filters
+##
+## Get all filters.
+
+get_filters
+ = element get_filters
+     {
+       # ID of single filter to get.
+       attribute filter_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
+       & # Actions filter for filters of observed tasks.
+       attribute actions { actions }?
+       & # Whether to get the trashcan filters instead.
+       attribute trash { boolean }?
+       & # Whether to include list of alerts that use the filter.
+       attribute alerts { boolean }?
      }
 
 ## Command get_info
@@ -2890,6 +3016,10 @@ get_reports
      {
        # ID of single report to get.
        attribute report_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
        & # Type of report to get.
        attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        & # ID of required report format.
@@ -3069,6 +3199,10 @@ get_targets
      {
        # ID of single target to get.
        attribute target_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query..
+       attribute filt_id { uuid }?
        & # Actions filter for targets of observed tasks.
        attribute actions { actions }?
        & # Whether to get the trashcan targets instead.
@@ -3242,6 +3376,49 @@ modify_config_nvt_selection_nvt
  = element nvt
      {
        attribute oid { oid }
+     }
+
+## Command modify_filter
+##
+## Modify an existing filter.
+
+modify_filter
+ = element modify_filter
+     {
+       # ID of filter to modify.
+       attribute filter_id { uuid }
+       & modify_filter_comment?
+       & modify_filter_name?
+       & modify_filter_term?
+       & modify_filter_type?
+     }
+
+# Comment on filter.
+modify_filter_comment
+ = element comment
+     {
+       text
+     }
+
+# Name of filter.
+modify_filter_name
+ = element name
+     {
+       name
+     }
+
+# Filter term.
+modify_filter_term
+ = element term
+     {
+       text
+     }
+
+# Resource type filter applies to.
+modify_filter_type
+ = element type
+     {
+       text
      }
 
 ## Command modify_lsc_credential
@@ -3819,6 +3996,7 @@ commands_response
            | create_agent_response
            | create_alert_response
            | create_config_response
+           | create_filter_response
            | create_lsc_credential_response
            | create_note_response
            | create_override_response
@@ -3831,6 +4009,7 @@ commands_response
            | delete_agent_response
            | delete_alert_response
            | delete_config_response
+           | delete_filter_response
            | delete_lsc_credential_response
            | delete_note_response
            | delete_override_response
@@ -3849,6 +4028,7 @@ commands_response
            | get_dependencies_response
            | get_info_response
            | get_lsc_credentials_response
+           | get_filters_response
            | get_notes_response
            | get_nvts_response
            | get_nvt_families_response
@@ -3869,6 +4049,7 @@ commands_response
            | get_version_response
            | help_response
            | modify_config_response
+           | modify_filter_response
            | modify_lsc_credential_response
            | modify_note_response
            | modify_override_response
@@ -3910,6 +4091,16 @@ create_config_response
 
 create_alert_response
  = element create_alert_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_filter
+
+create_filter_response
+ = element create_filter_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -4053,6 +4244,15 @@ delete_alert_response
        & attribute status_text { text }
      }
 
+## Response to delete_filter
+
+delete_filter_response
+ = element delete_filter_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
 ## Response to delete_lsc_credential
 
 delete_lsc_credential_response
@@ -4169,6 +4369,10 @@ get_agents_response
        attribute status { status }
        & attribute status_text { text }
        & get_agents_response_agent*
+       & get_agents_response_filters
+       & get_agents_response_sort
+       & get_agents_response_agents
+       & get_agents_response_agent_count
      }
 
 get_agents_response_agent
@@ -4253,6 +4457,70 @@ get_agents_response_agent_package_filename
  = element filename
      {
        text
+     }
+
+get_agents_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_agents_response_filters_term
+     }
+
+# Filter term.
+get_agents_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_agents_response_sort
+ = element sort
+     {
+       text
+       & get_agents_response_sort_field
+     }
+
+get_agents_response_sort_field
+ = element field
+     {
+       get_agents_response_sort_field_order
+     }
+
+get_agents_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_agents_response_agents
+ = element agents
+     {
+       # First agent.
+       attribute start {  }
+       & # Maximum number of agents.
+       attribute max {  }
+     }
+
+get_agents_response_agent_count
+ = element agent_count
+     {
+       get_agents_response_agent_count_filtered
+       & get_agents_response_agent_count_page
+     }
+
+# Number of agents after filtering.
+get_agents_response_agent_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of agents on current page.
+get_agents_response_agent_count_page
+ = element page
+     {
+       integer
      }
 
 ## Response to get_configs
@@ -4534,6 +4802,7 @@ get_alerts_response_alert
        & get_alerts_response_alert_condition
        & get_alerts_response_alert_event
        & get_alerts_response_alert_method
+       & get_alerts_response_alert_filter
      }
 
 # The name of the alert.
@@ -4624,6 +4893,197 @@ get_alerts_response_alert_method_data_name
  = element name
      {
        text
+     }
+
+get_alerts_response_alert_filter
+ = element filter
+     {
+       attribute id { uuid }?
+       & get_alerts_response_alert_filter_name
+       & get_alerts_response_alert_filter_trash
+     }
+
+# The name of the filter.
+get_alerts_response_alert_filter_name
+ = element name
+     {
+       name
+     }
+
+# Whether the filter is in the trashcan.
+get_alerts_response_alert_filter_trash
+ = element trash
+     {
+       boolean
+     }
+
+## Response to get_filters
+
+get_filters_response
+ = element get_filters_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_filters_response_filter*
+       & get_filters_response_filters
+       & get_filters_response_sort
+       & get_filters_response_filters
+       & get_filters_response_filter_count
+     }
+
+get_filters_response_filter
+ = element filter
+     {
+       get_filters_response_filter_name
+       & get_filters_response_filter_comment
+       & get_filters_response_filter_term
+       & get_filters_response_filter_type
+       & get_filters_response_filter_creation_time
+       & get_filters_response_filter_modification_time
+       & get_filters_response_filter_in_use
+       & get_filters_response_filter_writable
+       & get_filters_response_filter_alerts?
+     }
+
+# The name of the filter.
+get_filters_response_filter_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the filter.
+get_filters_response_filter_comment
+ = element comment
+     {
+       text
+     }
+
+# The filter term.
+get_filters_response_filter_term
+ = element term
+     {
+       text
+     }
+
+# Resource type filter applies to. Blank for all..
+get_filters_response_filter_type
+ = element type
+     {
+       text
+     }
+
+# Date and time the filter was created.
+get_filters_response_filter_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the filter was last modified.
+get_filters_response_filter_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# Whether any tasks are using the filter.
+get_filters_response_filter_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# Whether the filter is writable.
+get_filters_response_filter_writable
+ = element writable
+     {
+       boolean
+     }
+
+# All alerts using the filter.
+get_filters_response_filter_alerts
+ = element alerts
+     {
+       get_filters_response_filter_alerts_alert*
+     }
+
+get_filters_response_filter_alerts_alert
+ = element alert
+     {
+       attribute id { uuid }
+       & get_filters_response_filter_alerts_alert_name
+     }
+
+# The name of the alert.
+get_filters_response_filter_alerts_alert_name
+ = element name
+     {
+       name
+     }
+
+get_filters_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_filters_response_filters_term
+     }
+
+# Filter term.
+get_filters_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_filters_response_sort
+ = element sort
+     {
+       text
+       & get_filters_response_sort_field
+     }
+
+get_filters_response_sort_field
+ = element field
+     {
+       get_filters_response_sort_field_order
+     }
+
+get_filters_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_filters_response_filters
+ = element filters
+     {
+       # First filter.
+       attribute start {  }
+       & # Maximum number of filters.
+       attribute max {  }
+     }
+
+get_filters_response_filter_count
+ = element filter_count
+     {
+       get_filters_response_filter_count_filtered
+       & get_filters_response_filter_count_page
+     }
+
+# Number of filters after filtering.
+get_filters_response_filter_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of filters on current page.
+get_filters_response_filter_count_page
+ = element page
+     {
+       integer
      }
 
 ## Response to get_info
@@ -6206,6 +6666,10 @@ get_targets_response
        attribute status { status }
        & attribute status_text { text }
        & get_targets_response_target*
+       & get_targets_response_filters
+       & get_targets_response_sort
+       & get_targets_response_targets
+       & get_targets_response_target_count
      }
 
 get_targets_response_target
@@ -6382,6 +6846,70 @@ get_targets_response_target_tasks_task_name
  = element name
      {
        name
+     }
+
+get_targets_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_targets_response_filters_term
+     }
+
+# Filter term.
+get_targets_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_targets_response_sort
+ = element sort
+     {
+       text
+       & get_targets_response_sort_field
+     }
+
+get_targets_response_sort_field
+ = element field
+     {
+       get_targets_response_sort_field_order
+     }
+
+get_targets_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_targets_response_targets
+ = element targets
+     {
+       # First target.
+       attribute start {  }
+       & # Maximum number of targets.
+       attribute max {  }
+     }
+
+get_targets_response_target_count
+ = element target_count
+     {
+       get_targets_response_target_count_filtered
+       & get_targets_response_target_count_page
+     }
+
+# Number of targets after filtering.
+get_targets_response_target_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of targets on current page.
+get_targets_response_target_count_page
+ = element page
+     {
+       integer
      }
 
 ## Response to get_tasks
@@ -7065,6 +7593,15 @@ help_response_schema_protocol_command
 
 modify_config_response
  = element modify_config_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_filter
+
+modify_filter_response
+ = element modify_filter_response
      {
        attribute status { status }
        & attribute status_text { text }

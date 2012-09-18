@@ -1,5 +1,16 @@
 2012-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (report): Add new filters.
+	(create_filter, delete_filter, get_filters, modify_filter): New commands.
+	(create_alerts, get_alerts, get_agents, get_reports): Add new filters.
+	(get_targets): Add new filters.  In examples add missing elements and
+	make UUIDs match.
+	(help): Add new commands.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2012-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql (agents, agents_trash, targets, targets_trash): Add
 	times.
 	(alerts, alerts_trash): Add filters.

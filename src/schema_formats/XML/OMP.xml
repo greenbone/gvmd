@@ -842,7 +842,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filters</name>
         <summary>Result filtering information</summary>
         <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>Filter used if any, else 0</summary>
+            <type>uuid</type>
+          </attrib>
           <t>levels</t>
+          <e>term</e>
           <e>phrase</e>
           <e>notes</e>
           <e>overrides</e>
@@ -855,6 +861,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <o><e>host</e></o>
           <o><e>delta</e></o>
         </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>
+            <t>text</t>
+          </pattern>
+        </ele>
         <ele>
           <name>phrase</name>
           <summary>Search phrase</summary>
@@ -1465,6 +1478,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_agent</c>
           <c>create_alert</c>
           <c>create_config</c>
+          <c>create_filter</c>
           <c>create_lsc_credential</c>
           <c>create_note</c>
           <c>create_override</c>
@@ -1478,6 +1492,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_agent</c>
           <c>delete_alert</c>
           <c>delete_config</c>
+          <c>delete_filter</c>
           <c>delete_lsc_credential</c>
           <c>delete_note</c>
           <c>delete_override</c>
@@ -1494,6 +1509,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_alerts</c>
           <c>get_configs</c>
           <c>get_dependencies</c>
+          <c>get_filters</c>
           <c>get_info</c>
           <c>get_lsc_credentials</c>
           <c>get_notes</c>
@@ -1516,6 +1532,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_version</c>
           <c>help</c>
           <c>modify_config</c>
+          <c>modify_filter</c>
           <c>modify_lsc_credential</c>
           <c>modify_note</c>
           <c>modify_override</c>
@@ -1553,6 +1570,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_agent</r>
             <r>create_alert</r>
             <r>create_config</r>
+            <r>create_filter</r>
             <r>create_lsc_credential</r>
             <r>create_note</r>
             <r>create_override</r>
@@ -1565,6 +1583,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_agent</r>
             <r>delete_alert</r>
             <r>delete_config</r>
+            <r>delete_filter</r>
             <r>delete_lsc_credential</r>
             <r>delete_note</r>
             <r>delete_override</r>
@@ -1583,6 +1602,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_dependencies</r>
             <r>get_info</r>
             <r>get_lsc_credentials</r>
+            <r>get_filters</r>
             <r>get_notes</r>
             <r>get_nvts</r>
             <r>get_nvt_families</r>
@@ -1603,6 +1623,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_version</r>
             <r>help</r>
             <r>modify_config</r>
+            <r>modify_filter</r>
             <r>modify_lsc_credential</r>
             <r>modify_note</r>
             <r>modify_override</r>
@@ -1859,6 +1880,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>condition</e>
       <e>event</e>
       <e>method</e>
+      <e>filter</e>
     </pattern>
     <ele>
       <name>name</name>
@@ -1945,6 +1967,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
       </ele>
     </ele>
+    <ele>
+      <name>filter</name>
+      <summary>Filter to apply when executing alert</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
     <response>
       <pattern>
         <attrib>
@@ -2001,6 +2034,100 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                                status_text="OK, resource created"
                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
         </create_alert_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_filter</name>
+    <summary>Create a filter</summary>
+    <description>
+      <p>
+        The client uses the create_filter command to create a new filter.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <o><e>copy</e></o>
+      <o><e>term</e></o>
+      <o><e>type</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the filter</summary>
+      <pattern>
+        <t>name</t>
+        <e>make_unique</e>
+      </pattern>
+      <ele>
+        <name>make_unique</name>
+        <summary>
+          Whether to append a unique suffix if the name already exists
+        </summary>
+        <pattern>boolean</pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the filter</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing filter</summary>
+      <pattern>
+        <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>term</name>
+      <summary>Filter term</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>type</name>
+      <summary>Resource type</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a filter</summary>
+      <request>
+        <create_filter>
+          <name>Single Targets</name>
+          <comment>Targets with only one host</comment>
+          <term>ips=1 first=1 rows=-2</term>
+          <type>target</type>
+        </create_filter>
+      </request>
+      <response>
+        <create_filter_response status="201" status_text="OK, resource created"
+                               id="254cd3ef-bbe1-4d58-859d-21b8d0c046c7">
+        </create_filter_response>
       </response>
     </example>
   </command>
@@ -3415,6 +3542,57 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>delete_filter</name>
+    <summary>Delete a filter</summary>
+    <description>
+      <p>
+        The client uses the delete_filter command to delete an existing filter.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>filter_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a filter</summary>
+      <request>
+        <delete_filter filter_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_filter>
+      </request>
+      <response>
+        <delete_filter_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>delete_lsc_credential</name>
     <summary>Delete an LSC credential</summary>
     <description>
@@ -4019,6 +4197,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan agents instead</summary>
         <type>boolean</type>
@@ -4055,6 +4243,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
         <any><e>agent</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>agents</e>
+        <e>agent_count</e>
       </pattern>
       <ele>
         <name>agent</name>
@@ -4136,6 +4328,81 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The filename of the package</summary>
             <pattern>text</pattern>
           </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>agents</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First agent</summary>
+            <type><t>number</t></type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of agents</summary>
+            <type><t>number</t></type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>agent_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of agents after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of agents on current page</summary>
+          <pattern><t>integer</t></pattern>
         </ele>
       </ele>
     </response>
@@ -4666,6 +4933,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>boolean</type>
       </attrib>
       <attrib>
+        <name>filter</name>
+        <summary>Whether to get the alerts filters</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>sort_order</name>
         <type>sort_order</type>
       </attrib>
@@ -4697,6 +4969,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>condition</e>
           <e>event</e>
           <e>method</e>
+          <e>filter</e>
         </pattern>
         <ele>
           <name>name</name>
@@ -4786,6 +5059,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </ele>
           </ele>
         </ele>
+        <ele>
+          <name>filter</name>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+            </attrib>
+            <e>name</e>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the filter</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the filter is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
       </ele>
     </response>
     <example>
@@ -4831,6 +5125,268 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </alert>
           <truncated>...</truncated>
         </get_alerts_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_filters</name>
+    <summary>Get all filters</summary>
+    <description>
+      The client uses the get_filters command to get filter information.
+    </description>
+    <pattern>
+      <attrib>
+        <name>filter_id</name>
+        <summary>ID of single filter to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>actions</name>
+        <summary>Actions filter for filters of observed tasks</summary>
+        <type>actions</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan filters instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>alerts</name>
+        <summary>Whether to include list of alerts that use the filter</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>filter</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>filters</e>
+        <e>filter_count</e>
+      </pattern>
+      <ele>
+        <name>filter</name>
+        <pattern>
+          <e>name</e>
+          <e>comment</e>
+          <e>term</e>
+          <e>type</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>in_use</e>
+          <e>writable</e>
+          <o><e>alerts</e></o>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the filter</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the filter</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>term</name>
+          <summary>The filter term</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>type</name>
+          <summary>Resource type filter applies to.  Blank for all.</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the filter was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the filter was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any tasks are using the filter</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the filter is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>alerts</name>
+          <summary>All alerts using the filter</summary>
+          <pattern>
+            <any><e>alert</e></any>
+          </pattern>
+          <ele>
+            <name>alert</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the alert</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First filter</summary>
+            <type><t>number</t></type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of filters</summary>
+            <type><t>number</t></type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>filter_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of filters after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of filters on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all filters</summary>
+      <request>
+        <get_filters></get_filters>
+      </request>
+      <response>
+        <get_filters_response status="200" status_text="OK">
+          <filter id="b493b7a8-7489-11df-a3ec-001164764cea">
+            <name>Single Targets</name>
+            <comment>Targets with only one host</comment>
+            <term>ips=1 first=1 rows=-2</term>
+            <type>target</type>
+            <in_use>1</in_use>
+            <writable>1</writable>
+            <creation_time>Sun Jun 27 08:49:46 2010</creation_time>
+            <modification_time>Sun Jun 27 08:49:46 2010</modification_time>
+          </filter>
+          <truncated>...</truncated>
+        </get_filters_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get single filter, including alerts that use the filter</summary>
+      <request>
+        <get_filters filter_id="c33864a9-d3fd-44b3-8717-972bfb01dfc0" tasks="1">
+        </get_filters>
+      </request>
+      <response>
+        <get_filters_response status="200" status_text="OK">
+          <filter id="c33864a9-d3fd-44b3-8717-972bfb01dfc0">
+            <name>Local</name>
+            <comment>Any item with name containing 'local'.</comment>
+            <term>name~local first=1 rows=-2</term>
+            <type></type>
+            <in_use>1</in_use>
+            <writable>1</writable>
+            <creation_time>Sun Jun 27 08:49:43 2010</creation_time>
+            <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
+            <alerts>
+              <alert id="13bb418a-4220-4575-b35b-ec398bff7418">
+                <name>Local Mailer</name>
+              </alert>
+              <truncated>...</truncated>
+            </alerts>
+          </filter>
+        </get_filters_response>
       </response>
     </example>
   </command>
@@ -6572,6 +7128,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
         <name>type</name>
         <summary>Type of report to get</summary>
         <type>
@@ -6769,8 +7335,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   <order>descending</order>
                 </field>
               </sort>
-              <filters>
+              <filters id="0">
                 hmlgd
+                <term></term>
                 <phrase></phrase>
                 <notes>0</notes>
                 <overrides>0</overrides>
@@ -7983,6 +8550,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query.</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
         <name>actions</name>
         <summary>Actions filter for targets of observed tasks</summary>
         <type>actions</type>
@@ -8019,6 +8596,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
         <any><e>target</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>targets</e>
+        <e>target_count</e>
       </pattern>
       <ele>
         <name>target</name>
@@ -8188,6 +8769,81 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
       </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>targets</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First target</summary>
+            <type><t>number</t></type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of targets</summary>
+            <type><t>number</t></type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>target_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of targets after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of targets on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
     </response>
     <example>
       <summary>Get all targets</summary>
@@ -8202,6 +8858,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <max_hosts>1</max_hosts>
             <comment></comment>
             <in_use>7</in_use>
+            <writable>0</writable>
+            <creation_time>Sun Jun 27 08:49:43 2010</creation_time>
+            <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
             <ssh_lsc_credential id="">
               <name></name>
             </ssh_lsc_credential>
@@ -8216,7 +8875,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <example>
       <summary>Get a single target, including tasks using the target</summary>
       <request>
-        <get_targets target_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf" tasks="1">
+        <get_targets target_id="1f28d970-17ef-4c69-ba8a-13827059f2b9" tasks="1">
         </get_targets>
       </request>
       <response>
@@ -8227,6 +8886,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <max_hosts>1</max_hosts>
             <comment>dik mm</comment>
             <in_use>4</in_use>
+            <writable>0</writable>
+            <creation_time>Sun Jun 27 08:49:43 2010</creation_time>
+            <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
             <ssh_lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
               <name>mm</name>
             </ssh_lsc_credential>
@@ -9148,6 +9810,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             CREATE_AGENT           Create an agent.
             CREATE_CONFIG          Create a config.
             CREATE_ALERT           Create an alert.
+            CREATE_FILTER          Create a filter.
             CREATE_LSC_CREDENTIAL  Create a local security check credential.
             CREATE_NOTE            Create a note.
             CREATE_OVERRIDE        Create an override.
@@ -9162,6 +9825,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             DELETE_AGENT           Delete an agent.
             DELETE_CONFIG          Delete a config.
             DELETE_ALERT           Delete an alert.
+            DELETE_FILTER          Delete a filter.
             DELETE_LSC_CREDENTIAL  Delete a local security check credential.
             DELETE_NOTE            Delete a note.
             DELETE_OVERRIDE        Delete an override.
@@ -9178,6 +9842,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_CONFIGS            Get all configs.
             GET_DEPENDENCIES       Get dependencies for all available NVTs.
             GET_ALERTS             Get all alerts.
+            GET_FILTERS            Get all filters.
             GET_LSC_CREDENTIALS    Get all local security check credentials.
             GET_NOTES              Get all notes.
             GET_NVTS               Get one or all available NVTs.
@@ -9201,6 +9866,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             HELP                   Get this help text.
             MODIFY_CONFIG          Update an existing config.
             MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.
+            MODIFY_FILTER          Modify an existing filter.
             MODIFY_NOTE            Modify an existing note.
             MODIFY_OVERRIDE        Modify an existing override.
             MODIFY_REPORT          Modify an existing report.
@@ -9582,6 +10248,73 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_config_response status="200" status_text="OK">
         </modify_config_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_filter</name>
+    <summary>Modify an existing filter</summary>
+    <description>
+      <p>
+        The client uses the modify_filter command to change an existing filter.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>filter_id</name>
+        <summary>ID of filter to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>comment</e></o>
+      <o><e>name</e></o>
+      <o><e>term</e></o>
+      <o><e>type</e></o>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on filter</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>name</name>
+      <summary>Name of filter</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>term</name>
+      <summary>Filter term</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>type</name>
+      <summary>Resource type filter applies to</summary>
+      <pattern>text</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the term of a filter</summary>
+      <request>
+        <modify_filter filter_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <term>name=local</term>
+        </modify_filter>
+      </request>
+      <response>
+        <modify_filter_response status="200" status_text="OK">
+        </modify_filter_response>
       </response>
     </example>
   </command>
