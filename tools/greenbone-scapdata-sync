@@ -6,9 +6,10 @@
 #
 # Authors:
 # Henri Doreau <henri.doreau@greenbone.net>
+# Michael Wiegand <michael.wiegand@greenbone.net>
 #
 # Copyright:
-# Copyright (C) 2011 Greenbone Networks GmbH
+# Copyright (C) 2012 Greenbone Networks GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2,
@@ -24,11 +25,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-# If you modify this script, please prefix the version
-# with some characters in order to make it newer than
-# any follow-up version to prevent that your version
-# will be overwritten.
-VERSION=20120413
+VERSION=20120919
 
 # SETTINGS
 # ========
@@ -120,7 +117,7 @@ then
   echo "==============================================================================="
   echo
   log_write "rsync not found, aborting synchronization."
-  logger "Software Update: rsync not found, aborting synchronization."
+  logger "SCAP synchronization: rsync not found, aborting synchronization."
   exit 1
 fi
 
@@ -139,7 +136,7 @@ then
   echo "==============================================================================="
   echo
   log_write "sqlite3 not found, aborting synchronization."
-  logger "Software Update: sqlite3 not found, aborting synchronization."
+  logger "SCAP synchronization: sqlite3 not found, aborting synchronization."
   exit 1
 fi
 
@@ -211,7 +208,7 @@ sync_scapdata(){
       echo "and your customer ID."
       echo "==============================================================================="
       log_write "Could not determine credentials, aborting synchronization."
-      logger "Software Update: Could not determine credentials, aborting synchronization."
+      logger "SCAP synchronization: Could not determine credentials, aborting synchronization."
       exit 1
     fi
     while (($notsynced))
@@ -241,14 +238,14 @@ sync_scapdata(){
         echo "==============================================================================="
         echo
         log_write "rsync failed, aborting synchronization."
-	logger "Software Update:  failed, aborting synchronization."
+        logger "SCAP synchronization:  failed, aborting synchronization."
         exit 1
       fi
       notsynced=0
     done
     echo "Synchronization with the Greenbone SCAP data Repository successful."
     log_write "Synchronization with the Greenbone SCAP data Repository successful."
-    logger "Software Update: Synchronization with the Greenbone SCAP data Repository successful."
+    logger "SCAP synchronization: Synchronization with the Greenbone SCAP data Repository successful."
     echo
 
     update_scap_db
@@ -270,7 +267,7 @@ sync_scapdata(){
     echo "==============================================================================="
     echo
     log_write "gsf-access-key not found, aborting synchronization."
-    logger "Software Update: gsf-access-key not found, aborting synchronization."
+    logger "SCAP synchronization: gsf-access-key not found, aborting synchronization."
     exit 1
   fi
 }

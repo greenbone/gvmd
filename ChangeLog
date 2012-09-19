@@ -1,3 +1,7 @@
+2012-09-19  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/greenbone-scapdata-sync: Fix script name in log entries.
+
 2012-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (report): Add new filters.
