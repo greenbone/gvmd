@@ -156,15 +156,15 @@ update_scap_db() {
     touch $SCAP_DIR/*.xml
     REFDATE=0
   else
-    REFDATE=`stat -c "%y" $SCAP_DB | cut -d " " -f 1 | tr -d "-"`
+    REFDATE=`sqlite3 $SCAP_DB "select max(last_mod) from cves;" | sed -e 's/T.*//' | tr -d "-"`
   fi
 
-  DB_LASTMOD=`stat -c "%Y" $SCAP_DB`
+  DB_LASTMOD=$REFDATE
 
   CPE_BASE="$SCAP_DIR/official-cpe-dictionary_v2.2.xml"
   if [ -e $CPE_BASE ]
   then
-    if [ `stat -c "%Y" $CPE_BASE` -ge $DB_LASTMOD ]
+    if [ `stat -c "%Y" $CPE_BASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTMOD ]
     then
       log_write "Updating CPEs"
       xsltproc --stringparam refdate $REFDATE $SCAP_RES/cpe_youngerthan.xsl $CPE_BASE | xsltproc $SCAP_RES/cpe_update.xsl - | sqlite3 $SCAP_DB
@@ -175,7 +175,7 @@ update_scap_db() {
 
   for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
   do
-    if [ `stat -c "%Y" $cvefile` -ge $DB_LASTMOD ]
+    if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTMOD ]
     then
       log_write "Updating $cvefile"
       xsltproc --stringparam refdate $REFDATE $SCAP_RES/cve_youngerthan.xsl $cvefile | xsltproc $SCAP_RES/cve_update.xsl - | sqlite3 $SCAP_DB

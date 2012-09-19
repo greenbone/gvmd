@@ -1,5 +1,11 @@
 2012-09-19  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* tools/greenbone-scapdata-sync: Do not use the timestamp of $SCAP_DB
+	to decide which CPEs/CVEs to add/update. Use the timestamp of the last
+	modified CVE in the DB instead.
+
+2012-09-19  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* tools/greenbone-scapdata-sync: Re-add copyright year lost in last
 	commit, spotted by Felix Wolfsteller.
 
