@@ -1407,6 +1407,7 @@ create_target_data_reset (create_target_data_t *data)
   free (data->ssh_lsc_credential_id);
   free (data->ssh_port);
   free (data->smb_lsc_credential_id);
+  free (data->make_name_unique);
   free (data->name);
   free (data->target_locator);
   free (data->target_locator_password);

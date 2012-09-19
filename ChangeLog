@@ -1,3 +1,7 @@
+2012-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (create_target_data_reset): Free make_name_unique.
+
 2012-09-19  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Do not use the timestamp of $SCAP_DB
