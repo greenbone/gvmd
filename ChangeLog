@@ -1,5 +1,10 @@
 2012-09-19  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* tools/greenbone-scapdata-sync: Re-add copyright year lost in last
+	commit, spotted by Felix Wolfsteller.
+
+2012-09-19  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* tools/greenbone-scapdata-sync: Fix script name in log entries.
 
 2012-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
