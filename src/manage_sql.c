@@ -37984,8 +37984,8 @@ range_compare (gconstpointer one, gconstpointer two)
 {
   range_t *range_one, *range_two;
 
-  range_one = (range_t*) one;
-  range_two = (range_t*) two;
+  range_one = *((range_t**) one);
+  range_two = *((range_t**) two);
 
   if (range_one->type > range_two->type)
     return 1;
@@ -37993,10 +37993,10 @@ range_compare (gconstpointer one, gconstpointer two)
   if (range_one->type < range_two->type)
     return -1;
 
-  if (range_one->start < range_two->start)
+  if (range_one->start > range_two->start)
     return 1;
 
-  if (range_one->start > range_two->start)
+  if (range_one->start < range_two->start)
     return -1;
 
   return 0;

@@ -1,3 +1,8 @@
+2012-09-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (range_compare): Treat args correctly, as pointers to
+	array pointers.  Order start ascending instead of descending.
+
 2012-09-20  Andre Heinecke <aheinecke@intevation.de>
 
 	* report_formats/verinice-ism/classification-helpers.xsl
