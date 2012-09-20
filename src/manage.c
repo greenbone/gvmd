@@ -234,6 +234,11 @@ manage_result_type_threat (const char* type)
 /* Task globals. */
 
 /**
+ * @brief Scanner available flag.
+ */
+short scanner_up = 1;
+
+/**
  * @brief Scanner active flag.
  *
  * This indicates whether the scanner is doing something that the manager
@@ -1899,8 +1904,8 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
  *
  * @return Before forking: 1 task is active already, -1 error,
  *         -2 task is missing a target, -3 creating the report failed,
- *         -4 target missing hosts, -6 already a task running in this process,
- *         -9 fork failed.
+ *         -4 target missing hosts, -5 scanner is down, -6 already a task
+ *         running in this process, -9 fork failed.
  *         After forking: 0 success (parent), 2 success (child),
  *         -10 error (child).
  */
@@ -1919,6 +1924,9 @@ run_task (task_t task, char **report_id, int from)
   report_t last_stopped_report;
 
   tracef ("   start task %u\n", task_id (task));
+
+  if (scanner_up == 0)
+    return -5;
 
   if (set_task_requested (task, &run_status))
     return 1;
@@ -2509,13 +2517,15 @@ start_task (task_t task, char **report_id)
  * @param[in]  task  A pointer to the task.
  *
  * @return 0 on success, 1 if stop requested, -1 if out of space in scanner
- *         output buffer.
+ *         output buffer, -5 scanner down.
  */
 int
 stop_task (task_t task)
 {
   task_status_t run_status;
   tracef ("   request task stop %u\n", task_id (task));
+  if (scanner_up == 0)
+    return -5;
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_PAUSE_REQUESTED
       || run_status == TASK_STATUS_PAUSE_WAITING
@@ -2543,13 +2553,15 @@ stop_task (task_t task)
  * @param[in]  task  A pointer to the task.
  *
  * @return 0 on success, 1 if pause requested, -1 if out of space in scanner
- *         output buffer.
+ *         output buffer, -5 scanner down.
  */
 int
 pause_task (task_t task)
 {
   task_status_t run_status;
   tracef ("   request task pause %u\n", task_id (task));
+  if (scanner_up == 0)
+    return -5;
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
@@ -2572,13 +2584,15 @@ pause_task (task_t task)
  * @param[in]  task  A pointer to the task.
  *
  * @return 0 on success, 1 if resume requested, -1 if out of space in scanner
- *         output buffer.
+ *         output buffer, -5 scanner down.
  */
 int
 resume_paused_task (task_t task)
 {
   task_status_t run_status;
   tracef ("   request task resume %u\n", task_id (task));
+  if (scanner_up == 0)
+    return -5;
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_PAUSE_REQUESTED
       || run_status == TASK_STATUS_PAUSED)

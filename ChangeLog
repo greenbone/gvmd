@@ -1,5 +1,26 @@
 2012-09-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Serve OMP even when the scanner is down.
+
+	* src/manage.c (scanner_up): New variable.
+	(run_task, start_task, stop_task, pause_task, resume_paused_task): Check
+	that scanner is up.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new "scanner down"
+	returns from task commands.
+	(scanner_is_up): New function.
+
+	* src/omp.h: Add header accordingly.
+
+	* src/omp.c (serve_omp): Only interact with the scanner when it is up.
+	If the scanner init fails then set the scanner down.  Loop while the
+	initial write is interrupted, in order to tell if the connection
+	succeeds.
+
+2012-09-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage): Add WHERE to SQL that ensures that the
 	the Localhost target has the right port list, otherwise all targets are
 	set the Default port list on startup.

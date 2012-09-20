@@ -105,6 +105,7 @@ manage_migrate (GSList*, const gchar*);
 
 /* Task structures. */
 
+extern short scanner_up;
 extern short scanner_active;
 
 /**

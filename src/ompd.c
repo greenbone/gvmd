@@ -676,7 +676,10 @@ serve_omp (gnutls_session_t* client_session,
 #endif
 
   /* Initiate connection (to_scanner is empty so this will just init). */
-  write_to_scanner (scanner_socket, scanner_session);
+  while ((ret = write_to_scanner (scanner_socket, scanner_session)) == -3
+         && scanner_init_state == SCANNER_INIT_CONNECT_INTR);
+  if (ret == -1)
+    scanner_up = 0;
 
   if (client_active)
     {
@@ -833,7 +836,8 @@ serve_omp (gnutls_session_t* client_session,
       FD_ZERO (&exceptfds);
       FD_ZERO (&readfds);
       FD_ZERO (&writefds);
-      FD_SET (scanner_socket, &exceptfds);
+      if (scanner_is_up ())
+        FD_SET (scanner_socket, &exceptfds);
 
       /** @todo Shutdown on failure (for example, if a read fails). */
 
@@ -872,15 +876,16 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       /* See whether we need to read from the scannner.  */
-      if ((scanner_init_state == SCANNER_INIT_DONE
-           || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
-           || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE
-           || scanner_init_state == SCANNER_INIT_GOT_VERSION
-           || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST
-           || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
-           || scanner_init_state == SCANNER_INIT_SENT_PASSWORD
-           || scanner_init_state == SCANNER_INIT_SENT_USER
-           || scanner_init_state == SCANNER_INIT_SENT_VERSION)
+      if (scanner_is_up ()
+          && (scanner_init_state == SCANNER_INIT_DONE
+              || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
+              || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE
+              || scanner_init_state == SCANNER_INIT_GOT_VERSION
+              || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST
+              || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
+              || scanner_init_state == SCANNER_INIT_SENT_PASSWORD
+              || scanner_init_state == SCANNER_INIT_SENT_USER
+              || scanner_init_state == SCANNER_INIT_SENT_VERSION)
           && from_scanner_end < from_buffer_size)
         {
           FD_SET (scanner_socket, &readfds);
@@ -888,17 +893,18 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       /* See whether we need to write to the scanner.  */
-      if (((scanner_init_state == SCANNER_INIT_TOP
-            || scanner_init_state == SCANNER_INIT_DONE
-            || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
-            || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
-           && to_server_buffer_space () > 0)
-          || scanner_init_state == SCANNER_INIT_CONNECT_INTR
-          || scanner_init_state == SCANNER_INIT_CONNECTED
-          || scanner_init_state == SCANNER_INIT_GOT_MD5SUM
-          || scanner_init_state == SCANNER_INIT_GOT_PASSWORD
-          || scanner_init_state == SCANNER_INIT_GOT_PLUGINS
-          || scanner_init_state == SCANNER_INIT_GOT_USER)
+      if (scanner_is_up ()
+          && (((scanner_init_state == SCANNER_INIT_TOP
+                || scanner_init_state == SCANNER_INIT_DONE
+                || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
+                || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
+               && to_server_buffer_space () > 0)
+              || scanner_init_state == SCANNER_INIT_CONNECT_INTR
+              || scanner_init_state == SCANNER_INIT_CONNECTED
+              || scanner_init_state == SCANNER_INIT_GOT_MD5SUM
+              || scanner_init_state == SCANNER_INIT_GOT_PASSWORD
+              || scanner_init_state == SCANNER_INIT_GOT_PLUGINS
+              || scanner_init_state == SCANNER_INIT_GOT_USER))
         {
           FD_SET (scanner_socket, &writefds);
           fd_info |= FD_SCANNER_WRITE;
@@ -967,7 +973,7 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       /* Check for exceptions on the scanner socket.  */
-      if (FD_ISSET (scanner_socket, &exceptfds))
+      if (scanner_is_up () && FD_ISSET (scanner_socket, &exceptfds))
         {
           char ch;
           if (recv (scanner_socket, &ch, 1, MSG_OOB) < 1)
@@ -1152,7 +1158,8 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       /* Read data from the scanner.  */
-      if ((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ
+      if (scanner_is_up ()
+          && ((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ)
           && FD_ISSET (scanner_socket, &readfds))
         {
 #if TRACE || LOG
@@ -1266,7 +1273,8 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       /* Write data to the scanner.  */
-      if ((fd_info & FD_SCANNER_WRITE) == FD_SCANNER_WRITE
+      if (scanner_is_up ()
+          && ((fd_info & FD_SCANNER_WRITE) == FD_SCANNER_WRITE)
           && FD_ISSET (scanner_socket, &writefds))
         {
           /* Write as much as possible to the scanner. */
@@ -1418,7 +1426,7 @@ serve_omp (gnutls_session_t* client_session,
             }
         }
 
-      if (scanner_input_stalled)
+      if (scanner_is_up () && scanner_input_stalled)
         {
           /* Try process the scanner input, in case writing to the scanner
            * has freed some space in to_scanner. */

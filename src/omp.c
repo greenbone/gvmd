@@ -14930,6 +14930,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          "Task %s has been requested to pause",
                          pause_task_data->task_id);
                   break;
+                case -5:
+                  SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("pause_task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s has failed to pause",
+                         pause_task_data->task_id);
+                  break;
                 default:  /* Programming error. */
                   assert (0);
                 case -1:
@@ -15106,6 +15112,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                              "Task %s has failed to start",
                              resume_or_start_task_data->task_id);
                       break;
+                    case -5:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_SERVICE_DOWN ("resume_or_start_task"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to start",
+                             resume_or_start_task_data->task_id);
+                      break;
                     default: /* Programming error. */
                       assert (0);
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_or_start_task"));
@@ -15155,6 +15168,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    (XML_OK_REQUESTED ("resume_paused_task"));
                   g_log ("event task", G_LOG_LEVEL_MESSAGE,
                          "Task %s has been requested to resume",
+                         resume_paused_task_data->task_id);
+                  break;
+                case -5:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_SERVICE_DOWN ("resume_paused_task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s has failed to resume",
                          resume_paused_task_data->task_id);
                   break;
                 default:  /* Programming error. */
@@ -15282,6 +15302,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     case -1:
                     case -3: /* Failed to create report. */
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_stopped_task"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to resume",
+                             resume_stopped_task_data->task_id);
+                      break;
+                    case -5:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_SERVICE_DOWN ("resume_stopped_task"));
                       g_log ("event task", G_LOG_LEVEL_MESSAGE,
                              "Task %s has failed to resume",
                              resume_stopped_task_data->task_id);
@@ -15559,6 +15586,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                              "Task %s has failed to start",
                              start_task_data->task_id);
                       break;
+                    case -5:
+                      SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("start_task"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to start",
+                             start_task_data->task_id);
+                      break;
                     default: /* Programming error. */
                       assert (0);
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
@@ -15608,6 +15641,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("stop_task"));
                   g_log ("event task", G_LOG_LEVEL_MESSAGE,
                          "Task %s has been requested to stop",
+                         stop_task_data->task_id);
+                  break;
+                case -5:
+                  SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("stop_task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s has failed to stop",
                          stop_task_data->task_id);
                   break;
                 default:  /* Programming error. */
@@ -19038,6 +19077,17 @@ process_omp (omp_parser_t *parser, const gchar *command, gchar **response)
   if (forked)
     return 3;
   return 0;
+}
+
+/**
+ * @brief Return whether the scanner is up.
+ *
+ * @return 1 if the scanner is available, else 0.
+ */
+short
+scanner_is_up ()
+{
+  return scanner_up;
 }
 
 /**
