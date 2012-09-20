@@ -192,6 +192,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </xsl:choose>
           </value>
       </syncAttribute>
+      <!-- Plain and simple ip address -->
+      <syncAttribute>
+          <name>gsm_ip_address</name>
+          <value>
+              <xsl:value-of select="$addr"/>
+          </value>
+      </syncAttribute>
   </xsl:template>
 
   <xsl:template match="report/host_start">
@@ -365,7 +372,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <!-- The root Match -->
   <xsl:template match="/">
-    <!-- TODO really? -->
     <xsl:variable name="task_id">
       <xsl:call-template name="extract_organization"/>
       <!--<xsl:apply-templates select="report/task"/>-->
@@ -527,6 +533,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ns2:mapAttributeType intId="gsm_scan_started" extId="gsm_scan_started"/>
         <ns2:mapAttributeType intId="gsm_hostname" extId="gsm_hostname"/>
         <ns2:mapAttributeType intId="gsm_mac_address" extId="gsm_mac_address"/>
+        <ns2:mapAttributeType intId="gsm_ip_address" extId="gsm_ip_address"/>
       </ns2:mapObjectType>
 
       <!-- Vulnerability / NVT -->

@@ -1,3 +1,8 @@
+2012-09-20  Andre Heinecke <aheinecke@intevation.de>
+
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl: Add gsm_ip_address
+	field to allow easier parsing of the address in verinice
+
 2012-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (create_target_data_reset): Free make_name_unique.
