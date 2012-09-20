@@ -1,5 +1,11 @@
 2012-09-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Add WHERE to SQL that ensures that the
+	the Localhost target has the right port list, otherwise all targets are
+	set the Default port list on startup.
+
+2012-09-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (range_compare): Treat args correctly, as pointers to
 	array pointers.  Order start ascending instead of descending.
 

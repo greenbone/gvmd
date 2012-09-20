@@ -10516,7 +10516,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     /* The port list was wrong for a while, so make sure it's correct. */
     sql ("UPDATE targets SET port_range = "
          " (SELECT ROWID FROM port_lists"
-         "  WHERE uuid = '" PORT_LIST_UUID_DEFAULT "')");
+         "  WHERE uuid = '" PORT_LIST_UUID_DEFAULT "')"
+         " WHERE uuid = '" TARGET_UUID_LOCALHOST "';");
 
   /* Ensure the predefined example task and report exists. */
 
