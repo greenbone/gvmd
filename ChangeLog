@@ -1,3 +1,10 @@
+2012-09-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (modify_target): Add assertions.
+
+	* src/omp.c (omp_xml_handle_end_element): In MODIFY_TARGET check for
+	target_id and port_list_id, and add missing return case.
+
 2012-09-21  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* report_formats/verinice-ism/create_report_import: Bump version

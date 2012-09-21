@@ -24486,6 +24486,10 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   target_t target;
   lsc_credential_t ssh_lsc_credential, smb_lsc_credential;
 
+  assert (target_id);
+  assert (port_list_id);
+  assert (name);
+
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);

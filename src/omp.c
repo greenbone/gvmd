@@ -14695,6 +14695,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("modify_target",
                                   "MODIFY is forbidden for observer users"));
             }
+          else if (modify_target_data->target_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_note",
+                                "MODIFY_TARGET requires a target_id attribute"));
+          else if (modify_target_data->port_list_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_note",
+                                "MODIFY_TARGET requires a PORT_LIST"));
           else if (modify_target_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_target",
@@ -14805,6 +14813,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                      ("modify_target",
                       "LSC credential",
                       modify_target_data->smb_lsc_credential_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 9:
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be modified");
+                if (send_find_error_to_client
+                     ("modify_target",
+                      "target",
+                      modify_target_data->target_id,
                       write_to_client,
                       write_to_client_data))
                   {
