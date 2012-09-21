@@ -4714,7 +4714,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("CREATE_AGENT", element_name) == 0)
           {
             openvas_append_string (&create_agent_data->comment, "");
-            openvas_append_string (&create_agent_data->name, "");
             openvas_append_string (&create_agent_data->installer, "");
             openvas_append_string (&create_agent_data->installer_filename, "");
             openvas_append_string (&create_agent_data->installer_signature, "");
@@ -4780,7 +4779,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
           {
             openvas_append_string (&create_target_data->comment, "");
-            openvas_append_string (&create_target_data->name, "");
             openvas_append_string (&create_target_data->hosts, "");
             set_client_state (CLIENT_CREATE_TARGET);
           }
@@ -6129,7 +6127,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("INSTALLER", element_name) == 0)
           set_client_state (CLIENT_CREATE_AGENT_INSTALLER);
         else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_AGENT_NAME);
+          {
+            openvas_append_string (&create_agent_data->name, "");
+            set_client_state (CLIENT_CREATE_AGENT_NAME);
+          }
         ELSE_ERROR ("create_agent");
       case CLIENT_CREATE_AGENT_INSTALLER:
         if (strcasecmp ("FILENAME", element_name) == 0)
@@ -6911,7 +6912,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TARGET_NAME);
+          {
+            openvas_append_string (&create_target_data->name, "");
+            set_client_state (CLIENT_CREATE_TARGET_NAME);
+          }
         else if (strcasecmp ("TARGET_LOCATOR", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR);
         ELSE_ERROR ("create_target");
@@ -11730,7 +11734,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           agent_t agent;
 
           assert (strcasecmp ("CREATE_AGENT", element_name) == 0);
-          assert (create_agent_data->name != NULL);
 
           if (openvas_is_user_observer (current_credentials.username))
             {
@@ -11738,6 +11741,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("create_agent",
                                   "CREATE is forbidden for observer users"));
             }
+          else if (create_agent_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_agent",
+                                "CREATE_AGENT requires a NAME"));
           else if (strlen (create_agent_data->name) == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
@@ -13752,7 +13759,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           target_t new_target;
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
-          assert (create_target_data->name != NULL);
           assert (create_target_data->target_locator
                   || create_target_data->hosts != NULL);
 
@@ -13793,6 +13799,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          "Target could not be created");
                   break;
               }
+          else if (create_target_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_target",
+                                "CREATE_TARGET requires a NAME"));
           else if (strlen (create_target_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",

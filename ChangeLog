@@ -1,5 +1,12 @@
 2012-09-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_start_element): Move CREATE_AGENT and
+	CREATE_TARGET name init to name element, to match filters.
+	(omp_xml_handle_end_element): Check that NAME exists in CREATE_AGENT
+	and CREATE_TARGET, as in CREATE_FILTER.
+
+2012-09-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_target): Add assertions.
 
 	* src/omp.c (omp_xml_handle_end_element): In MODIFY_TARGET check for
