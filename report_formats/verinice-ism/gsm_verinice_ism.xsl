@@ -402,7 +402,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <children>
             <syncAttribute>
               <name>gsm_ism_assets_group_name</name>
-              <value>Assets GSM-Scan <xsl:value-of select="$scan_name"/></value>
+              <value>Assets GSM-Scan</value>
             </syncAttribute>
             <extId><xsl:value-of select="$task_id"/>-ism-assets</extId>
             <extObjectType>gsm_ism_assets</extObjectType>
@@ -415,7 +415,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <children>
             <syncAttribute>
               <name>gsm_ism_vulnerabilities_group_name</name>
-              <value>Vulnerabilities GSM-Scan <xsl:value-of select="$scan_name"/></value>
+              <value>Vulnerabilities GSM-Scan</value>
             </syncAttribute>
             <extId><xsl:value-of select="$task_id"/>-ism-vulnerabilities</extId>
             <extObjectType>gsm_ism_vulnerabilities</extObjectType>
@@ -430,7 +430,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <children>
             <syncAttribute>
               <name>gsm_ism_controls_group_name</name>
-              <value>Controls GSM-Scan <xsl:value-of select="$scan_name"/></value>
+              <value>Controls GSM-Scan</value>
             </syncAttribute>
             <extId><xsl:value-of select="$task_id"/>-ism-controls</extId>
             <extObjectType>gsm_ism_controls</extObjectType>
@@ -445,7 +445,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <children>
             <syncAttribute>
               <name>gsm_ism_scenarios_group_name</name>
-              <value>Scenarios GSM-Scan <xsl:value-of select="$scan_name"/></value>
+              <value>Scenarios GSM-Scan</value>
             </syncAttribute>
             <extId><xsl:value-of select="$task_id"/>-ism-scenario</extId>
             <extObjectType>gsm_ism_scenarios</extObjectType>

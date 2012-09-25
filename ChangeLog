@@ -1,5 +1,10 @@
 2012-09-25  Andre Heinecke <aheinecke@intevation.de>
 
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl: Remove scan name from
+	group names.
+
+2012-09-25  Andre Heinecke <aheinecke@intevation.de>
+
 	* report_formats/verinice-ism/gsm_verinice_ism.xsl: Use filename as ID.
 
 	* report_formats/verinice-ism/generate: Include task name and current
