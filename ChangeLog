@@ -1,3 +1,10 @@
+2012-09-25  Andre Heinecke <aheinecke@intevation.de>
+
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl: Use filename as ID.
+
+	* report_formats/verinice-ism/generate: Include task name and current
+	date in filenames for attachments.
+
 2012-09-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_start_element): Move CREATE_AGENT and

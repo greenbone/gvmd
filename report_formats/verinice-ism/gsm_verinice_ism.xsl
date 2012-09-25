@@ -475,7 +475,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <name>attachment_mime_type</name>
                 <value>xml</value>
             </syncAttribute>
-            <extId><xsl:value-of select="$task_id"/>-report-file</extId>
+            <extId><xsl:value-of select="$filename"/></extId>
             <file>files/<xsl:value-of select="$filename"/></file>
         </file>
         <file>
@@ -495,7 +495,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <name>attachment_mime_type</name>
                 <value>html</value>
             </syncAttribute>
-            <extId><xsl:value-of select="$task_id"/>-html-report</extId>
+            <extId><xsl:value-of select="$htmlfilename"/></extId>
             <file>files/<xsl:value-of select="$htmlfilename"/></file>
         </file>
 

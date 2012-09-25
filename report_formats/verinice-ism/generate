@@ -27,19 +27,24 @@
 TMP=`mktemp -d` || exit 1
 STARTDIR=`pwd`
 XMLFILE=`readlink -f $1`
-FILENAME=`basename $1`
+DATE=$(date +%F-%H-%M-%S)
 
-REPORT_ID=`xmlstarlet sel -t -v /report/task/@id $XMLFILE`
+SCAN_NAME=`xmlstarlet sel -t -v /report/task/name "$XMLFILE"`
+
+SCAN_NAME=$(echo $SCAN_NAME | sed 's/ /_/g')
 
 mkdir -p  $TMP/files
-FILELOC=$TMP/files/$FILENAME
-cp $XMLFILE $FILELOC
+FILENAME=${SCAN_NAME}-${DATE}.xml
+FILELOC=$TMP/files/${FILENAME}
+cp "$XMLFILE" "$FILELOC"
 HTML_FILELOC=$(echo $FILELOC | sed 's/\.xml/\.html/')
 HTML_FILE=$(echo $FILENAME | sed 's/\.xml/\.html/')
 
-xsltproc ./html.xsl $1 > $HTML_FILELOC
-xsltproc --stringparam filename $FILENAME \
-         --stringparam htmlfilename $HTML_FILE \
+
+
+xsltproc ./html.xsl $1 > "$HTML_FILELOC"
+xsltproc --stringparam filename "$FILENAME" \
+         --stringparam htmlfilename "$HTML_FILE" \
          --stringparam filedate `stat -c %Z $XMLFILE` ./gsm_verinice_ism.xsl $1 | \
         sed -e "s/\ xmlns=\"\"//g" | \
         xmlstarlet fo >  $TMP/verinice.xml && \
