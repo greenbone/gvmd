@@ -1,3 +1,8 @@
+2012-09-25  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* report_formats/verinice-ism/create_report_import: Bump version
+	number.
+
 2012-09-25  Andre Heinecke <aheinecke@intevation.de>
 
 	* report_formats/verinice-ism/gsm_verinice_ism.xsl: Remove scan name from
