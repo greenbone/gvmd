@@ -28254,7 +28254,9 @@ config_writable (config_t config)
 
   return sql_int (0, 0,
                   "SELECT count(*) FROM tasks"
-                  " WHERE config = %llu",
+                  " WHERE config = %llu"
+                  " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
+                  " AND (hidden = 0 OR hidden = 1);",
                   config)
          == 0;
 }
@@ -28441,7 +28443,8 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
       sql ("BEGIN IMMEDIATE;");
 
       if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks WHERE config = %llu;",
+                   "SELECT count(*) FROM tasks"
+                   " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
                    config))
         {
           sql ("ROLLBACK;");
@@ -28474,7 +28477,8 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
   sql ("BEGIN IMMEDIATE;");
 
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE config = %llu;",
+               "SELECT count(*) FROM tasks"
+               " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
                config))
     {
       sql ("ROLLBACK;");
@@ -28699,7 +28703,8 @@ manage_set_config_nvts (config_t config, const char* family,
   sql ("BEGIN EXCLUSIVE;");
 
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE config = %llu;",
+               "SELECT count(*) FROM tasks"
+               " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
                config))
     {
       sql ("ROLLBACK;");
@@ -30575,7 +30580,8 @@ manage_set_config_families (config_t config,
   sql ("BEGIN EXCLUSIVE;");
 
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE config = %llu;",
+               "SELECT count(*) FROM tasks"
+               " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
                config))
     {
       sql ("ROLLBACK;");

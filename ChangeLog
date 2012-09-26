@@ -1,5 +1,13 @@
 2012-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (config_writable): Add location and hidden check as
+	in config_in_use.
+	(manage_set_config_preference, manage_set_config_nvts)
+	(manage_set_config_families): Add hidden clause to "config in use"
+	check.  Thanks to Sebastien Aucouturier for pointing this out.
+
+2012-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (client_state_t, omp_xml_handle_end_element): Remove
 	spurious state.  Correct command name in error message.
 
