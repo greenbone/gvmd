@@ -1,3 +1,12 @@
+2012-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (client_state_t, omp_xml_handle_end_element): Remove
+	spurious state.  Correct command name in error message.
+
+	* src/schema_formats/XML/OMP.xml: Add modify_target.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2012-09-25  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* report_formats/verinice-ism/create_report_import: Bump version

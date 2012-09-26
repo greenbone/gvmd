@@ -76,6 +76,7 @@ command
     | modify_report
     | modify_report_format
     | modify_setting
+    | modify_target
     | modify_task
     | pause_task
     | restore
@@ -157,6 +158,7 @@ response
     | modify_report_response
     | modify_report_format_response
     | modify_setting_response
+    | modify_target_response
     | modify_task_response
     | pause_task_response
     | restore_response
@@ -1571,6 +1573,7 @@ commands
            | modify_override
            | modify_report
            | modify_setting
+           | modify_target
            | modify_task
            | pause_task
            | restore
@@ -3708,6 +3711,85 @@ modify_setting_value
        text
      }
 
+## Command modify_target
+##
+## Modify an existing target.
+
+modify_target
+ = element modify_target
+     {
+       # ID of target to modify.
+       attribute target_id { uuid }
+       & modify_target_comment?
+       & modify_target_name?
+       & modify_target_hosts?
+       & modify_target_ssh_lsc_credential?
+       & modify_target_smb_lsc_credential?
+       & modify_target_port_list?
+       & modify_target_target_locator?
+     }
+
+# Comment on target.
+modify_target_comment
+ = element comment
+     {
+       text
+     }
+
+# Name of target.
+modify_target_name
+ = element name
+     {
+       name
+     }
+
+# Target hosts.
+modify_target_hosts
+ = element hosts
+     {
+       text
+     }
+
+# SSH credential to use on target.
+modify_target_ssh_lsc_credential
+ = element ssh_lsc_credential
+     {
+       attribute id { uuid }
+     }
+
+# SMB credential to use on target.
+modify_target_smb_lsc_credential
+ = element smb_lsc_credential
+     {
+       attribute id { uuid }
+     }
+
+# Port List describing ports to scan.
+modify_target_port_list
+ = element port_list
+     {
+       attribute id { uuid }
+     }
+
+modify_target_target_locator
+ = element target_locator
+     {
+       modify_target_target_locator_username
+       & modify_target_target_locator_password
+     }
+
+modify_target_target_locator_username
+ = element username
+     {
+       text
+     }
+
+modify_target_target_locator_password
+ = element password
+     {
+       text
+     }
+
 ## Command modify_task
 ##
 ## Modify an existing task.
@@ -4055,6 +4137,7 @@ commands_response
            | modify_override_response
            | modify_report_response
            | modify_setting_response
+           | modify_target_response
            | modify_task_response
            | pause_task_response
            | restore_response
@@ -7656,6 +7739,15 @@ modify_report_format_response
 
 modify_setting_response
  = element modify_setting_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_target
+
+modify_target_response
+ = element modify_target_response
      {
        attribute status { status }
        & attribute status_text { text }

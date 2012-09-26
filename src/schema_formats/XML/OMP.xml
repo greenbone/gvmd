@@ -1538,6 +1538,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_override</c>
           <c>modify_report</c>
           <c>modify_setting</c>
+          <c>modify_target</c>
           <c>modify_task</c>
           <c>pause_task</c>
           <c>restore</c>
@@ -1629,6 +1630,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_override</r>
             <r>modify_report</r>
             <r>modify_setting</r>
+            <r>modify_target</r>
             <r>modify_task</r>
             <r>pause_task</r>
             <r>restore</r>
@@ -9872,6 +9874,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             MODIFY_REPORT          Modify an existing report.
             MODIFY_REPORT_FORMAT   Modify an existing report format.
             MODIFY_SETTING         Modify an existing setting.
+            MODIFY_TARGET          Modify an existing target.
             MODIFY_TASK            Update an existing task.
             PAUSE_TASK             Pause a running task.
             RESTORE                Restore a resource.
@@ -10836,6 +10839,119 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_setting_response status="200" status_text="OK">
         </modify_setting_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_target</name>
+    <summary>Modify an existing target</summary>
+    <description>
+      <p>
+        The client uses the modify_target command to change an existing target.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>target_id</name>
+        <summary>ID of target to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>comment</e></o>
+      <o><e>name</e></o>
+      <o><e>hosts</e></o>
+      <o><e>ssh_lsc_credential</e></o>
+      <o><e>smb_lsc_credential</e></o>
+      <o><e>port_list</e></o>
+      <o><e>target_locator</e></o>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on target</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>name</name>
+      <summary>Name of target</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>hosts</name>
+      <summary>Target hosts</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>ssh_lsc_credential</name>
+      <summary>SSH credential to use on target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>smb_lsc_credential</name>
+      <summary>SMB credential to use on target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>port_list</name>
+      <summary>Port List describing ports to scan</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>target_locator</name>
+      <pattern>
+        <e>username</e>
+        <e>password</e>
+      </pattern>
+      <ele>
+        <name>username</name>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>password</name>
+        <pattern>text</pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the name of a target</summary>
+      <request>
+        <modify_target target_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <name>Upstairs Lab</name>
+        </modify_target>
+      </request>
+      <response>
+        <modify_target_response status="200" status_text="OK">
+        </modify_target_response>
       </response>
     </example>
   </command>

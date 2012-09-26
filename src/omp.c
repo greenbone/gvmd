@@ -4056,7 +4056,6 @@ typedef enum
   CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT,
   CLIENT_MODIFY_TARGET_SMB_LSC_CREDENTIAL,
   CLIENT_MODIFY_TARGET_NAME,
-  CLIENT_MODIFY_TARGET_PORT_RANGE,
   CLIENT_MODIFY_TARGET_PORT_LIST,
   CLIENT_MODIFY_TARGET_TARGET_LOCATOR,
   CLIENT_MODIFY_TARGET_TARGET_LOCATOR_PASSWORD,
@@ -14707,11 +14706,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else if (modify_target_data->target_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_note",
+             (XML_ERROR_SYNTAX ("modify_target",
                                 "MODIFY_TARGET requires a target_id attribute"));
           else if (modify_target_data->port_list_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_note",
+             (XML_ERROR_SYNTAX ("modify_target",
                                 "MODIFY_TARGET requires a PORT_LIST"));
           else if (modify_target_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
@@ -14868,7 +14867,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET, HOSTS);
       CLOSE (CLIENT_MODIFY_TARGET, NAME);
       CLOSE (CLIENT_MODIFY_TARGET, PORT_LIST);
-      CLOSE (CLIENT_MODIFY_TARGET, PORT_RANGE);
       CLOSE (CLIENT_MODIFY_TARGET, SSH_LSC_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SMB_LSC_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET_TARGET_LOCATOR, PASSWORD);
