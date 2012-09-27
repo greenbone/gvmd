@@ -1,7 +1,17 @@
+2012-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport from trunk r14163.
+
+	* src/manage_sql.c (config_writable): Add location and hidden check as
+	in config_in_use.
+	(manage_set_config_preference, manage_set_config_nvts)
+	(manage_set_config_families): Add hidden clause to "config in use"
+	check.  Thanks to Sebastien Aucouturier for pointing this out.
+
 2012-08-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (omp_xml_handle_end_element): In CLIENT_MODIFY_TASK
-	add the missing comment check.
+	add the missing comment check.  Backport from trunk r13967.
 
 2012-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
