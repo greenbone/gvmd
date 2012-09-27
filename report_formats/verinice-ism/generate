@@ -34,7 +34,7 @@ SCAN_NAME=`xmlstarlet sel -t -v /report/task/name "$XMLFILE"`
 SCAN_NAME=$(echo $SCAN_NAME | sed 's/ /_/g')
 
 mkdir -p  $TMP/files
-FILENAME=${SCAN_NAME}-${DATE}.xml
+FILENAME=${SCAN_NAME}_${DATE}.xml
 FILELOC=$TMP/files/${FILENAME}
 cp "$XMLFILE" "$FILELOC"
 HTML_FILELOC=$(echo $FILELOC | sed 's/\.xml/\.html/')

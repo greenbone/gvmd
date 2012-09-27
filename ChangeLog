@@ -1,3 +1,8 @@
+2012-09-27  Andre Heinecke <aheinecke@intevation.de>
+
+	* report_formats/verinice-ism/generate: Use _ instead of - as the
+	separator between Scan Name and Date for file attachment names.
+
 2012-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (config_writable): Add location and hidden check as
