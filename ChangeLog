@@ -1,3 +1,11 @@
+2012-09-28  Andre Heinecke <aheinecke@intevation.de>
+
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl (create_links):
+	Correct relationId's
+
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl (get-details):
+	Only use the hostname for the asset if available instead of hostname - ip
+
 2012-09-27  Andre Heinecke <aheinecke@intevation.de>
 
 	* report_formats/verinice-ism/generate: Use _ instead of - as the

@@ -220,8 +220,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <xsl:choose>
               <xsl:when test="/report/host[ip=$addr]/detail[name='hostname']/value/text()">
                   <xsl:value-of select="/report/host[ip=$addr]/detail[name='hostname']/value/text()"/>
-                  <xsl:text> - </xsl:text>
-                  <xsl:value-of select="$addr"/>
               </xsl:when>
               <xsl:otherwise>
                   <xsl:value-of select="$addr"/>
@@ -353,12 +351,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <syncLink>
         <dependant><xsl:value-of select="$task_id"/>-<xsl:value-of select="$cur_oid"/>-scenario</dependant>
         <dependency><xsl:value-of select="$task_id"/>-<xsl:value-of select="$cur_oid"/>-vulnerability</dependency>
-        <relationId>rel_incsen_vulnerability</relationId>
+        <relationId>rel_incscen_vulnerability</relationId>
       </syncLink>
       <syncLink>
         <dependant><xsl:value-of select="$task_id"/>-<xsl:value-of select="$cur_oid"/>-scenario</dependant>
         <dependency><xsl:value-of select="$task_id"/>-<xsl:value-of select="host"/></dependency>
-        <relationId>rel_incsen_asset</relationId>
+        <relationId>rel_incscen_asset</relationId>
       </syncLink>
     </xsl:for-each>
     <xsl:for-each select="/report/results/result/notes/note[nvt/@oid = $cur_oid]">
