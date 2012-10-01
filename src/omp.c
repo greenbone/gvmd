@@ -1844,6 +1844,12 @@ get_data_parse_attributes (get_data_t *data, const gchar *type,
     data->trash = strcmp (attribute, "0");
   else
     data->trash = 0;
+
+  if (find_attribute (attribute_names, attribute_values,
+                      "details", &attribute))
+    data->details = strcmp (attribute, "0");
+  else
+    data->details = 0;
 }
 
 /**
@@ -2023,12 +2029,10 @@ get_lsc_credentials_data_reset (get_lsc_credentials_data_t *data)
  */
 typedef struct
 {
+  get_data_t get;        ///< Get args.
   char *note_id;         ///< ID of single note to get.
   char *nvt_oid;         ///< OID of NVT to which to limit listing.
   char *task_id;         ///< ID of task to which to limit listing.
-  char *sort_field;      ///< Field to sort results on.
-  int sort_order;        ///< Result sort order: 0 descending, else ascending.
-  int details;           ///< Boolean.  Whether to include full note details.
   int result;            ///< Boolean.  Whether to include associated results.
 } get_notes_data_t;
 
@@ -5063,6 +5067,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
 
+            get_data_parse_attributes (&get_notes_data->get, "note",
+                                       attribute_names,
+                                       attribute_values);
+
             append_attribute (attribute_names, attribute_values, "note_id",
                               &get_notes_data->note_id);
 
@@ -5073,25 +5081,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_notes_data->task_id);
 
             if (find_attribute (attribute_names, attribute_values,
-                                "details", &attribute))
-              get_notes_data->details = strcmp (attribute, "0");
-            else
-              get_notes_data->details = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
                                 "result", &attribute))
               get_notes_data->result = strcmp (attribute, "0");
             else
               get_notes_data->result = 0;
-
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_notes_data->sort_field);
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_notes_data->sort_order = strcmp (attribute, "descending");
-            else
-              get_notes_data->sort_order = 1;
 
             set_client_state (CLIENT_GET_NOTES);
           }
@@ -7926,14 +7919,19 @@ buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
 
   if (task)
     {
+      get_data_t get;
       iterator_t notes;
+      memset (&get, '\0', sizeof (get));
+#if 0
+      // FIX do in filter
+      get.sort_order = 0;
+      get.sort_field = "creation_time";
+#endif
       init_note_iterator (&notes,
-                          0,
+                          &get,
                           0,
                           result,
-                          task,
-                          0, /* Most recent first. */
-                          "creation_time");
+                          task);
       buffer_notes_xml (buffer,
                         &notes,
                         include_notes_details,
@@ -8629,7 +8627,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_NOTES:
         {
-          note_t note = 0;
           nvt_t nvt = 0;
           task_t task = 0;
 
@@ -8645,21 +8642,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_notes",
                                 "Only one of the note_id and task_id"
                                 " attributes may be given"));
-          else if (get_notes_data->note_id
-              && find_note (get_notes_data->note_id, &note))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_notes"));
-          else if (get_notes_data->note_id && note == 0)
-            {
-              if (send_find_error_to_client ("get_notes",
-                                             "note",
-                                             get_notes_data->note_id,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
           else if (get_notes_data->task_id
                    && find_task (get_notes_data->task_id, &task))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_notes"));
@@ -8694,30 +8676,160 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               iterator_t notes;
               GString *buffer;
+              int count, filtered, ret, first;
+              get_data_t * get;
 
-              SENDF_TO_CLIENT_OR_FAIL ("<get_notes_response"
-                                       " status=\"" STATUS_OK "\""
-                                       " status_text=\"" STATUS_OK_TEXT "\">");
+              ret = init_note_iterator (&notes, &get_notes_data->get, nvt, 0,
+                                        task);
+              if (ret)
+                {
+                  switch (ret)
+                    {
+                      case 1:
+                        if (send_find_error_to_client ("get_notes",
+                                                       "note",
+                                                       get_notes_data->get.id,
+                                                       write_to_client,
+                                                       write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case 2:
+                        if (send_find_error_to_client
+                             ("get_notes",
+                              "filter",
+                              get_notes_data->get.filt_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case -1:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("get_notes"));
+                        break;
+                    }
+                  get_notes_data_reset (get_notes_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+
+              count = 0;
+              get = &get_notes_data->get;
+              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+              SEND_GET_START ("note", &get_notes_data->get);
 
               buffer = g_string_new ("");
 
-              init_note_iterator (&notes,
-                                  note,
-                                  nvt,
-                                  0,
-                                  task,
-                                  get_notes_data->sort_order,
-                                  get_notes_data->sort_field);
-              buffer_notes_xml (buffer, &notes, get_notes_data->details,
+              // FIX count++;  send_get_common for each
+              buffer_notes_xml (buffer, &notes, get_notes_data->get.details,
                                 get_notes_data->result);
-              cleanup_iterator (&notes);
 
               SEND_TO_CLIENT_OR_FAIL (buffer->str);
               g_string_free (buffer, TRUE);
 
-              SEND_TO_CLIENT_OR_FAIL ("</get_notes_response>");
-            }
 
+#if 0
+              while (1)
+                {
+                  char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
+                  const char *port_list_uuid, *port_list_name, *ssh_port;
+                  lsc_credential_t ssh_credential, smb_credential;
+                  int port_list_trash;
+                  char *port_range;
+
+                  ret = get_next (&notes, get, &first, &count,
+                                  init_note_iterator);
+                  if (ret == 1)
+                    break;
+                  if (ret == -1)
+                    {
+                      internal_error_send_to_client (error);
+                      return;
+                    }
+
+                  port_list_uuid = note_iterator_port_list_uuid (&notes);
+                  port_list_name = note_iterator_port_list_name (&notes);
+                  port_list_trash = note_iterator_port_list_trash (&notes);
+                  ssh_port = note_iterator_ssh_port (&notes);
+                  port_range = note_port_range (note_iterator_note
+                                                    (&notes));
+
+                  SEND_GET_COMMON (note, &get_notes_data->get, &notes);
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
+                                           "<max_hosts>%i</max_hosts>"
+                                           "<port_range>%s</port_range>"
+                                           "<port_list id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<trash>%i</trash>"
+                                           "</port_list>"
+                                           "<ssh_lsc_credential id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<port>%s</port>"
+                                           "<trash>%i</trash>"
+                                           "</ssh_lsc_credential>"
+                                           "<smb_lsc_credential id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<trash>%i</trash>"
+                                           "</smb_lsc_credential>",
+                                           note_iterator_hosts (&notes),
+                                           manage_max_hosts
+                                            (note_iterator_hosts (&notes)),
+                                           port_range,
+                                           port_list_uuid ? port_list_uuid : "",
+                                           port_list_name ? port_list_name : "",
+                                           port_list_trash,
+                                           ssh_lsc_uuid ? ssh_lsc_uuid : "",
+                                           ssh_lsc_name ? ssh_lsc_name : "",
+                                           ssh_port ? ssh_port : "",
+                                           (get_notes_data->get.trash
+                                             && note_iterator_ssh_trash
+                                                 (&notes)),
+                                           smb_lsc_uuid ? smb_lsc_uuid : "",
+                                           smb_lsc_name ? smb_lsc_name : "",
+                                           (get_notes_data->get.trash
+                                             && note_iterator_smb_trash
+                                                 (&notes)));
+
+                  if (get_notes_data->tasks)
+                    {
+                      iterator_t tasks;
+
+                      SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+                      init_note_task_iterator (&tasks,
+                                                 note_iterator_note
+                                                  (&notes));
+                      while (next (&tasks))
+                        SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                                 "<name>%s</name>"
+                                                 "</task>",
+                                                 note_task_iterator_uuid (&tasks),
+                                                 note_task_iterator_name (&tasks));
+                      cleanup_iterator (&tasks);
+                      SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+                    }
+
+                  SEND_TO_CLIENT_OR_FAIL ("</note>");
+                  count++;
+                  free (ssh_lsc_name);
+                  free (ssh_lsc_uuid);
+                  free (smb_lsc_name);
+                  free (smb_lsc_uuid);
+                  free (port_range);
+                }
+#endif
+
+              cleanup_iterator (&notes);
+              filtered = get_notes_data->get.id
+                          ? 1
+                          : note_count (&get_notes_data->get);
+              SEND_GET_END ("note", &get_notes_data->get, count, filtered);
+            }
           get_notes_data_reset (get_notes_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
@@ -16896,9 +17008,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         break;
                       case 2:
                         if (send_find_error_to_client
-                             ("get_filters",
+                             ("get_targets",
                               "filter",
-                              get_filters_data->get.filt_id,
+                              get_targets_data->get.filt_id,
                               write_to_client,
                               write_to_client_data))
                           {

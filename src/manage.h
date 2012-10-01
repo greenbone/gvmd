@@ -664,6 +664,7 @@ typedef enum
 typedef struct
 {
   char *actions;       ///< Actions.
+  int details;         ///< Boolean.  Whether to include full details.
   char *filt_id;       ///< Filter ID.  Overrides "filter".
   char *filter;        ///< Filter term.
   int first;           ///< Skip over items before this number.
@@ -1602,9 +1603,11 @@ int
 modify_note (note_t, const char*, const char*, const char*, const char*,
              const char*, task_t, result_t);
 
-void
-init_note_iterator (iterator_t*, note_t, nvt_t, result_t, task_t, int,
-                    const char*);
+int
+note_count (const get_data_t *);
+
+int
+init_note_iterator (iterator_t*, const get_data_t*, nvt_t, result_t, task_t);
 
 const char*
 note_iterator_uuid (iterator_t*);

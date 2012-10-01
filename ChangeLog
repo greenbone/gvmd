@@ -1,3 +1,27 @@
+2012-10-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add filtering to GET_NOTES.
+
+	* src/manage_sql.c (ANON_GET_ITERATOR_FILTER_COLUMNS)
+	(ANON_GET_ITERATOR_COLUMNS): New defines.
+	(init_user_get_iterator, init_get_iterator): Give caller more SQL
+	flexibility.  Update callers.
+	(NOTE_ITERATOR_FILTER_COLUMNS, NOTE_ITERATOR_COLUMNS)
+	(NOTE_ITERATOR_TRASH_COLUMNS): New defines.
+	(note_count): New function.
+	(init_note_iterator): Update to new GET style with filter, leaving
+	certain note-specific "filtering" params.  Adjust all accessors
+	accordingly.
+
+	* src/manage.h: Update headers accordingly.
+	(get_data_t): Add details.
+
+	* src/omp.c (get_data_parse_attributes): Add details.
+	(get_notes_data_t): Switch to generic GET arg.
+	(omp_xml_handle_start_element): Parse generic GET data in GET_NOTES.
+	(buffer_result_notes_xml, omp_xml_handle_end_element): Pass generic GET
+	arg to iterator.  Use correct command in CLIENT_GET_TARGETS error.
+
 2012-10-01  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/openvas-scapdata-sync.in: Do not use the timestamp of $SEC_DB

@@ -25873,8 +25873,22 @@ filter_clause (const char* type, const char* filter, const char **columns,
 /**
  * @brief Filter columns for GET iterator.
  */
+#define ANON_GET_ITERATOR_FILTER_COLUMNS "uuid", \
+ "created", "modified"
+
+/**
+ * @brief Filter columns for GET iterator.
+ */
 #define GET_ITERATOR_FILTER_COLUMNS "uuid", "name", "comment", \
  "created", "modified"
+
+/**
+ * @brief Columns for GET iterator.
+ */
+#define ANON_GET_ITERATOR_COLUMNS                            \
+  "ROWID, uuid, '', '', iso_time (creation_time),"           \
+  " iso_time (modification_time), creation_time AS created," \
+  " modification_time AS modified"
 
 /**
  * @brief Columns for GET iterator.
@@ -26044,6 +26058,12 @@ target_count (const get_data_t *get)
  * @param[in]  trash_columns   Columns for SQL trash case.
  * @param[in]  filter_columns  Columns for filter.
  * @param[in]  resource        Resource.
+ * @param[in]  distinct        Whether the query should be distinct.  Skipped
+ *                             for trash and single resource.
+ * @param[in]  extra_tables    Join tables.  Skipped for trash and single
+ *                             resource.
+ * @param[in]  extra_where     Extra WHERE clauses.  Skipped for trash and
+ *                             single resource.
  *
  * @return 0 success, 2 failed to find filter.
  */
@@ -26051,7 +26071,8 @@ static int
 init_user_get_iterator (iterator_t* iterator, const char *type,
                         const get_data_t *get, const char *columns,
                         const char *trash_columns, const char **filter_columns,
-                        resource_t resource)
+                        resource_t resource, int distinct,
+                        const char *extra_tables, const char *extra_where)
 {
   gchar *clause, *order, *filter;
   int first, max;
@@ -26112,17 +26133,22 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
                    order);
   else
     init_iterator (iterator,
-                   "SELECT %s"
-                   " FROM %ss"
-                   " WHERE ((owner IS NULL) OR (owner ="
+                   "SELECT%s %s"
+                   " FROM %ss%s"
+                   " WHERE ((%ss.owner IS NULL) OR (%ss.owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s%s%s"
+                   "%s%s%s%s"
                    " LIMIT %i OFFSET %i;",
+                   distinct ? " DISTINCT" : "",
                    columns,
+                   type,
+                   extra_tables ? extra_tables : "",
+                   type,
                    type,
                    current_credentials.uuid,
                    clause ? " AND " : "",
                    clause ? clause : "",
+                   extra_where ? extra_where : "",
                    order,
                    max,
                    first);
@@ -26141,6 +26167,12 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
  * @param[in]  trash_columns   Columns for SQL trash case.
  * @param[in]  filter_columns  Columns for filter.
  * @param[in]  used_by         Type that uses these resources, or NULL.
+ * @param[in]  distinct        Whether the query should be distinct.  Skipped
+ *                             for trash and single resource.
+ * @param[in]  extra_tables    Join tables.  Skipped for trash and single
+ *                             resource.
+ * @param[in]  extra_where     Extra WHERE clauses.  Skipped for trash and
+ *                             single resource.
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
  *         error.
@@ -26149,7 +26181,8 @@ static int
 init_get_iterator (iterator_t* iterator, const char *type,
                    const get_data_t *get, const char *columns,
                    const char *trash_columns, const char **filter_columns,
-                   const char *used_by)
+                   const char *used_by, int distinct, const char *extra_tables,
+                   const char *extra_where)
 {
   int actions, first, max;
   gchar *clause, *order, *used_by_clause, *filter;
@@ -26174,13 +26207,15 @@ init_get_iterator (iterator_t* iterator, const char *type,
 
   if (get->actions == NULL || strlen (get->actions) == 0)
     return init_user_get_iterator (iterator, type, get, columns, trash_columns,
-                                   filter_columns, resource);
+                                   filter_columns, resource, distinct,
+                                   extra_tables, extra_where);
 
   actions = parse_actions (get->actions);
 
   if (actions == 0)
     return init_user_get_iterator (iterator, type, get, columns, trash_columns,
-                                   filter_columns, resource);
+                                   filter_columns, resource, distinct,
+                                   extra_tables, extra_where);
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -26266,20 +26301,25 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    order);
   else
     init_iterator (iterator,
-                   "SELECT %s"
-                   " FROM %ss"
+                   "SELECT%s %s"
+                   " FROM %ss%s"
                    " WHERE"
-                   " ((owner IS NULL) OR (owner ="
+                   " ((%ss.owner IS NULL) OR (%ss.owner ="
                    "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
                    "  %s)"
-                   "%s%s%s"
+                   "%s%s%s%s"
                    " LIMIT %i OFFSET %i;",
+                   distinct ? " DISTINCT" : "",
                    columns,
+                   type,
+                   extra_tables ? extra_tables : "",
+                   type,
                    type,
                    current_credentials.uuid,
                    used_by_clause,
                    clause ? " AND " : "",
                    clause ? clause : "",
+                   extra_where ? extra_where : "",
                    order,
                    max,
                    first);
@@ -26310,7 +26350,7 @@ init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
   get.filter = (char*) filter;
   init_user_get_iterator (iterator, "target", &get, TARGET_ITERATOR_COLUMNS,
                           TARGET_ITERATOR_TRASH_COLUMNS, filter_columns,
-                          target);
+                          target, 0, 0, 0);
 }
 
 /**
@@ -26335,7 +26375,10 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
                             /* Columns for trashcan. */
                             TARGET_ITERATOR_TRASH_COLUMNS,
                             filter_columns,
-                            "task");
+                            "task",
+                            0,
+                            NULL,
+                            NULL);
 }
 
 /**
@@ -33257,6 +33300,9 @@ init_agent_iterator (iterator_t* iterator, const get_data_t *get)
                             /* Columns for trashcan. */
                             AGENT_ITERATOR_TRASH_COLUMNS,
                             filter_columns,
+                            NULL,
+                            0,
+                            NULL,
                             NULL);
 }
 
@@ -33695,38 +33741,74 @@ modify_note (note_t note, const char *active, const char* text,
 }
 
 /**
- * @brief Database columns used in note iterators.
+ * @brief Filter columns for note iterator.
  */
-#define NOTE_COLUMNS "notes.ROWID, notes.uuid, notes.nvt,"                 \
-                     " notes.creation_time, notes.modification_time,"      \
-                     " notes.text, notes.hosts, notes.port, notes.threat," \
-                     " notes.task, notes.result, notes.end_time,"          \
-                     " (notes.end_time = 0)"                               \
-                     "  OR (notes.end_time >= now ())"
+#define NOTE_ITERATOR_FILTER_COLUMNS                                         \
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "nvt", "text", NULL }  // FIX more
+
+/**
+ * @brief Note iterator columns.
+ */
+#define NOTE_ITERATOR_COLUMNS                                              \
+  /* ANON_GET_ITERATOR_COLUMNS, */  /* Need the notes prefix. */           \
+  "notes.ROWID, notes.uuid, '', '', iso_time (notes.creation_time),"       \
+  " iso_time (notes.modification_time), notes.creation_time AS created,"   \
+  " notes.modification_time AS modified,"                                  \
+  /* FIX duplicates of above */                                            \
+  " notes.ROWID, notes.uuid, notes.nvt AS oid,"                            \
+  " notes.creation_time, notes.modification_time, notes.text,"             \
+  " notes.hosts, notes.port, notes.threat, notes.task, notes.result,"      \
+  " notes.end_time, (notes.end_time = 0) OR (notes.end_time >= now ()),"   \
+  " (SELECT name FROM nvts WHERE oid = notes.nvt) AS nvt"
+
+/**
+ * @brief Note iterator columns for trash case.
+ */
+#define NOTE_ITERATOR_TRASH_COLUMNS NOTE_ITERATOR_COLUMNS
+
+/**
+ * @brief Count number of notes.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of notes in filtered set.
+ */
+int
+note_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = NOTE_ITERATOR_FILTER_COLUMNS;
+  // FIX will need more
+  return count ("note", get, NOTE_ITERATOR_COLUMNS, extra_columns);
+}
 
 /**
  * @brief Initialise a note iterator.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  note        Single note to iterate, 0 for all.
+ * @param[in]  get         GET data.
  * @param[in]  result      Result to limit notes to, 0 for all.
  * @param[in]  task        If result is > 0, task whose notes on result to
  *                         include, otherwise task to limit notes to.  0 for
  *                         all tasks.
  * @param[in]  nvt         NVT to limit notes to, 0 for all.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
  */
-void
-init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
-                    result_t result, task_t task, int ascending,
-                    const char* sort_field)
+int
+init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
+                    result_t result, task_t task)
 {
+  static const char *filter_columns[] = NOTE_ITERATOR_FILTER_COLUMNS;
   gchar *result_clause, *join_clause = NULL;
+  int ret;
 
   assert (current_credentials.uuid);
-  assert ((nvt && note) == 0);
-  assert ((task && note) == 0);
+  assert ((nvt && get->id) == 0);
+  assert ((task && get->id) == 0);
+
+  assert (result ? nvt == 0 : 1);
+  assert (task ? nvt == 0 : 1);
 
   if (result)
     result_clause = g_strdup_printf (" AND"
@@ -33771,56 +33853,36 @@ init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
                         task);
       join_clause = g_strdup (", reports, report_results, results");
     }
+  else if (nvt)
+    {
+      result_clause = g_strdup_printf
+                       (" AND (notes.nvt ="
+                        " (SELECT oid FROM nvts WHERE nvts.ROWID = %llu))"
+                        " AND ((notes.owner IS NULL) OR (notes.owner ="
+                        " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+                        nvt,
+                        current_credentials.uuid);
+    }
   else
     result_clause = NULL;
 
-  if (note)
-    init_iterator (iterator,
-                   "SELECT " NOTE_COLUMNS
-                   " FROM notes"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s;",
-                   note,
-                   current_credentials.uuid,
-                   result_clause ? result_clause : "");
-  else if (nvt)
-    init_iterator (iterator,
-                   "SELECT DISTINCT " NOTE_COLUMNS ","
-                   " (SELECT name FROM NVTS WHERE oid = notes.nvt)"
-                   " AS notes_nvt_name"
-                   " FROM notes%s"
-                   " WHERE (notes.nvt ="
-                   " (SELECT oid FROM nvts WHERE nvts.ROWID = %llu))"
-                   " AND ((notes.owner IS NULL) OR (notes.owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s"
-                   " ORDER BY %s %s;",
-                   join_clause ? join_clause : "",
-                   nvt,
-                   current_credentials.uuid,
-                   result_clause ? result_clause : "",
-                   sort_field ? sort_field : "notes.ROWID",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT DISTINCT " NOTE_COLUMNS ","
-                   " (SELECT name FROM NVTS WHERE oid = notes.nvt)"
-                   " AS notes_nvt_name"
-                   " FROM notes%s"
-                   " WHERE ((notes.owner IS NULL) OR (notes.owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s"
-                   " ORDER BY %s %s;",
-                   join_clause ? join_clause : "",
-                   current_credentials.uuid,
-                   result_clause ? result_clause : "",
-                   sort_field ? sort_field : "notes.ROWID",
-                   ascending ? "ASC" : "DESC");
+  ret = init_get_iterator (iterator,
+                           "note",
+                           get,
+                           /* Columns. */
+                           NOTE_ITERATOR_COLUMNS,
+                           /* Columns for trashcan. */
+                           NOTE_ITERATOR_TRASH_COLUMNS,
+                           filter_columns,
+                           "task",
+                           task || nvt,
+                           join_clause,
+                           result_clause);
 
   g_free (result_clause);
   g_free (join_clause);
+
+  return ret;
 }
 
 /**
@@ -33831,7 +33893,7 @@ init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
  * @return UUID, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_uuid, 1);
+DEF_ACCESS (note_iterator_uuid, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
  * @brief Get the NVT OID from a note iterator.
@@ -33841,7 +33903,7 @@ DEF_ACCESS (note_iterator_uuid, 1);
  * @return NVT OID, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_nvt_oid, 2);
+DEF_ACCESS (note_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the creation time from a note iterator.
@@ -33883,7 +33945,7 @@ note_iterator_modification_time (iterator_t* iterator)
  * @return Text, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_text, 5);
+DEF_ACCESS (note_iterator_text, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the hosts from a note iterator.
@@ -33893,7 +33955,7 @@ DEF_ACCESS (note_iterator_text, 5);
  * @return Hosts, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_hosts, 6);
+DEF_ACCESS (note_iterator_hosts, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Get the port from a note iterator.
@@ -33903,7 +33965,7 @@ DEF_ACCESS (note_iterator_hosts, 6);
  * @return Port, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_port, 7);
+DEF_ACCESS (note_iterator_port, GET_ITERATOR_COLUMN_COUNT + 7);
 
 /**
  * @brief Get the threat from a note iterator.
@@ -33917,7 +33979,8 @@ note_iterator_threat (iterator_t *iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 8);
+  ret = (const char*) sqlite3_column_text (iterator->stmt,
+                                           GET_ITERATOR_COLUMN_COUNT + 8);
   if (ret == NULL) return NULL;
   return message_type_threat (ret);
 }
@@ -33933,7 +33996,8 @@ task_t
 note_iterator_task (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) sqlite3_column_int64 (iterator->stmt, 9);
+  return (task_t) sqlite3_column_int64 (iterator->stmt,
+                                        GET_ITERATOR_COLUMN_COUNT + 9);
 }
 
 /**
@@ -33947,7 +34011,8 @@ result_t
 note_iterator_result (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (result_t) sqlite3_column_int64 (iterator->stmt, 10);
+  return (result_t) sqlite3_column_int64 (iterator->stmt,
+                                          GET_ITERATOR_COLUMN_COUNT + 10);
 }
 
 /**
@@ -33963,7 +34028,8 @@ note_iterator_end_time (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 11);
+  ret = (time_t) sqlite3_column_int (iterator->stmt,
+                                     GET_ITERATOR_COLUMN_COUNT + 11);
   return ret;
 }
 
@@ -33979,7 +34045,8 @@ note_iterator_active (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = sqlite3_column_int (iterator->stmt, 12);
+  ret = sqlite3_column_int (iterator->stmt,
+                            GET_ITERATOR_COLUMN_COUNT + 12);
   return ret;
 }
 
@@ -33988,18 +34055,10 @@ note_iterator_active (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The name of the NVT associated with the note, or NULL on error.
+ * @return NVT name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
  */
-const char*
-note_iterator_nvt_name (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, note_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_name (nvti);
-  return NULL;
-}
+DEF_ACCESS (note_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 13);
 
 
 /* Overrides. */
@@ -39763,6 +39822,9 @@ init_filter_iterator (iterator_t* iterator, const get_data_t *get)
                             /* Columns for trashcan. */
                             FILTER_ITERATOR_TRASH_COLUMNS,
                             filter_columns,
+                            NULL,
+                            0,
+                            NULL,
                             NULL);
 }
 
