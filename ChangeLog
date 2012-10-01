@@ -1,3 +1,9 @@
+2012-10-01  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/openvas-scapdata-sync.in: Do not use the timestamp of $SEC_DB
+	to decide which CPEs/CVEs to add/update. Use the timestamp of the last
+	modified CVE in the DB instead.
+
 2012-09-28  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* report_formats/verinice-ism/create_report_import: Bump version

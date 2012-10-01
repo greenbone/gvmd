@@ -213,12 +213,12 @@ update_sec_db () {
     touch $SCAP_DIR/*.xml
     REFDATE=0
   else
-    REFDATE=`stat -c "%y" $SEC_DB | cut -d " " -f 1 | tr -d "-"`
+    REFDATE=`sqlite3 $SEC_DB "select max(last_mod) from cves;" | sed -e 's/T.*//' | tr -d "-"`
   fi
 
-  DB_LASTMOD=`stat -c "%Y" $SEC_DB`
+  DB_LASTMOD=$REFDATE
 
-  if [ `stat -c "%Y" $CPEBASE` -ge $DB_LASTMOD ]
+  if [ `stat -c "%Y" $CPE_BASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTMOD ]
   then
     echo "[i] Updating CPEs"
     xsltproc --stringparam refdate $REFDATE $RES_DIR/cpe_youngerthan.xsl $CPEBASE | xsltproc $RES_DIR/cpe_update.xsl - | sqlite3 $SEC_DB
@@ -228,7 +228,7 @@ update_sec_db () {
 
   for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
   do
-    if [ `stat -c "%Y" $cvefile` -ge $DB_LASTMOD ]
+    if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTMOD ]
     then
       echo "[i] Updating $cvefile"
       xsltproc --stringparam refdate $REFDATE $RES_DIR/cve_youngerthan.xsl $cvefile | xsltproc $RES_DIR/cve_update.xsl - | sqlite3 $SEC_DB
