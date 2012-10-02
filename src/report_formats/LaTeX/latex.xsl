@@ -249,24 +249,6 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 </xsl:text>
   </xsl:template>
 
-  <!-- Prepends a backslash to a specified character. -->
-  <xsl:template name="latex-prepend-backslash">
-    <xsl:param name="string"/>
-    <xsl:param name="character"/>
-    <xsl:choose>
-      <xsl:when test="string-length($string) &gt; 0 and contains($string, $character)">
-        <xsl:value-of select="concat(substring-before($string, $character), '\', $character)"/>
-        <xsl:call-template name="latex-prepend-backslash">
-          <xsl:with-param name="string" select="substring-after($string, $character)"/>
-          <xsl:with-param name="character" select="$character"/>
-        </xsl:call-template>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:value-of select="$string"/>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
   <!-- Assuming a "\verb==" environment, "escape" '=' characters by placing them
        in a "verb\-\-" environment. -->
   <xsl:template name="escape_verb_env">
@@ -334,67 +316,46 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     </xsl:choose>
   </xsl:template>
 
+  <xsl:template name="escape_special_chars">
+    <xsl:param name="string"/>
+    <xsl:value-of select="str:replace(
+      str:replace(
+      str:replace(
+      str:replace(
+      str:replace(
+      str:replace(
+      str:replace(
+      $string,
+      '_', '\_'),
+      '%', '\%'),
+      '&amp;','\&amp;'),
+      '#', '\#'),
+      '^', '\^'),
+      '}', '\}'),
+      '{', '\}')"/>
+  </xsl:template>
+
   <!-- Escape text for normal latex environment. Following characters get a
        prepended backslash: #$%&_^{} -->
   <xsl:template name="escape_text">
     <xsl:param name="string"/>
-    <!-- Replace backslashes. -->
     <!-- Replace backslashes and $'s .-->
-    <xsl:variable name="string_backslash_replaced">
-      <xsl:call-template name="latex-replace-backslash-dollar">
-        <xsl:with-param name="string" select="$string"/>
-      </xsl:call-template>
-    </xsl:variable>
-    <xsl:variable name="string_replace1">
-      <xsl:call-template name="latex-prepend-backslash">
-        <xsl:with-param name="string" select="$string_backslash_replaced"/>
-        <xsl:with-param name="character">_</xsl:with-param>
-      </xsl:call-template>
-    </xsl:variable>
-    <xsl:variable name="string_replace2">
-      <xsl:call-template name="latex-prepend-backslash">
-        <xsl:with-param name="string" select="$string_replace1"/>
-        <xsl:with-param name="character">%</xsl:with-param>
-      </xsl:call-template>
-    </xsl:variable>
-    <xsl:variable name="string_replace3">
-      <xsl:call-template name="latex-prepend-backslash">
-        <xsl:with-param name="string" select="$string_replace2"/>
-        <xsl:with-param name="character">&amp;</xsl:with-param>
-      </xsl:call-template>
-    </xsl:variable>
-    <xsl:variable name="string_replace4">
-      <xsl:call-template name="latex-prepend-backslash">
-        <xsl:with-param name="string" select="$string_replace3"/>
-        <xsl:with-param name="character">#</xsl:with-param>
-      </xsl:call-template>
-    </xsl:variable>
-    <xsl:variable name="string_replace5">
-      <xsl:call-template name="latex-prepend-backslash">
-        <xsl:with-param name="string" select="$string_replace4"/>
-        <xsl:with-param name="character">^</xsl:with-param>
-      </xsl:call-template>
-    </xsl:variable>
-    <!-- TODO conflicts backslash replacement
-    <xsl:variable name="string_replace6">
-      <xsl:call-template name="latex-prepend-backslash">
-        <xsl:with-param name="string" select="string_replace5"/>
-        <xsl:with-param name="character">$</xsl:with-param>
-      </xsl:call-template>
-    </xsl:variable>-->
-    <xsl:variable name="string_replace6">
-      <xsl:call-template name="latex-prepend-backslash">
-        <xsl:with-param name="string" select="$string_replace5"/>
-        <xsl:with-param name="character">{</xsl:with-param>
-      </xsl:call-template>
-    </xsl:variable>
-    <xsl:variable name="string_replace7">
-      <xsl:call-template name="latex-prepend-backslash">
-        <xsl:with-param name="string" select="$string_replace6"/>
-        <xsl:with-param name="character">}</xsl:with-param>
-      </xsl:call-template>
-    </xsl:variable>
-    <xsl:value-of select="$string_replace7"/>
+    <xsl:choose>
+      <xsl:when test="contains($string, '\') or contains($string, '$')">
+        <xsl:call-template name="escape_special_chars">
+          <xsl:with-param name="string">
+            <xsl:call-template name="latex-replace-backslash-dollar">
+              <xsl:with-param name="string" select="$string"/>
+            </xsl:call-template>
+          </xsl:with-param>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="escape_special_chars">
+          <xsl:with-param name="string" select="$string"/>
+        </xsl:call-template>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <!-- Create a verbatim indented row. -->
