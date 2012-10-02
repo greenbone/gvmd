@@ -1,5 +1,10 @@
 2012-10-02  Andre Heinecke <aheinecke@intevation.de>
 
+	* tools/openvas-scapdata-sync.in (update_sec_db):
+	Correct variable name used in the CPEBASE stat call
+
+2012-10-02  Andre Heinecke <aheinecke@intevation.de>
+
 	Improve performance of latex text escaping
 
 	* src/report_formats/LaTeX/latex.xsl (escape_text): Avoid

@@ -218,7 +218,7 @@ update_sec_db () {
 
   DB_LASTMOD=$REFDATE
 
-  if [ `stat -c "%Y" $CPE_BASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTMOD ]
+  if [ `stat -c "%Y" $CPEBASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTMOD ]
   then
     echo "[i] Updating CPEs"
     xsltproc --stringparam refdate $REFDATE $RES_DIR/cpe_youngerthan.xsl $CPEBASE | xsltproc $RES_DIR/cpe_update.xsl - | sqlite3 $SEC_DB
