@@ -25747,7 +25747,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
           if ((strlen (keyword->column) > 3)
               && (strcmp (keyword->column + strlen (keyword->column) - 3, "_id")
-                  == 0))
+                  == 0)
+              && strcasecmp (keyword->column, "nvt_id"))
             {
               gchar *type_term;
 
@@ -33833,7 +33834,7 @@ modify_note (note_t note, const char *active, const char* text,
  * @brief Filter columns for note iterator.
  */
 #define NOTE_ITERATOR_FILTER_COLUMNS                                         \
- { ANON_GET_ITERATOR_FILTER_COLUMNS, "nvt", "text", "task_id", NULL }  // FIX more
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "nvt", "text", "task_id", "nvt_id", NULL }
 
 /**
  * @brief Note iterator columns.
@@ -33848,7 +33849,7 @@ modify_note (note_t note, const char *active, const char* text,
   " notes.creation_time, notes.modification_time, notes.text,"             \
   " notes.hosts, notes.port, notes.threat, notes.task, notes.result,"      \
   " notes.end_time, (notes.end_time = 0) OR (notes.end_time >= now ()),"   \
-  " (SELECT name FROM nvts WHERE oid = notes.nvt) AS nvt"
+  " (SELECT name FROM nvts WHERE oid = notes.nvt) AS nvt, nvt AS nvt_id"
 
 /**
  * @brief Note iterator columns for trash case.

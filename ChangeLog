@@ -1,5 +1,12 @@
 2012-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Exclude nvt_id from the _id
+	handling.
+	(ANON_GET_ITERATOR_FILTER_COLUMNS): Add nvt_id.
+	(NOTE_ITERATOR_COLUMNS): Add special column for nvt_id.
+
+2012-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): For an equal relation, when the
 	column ends in "_id" then add a clause that does a UUID comparison
 	across tables.
