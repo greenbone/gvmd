@@ -1594,6 +1594,9 @@ create_note (const char*, const char*, const char*, const char*, const char*,
              const char*, task_t, result_t, note_t*);
 
 int
+copy_note (const char*, note_t*);
+
+int
 delete_note (note_t);
 
 int

@@ -1001,6 +1001,20 @@ valid_type (const char* type)
 }
 
 /**
+ * @brief Check whether a type has a name and comment.
+ *
+ * @param[in]  type          Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+type_named (const char *type)
+{
+  return strcasecmp (type, "note")
+         && strcasecmp (type, "override");
+}
+
+/**
  * @brief Find a resource given a UUID.
  *
  * @param[in]   type       Type of resource.
@@ -1089,6 +1103,7 @@ find_resource_for_actions (const char* type, const char* uuid,
 /**
  * @brief Create a resource from an existing resource.
  *
+ * @param[in]  type          Type of resource.
  * @param[in]  name          Name of new resource.  NULL to copy from existing.
  * @param[in]  comment       Comment on new resource.  NULL to copy from existing.
  * @param[in]  resource_id   UUID of existing resource.
@@ -1104,15 +1119,18 @@ copy_resource (const char *type, const char *name, const char *comment,
                resource_t* new_resource)
 {
   gchar *quoted_name, *quoted_uuid;
+  int named;
 
   assert (current_credentials.uuid);
 
   if (resource_id == NULL)
     return -1;
 
+  named = type_named (type);
+
   sql ("BEGIN IMMEDIATE;");
 
-  if (name && strlen (name))
+  if (named && name && strlen (name))
     {
       quoted_name = sql_quote (name);
       if (sql_int (0, 0,
@@ -1149,7 +1167,7 @@ copy_resource (const char *type, const char *name, const char *comment,
 
   /* Copy the existing resource. */
 
-  if (comment && strlen (comment))
+  if (named && comment && strlen (comment))
     {
       gchar *quoted_comment;
       quoted_comment = sql_nquote (comment, strlen (comment));
@@ -1173,7 +1191,7 @@ copy_resource (const char *type, const char *name, const char *comment,
            quoted_uuid);
       g_free (quoted_comment);
     }
-  else
+  else if (named)
     sql ("INSERT INTO %ss"
          " (uuid, owner, name, comment, creation_time, modification_time%s%s)"
          " SELECT make_uuid (),"
@@ -1191,6 +1209,22 @@ copy_resource (const char *type, const char *name, const char *comment,
          columns ? columns : "",
          type,
          quoted_uuid);
+  else
+    sql ("INSERT INTO %ss"
+         " (uuid, owner, creation_time, modification_time%s%s)"
+         " SELECT make_uuid (),"
+         " (SELECT ROWID FROM users where users.uuid = '%s'),"
+         " now (), now ()%s%s"
+         " FROM %ss WHERE uuid = '%s';",
+         type,
+         columns ? ", " : "",
+         columns ? columns : "",
+         current_credentials.uuid,
+         columns ? ", " : "",
+         columns ? columns : "",
+         type,
+         quoted_uuid);
+
 
   if (new_resource)
     *new_resource = sqlite3_last_insert_rowid (task_db);
@@ -33609,6 +33643,25 @@ create_note (const char* active, const char* nvt, const char* text,
     *note = sqlite3_last_insert_rowid (task_db);
 
   return 0;
+}
+
+/**
+ * @brief Create a note from an existing note.
+ *
+ * @param[in]  name      Name of new note.  NULL to copy from existing.
+ * @param[in]  comment   Comment on new note.  NULL to copy from existing.
+ * @param[in]  note_id   UUID of existing note.
+ * @param[out] new_note  New note.
+ *
+ * @return 0 success, 1 note exists already, 2 failed to find existing
+ *         note, -1 error.
+ */
+int
+copy_note (const char *note_id, note_t* new_note)
+{
+  return copy_resource ("note", NULL, NULL, note_id,
+                        "nvt, text, hosts, port, threat, task, result, end_time",
+                        new_note);
 }
 
 /**

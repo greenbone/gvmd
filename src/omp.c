@@ -973,6 +973,7 @@ create_lsc_credential_data_reset (create_lsc_credential_data_t *data)
 typedef struct
 {
   char *active;       ///< Whether the note is active.
+  char *copy;         ///< UUID of resource to copy.
   char *hosts;        ///< Hosts to which to limit override.
   char *nvt_oid;      ///< NVT to which to limit override.
   char *port;         ///< Port to which to limit override.
@@ -991,6 +992,7 @@ static void
 create_note_data_reset (create_note_data_t *data)
 {
   free (data->active);
+  free (data->copy);
   free (data->hosts);
   free (data->nvt_oid);
   free (data->port);
@@ -3788,6 +3790,7 @@ typedef enum
   CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC,
   CLIENT_CREATE_NOTE,
   CLIENT_CREATE_NOTE_ACTIVE,
+  CLIENT_CREATE_NOTE_COPY,
   CLIENT_CREATE_NOTE_HOSTS,
   CLIENT_CREATE_NOTE_NVT,
   CLIENT_CREATE_NOTE_PORT,
@@ -6332,6 +6335,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_NOTE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE_ACTIVE);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_NOTE_COPY);
         else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE_HOSTS);
         else if (strcasecmp ("NVT", element_name) == 0)
@@ -12624,6 +12629,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("create_note",
                                   "CREATE is forbidden for observer users"));
             }
+          else if (create_note_data->copy)
+            switch (copy_note (create_note_data->copy, &new_note))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    note_uuid (new_note, &uuid);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_note"),
+                                             uuid);
+                    g_log ("event note", G_LOG_LEVEL_MESSAGE,
+                           "Note %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_note",
+                                      "Note exists already"));
+                  g_log ("event note", G_LOG_LEVEL_MESSAGE,
+                         "Note could not be created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_note"));
+                  g_log ("event note", G_LOG_LEVEL_MESSAGE,
+                         "Note could not be created");
+                  break;
+              }
           else if (create_note_data->nvt_oid == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
@@ -12711,6 +12744,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_NOTE, ACTIVE);
+      CLOSE (CLIENT_CREATE_NOTE, COPY);
       CLOSE (CLIENT_CREATE_NOTE, HOSTS);
       CLOSE (CLIENT_CREATE_NOTE, NVT);
       CLOSE (CLIENT_CREATE_NOTE, PORT);
@@ -18538,6 +18572,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_NOTE_ACTIVE,
               &create_note_data->active);
+
+      APPEND (CLIENT_CREATE_NOTE_COPY,
+              &create_note_data->copy);
 
       APPEND (CLIENT_CREATE_NOTE_HOSTS,
               &create_note_data->hosts);

@@ -1,3 +1,18 @@
+2012-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add COPY to CREATE_NOTE for cloning.
+
+	* src/manage_sql.c (type_named): New function.
+	(copy_resource): Check if type has name and comment.
+	(copy_note): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (create_note_data_t, create_note_data_reset): Add copy.
+	(client_state_t): Add CLIENT_CREATE_NOTE_COPY.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add COPY to CREATE_NOTE.
+
 2012-10-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (target_writable, trash_target_writable): Invert
