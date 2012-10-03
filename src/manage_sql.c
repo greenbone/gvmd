@@ -33844,9 +33844,8 @@ modify_note (note_t note, const char *active, const char* text,
   "notes.ROWID, notes.uuid, '', '', iso_time (notes.creation_time),"       \
   " iso_time (notes.modification_time), notes.creation_time AS created,"   \
   " notes.modification_time AS modified,"                                  \
-  /* FIX duplicates of above */                                            \
-  " notes.ROWID, notes.uuid, notes.nvt AS oid,"                            \
-  " notes.creation_time, notes.modification_time, notes.text,"             \
+  /* Columns specific to notes. */                                         \
+  " notes.nvt AS oid, notes.text,"                                         \
   " notes.hosts, notes.port, notes.threat, notes.task, notes.result,"      \
   " notes.end_time, (notes.end_time = 0) OR (notes.end_time >= now ()),"   \
   " (SELECT name FROM nvts WHERE oid = notes.nvt) AS nvt, nvt AS nvt_id,"  \
@@ -33977,16 +33976,6 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
 }
 
 /**
- * @brief Get the uuid from a note iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (note_iterator_uuid, GET_ITERATOR_COLUMN_COUNT + 1);
-
-/**
  * @brief Get the NVT OID from a note iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -33994,39 +33983,7 @@ DEF_ACCESS (note_iterator_uuid, GET_ITERATOR_COLUMN_COUNT + 1);
  * @return NVT OID, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
- * @brief Get the creation time from a note iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Time note was created.
- */
-time_t
-note_iterator_creation_time (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 3);
-  return ret;
-}
-
-/**
- * @brief Get the modification time from a note iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Time note was last modified.
- */
-time_t
-note_iterator_modification_time (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 4);
-  return ret;
-}
+DEF_ACCESS (note_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT);
 
 /**
  * @brief Get the text from a note iterator.
@@ -34036,7 +33993,7 @@ note_iterator_modification_time (iterator_t* iterator)
  * @return Text, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_text, GET_ITERATOR_COLUMN_COUNT + 5);
+DEF_ACCESS (note_iterator_text, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
  * @brief Get the hosts from a note iterator.
@@ -34046,7 +34003,7 @@ DEF_ACCESS (note_iterator_text, GET_ITERATOR_COLUMN_COUNT + 5);
  * @return Hosts, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_hosts, GET_ITERATOR_COLUMN_COUNT + 6);
+DEF_ACCESS (note_iterator_hosts, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the port from a note iterator.
@@ -34056,7 +34013,7 @@ DEF_ACCESS (note_iterator_hosts, GET_ITERATOR_COLUMN_COUNT + 6);
  * @return Port, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_port, GET_ITERATOR_COLUMN_COUNT + 7);
+DEF_ACCESS (note_iterator_port, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Get the threat from a note iterator.
@@ -34071,7 +34028,7 @@ note_iterator_threat (iterator_t *iterator)
   const char *ret;
   if (iterator->done) return NULL;
   ret = (const char*) sqlite3_column_text (iterator->stmt,
-                                           GET_ITERATOR_COLUMN_COUNT + 8);
+                                           GET_ITERATOR_COLUMN_COUNT + 4);
   if (ret == NULL) return NULL;
   return message_type_threat (ret);
 }
@@ -34088,7 +34045,7 @@ note_iterator_task (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return (task_t) sqlite3_column_int64 (iterator->stmt,
-                                        GET_ITERATOR_COLUMN_COUNT + 9);
+                                        GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**
@@ -34103,7 +34060,7 @@ note_iterator_result (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return (result_t) sqlite3_column_int64 (iterator->stmt,
-                                          GET_ITERATOR_COLUMN_COUNT + 10);
+                                          GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
@@ -34120,7 +34077,7 @@ note_iterator_end_time (iterator_t* iterator)
   int ret;
   if (iterator->done) return -1;
   ret = (time_t) sqlite3_column_int (iterator->stmt,
-                                     GET_ITERATOR_COLUMN_COUNT + 11);
+                                     GET_ITERATOR_COLUMN_COUNT + 7);
   return ret;
 }
 
@@ -34137,7 +34094,7 @@ note_iterator_active (iterator_t* iterator)
   int ret;
   if (iterator->done) return -1;
   ret = sqlite3_column_int (iterator->stmt,
-                            GET_ITERATOR_COLUMN_COUNT + 12);
+                            GET_ITERATOR_COLUMN_COUNT + 8);
   return ret;
 }
 
@@ -34149,7 +34106,7 @@ note_iterator_active (iterator_t* iterator)
  * @return NVT name, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 13);
+DEF_ACCESS (note_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 9);
 
 
 /* Overrides. */

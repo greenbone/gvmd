@@ -1,5 +1,13 @@
 2012-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (NOTE_ITERATOR_COLUMNS): Remove duplicates.  Update
+	accessors accordingly.
+
+	* src/omp.c (buffer_notes_xml): Switch to generic accessors for common
+	GET fields.
+
+2012-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (NOTE_ITERATOR_COLUMNS): Add fake task_id column so
 	that when the general filter clause is used there is a column to lookup.
 

@@ -7451,7 +7451,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     "<text excerpt=\"%i\">%s</text>"
                                     "<orphan>%i</orphan>"
                                     "</note>",
-                                    note_iterator_uuid (notes),
+                                    get_iterator_uuid (notes),
                                     note_iterator_nvt_oid (notes),
                                     note_iterator_nvt_name (notes),
                                     note_iterator_active (notes),
@@ -7466,8 +7466,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
       else
         {
           char *name_task;
-          time_t creation_time, mod_time;
-          gchar *creation, *mod;
           int trash_task;
           time_t end_time;
 
@@ -7482,10 +7480,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
               trash_task = 0;
             }
 
-          creation_time = note_iterator_creation_time (notes);
-          creation = g_strdup (iso_time (&creation_time));
-          mod_time = note_iterator_modification_time (notes);
-          mod = g_strdup (iso_time (&mod_time));
           end_time = note_iterator_end_time (notes);
 
           buffer_xml_append_printf
@@ -7502,11 +7496,11 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             "<threat>%s</threat>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
-            note_iterator_uuid (notes),
+            get_iterator_uuid (notes),
             note_iterator_nvt_oid (notes),
             note_iterator_nvt_name (notes),
-            creation,
-            mod,
+            get_iterator_creation_time (notes),
+            get_iterator_modification_time (notes),
             note_iterator_active (notes),
             end_time > 1 ? iso_time (&end_time) : "",
             note_iterator_text (notes),
@@ -7523,8 +7517,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
              || (note_iterator_result (notes) && (uuid_result == NULL))));
 
           free (name_task);
-          g_free (creation);
-          g_free (mod);
 
           if (include_result && note_iterator_result (notes))
             {
