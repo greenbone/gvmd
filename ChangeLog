@@ -1,5 +1,12 @@
 2012-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): For an equal relation, when the
+	column ends in "_id" then add a clause that does a UUID comparison
+	across tables.
+	(NOTE_ITERATOR_FILTER_COLUMNS): Add task_id to possible filter columns.
+
+2012-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add COPY to CREATE_NOTE for cloning.
 
 	* src/manage_sql.c (type_named): New function.

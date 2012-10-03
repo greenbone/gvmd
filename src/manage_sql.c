@@ -25745,15 +25745,49 @@ filter_clause (const char* type, const char* filter, const char **columns,
               continue;
             }
 
-          quoted_keyword = sql_quote (keyword->string);
-          quoted_column = sql_quote (keyword->column);
-          g_string_append_printf (clause,
-                                  "%s(CAST (%s AS TEXT) IS '%s'",
-                                  get_join (first_keyword, last_was_and,
-                                            last_was_not),
-                                  quoted_column,
-                                  quoted_keyword);
-          g_free (quoted_column);
+          if ((strlen (keyword->column) > 3)
+              && (strcmp (keyword->column + strlen (keyword->column) - 3, "_id")
+                  == 0))
+            {
+              gchar *type_term;
+
+              type_term = g_strndup (keyword->column,
+                                     strlen (keyword->column) - 3);
+              if (valid_type (type_term) == 0)
+                {
+                  g_free (type_term);
+                  last_was_and = 0;
+                  last_was_not = 0;
+                  point++;
+                  continue;
+                }
+
+              quoted_keyword = sql_quote (keyword->string);
+              g_string_append_printf (clause,
+                                      "%s((SELECT ROWID FROM %ss"
+                                      "    WHERE %ss.uuid = '%s')"
+                                      "   = %ss.%s",
+                                      get_join (first_keyword, last_was_and,
+                                                last_was_not),
+                                      type_term,
+                                      type_term,
+                                      quoted_keyword,
+                                      type,
+                                      type_term);
+              g_free (type_term);
+            }
+          else
+            {
+              quoted_keyword = sql_quote (keyword->string);
+              quoted_column = sql_quote (keyword->column);
+              g_string_append_printf (clause,
+                                      "%s(CAST (%s AS TEXT) IS '%s'",
+                                      get_join (first_keyword, last_was_and,
+                                                last_was_not),
+                                      quoted_column,
+                                      quoted_keyword);
+              g_free (quoted_column);
+            }
         }
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
         {
@@ -33799,7 +33833,7 @@ modify_note (note_t note, const char *active, const char* text,
  * @brief Filter columns for note iterator.
  */
 #define NOTE_ITERATOR_FILTER_COLUMNS                                         \
- { ANON_GET_ITERATOR_FILTER_COLUMNS, "nvt", "text", NULL }  // FIX more
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "nvt", "text", "task_id", NULL }  // FIX more
 
 /**
  * @brief Note iterator columns.
