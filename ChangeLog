@@ -1,5 +1,10 @@
 2012-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (NOTE_ITERATOR_COLUMNS): Add fake task_id column so
+	that when the general filter clause is used there is a column to lookup.
+
+2012-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): Exclude nvt_id from the _id
 	handling.
 	(ANON_GET_ITERATOR_FILTER_COLUMNS): Add nvt_id.

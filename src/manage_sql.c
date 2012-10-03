@@ -33849,7 +33849,8 @@ modify_note (note_t note, const char *active, const char* text,
   " notes.creation_time, notes.modification_time, notes.text,"             \
   " notes.hosts, notes.port, notes.threat, notes.task, notes.result,"      \
   " notes.end_time, (notes.end_time = 0) OR (notes.end_time >= now ()),"   \
-  " (SELECT name FROM nvts WHERE oid = notes.nvt) AS nvt, nvt AS nvt_id"
+  " (SELECT name FROM nvts WHERE oid = notes.nvt) AS nvt, nvt AS nvt_id,"  \
+  " '' AS task_id"
 
 /**
  * @brief Note iterator columns for trash case.
