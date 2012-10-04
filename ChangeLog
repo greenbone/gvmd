@@ -1,5 +1,20 @@
 2012-10-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add trashcan feature to notes.
+
+	* src/omp.c (delete_lsc_credential_data_reset): Add ultimate.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add ultimate
+	flag to DELETE_NOTE.
+
+	* src/manage_sql.c (create_tables): Add notes_trash.
+	(delete_note): Add ultimate arg and trashcan handling.
+	(NOTE_ITERATOR_TRASH_COLUMNS): Explicitly specify columns.
+	(manage_restore): Add notes.
+
+	* src/manage.h: Add header accordingly.
+
+2012-10-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (NOTE_ITERATOR_COLUMNS): Add missing table to column.
 
 2012-10-03  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -1597,7 +1597,7 @@ int
 copy_note (const char*, note_t*);
 
 int
-delete_note (note_t);
+delete_note (const char *, int);
 
 int
 note_uuid (note_t, char **);

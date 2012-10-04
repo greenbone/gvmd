@@ -1264,6 +1264,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, result INTEGER, end_time);");
+  sql ("CREATE TABLE IF NOT EXISTS notes_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* in manage.h). */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
@@ -33702,14 +33703,62 @@ copy_note (const char *note_id, note_t* new_note)
 /**
  * @brief Delete a note.
  *
- * @param[in]  note  Note.
+ * @param[in]  note_id    UUID of note.
+ * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
- * @return 0 success.
+ * @return 0 success, 2 failed to find note, -1 error.
  */
 int
-delete_note (note_t note)
+delete_note (const char *note_id, int ultimate)
 {
+  note_t note = 0;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (find_note (note_id, &note))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (note == 0)
+    {
+      if (find_trash ("note", note_id, &note))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (note == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      sql ("DELETE FROM notes_trash WHERE ROWID = %llu;", note);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  if (ultimate == 0)
+    {
+      sql ("INSERT INTO notes_trash"
+           " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
+           "  port, threat, task, result, end_time)"
+           " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
+           "        hosts, port, threat, task, result, end_time"
+           " FROM notes WHERE ROWID = %llu;",
+           note);
+    }
+
   sql ("DELETE FROM notes WHERE ROWID = %llu;", note);
+
+  sql ("COMMIT;");
   return 0;
 }
 
@@ -33854,7 +33903,21 @@ modify_note (note_t note, const char *active, const char* text,
 /**
  * @brief Note iterator columns for trash case.
  */
-#define NOTE_ITERATOR_TRASH_COLUMNS NOTE_ITERATOR_COLUMNS
+#define NOTE_ITERATOR_TRASH_COLUMNS                                        \
+  /* ANON_GET_ITERATOR_TRASH_COLUMNS, */  /* Need the notes prefix. */     \
+  "notes_trash.ROWID, notes_trash.uuid, '', '',"                           \
+  " iso_time (notes_trash.creation_time),"                                 \
+  " iso_time (notes_trash.modification_time),"                             \
+  " notes_trash.creation_time AS created,"                                 \
+  " notes_trash.modification_time AS modified,"                            \
+  /* Columns specific to notes_trash. */                                   \
+  " notes_trash.nvt AS oid, notes_trash.text,"                             \
+  " notes_trash.hosts, notes_trash.port, notes_trash.threat,"              \
+  " notes_trash.task, notes_trash.result,"                                 \
+  " notes_trash.end_time,"                                                 \
+  " (notes_trash.end_time = 0) OR (notes_trash.end_time >= now ()),"       \
+  " (SELECT name FROM nvts WHERE oid = notes_trash.nvt) AS nvt,"           \
+  " notes_trash.nvt AS nvt_id, '' AS task_id"
 
 /**
  * @brief Count number of notes.
@@ -40563,6 +40626,28 @@ manage_restore (const char *id)
            resource);
 
       sql ("DELETE FROM lsc_credentials_trash WHERE ROWID = %llu;", resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  /* Note. */
+
+  if (find_trash ("note", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      sql ("INSERT INTO notes"
+           " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
+           "  port, threat, task, result, end_time)"
+           " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
+           "        hosts, port, threat, task, result, end_time"
+           " FROM notes_trash WHERE ROWID = %llu;",
+           resource);
+      sql ("DELETE FROM notes_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
       return 0;
     }

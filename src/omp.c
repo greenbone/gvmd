@@ -1583,6 +1583,7 @@ delete_lsc_credential_data_reset (delete_lsc_credential_data_t *data)
 typedef struct
 {
   char *note_id;   ///< ID of note to delete.
+  int ultimate;    ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_note_data_t;
 
 /**
@@ -4859,8 +4860,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DELETE_NOTE", element_name) == 0)
           {
+            const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "note_id",
                               &delete_note_data->note_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_note_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_note_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_NOTE);
           }
         else if (strcasecmp ("DELETE_OVERRIDE", element_name) == 0)
@@ -9276,13 +9283,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_NOTE:
         assert (strcasecmp ("DELETE_NOTE", element_name) == 0);
         if (delete_note_data->note_id)
-          {
-            note_t note;
-
-            if (find_note (delete_note_data->note_id, &note))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_note"));
-            else if (note == 0)
-              {
+          switch (delete_note (delete_note_data->note_id,
+                               delete_note_data->ultimate))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_note"));
+                g_log ("event note", G_LOG_LEVEL_MESSAGE,
+                       "Note %s has been deleted",
+                       delete_note_data->note_id);
+                break;
+              case 2:
                 if (send_find_error_to_client ("delete_note",
                                                "note",
                                                delete_note_data->note_id,
@@ -9292,18 +9302,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     error_send_to_client (error);
                     return;
                   }
-              }
-            else switch (delete_note (note))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_note"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("delete_note"));
-                  break;
-              }
-          }
+                g_log ("event note", G_LOG_LEVEL_MESSAGE,
+                       "Note %s could not be deleted",
+                       delete_note_data->note_id);
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_note"));
+                g_log ("event note", G_LOG_LEVEL_MESSAGE,
+                       "Note %s could not be deleted",
+                       delete_note_data->note_id);
+            }
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("delete_note",
