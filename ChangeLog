@@ -1,3 +1,7 @@
+2012-10-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (NOTE_ITERATOR_COLUMNS): Add missing table to column.
+
 2012-10-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (NOTE_ITERATOR_COLUMNS): Remove duplicates.  Update
