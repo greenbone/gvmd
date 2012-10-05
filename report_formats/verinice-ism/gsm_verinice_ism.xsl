@@ -231,13 +231,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>gsm_ism_asset_tags</name>
         <value><xsl:call-template name="remove-duplicates">
             <xsl:with-param name="string">
-              <xsl:for-each select="/report/host[ip=$addr]">
-                <xsl:apply-templates select="detail"/>
+              <xsl:for-each select="/report/host[ip=$addr]/detail">
+                <xsl:call-template name="generate-tags"/>
               </xsl:for-each>
             </xsl:with-param>
             <xsl:with-param name="newstring" select="''"/>
-          </xsl:call-template></value>
-      </syncAttribute>
+        </xsl:call-template></value>
+    </syncAttribute>
       <xsl:for-each select="/report/host[ip=$addr]">
         <xsl:call-template name="get-details"/>
       </xsl:for-each>

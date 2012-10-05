@@ -1,3 +1,17 @@
+2012-10-05  Andre Heinecke <aheinecke@intevation.de>
+
+	Only include application Tags in itg report.
+
+	* report_formats/verinice-ism/classification-helpers.xsl (detail):
+	Rename to generate-tags add parameter to include apps
+
+	* report_formats/verinice-itg/gsm_verinice_itg.xsl (/):
+	Use extract Organization instead of the task name as general id.
+	(report/host_start): Call generate-tags instead of matching
+
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl (report/host_start):
+	Call generate-tags without parameter instead of matching the template
+
 2012-10-05  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Improve handling of present, but

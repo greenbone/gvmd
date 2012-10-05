@@ -242,8 +242,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:variable name="system_tags">
       <xsl:call-template name="remove-duplicates">
         <xsl:with-param name="string">
-          <xsl:for-each select="/report/host[ip=$addr]">
-            <xsl:apply-templates select="detail"/>
+          <xsl:for-each select="/report/host[ip=$addr]/detail">
+            <xsl:call-template name="generate-tags">
+              <xsl:with-param name="include_apps" select="'1'"/>
+            </xsl:call-template>
           </xsl:for-each>
         </xsl:with-param>
         <xsl:with-param name="newstring" select="''"/>
@@ -281,10 +283,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
   <xsl:template match="/">
     <xsl:variable name="task_id">
-      <xsl:apply-templates select="report/task"/>
+      <xsl:call-template name="extract_organization"/>
+      <!--<xsl:apply-templates select="report/task"/>-->
     </xsl:variable>
     <xsl:variable name="scan_name">
-      <xsl:apply-templates select="report/task/name"/>
+      <xsl:call-template name="extract_organization"/>
     </xsl:variable>
     <ns3:syncRequest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
         xmlns="http://www.sernet.de/sync/data"

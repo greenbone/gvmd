@@ -32,7 +32,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     Notice:
     The space in the end of each tag works as separator
 -->
-  <xsl:template match="detail">
+  <xsl:template name="generate-tags">
+    <xsl:param name="include_apps"/>
     <xsl:choose>
       <!--
              Check for Operating system with best_os_cpe and OS
@@ -294,29 +295,31 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:when>
       <!-- Check for other cpe details -->
       <xsl:when test="name='App'">
-        <xsl:choose>
-          <xsl:when test="contains(value, 'cpe:/a:apache:http_server')">
-            <xsl:text>gsm_system_apache gsm_system_wwwserver </xsl:text>
-          </xsl:when>
-          <xsl:when test="contains(value, 'cpe:/a:microsoft:iis')">
-            <xsl:text>gsm_system_iis gsm_system_wwwserver </xsl:text>
-          </xsl:when>
-          <xsl:when test="contains(value, 'cpe:/a:microsoft:exchange_server')">
-            <xsl:text>gsm_system_exchange </xsl:text>
-          </xsl:when>
-          <xsl:when test="contains(value, 'cpe:/a:microsoft:outlook')">
-            <xsl:text>gsm_system_outlook </xsl:text>
-          </xsl:when>
-          <xsl:when test="contains(value, 'cpe:/a:ibm:lotus_notes')">
-            <xsl:text>gsm_system_notes </xsl:text>
-          </xsl:when>
-          <xsl:when test="contains(value, 'cpe:/a:sap:')">
-            <xsl:text>gsm_system_sap </xsl:text>
-          </xsl:when>
-          <xsl:when test="contains(value, 'cpe:/a:samba:samba')">
-            <xsl:text>gsm_system_samba </xsl:text>
-          </xsl:when>
-        </xsl:choose>
+        <xsl:if test="$include_apps">
+          <xsl:choose>
+            <xsl:when test="contains(value, 'cpe:/a:apache:http_server')">
+              <xsl:text>gsm_system_apache gsm_system_wwwserver </xsl:text>
+            </xsl:when>
+            <xsl:when test="contains(value, 'cpe:/a:microsoft:iis')">
+              <xsl:text>gsm_system_iis gsm_system_wwwserver </xsl:text>
+            </xsl:when>
+            <xsl:when test="contains(value, 'cpe:/a:microsoft:exchange_server')">
+              <xsl:text>gsm_system_exchange </xsl:text>
+            </xsl:when>
+            <xsl:when test="contains(value, 'cpe:/a:microsoft:outlook')">
+              <xsl:text>gsm_system_outlook </xsl:text>
+            </xsl:when>
+            <xsl:when test="contains(value, 'cpe:/a:ibm:lotus_notes')">
+              <xsl:text>gsm_system_notes </xsl:text>
+            </xsl:when>
+            <xsl:when test="contains(value, 'cpe:/a:sap:')">
+              <xsl:text>gsm_system_sap </xsl:text>
+            </xsl:when>
+            <xsl:when test="contains(value, 'cpe:/a:samba:samba')">
+              <xsl:text>gsm_system_samba </xsl:text>
+            </xsl:when>
+          </xsl:choose>
+        </xsl:if>
       </xsl:when>
     </xsl:choose>
   </xsl:template>
