@@ -1,3 +1,8 @@
+2012-10-05  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/greenbone-scapdata-sync: Improve handling of present, but
+	empty DB files.
+
 2012-10-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add trashcan feature to notes.

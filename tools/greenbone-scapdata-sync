@@ -159,6 +159,15 @@ update_scap_db() {
     REFDATE=`sqlite3 $SCAP_DB "select max(last_mod) from cves;" | sed -e 's/T.*//' | tr -d "-"`
   fi
 
+  if [ -z $REFDATE ]
+  then
+    log_write "Resetting SCAP database."
+    rm -f $SCAP_DB
+    sqlite3 $SCAP_DB < $SCAP_RES/db_init.sql
+    touch $SCAP_DIR/*.xml
+    REFDATE=0
+  fi
+
   DB_LASTMOD=$REFDATE
 
   CPE_BASE="$SCAP_DIR/official-cpe-dictionary_v2.2.xml"
