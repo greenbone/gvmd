@@ -33622,17 +33622,25 @@ find_note (const char* uuid, note_t* note)
  * @param[in]  result      Result to apply note to, 0 for any result.
  * @param[out] note        Created note.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 failed to find NVT, -1 error.
  */
 int
 create_note (const char* active, const char* nvt, const char* text,
              const char* hosts, const char* port, const char* threat,
              task_t task, result_t result, note_t *note)
 {
-  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
+  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat, *quoted_nvt;
 
   if (nvt == NULL)
     return -1;
+
+  quoted_nvt = sql_quote (nvt);
+  if (sql_int (0, 0, "SELECT count (*) FROM nvts WHERE oid = '%s'", nvt) == 0)
+    {
+      g_free (quoted_nvt);
+      return 1;
+    }
+  g_free (quoted_nvt);
 
   if (text == NULL)
     return -1;

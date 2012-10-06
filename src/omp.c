@@ -12729,6 +12729,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (uuid);
                   break;
                 }
+              case 1:
+                if (send_find_error_to_client ("create_note",
+                                               "nvt",
+                                               create_note_data->nvt_oid,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_note"));

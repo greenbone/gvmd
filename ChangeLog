@@ -1,3 +1,9 @@
+2012-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_note): Check that NVT exists.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new create_note return.
+
 2012-10-05  Andre Heinecke <aheinecke@intevation.de>
 
 	Only include application Tags in itg report.
