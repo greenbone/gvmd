@@ -1,3 +1,12 @@
+2012-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (split_filter): If there is a filter, make the
+	max_return default to Rows Per Page.
+	(filter_clause): Init max_return for safety.  Add a special sorting
+	case for notes to get the rows sorted by text as a second field.
+	(NOTE_ITERATOR_FILTER_COLUMNS, NOTE_ITERATOR_COLUMNS): Add name so
+	there is something to sort by in the default case.
+
 2012-10-08  Andre Heinecke <aheinecke@intevation.de>
 
 	* report_formats/verinice-itg/gsm_verinice_itg.xsl (get-details):

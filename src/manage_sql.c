@@ -24899,13 +24899,14 @@ filter_free (array_t *split)
  * @return Array of strings, the parts.
  */
 static array_t *
-split_filter (const gchar* filter)
+split_filter (const gchar* given_filter)
 {
   int in_quote, between;
   array_t *parts;
-  const gchar *current_part;
+  const gchar *current_part, *filter;
   keyword_t *keyword;
 
+  filter = given_filter;
   parts = make_array ();
   in_quote = 0;
   between = 1;
@@ -25081,7 +25082,14 @@ split_filter (const gchar* filter)
       {
         keyword = g_malloc0 (sizeof (keyword_t));
         keyword->column = g_strdup ("rows");
-        keyword->string = g_strdup ("-1");
+        /* If there was a filter, make max_return default to Rows Per
+         * Page.  This keeps the pre-filters OMP behaviour when the filter
+         * is empty, but is more convenenient for clients that set the
+         * filter. */
+        if (strlen (given_filter))
+          keyword->string = g_strdup ("-2");
+        else
+          keyword->string = g_strdup ("-1");
         keyword->type = KEYWORD_TYPE_STRING;
         keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
         array_add (parts, keyword);
@@ -25619,6 +25627,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
   /* Add SQL to the clause for each keyword or phrase. */
 
+  if (max_return)
+    *max_return = -1;
+
   clause = g_string_new ("");
   order = g_string_new ("");
   split = split_filter (filter);
@@ -25678,11 +25689,20 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
           if (first_order)
             {
-              g_string_append_printf (order, " ORDER BY %s ASC",
-                                      keyword->string);
+              if (strcmp (type, "note")
+                  || (strcmp (keyword->string, "nvt")
+                      && strcmp (keyword->string, "name")))
+                g_string_append_printf (order, " ORDER BY %s ASC",
+                                        keyword->string);
+              else
+                /* Special case for notes text sorting. */
+                g_string_append_printf (order,
+                                        " ORDER BY nvt ASC, notes.text ASC");
               first_order = 0;
             }
           else
+            /* To help the client split_filter restricts the filter to one
+             * sorting term, preventing this from happening. */
             g_string_append_printf (order, ", %s ASC",
                                     keyword->string);
           point++;
@@ -25700,11 +25720,20 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
           if (first_order)
             {
-              g_string_append_printf (order, " ORDER BY %s DESC",
-                                      keyword->string);
+              if (strcmp (type, "note")
+                  || (strcmp (keyword->string, "nvt")
+                      && strcmp (keyword->string, "name")))
+                g_string_append_printf (order, " ORDER BY %s DESC",
+                                        keyword->string);
+              else
+                /* Special case for notes text sorting. */
+                g_string_append_printf (order,
+                                        " ORDER BY nvt DESC, notes.text ASC");
               first_order = 0;
             }
           else
+            /* To help the client split_filter restricts the filter to one
+             * sorting term, preventing this from happening. */
             g_string_append_printf (order, ", %s DESC",
                                     keyword->string);
           point++;
@@ -33891,14 +33920,17 @@ modify_note (note_t note, const char *active, const char* text,
  * @brief Filter columns for note iterator.
  */
 #define NOTE_ITERATOR_FILTER_COLUMNS                                         \
- { ANON_GET_ITERATOR_FILTER_COLUMNS, "nvt", "text", "task_id", "nvt_id", NULL }
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "task_id",       \
+   "nvt_id", NULL }
 
 /**
  * @brief Note iterator columns.
  */
 #define NOTE_ITERATOR_COLUMNS                                              \
   /* ANON_GET_ITERATOR_COLUMNS, */  /* Need the notes prefix. */           \
-  "notes.ROWID, notes.uuid, '', '', iso_time (notes.creation_time),"       \
+  "notes.ROWID, notes.uuid,"                                               \
+  " (SELECT name FROM nvts WHERE oid = notes.nvt) AS name, '',"            \
+  " iso_time (notes.creation_time),"                                       \
   " iso_time (notes.modification_time), notes.creation_time AS created,"   \
   " notes.modification_time AS modified,"                                  \
   /* Columns specific to notes. */                                         \
