@@ -9339,7 +9339,7 @@ update_nvti_cache ()
 
   nvti_cache = nvtis_new ();
 
-  init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
+  init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, NULL, 1, NULL);
   while (next (&nvts))
     {
       nvti_t *nvti = nvti_new ();
@@ -12660,7 +12660,8 @@ make_task_rcfile (task_t task)
           {
             iterator_t nvts;
 
-            init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
+            init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, NULL, 1,
+                               NULL);
             while (next (&nvts))
               g_string_append_printf (buffer,
                                       " %s = yes\n",
@@ -28893,7 +28894,7 @@ manage_set_config_nvts (config_t config, const char* family,
 
       new_nvt_count = family_nvt_count (family);
 
-      init_nvt_iterator (&nvts, (nvt_t) 0, config, family, 1, NULL);
+      init_nvt_iterator (&nvts, (nvt_t) 0, config, family, NULL, 1, NULL);
       while (next (&nvts))
         {
           const char *oid = nvt_iterator_oid (&nvts);
@@ -29357,6 +29358,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  * @param[in]  nvt         NVT to iterate over, all if 0.
  * @param[in]  config      Config to limit selection to.  NULL for all NVTs.
  *                         Overridden by \arg nvt.
+ * @param[in]  category    Category to limit selection to.  NULL for all.
  * @param[in]  family      Family to limit selection to.  NULL for all NVTs.
  *                         Overridden by \arg config.
  * @param[in]  ascending   Whether to sort ascending or descending.
@@ -29364,7 +29366,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  */
 void
 init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
-                   const char* family, int ascending, const char* sort_field)
+                   const char* family, const char *category, int ascending,
+                   const char* sort_field)
 {
   assert ((nvt && family) == 0);
 
@@ -29404,6 +29407,20 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
                      sort_field ? sort_field : "name",
                      ascending ? "ASC" : "DESC");
       g_free (quoted_family);
+    }
+  else if (category)
+    {
+      gchar *quoted_category;
+      quoted_category = sql_quote (category);
+      init_iterator (iterator,
+                     "SELECT " NVT_ITERATOR_COLUMNS
+                     " FROM nvts"
+                     " WHERE category = '%s'"
+                     " ORDER BY %s %s;",
+                     quoted_category,
+                     sort_field ? sort_field : "name",
+                     ascending ? "ASC" : "DESC");
+      g_free (quoted_category);
     }
   else
     init_iterator (iterator,
@@ -30825,8 +30842,8 @@ manage_set_config_families (config_t config,
 
                   /* Add an include for every NVT in the family. */
 
-                  init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, family, 1,
-                                     NULL);
+                  init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, family,
+                                     NULL, 1, NULL);
                   while (next (&nvts))
                     {
                       nvt_selector_add (quoted_selector,
@@ -30902,7 +30919,7 @@ manage_set_config_families (config_t config,
                       /* Add an exclude for every NVT in the family. */
 
                       init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0,
-                                         family, 1, NULL);
+                                         family, NULL, 1, NULL);
                       while (next (&nvts))
                         nvt_selector_add (quoted_selector,
                                           nvt_iterator_oid (&nvts),
@@ -30932,7 +30949,7 @@ manage_set_config_families (config_t config,
                        * other NVT's. */
 
                       init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0,
-                                         family, 1, NULL);
+                                         family, NULL, 1, NULL);
                       while (next (&nvts))
                         if (nvt_selector_has (quoted_selector,
                                               nvt_iterator_oid (&nvts),
@@ -31006,7 +31023,7 @@ manage_set_config_families (config_t config,
                        * other NVT's. */
 
                       init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0,
-                                         family, 1, NULL);
+                                         family, NULL, 1, NULL);
                       while (next (&nvts))
                         if (nvt_selector_has (quoted_selector,
                                               nvt_iterator_oid (&nvts),

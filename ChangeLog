@@ -1,4 +1,16 @@
-2012-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-10-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (nvt_selector_plugins): Always add all settings NVTs onto
+	plugins preference.
+
+	* src/manage_sql.c (init_nvt_iterator): Add category case.  Update
+	callers.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Update init_nvt_iterator call.
+
+2012-10-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (split_filter): If there is a filter, make the
 	max_return default to Rows Per Page.

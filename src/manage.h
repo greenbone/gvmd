@@ -1253,7 +1253,7 @@ gboolean
 find_nvt (const char*, nvt_t*);
 
 void
-init_nvt_iterator (iterator_t*, nvt_t, config_t, const char*, int,
+init_nvt_iterator (iterator_t*, nvt_t, config_t, const char*, const char*, int,
                    const char*);
 
 void

@@ -606,7 +606,7 @@ static gchar*
 nvt_selector_plugins (config_t config)
 {
   GString* plugins = g_string_new ("");
-  iterator_t families;
+  iterator_t families, nvts;
   gboolean first = TRUE;
 
   init_family_iterator (&families, 0, NULL, 1);
@@ -615,8 +615,7 @@ nvt_selector_plugins (config_t config)
       const char *family = family_iterator_name (&families);
       if (family)
         {
-          iterator_t nvts;
-          init_nvt_iterator (&nvts, 0, config, family, 1, NULL);
+          init_nvt_iterator (&nvts, 0, config, family, NULL, 1, NULL);
           while (next (&nvts))
             {
               if (first)
@@ -629,6 +628,18 @@ nvt_selector_plugins (config_t config)
         }
     }
   cleanup_iterator (&families);
+
+  /* Always add all settings NVTs onto list. */
+  init_nvt_iterator (&nvts, 0, 0, 0, "2", 1, NULL);
+  while (next (&nvts))
+    {
+      if (first)
+        first = FALSE;
+      else
+        g_string_append_c (plugins, ';');
+      g_string_append (plugins, nvt_iterator_oid (&nvts));
+    }
+  cleanup_iterator (&nvts);
 
   return g_string_free (plugins, FALSE);
 }
@@ -4466,7 +4477,7 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
 
       if (!find_nvt (name, &nvt) && nvt)
         {
-          init_nvt_iterator (&nvts, nvt, 0, NULL, 0, NULL);
+          init_nvt_iterator (&nvts, nvt, 0, NULL, NULL, 0, NULL);
 
           if (next (&nvts))
             *result = get_nvti_xml (&nvts, 1, 0, NULL, 1);

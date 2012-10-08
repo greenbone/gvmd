@@ -8953,6 +8953,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       ? 0
                                       : config,
                                      get_nvts_data->family,
+                                     NULL,
                                      get_nvts_data->sort_order,
                                      get_nvts_data->sort_field);
                   if (get_nvts_data->details)
