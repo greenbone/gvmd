@@ -1,5 +1,10 @@
 2012-10-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage_process): Check for the cves table when
+	setting scap_loaded, to ensure that the db schema has been created.
+
+2012-10-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (nvt_selector_plugins): Always add all settings NVTs onto
 	plugins preference.
 
