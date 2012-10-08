@@ -151,8 +151,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>gsm_mac_address</name>
           <value>
               <xsl:choose>
-                  <xsl:when test="string-length(/report/host[ip=$addr]/detail[name='mac_address']/value) &gt; 0">
-                      <xsl:value-of select="/report/host[ip=$addr]/detail[name='mac_address']/value/text()"/>
+                  <xsl:when test="string-length(/report/host[ip=$addr]/detail[name='MAC']/value) &gt; 0">
+                      <xsl:value-of select="/report/host[ip=$addr]/detail[name='MAC']/value/text()"/>
                   </xsl:when>
                   <xsl:otherwise>
                       <xsl:text>Not Available</xsl:text>

@@ -1,3 +1,8 @@
+2012-10-08  Andre Heinecke <aheinecke@intevation.de>
+
+	* report_formats/verinice-itg/gsm_verinice_itg.xsl (get-details):
+	Look for detail named MAC instead of mac_address
+
 2012-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_note): Check that NVT exists.
