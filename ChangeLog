@@ -1,5 +1,10 @@
 2012-10-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Add missing return case for
+	copy_filter, copy_note and copy_target.
+
+2012-10-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage_process): Add database to SCAP check
 	otherwise it always fails.
 

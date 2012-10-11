@@ -12458,6 +12458,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   g_log ("event filter", G_LOG_LEVEL_MESSAGE,
                          "Filter could not be created");
                   break;
+                case 2:
+                  if (send_find_error_to_client ("create_filter",
+                                                 "filter",
+                                                 create_filter_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                         "Filter could not be created");
+                  break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_filter"));
@@ -12648,6 +12661,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_note",
                                       "Note exists already"));
+                  g_log ("event note", G_LOG_LEVEL_MESSAGE,
+                         "Note could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_note",
+                                                 "note",
+                                                 create_note_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
                   g_log ("event note", G_LOG_LEVEL_MESSAGE,
                          "Note could not be created");
                   break;
@@ -13946,6 +13972,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_target",
                                       "Target exists already"));
+                  g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                         "Target could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_target",
+                                                 "target",
+                                                 create_target_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
                   g_log ("event target", G_LOG_LEVEL_MESSAGE,
                          "Target could not be created");
                   break;
