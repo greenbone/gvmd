@@ -1,5 +1,10 @@
 2012-10-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (note_count): Remove comment.  Extra SQL only
+	needed when a subset of the notes is required (like notes on a task).
+
+2012-10-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (buffer_notes_xml): Add count arg.  Update callers.  Match
 	XML to send_get_common.
 	(buffer_result_notes_xml): Add sorting.

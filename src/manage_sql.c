@@ -33989,7 +33989,6 @@ int
 note_count (const get_data_t *get)
 {
   static const char *extra_columns[] = NOTE_ITERATOR_FILTER_COLUMNS;
-  // FIX will need more
   return count ("note", get, NOTE_ITERATOR_COLUMNS, extra_columns);
 }
 
