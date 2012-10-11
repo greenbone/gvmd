@@ -1,5 +1,12 @@
 2012-10-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (buffer_notes_xml): Add count arg.  Update callers.  Match
+	XML to send_get_common.
+	(buffer_result_notes_xml): Add sorting.
+	(omp_xml_handle_end_element): Remove targets reference code.
+
+2012-10-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Add missing return case for
 	copy_filter, copy_note and copy_target.
 

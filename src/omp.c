@@ -7424,14 +7424,18 @@ buffer_xml_append_printf (GString *buffer, const char *format, ...)
  * @param[in]  notes                  Notes iterator.
  * @param[in]  include_notes_details  Whether to include details of notes.
  * @param[in]  include_result         Whether to include associated result.
+ * @param[out] count                  Number of notes.
  */
 static void
 buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
-                  int include_result)
+                  int include_result, int *count)
 {
   while (next (notes))
     {
       char *uuid_task, *uuid_result;
+
+      if (count)
+        (*count)++;
 
       if (note_iterator_task (notes))
         task_uuid (note_iterator_task (notes),
@@ -7449,11 +7453,16 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
         {
           const char *text = note_iterator_text (notes);
           gchar *excerpt = g_strndup (text, 40);
+          /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
                                     "<note id=\"%s\">"
                                     "<nvt oid=\"%s\">"
                                     "<name>%s</name>"
                                     "</nvt>"
+                                    "<creation_time>%s</creation_time>"
+                                    "<modification_time>%s</modification_time>"
+                                    "<writable>1</writable>"
+                                    "<in_use>1</in_use>"
                                     "<active>%i</active>"
                                     "<text excerpt=\"%i\">%s</text>"
                                     "<orphan>%i</orphan>"
@@ -7461,6 +7470,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     get_iterator_uuid (notes),
                                     note_iterator_nvt_oid (notes),
                                     note_iterator_nvt_name (notes),
+                                    get_iterator_creation_time (notes),
+                                    get_iterator_modification_time (notes),
                                     note_iterator_active (notes),
                                     strlen (excerpt) < strlen (text),
                                     excerpt,
@@ -7489,12 +7500,15 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
           end_time = note_iterator_end_time (notes);
 
+          /* This must match send_get_common. */
           buffer_xml_append_printf
            (buffer,
             "<note id=\"%s\">"
             "<nvt oid=\"%s\"><name>%s</name></nvt>"
             "<creation_time>%s</creation_time>"
             "<modification_time>%s</modification_time>"
+            "<writable>1</writable>"
+            "<in_use>1</in_use>"
             "<active>%i</active>"
             "<end_time>%s</end_time>"
             "<text>%s</text>"
@@ -7926,11 +7940,7 @@ buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
       get_data_t get;
       iterator_t notes;
       memset (&get, '\0', sizeof (get));
-#if 0
-      // FIX do in filter
-      get.sort_order = 0;
-      get.sort_field = "creation_time";
-#endif
+      get.filter = "sort-reverse=created";  /* Most recent first. */
       init_note_iterator (&notes,
                           &get,
                           0,
@@ -7939,7 +7949,8 @@ buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
       buffer_notes_xml (buffer,
                         &notes,
                         include_notes_details,
-                        0);
+                        0,
+                        NULL);
       cleanup_iterator (&notes);
     }
 
@@ -8729,104 +8740,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               buffer = g_string_new ("");
 
-              // FIX count++;  send_get_common for each
               buffer_notes_xml (buffer, &notes, get_notes_data->get.details,
-                                get_notes_data->result);
+                                get_notes_data->result, &count);
 
               SEND_TO_CLIENT_OR_FAIL (buffer->str);
               g_string_free (buffer, TRUE);
-
-
-#if 0
-              while (1)
-                {
-                  char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
-                  const char *port_list_uuid, *port_list_name, *ssh_port;
-                  lsc_credential_t ssh_credential, smb_credential;
-                  int port_list_trash;
-                  char *port_range;
-
-                  ret = get_next (&notes, get, &first, &count,
-                                  init_note_iterator);
-                  if (ret == 1)
-                    break;
-                  if (ret == -1)
-                    {
-                      internal_error_send_to_client (error);
-                      return;
-                    }
-
-                  port_list_uuid = note_iterator_port_list_uuid (&notes);
-                  port_list_name = note_iterator_port_list_name (&notes);
-                  port_list_trash = note_iterator_port_list_trash (&notes);
-                  ssh_port = note_iterator_ssh_port (&notes);
-                  port_range = note_port_range (note_iterator_note
-                                                    (&notes));
-
-                  SEND_GET_COMMON (note, &get_notes_data->get, &notes);
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
-                                           "<max_hosts>%i</max_hosts>"
-                                           "<port_range>%s</port_range>"
-                                           "<port_list id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<trash>%i</trash>"
-                                           "</port_list>"
-                                           "<ssh_lsc_credential id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<port>%s</port>"
-                                           "<trash>%i</trash>"
-                                           "</ssh_lsc_credential>"
-                                           "<smb_lsc_credential id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<trash>%i</trash>"
-                                           "</smb_lsc_credential>",
-                                           note_iterator_hosts (&notes),
-                                           manage_max_hosts
-                                            (note_iterator_hosts (&notes)),
-                                           port_range,
-                                           port_list_uuid ? port_list_uuid : "",
-                                           port_list_name ? port_list_name : "",
-                                           port_list_trash,
-                                           ssh_lsc_uuid ? ssh_lsc_uuid : "",
-                                           ssh_lsc_name ? ssh_lsc_name : "",
-                                           ssh_port ? ssh_port : "",
-                                           (get_notes_data->get.trash
-                                             && note_iterator_ssh_trash
-                                                 (&notes)),
-                                           smb_lsc_uuid ? smb_lsc_uuid : "",
-                                           smb_lsc_name ? smb_lsc_name : "",
-                                           (get_notes_data->get.trash
-                                             && note_iterator_smb_trash
-                                                 (&notes)));
-
-                  if (get_notes_data->tasks)
-                    {
-                      iterator_t tasks;
-
-                      SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-                      init_note_task_iterator (&tasks,
-                                                 note_iterator_note
-                                                  (&notes));
-                      while (next (&tasks))
-                        SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
-                                                 "<name>%s</name>"
-                                                 "</task>",
-                                                 note_task_iterator_uuid (&tasks),
-                                                 note_task_iterator_name (&tasks));
-                      cleanup_iterator (&tasks);
-                      SEND_TO_CLIENT_OR_FAIL ("</tasks>");
-                    }
-
-                  SEND_TO_CLIENT_OR_FAIL ("</note>");
-                  count++;
-                  free (ssh_lsc_name);
-                  free (ssh_lsc_uuid);
-                  free (smb_lsc_name);
-                  free (smb_lsc_uuid);
-                  free (port_range);
-                }
-#endif
 
               cleanup_iterator (&notes);
               filtered = get_notes_data->get.id
