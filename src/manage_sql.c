@@ -9050,7 +9050,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           sql ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
                " AS scap;");
           scap_loaded = !!sql_int (0, 0,
-                                   "SELECT count(*) FROM sqlite_master"
+                                   "SELECT count(*) FROM scap.sqlite_master"
                                    " WHERE type = 'table' AND name = 'cves';");
         }
 
