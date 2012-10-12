@@ -1,5 +1,10 @@
 2012-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (manage_read_info): Append XML with xml_string_append,
+	in case it contains special chars.
+
+2012-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql (notes_trash): New table.
 
 	* doc/db.png: Update from source.
