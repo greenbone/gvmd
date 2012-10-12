@@ -1,5 +1,11 @@
 2012-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db_postgres.sql (notes_trash): New table.
+
+	* doc/db.png: Update from source.
+
+2012-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (create_note): Add COPY.
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
