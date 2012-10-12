@@ -4903,6 +4903,11 @@ create_lsc_credential_password
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing note.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>hosts</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
 <ul style="list-style: none"></ul>
@@ -4961,6 +4966,7 @@ create_lsc_credential_password
        &amp; create_note_nvt
        &amp; create_note_active?
        &amp; create_note_comment?
+       &amp; create_note_copy?
        &amp; create_note_hosts?
        &amp; create_note_port?
        &amp; create_note_result?
@@ -4990,6 +4996,12 @@ create_note_comment
  = element comment
      {
        text
+     }
+
+create_note_copy
+ = element copy
+     {
+       uuid
      }
 
 create_note_hosts

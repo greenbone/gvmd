@@ -1929,6 +1929,7 @@ create_note
        & create_note_nvt
        & create_note_active?
        & create_note_comment?
+       & create_note_copy?
        & create_note_hosts?
        & create_note_port?
        & create_note_result?
@@ -1962,6 +1963,13 @@ create_note_comment
  = element comment
      {
        text
+     }
+
+# The UUID of an existing note.
+create_note_copy
+ = element copy
+     {
+       uuid
      }
 
 # A textual list of hosts.

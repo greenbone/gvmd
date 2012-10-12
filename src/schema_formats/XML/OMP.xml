@@ -2260,6 +2260,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>nvt</e>
       <o><e>active</e></o>
       <o><e>comment</e></o>
+      <o><e>copy</e></o>
       <o><e>hosts</e></o>
       <o><e>port</e></o>
       <o><e>result</e></o>
@@ -2294,6 +2295,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A comment on the note</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing note</summary>
+      <pattern>
+        <t>uuid</t>
       </pattern>
     </ele>
     <ele>

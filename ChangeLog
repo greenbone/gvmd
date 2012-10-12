@@ -1,3 +1,9 @@
+2012-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (create_note): Add COPY.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2012-10-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (note_count): Remove comment.  Extra SQL only
