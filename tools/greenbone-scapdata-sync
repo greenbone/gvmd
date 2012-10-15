@@ -151,7 +151,7 @@ fi
 migrate_0_to_1 () {
   log_write " Migrating database from Version 0 to 1"
   rm -f $SCAP_DB
-  sqlite3 $SCAP_DB < $SCAP_DIR/db_init.sql
+  sqlite3 $SCAP_DB < $SCAP_RES/db_init.sql
 }
 
 check_db_version () {

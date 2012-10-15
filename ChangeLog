@@ -1,3 +1,7 @@
+2012-10-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* tools/greenbone-scapdata-sync: Fixed a wrong path.
+
 2012-10-15  Andre Heinecke <aheinecke@intevation.de>
 
 	Expand get_info for multiple info elements and implement iteratable CPE info
