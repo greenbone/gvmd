@@ -1981,7 +1981,9 @@ get_filters_data_reset (get_filters_data_t *data)
 typedef struct
 {
   char *type;         ///< Requested information type.
-  char *name;         ///< Requested information identifier.
+  char *name;         ///< Name of the info
+  get_data_t get;     ///< Get Args.
+  int details;        ///< Boolean. Weather to include full details.
 } get_info_data_t;
 
 /**
@@ -1994,6 +1996,7 @@ get_info_data_reset (get_info_data_t *data)
 {
   free (data->type);
   free (data->name);
+  get_data_reset (&data->get);
 
   memset (data, 0, sizeof (get_info_data_t));
 }
@@ -4352,10 +4355,17 @@ send_get_start (const char *type, get_data_t *get,
 {
   gchar *msg;
 
-  msg = g_markup_printf_escaped ("<get_%ss_response"
-                                 " status=\"" STATUS_OK "\""
-                                 " status_text=\"" STATUS_OK_TEXT "\">",
-                                 type);
+  if (strcmp (type, "info"))
+    msg = g_markup_printf_escaped ("<get_%ss_response"
+                                   " status=\"" STATUS_OK "\""
+                                   " status_text=\"" STATUS_OK_TEXT "\">",
+                                   type);
+  else
+    msg = g_markup_printf_escaped ("<get_%s_response"
+                                   " status=\"" STATUS_OK "\""
+                                   " status_text=\"" STATUS_OK_TEXT "\">",
+                                   type);
+
 
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
@@ -4392,11 +4402,21 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                                  "<writable>%i</writable>"
                                  "<in_use>%i</in_use>",
                                  type,
-                                 get_iterator_uuid (iterator),
-                                 get_iterator_name (iterator),
-                                 get_iterator_comment (iterator),
-                                 get_iterator_creation_time (iterator),
-                                 get_iterator_modification_time (iterator),
+                                 get_iterator_uuid (iterator)
+                                  ? get_iterator_uuid (iterator)
+                                  : "",
+                                 get_iterator_name (iterator)
+                                  ? get_iterator_name (iterator)
+                                  : "",
+                                 get_iterator_comment (iterator)
+                                  ? get_iterator_comment (iterator)
+                                  : "",
+                                 get_iterator_creation_time (iterator)
+                                  ? get_iterator_creation_time (iterator)
+                                  : "",
+                                 get_iterator_modification_time (iterator)
+                                  ? get_iterator_modification_time (iterator)
+                                  : "",
                                  writable,
                                  in_use);
 
@@ -4426,6 +4446,7 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
 {
   gchar *msg, *sort_field, *filter;
   int first, max, sort_order;
+  GString *type_many;
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -4439,18 +4460,23 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
   manage_filter_controls (filter ? filter : get->filter,
                           &first, &max, &sort_field, &sort_order);
 
+  type_many = g_string_new (type);
+
+  if (strcmp (type, "info") != 0)
+    g_string_append (type_many, "s");
+
   msg = g_markup_printf_escaped ("<filters id=\"%s\">"
                                  "<term>%s</term>"
                                  "</filters>"
                                  "<sort>"
                                  "<field>%s<order>%s</order></field>"
                                  "</sort>"
-                                 "<%ss start=\"%i\" max=\"%i\"/>"
+                                 "<%s start=\"%i\" max=\"%i\"/>"
                                  "<%s_count>"
                                  "<filtered>%i</filtered>"
                                  "<page>%i</page>"
                                  "</%s_count>"
-                                 "</get_%ss_response>",
+                                 "</get_%s_response>",
                                  get->filt_id,
                                  filter || get->filter
                                   ? manage_clean_filter (filter
@@ -4459,14 +4485,15 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
                                   : "",
                                  sort_field,
                                  sort_order ? "ascending" : "descending",
-                                 type,
+                                 type_many->str,
                                  first,
                                  max,
                                  type,
                                  filtered,
                                  count,
                                  type,
-                                 type);
+                                 type_many->str);
+  g_string_free (type_many, TRUE);
   g_free (sort_field);
   g_free (filter);
 
@@ -5636,10 +5663,22 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_INFO", element_name) == 0)
           {
-            append_attribute (attribute_names, attribute_values, "type",
-                              &get_info_data->type);
+            const gchar* attribute;
+            const gchar* typebuf;
+            get_data_parse_attributes (&get_info_data->get, "info",
+                                       attribute_names,
+                                       attribute_values);
             append_attribute (attribute_names, attribute_values, "name",
                               &get_info_data->name);
+            if (find_attribute (attribute_names, attribute_values,
+                                "details", &attribute))
+              get_info_data->details = strcmp (attribute, "0");
+            else
+              get_info_data->details = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "type", &typebuf))
+              get_info_data->type = g_ascii_strdown (typebuf, -1);
             set_client_state (CLIENT_GET_INFO);
           }
         else if (strcasecmp ("GET_VERSION", element_name) == 0)
@@ -16492,32 +16531,206 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_INFO:
         {
-          gchar *result;
+          iterator_t info;
+          int count, first, filtered, ret;
+          int (*init_info_iterator) (iterator_t*, const get_data_t *, const char *);
+          int (*info_count) (const get_data_t *get);
 
-          result = NULL;
-
-          manage_read_info (get_info_data->type, get_info_data->name, &result);
-          if (result)
+          if (get_info_data->name && get_info_data->get.id)
             {
-              SEND_TO_CLIENT_OR_FAIL ("<get_info_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              SEND_TO_CLIENT_OR_FAIL (result);
-              SEND_TO_CLIENT_OR_FAIL ("</get_info_response>");
+              SEND_TO_CLIENT_OR_FAIL
+                (XML_ERROR_SYNTAX ("get_info",
+                                   "Only one of name and the id attribute"
+                                   " may be given"));
+              set_client_state (CLIENT_AUTHENTIC);
+              return;
+            }
+          if (get_info_data->type == NULL)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+                (XML_ERROR_SYNTAX ("get_info",
+                                   "No type specified"));
+              set_client_state (CLIENT_AUTHENTIC);
+              return;
+            }
 
-              g_free (result);
+          /* Set type specific functions */
+          if (g_strcmp0 ("cpe", get_info_data->type) == 0)
+            {
+              init_info_iterator = init_cpe_info_iterator;
+              info_count = cpe_info_count;
+            }
+          else if (g_strcmp0 ("cve", get_info_data->type) == 0 ||
+                   g_strcmp0 ("nvt", get_info_data->type) == 0)
+            {
+              /* TODO: add proper iterator support for cpe / NVT */
+              gchar *result = NULL;
+              manage_read_info (get_info_data->type, get_info_data->name, &result);
+              if (result)
+                {
+                  SEND_GET_START ("info", &get_info_data->get);
+                  SEND_TO_CLIENT_OR_FAIL ("<info>");
+                  SEND_TO_CLIENT_OR_FAIL (result);
+                  SEND_TO_CLIENT_OR_FAIL ("</info>");
+                  SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
+                  SEND_GET_END ("info", &get_info_data->get, 1, 1);
+                  g_free (result);
+                  get_info_data_reset (get_info_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+              else
+                {
+                  if (send_find_error_to_client ("get_info", "name",
+                                                 get_info_data->name,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                    }
+                  return;
+                }
             }
           else
             {
-              if (send_find_error_to_client ("get_info", "name",
-                                             get_info_data->name,
+              if (send_find_error_to_client ("get_info",
+                                             "type",
+                                             get_info_data->type,
                                              write_to_client,
                                              write_to_client_data))
                 {
                   error_send_to_client (error);
-                  return;
                 }
+              return;
             }
+
+          ret = init_info_iterator (&info, &get_info_data->get, get_info_data->name);
+          if (ret)
+            {
+              switch (ret)
+                {
+                case 1:
+                  if (send_find_error_to_client ("get_info",
+                                                 "type",
+                                                 get_info_data->type,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 2:
+                  if (send_find_error_to_client
+                      ("get_filters",
+                       "filter",
+                       get_filters_data->get.filt_id,
+                       write_to_client,
+                       write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                    (XML_INTERNAL_ERROR ("get_info"));
+                  break;
+                }
+              get_info_data_reset (get_info_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              return;
+            }
+
+          count = 0;
+          manage_filter_controls (get_info_data->get.filter, &first, NULL, NULL, NULL);
+          SEND_GET_START ("info", &get_info_data->get);
+          while (next (&info))
+            {
+              GString *result;
+
+              /* Info's are currently always read only */
+              send_get_common ("info", &get_info_data->get, &info,
+                               write_to_client, write_to_client_data, 0, 0);
+
+              result = g_string_new ("");
+              g_string_append_printf (result, "<%s>", get_info_data->type);
+
+              /* Information depending on type */
+
+              if (g_strcmp0 ("cpe", get_info_data->type) == 0)
+                {
+                  const char * title = cpe_info_iterator_title (&info);
+                  if (title)
+                    g_string_append_printf (result,
+                                            "<title>%s</title>",
+                                            cpe_info_iterator_title (&info));
+                  g_string_append_printf (result,
+                                          "<max_cvss>%s</max_cvss>"
+                                          "<cve_refs>%s</cve_refs>"
+                                          "<status>%s</status>",
+                                          cpe_info_iterator_max_cvss (&info),
+                                          cpe_info_iterator_cve_refs (&info),
+                                          cpe_info_iterator_status (&info) ?
+                                          cpe_info_iterator_status (&info) : "");
+
+                  if (get_info_data->details == 1)
+                    {
+                      iterator_t cves;
+                      g_string_append (result, "<cves>");
+                      init_cpe_cve_iterator (&cves, get_iterator_name (&info), 0, NULL);
+                      while (next (&cves))
+                        {
+                          g_string_append_printf (result,
+                                                  "<cve>"
+                                                  "<entry"
+                                                  " xmlns:cpe-lang=\"http://cpe.mitre.org/language/2.0\""
+                                                  " xmlns:vuln=\"http://scap.nist.gov/schema/vulnerability/0.4\""
+                                                  " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
+                                                  " xmlns:patch=\"http://scap.nist.gov/schema/patch/0.1\""
+                                                  " xmlns:scap-core=\"http://scap.nist.gov/schema/scap-core/0.1\""
+                                                  " xmlns:cvss=\"http://scap.nist.gov/schema/cvss-v2/0.2\""
+                                                  " xmlns=\"http://scap.nist.gov/schema/feed/vulnerability/2.0\""
+                                                  " id=\"%s\">"
+                                                  "<vuln:cvss>"
+                                                  "<cvss:base_metrics>"
+                                                  "<cvss:score>%s</cvss:score>"
+                                                  "</cvss:base_metrics>"
+                                                  "</vuln:cvss>"
+                                                  "</entry>"
+                                                  "</cve>",
+                                                  cve_iterator_name (&cves),
+                                                  cve_iterator_cvss (&cves));
+
+                        }
+                      cleanup_iterator (&cves);
+                      g_string_append (result, "</cves>");
+                    }
+                }
+              else if (g_strcmp0 ("cve", get_info_data->type) == 0)
+                {
+                  /* TODO */
+                }
+              else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
+                {
+                  /* TODO */
+                }
+
+              g_string_append_printf (result, "</%s></info>", get_info_data->type);
+              SEND_TO_CLIENT_OR_FAIL (result->str);
+              count++;
+              g_string_free (result, TRUE);
+            }
+          cleanup_iterator (&info);
+
+          if (get_info_data->details == 1)
+            SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
+
+          filtered = get_info_data->get.id || get_info_data->name
+                     ? 1
+                     : info_count (&get_info_data->get);
+          SEND_GET_END ("info", &get_info_data->get, count, filtered);
+
           get_info_data_reset (get_info_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;

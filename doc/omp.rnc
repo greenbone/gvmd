@@ -2877,15 +2877,23 @@ get_filters
 
 ## Command get_info
 ##
-## Get raw information for a given item.
+## Get information for items of given type.
 
 get_info
  = element get_info
      {
-       # Type of the requested information.
+       # Type must be either CPE, CVE or NVT.
        attribute type { text }
        & # Name or identifier of the requested information.
-       attribute name { text }
+       attribute name { text }?
+       & # ID of single info to get. Conflicts with name.
+       attribute info_id { text }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
+       & # Whether to include information about references to this information.
+       attribute details { boolean }?
      }
 
 ## Command get_lsc_credentials
@@ -5182,9 +5190,184 @@ get_filters_response_filter_count_page
 get_info_response
  = element get_info_response
      {
-       text
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
+       & get_info_response_info*
+       & get_info_response_filters
+       & get_info_response_sort
+       & get_info_response_details
+       & get_info_response_info_count
+     }
+
+get_info_response_info
+ = element info
+     {
+       # A unique number idenitfying this info, if available.
+       attribute id { integer }?
+       & get_info_response_info_name
+       & get_info_response_info_comment
+       & get_info_response_info_creation_time
+       & get_info_response_info_modification_time
+       & get_info_response_info_cpe?
+       & get_info_response_info_cve?
+       & get_info_response_info_nvt?
+     }
+
+# The name of the info.
+get_info_response_info_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the info.
+get_info_response_info_comment
+ = element comment
+     {
+       text
+     }
+
+# Date and time the info was created.
+get_info_response_info_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the info was last modified.
+get_info_response_info_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# A CVE info element.
+get_info_response_info_cve
+ = element cve
+     {
+       text
+     }
+
+# A NVT info element.
+get_info_response_info_nvt
+ = element nvt
+     {
+       text
+     }
+
+# A CPE info element.
+get_info_response_info_cpe
+ = element cpe
+     {
+       get_info_response_info_cpe_title?
+       & get_info_response_info_cpe_max_cvss
+       & get_info_response_info_cpe_cve_refs
+       & get_info_response_info_cpe_status
+       & ?
+     }
+
+# The title of the CPE.
+get_info_response_info_cpe_title
+ = element title
+     {
+       text
+     }
+
+# The highest CVSS recorder for this CPE.
+get_info_response_info_cpe_max_cvss
+ = element max_cvss
+     {
+       integer
+     }
+
+# The number CVE of references to this CPE.
+get_info_response_info_cpe_cve_refs
+ = element cve_refs
+     {
+       integer
+     }
+
+# The status of this CPE.
+get_info_response_info_cpe_status
+ = element status
+     {
+       text
+     }
+
+# NVD id of the deprecating CPE.
+get_info_response_info_cpe_deprecated_by
+ = element deprecated_by
+     {
+       integer
+     }
+
+get_info_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_info_response_filters_term
+     }
+
+# Filter term.
+get_info_response_filters_term
+ = element term    # type text
+     {
+     }
+
+get_info_response_sort
+ = element sort
+     {
+       text
+       & get_info_response_sort_field
+     }
+
+get_info_response_sort_field
+ = element field
+     {
+       get_info_response_sort_field_order
+     }
+
+get_info_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_info_response_filters
+ = element filters
+     {
+       # First filter.
+       attribute start { integer }
+       & # Maximum number of filters.
+       attribute max { integer }
+     }
+
+get_info_response_info_count
+ = element info_count
+     {
+       get_info_response_info_count_filtered
+       & get_info_response_info_count_page
+     }
+
+# Number of info elements after filtering.
+get_info_response_info_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of info elements on current page.
+get_info_response_info_count_page
+ = element page
+     {
+       integer
+     }
+
+# Are details included in this response.
+get_info_response_details
+ = element details    # type boolean
+     {
      }
 
 ## Response to get_lsc_credentials

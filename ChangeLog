@@ -1,5 +1,41 @@
 2012-10-15  Andre Heinecke <aheinecke@intevation.de>
 
+	Expand get_info for multiple info elements and implement iteratable CPE info
+
+	* src/manage_sql.c (count, get_target_iterator): Add owned parameter 
+	to allow handling types without owner. Update callers.
+	(cpe_info_count): New. Count info elements of type cpe
+	(init_cpe_info_iterator): New. Initialize a get iterator for info of type
+	cpe
+	(cpe_info_iterator_title, cpe_info_iterator_status)
+	(cpe_info_iterator_deprecated_by, cpe_info_iterator_max_cvss)
+	(cpe_info_iterator_cve_refs): New functions to access iterator.
+	(CPE_INFO_ITERATOR_FILTER_COLUMNS, CPE_INFO_ITERATOR_COLUMNS): New
+	defines.
+	(init_cpe_cve_iterator): Update column name for "cve name".
+	(cpe_info_count): New function to count cpe info.
+	(valid_type): Add info type
+
+	* src/manage.h: Add header accordingly.
+
+	* src/manage.c (get_cpe_filename): Removed.
+	(manage_read_info): Remove old handling of CPEs.
+	(CPE_GETBYNAME_XSL, CPE_DICT_FILENAME): Removed define.
+
+	* src/omp.c (get_info_data_t): Add generic GET arg and add details value.
+	(get_info_data_reset): Also reset the generic get_data
+	(send_get_start, send_get_end): Do not send plural form of info
+	(send_get_start): Send empty elements instead of (null) when an element is
+	null.
+	(omp_xml_handle_start_element): Parse generic GET data and details in GET_INFO
+	(omp_xml_handle_end_element): Add iterator based handling for CPEs
+
+	* src/schema_formats/XML/OMP.xml: Update get_info documentation
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2012-10-15  Andre Heinecke <aheinecke@intevation.de>
+
 	Allow more generic handling of SCAP Data and expand CPE/CVE info
 
 	* tools/db_init.sql (meta): Add meta table for version information.

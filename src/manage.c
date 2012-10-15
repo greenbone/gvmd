@@ -75,21 +75,10 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-
-/**
- * @brief CPE selection stylesheet location.
- */
-#define CPE_GETBYNAME_XSL SCAP_RES_DIR "/cpe_getbyname.xsl"
-
 /**
  * @brief CVE selection stylesheet location.
  */
 #define CVE_GETBYNAME_XSL SCAP_RES_DIR "/cve_getbyname.xsl"
-
-/**
- * @brief CPE dictionary location.
- */
-#define CPE_DICT_FILENAME SCAP_DATA_DIR "/official-cpe-dictionary_v2.2.xml"
 
 /**
  * @brief CVE data files location format string.
@@ -4057,18 +4046,6 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
 }
 
 /**
- * @brief Return the path to the CPE dictionary.
- *
- * @return A dynamically allocated string (to be g_free'd) containing the
- *         path to the desired file.
- */
-static char *
-get_cpe_filename ()
-{
-  return g_strdup (CPE_DICT_FILENAME);
-}
-
-/**
  * @brief Compute the filename where a given CVE can be found.
  *
  * @param[in] item_id   Full CVE identifier ("CVE-YYYY-ZZZZ").
@@ -4374,63 +4351,10 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
   gchar *pvalues[2] = { name, NULL };
 
   assert (result != NULL);
+  assert (g_ascii_strcasecmp ("CPE", type) != 0);
   *result = NULL;
 
-  if (g_ascii_strcasecmp ("CPE", type) == 0)
-    {
-      fname = get_cpe_filename ();
-      if (fname)
-        {
-          gchar *cpe;
-          cpe = xsl_transform (CPE_GETBYNAME_XSL, fname, pnames, pvalues);
-          g_free (fname);
-          if (cpe)
-            {
-              iterator_t cves;
-              GString *xml;
-
-              xml = g_string_new ("");
-
-              g_string_append_printf (xml,
-                                      "<cpe>"
-                                      "<update_time>%s</update_time>"
-                                      "%s"
-                                      "<cves>",
-                                      manage_scap_update_time (),
-                                      cpe);
-              init_cpe_cve_iterator (&cves, name, 0, NULL);
-              while (next (&cves))
-                g_string_append_printf (xml,
-                                        "<cve>"
-                                        "<entry"
-                                        " xmlns:cpe-lang=\"http://cpe.mitre.org/language/2.0\""
-                                        " xmlns:vuln=\"http://scap.nist.gov/schema/vulnerability/0.4\""
-                                        " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
-                                        " xmlns:patch=\"http://scap.nist.gov/schema/patch/0.1\""
-                                        " xmlns:scap-core=\"http://scap.nist.gov/schema/scap-core/0.1\""
-                                        " xmlns:cvss=\"http://scap.nist.gov/schema/cvss-v2/0.2\""
-                                        " xmlns=\"http://scap.nist.gov/schema/feed/vulnerability/2.0\""
-                                        " id=\"%s\">"
-                                        "<vuln:cvss>"
-                                        "<cvss:base_metrics>"
-                                        "<cvss:score>%s</cvss:score>"
-                                        "</cvss:base_metrics>"
-                                        "</vuln:cvss>"
-                                        "</entry>"
-                                        "</cve>",
-                                        cve_iterator_name (&cves),
-                                        cve_iterator_cvss (&cves));
-              cleanup_iterator (&cves);
-              g_string_append (xml,
-                               "</cves>"
-                               "</cpe>");
-
-              *result = g_string_free (xml, FALSE);
-            }
-          g_free (cpe);
-        }
-    }
-  else if (g_ascii_strcasecmp ("CVE", type) == 0)
+  if (g_ascii_strcasecmp ("CVE", type) == 0)
     {
       fname = get_cve_filename (name);
       if (fname)

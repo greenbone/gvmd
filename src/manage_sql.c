@@ -997,7 +997,8 @@ valid_type (const char* type)
          || (strcasecmp (type, "schedule") == 0)
          || (strcasecmp (type, "slave") == 0)
          || (strcasecmp (type, "target") == 0)
-         || (strcasecmp (type, "task") == 0);
+         || (strcasecmp (type, "task") == 0)
+         || (strcasecmp (type, "info") == 0);
 }
 
 /**
@@ -26013,6 +26014,24 @@ filter_clause (const char* type, const char* filter, const char **columns,
    "smb_credential", NULL }
 
 /**
+ * @brief Filter columns for CPE iterator.
+ */
+#define CPE_INFO_ITERATOR_FILTER_COLUMNS                    \
+ { GET_ITERATOR_FILTER_COLUMNS, "title", "status",          \
+   "deprecated_by_id", "max_cvss", "cves",  NULL }
+
+/**
+ * @brief CPE iterator columns.
+ */
+#define CPE_INFO_ITERATOR_COLUMNS                           \
+ /*GET_ITERATOR_COLUMNS " dates are not in iso format*/     \
+  "ROWID, uuid, name, comment, creation_time,"              \
+  " modification_time, creation_time AS created,"           \
+  " modification_time AS modified,"                         \
+  " title, status, deprecated_by_id, max_cvss,"             \
+  " cve_refs AS cves"
+
+/**
  * @brief Target iterator columns.
  */
 #define TARGET_ITERATOR_COLUMNS                             \
@@ -26062,15 +26081,17 @@ filter_clause (const char* type, const char* filter, const char **columns,
  * @param[in]  get               GET params.
  * @param[in]  iterator_columns  Iterator columns.
  * @param[in]  extra_columns     Extra columns.
+ * @param[in]  owned             Only count items owned by current user.
  *
  * @return Total number of resources in filtered set.
  */
 static int
 count (const char *type, const get_data_t *get,
-       const char *iterator_columns, const char **extra_columns)
+       const char *iterator_columns, const char **extra_columns,
+       int owned)
 {
   int actions, ret;
-  gchar *clause;
+  gchar *clause, *owned_clause;
   gchar *filter;
 
   assert (current_credentials.uuid);
@@ -26087,6 +26108,13 @@ count (const char *type, const get_data_t *get,
 
   clause = filter_clause (type, filter ? filter : get->filter, extra_columns,
                           NULL, NULL, NULL);
+  if (owned)
+    owned_clause = g_strdup_printf ("((owner IS NULL) OR (owner ="
+                                    " (SELECT ROWID FROM users"
+                                    " WHERE users.uuid = '%s')))",
+                                    current_credentials.uuid);
+  else
+    owned_clause = g_strdup ("1");
 
   if (get->actions == NULL
       || strlen (get->actions) == 0
@@ -26095,12 +26123,11 @@ count (const char *type, const get_data_t *get,
       ret = sql_int (0, 0,
                      "SELECT count (*), %s"
                      " FROM %ss"
-                     " WHERE ((owner IS NULL) OR (owner ="
-                     " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                     " WHERE %s"
                      "%s%s;",
                      iterator_columns,
                      type,
-                     current_credentials.uuid,
+                     owned_clause,
                      clause ? " AND " : "",
                      clause ? clause : "");
       g_free (clause);
@@ -26110,9 +26137,7 @@ count (const char *type, const get_data_t *get,
   ret = sql_int (0, 0,
                  "SELECT count (*), %s"
                  " FROM %ss"
-                 " WHERE"
-                 " ((owner IS NULL) OR (owner ="
-                 "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                 " WHERE %s"
                  "  OR"
                  // FIX
                  "  (SELECT tasks.ROWID FROM tasks"
@@ -26125,13 +26150,14 @@ count (const char *type, const get_data_t *get,
                  "%s%s;",
                  iterator_columns,
                  type,
-                 current_credentials.uuid,
+                 owned_clause,
                  current_credentials.uuid,
                  actions,
                  actions,
                  clause ? " AND " : "",
                  clause ? clause : "");
 
+  g_free (owned_clause);
   g_free (clause);
   return ret;
 }
@@ -26147,7 +26173,7 @@ int
 target_count (const get_data_t *get)
 {
   static const char *extra_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
-  return count ("target", get, TARGET_ITERATOR_COLUMNS, extra_columns);
+  return count ("target", get, TARGET_ITERATOR_COLUMNS, extra_columns, TRUE);
 }
 
 /**
@@ -26275,6 +26301,7 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
  *                             resource.
  * @param[in]  extra_where     Extra WHERE clauses.  Skipped for trash and
  *                             single resource.
+ * @param[in]  owned           Only get items owned by the current user.
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
  *         error.
@@ -26284,10 +26311,10 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    const get_data_t *get, const char *columns,
                    const char *trash_columns, const char **filter_columns,
                    const char *used_by, int distinct, const char *extra_tables,
-                   const char *extra_where)
+                   const char *extra_where, int owned)
 {
-  int actions, first, max;
-  gchar *clause, *order, *used_by_clause, *filter;
+  int first, max, actions;
+  gchar *clause, *order, *used_by_clause, *filter, *owned_and_used_by_clause;
   resource_t resource = 0;
 
   assert (current_credentials.uuid);
@@ -26299,7 +26326,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
       return -1;
     }
 
-  if (get->id)
+  if (get->id && owned)
     {
       if (find_resource_for_actions (type, get->id, &resource, get->actions))
         return -1;
@@ -26308,16 +26335,9 @@ init_get_iterator (iterator_t* iterator, const char *type,
     }
 
   if (get->actions == NULL || strlen (get->actions) == 0)
-    return init_user_get_iterator (iterator, type, get, columns, trash_columns,
-                                   filter_columns, resource, distinct,
-                                   extra_tables, extra_where);
-
-  actions = parse_actions (get->actions);
-
-  if (actions == 0)
-    return init_user_get_iterator (iterator, type, get, columns, trash_columns,
-                                   filter_columns, resource, distinct,
-                                   extra_tables, extra_where);
+    actions = 0;
+  else
+    actions = parse_actions (get->actions);
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -26333,7 +26353,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
 
   g_free (filter);
 
-  if (used_by)
+  if (used_by && actions)
     used_by_clause = g_strdup_printf ("  OR"
                                       "  (SELECT %ss.ROWID FROM %ss"
                                       "   WHERE %s = %ss.ROWID)"
@@ -26353,72 +26373,84 @@ init_get_iterator (iterator_t* iterator, const char *type,
                                       actions,
                                       actions);
   else
-    used_by_clause = g_strdup ("");
+    used_by_clause = NULL;
+
+  if (owned)
+    {
+      if (resource || get->trash)
+        owned_and_used_by_clause = g_strdup_printf (" ((owner IS NULL) OR (owner ="
+                                                    "  (SELECT ROWID FROM users"
+                                                    " WHERE users.uuid = '%s'))"
+                                                    " %s)",
+                                                    current_credentials.uuid,
+                                                    used_by_clause ? used_by_clause : "");
+      else
+        owned_and_used_by_clause = g_strdup_printf (" ((%ss.owner IS NULL) OR (%ss.owner ="
+                                                    "  (SELECT ROWID FROM users WHERE"
+                                                    " users.uuid = '%s'))"
+                                                    " %s)",
+                                                    type,
+                                                    type,
+                                                    current_credentials.uuid,
+                                                    used_by_clause ? used_by_clause : "");
+
+    }
+  else if (used_by_clause)
+   owned_and_used_by_clause = g_strdup (used_by_clause);
+  else
+   owned_and_used_by_clause = g_strdup (" 1");
+
+  g_free (used_by_clause);
 
   if (resource && get->trash)
     init_iterator (iterator,
                    "SELECT %s"
                    " FROM %ss_trash"
                    " WHERE ROWID = %llu"
-                   " AND"
-                   " ((owner IS NULL) OR (owner ="
-                   "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
-                   "  %s)"
+                   " AND %s"
                    "%s;",
                    trash_columns ? trash_columns : columns,
                    type,
                    resource,
-                   current_credentials.uuid,
-                   used_by_clause,
+                   owned_and_used_by_clause,
                    order);
   else if (get->trash)
     init_iterator (iterator,
                    "SELECT %s"
                    " FROM %ss_trash"
                    " WHERE"
-                   " ((owner IS NULL) OR (owner ="
-                   "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
-                   "  %s)"
+                   "%s"
                    "%s;",
                    trash_columns ? trash_columns : columns,
                    type,
-                   current_credentials.uuid,
-                   used_by_clause,
+                   owned_and_used_by_clause,
                    order);
   else if (resource)
     init_iterator (iterator,
                    "SELECT %s"
                    " FROM %ss"
                    " WHERE ROWID = %llu"
-                   " AND"
-                   " ((owner IS NULL) OR (owner ="
-                   "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
-                   "  %s)"
+                   " AND %s"
                    "%s;",
                    columns,
                    type,
                    resource,
-                   current_credentials.uuid,
-                   used_by_clause,
+                   owned_and_used_by_clause,
                    order);
   else
-    init_iterator (iterator,
+    {
+      init_iterator (iterator,
                    "SELECT%s %s"
                    " FROM %ss%s"
                    " WHERE"
-                   " ((%ss.owner IS NULL) OR (%ss.owner ="
-                   "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
-                   "  %s)"
+                   " %s"
                    "%s%s%s%s"
                    " LIMIT %i OFFSET %i;",
                    distinct ? " DISTINCT" : "",
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
-                   type,
-                   type,
-                   current_credentials.uuid,
-                   used_by_clause,
+                   owned_and_used_by_clause,
                    clause ? " AND " : "",
                    clause ? clause : "",
                    extra_where ? extra_where : "",
@@ -26426,6 +26458,9 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    max,
                    first);
 
+    }
+
+  g_free (owned_and_used_by_clause);
   g_free (order);
   g_free (clause);
   return 0;
@@ -26480,7 +26515,8 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
                             "task",
                             0,
                             NULL,
-                            NULL);
+                            NULL,
+                            TRUE);
 }
 
 /**
@@ -33423,7 +33459,8 @@ init_agent_iterator (iterator_t* iterator, const get_data_t *get)
                             NULL,
                             0,
                             NULL,
-                            NULL);
+                            NULL,
+                            TRUE);
 }
 
 /**
@@ -33597,7 +33634,7 @@ int
 agent_count (const get_data_t *get)
 {
   static const char *extra_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
-  return count ("agent", get, AGENT_ITERATOR_COLUMNS, extra_columns);
+  return count ("agent", get, AGENT_ITERATOR_COLUMNS, extra_columns, TRUE);
 }
 
 /**
@@ -33989,7 +34026,7 @@ int
 note_count (const get_data_t *get)
 {
   static const char *extra_columns[] = NOTE_ITERATOR_FILTER_COLUMNS;
-  return count ("note", get, NOTE_ITERATOR_COLUMNS, extra_columns);
+  return count ("note", get, NOTE_ITERATOR_COLUMNS, extra_columns, TRUE);
 }
 
 /**
@@ -34088,7 +34125,8 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                            "task",
                            task || nvt,
                            join_clause,
-                           result_clause);
+                           result_clause,
+                           TRUE);
 
   g_free (result_clause);
   g_free (join_clause);
@@ -39966,7 +40004,7 @@ int
 filter_count (const get_data_t *get)
 {
   static const char *extra_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
-  return count ("filter", get, FILTER_ITERATOR_COLUMNS, extra_columns);
+  return count ("filter", get, FILTER_ITERATOR_COLUMNS, extra_columns, TRUE);
 }
 
 /**
@@ -39994,7 +40032,8 @@ init_filter_iterator (iterator_t* iterator, const get_data_t *get)
                             NULL,
                             0,
                             NULL,
-                            NULL);
+                            NULL,
+                            TRUE);
 }
 
 /**
@@ -41610,13 +41649,13 @@ init_cpe_cve_iterator (iterator_t *iterator, const char *cve, int ascending,
   assert (cve);
   quoted_cpe = sql_quote (cve);
   init_iterator (iterator,
-                 "SELECT ROWID, cve, cvss FROM cves WHERE ROWID IN"
+                 "SELECT ROWID, name, cvss FROM cves WHERE ROWID IN"
                  " (SELECT cve FROM affected_products"
                  "  WHERE cpe ="
                  "  (SELECT ROWID FROM cpes WHERE name = '%s'))"
                  " ORDER BY %s %s;",
                  quoted_cpe,
-                 sort_field ? sort_field : "cvss DESC, cve",
+                 sort_field ? sort_field : "cvss DESC, name",
                  ascending ? "ASC" : "DESC");
   g_free (quoted_cpe);
 }
@@ -41640,5 +41679,114 @@ DEF_ACCESS (cve_iterator_name, 1);
  *         cleanup_iterator.
  */
 DEF_ACCESS (cve_iterator_cvss, 2);
+
+/**
+ * @brief Count number of cpe.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of cpes in filtered set.
+ */
+int
+cpe_info_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = CPE_INFO_ITERATOR_FILTER_COLUMNS;
+  return count ("cpe", get, CPE_INFO_ITERATOR_COLUMNS, extra_columns, FALSE);
+}
+
+/**
+ * @brief Initialise a info iterator.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ * @param[in]  name            Name of the info
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_cpe_info_iterator (iterator_t* iterator, const get_data_t *get, const char *name)
+{
+  static const char *filter_columns[] = CPE_INFO_ITERATOR_FILTER_COLUMNS;
+  gchar *clause = NULL;
+  int ret;
+
+  if (get->id)
+    {
+      gchar *quoted = sql_quote (get->id);
+      clause = g_strdup_printf (" AND uuid = '%s'", quoted);
+      g_free (quoted);
+    }
+  else if (name)
+    {
+      gchar *quoted = sql_quote (name);
+      clause = g_strdup_printf (" AND name = '%s'", quoted);
+      g_free (quoted);
+    }
+  ret = init_get_iterator (iterator,
+                           "cpe",
+                           get,
+                           /* Columns. */
+                           CPE_INFO_ITERATOR_COLUMNS,
+                           NULL,
+                           filter_columns,
+                           NULL,
+                           0,
+                           NULL,
+                           clause,
+                           FALSE);
+  g_free (clause);
+  return ret;
+}
+
+/**
+ * @brief Get the title from a CPE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The Title of the CPE, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (cpe_info_iterator_title, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the status from a CPE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The Status of the CPE, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (cpe_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the id of the deprecating CPE from a CPE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The deprecated_by CVD ID, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cpe_info_iterator_deprecated_by, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the Highest CVSS Score of all CVE's referencing this cpe.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The Highest CVSS of the CPE, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cpe_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get the Number of CVE's referencing this cpe from a CPE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The Number of references to the CPE, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cpe_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 4);
 
 #undef DEF_ACCESS
