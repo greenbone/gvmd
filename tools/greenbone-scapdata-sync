@@ -148,35 +148,52 @@ then
   exit 1
 fi
 
+migrate_0_to_1 () {
+  log_write " Migrating database from Version 0 to 1"
+  rm -f $SCAP_DB
+  sqlite3 $SCAP_DB < $SCAP_DIR/db_init.sql
+}
+
+check_db_version () {
+  DB_VERSION=`sqlite3 $SCAP_DB "select value from meta where name = 'version';" 2>/dev/null || echo 0`
+  case "$DB_VERSION" in
+    0) migrate_0_to_1 ;;
+  esac
+}
+
 update_scap_db() {
   if [ ! -f $SCAP_DB ]
   then
-    log_write "(Re-)initializing SCAP database."
+    log_write "Initializing SCAP database."
     sqlite3 $SCAP_DB < $SCAP_RES/db_init.sql
-    touch $SCAP_DIR/*.xml
     REFDATE=0
   else
-    REFDATE=`sqlite3 $SCAP_DB "select max(last_mod) from cves;" | sed -e 's/T.*//' | tr -d "-"`
+    check_db_version
+    REFDATE=`sqlite3 $SCAP_DB "select max(modification_time) from cves;" | sed -e 's/T.*//' | tr -d "-"`
   fi
 
-  if [ -z $REFDATE ]
+  DB_LASTUPDATE=`sqlite3 $SCAP_DB "select value from meta where name = 'last_update';"`
+
+  if [ -z $REFDATE ] || [ -z $DB_LASTUPDATE ];
   then
-    log_write "Resetting SCAP database."
+    # Happens when initial sync was aborted
+    log_write "Error: Inconsistent data. Resetting SCAP database."
     rm -f $SCAP_DB
     sqlite3 $SCAP_DB < $SCAP_RES/db_init.sql
-    touch $SCAP_DIR/*.xml
     REFDATE=0
+    DB_LASTUPDATE=0
   fi
 
-  DB_LASTMOD=$REFDATE
-
-  CPE_BASE="$SCAP_DIR/official-cpe-dictionary_v2.2.xml"
-  if [ -e $CPE_BASE ]
+  CPEBASE="$SCAP_DIR/official-cpe-dictionary_v2.2.xml"
+  if [ -e $CPEBASE ]
   then
-    if [ `stat -c "%Y" $CPE_BASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTMOD ]
+    if [ `stat -c "%Y" $CPEBASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
     then
       log_write "Updating CPEs"
-      xsltproc --stringparam refdate $REFDATE $SCAP_RES/cpe_youngerthan.xsl $CPE_BASE | xsltproc $SCAP_RES/cpe_update.xsl - | sqlite3 $SCAP_DB
+      sed 's/&/&amp;/g' $CPEBASE | \
+        xsltproc --stringparam refdate $REFDATE $SCAP_RES/cpe_youngerthan.xsl - | \
+        xsltproc $SCAP_RES/cpe_update.xsl - | \
+        sqlite3 $SCAP_DB
     else
       log_write "Skipping CPEs, file is older than last revision (this is not an error)."
     fi
@@ -184,10 +201,12 @@ update_scap_db() {
 
   for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
   do
-    if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTMOD ]
+    if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
     then
       log_write "Updating $cvefile"
-      xsltproc --stringparam refdate $REFDATE $SCAP_RES/cve_youngerthan.xsl $cvefile | xsltproc $SCAP_RES/cve_update.xsl - | sqlite3 $SCAP_DB
+      xsltproc --stringparam refdate $REFDATE $SCAP_RES/cve_youngerthan.xsl $cvefile | \
+        xsltproc $SCAP_RES/cve_update.xsl - | \
+        sqlite3 $SCAP_DB
     else
       log_write "Skipping $cvefile, file is older than last revision (this is not an error)."
     fi

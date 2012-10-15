@@ -29,20 +29,34 @@ DROP TABLE IF EXISTS cves;
 DROP TABLE IF EXISTS cpes;
 DROP TABLE IF EXISTS affected_products;
 
+CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
+INSERT INTO meta (name, value) VALUES ("database_version", "1");
+INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
-CREATE TABLE  cves (
+CREATE TABLE cves (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  cve VARCHAR(10) UNIQUE NOT NULL,
-  last_mod DATE,
-  cvss FLOAT,
-  description TEXT
+  uuid UNIQUE,
+  name,
+  comment,
+  creation_time DATE,
+  modification_time DATE,
+  cvss FLOAT DEFAULT 0
 );
-CREATE UNIQUE INDEX cve_idx ON cves (cve);
+CREATE UNIQUE INDEX cve_idx ON cves (name);
 
 
 CREATE TABLE cpes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name VARCHAR(80) UNIQUE NOT NULL
+  uuid UNIQUE,
+  name,
+  comment,
+  creation_time DATE,
+  modification_time DATE,
+  title,
+  status,
+  deprecated_by_id INTEGER,
+  max_cvss FLOAT DEFAULT 0,
+  cve_refs INTEGER DEFAULT 0
 );
 CREATE UNIQUE INDEX cpe_idx ON cpes (name);
 
@@ -55,3 +69,16 @@ CREATE TABLE affected_products (
 );
 CREATE INDEX afp_idx ON affected_products (cve,cpe);
 
+CREATE TRIGGER cves_delete AFTER DELETE ON cves
+BEGIN
+  DELETE FROM affected_products where cve = old.id;
+END;
+
+CREATE TRIGGER affected_delete AFTER DELETE ON affected_products
+BEGIN
+  UPDATE cpes set max_cvss =
+  (SELECT max(cvss) FROM cves WHERE id in
+    (SELECT cve FROM affected_products WHERE cpe = old.cpe)
+  ) WHERE id = old.cpe;
+  UPDATE cpes set cve_refs = cve_refs -1 WHERE id = old.cpe;
+END;

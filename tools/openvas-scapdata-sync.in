@@ -37,6 +37,7 @@ if [ -z "$SCAP_DIR" ]; then
     SCAP_DIR="$SCAP_DIR/scap-data"
   fi
 fi
+SEC_DB="$SCAP_DIR/scap.db"
 
 # Script and feed information which will be made available to user through
 # command line options and automated tools.
@@ -44,7 +45,6 @@ SCRIPT_NAME="openvas-scapdata-sync"
 VERSION=@OPENVASMD_VERSION@
 RES_DIR=@OPENVAS_SCAP_RES_DIR@
 RESTRICTED=0
-
 
 # The URL of the plugin feed
 if [ -z "$OV_RSYNC_FEED" ]; then
@@ -201,41 +201,72 @@ do_sync () {
   fi
 }
 
+migrate_0_to_1 () {
+  echo "[i] Major change in internal SCAP data structures."
+  echo "[i] Reinitialization of database necessary."
+  echo "[i] This update might take a while.."
+  sqlite3 $SEC_DB < $RES_DIR/db_init.sql
+}
+
+check_db_version () {
+  DB_VERSION=`sqlite3 $SEC_DB "select value from meta where name = 'version';" 2>/dev/null || echo 0`
+  case "$DB_VERSION" in
+    0) migrate_0_to_1 ;;
+  esac
+}
+
 update_sec_db () {
-
-  SEC_DB="$SCAP_DIR/scap.db"
-  CPEBASE="$SCAP_DIR/official-cpe-dictionary_v2.2.xml"
-
   if [ ! -f $SEC_DB ]
   then
-    echo "[i] (Re-)initializing database"
+    echo "[i] Initializing scap database"
     sqlite3 $SEC_DB < $RES_DIR/db_init.sql
-    touch $SCAP_DIR/*.xml
+    DB_LASTUPDATE=0
     REFDATE=0
   else
-    REFDATE=`sqlite3 $SEC_DB "select max(last_mod) from cves;" | sed -e 's/T.*//' | tr -d "-"`
+    check_db_version
+    REFDATE=`sqlite3 $SEC_DB "select max(modification_time) from cves;" | sed -e 's/T.*//' | tr -d "-"`
   fi
 
-  DB_LASTMOD=$REFDATE
+  DB_LASTUPDATE=`sqlite3 $SEC_DB "select value from meta where name = 'last_update';"`
 
-  if [ `stat -c "%Y" $CPEBASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTMOD ]
+  if [ -z $REFDATE ] || [ -z $DB_LASTUPDATE ]
   then
-    echo "[i] Updating CPEs"
-    xsltproc --stringparam refdate $REFDATE $RES_DIR/cpe_youngerthan.xsl $CPEBASE | xsltproc $RES_DIR/cpe_update.xsl - | sqlite3 $SEC_DB
-  else
-    echo "[i] Skipping CPEs, file is older than last revision"
+    # Happens when initial sync was aborted
+    log_write "Error: Inconsistent data. Resetting SCAP database."
+    rm -f $SEC_DB
+    sqlite3 $SEC_DB < $SCAP_RES/db_init.sql
+    REFDATE=0
+    DB_LASTUPDATE=0
+  fi
+
+  CPEBASE="$SCAP_DIR/official-cpe-dictionary_v2.2.xml"
+  if [ -e $CPEBASE ]
+  then
+    if [ `stat -c "%Y" $CPEBASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+    then
+      echo "[i] Updating CPEs"
+      sed 's/&/&amp;/g' $CPEBASE | \
+        xsltproc --stringparam refdate $REFDATE $RES_DIR/cpe_youngerthan.xsl - | \
+        xsltproc $RES_DIR/cpe_update.xsl - | \
+        sqlite3 $SEC_DB
+    else
+      echo "[i] Skipping CPEs, file is older than last revision"
+    fi
   fi
 
   for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
   do
-    if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTMOD ]
+    if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
     then
       echo "[i] Updating $cvefile"
-      xsltproc --stringparam refdate $REFDATE $RES_DIR/cve_youngerthan.xsl $cvefile | xsltproc $RES_DIR/cve_update.xsl - | sqlite3 $SEC_DB
+      xsltproc --stringparam refdate $REFDATE $RES_DIR/cve_youngerthan.xsl $cvefile | \
+        xsltproc $RES_DIR/cve_update.xsl - | \
+        sqlite3 $SEC_DB
     else
       echo "[i] Skipping $cvefile, file is older than last revision"
     fi
   done
+  sqlite3 $SEC_DB "update meta set value ='`date +%s`' where name = 'last_update';"
 }
 
 if [ -n "$1" ]; then

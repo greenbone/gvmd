@@ -1,3 +1,27 @@
+2012-10-15  Andre Heinecke <aheinecke@intevation.de>
+
+	Allow more generic handling of SCAP Data and expand CPE/CVE info
+
+	* tools/db_init.sql (meta): Add meta table for version information.
+	(cves): Remove description but add generic data fields
+	(cpes): Add generic data fields and additional columns
+	(cves_delete): New. Trigger for cve deletion to correctly adopt
+	affected_products.
+	(affected_delete): New. Trigger to keep cached information about related
+	cves accurate in the cpe table.
+
+	* tools/greenbone-scapdata-sync, tools/openvas-scapdata-sync
+	(migrate_0_to_1, check_db_version): New. support a versioned Database.
+
+	* tools/greenbone-scapdata-sync (update_scap_db),
+	tools/openvas-scapdata-sync (update_sec_db): Handle database version
+	and last_updated from database.
+
+	* tools/cve_update.xsl: Add statements to calculate cpe max_cvss and
+	cve_refs values. Use new columns.
+
+	* tools/cpe_update.xsl: Use new columns. Escape names and titles.
+
 2012-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (manage_read_info): Append XML with xml_string_append,
