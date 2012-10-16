@@ -22081,42 +22081,20 @@ task_finished_report_count (task_t task)
 }
 
 /**
- * @brief Return the trend of a task.
+ * @brief Return the trend of a task, given counts.
  *
  * @param[in]  task      Task.
  * @param[in]  override  Whether to override the threat.
  *
  * @return "up", "down", "more", "less", "same" or if too few reports "".
  */
-const char *
-task_trend (task_t task, int override)
+static const char *
+task_trend_calc (int holes_a, int warns_a, int infos_a, int holes_b,
+                 int warns_b, int infos_b)
 {
-  report_t last_report, second_last_report;
-  int holes_a, warns_a, infos_a, logs_a, threat_a, false_positives_a;
-  int holes_b, warns_b, infos_b, logs_b, threat_b, false_positives_b;
+  int threat_a, threat_b;
 
-  /* Ensure there are enough reports. */
-
-  if (task_finished_report_count (task) <= 1)
-    return "";
-
-  /* Skip running tasks. */
-
-  if (task_run_status (task) == TASK_STATUS_RUNNING)
-    return "";
-
-  /* Get details of last report. */
-
-  task_last_report (task, &last_report);
-  if (last_report == 0)
-    return "";
-
-  /* Count the logs and false positives too, as report_counts_id is faster
-   * with all five. */
-  if (report_counts_id (last_report, NULL, &holes_a, &infos_a, &logs_a, &warns_a,
-                        &false_positives_a, override, NULL, 0))
-    /** @todo Either fail better or abort at SQL level. */
-    abort ();
+  /* Calculate trend. */
 
   if (holes_a > 0)
     threat_a = 4;
@@ -22126,19 +22104,6 @@ task_trend (task_t task, int override)
     threat_a = 2;
   else
     threat_a = 1;
-
-  /* Get details of second last report. */
-
-  task_second_last_report (task, &second_last_report);
-  if (second_last_report == 0)
-    return "";
-
-  /* Count the logs and false positives too, as report_counts_id is faster
-   * with all five. */
-  if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, &logs_b,
-                        &warns_b, &false_positives_b, override, NULL, 0))
-    /** @todo Either fail better or abort at SQL level. */
-    abort ();
 
   if (holes_b > 0)
     threat_b = 4;
@@ -22187,6 +22152,86 @@ task_trend (task_t task, int override)
     }
 
   return "same";
+}
+
+/**
+ * @brief Return the trend of a task, given counts.
+ *
+ * @param[in]  task      Task.
+ * @param[in]  override  Whether to override the threat.
+ *
+ * @return "up", "down", "more", "less", "same" or if too few reports "".
+ */
+const char *
+task_trend_counts (task_t task, int holes_a, int warns_a, int infos_a,
+                   int holes_b, int warns_b, int infos_b)
+{
+  /* Ensure there are enough reports. */
+
+  if (task_finished_report_count (task) <= 1)
+    return "";
+
+  /* Skip running tasks. */
+
+  if (task_run_status (task) == TASK_STATUS_RUNNING)
+    return "";
+
+  return task_trend_calc (holes_a, warns_a, infos_a, holes_b, warns_b, infos_b);
+}
+
+/**
+ * @brief Return the trend of a task.
+ *
+ * @param[in]  task      Task.
+ * @param[in]  override  Whether to override the threat.
+ *
+ * @return "up", "down", "more", "less", "same" or if too few reports "".
+ */
+const char *
+task_trend (task_t task, int override)
+{
+  report_t last_report, second_last_report;
+  int holes_a, warns_a, infos_a, logs_a, false_positives_a;
+  int holes_b, warns_b, infos_b, logs_b, false_positives_b;
+
+  /* Ensure there are enough reports. */
+
+  if (task_finished_report_count (task) <= 1)
+    return "";
+
+  /* Skip running tasks. */
+
+  if (task_run_status (task) == TASK_STATUS_RUNNING)
+    return "";
+
+  /* Get details of last report. */
+
+  task_last_report (task, &last_report);
+  if (last_report == 0)
+    return "";
+
+  /* Count the logs and false positives too, as report_counts_id is faster
+   * with all five. */
+  if (report_counts_id (last_report, NULL, &holes_a, &infos_a, &logs_a, &warns_a,
+                        &false_positives_a, override, NULL, 0))
+    /** @todo Either fail better or abort at SQL level. */
+    abort ();
+
+  /* Get details of second last report. */
+
+  task_second_last_report (task, &second_last_report);
+  if (second_last_report == 0)
+    return "";
+
+  /* Count the logs and false positives too, as report_counts_id is faster
+   * with all five. */
+  if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, &logs_b,
+                        &warns_b, &false_positives_b, override, NULL, 0))
+    /** @todo Either fail better or abort at SQL level. */
+    abort ();
+
+  return task_trend_calc (holes_a, warns_a, infos_a, holes_b, warns_b,
+                          infos_b);
 }
 
 /**

@@ -17910,6 +17910,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     schedule_t schedule;
                     time_t next_time;
                     int debugs, holes, infos, logs, warnings;
+                    int holes_2, infos_2, warnings_2;
                     int false_positives;
 
                     /** @todo Buffer entire response so respond with error.
@@ -17934,6 +17935,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       {
                         gchar *timestamp;
 
+                        // TODO Could skip this count for tasks page.
                         if (report_counts (first_report_id,
                                            &debugs, &holes, &infos, &logs,
                                            &warnings, &false_positives,
@@ -17984,8 +17986,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         if (((first_report_id == NULL)
                              || (strcmp (second_last_report_id, first_report_id)))
                             && report_counts (second_last_report_id,
-                                              &debugs, &holes, &infos, &logs,
-                                              &warnings, &false_positives,
+                                              &debugs, &holes_2, &infos_2,
+                                              &logs, &warnings_2,
+                                              &false_positives,
                                               get_tasks_data->apply_overrides,
                                               0))
                           /** @todo Either fail better or abort at SQL level. */
@@ -18013,10 +18016,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                second_last_report_id,
                                                timestamp,
                                                debugs,
-                                               holes,
-                                               infos,
+                                               holes_2,
+                                               infos_2,
                                                logs,
-                                               warnings,
+                                               warnings_2,
                                                false_positives);
                         g_free (timestamp);
                       }
@@ -18275,9 +18278,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               description64,
                               task_report_count (index),
                               task_finished_report_count (index),
-                              task_trend
-                               (index,
-                                get_tasks_data->apply_overrides),
+                              task_trend_counts
+                               (task, holes, warnings, infos,
+                                holes_2, warnings_2, infos_2),
                               task_schedule_uuid,
                               task_schedule_name,
                               (next_time == 0

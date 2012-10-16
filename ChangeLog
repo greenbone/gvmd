@@ -1,3 +1,14 @@
+2012-10-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (task_trend_calc, task_trend_counts): New functions.
+	(task_trend): Call task_trend_calc.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): For the brief GET_TASKS
+	version call task_trend_counts to get the trend, in order to save
+	some counting.
+
 2012-10-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Fixed a wrong path.
@@ -6,7 +17,7 @@
 
 	Expand get_info for multiple info elements and implement iteratable CPE info
 
-	* src/manage_sql.c (count, get_target_iterator): Add owned parameter 
+	* src/manage_sql.c (count, get_target_iterator): Add owned parameter
 	to allow handling types without owner. Update callers.
 	(cpe_info_count): New. Count info elements of type cpe
 	(init_cpe_info_iterator): New. Initialize a get iterator for info of type
