@@ -17937,8 +17937,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         // TODO Could skip this count for tasks page.
                         if (report_counts (first_report_id,
-                                           &debugs, &holes, &infos, &logs,
-                                           &warnings, &false_positives,
+                                           &debugs, &holes_2, &infos_2, &logs,
+                                           &warnings_2, &false_positives,
                                            get_tasks_data->apply_overrides,
                                            0))
                           /** @todo Either fail better or abort at SQL level. */
@@ -17968,10 +17968,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                         first_report_id,
                                                         timestamp,
                                                         debugs,
-                                                        holes,
-                                                        infos,
+                                                        holes_2,
+                                                        infos_2,
                                                         logs,
-                                                        warnings,
+                                                        warnings_2,
                                                         false_positives);
                         g_free (timestamp);
                       }
@@ -18031,19 +18031,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       {
                         gchar *timestamp;
 
-                        if (((first_report_id == NULL)
-                             || (second_last_report_id == NULL)
-                             || (strcmp (last_report_id, first_report_id)
-                                 && strcmp (last_report_id,
-                                            second_last_report_id)))
-                            && (report_counts
+                        if ((first_report_id == NULL)
+                            || (second_last_report_id == NULL)
+                            || (strcmp (last_report_id, first_report_id)
+                                && strcmp (last_report_id,
+                                           second_last_report_id)))
+                          {
+                            if (report_counts
                                  (last_report_id,
                                   &debugs, &holes, &infos, &logs,
                                   &warnings, &false_positives,
                                   get_tasks_data->apply_overrides,
-                                  0)))
-                          /** @todo Either fail better or abort at SQL level. */
-                          abort ();
+                                  0))
+                              /** @todo Either fail better or abort at SQL level. */
+                              abort ();
+                          }
+                        else
+                          {
+                            holes = holes_2;
+                            infos = infos_2;
+                            warnings = warnings_2;
+                          }
 
                         if (report_timestamp (last_report_id, &timestamp))
                           abort ();
@@ -18279,7 +18287,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               task_report_count (index),
                               task_finished_report_count (index),
                               task_trend_counts
-                               (task, holes, warnings, infos,
+                               (index, holes, warnings, infos,
                                 holes_2, warnings_2, infos_2),
                               task_schedule_uuid,
                               task_schedule_name,

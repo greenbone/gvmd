@@ -1,3 +1,10 @@
+2012-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In the brief GET_TASKS case
+	take into account that the count for the older report will be reused
+	when there are only one or two reports, and correct the name of the
+	task variable passed to task_trend_counts.
+
 2012-10-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_trend_calc, task_trend_counts): New functions.
