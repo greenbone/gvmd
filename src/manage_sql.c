@@ -1297,7 +1297,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE INDEX IF NOT EXISTS report_results_by_report ON report_results (report);");
   sql ("CREATE INDEX IF NOT EXISTS report_results_by_result ON report_results (result);");
-  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress, slave_task_uuid);");
+  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress, slave_task_uuid, highs, mediums, lows, logs, fps, override_highs, override_mediums, override_lows, override_logs, override_fps);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
   sql ("CREATE INDEX IF NOT EXISTS results_by_host ON results (host);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_task ON results (task);");
@@ -6031,6 +6031,52 @@ migrate_60_to_61 ()
 }
 
 /**
+ * @brief Migrate the database from version 61 to version 62.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_61_to_62 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 61. */
+
+  if (manage_db_version () != 61)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* The reports table got count cache columns. */
+
+  sql ("ALTER TABLE reports ADD COLUMN highs;");
+  sql ("ALTER TABLE reports ADD COLUMN mediums;");
+  sql ("ALTER TABLE reports ADD COLUMN lows;");
+  sql ("ALTER TABLE reports ADD COLUMN logs;");
+  sql ("ALTER TABLE reports ADD COLUMN fps;");
+  sql ("ALTER TABLE reports ADD COLUMN override_highs;");
+  sql ("ALTER TABLE reports ADD COLUMN override_mediums;");
+  sql ("ALTER TABLE reports ADD COLUMN override_lows;");
+  sql ("ALTER TABLE reports ADD COLUMN override_logs;");
+  sql ("ALTER TABLE reports ADD COLUMN override_fps;");
+
+  sql ("UPDATE reports SET highs = -1, override_highs = -1;");
+
+  /* Set the database version to 62. */
+
+  set_db_version (62);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -6096,6 +6142,7 @@ static migrator_t database_migrators[]
     {59, migrate_58_to_59},
     {60, migrate_59_to_60},
     {61, migrate_60_to_61},
+    {62, migrate_61_to_62},
     /* End marker. */
     {-1, NULL}};
 
@@ -10595,11 +10642,11 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
         {
           sql ("INSERT into reports (uuid, owner, hidden, task, comment,"
                " start_time, end_time, scan_run_status, slave_progress,"
-               " slave_task_uuid)"
+               " slave_task_uuid, highs, override_highs)"
                " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', NULL, 1, %llu,"
                " 'This is an example report for the help pages.',"
                " 1251236905, 1251237136,"
-               " %u, 0, '');",
+               " %u, 0, '', -1, -1);",
                task,
                TASK_STATUS_DONE);
           report = sqlite3_last_insert_rowid (task_db);
@@ -13243,6 +13290,35 @@ prognostic_report_result_count (report_host_t report_host,
 /* Reports. */
 
 /**
+ * @brief Clear cached report count.
+ *
+ * @param[in]  override  Flag for override or regular case.
+ */
+void
+reports_clear_count_cache (int override)
+{
+  if (override)
+    sql ("UPDATE reports SET override_highs = -1;");
+  else
+    sql ("UPDATE reports SET highs = -1;");
+}
+
+/**
+ * @brief Cached report counts.
+ *
+ * @param[in]  report  Report.
+ */
+void
+report_cache_counts (report_t report)
+{
+  int debugs, holes, infos, logs, warnings, false_positives;
+  report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
+                    &false_positives, 0, NULL, 0);
+  report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
+                    &false_positives, 0, NULL, 0);
+}
+
+/**
  * @brief Make a report.
  *
  * @param[in]  task    The task associated with the report.
@@ -13259,10 +13335,11 @@ make_report (task_t task, const char* uuid, task_status_t status)
   assert (current_credentials.uuid);
 
   sql ("INSERT into reports (uuid, owner, hidden, task, date, nbefile, comment,"
-       " scan_run_status, slave_progress, slave_task_uuid)"
+       " scan_run_status, slave_progress, slave_task_uuid, highs,"
+       " override_highs)"
        " VALUES ('%s',"
        " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       " 0, %llu, %i, '', '', %u, 0, '');",
+       " 0, %llu, %i, '', '', %u, 0, '', -1, -1);",
        uuid, current_credentials.uuid, task, time (NULL), status);
   report = sqlite3_last_insert_rowid (task_db);
   return report;
@@ -15499,6 +15576,8 @@ set_scan_end_time_otp (report_t report, const char* timestamp)
   else
     sql ("UPDATE reports SET end_time = NULL WHERE ROWID = %llu;",
          report);
+
+  report_cache_counts (report);
 }
 
 /**
@@ -16794,6 +16873,70 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 
   if (holes && infos && logs && warnings && false_positives)
     {
+      if (autofp == 0 && host == NULL && filtered_holes == NULL
+          && filtered_infos == NULL && filtered_logs == NULL
+          && filtered_warnings == NULL && filtered_false_positives == NULL)
+        {
+          /* Try get from cache. */
+
+          if (override)
+            {
+              *holes = sql_int (0, 0,
+                                "SELECT override_highs FROM reports"
+                                " WHERE ROWID = %llu",
+                                report);
+              if (*holes >= 0)
+                {
+                  *warnings = sql_int (0, 0,
+                                       "SELECT override_mediums FROM reports"
+                                       " WHERE ROWID = %llu",
+                                       report);
+                  *infos = sql_int (0, 0,
+                                    "SELECT override_lows FROM reports"
+                                    " WHERE ROWID = %llu",
+                                    report);
+                  *logs = sql_int (0, 0,
+                                   "SELECT override_logs FROM reports"
+                                   " WHERE ROWID = %llu",
+                                   report);
+                  *false_positives = sql_int (0, 0,
+                                              "SELECT override_fps FROM reports"
+                                              " WHERE ROWID = %llu",
+                                              report);
+                  return 0;
+                }
+            }
+          else
+            {
+              *holes = sql_int (0, 0,
+                                "SELECT highs FROM reports"
+                                " WHERE ROWID = %llu",
+                                report);
+              if (*holes >= 0)
+                {
+                  *warnings = sql_int (0, 0,
+                                       "SELECT mediums FROM reports"
+                                       " WHERE ROWID = %llu",
+                                       report);
+                  *infos = sql_int (0, 0,
+                                    "SELECT lows FROM reports"
+                                    " WHERE ROWID = %llu",
+                                    report);
+                  *logs = sql_int (0, 0,
+                                   "SELECT logs FROM reports"
+                                   " WHERE ROWID = %llu",
+                                   report);
+                  *false_positives = sql_int (0, 0,
+                                              "SELECT fps FROM reports"
+                                              " WHERE ROWID = %llu",
+                                              report);
+                  return 0;
+                }
+            }
+        }
+
+      /* Recalculate. */
+
       if (override
           && sql_int (0, 0,
                       "SELECT count(*)"
@@ -16811,7 +16954,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 
           sqlite3_stmt *stmt, *full_stmt;
           gchar *select, *quoted_host;
-          int ret;
+          int ret, status;
 
           /* Prepare quick inner statement. */
 
@@ -17211,6 +17354,26 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
           cleanup_iterator (&results);
           sqlite3_finalize (stmt);
 
+          report_scan_run_status (report, &status);
+
+          if (autofp == 0 && host == NULL && status == TASK_STATUS_DONE)
+            {
+              /* Cache results. */
+              if (override)
+                sql ("UPDATE reports SET override_highs = %i,"
+                     " override_mediums = %i, override_lows = %i,"
+                     " override_logs = %i, override_fps = %i"
+                     " WHERE ROWID = %llu;",
+                     *holes, *warnings, *infos, *logs, *false_positives,
+                     report);
+              else
+                sql ("UPDATE reports SET highs = %i, mediums = %i, lows = %i,"
+                     " logs = %i, fps = %i"
+                     " WHERE ROWID = %llu;",
+                     *holes, *warnings, *infos, *logs, *false_positives,
+                     report);
+            }
+
           return 0;
         }
     }
@@ -17222,6 +17385,31 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
   if (logs) *logs = report_count (report, "Log Message", override, host);
   if (warnings)
     *warnings = report_count (report, "Security Warning", override, host);
+
+  if (holes && infos && logs && warnings && false_positives
+      && host == NULL)
+    {
+      int status;
+
+      report_scan_run_status (report, &status);
+      if (status == TASK_STATUS_DONE)
+        {
+          /* Cache results. */
+          if (override)
+            sql ("UPDATE reports SET override_highs = %i,"
+                 " override_mediums = %i, override_lows = %i,"
+                 " override_logs = %i, override_fps = %i"
+                 " WHERE ROWID = %llu;",
+                 *holes, *warnings, *infos, *logs, *false_positives,
+                 report);
+          else
+            sql ("UPDATE reports SET highs = %i, mediums = %i, lows = %i,"
+                 " logs = %i, fps = %i"
+                 " WHERE ROWID = %llu;",
+                 *holes, *warnings, *infos, *logs, *false_positives,
+                 report);
+        }
+    }
 
   if (filtered_false_positives)
     *filtered_false_positives
@@ -34436,6 +34624,8 @@ create_override (const char* active, const char* nvt, const char* text,
   if (override)
     *override = sqlite3_last_insert_rowid (task_db);
 
+  reports_clear_count_cache (1);
+
   return 0;
 }
 
@@ -34581,6 +34771,8 @@ modify_override (override_t override, const char *active, const char* text,
   g_free (quoted_port);
   g_free (quoted_threat);
   g_free (quoted_new_threat);
+
+  reports_clear_count_cache (1);
 
   return 0;
 }

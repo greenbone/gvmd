@@ -302,7 +302,17 @@ CREATE TABLE reports (
 	comment text,
 	scan_run_status integer,
 	slave_progress text,
-	slave_task_uuid text);
+	slave_task_uuid text,
+	highs integer,
+	mediums integer,
+	lows integer,
+	logs integer,
+	fps integer,
+	override_highs integer,
+	override_mediums integer,
+	override_lows integer,
+	override_logs integer,
+	override_fps integer);
 
 CREATE TABLE report_format_params (
 	id integer PRIMARY KEY,

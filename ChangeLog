@@ -1,5 +1,27 @@
 2012-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add simple report count caching.  Hence increase database version to 62.
+	Add database migration from version 61 to 62.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 62.
+
+	* src/manage_sql.c (create_tables): Add cache columns to reports.
+	(migrate_61_to_62): New function.
+	(migrators): Add migrate_61_to_62.
+	(init_manage, make_report): Init report cache columns.
+	(reports_clear_count_cache, report_cache_counts): New functions.
+	(set_scan_end_time_otp): Cache report counts.
+	(report_counts_id_filt): In the "all" case try to read the counts from
+	the cache, and store counts in cache after counting.
+	(create_override, modify_override): Clear cached override counts in
+	report.
+
+	* doc/db_postgres.sql (reports): Add cache fields.
+
+	* doc/db.png: Update from source.
+
+2012-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In the brief GET_TASKS case
 	take into account that the count for the older report will be reused
 	when there are only one or two reports, and correct the name of the
