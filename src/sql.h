@@ -52,6 +52,9 @@ sql_quiet (char * sql, ...);
 int
 sql_x (unsigned int, unsigned int, char *, va_list, sqlite3_stmt **);
 
+double
+sql_double (unsigned int, unsigned int, char* sql, ...);
+
 int
 sql_int (unsigned int, unsigned int, char *, ...);
 
@@ -88,8 +91,14 @@ sql_rename_column (const char *, const char *, const char *, const char *);
 void
 sql_common_cve (sqlite3_context *, int argc, sqlite3_value **);
 
+sqlite3_stmt *
+sql_prepare (const char* sql, ...);
+
 
 /* Iterators. */
+
+void
+init_prepared_iterator (iterator_t*, sqlite3_stmt*);
 
 void
 init_iterator (iterator_t*, const char*, ...);

@@ -202,6 +202,7 @@ typedef struct
 {
   sqlite3_stmt* stmt;        ///< SQL statement.
   gboolean done;             ///< End flag.
+  int prepared;              ///< Prepared flag.
 } iterator_t;
 
 

@@ -1,5 +1,26 @@
 2012-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.h (iterator_t): Add prepared flag.
+
+	* src/sql.c (sql_double, sql_prepare, init_prepared_iterator): New
+	functions.
+	(init_iterator): Clear prepared flag.
+	(cleanup_iterator): Skip finalize if prepared.
+
+	* src/sql.h: Add headers accordingly.
+
+	* src/manage_sql.c (cpe_highest_cvss): New function.
+	(init_prognosis_iterator): Prepare the iterator statement once per
+	process instead of every time.
+	(prognosis_where_search_phrase, init_host_prognosis_iterator): Comment
+	out cves.description for now.
+	(print_report_xml): Only print the CVEs of the App when the details flag
+	is given.  Get the highest CVSS of a CVE from the SCAP db instead of
+	computing it.  These two combine to make the GSA Host Assets Table much
+	faster.  Print the host prognosis once instead of for every detail.
+
+2012-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-scapdata-sync (SQLITE): New variable.  Replace all calls
 	to sqlite3 with this, to override the users header config.
 	(update_sec_db): Quotes variables in condition for empty string test.

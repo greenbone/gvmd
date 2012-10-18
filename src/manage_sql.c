@@ -12985,6 +12985,30 @@ detect_cleanup:
 /* Prognostics. */
 
 /**
+ * @brief Return highest CVE for an App.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  cpe       CPE.
+ */
+double
+cpe_highest_cvss (const char *cpe)
+{
+  int highest;
+  gchar *quoted_cpe;
+  quoted_cpe = sql_quote (cpe);
+  highest = sql_double (0, 0,
+                        "SELECT"
+                        " (CASE WHEN (SELECT ROWID FROM cpes WHERE name = '%s')"
+                        "  THEN (SELECT max_cvss FROM cpes WHERE name = '%s')"
+                        "  ELSE -1"
+                        "  END);",
+                        quoted_cpe,
+                        quoted_cpe);
+  g_free (quoted_cpe);
+  return highest;
+}
+
+/**
  * @brief Initialise a prognosis iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -12993,17 +13017,36 @@ detect_cleanup:
 void
 init_prognosis_iterator (iterator_t *iterator, const char *cpe)
 {
-  gchar *quoted_cpe;
-  quoted_cpe = sql_quote (cpe);
-  init_iterator (iterator,
-                 "SELECT cves.cve, cves.cvss, cves.description, cpes.name"
-                 " FROM scap.cves, scap.cpes, scap.affected_products"
-                 " WHERE cpes.name='%s'"
-                 " AND cpes.id=affected_products.cpe"
-                 " AND cves.id=affected_products.cve"
-                 " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
-                 quoted_cpe);
-  g_free (quoted_cpe);
+  static sqlite3_stmt* stmt = NULL;
+
+  if (stmt == NULL)
+    stmt = sql_prepare ("SELECT cves.name, cves.cvss, \"cves.description\","
+                        "       cpes.name"
+                        " FROM scap.cves, scap.cpes, scap.affected_products"
+                        " WHERE cpes.name=$cpe"
+                        " AND cpes.id=affected_products.cpe"
+                        " AND cves.id=affected_products.cve"
+                        " ORDER BY CAST (cves.cvss AS INTEGER) DESC;");
+  else
+    {
+      sqlite3_clear_bindings (stmt);
+      sqlite3_reset (stmt);
+    }
+
+  init_prepared_iterator (iterator, stmt);
+
+  /* Bind iterator. */
+  while (1)
+    {
+      int ret;
+      ret = sqlite3_bind_text (stmt, 1, cpe, -1, SQLITE_TRANSIENT);
+      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_OK) break;
+      g_warning ("%s: sqlite3_bind failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
 }
 
 DEF_ACCESS (prognosis_iterator_cve, 0);
@@ -13061,10 +13104,10 @@ prognosis_where_search_phrase (const char* search_phrase)
       quoted_search_phrase = sql_quote (search_phrase);
       phrase_sql = g_string_new ("");
       g_string_append_printf (phrase_sql,
-                              " AND (cves.description LIKE '%%%%%s%%%%'"
-                              " OR cves.cve LIKE '%%%%%s%%%%'"
+                              " AND (" /* cves.description LIKE '%%%%%s%%%%'" */
+                              /* " OR */ "cves.cve LIKE '%%%%%s%%%%'"
                               " OR cpes.name LIKE '%%%%%s%%%%')",
-                              quoted_search_phrase,
+                              //quoted_search_phrase,
                               quoted_search_phrase,
                               quoted_search_phrase);
       g_free (quoted_search_phrase);
@@ -13181,7 +13224,7 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
   cvss_sql = prognosis_where_cvss_base (min_cvss_base);
 
   init_iterator (iterator,
-                 "SELECT cves.cve, cves.cvss, cves.description, cpes.name"
+                 "SELECT cves.name, cves.cvss, \"cves.description\", cpes.name"
                  " FROM scap.cves, scap.cpes, scap.affected_products,"
                  "      report_host_details"
                  " WHERE report_host_details.report_host = %llu"
@@ -19492,6 +19535,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         }
       else
         {
+          // TODO Slow (about 30% of assets page).
           init_asset_iterator (&hosts, first_result, max_results, levels,
                                search_phrase, apply_overrides);
           PRINT (out,
@@ -19500,6 +19544,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                  "<filtered>%i</filtered>"
                  "</host_count>",
                  host_count (),
+                 // TODO Slow (about 30% of assets page).
                  filtered_host_count (levels, search_phrase, apply_overrides));
           PRINT (out,
                  "<hosts start=\"%i\" max=\"%i\"/>",
@@ -19536,6 +19581,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   iterator_t details;
                   report_t report;
                   int holes, infos, logs, warnings, false_positives;
+                  double highest_cvss;
 
                   PRINT (out,
                          "<host>"
@@ -19612,11 +19658,13 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                          "</detail>",
                          infos);
 
+                  /* Print all the host details. */
+
+                  highest_cvss = -1;
                   init_report_host_details_iterator
                    (&details, report_host);
                   while (next (&details))
                     {
-                      double highest_cvss;
                       const char *value;
                       value = report_host_details_iterator_value (&details);
 
@@ -19636,8 +19684,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                              report_host_details_iterator_source_name (&details),
                              report_host_details_iterator_source_desc (&details));
 
-                      highest_cvss = -1;
                       if (scap_loaded
+                          && get->details
                           && (strcmp (report_host_details_iterator_name
                                        (&details),
                                       "App")
@@ -19646,6 +19694,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                           iterator_t prognosis;
                           double cvss;
                           int first;
+
+                          /* Print details of all CVEs on the App. */
 
                           first = 1;
                           cvss = -1;
@@ -19656,8 +19706,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                 {
                                   cvss = prognosis_iterator_cvss_double
                                           (&prognosis);
-                                  if (cvss > highest_cvss)
-                                    highest_cvss = cvss;
                                   first = 0;
                                 }
 
@@ -19676,6 +19724,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                      prognosis_iterator_cve (&prognosis),
                                      prognosis_iterator_cvss (&prognosis));
                             }
+
+                          /* Print App prognosis, according to highest CVSS. */
+
                           if (cvss >= 0)
                             PRINT (out,
                                    "<detail>"
@@ -19686,16 +19737,32 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                    cvss_threat (cvss));
                           cleanup_iterator (&prognosis);
                         }
-                      if (highest_cvss >= 0)
-                        PRINT (out,
-                               "<detail>"
-                               "<name>prognosis</name>"
-                               "<value>%s</value>"
-                               "</detail>",
-                               cvss_threat (highest_cvss));
-                    }
 
+                      if (scap_loaded
+                          && (strcmp (report_host_details_iterator_name
+                                       (&details),
+                                      "App")
+                              == 0))
+                        {
+                          int highest;
+                          /* Check if this App's CVSS is the highest CVSS for
+                           * this host. */
+                          highest = cpe_highest_cvss (value);
+                          if (highest > highest_cvss)
+                            highest_cvss = highest;
+                        }
+                    }
                   cleanup_iterator (&details);
+
+                  /* Print prognosis of host, according to highest CVSS. */
+
+                  if (highest_cvss >= 0)
+                    PRINT (out,
+                           "<detail>"
+                           "<name>prognosis</name>"
+                           "<value>%s</value>"
+                           "</detail>",
+                           cvss_threat (highest_cvss));
 
                   PRINT (out,
                          "<detail>"

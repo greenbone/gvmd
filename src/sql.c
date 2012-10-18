@@ -348,6 +348,42 @@ sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
 }
 
 /**
+ * @brief Get a particular cell from a SQL query, as a double.
+ *
+ * @warning Aborts on invalid queries.
+ *
+ * @warning Aborts when the query returns fewer rows than \p row.  The
+ *          caller must ensure that the query will return sufficient rows.
+ *
+ * @param[in]  col    Column.
+ * @param[in]  row    Row.
+ * @param[in]  sql    Format string for SQL query.
+ * @param[in]  ...    Arguments for format string.
+ *
+ * @return Result of the query as an integer.
+ */
+double
+sql_double (unsigned int col, unsigned int row, char* sql, ...)
+{
+  sqlite3_stmt* stmt;
+  va_list args;
+  double ret;
+
+  int sql_x_ret;
+  va_start (args, sql);
+  sql_x_ret = sql_x (col, row, sql, args, &stmt);
+  va_end (args);
+  if (sql_x_ret)
+    {
+      sqlite3_finalize (stmt);
+      abort ();
+    }
+  ret = sqlite3_column_double (stmt, col);
+  sqlite3_finalize (stmt);
+  return ret;
+}
+
+/**
  * @brief Get a particular cell from a SQL query, as an int.
  *
  * @warning Aborts on invalid queries.
@@ -840,6 +876,70 @@ sql_common_cve (sqlite3_context *context, int argc, sqlite3_value** argv)
 /* Iterators. */
 
 /**
+ * @brief Prepare a statement.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  sql       Format string for SQL.
+ */
+sqlite3_stmt *
+sql_prepare (const char* sql, ...)
+{
+  int ret;
+  const char* tail;
+  sqlite3_stmt* stmt;
+  va_list args;
+  gchar* formatted;
+
+  va_start (args, sql);
+  formatted = g_strdup_vprintf (sql, args);
+  va_end (args);
+
+  tracef ("   sql: %s\n", formatted);
+
+  stmt = NULL;
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+
+  tracef ("   prepared as: %p\n", stmt);
+
+  return stmt;
+}
+
+/**
+ * @brief Initialise an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  sql       Format string for SQL.
+ */
+void
+init_prepared_iterator (iterator_t* iterator, sqlite3_stmt* stmt)
+{
+  iterator->done = FALSE;
+  iterator->stmt = stmt;
+  iterator->prepared = 1;
+  tracef ("   sql: init prepared %p\n", stmt);
+}
+
+/**
  * @brief Initialise an iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -861,6 +961,7 @@ init_iterator (iterator_t* iterator, const char* sql, ...)
   tracef ("   sql: %s\n", formatted);
 
   iterator->done = FALSE;
+  iterator->prepared = 0;
   while (1)
     {
       ret = sqlite3_prepare (task_db, formatted, -1, &stmt, &tail);
@@ -952,7 +1053,8 @@ iterator_column_count (iterator_t* iterator)
 void
 cleanup_iterator (iterator_t* iterator)
 {
-  sqlite3_finalize (iterator->stmt);
+  if (iterator->prepared == 0)
+    sqlite3_finalize (iterator->stmt);
 }
 
 /**
