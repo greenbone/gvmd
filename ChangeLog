@@ -1,3 +1,10 @@
+2012-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/openvas-scapdata-sync (SQLITE): New variable.  Replace all calls
+	to sqlite3 with this, to override the users header config.
+	(update_sec_db): Quotes variables in condition for empty string test.
+	Replace log_write with echo, log_write is for greenbone-scapdata-sync.
+
 2012-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add simple report count caching.  Hence increase database version to 62.

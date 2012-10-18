@@ -94,6 +94,7 @@ CMD_RSYNC=`which rsync`
 CMD_WGET=`which wget`
 CMD_CURL=`which curl`
 CMD_SQLITE=`which sqlite3`
+SQLITE="sqlite3 -noheader"
 TMP_SCAP="$SYNC_TMP_DIR/openvas-feed-`date +%F`-$$.tar.bz2"
 
 chk_system_tools () {
@@ -205,11 +206,11 @@ migrate_0_to_1 () {
   echo "[i] Major change in internal SCAP data structures."
   echo "[i] Reinitialization of database necessary."
   echo "[i] This update might take a while.."
-  sqlite3 $SEC_DB < $RES_DIR/db_init.sql
+  $SQLITE $SEC_DB < $RES_DIR/db_init.sql
 }
 
 check_db_version () {
-  DB_VERSION=`sqlite3 $SEC_DB "select value from meta where name = 'version';" 2>/dev/null || echo 0`
+  DB_VERSION=`$SQLITE $SEC_DB "select value from meta where name = 'version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
     0) migrate_0_to_1 ;;
   esac
@@ -219,22 +220,22 @@ update_sec_db () {
   if [ ! -f $SEC_DB ]
   then
     echo "[i] Initializing scap database"
-    sqlite3 $SEC_DB < $RES_DIR/db_init.sql
+    $SQLITE $SEC_DB < $RES_DIR/db_init.sql
     DB_LASTUPDATE=0
     REFDATE=0
   else
     check_db_version
-    REFDATE=`sqlite3 $SEC_DB "select max(modification_time) from cves;" | sed -e 's/T.*//' | tr -d "-"`
+    REFDATE=`$SQLITE $SEC_DB "select max(modification_time) from cves;" | sed -e 's/T.*//' | tr -d "-"`
   fi
 
-  DB_LASTUPDATE=`sqlite3 $SEC_DB "select value from meta where name = 'last_update';"`
+  DB_LASTUPDATE=`$SQLITE $SEC_DB "select value from meta where name = 'last_update';"`
 
-  if [ -z $REFDATE ] || [ -z $DB_LASTUPDATE ]
+  if [ -z "$REFDATE" ] || [ -z "$DB_LASTUPDATE" ]
   then
     # Happens when initial sync was aborted
-    log_write "Error: Inconsistent data. Resetting SCAP database."
+    echo "Error: Inconsistent data. Resetting SCAP database."
     rm -f $SEC_DB
-    sqlite3 $SEC_DB < $SCAP_RES/db_init.sql
+    $SQLITE $SEC_DB < $RES_DIR/db_init.sql
     REFDATE=0
     DB_LASTUPDATE=0
   fi
@@ -248,7 +249,7 @@ update_sec_db () {
       sed 's/&/&amp;/g' $CPEBASE | \
         xsltproc --stringparam refdate $REFDATE $RES_DIR/cpe_youngerthan.xsl - | \
         xsltproc $RES_DIR/cpe_update.xsl - | \
-        sqlite3 $SEC_DB
+        $SQLITE $SEC_DB
     else
       echo "[i] Skipping CPEs, file is older than last revision"
     fi
@@ -261,12 +262,12 @@ update_sec_db () {
       echo "[i] Updating $cvefile"
       xsltproc --stringparam refdate $REFDATE $RES_DIR/cve_youngerthan.xsl $cvefile | \
         xsltproc $RES_DIR/cve_update.xsl - | \
-        sqlite3 $SEC_DB
+        $SQLITE $SEC_DB
     else
       echo "[i] Skipping $cvefile, file is older than last revision"
     fi
   done
-  sqlite3 $SEC_DB "update meta set value ='`date +%s`' where name = 'last_update';"
+  $SQLITE $SEC_DB "update meta set value ='`date +%s`' where name = 'last_update';"
 }
 
 if [ -n "$1" ]; then
