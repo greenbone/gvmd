@@ -28,9 +28,10 @@
 DROP TABLE IF EXISTS cves;
 DROP TABLE IF EXISTS cpes;
 DROP TABLE IF EXISTS affected_products;
+DROP TABLE IF EXISTS meta;
 
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "1");
+INSERT INTO meta (name, value) VALUES ("database_version", "2");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
 CREATE TABLE cves (
@@ -38,6 +39,7 @@ CREATE TABLE cves (
   uuid UNIQUE,
   name,
   comment,
+  description,
   creation_time DATE,
   modification_time DATE,
   cvss FLOAT DEFAULT 0

@@ -1,3 +1,23 @@
+2012-10-19  Andre Heinecke <aheinecke@intevation.de>
+
+	Readd description to the CVE table
+
+	* src/manage_sql.c (prognosis_where_search_phrase),
+	(init_host_prognosis_iterator): Uncomment cves.description again.
+
+	* tools/openvas-scapdata-sync.in, tools/greenbone-scapdata-sync
+	(check_db_version): Handle Version 1. Correct column name of
+	database_version.
+	(migrate_to_2): New. Just reinitializes the database.
+	(migrate_0_to_1): Removed.
+	(update_sec_db): Do not delete database if refdate is empty.
+
+	* tools/greenbone-scapdata-sync: Update script Version.
+
+	* tools/db_init.sql: Change DB version to 2.
+	(cves): Add description column.
+	* tools/cve_update.xsl (cve:entry): Insert description.
+
 2012-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.h (iterator_t): Add prepared flag.

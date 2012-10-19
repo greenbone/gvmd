@@ -25,7 +25,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20120919
+VERSION=20121019
 
 # SETTINGS
 # ========
@@ -148,16 +148,17 @@ then
   exit 1
 fi
 
-migrate_0_to_1 () {
-  log_write " Migrating database from Version 0 to 1"
+migrate_to_2 () {
+  log_write " Migrating database from Version to 2"
   rm -f $SCAP_DB
   sqlite3 $SCAP_DB < $SCAP_RES/db_init.sql
 }
 
 check_db_version () {
-  DB_VERSION=`sqlite3 $SCAP_DB "select value from meta where name = 'version';" 2>/dev/null || echo 0`
+  DB_VERSION=`sqlite3 $SCAP_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
-    0) migrate_0_to_1 ;;
+    0) migrate_to_2 ;;
+    1) migrate_to_2 ;;
   esac
 }
 
@@ -174,7 +175,12 @@ update_scap_db() {
 
   DB_LASTUPDATE=`sqlite3 $SCAP_DB "select value from meta where name = 'last_update';"`
 
-  if [ -z $REFDATE ] || [ -z $DB_LASTUPDATE ];
+  if [ -z "$REFDATE" ]
+  then
+    REFDATE=0
+  fi
+
+  if [ -z "$DB_LASTUPDATE" ];
   then
     # Happens when initial sync was aborted
     log_write "Error: Inconsistent data. Resetting SCAP database."

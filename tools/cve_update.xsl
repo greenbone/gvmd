@@ -40,12 +40,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:output method="text"/>
 
 <xsl:template match="cve:entry">
-  INSERT OR REPLACE INTO cves (uuid,name,creation_time,modification_time,cvss) VALUES (
+  INSERT OR REPLACE INTO cves (uuid,name,creation_time,modification_time,cvss,description) VALUES (
   "<xsl:value-of select="@id"/>",
   "<xsl:value-of select="@id"/>",
   "<xsl:value-of select="vuln:published-datetime"/>",
   "<xsl:value-of select="vuln:last-modified-datetime"/>",
-  "<xsl:value-of select="vuln:cvss/cvss:base_metrics/cvss:score"/>");
+  "<xsl:value-of select="vuln:cvss/cvss:base_metrics/cvss:score"/>",
+  "<xsl:value-of select="translate(vuln:summary/text(), '&quot;', '')"/>");
 
   <xsl:for-each select="vuln:vulnerable-software-list/vuln:product">
     <xsl:variable name="decoded_cpe" select='

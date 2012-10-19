@@ -202,7 +202,7 @@ do_sync () {
   fi
 }
 
-migrate_0_to_1 () {
+migrate_to_2 () {
   echo "[i] Major change in internal SCAP data structures."
   echo "[i] Reinitialization of database necessary."
   echo "[i] This update might take a while.."
@@ -210,9 +210,10 @@ migrate_0_to_1 () {
 }
 
 check_db_version () {
-  DB_VERSION=`$SQLITE $SEC_DB "select value from meta where name = 'version';" 2>/dev/null || echo 0`
+  DB_VERSION=`$SQLITE $SEC_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
-    0) migrate_0_to_1 ;;
+    0) migrate_to_2 ;;
+    1) migrate_to_2 ;;
   esac
 }
 
@@ -230,7 +231,12 @@ update_sec_db () {
 
   DB_LASTUPDATE=`$SQLITE $SEC_DB "select value from meta where name = 'last_update';"`
 
-  if [ -z "$REFDATE" ] || [ -z "$DB_LASTUPDATE" ]
+  if [ -z "$REFDATE" ]
+  then
+    REFDATE=0
+  fi
+
+  if [ -z "$DB_LASTUPDATE" ]
   then
     # Happens when initial sync was aborted
     echo "Error: Inconsistent data. Resetting SCAP database."
