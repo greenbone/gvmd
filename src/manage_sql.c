@@ -13020,7 +13020,7 @@ init_prognosis_iterator (iterator_t *iterator, const char *cpe)
   static sqlite3_stmt* stmt = NULL;
 
   if (stmt == NULL)
-    stmt = sql_prepare ("SELECT cves.name, cves.cvss, \"cves.description\","
+    stmt = sql_prepare ("SELECT cves.name, cves.cvss, cves.description,"
                         "       cpes.name"
                         " FROM scap.cves, scap.cpes, scap.affected_products"
                         " WHERE cpes.name=$cpe"
@@ -13104,10 +13104,10 @@ prognosis_where_search_phrase (const char* search_phrase)
       quoted_search_phrase = sql_quote (search_phrase);
       phrase_sql = g_string_new ("");
       g_string_append_printf (phrase_sql,
-                              " AND (" /* cves.description LIKE '%%%%%s%%%%'" */
-                              /* " OR */ "cves.cve LIKE '%%%%%s%%%%'"
+                              " AND (cves.description LIKE '%%%%%s%%%%'"
+                              " OR cves.name LIKE '%%%%%s%%%%'"
                               " OR cpes.name LIKE '%%%%%s%%%%')",
-                              //quoted_search_phrase,
+                              quoted_search_phrase,
                               quoted_search_phrase,
                               quoted_search_phrase);
       g_free (quoted_search_phrase);
@@ -13224,7 +13224,7 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
   cvss_sql = prognosis_where_cvss_base (min_cvss_base);
 
   init_iterator (iterator,
-                 "SELECT cves.name, cves.cvss, \"cves.description\", cpes.name"
+                 "SELECT cves.name, cves.cvss, cves.description, cpes.name"
                  " FROM scap.cves, scap.cpes, scap.affected_products,"
                  "      report_host_details"
                  " WHERE report_host_details.report_host = %llu"
