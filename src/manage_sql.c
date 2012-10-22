@@ -19322,7 +19322,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                  notes, overrides, first_result, max_results);
     }
 
-  levels = levels ? levels : "hmlgd";
+  levels = levels ? levels : g_strdup ("hmlgd");
 
   if (task && task_uuid (task, &tsk_uuid))
     {

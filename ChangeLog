@@ -1,5 +1,10 @@
 2012-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): Allocate levels in fallback case,
+	as it is now allocated in the filter cases.
+
+2012-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Correct command name in
 	GET_AGENTS error response.
 
