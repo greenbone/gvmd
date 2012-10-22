@@ -25912,12 +25912,14 @@ get_join (int first, int last_was_and, int last_was_not)
  * @param[in]  filter   Filter term.
  * @param[in]  columns  Columns in the SQL statement.
  * @param[out] order    If given then order clause.
+ * @param[out] trash    Whether the trash table is being queried.
  *
  * @return WHERE clause for filter if one is required, else NULL.
  */
 static gchar *
 filter_clause (const char* type, const char* filter, const char **columns,
-               gchar **order_return, int *first_return, int *max_return)
+               int trash, gchar **order_return, int *first_return,
+               int *max_return)
 {
   GString *clause, *order;
   keyword_t **point;
@@ -26001,7 +26003,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
-                                        " ORDER BY nvt ASC, notes.text ASC");
+                                        " ORDER BY nvt ASC, notes%s.text ASC",
+                                        trash ? "_trash" : "");
               first_order = 0;
             }
           else
@@ -26032,7 +26035,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
-                                        " ORDER BY nvt DESC, notes.text ASC");
+                                        " ORDER BY nvt ASC, notes%s.text ASC",
+                                        trash ? "_trash" : "");
               first_order = 0;
             }
           else
@@ -26407,7 +26411,7 @@ count (const char *type, const get_data_t *get,
     filter = NULL;
 
   clause = filter_clause (type, filter ? filter : get->filter, extra_columns,
-                          NULL, NULL, NULL);
+                          get->trash, NULL, NULL, NULL);
   if (owned)
     owned_clause = g_strdup_printf ("((owner IS NULL) OR (owner ="
                                     " (SELECT ROWID FROM users"
@@ -26518,7 +26522,7 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
     filter = NULL;
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          &order, &first, &max);
+                          get->trash, &order, &first, &max);
 
   g_free (filter);
 
@@ -26649,7 +26653,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
     filter = NULL;
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          &order, &first, &max);
+                          get->trash, &order, &first, &max);
 
   g_free (filter);
 
@@ -41608,7 +41612,8 @@ setting_count (const char *filter)
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause ("setting", filter, extra_columns, NULL, NULL, NULL);
+  clause = filter_clause ("setting", filter, extra_columns, 0, NULL, NULL,
+                          NULL);
 
   ret = sql_int (0, 0,
                  "SELECT count (*)"
@@ -41657,7 +41662,8 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
   if (max < 1)
     max = -1;
 
-  clause = filter_clause ("setting", filter, extra_columns, NULL, NULL, NULL);
+  clause = filter_clause ("setting", filter, extra_columns, 0, NULL, NULL,
+                          NULL);
 
   quoted_uuid = uuid ? sql_quote (uuid) : NULL;
 

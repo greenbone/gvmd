@@ -1,3 +1,8 @@
+2012-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Add trash arg.  Use notes_trash
+	table if set.  Update callers.
+
 2012-10-19  Andre Heinecke <aheinecke@intevation.de>
 
 	Readd description to the CVE table
