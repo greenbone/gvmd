@@ -1515,7 +1515,8 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
       if (next (&targets))
         {
           const char *hosts;
-          gchar *hosts_copy;
+          gchar *hosts_copy, *port_range;
+          omp_create_target_opts_t opts;
 
           hosts = target_iterator_hosts (&targets);
           if (hosts == NULL)
@@ -1525,14 +1526,20 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
             }
 
           hosts_copy = g_strdup (hosts);
+          port_range = target_port_range (target_iterator_target (&targets));
           cleanup_iterator (&targets);
 
-          ret = omp_create_target (&session, name, hosts_copy,
-                                   "Slave target created by Master",
-                                   slave_ssh_credential_uuid,
-                                   slave_smb_credential_uuid,
-                                   &slave_target_uuid);
+          opts = omp_create_target_opts_defaults;
+          opts.hosts = hosts_copy;
+          opts.ssh_credential_id = slave_ssh_credential_uuid;
+          opts.smb_credential_id = slave_smb_credential_uuid;
+          opts.port_range = port_range;
+          opts.name = name;
+          opts.comment = "Slave target created by Master";
+
+          ret = omp_create_target_ext (&session, opts, &slave_target_uuid);
           g_free (hosts_copy);
+          g_free (port_range);
           if (ret)
             goto fail_credential;
         }

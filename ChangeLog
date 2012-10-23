@@ -1,3 +1,10 @@
+2012-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport from trunk r14320.
+
+	* src/manage.c (run_slave_task): Create target with
+	omp_create_target_ext in order to specify port list.
+
 2012-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport from trunk r14163.
