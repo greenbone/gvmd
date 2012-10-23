@@ -954,7 +954,7 @@ manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
                                   void*),
                     int (*) (const char *, void*), void *, const char *,
                     const char *, const char *, int, const char *,
-                    const char *, int, int);
+                    const char *, int, int, const gchar *);
 
 
 /* RC's. */

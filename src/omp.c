@@ -9643,18 +9643,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        if (get_reports_data->alert_id == NULL)
-          SEND_TO_CLIENT_OR_FAIL
-           ("<get_reports_response"
-            " status=\"" STATUS_OK "\""
-            " status_text=\"" STATUS_OK_TEXT "\">");
-
         if (strcmp (get_reports_data->type, "assets") == 0)
           {
             gchar *extension, *content_type;
             int ret, pos;
 
             /* An asset report. */
+
+            if (get_reports_data->alert_id == NULL)
+              SEND_TO_CLIENT_OR_FAIL
+               ("<get_reports_response"
+                " status=\"" STATUS_OK "\""
+                " status_text=\"" STATUS_OK_TEXT "\">");
 
             content_type = report_format_content_type (report_format);
             extension = report_format_extension (report_format);
@@ -9704,7 +9704,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "assets",
                                       get_reports_data->host,
                                       pos,
-                                      NULL, NULL, 0, 0);
+                                      NULL, NULL, 0, 0, NULL);
 
             if (ret)
               {
@@ -9728,6 +9728,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             int ret, pos;
 
             /* A prognostic report. */
+
+            if (get_reports_data->alert_id == NULL)
+              SEND_TO_CLIENT_OR_FAIL
+               ("<get_reports_response"
+                " status=\"" STATUS_OK "\""
+                " status_text=\"" STATUS_OK_TEXT "\">");
 
             content_type = report_format_content_type (report_format);
             extension = report_format_extension (report_format);
@@ -9780,7 +9786,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->host_search_phrase,
                                       get_reports_data->host_levels,
                                       get_reports_data->host_first_result,
-                                      get_reports_data->host_max_results);
+                                      get_reports_data->host_max_results,
+                                      NULL);
 
             if (ret)
               {
@@ -9800,27 +9807,41 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         /* The usual scan report. */
 
+        if (request_report == 0 && get_reports_data->alert_id == NULL)
+          SEND_TO_CLIENT_OR_FAIL
+           ("<get_reports_response"
+            " status=\"" STATUS_OK "\""
+            " status_text=\"" STATUS_OK_TEXT "\">");
+
         init_report_iterator (&reports, 0, request_report);
         while (next_report (&reports, &report))
           {
             gchar *extension, *content_type;
             int ret;
+            GString *prefix;
 
+            prefix = g_string_new ("");
             content_type = report_format_content_type (report_format);
             extension = report_format_extension (report_format);
 
+            if (request_report && get_reports_data->alert_id == NULL)
+              g_string_append (prefix,
+                               "<get_reports_response"
+                               " status=\"" STATUS_OK "\""
+                               " status_text=\"" STATUS_OK_TEXT "\">");
+
             if (get_reports_data->alert_id == NULL)
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<report"
-                " type=\"scan\""
-                " id=\"%s\""
-                " format_id=\"%s\""
-                " extension=\"%s\""
-                " content_type=\"%s\">",
-                report_iterator_uuid (&reports),
-                get_reports_data->format_id,
-                extension,
-                content_type);
+              g_string_append_printf (prefix,
+                                      "<report"
+                                      " type=\"scan\""
+                                      " id=\"%s\""
+                                      " format_id=\"%s\""
+                                      " extension=\"%s\""
+                                      " content_type=\"%s\">",
+                                      report_iterator_uuid (&reports),
+                                      get_reports_data->format_id,
+                                      extension,
+                                      content_type);
 
             g_free (extension);
             g_free (content_type);
@@ -9860,7 +9881,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       write_to_client_data,
                                       get_reports_data->alert_id,
                                       get_reports_data->type,
-                                      NULL, 0, NULL, NULL, 0, 0);
+                                      NULL, 0, NULL, NULL, 0, 0, prefix->str);
+            g_string_free (prefix, TRUE);
             if (ret)
               {
                 if (get_reports_data->alert_id)
@@ -9879,7 +9901,29 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             error_send_to_client (error);
                             return;
                           }
+                        /* Close the connection with the client, as part of the
+                         * response may have been sent before the error
+                         * occurred. */
                         internal_error_send_to_client (error);
+                        if (request_report == 0)
+                          cleanup_iterator (&reports);
+                        get_reports_data_reset (get_reports_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        return;
+                        break;
+                      case 2:
+                        if (send_find_error_to_client
+                             ("get_reports",
+                              "filter",
+                              get_reports_data->get.filt_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        /* This error always occurs before anything is sent
+                         * to the client, so the connection can stay up. */
                         if (request_report == 0)
                           cleanup_iterator (&reports);
                         get_reports_data_reset (get_reports_data);
@@ -9890,6 +9934,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       case -1:
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_INTERNAL_ERROR ("get_reports"));
+                        /* Close the connection with the client, as part of the
+                         * response may have been sent before the error
+                         * occurred. */
                         internal_error_send_to_client (error);
                         if (request_report == 0)
                           cleanup_iterator (&reports);
@@ -9898,8 +9945,32 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         return;
                         break;
                     }
+                else if (ret == 2)
+                  {
+                    if (send_find_error_to_client
+                         ("get_reports",
+                          "filter",
+                          get_reports_data->get.filt_id,
+                          write_to_client,
+                          write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    /* This error always occurs before anything is sent
+                     * to the client, so the connection can stay up. */
+                    if (request_report == 0)
+                      cleanup_iterator (&reports);
+                    get_reports_data_reset (get_reports_data);
+                    set_client_state (CLIENT_AUTHENTIC);
+                    return;
+                    break;
+                  }
                 else
                   {
+                    /* Close the connection with the client, as part of the
+                     * response may have been sent before the error
+                     * occurred. */
                     internal_error_send_to_client (error);
                     if (request_report == 0)
                       cleanup_iterator (&reports);

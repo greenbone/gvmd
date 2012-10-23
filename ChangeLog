@@ -1,3 +1,19 @@
+2012-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Add prefix arg.  Print it just
+	before first part of report.  Change filter_term error to 2.  Update
+	callers.
+	(manage_send_report): Pass prefix to print_report_xml and check for 2
+	return.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_REPORTS for the
+	standard scan report when there is a single report let
+	manage_send_report handle the report heading.  This allows detection of
+	the filter_term error before anything is sent to the client, and so
+	the connection can stay open when this error occurs.
+
 2012-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml): Allocate levels in fallback case,
