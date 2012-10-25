@@ -503,7 +503,8 @@ CREATE TABLE schedules (
 	first_time date,
 	period integer,
 	period_months integer,
-	duration integer);
+	timezone text,
+	initial_offset integer);
 
 CREATE TABLE schedules_trash (
 	id integer PRIMARY KEY,

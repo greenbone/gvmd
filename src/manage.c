@@ -3347,9 +3347,15 @@ manage_schedule (int (*fork_connection) (int *,
 
             assert (first <= now);
 
+            /* In the database keep the times in UTC... */
             set_task_schedule_next_time
              (task_schedule_iterator_task (&schedules),
               first + ((((now - first) / period) + 1) * period));
+
+            /* ...but for the calculations offset for daylight saving. */
+            first += task_schedule_iterator_initial_offset (&schedules)
+                      - current_offset (task_schedule_iterator_timezone
+                                         (&schedules));
 
             /* Ensure that the task starts within the duration if it has one. */
             if (duration && (((now - first) % period) > duration))
@@ -3373,9 +3379,15 @@ manage_schedule (int (*fork_connection) (int *,
 
             assert (first <= now);
 
+            /* In the database keep the times in UTC... */
             set_task_schedule_next_time
              (task_schedule_iterator_task (&schedules),
               add_months (first, months_between (first, now) + 1));
+
+            /* ...but for the calculations offset for daylight saving. */
+            first += task_schedule_iterator_initial_offset (&schedules)
+                      - current_offset (task_schedule_iterator_timezone
+                                         (&schedules));
 
             /* Ensure that the task starts within the duration if it has one. */
             if (duration

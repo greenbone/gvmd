@@ -933,6 +933,66 @@ iso_time (time_t *epoch_time)
 }
 
 /**
+ * @brief Get the current offset from UTC of a timezone.
+ *
+ * @param[in]  zone  Timezone, or NULL for UTC.
+ *
+ * @return Seconds east of UTC.
+ */
+long
+current_offset (const char *zone)
+{
+  gchar *tz;
+  long offset;
+  time_t now;
+  struct tm *now_broken;
+
+  if (zone == NULL)
+    return 0;
+
+  /* Store current TZ. */
+  tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+  if (setenv ("TZ", zone, 1) == -1)
+    {
+      g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
+      setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
+
+  tzset ();
+
+  time (&now);
+  now_broken = localtime (&now);
+  if (setenv ("TZ", "UTC", 1) == -1)
+    {
+      g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
+      setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
+  tzset ();
+  offset = - (now - mktime (now_broken));
+
+  /* Revert to stored TZ. */
+  if (tz)
+    {
+      if (setenv ("TZ", tz, 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+          g_free (tz);
+          return 0;
+        }
+    }
+  else
+    unsetenv ("TZ");
+
+  g_free (tz);
+  return offset;
+}
+
+/**
  * @brief Find a string in an array.
  *
  * @param[in]  array   Array.
@@ -1302,8 +1362,8 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS results_by_host ON results (host);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_task ON results (task);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_type ON results (type);");
-  sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
-  sql ("CREATE TABLE IF NOT EXISTS schedules_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
+  sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration, timezone, initial_offset);");
+  sql ("CREATE TABLE IF NOT EXISTS schedules_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration, timezone, initial_offset);");
   sql ("CREATE TABLE IF NOT EXISTS slaves (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
   sql ("CREATE TABLE IF NOT EXISTS slaves_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
   sql ("CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");
@@ -6077,6 +6137,58 @@ migrate_61_to_62 ()
 }
 
 /**
+ * @brief Migrate the database from version 62 to version 63.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_62_to_63 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 62. */
+
+  if (manage_db_version () != 62)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* The reports table got count cache columns. */
+
+  sql ("ALTER TABLE schedules ADD COLUMN timezone;");
+  sql ("ALTER TABLE schedules ADD COLUMN initial_offset;");
+
+  sql ("UPDATE schedules"
+       " SET timezone = (SELECT users.timezone FROM users"
+       "                 WHERE ROWID = schedules.owner);");
+
+  sql ("UPDATE schedules SET initial_offset = current_offset (timezone);");
+
+  sql ("ALTER TABLE schedules_trash ADD COLUMN timezone;");
+  sql ("ALTER TABLE schedules_trash ADD COLUMN initial_offset;");
+
+  sql ("UPDATE schedules_trash"
+       " SET timezone = (SELECT users.timezone FROM users"
+       "                 WHERE ROWID = schedules_trash.owner);");
+
+  sql ("UPDATE schedules_trash"
+       " SET initial_offset = current_offset (timezone);");
+
+  /* Set the database version to 63. */
+
+  set_db_version (63);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -6143,6 +6255,7 @@ static migrator_t database_migrators[]
     {60, migrate_59_to_60},
     {61, migrate_60_to_61},
     {62, migrate_61_to_62},
+    {63, migrate_62_to_63},
     /* End marker. */
     {-1, NULL}};
 
@@ -9235,6 +9348,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           != SQLITE_OK)
         {
           g_warning ("%s: failed to create common_cve", __FUNCTION__);
+          abort ();
+        }
+
+      if (sqlite3_create_function (task_db,
+                                   "current_offset",
+                                   1,               /* Number of args. */
+                                   SQLITE_UTF8,
+                                   NULL,            /* Callback data. */
+                                   sql_current_offset,
+                                   NULL,            /* xStep. */
+                                   NULL)            /* xFinal. */
+          != SQLITE_OK)
+        {
+          g_warning ("%s: failed to create current_offset", __FUNCTION__);
           abort ();
         }
     }
@@ -35242,6 +35369,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
                  schedule_t *schedule)
 {
   gchar *quoted_name = sql_quote (name);
+  long offset;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -35260,28 +35388,39 @@ create_schedule (const char* name, const char *comment, time_t first_time,
       return 1;
     }
 
+  offset = current_offset (sql_string (0, 0,
+                                       "SELECT timezone FROM users"
+                                       " WHERE users.uuid = '%s';",
+                                       current_credentials.uuid));
+
   if (comment)
     {
       gchar *quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO schedules"
            " (uuid, name, owner, comment, first_time, period, period_months,"
-           "  duration)"
-           " VALUES (make_uuid (), '%s',"
-           " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', %i, %i, %i, %i);",
+           "  duration, timezone, initial_offset)"
+           " VALUES"
+           " (make_uuid (), '%s',"
+           "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+           "  '%s', %i, %i, %i, %i,"
+           "  (SELECT timezone FROM users WHERE users.uuid = '%s'),"
+           "  %li);",
            quoted_name, current_credentials.uuid, quoted_comment, first_time,
-           period, period_months, duration);
+           period, period_months, duration, current_credentials.uuid, offset);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO schedules"
          " (uuid, name, owner, comment, first_time, period, period_months,"
-         "  duration)"
-         " VALUES (make_uuid (), '%s',"
-         " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '', %i, %i, %i, %i);",
+         "  duration, timezone, initial_offset)"
+         " VALUES"
+         " (make_uuid (), '%s',"
+         "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+         "  '', %i, %i, %i, %i,"
+         "  (SELECT timezone FROM users WHERE users.uuid = '%s'),"
+         "  %li);",
          quoted_name, current_credentials.uuid, first_time, period,
-         period_months, duration);
+         period_months, duration, current_credentials.uuid, offset);
 
   if (schedule)
     *schedule = sqlite3_last_insert_rowid (task_db);
@@ -35364,9 +35503,9 @@ delete_schedule (const char *schedule_id, int ultimate)
     {
       sql ("INSERT INTO schedules_trash"
            " (uuid, owner, name, comment, first_time, period, period_months,"
-           "  duration)"
+           "  duration, timezone, initial_offset)"
            " SELECT uuid, owner, name, comment, first_time, period, period_months,"
-           "        duration"
+           "        duration, timezone, initial_offset"
            " FROM schedules WHERE ROWID = %llu;",
            schedule);
 
@@ -35760,7 +35899,8 @@ init_task_schedule_iterator (iterator_t* iterator)
                  " schedules.period, schedules.period_months,"
                  " schedules.first_time,"
                  " schedules.duration,"
-                 " users.uuid, users.name"
+                 " users.uuid, users.name, schedules.owner,"
+                 " schedules.timezone, schedules.initial_offset"
                  " FROM tasks, schedules, users"
                  " WHERE tasks.schedule = schedules.ROWID"
                  " AND tasks.hidden = 0"
@@ -35888,7 +36028,7 @@ task_schedule_iterator_duration (iterator_t* iterator)
 }
 
 /**
- * @brief Get the owner uuid from a task schedule iterator.
+ * @brief Get the task owner uuid from a task schedule iterator.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -35898,7 +36038,7 @@ task_schedule_iterator_duration (iterator_t* iterator)
 DEF_ACCESS (task_schedule_iterator_owner_uuid, 8);
 
 /**
- * @brief Get the owner_name from a task schedule iterator.
+ * @brief Get the task owner name from a task schedule iterator.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -35906,6 +36046,40 @@ DEF_ACCESS (task_schedule_iterator_owner_uuid, 8);
  *         cleanup_iterator.
  */
 DEF_ACCESS (task_schedule_iterator_owner_name, 9);
+
+/**
+ * @brief Get the schedule owner from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Owner name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (task_schedule_iterator_owner, 10);
+
+/**
+ * @brief Get the timezone from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Timezone, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (task_schedule_iterator_timezone, 11);
+
+/**
+ * @brief Get the initial offset from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Initial offset.
+ */
+time_t
+task_schedule_iterator_initial_offset (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (time_t) sqlite3_column_int64 (iterator->stmt, 12);
+}
 
 /**
  * @brief Get the start due state from a task schedule iterator.
@@ -35923,7 +36097,9 @@ task_schedule_iterator_start_due (iterator_t* iterator)
   if (iterator->done) return FALSE;
 
   run_status = task_run_status (task_schedule_iterator_task (iterator));
-  start_time = task_schedule_iterator_next_time (iterator);
+  start_time = task_schedule_iterator_next_time (iterator)
+                + task_schedule_iterator_initial_offset (iterator)
+                - current_offset (task_schedule_iterator_timezone (iterator));
 
   if ((run_status == TASK_STATUS_DONE
        || run_status == TASK_STATUS_INTERNAL_ERROR
@@ -41288,9 +41464,9 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO schedules"
            " (uuid, owner, name, comment, first_time, period, period_months,"
-           "  duration)"
+           "  duration, timezone, initial_offset)"
            " SELECT uuid, owner, name, comment, first_time, period,"
-           "        period_months, duration"
+           "        period_months, duration, timezone, initial_offset"
            " FROM schedules_trash WHERE ROWID = %llu;",
            resource);
 

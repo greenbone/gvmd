@@ -1,3 +1,33 @@
+2012-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Handle daylight saving in schedules.  Hence increase database version to
+	63.  Add database migration from version 62 to 63.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 63.
+
+	* src/manage_sql.c (current_offset): New function.
+	(create_tables): Add timezone and offset columns to schedules.
+	(migrate_62_to_63): New function.
+	(migrators): Add migrate_62_to_63.
+	(init_manage_process): Init current_offset.
+	(create_schedule): Init timezone and offset according to user's current
+	timezone.
+	(delete_schedule, manage_restore): Add new schedule columns.
+	(init_task_schedule_iterator): Add owner and new schedule columns.
+	(task_schedule_iterator_owner, task_schedule_iterator_timezone)
+	(task_schedule_iterator_initial_offset): New functions.
+	(task_schedule_iterator_start_due): Account for daylight saving.
+
+	* src/manage.c (manage_schedule): Adjust times for daylight saving.
+
+	* src/sql.c (sql_current_offset): New function.
+
+	* src/manage.h, src/sql.h, src/manage_sql.h: Add headers accordingly.
+
+	* doc/db_postgres.sql (schedules): Add fields.
+
+	* doc/db.png: Update from source.
+
 2012-10-25  Andre Heinecke <aheinecke@intevation.de>
 
 	Use Epoch date instead of ISO date in scap.db

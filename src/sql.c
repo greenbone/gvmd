@@ -43,6 +43,9 @@ iso_time (time_t *);
 int
 manage_max_hosts (const char *);
 
+long
+current_offset (const char *);
+
 
 /* Variables */
 
@@ -870,6 +873,24 @@ sql_common_cve (sqlite3_context *context, int argc, sqlite3_value** argv)
   g_strfreev (split_2);
 
   sqlite3_result_int (context, 0);
+}
+
+/**
+ * @brief Get the offset from UTC of the current time for a timezone.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_current_offset (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  assert (argc == 1);
+  sqlite3_result_int
+   (context,
+    (int) current_offset ((const char *) sqlite3_value_text (argv[0])));
 }
 
 

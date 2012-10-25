@@ -97,6 +97,10 @@ const char *task_schedule_iterator_owner_uuid (iterator_t *);
 
 const char *task_schedule_iterator_owner_name (iterator_t *);
 
+const char *task_schedule_iterator_timezone (iterator_t *);
+
+time_t task_schedule_iterator_initial_offset (iterator_t *);
+
 void reinit_manage_process ();
 
 void manage_update_nvti_cache ();

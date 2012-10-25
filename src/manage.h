@@ -1777,6 +1777,9 @@ manage_system_report (const char *, const char *, const char *, char **);
 
 /* Scheduling. */
 
+long
+current_offset (const char *);
+
 gboolean
 find_schedule (const char*, schedule_t*);
 
