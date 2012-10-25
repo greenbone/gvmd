@@ -26337,12 +26337,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
  * @brief CPE iterator columns.
  */
 #define CPE_INFO_ITERATOR_COLUMNS                           \
- /*GET_ITERATOR_COLUMNS " dates are not in iso format*/     \
-  "ROWID, uuid, name, comment, creation_time,"              \
-  " modification_time, creation_time AS created,"           \
-  " modification_time AS modified,"                         \
-  " title, status, deprecated_by_id, max_cvss,"             \
-  " cve_refs AS cves"
+  GET_ITERATOR_COLUMNS ", title, status, deprecated_by_id," \
+  "max_cvss, cve_refs AS cves"
 
 /**
  * @brief Target iterator columns.

@@ -31,7 +31,7 @@ DROP TABLE IF EXISTS affected_products;
 DROP TABLE IF EXISTS meta;
 
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "2");
+INSERT INTO meta (name, value) VALUES ("database_version", "3");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
 CREATE TABLE cves (

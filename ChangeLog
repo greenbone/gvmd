@@ -1,5 +1,25 @@
 2012-10-25  Andre Heinecke <aheinecke@intevation.de>
 
+	Use Epoch date instead of ISO date in scap.db
+
+	* tools/openvas-scapdata-sync.in, tools/greenbone-scapdata-sync
+	(migrate_3): New.
+	(migrate_to_2, reinit): Renamed migrate_to_2 to reinit.
+	(check_db_version): Migrate from 2 to 3.
+
+	* tools/db_init.sql: Bump Version number to 3
+
+	* tools/cve_update.xsl (cve:entry): Call strftime to insert times in epoch
+	format. Consistently use single single quotes in sql statements.
+
+	* tools/cpe_update.xsl (cpe:cpe-item): Use strftime to insert times in
+	epoch format.
+
+	* src/manage_sql.c (CPE_INFO_ITERATOR_COLUMNS): Use generic
+	GET_ITERATOR_COLUMNS together with the specific columns.
+
+2012-10-25  Andre Heinecke <aheinecke@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): Check for manage_scap_loaded and
 	send an error similiar to the one from prognostic reports otherwise.
 	Reset get_info_data and break correctly when errors are detected.

@@ -48,8 +48,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       str:decode-uri(@name), "%7E", "~"),
       "&#39;", "&#39;&#39;")'/>',
     '<xsl:value-of select='str:replace(cpe:title[@xml:lang = "en-US"], "&#39;", "&#39;&#39;")'/>',
-    '<xsl:value-of select="meta:item-metadata/@modification-date"/>',
-    '<xsl:value-of select="meta:item-metadata/@modification-date"/>',
+    strftime('%s', '<xsl:value-of select="meta:item-metadata/@modification-date"/>'),
+    strftime('%s', '<xsl:value-of select="meta:item-metadata/@modification-date"/>'),
     '<xsl:value-of select="meta:item-metadata/@status"/>',
     <xsl:call-template name="value_or_null">
       <xsl:with-param name="value" select="meta:item-metadata/@deprecated-by-nvd-id"/>

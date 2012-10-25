@@ -41,12 +41,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <xsl:template match="cve:entry">
   INSERT OR REPLACE INTO cves (uuid,name,creation_time,modification_time,cvss,description) VALUES (
-  "<xsl:value-of select="@id"/>",
-  "<xsl:value-of select="@id"/>",
-  "<xsl:value-of select="vuln:published-datetime"/>",
-  "<xsl:value-of select="vuln:last-modified-datetime"/>",
-  "<xsl:value-of select="vuln:cvss/cvss:base_metrics/cvss:score"/>",
-  "<xsl:value-of select="translate(vuln:summary/text(), '&quot;', '')"/>");
+  '<xsl:value-of select="@id"/>',
+  '<xsl:value-of select="@id"/>',
+  strftime('%s', '<xsl:value-of select="vuln:published-datetime"/>'),
+  strftime('%s', '<xsl:value-of select="vuln:last-modified-datetime"/>'),
+  '<xsl:value-of select="vuln:cvss/cvss:base_metrics/cvss:score"/>',
+  '<xsl:value-of select='str:replace(vuln:summary/text(), "&#39;", "&#39;&#39;")'/>');
 
   <xsl:for-each select="vuln:vulnerable-software-list/vuln:product">
     <xsl:variable name="decoded_cpe" select='
@@ -54,16 +54,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       str:replace(
       str:decode-uri(text()), "%7E", "~"),
       "&#39;", "&#39;&#39;")'/>
-  INSERT OR IGNORE INTO cpes (name) VALUES ("<xsl:value-of select="$decoded_cpe"/>");
+  INSERT OR IGNORE INTO cpes (name) VALUES ('<xsl:value-of select="$decoded_cpe"/>');
 
-  INSERT OR REPLACE INTO affected_products (cve,cpe) VALUES ((SELECT id FROM cves WHERE uuid="<xsl:value-of select="../../@id"/>"),
-  (SELECT id FROM cpes WHERE name="<xsl:value-of select="$decoded_cpe"/>"));
+  INSERT OR REPLACE INTO affected_products (cve,cpe) VALUES ((SELECT id FROM cves WHERE uuid='<xsl:value-of select="../../@id"/>'),
+  (SELECT id FROM cpes WHERE name='<xsl:value-of select="$decoded_cpe"/>'));
 
-  UPDATE cpes SET cve_refs = cve_refs + 1 where name="<xsl:value-of select="$decoded_cpe"/>";
+  UPDATE cpes SET cve_refs = cve_refs + 1 where name='<xsl:value-of select="$decoded_cpe"/>';
   <xsl:if test="../../vuln:cvss/cvss:base_metrics/cvss:score/text()">
     UPDATE cpes SET max_cvss = max(max_cvss,
     <xsl:value-of select="number(../../vuln:cvss/cvss:base_metrics/cvss:score/text())"/>)
-    where name="<xsl:value-of select="$decoded_cpe"/>";
+    where name='<xsl:value-of select="$decoded_cpe"/>';
   </xsl:if>
   </xsl:for-each>
 </xsl:template>
