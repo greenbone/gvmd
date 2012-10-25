@@ -1,3 +1,9 @@
+2012-10-25  Andre Heinecke <aheinecke@intevation.de>
+
+	* src/omp.c (omp_xml_handle_end_element): Check for manage_scap_loaded and
+	send an error similiar to the one from prognostic reports otherwise.
+	Reset get_info_data and break correctly when errors are detected.
+
 2012-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (run_slave_task): Create target with

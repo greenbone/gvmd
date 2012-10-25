@@ -16607,22 +16607,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           int (*init_info_iterator) (iterator_t*, const get_data_t *, const char *);
           int (*info_count) (const get_data_t *get);
 
+          if (manage_scap_loaded () == 0)
+          {
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_info",
+                                "GET_INFO requires the SCAP database."));
+            get_info_data_reset (get_info_data);
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
+          }
+
           if (get_info_data->name && get_info_data->get.id)
             {
               SEND_TO_CLIENT_OR_FAIL
                 (XML_ERROR_SYNTAX ("get_info",
                                    "Only one of name and the id attribute"
-                                   " may be given"));
+                                   " may be given."));
+              get_info_data_reset (get_info_data);
               set_client_state (CLIENT_AUTHENTIC);
-              return;
+              break;
             }
           if (get_info_data->type == NULL)
             {
               SEND_TO_CLIENT_OR_FAIL
                 (XML_ERROR_SYNTAX ("get_info",
-                                   "No type specified"));
+                                   "No type specified."));
+              get_info_data_reset (get_info_data);
               set_client_state (CLIENT_AUTHENTIC);
-              return;
+              break;
             }
 
           /* Set type specific functions */
