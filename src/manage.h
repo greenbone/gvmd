@@ -496,7 +496,7 @@ int
 task_schedule_in_trash (task_t);
 
 int
-task_schedule_next_time (task_t);
+task_schedule_next_time_tz (task_t);
 
 void
 set_scan_attack_state (report_t, const char*, const char*);

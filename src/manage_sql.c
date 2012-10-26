@@ -12637,7 +12637,7 @@ task_schedule_in_trash (task_t task)
 }
 
 /**
- * @brief Get the next time a task with a schedule will run.
+ * @brief Get next time a scheduled task will run, following schedule timezone.
  *
  * @param[in]  task  Task.
  *
@@ -12645,12 +12645,26 @@ task_schedule_in_trash (task_t task)
  *         has already run), otherwise 0.
  */
 int
-task_schedule_next_time (task_t task)
+task_schedule_next_time_tz (task_t task)
 {
-  return sql_int (0, 0,
-                  "SELECT schedule_next_time FROM tasks"
-                  " WHERE ROWID = %llu;",
-                  task);
+  int next_time;
+  iterator_t schedules;
+
+  next_time = sql_int (0, 0,
+                       "SELECT schedule_next_time FROM tasks"
+                       " WHERE ROWID = %llu;",
+                       task);
+  if (next_time == 0)
+    return 0;
+
+  init_schedule_iterator (&schedules, task_schedule (task),
+                          task_schedule_in_trash (task), 0, NULL);
+  if (next (&schedules))
+    next_time += schedule_iterator_initial_offset (&schedules)
+                  - time_offset (schedule_iterator_timezone (&schedules),
+                                 next_time);
+  cleanup_iterator (&schedules);
+  return next_time;
 }
 
 /**
@@ -36284,7 +36298,10 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
           time_t now, first, start;
 
           now = time (NULL);
-          first = task_schedule_iterator_first_time (iterator);
+          first = task_schedule_iterator_first_time (iterator)
+                   + task_schedule_iterator_initial_offset (iterator)
+                   - current_offset (task_schedule_iterator_timezone
+                                      (iterator));
           start = first + (((now - first) / period) * period);
           if ((start + duration) < now)
             return TRUE;
@@ -36302,7 +36319,10 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
           time_t now, first, start;
 
           now = time (NULL);
-          first = task_schedule_iterator_first_time (iterator);
+          first = task_schedule_iterator_first_time (iterator)
+                   + task_schedule_iterator_initial_offset (iterator)
+                   - current_offset (task_schedule_iterator_timezone
+                                      (iterator));
           start = add_months (first, months_between (first, now));
           if ((start + duration) < now)
             return TRUE;
@@ -36320,7 +36340,10 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
           time_t now, start;
 
           now = time (NULL);
-          start = task_schedule_iterator_first_time (iterator);
+          start = task_schedule_iterator_first_time (iterator)
+                   + task_schedule_iterator_initial_offset (iterator)
+                   - current_offset (task_schedule_iterator_timezone
+                                      (iterator));
           if ((start + duration) < now)
             return TRUE;
         }

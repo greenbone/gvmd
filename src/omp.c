@@ -8252,7 +8252,7 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
           next_time = schedule_iterator_next_time (schedules);
 
           first_time += schedule_iterator_initial_offset (schedules)
-                         - current_offset (timezone);
+                         - time_offset (timezone, first_time);
           next_time += schedule_iterator_initial_offset (schedules)
                          - time_offset (timezone, next_time);
 
@@ -17833,7 +17833,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         task_schedule_uuid = (char*) g_strdup ("");
                         task_schedule_name = (char*) g_strdup ("");
                       }
-                    next_time = task_schedule_next_time (task);
+                    next_time = task_schedule_next_time_tz (task);
                     response = g_strdup_printf
                                 ("<task id=\"%s\">"
                                  "<name>%s</name>"
@@ -18318,7 +18318,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         task_schedule_name = (char*) g_strdup ("");
                         schedule_in_trash = 0;
                       }
-                    next_time = task_schedule_next_time (index);
+                    next_time = task_schedule_next_time_tz (index);
                     line = g_strdup_printf
                              ("<task"
                               " id=\"%s\">"

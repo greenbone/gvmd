@@ -1,5 +1,19 @@
 2012-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (buffer_schedules_xml): Use time_offset instead of
+	current_offset for first_time because first_time may be the other side
+	of a DST changeover.
+	(omp_xml_handle_end_element): For GET_TASKS get schdule next_time with
+	task_schedule_next_time_tz so that it follows the schedule's timezone.
+
+	* src/manage_sql.c (task_schedule_next_time): Remove.
+	(task_schedule_next_time_tz): New function.
+	(task_schedule_iterator_stop_due): Account for schedule's timezone.
+
+	* src/manage.h: Update headers accordingly.
+
+2012-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (iso_time_tz, time_offset): New functions.
 	(init_schedule_iterator): Add timezone and initial_offset.
 	(schedule_iterator_timezone, schedule_iterator_initial_offset): New
