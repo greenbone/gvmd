@@ -1,3 +1,16 @@
+2012-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (iso_time_tz, time_offset): New functions.
+	(init_schedule_iterator): Add timezone and initial_offset.
+	(schedule_iterator_timezone, schedule_iterator_initial_offset): New
+	functions.
+	(schedule_iterator_in_use): Adjust column number accordingly.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (buffer_schedules_xml): Add TIMEZONE to SCHEDULE.  Adjust
+	next time for daylight saving.
+
 2012-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Handle daylight saving in schedules.  Hence increase database version to

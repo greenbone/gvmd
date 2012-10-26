@@ -933,6 +933,54 @@ iso_time (time_t *epoch_time)
 }
 
 /**
+ * @brief Create an ISO time from seconds since epoch, given a timezone.
+ *
+ * @param[in]  epoch_time  Time in seconds from epoch.
+ * @param[in]  Timezone    Timezone.
+ *
+ * @return Pointer to ISO time in static memory, or NULL on error.
+ */
+char *
+iso_time_tz (time_t *epoch_time, const char *timezone)
+{
+  gchar *tz;
+  char *ret;
+
+  if (timezone == NULL)
+    return iso_time (epoch_time);
+
+  /* Store current TZ. */
+  tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+  if (setenv ("TZ", timezone, 1) == -1)
+    {
+      g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
+      setenv ("TZ", tz, 1);
+      g_free (tz);
+      return iso_time (epoch_time);
+    }
+
+  tzset ();
+  ret = iso_time (epoch_time);
+
+  /* Revert to stored TZ. */
+  if (tz)
+    {
+      if (setenv ("TZ", tz, 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+          g_free (tz);
+          return ret;
+        }
+    }
+  else
+    unsetenv ("TZ");
+
+  g_free (tz);
+  return ret;
+}
+
+/**
  * @brief Get the current offset from UTC of a timezone.
  *
  * @param[in]  zone  Timezone, or NULL for UTC.
@@ -990,6 +1038,73 @@ current_offset (const char *zone)
 
   g_free (tz);
   return offset;
+}
+
+/**
+ * @brief Get the offset from UTC of a timezone at a particular time.
+ *
+ * @param[in]  zone  Timezone, or NULL for UTC.
+ *
+ * @return Seconds east of UTC.
+ */
+long
+time_offset (const char *zone, time_t time)
+{
+  gchar *tz;
+  struct tm *time_broken;
+  int mins;
+  char buf[100];
+
+  if (zone == NULL || strcmp (zone, "UTC") == 0)
+    return 0;
+
+  /* Store current TZ. */
+  tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+  if (setenv ("TZ", zone, 1) == -1)
+    {
+      g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
+      setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
+
+  tzset ();
+
+  time_broken = localtime (&time);
+  if (strftime (buf, 100, "%z", time_broken) == 0)
+    {
+      g_warning ("%s: Failed to format timezone", __FUNCTION__);
+      setenv ("TZ", tz, 1);
+      g_free (tz);
+      return 0;
+    }
+
+  if (strlen (buf) > 3)
+    {
+      mins = atoi (buf);
+      mins /= 100;
+      mins *= 60;
+      mins += atoi (buf + 3);
+    }
+  else
+    mins = 0;
+
+  /* Revert to stored TZ. */
+  if (tz)
+    {
+      if (setenv ("TZ", tz, 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+          g_free (tz);
+          return mins * 60;
+        }
+    }
+  else
+    unsetenv ("TZ");
+
+  g_free (tz);
+  return mins * 60;
 }
 
 /**
@@ -35673,7 +35788,7 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule, int trash,
   if (schedule && trash)
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, first_time,"
-                   " period, period_months, duration,"
+                   " period, period_months, duration, timezone, initial_offset,"
                    " (SELECT count(*) > 0 FROM tasks"
                    "  WHERE tasks.schedule = schedules_trash.ROWID"
                    "  AND schedule_location = " G_STRINGIFY (LOCATION_TRASH) ")"
@@ -35689,7 +35804,7 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule, int trash,
   else if (schedule)
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, first_time,"
-                   " period, period_months, duration,"
+                   " period, period_months, duration, timezone, initial_offset,"
                    " (SELECT count(*) > 0 FROM tasks"
                    "  WHERE tasks.schedule = schedules.ROWID"
                    "  AND (hidden = 0 OR hidden = 1)"
@@ -35706,7 +35821,7 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule, int trash,
   else if (trash)
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, first_time,"
-                   " period, period_months, duration,"
+                   " period, period_months, duration, timezone, initial_offset,"
                    " (SELECT count(*) > 0 FROM tasks"
                    "  WHERE tasks.schedule = schedules_trash.ROWID"
                    "  AND schedule_location = " G_STRINGIFY (LOCATION_TRASH) ")"
@@ -35720,7 +35835,7 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule, int trash,
   else
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, first_time,"
-                   " period, period_months, duration,"
+                   " period, period_months, duration, timezone, initial_offset,"
                    " (SELECT count(*) > 0 FROM tasks"
                    "  WHERE tasks.schedule = schedules.ROWID"
                    "  AND (hidden = 0 OR hidden = 1)"
@@ -35867,6 +35982,33 @@ schedule_iterator_duration (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the timezone from a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Timezone, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (schedule_iterator_timezone, 8);
+
+/**
+ * @brief Get the initial offset from a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Initial offset, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+time_t
+schedule_iterator_initial_offset (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 9);
+  return ret;
+}
+
+/**
  * @brief Get whether a schedule iterator is in use by any tasks.
  *
  * @param[in]  iterator  Iterator.
@@ -35878,7 +36020,7 @@ schedule_iterator_in_use (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 8);
+  ret = (int) sqlite3_column_int (iterator->stmt, 10);
   return ret;
 }
 

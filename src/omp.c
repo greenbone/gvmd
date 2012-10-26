@@ -8243,9 +8243,21 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
       else
         {
           iterator_t tasks;
-          time_t first_time = schedule_iterator_first_time (schedules);
-          time_t next_time = schedule_iterator_next_time (schedules);
-          gchar *first_iso_time = g_strdup (iso_time (&first_time));
+          time_t first_time, next_time;
+          gchar *iso;
+          const char *timezone;
+
+          timezone = schedule_iterator_timezone (schedules);
+          first_time = schedule_iterator_first_time (schedules);
+          next_time = schedule_iterator_next_time (schedules);
+
+          first_time += schedule_iterator_initial_offset (schedules)
+                         - current_offset (timezone);
+          next_time += schedule_iterator_initial_offset (schedules)
+                         - time_offset (timezone, next_time);
+
+          /* Duplicate static string because there's an iso_time_tz below. */
+          iso = g_strdup (iso_time_tz (&first_time, timezone));
 
           buffer_xml_append_printf
            (buffer,
@@ -8257,18 +8269,20 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
             "<period>%i</period>"
             "<period_months>%i</period_months>"
             "<duration>%i</duration>"
+            "<timezone>%s</timezone>"
             "<in_use>%i</in_use>",
             schedule_iterator_uuid (schedules),
             schedule_iterator_name (schedules),
             schedule_iterator_comment (schedules),
-            first_iso_time,
-            (next_time == 0 ? "over" : iso_time (&next_time)),
+            iso,
+            (next_time == 0 ? "over" : iso_time_tz (&next_time, timezone)),
             schedule_iterator_period (schedules),
             schedule_iterator_period_months (schedules),
             schedule_iterator_duration (schedules),
+            schedule_iterator_timezone (schedules),
             schedule_iterator_in_use (schedules));
 
-          g_free (first_iso_time);
+          g_free (iso);
 
           buffer_xml_append_printf (buffer, "<tasks>");
           init_schedule_task_iterator (&tasks,

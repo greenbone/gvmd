@@ -1778,6 +1778,9 @@ manage_system_report (const char *, const char *, const char *, char **);
 /* Scheduling. */
 
 long
+time_offset (const char *, time_t);
+
+long
 current_offset (const char *);
 
 gboolean
@@ -1843,6 +1846,12 @@ schedule_iterator_period_months (iterator_t *);
 
 time_t
 schedule_iterator_duration (iterator_t *);
+
+const char*
+schedule_iterator_timezone (iterator_t *);
+
+time_t
+schedule_iterator_initial_offset (iterator_t *);
 
 int
 schedule_iterator_in_use (iterator_t*);
@@ -2415,6 +2424,9 @@ manage_run_wizard (const gchar *, int (*) (void*, gchar*, gchar**),
 
 char *
 iso_time (time_t *);
+
+char *
+iso_time_tz (time_t *, const char *);
 
 gchar *
 xsl_transform (gchar *, gchar *, gchar **, gchar **);
