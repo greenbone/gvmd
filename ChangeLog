@@ -1,5 +1,11 @@
 2012-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (get_schedule): Add TIMEZONE.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2012-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (buffer_schedules_xml): Skip the timezone adjustment when
 	the schedule is over.
 

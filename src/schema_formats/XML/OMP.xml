@@ -8211,6 +8211,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>comment</e>
               <e>first_time</e>
               <e>next_time</e>
+              <e>timezone</e>
               <e>period</e>
               <e>period_months</e>
               <e>duration</e>
@@ -8240,6 +8241,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>next_time</name>
           <summary>The next time the task will run</summary>
           <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>timezone</name>
+          <summary>The timezone that the schedule follows</summary>
+          <pattern>text</pattern>
         </ele>
         <ele>
           <name>period</name>
@@ -8313,6 +8319,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <comment>3 hours, starting at 12h00.</comment>
             <first_time>Tue Jun 29 00:00:00 2010</first_time>
             <next_time>Tue Jun 29 00:00:00 2010</next_time>
+            <timezone>Europe/Berlin</timezone>
             <period>86400</period>
             <period_months>0</period_months>
             <duration>10800</duration>

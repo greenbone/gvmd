@@ -13305,6 +13305,11 @@ get_results_response_results_result_overrides
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>timezone</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The timezone that the schedule follows.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>period</b>&gt;
               <div style="margin-left: 15px; display: inline;">How often the task will run, in seconds.</div>
 <ul style="list-style: none"></ul>
@@ -13376,6 +13381,7 @@ get_schedules_response_schedule
        &amp; ( get_schedules_response_schedule_comment
            &amp; get_schedules_response_schedule_first_time
            &amp; get_schedules_response_schedule_next_time
+           &amp; get_schedules_response_schedule_timezone
            &amp; get_schedules_response_schedule_period
            &amp; get_schedules_response_schedule_period_months
            &amp; get_schedules_response_schedule_duration
@@ -13405,6 +13411,12 @@ get_schedules_response_schedule_next_time
  = element next_time
      {
        iso_time
+     }
+
+get_schedules_response_schedule_timezone
+ = element timezone
+     {
+       text
      }
 
 get_schedules_response_schedule_period
@@ -13476,6 +13488,7 @@ get_schedules_response_schedule_tasks_task_name
      &lt;comment&gt;3 hours, starting at 12h00.&lt;/comment&gt;
      &lt;first_time&gt;Tue Jun 29 00:00:00 2010&lt;/first_time&gt;
      &lt;next_time&gt;Tue Jun 29 00:00:00 2010&lt;/next_time&gt;
+     &lt;timezone&gt;Europe/Berlin&lt;/timezone&gt;
      &lt;period&gt;86400&lt;/period&gt;
      &lt;period_months&gt;0&lt;/period_months&gt;
      &lt;duration&gt;10800&lt;/duration&gt;

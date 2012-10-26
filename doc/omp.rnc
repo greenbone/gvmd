@@ -6644,6 +6644,7 @@ get_schedules_response_schedule
        & ( get_schedules_response_schedule_comment
            & get_schedules_response_schedule_first_time
            & get_schedules_response_schedule_next_time
+           & get_schedules_response_schedule_timezone
            & get_schedules_response_schedule_period
            & get_schedules_response_schedule_period_months
            & get_schedules_response_schedule_duration
@@ -6677,6 +6678,13 @@ get_schedules_response_schedule_next_time
  = element next_time
      {
        iso_time
+     }
+
+# The timezone that the schedule follows.
+get_schedules_response_schedule_timezone
+ = element timezone
+     {
+       text
      }
 
 # How often the task will run, in seconds.
