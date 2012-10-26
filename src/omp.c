@@ -8253,8 +8253,9 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
 
           first_time += schedule_iterator_initial_offset (schedules)
                          - time_offset (timezone, first_time);
-          next_time += schedule_iterator_initial_offset (schedules)
-                         - time_offset (timezone, next_time);
+          if (next_time)
+            next_time += schedule_iterator_initial_offset (schedules)
+                           - time_offset (timezone, next_time);
 
           /* Duplicate static string because there's an iso_time_tz below. */
           iso = g_strdup (iso_time_tz (&first_time, timezone));

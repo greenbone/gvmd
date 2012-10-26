@@ -1,5 +1,10 @@
 2012-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (buffer_schedules_xml): Skip the timezone adjustment when
+	the schedule is over.
+
+2012-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (buffer_schedules_xml): Use time_offset instead of
 	current_offset for first_time because first_time may be the other side
 	of a DST changeover.
