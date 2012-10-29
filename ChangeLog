@@ -1,5 +1,12 @@
 2012-10-29  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* CMakeLists.txt: Increase dependency of openvas-libraries from 5.0.0
+	to 6.0.0.
+
+	* INSTALL: Drop Debian 5, updated pre-requisites.
+
+2012-10-29  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* CHANGES: Prepared for the next beta release.
 
 2012-10-26  Matthew Mundell <matthew.mundell@greenbone.net>

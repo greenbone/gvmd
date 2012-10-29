@@ -1,10 +1,9 @@
 INSTALLATION INSTRUCTIONS FOR OPENVAS-MANAGER
 =============================================
 
-Please note: The reference systems used by most of the developers are Debian
-GNU/Linux 'Lenny' 5.0 and Debian GNU/Linux 'Squeeze' 6.0.  The build might fail
-on any other systems.  Also it is necessary to install dependent development
-packages.
+Please note: The reference systems used by most of the developers is Debian
+Debian GNU/Linux 'Squeeze' 6.0. The build might fail on any other systems.
+Also it is necessary to install dependent development packages.
 
 
 Prerequisites for openvas-manager
@@ -15,7 +14,7 @@ Prerequisites:
 * glib-2.0 >= 2.16
 * gnutls >= 2.2
 * libuuid (from e2fsprogs)
-* openvas-libraries >= 5.0.0
+* openvas-libraries >= 6.0.0
 * sqlite3
 * pkg-config
 
