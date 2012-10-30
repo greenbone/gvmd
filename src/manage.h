@@ -1865,6 +1865,10 @@ schedule_task_iterator_uuid (iterator_t *);
 const char*
 schedule_task_iterator_name (iterator_t *);
 
+int
+modify_schedule (const char*, const char*, const char *, time_t, time_t, time_t,
+                 time_t, const char *);
+
 
 /* Report Formats. */
 

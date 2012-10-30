@@ -1,3 +1,22 @@
+2012-10-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP MODIFY_SCHEDULE.
+
+	* src/manage_sql.c (modify_schedule): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (time_from_strings): Add timezone arg.  Update caller.
+	(omp_commands, command_data_t): Add modify_schedule.
+	(modify_schedule_data_t): New type.
+	(modify_schedule_data_reset): New function.
+	(modify_schedule_data): New variable.
+	(client_state_t): Add MODIFY_SCHEDULE states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add MODIFY_SCHEDULE.
+	(buffer_schedules_xml): Add SIMPLE_DURATION and SIMPLE_PERIOD to SCHEDULE
+	to make it easier for basic clients to figure out the values and units.
+
 2012-10-29  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt: Increase dependency of openvas-libraries from 5.0.0

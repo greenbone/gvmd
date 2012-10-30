@@ -248,16 +248,33 @@ file_utils_rmdir_rf (const gchar * pathname)
  * @param[in]   day_of_month  Day of month (1 to 31).
  * @param[in]   month         Month (1 to 12).
  * @param[in]   year          Year.
+ * @param[in]   timezone      Timezone.
  *
- * @return Time described by arguments on success, else -1.
+ * @return Time described by arguments on success, -2 if failed to switch to
+ *         timezone, -1 on error.
  */
 static time_t
 time_from_strings (const char *hour, const char *minute,
                    const char *day_of_month, const char *month,
-                   const char *year)
+                   const char *year, const char *timezone)
 {
   struct tm given_broken, *now_broken;
-  time_t now;
+  time_t now, ret;
+  gchar *tz;
+
+  tz = NULL;
+  if (timezone)
+    {
+      /* Store current TZ. */
+      tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+      if (setenv ("TZ", timezone, 1) == -1)
+        {
+          g_free (tz);
+          return -2;
+        }
+      tzset ();
+    }
 
   time (&now);
   now_broken = localtime (&now);
@@ -272,7 +289,20 @@ time_from_strings (const char *hour, const char *minute,
   given_broken.tm_year = (year ? (atoi (year) - 1900) : now_broken->tm_year);
   given_broken.tm_isdst = now_broken->tm_isdst;
 
-  return mktime (&given_broken);
+  ret = mktime (&given_broken);
+
+  if (timezone)
+    {
+      /* Revert to stored TZ. */
+      if (tz)
+        setenv ("TZ", tz, 1);
+      else
+        unsetenv ("TZ");
+      g_free (tz);
+      tzset ();
+    }
+
+  return ret;
 }
 
 /**
@@ -467,6 +497,7 @@ static command_t omp_commands[]
     {"MODIFY_OVERRIDE", "Modify an existing override."},
     {"MODIFY_REPORT", "Modify an existing report."},
     {"MODIFY_REPORT_FORMAT", "Modify an existing report format."},
+    {"MODIFY_SCHEDULE", "Modify an existing schedule."},
     {"MODIFY_SETTING", "Modify an existing setting."},
     {"MODIFY_TARGET", "Modify an existing target."},
     {"MODIFY_TASK", "Update an existing task."},
@@ -2675,6 +2706,51 @@ modify_report_format_data_reset (modify_report_format_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_schedule command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *name;                    ///< Name of schedule.
+  char *schedule_id;             ///< Schedule UUID.
+  char *first_time_day_of_month; ///< Day of month schedule must first run.
+  char *first_time_hour;         ///< Hour schedule must first run.
+  char *first_time_minute;       ///< Minute schedule must first run.
+  char *first_time_month;        ///< Month schedule must first run.
+  char *first_time_year;         ///< Year schedule must first run.
+  char *period;                  ///< Period of schedule (how often it runs).
+  char *period_unit;             ///< Unit of period: "hour", "day", "week", ....
+  char *duration;                ///< Duration of schedule (how long it runs for).
+  char *duration_unit;           ///< Unit of duration: "hour", "day", "week", ....
+  char *timezone;                ///< Timezone.
+} modify_schedule_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_schedule_data_reset (modify_schedule_data_t *data)
+{
+  free (data->comment);
+  free (data->name);
+  free (data->schedule_id);
+  free (data->first_time_day_of_month);
+  free (data->first_time_hour);
+  free (data->first_time_minute);
+  free (data->first_time_month);
+  free (data->first_time_year);
+  free (data->period);
+  free (data->period_unit);
+  free (data->duration);
+  free (data->duration_unit);
+  free (data->timezone);
+
+  memset (data, 0, sizeof (modify_schedule_data_t));
+}
+
+/**
  * @brief Command data for the modify_setting command.
  */
 typedef struct
@@ -3189,6 +3265,7 @@ typedef union
   modify_lsc_credential_data_t modify_lsc_credential; ///< modify_lsc_credential
   modify_report_data_t modify_report;                 ///< modify_report
   modify_report_format_data_t modify_report_format;   ///< modify_report_format
+  modify_schedule_data_t modify_schedule;             ///< modify_schedule
   modify_setting_data_t modify_setting;               ///< modify_setting
   modify_target_data_t modify_target;                 ///< modify_target
   modify_task_data_t modify_task;                     ///< modify_task
@@ -3593,6 +3670,12 @@ modify_report_data_t *modify_report_data
  */
 modify_report_format_data_t *modify_report_format_data
  = &(command_data.modify_report_format);
+
+/**
+ * @brief Parser callback data for MODIFY_SCHEDULE.
+ */
+modify_schedule_data_t *modify_schedule_data
+ = &(command_data.modify_schedule);
 
 /**
  * @brief Parser callback data for MODIFY_SETTING.
@@ -4057,6 +4140,20 @@ typedef enum
   CLIENT_MODIFY_OVERRIDE_TASK,
   CLIENT_MODIFY_OVERRIDE_TEXT,
   CLIENT_MODIFY_OVERRIDE_THREAT,
+  CLIENT_MODIFY_SCHEDULE,
+  CLIENT_MODIFY_SCHEDULE_COMMENT,
+  CLIENT_MODIFY_SCHEDULE_NAME,
+  CLIENT_MODIFY_SCHEDULE_FIRST_TIME,
+  CLIENT_MODIFY_SCHEDULE_FIRST_TIME_DAY_OF_MONTH,
+  CLIENT_MODIFY_SCHEDULE_FIRST_TIME_HOUR,
+  CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MINUTE,
+  CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MONTH,
+  CLIENT_MODIFY_SCHEDULE_FIRST_TIME_YEAR,
+  CLIENT_MODIFY_SCHEDULE_DURATION,
+  CLIENT_MODIFY_SCHEDULE_DURATION_UNIT,
+  CLIENT_MODIFY_SCHEDULE_PERIOD,
+  CLIENT_MODIFY_SCHEDULE_PERIOD_UNIT,
+  CLIENT_MODIFY_SCHEDULE_TIMEZONE,
   CLIENT_MODIFY_SETTING,
   CLIENT_MODIFY_SETTING_NAME,
   CLIENT_MODIFY_SETTING_VALUE,
@@ -5735,6 +5832,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_report_format_data->report_format_id);
             set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
           }
+        else if (strcasecmp ("MODIFY_SCHEDULE", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "schedule_id",
+                              &modify_schedule_data->schedule_id);
+            set_client_state (CLIENT_MODIFY_SCHEDULE);
+          }
         else if (strcasecmp ("MODIFY_SETTING", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values,
@@ -6034,6 +6137,52 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE);
         ELSE_ERROR ("modify_report_format");
+
+      case CLIENT_MODIFY_SCHEDULE:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_append_string (&modify_schedule_data->comment, "");
+            set_client_state (CLIENT_MODIFY_SCHEDULE_COMMENT);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&modify_schedule_data->name, "");
+            set_client_state (CLIENT_MODIFY_SCHEDULE_NAME);
+          }
+        else if (strcasecmp ("DURATION", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SCHEDULE_DURATION);
+        else if (strcasecmp ("FIRST_TIME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SCHEDULE_NAME);
+        else if (strcasecmp ("PERIOD", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SCHEDULE_PERIOD);
+        else if (strcasecmp ("TIMEZONE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SCHEDULE_TIMEZONE);
+        ELSE_ERROR ("modify_schedule");
+
+      case CLIENT_MODIFY_SCHEDULE_FIRST_TIME:
+        if (strcasecmp ("DAY_OF_MONTH", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_DAY_OF_MONTH);
+        else if (strcasecmp ("HOUR", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_HOUR);
+        else if (strcasecmp ("MINUTE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MINUTE);
+        else if (strcasecmp ("MONTH", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MONTH);
+        else if (strcasecmp ("YEAR", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_YEAR);
+        ELSE_ERROR ("modify_schedule");
+
+      case CLIENT_MODIFY_SCHEDULE_DURATION:
+        if (strcasecmp ("UNIT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SCHEDULE_DURATION_UNIT);
+        ELSE_ERROR ("modify_schedule");
+
+      case CLIENT_MODIFY_SCHEDULE_PERIOD:
+        if (strcasecmp ("UNIT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_SCHEDULE_PERIOD_UNIT);
+        ELSE_ERROR ("modify_schedule");
 
       case CLIENT_MODIFY_SETTING:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -8246,6 +8395,10 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
           time_t first_time, next_time;
           gchar *iso;
           const char *timezone;
+          char *simple_period_unit, *simple_duration_unit;
+          int period, period_minutes, period_hours, period_days, period_weeks;
+          int period_months, duration, duration_minutes, duration_hours;
+          int duration_days, duration_weeks, simple_period, simple_duration;
 
           timezone = schedule_iterator_timezone (schedules);
           first_time = schedule_iterator_first_time (schedules);
@@ -8260,6 +8413,91 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
           /* Duplicate static string because there's an iso_time_tz below. */
           iso = g_strdup (iso_time_tz (&first_time, timezone));
 
+          period = schedule_iterator_period (schedules);
+          if (period)
+            {
+              period_minutes = period / 60;
+              period_hours = period_minutes / 60;
+              period_days = period_hours / 24;
+              period_weeks = period_days / 7;
+            }
+          simple_period_unit = "";
+          if (period == 0)
+            simple_period = 0;
+          else if (period_weeks)
+            {
+              if (period % (60 * 60 * 24 * 7))
+                simple_period = 0;
+              else
+                simple_period = period_weeks;
+              simple_period_unit = "week";
+            }
+          else if (period_days)
+            {
+              if (period % (60 * 60 * 24))
+                simple_period = 0;
+              else
+                simple_period = period_days;
+              simple_period_unit = "day";
+            }
+          else if (period_hours)
+            {
+              if (period % (60 * 60))
+                simple_period = 0;
+              else
+                simple_period = period_hours;
+              simple_period_unit = "hour";
+            }
+          /* The granularity of the "simple" GSA interface stops at hours. */
+          else
+            simple_period = 0;
+
+          period_months = schedule_iterator_period_months (schedules);
+          if (period_months && (period_months < 25))
+            {
+              simple_period = period_months;
+              simple_period_unit = "month";
+            }
+
+          duration = schedule_iterator_duration (schedules);
+          if (duration)
+            {
+              duration_minutes = duration / 60;
+              duration_hours = duration_minutes / 60;
+              duration_days = duration_hours / 24;
+              duration_weeks = duration_days / 7;
+            }
+          simple_duration_unit = "";
+          if (duration == 0)
+            simple_duration = 0;
+          else if (duration_weeks)
+            {
+              if (duration % (60 * 60 * 24 * 7))
+                simple_duration = 0;
+              else
+                simple_duration = duration_weeks;
+              simple_duration_unit = "week";
+            }
+          else if (duration_days)
+            {
+              if (duration % (60 * 60 * 24))
+                simple_duration = 0;
+              else
+                simple_duration = duration_days;
+              simple_duration_unit = "day";
+            }
+          else if (duration_hours)
+            {
+              if (duration % (60 * 60))
+                simple_duration = 0;
+              else
+                simple_duration = duration_hours;
+              simple_duration_unit = "hour";
+            }
+          /* The granularity of the "simple" GSA interface stops at hours. */
+          else
+            simple_duration = 0;
+
           buffer_xml_append_printf
            (buffer,
             "<schedule id=\"%s\">"
@@ -8269,7 +8507,9 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
             "<next_time>%s</next_time>"
             "<period>%i</period>"
             "<period_months>%i</period_months>"
+            "<simple_period>%i<unit>%s</unit></simple_period>"
             "<duration>%i</duration>"
+            "<simple_duration>%i<unit>%s</unit></simple_duration>"
             "<timezone>%s</timezone>"
             "<in_use>%i</in_use>",
             schedule_iterator_uuid (schedules),
@@ -8279,7 +8519,11 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
             (next_time == 0 ? "over" : iso_time_tz (&next_time, timezone)),
             schedule_iterator_period (schedules),
             schedule_iterator_period_months (schedules),
+            simple_period,
+            simple_period_unit,
             schedule_iterator_duration (schedules),
+            simple_duration,
+            simple_duration_unit,
             schedule_iterator_timezone (schedules),
             schedule_iterator_in_use (schedules));
 
@@ -13794,7 +14038,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    create_schedule_data->first_time_minute,
                                    create_schedule_data->first_time_day_of_month,
                                    create_schedule_data->first_time_month,
-                                   create_schedule_data->first_time_year))
+                                   create_schedule_data->first_time_year,
+                                   NULL))
                    == -1)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
@@ -14933,6 +15178,145 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_OVERRIDE, TASK);
       CLOSE (CLIENT_MODIFY_OVERRIDE, TEXT);
       CLOSE (CLIENT_MODIFY_OVERRIDE, THREAT);
+
+      case CLIENT_MODIFY_SCHEDULE:
+        {
+          time_t first_time, period, period_months, duration;
+
+          assert (strcasecmp ("MODIFY_SCHEDULE", element_name) == 0);
+
+          period_months = 0;
+
+          /* Only change schedule "first time" if given. */
+          first_time = modify_schedule_data->first_time_hour
+                        || modify_schedule_data->first_time_minute
+                        || modify_schedule_data->first_time_day_of_month
+                        || modify_schedule_data->first_time_month
+                        || modify_schedule_data->first_time_year;
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_schedule",
+                                  "MODIFY is forbidden for observer users"));
+            }
+          else if (first_time
+                   && ((first_time
+                         = time_from_strings
+                            (modify_schedule_data->first_time_hour,
+                             modify_schedule_data->first_time_minute,
+                             modify_schedule_data->first_time_day_of_month,
+                             modify_schedule_data->first_time_month,
+                             modify_schedule_data->first_time_year,
+                             modify_schedule_data->timezone))
+                       == -1))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_schedule",
+                                "Failed to create time from FIRST_TIME"
+                                " elements"));
+          else if ((period = interval_from_strings
+                              (modify_schedule_data->period,
+                               modify_schedule_data->period_unit,
+                               &period_months))
+                   == -1)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_schedule",
+                                "Failed to create interval from PERIOD"));
+          else if ((duration = interval_from_strings
+                                (modify_schedule_data->duration,
+                                 modify_schedule_data->duration_unit,
+                                 NULL))
+                   == -1)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_schedule",
+                                "Failed to create interval from DURATION"));
+          else if (period_months
+                   && (duration > (period_months * 60 * 60 * 24 * 28)))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_schedule",
+                                "Duration too long for number of months"));
+          else if (period && (duration > period))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_schedule",
+                                "Duration is longer than period"));
+          else switch (modify_schedule
+                        (modify_schedule_data->schedule_id,
+                         modify_schedule_data->name,
+                         modify_schedule_data->comment,
+                         first_time,
+                         period,
+                         period_months,
+                         duration,
+                         modify_schedule_data->timezone))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_schedule"));
+                g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                       "Schedule %s has been modified",
+                       modify_schedule_data->schedule_id);
+                break;
+              case 1:
+                if (send_find_error_to_client ("modify_schedule",
+                                               "schedule",
+                                               modify_schedule_data->schedule_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                       "Schedule could not be modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_schedule",
+                                    "Schedule with new name exists already"));
+                g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                       "Schedule could not be modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_schedule",
+                                    "Error in type name"));
+                g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                       "Schedule could not be modified");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_schedule",
+                                    "MODIFY_SCHEDULE requires a schedule_id"));
+                g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                       "Schedule could not be modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_schedule"));
+                g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                       "Schedule could not be modified");
+                break;
+            }
+
+          modify_schedule_data_reset (modify_schedule_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_SCHEDULE, COMMENT);
+      CLOSE (CLIENT_MODIFY_SCHEDULE, DURATION);
+      CLOSE (CLIENT_MODIFY_SCHEDULE, FIRST_TIME);
+      CLOSE (CLIENT_MODIFY_SCHEDULE, NAME);
+      CLOSE (CLIENT_MODIFY_SCHEDULE, PERIOD);
+      CLOSE (CLIENT_MODIFY_SCHEDULE, TIMEZONE);
+
+      CLOSE (CLIENT_MODIFY_SCHEDULE_FIRST_TIME, DAY_OF_MONTH);
+      CLOSE (CLIENT_MODIFY_SCHEDULE_FIRST_TIME, HOUR);
+      CLOSE (CLIENT_MODIFY_SCHEDULE_FIRST_TIME, MINUTE);
+      CLOSE (CLIENT_MODIFY_SCHEDULE_FIRST_TIME, MONTH);
+      CLOSE (CLIENT_MODIFY_SCHEDULE_FIRST_TIME, YEAR);
+
+      CLOSE (CLIENT_MODIFY_SCHEDULE_DURATION, UNIT);
+
+      CLOSE (CLIENT_MODIFY_SCHEDULE_PERIOD, UNIT);
 
       case CLIENT_MODIFY_TARGET:
         {
@@ -19207,6 +19591,43 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_OVERRIDE_THREAT,
               &modify_override_data->threat);
+
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_COMMENT,
+              &modify_schedule_data->comment);
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_DURATION,
+              &modify_schedule_data->duration);
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_DURATION_UNIT,
+              &modify_schedule_data->duration_unit);
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_DAY_OF_MONTH,
+              &modify_schedule_data->first_time_day_of_month);
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_HOUR,
+              &modify_schedule_data->first_time_hour);
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MINUTE,
+              &modify_schedule_data->first_time_minute);
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_MONTH,
+              &modify_schedule_data->first_time_month);
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_FIRST_TIME_YEAR,
+              &modify_schedule_data->first_time_year);
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_NAME,
+              &modify_schedule_data->name);
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_PERIOD,
+              &modify_schedule_data->period);
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_PERIOD_UNIT,
+              &modify_schedule_data->period_unit);
+
+      APPEND (CLIENT_MODIFY_SCHEDULE_TIMEZONE,
+              &modify_schedule_data->timezone);
 
 
       APPEND (CLIENT_MODIFY_TARGET_COMMENT,

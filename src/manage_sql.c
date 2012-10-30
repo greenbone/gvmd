@@ -36387,6 +36387,157 @@ DEF_ACCESS (schedule_task_iterator_uuid, 1);
  */
 DEF_ACCESS (schedule_task_iterator_name, 2);
 
+/**
+ * @brief Modify a schedule.
+ *
+ * @param[in]   schedule_id  UUID of schedule.
+ * @param[in]   name         Name of schedule.
+ * @param[in]   comment      Comment on schedule.
+ * @param[in]   first_time   First time action will run.
+ * @param[in]   period       How often the action will run in seconds.  0 means
+ *                           once.
+ * @param[in]   period_months  The months part of the period.
+ * @param[in]   duration     The length of the time window the action will run
+ *                           in.  0 means entire duration of action.
+ * @param[in]   timezone     Timezone.
+ *
+ * @return 0 success, 1 failed to find schedule, 2 schedule with new name exists,
+ *         3 error in type name, 4 schedule_id required, -1 internal error.
+ */
+int
+modify_schedule (const char *schedule_id, const char *name, const char *comment,
+                 time_t first_time, time_t period, time_t period_months,
+                 time_t duration, const char *timezone)
+{
+  gchar *quoted_name, *quoted_comment, *quoted_timezone;
+  gchar *first_time_string, *duration_string, *period_string;
+  gchar *period_months_string, *offset_string;
+  schedule_t schedule;
+
+  if (schedule_id == NULL)
+    return 4;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+
+  schedule = 0;
+  if (find_schedule (schedule_id, &schedule))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (schedule == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  /* Check whether a schedule with the same name exists already. */
+  if (name)
+    {
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM schedules"
+                   " WHERE name = '%s'"
+                   " AND ROWID != %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   schedule,
+                   current_credentials.uuid))
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+    }
+  else
+    quoted_name = NULL;
+
+  quoted_comment = comment ? sql_quote (comment) : NULL;
+
+  if (duration)
+    duration_string = g_strdup_printf ("%li", duration);
+  else
+    duration_string = NULL;
+
+  if (first_time)
+    first_time_string = g_strdup_printf ("%li", first_time);
+  else
+    first_time_string = NULL;
+
+  if (period_months)
+    {
+      period_months_string = g_strdup_printf ("%li", period_months);
+      period_string = g_strdup ("0");
+    }
+  else
+    {
+      if (period)
+        {
+          period_months_string = g_strdup ("0");
+          period_string = g_strdup_printf ("%li", period);
+        }
+      else
+        {
+          period_months_string = NULL;
+          period_string = NULL;
+        }
+    }
+
+  if (first_time)
+    {
+      if (timezone)
+        offset_string = g_strdup_printf ("%li", current_offset (timezone));
+      else
+        offset_string = NULL;
+    }
+  else
+    offset_string = NULL;
+
+  quoted_timezone = timezone ? sql_quote (timezone) : NULL;
+
+  sql ("UPDATE schedules SET"
+       " name = %s%s%s,"
+       " comment = %s%s%s,"
+       " timezone = %s%s%s,"
+       " first_time = %s,"
+       " period = %s,"
+       " period_months = %s,"
+       " duration = %s,"
+       " initial_offset = %s"
+       " WHERE ROWID = %llu;",
+       quoted_name ? "'" : "",
+       quoted_name ? quoted_name : "name",
+       quoted_name ? "'" : "",
+       quoted_comment ? "'" : "",
+       quoted_comment ? quoted_comment : "comment",
+       quoted_comment ? "'" : "",
+       quoted_timezone ? "'" : "",
+       quoted_timezone ? quoted_timezone : "timezone",
+       quoted_timezone ? "'" : "",
+       first_time ? first_time_string : "first_time",
+       period_string ? period_string : "period",
+       period_months_string ? period_months_string : "period_months",
+       duration ? duration_string : "duration",
+       offset_string ? offset_string : "initial_offset",
+       schedule);
+
+  g_free (duration_string);
+  g_free (first_time_string);
+  g_free (offset_string);
+  g_free (period_string);
+  g_free (quoted_comment);
+  g_free (quoted_name);
+  g_free (quoted_timezone);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 
 /* Report Formats. */
 
