@@ -36525,6 +36525,12 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        offset_string ? offset_string : "initial_offset",
        schedule);
 
+  sql ("UPDATE tasks SET schedule_next_time = "
+       " (SELECT first_time FROM schedules WHERE ROWID = %llu)"
+       " WHERE schedule = %llu;",
+       schedule,
+       schedule);
+
   g_free (duration_string);
   g_free (first_time_string);
   g_free (offset_string);

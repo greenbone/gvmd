@@ -1,5 +1,9 @@
 2012-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (modify_schedule): Update task next time too.
+
+2012-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (slave_system_report): Request duration too, by using
 	omp_get_system_reports_ext.
 
