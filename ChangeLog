@@ -1,3 +1,10 @@
+2012-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (modify_schedule): New command.
+	(get_schedules): Add SIMPLE_PERIOD and SIMPLE_DURATION.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2012-10-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OMP MODIFY_SCHEDULE.

@@ -1537,6 +1537,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_note</c>
           <c>modify_override</c>
           <c>modify_report</c>
+          <c>modify_schedule</c>
           <c>modify_setting</c>
           <c>modify_target</c>
           <c>modify_task</c>
@@ -1629,6 +1630,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_note</r>
             <r>modify_override</r>
             <r>modify_report</r>
+            <r>modify_schedule</r>
             <r>modify_setting</r>
             <r>modify_target</r>
             <r>modify_task</r>
@@ -8214,7 +8216,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>timezone</e>
               <e>period</e>
               <e>period_months</e>
+              <e>simple_period</e>
               <e>duration</e>
+              <e>simple_duration</e>
               <e>in_use</e>
               <e>tasks</e>
             </g>
@@ -8258,9 +8262,33 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern><t>integer</t></pattern>
         </ele>
         <ele>
+          <name>simple_period</name>
+          <summary>Simple representation of period, if available</summary>
+          <pattern>
+            text
+            <o><e>unit</e></o>
+          </pattern>
+          <ele>
+            <name>unit</name>
+            <pattern><t>time_unit</t></pattern>
+          </ele>
+        </ele>
+        <ele>
           <name>duration</name>
           <summary>How long the task will run for (0 for entire task)</summary>
           <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>simple_duration</name>
+          <summary>Simple representation of duration, if available</summary>
+          <pattern>
+            text
+            <o><e>unit</e></o>
+          </pattern>
+          <ele>
+            <name>unit</name>
+            <pattern><t>time_unit</t></pattern>
+          </ele>
         </ele>
         <ele>
           <name>in_use</name>
@@ -8322,7 +8350,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <timezone>Europe/Berlin</timezone>
             <period>86400</period>
             <period_months>0</period_months>
+            <simple_period>1<unit>day</unit></simple_period>
             <duration>10800</duration>
+            <simple_duration>3<unit>hour</unit></simple_duration>
             <in_use>1</in_use>
             <tasks>
               <task id="d4daf4c4-25c7-40ac-87d3-38e489f34330">
@@ -10096,7 +10126,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_TARGETS            Get all targets.
             GET_TASKS              Get all tasks.
             GET_VERSION            Get the OpenVAS Manager Protocol version.
-            GET_INFO               Get information for items of given type.
+            GET_INFO               Get raw information for a given item.
             HELP                   Get this help text.
             MODIFY_CONFIG          Update an existing config.
             MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.
@@ -10105,6 +10135,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             MODIFY_OVERRIDE        Modify an existing override.
             MODIFY_REPORT          Modify an existing report.
             MODIFY_REPORT_FORMAT   Modify an existing report format.
+            MODIFY_SCHEDULE        Modify an existing schedule.
             MODIFY_SETTING         Modify an existing setting.
             MODIFY_TARGET          Modify an existing target.
             MODIFY_TASK            Update an existing task.
@@ -11010,6 +11041,125 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_report_format_response status="200" status_text="OK">
         </modify_report_format_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_schedule</name>
+    <summary>Modify an existing schedule</summary>
+    <description>
+      <p>
+        The client uses the modify_schedule command to change an existing schedule.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>schedule_id</name>
+        <summary>ID of schedule to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>comment</e></o>
+      <o><e>name</e></o>
+      <o><e>first_time</e></o>
+      <o><e>duration</e></o>
+      <o><e>period</e></o>
+      <o><e>timezone</e></o>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on schedule</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>name</name>
+      <summary>Name of schedule</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>first_time</name>
+      <summary>First time the task will run</summary>
+      <pattern>
+        <o><e>day_of_month</e></o>
+        <o><e>hour</e></o>
+        <o><e>minute</e></o>
+        <o><e>month</e></o>
+        <o><e>year</e></o>
+      </pattern>
+      <ele>
+        <name>day_of_month</name>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>hour</name>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>minute</name>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>month</name>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>year</name>
+        <pattern>text</pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>timezone</name>
+      <summary>The timezone the schedule will follow</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>duration</name>
+      <summary>How long the task will run for</summary>
+      <pattern>
+        text
+        <o><e>unit</e></o>
+      </pattern>
+      <ele>
+        <name>unit</name>
+        <pattern><t>time_unit</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>period</name>
+      <summary>How often the task will run</summary>
+      <pattern>
+        text
+        <o><e>unit</e></o>
+      </pattern>
+      <ele>
+        <name>unit</name>
+        <pattern><t>time_unit</t></pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the name of a schedule</summary>
+      <request>
+        <modify_schedule schedule_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <name>Weekly Scan</name>
+        </modify_schedule>
+      </request>
+      <response>
+        <modify_schedule_response status="200" status_text="OK">
+        </modify_schedule_response>
       </response>
     </example>
   </command>

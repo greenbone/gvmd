@@ -75,6 +75,7 @@ command
     | modify_override
     | modify_report
     | modify_report_format
+    | modify_schedule
     | modify_setting
     | modify_target
     | modify_task
@@ -157,6 +158,7 @@ response
     | modify_override_response
     | modify_report_response
     | modify_report_format_response
+    | modify_schedule_response
     | modify_setting_response
     | modify_target_response
     | modify_task_response
@@ -1572,6 +1574,7 @@ commands
            | modify_note
            | modify_override
            | modify_report
+           | modify_schedule
            | modify_setting
            | modify_target
            | modify_task
@@ -3701,6 +3704,113 @@ modify_report_format_param_value
        base64
      }
 
+## Command modify_schedule
+##
+## Modify an existing schedule.
+
+modify_schedule
+ = element modify_schedule
+     {
+       # ID of schedule to modify.
+       attribute schedule_id { uuid }
+       & modify_schedule_comment?
+       & modify_schedule_name?
+       & modify_schedule_first_time?
+       & modify_schedule_duration?
+       & modify_schedule_period?
+       & modify_schedule_timezone?
+     }
+
+# Comment on schedule.
+modify_schedule_comment
+ = element comment
+     {
+       text
+     }
+
+# Name of schedule.
+modify_schedule_name
+ = element name
+     {
+       name
+     }
+
+# First time the task will run.
+modify_schedule_first_time
+ = element first_time
+     {
+       modify_schedule_first_time_day_of_month?
+       & modify_schedule_first_time_hour?
+       & modify_schedule_first_time_minute?
+       & modify_schedule_first_time_month?
+       & modify_schedule_first_time_year?
+     }
+
+modify_schedule_first_time_day_of_month
+ = element day_of_month
+     {
+       text
+     }
+
+modify_schedule_first_time_hour
+ = element hour
+     {
+       text
+     }
+
+modify_schedule_first_time_minute
+ = element minute
+     {
+       text
+     }
+
+modify_schedule_first_time_month
+ = element month
+     {
+       text
+     }
+
+modify_schedule_first_time_year
+ = element year
+     {
+       text
+     }
+
+# The timezone the schedule will follow.
+modify_schedule_timezone
+ = element timezone
+     {
+       text
+     }
+
+# How long the task will run for.
+modify_schedule_duration
+ = element duration
+     {
+       text
+       & modify_schedule_duration_unit?
+     }
+
+modify_schedule_duration_unit
+ = element unit
+     {
+       time_unit
+     }
+
+# How often the task will run.
+modify_schedule_period
+ = element period
+     {
+       text
+       & modify_schedule_period_unit?
+     }
+
+modify_schedule_period_unit
+ = element unit
+     {
+       time_unit
+     }
+
 ## Command modify_setting
 ##
 ## Modify an existing setting.
@@ -4152,6 +4262,7 @@ commands_response
            | modify_note_response
            | modify_override_response
            | modify_report_response
+           | modify_schedule_response
            | modify_setting_response
            | modify_target_response
            | modify_task_response
@@ -6647,7 +6758,9 @@ get_schedules_response_schedule
            & get_schedules_response_schedule_timezone
            & get_schedules_response_schedule_period
            & get_schedules_response_schedule_period_months
+           & get_schedules_response_schedule_simple_period
            & get_schedules_response_schedule_duration
+           & get_schedules_response_schedule_simple_duration
            & get_schedules_response_schedule_in_use
            & get_schedules_response_schedule_tasks )?
      }
@@ -6701,11 +6814,39 @@ get_schedules_response_schedule_period_months
        integer
      }
 
+# Simple representation of period, if available.
+get_schedules_response_schedule_simple_period
+ = element simple_period
+     {
+       text
+       & get_schedules_response_schedule_simple_period_unit?
+     }
+
+get_schedules_response_schedule_simple_period_unit
+ = element unit
+     {
+       time_unit
+     }
+
 # How long the task will run for (0 for entire task).
 get_schedules_response_schedule_duration
  = element duration
      {
        integer
+     }
+
+# Simple representation of duration, if available.
+get_schedules_response_schedule_simple_duration
+ = element simple_duration
+     {
+       text
+       & get_schedules_response_schedule_simple_duration_unit?
+     }
+
+get_schedules_response_schedule_simple_duration_unit
+ = element unit
+     {
+       time_unit
      }
 
 # Whether any tasks are using the schedule.
@@ -7929,6 +8070,15 @@ modify_report_response
 
 modify_report_format_response
  = element modify_report_format_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_schedule
+
+modify_schedule_response
+ = element modify_schedule_response
      {
        attribute status { status }
        & attribute status_text { text }
