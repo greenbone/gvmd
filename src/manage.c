@@ -3083,6 +3083,7 @@ slave_system_report (const char *name, const char *duration,
   gnutls_session_t session;
   entity_t get, entity;
   entities_t reports;
+  omp_get_system_reports_opts_t opts;
 
   if (find_slave (slave_id, &slave))
     return -1;
@@ -3114,7 +3115,12 @@ slave_system_report (const char *name, const char *duration,
 
   tracef ("   %s: authenticated\n", __FUNCTION__);
 
-  if (omp_get_system_reports (&session, name, 0, &get))
+  opts = omp_get_system_reports_opts_defaults;
+  opts.name = name;
+  opts.duration = duration;
+  opts.brief = 0;
+
+  if (omp_get_system_reports_ext (&session, opts, &get))
     goto fail;
 
   openvas_server_close (socket, session);
