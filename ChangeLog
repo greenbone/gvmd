@@ -1,3 +1,19 @@
+2012-11-01  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Add support for sending alerts to a verinice .PRO server.
+
+	* src/manage.h: Introduce ALERT_METHOD_VERINICE.
+
+	* src/manage.c (alert_method_name, alert_method_from_name): Add
+	support for ALERT_METHOD_VERINICE.
+
+	* src/manage_sql.c (send_to_verinice): New function.
+	(escalate_2): Add new case for ALERT_METHOD_VERINICE.
+
+	* src/alert_methods/verinice/alert: New.
+
+	* CMakeLists.txt: Ensure alert script is installed.
+
 2012-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (modify_schedule): Update task next time too.

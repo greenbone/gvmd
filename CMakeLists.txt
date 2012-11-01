@@ -337,6 +337,10 @@ install (FILES src/alert_methods/Sourcefire/alert
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_alert_methods/cd1f5a34-6bdc-11e0-9827-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
+install (FILES src/alert_methods/verinice/alert
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_alert_methods/f9d97653-f89b-41af-9ba1-0f6ee00e9c1a/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
 install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${OPENVAS_DATA_DIR}/openvasmd/wizards)")
 
 install (FILES src/wizards/quick_first_scan.xml
