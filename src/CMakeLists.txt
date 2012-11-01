@@ -134,25 +134,31 @@ install (TARGETS openvasmd
 # FIX test coverage
 
 add_custom_target (splint COMMENT "Running splint..."
-                   COMMAND sh -c \"splint -booltype gboolean -predboolint +unixlib +export-header `pkg-config --cflags glib-2.0` `pkg-config --cflags libopenvas` *.c\")
+                   COMMAND sh -c \"splint -booltype gboolean -predboolint +unixlib +export-header `pkg-config --cflags glib-2.0` `pkg-config --cflags libopenvas` ${CMAKE_CURRENT_SOURCE_DIR}/*.c\")
 
 add_custom_target (rats COMMENT "Running rats..."
-                   COMMAND sh -c \"rats --warning 2 *.[ch]\")
+                   COMMAND sh -c \"rats --warning 2 ${CMAKE_CURRENT_SOURCE_DIR}/*.[ch]\")
 
 add_custom_target (flawfinder COMMENT "Running flawfinder..."
-                   COMMAND sh -c \"flawfinder *.[ch]\")
+                   COMMAND sh -c \"flawfinder ${CMAKE_CURRENT_SOURCE_DIR}/*.[ch]\")
 
 add_custom_target (check COMMENT "Checking code...")
 add_dependencies (check splint rats flawfinder)
 
 ## Tag files
 
-set (C_FILES "openvasmd.c" "oxpd.c" "otpd.c" "ompd.c" "omp.c" "otp.c"
-             "manage.c" "manage_ranges_all_tcp_nmap_5_51_top_100.c"
-             "manage_ranges_all_tcp_nmap_5_51_top_1000.c"
-             "manage_ranges_iana_tcp_2012.c" "manage_ranges_iana_tcp_udp_2012.c"
-             "manage_ranges_nmap_5_51_top_2000_top_100.c"
-             "manage_sql.c" "ovas-mngr-comm.c" "lsc_user.c" "sql.c")
+set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/oxpd.c" "${CMAKE_CURRENT_SOURCE_DIR}/otpd.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/ompd.c" "${CMAKE_CURRENT_SOURCE_DIR}/omp.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/otp.c" "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_all_tcp_nmap_5_51_top_100.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_all_tcp_nmap_5_51_top_1000.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_iana_tcp_2012.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_iana_tcp_udp_2012.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_nmap_5_51_top_2000_top_100.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/ovas-mngr-comm.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c" "${CMAKE_CURRENT_SOURCE_DIR}/sql.c")
 add_custom_target (etags COMMENT "Building TAGS..."
                    COMMAND etags ${C_FILES})
 add_custom_target (ctags COMMENT "Building tags..."

@@ -1,3 +1,18 @@
+2012-11-01  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Update targets for out-of-source builds.
+
+	* doc/CMakeLists.txt: Update commands and targets to work with
+	out-of-source builds.
+
+	* doc/Doxyfile.in: Updated to work with out-of-source builds,
+	harmonized with other modules.
+
+	* doc/Doxyfile_full.in: Harmonized with Doxyfile.in.
+
+	* src/CMakeLists.txt: Ensure that the target "splint", "rats",
+	"flawfinder", "etags" and "ctags" work with out-of-source builds.
+
 2012-11-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (modify_schedule): When intervals are -1 retain the
