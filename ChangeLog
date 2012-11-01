@@ -1,5 +1,11 @@
 2012-11-01  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* INSTALL: Update for out-of-source builds, update openvas-libraries
+	dependency, mention verinice .PRO connector, replace "escalator" with
+	"alert".
+
+2012-11-01  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Update targets for out-of-source builds.
 
 	* doc/CMakeLists.txt: Update commands and targets to work with

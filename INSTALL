@@ -1,7 +1,7 @@
 INSTALLATION INSTRUCTIONS FOR OPENVAS-MANAGER
 =============================================
 
-Please note: The reference systems used by most of the developers is Debian
+Please note: The reference system used by most of the developers is Debian
 Debian GNU/Linux 'Squeeze' 6.0. The build might fail on any other systems.
 Also it is necessary to install dependent development packages.
 
@@ -14,7 +14,7 @@ Prerequisites:
 * glib-2.0 >= 2.16
 * gnutls >= 2.2
 * libuuid (from e2fsprogs)
-* openvas-libraries >= 6.0.0
+* openvas-libraries >= 6.0+beta2
 * sqlite3
 * pkg-config
 
@@ -36,13 +36,18 @@ files before configuring:
 
     $ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/your/location/lib/pkgconfig
 
+Create a build directory and change into it with
+
+    $ mkdir build
+    $ cd build
+
 Then configure the build with
 
-    $ cmake -DCMAKE_INSTALL_PREFIX=/path/to/your/installation .
+    $ cmake -DCMAKE_INSTALL_PREFIX=/path/to/your/installation ..
 
 or (if you want to use the default installation path /usr/local)
 
-    $ cmake .
+    $ cmake ..
 
 This only needs to be done once.  Note: It is assumed that the other
 OpenVAS components are installed to the same path.  If not, you need to set
@@ -54,7 +59,7 @@ Thereafter, the following commands are useful.
     $ make doc            # build the documentation
     $ make doc-full       # build more developer-oriented documentation
     $ make install        # install the build
-    $ make rebuild_cache  # rebuild the make system cache
+    $ make rebuild_cache  # rebuild the cmake cache
 
 In case you want to install openvas-manager to a different path from the
 other OpenVAS modules, you might need to set some paths explicitly
@@ -178,9 +183,13 @@ Prerequisites for generating system reports:
 Prerequisites for signature verification:
 * gnupg
 
-Prerequisites for HTTP escalators:
+Prerequisites for HTTP alerts:
 * wget
 
-Prerequisites for Sourcefire Connector escalator:
+Prerequisites for Sourcefire Connector alert:
 * A program in the PATH called greenbone_sourcefire_connector that takes args
   IP, port, PKCS12 file and report file in Sourcefire format.
+
+Prerequisites for verinice .PRO Connector alert:
+* A program in the PATH called greenbone_verinice_connector that takes args
+  IP, port, username, password and report file in verinice .PRO format.
