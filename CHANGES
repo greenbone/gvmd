@@ -1,4 +1,4 @@
-openvas-manager 4.0+beta4 (2012-10-XX)
+openvas-manager 4.0+beta4 (2012-11-XX)
 
 This is the fourth beta version of the upcoming 4.0 release of the OpenVAS
 Manager. It is the central management service between the actual security
@@ -15,11 +15,12 @@ and Michael Wiegand.
 Main changes since 4.0+beta3:
 * New: Auto-FP feature to filter out likely false positives in a report.
 * New: Manage closed CVEs, as reported by the Scanner (trusted vendor updates).
-* New: Mutiple alerts can now be attached to a task.
+* New: Multiple alerts can now be attached to a task.
 * New: Wizard framework with first wizard "quick_first_scan" and user setting
   for wizard appearance.
 * New: Management for Filter objects.
-* New: Report format plugins for ISMS tool "verinice". 
+* New: Report format plugins for ISMS tool "verinice".
+* New: Alert for sending results to a verinice .PRO server.
 * Extended: Management for information such as CPE, including a extended SCAP
   data synchronization.
 * Extended: Powerfilter now available for Reports.
@@ -28,12 +29,12 @@ Main changes since 4.0+beta3:
 * Improved: Handle daylight saving in schedules.
 * Improved: Extended features of Powerfilter such as sorting and result ranges.
 * Improved: When importing a report, now the host details are also imported.
-* Improved: Reduced databse locking times during some operations so that
+* Improved: Reduced database locking times during some operations so that
   less blocking happens.
 * Improved: Manager serves OMP even when the scanner is down.
 * Improved: Notes management now supports Powerfilter and Trashcan.
 * Improved: Added switch to control whether a task should contribute to asset
-  management. 
+  management.
 * Improved: Report exports now also contain the comment of the respective task.
 * Improved: Report exports now also contain the family of NVTs.
 * Improved: Faster report format plugins LaTeX and PDF.
