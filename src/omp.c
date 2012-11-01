@@ -308,18 +308,19 @@ time_from_strings (const char *hour, const char *minute,
 /**
  * @brief Return interval defined by time and unit strings.
  *
- * @param[in]   value   Value.  0 if NULL.
+ * @param[in]   value   Value.
  * @param[in]   unit    Calendar unit: second, minute, hour, day, week,
  *                      month, year or decade.  "second" if NULL.
  * @param[out]  months  Months return.
  *
- * @return Interval described by arguments on success, else -1.
+ * @return Interval described by arguments on success, -2 if value was NULL,
+ *         -1 on error.
  */
 static time_t
 interval_from_strings (const char *value, const char *unit, time_t *months)
 {
   if (value == NULL)
-    return 0;
+    return -1;
 
   if ((unit == NULL) || (strcasecmp (unit, "second") == 0))
     return atoi (value);
@@ -357,7 +358,7 @@ interval_from_strings (const char *value, const char *unit, time_t *months)
         }
     }
 
-  return -1;
+  return -2;
 }
 
 /**
@@ -14049,7 +14050,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               (create_schedule_data->period,
                                create_schedule_data->period_unit,
                                &period_months))
-                   == -1)
+                   == -2)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
                                 "Failed to create interval from PERIOD"));
@@ -14057,7 +14058,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 (create_schedule_data->duration,
                                  create_schedule_data->duration_unit,
                                  NULL))
-                   == -1)
+                   == -2)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
                                 "Failed to create interval from DURATION"));
@@ -15218,7 +15219,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               (modify_schedule_data->period,
                                modify_schedule_data->period_unit,
                                &period_months))
-                   == -1)
+                   == -2)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_schedule",
                                 "Failed to create interval from PERIOD"));
@@ -15226,7 +15227,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 (modify_schedule_data->duration,
                                  modify_schedule_data->duration_unit,
                                  NULL))
-                   == -1)
+                   == -2)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_schedule",
                                 "Failed to create interval from DURATION"));

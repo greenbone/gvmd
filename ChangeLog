@@ -1,3 +1,12 @@
+2012-11-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (modify_schedule): When intervals are -1 retain the
+	existing value, instead of when intervals are 0.  This allows setting
+	the value to 0.
+
+	* src/omp.c (time_from_strings): Return -1 if value was NULL and -2 on
+	error.  Adjust callers.
+
 2012-11-01  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Add support for sending alerts to a verinice .PRO server.

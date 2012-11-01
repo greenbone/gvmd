@@ -36682,33 +36682,33 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   quoted_comment = comment ? sql_quote (comment) : NULL;
 
-  if (duration)
-    duration_string = g_strdup_printf ("%li", duration);
-  else
+  if (duration == -1)
     duration_string = NULL;
-
-  if (first_time)
-    first_time_string = g_strdup_printf ("%li", first_time);
   else
+    duration_string = g_strdup_printf ("%li", duration);
+
+  if (first_time == -1)
     first_time_string = NULL;
-
-  if (period_months)
-    {
-      period_months_string = g_strdup_printf ("%li", period_months);
-      period_string = g_strdup ("0");
-    }
   else
+    first_time_string = g_strdup_printf ("%li", first_time);
+
+  if (period_months == -1)
     {
-      if (period)
-        {
-          period_months_string = g_strdup ("0");
-          period_string = g_strdup_printf ("%li", period);
-        }
-      else
+      if (period == -1)
         {
           period_months_string = NULL;
           period_string = NULL;
         }
+      else
+        {
+          period_months_string = g_strdup ("0");
+          period_string = g_strdup_printf ("%li", period);
+        }
+    }
+  else
+    {
+      period_months_string = g_strdup_printf ("%li", period_months);
+      period_string = g_strdup ("0");
     }
 
   if (first_time)
