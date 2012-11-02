@@ -1,3 +1,8 @@
+2012-11-02  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_sql.c (send_to_verinice, send_to_sourcefire): Drop
+	privileges when run as root.
+
 2012-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (append_relation, manage_clean_filter): Preserve
