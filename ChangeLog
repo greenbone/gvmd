@@ -1,5 +1,12 @@
 2012-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_asset_iterator, filtered_host_count): Rework
+	SQL of "Text phrase" case, to take advantage of the new results report
+	column and index.  For the count add report status check and in_assets
+	check.
+
+2012-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Improve performance of the simple case of the Assets report.  Hence
 	increase database version to 64.  Add database migration from version 63
 	to 64.
