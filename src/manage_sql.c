@@ -15876,29 +15876,32 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                          "                WHERE reports.ROWID = report)"
                          "       AND task_preferences.name = 'in_assets')"
                          "      = 'yes'"
-                         /* Search IP. */
-                         "  AND (host LIKE '%%%s%%%'"
-                         /* Search hostname. */
-                         "       OR EXISTS"
-                         "       (SELECT * FROM report_host_details"
-                         "        WHERE report_hosts.ROWID = report_host"
-                         "        AND (name = 'hostname'"
-                         "             OR name = 'best_os_txt'"
-                         "             OR name = 'best_os_cpe' OR name = 'App'"
-                         "             OR name = 'ports')"
-                         "        AND source_type = 'nvt'"
-                         "        AND value LIKE '%%%s%%'))"
                          "  ORDER BY ROWID DESC)"
                          "  AS last_report"
                          " FROM (SELECT DISTINCT host AS distinct_host"
                          "       FROM report_hosts"
                          "       ORDER BY host COLLATE collate_ip)"
+                         /* Search IP. */
+                         " WHERE (distinct_host LIKE '%%%s%%%'"
+                         /* Search hostname. */
+                         "        OR EXISTS"
+                         "        (SELECT * FROM report_host_details"
+                         "         WHERE report_host"
+                         "               = (SELECT ROWID FROM report_hosts"
+                         "                  WHERE report = last_report"
+                         "                  AND host = distinct_host)"
+                         "         AND (name = 'hostname'"
+                         "              OR name = 'best_os_txt'"
+                         "              OR name = 'best_os_cpe' OR name = 'App'"
+                         "              OR name = 'ports')"
+                         "         AND source_type = 'nvt'"
+                         "         AND value LIKE '%%%s%%'))"
                          /* Filter levels. */
-                         " WHERE EXISTS (SELECT results.ROWID, %s AS new_type"
-                         "               FROM results"
-                         "               WHERE results.report = last_report"
-                         "               AND results.host = distinct_host"
-                         "               %s)"
+                         " AND EXISTS (SELECT results.ROWID, %s AS new_type"
+                         "             FROM results"
+                         "             WHERE results.report = last_report"
+                         "             AND results.host = distinct_host"
+                         "             %s)"
                          " LIMIT %i OFFSET %i;",
                          current_credentials.uuid,
                          TASK_STATUS_DONE,
@@ -19476,27 +19479,30 @@ filtered_host_count (const char *levels, const char *search_phrase,
                          "                WHERE reports.ROWID = report)"
                          "       AND task_preferences.name = 'in_assets')"
                          "      = 'yes'"
-                         /* Search IP. */
-                         "  AND (host LIKE '%%%s%%%'"
-                         /* Search hostname. */
-                         "       OR EXISTS"
-                         "       (SELECT * FROM report_host_details"
-                         "        WHERE report_hosts.ROWID = report_host"
-                         "        AND (name = 'hostname'"
-                         "             OR name = 'best_os_txt'"
-                         "             OR name = 'best_os_cpe' OR name = 'App'"
-                         "             OR name = 'ports')"
-                         "        AND source_type = 'nvt'"
-                         "        AND value LIKE '%%%s%%'))"
                          "  ORDER BY ROWID DESC)"
                          "  AS last_report"
                          " FROM (SELECT DISTINCT host AS distinct_host"
                          "       FROM report_hosts)"
-                         " WHERE EXISTS (SELECT results.ROWID, %s AS new_type"
-                         "               FROM results"
-                         "               WHERE results.report = last_report"
-                         "               AND results.host = distinct_host"
-                         "               %s);",
+                         /* Search IP. */
+                         " WHERE (distinct_host LIKE '%%%s%%%'"
+                         /* Search hostname. */
+                         "        OR EXISTS"
+                         "        (SELECT * FROM report_host_details"
+                         "         WHERE report_host"
+                         "               = (SELECT ROWID FROM report_hosts"
+                         "                  WHERE report = last_report"
+                         "                  AND host = distinct_host)"
+                         "         AND (name = 'hostname'"
+                         "              OR name = 'best_os_txt'"
+                         "              OR name = 'best_os_cpe' OR name = 'App'"
+                         "              OR name = 'ports')"
+                         "         AND source_type = 'nvt'"
+                         "         AND value LIKE '%%%s%%'))"
+                         " AND EXISTS (SELECT results.ROWID, %s AS new_type"
+                         "             FROM results"
+                         "             WHERE results.report = last_report"
+                         "             AND results.host = distinct_host"
+                         "             %s);",
                          current_credentials.uuid,
                          TASK_STATUS_DONE,
                          quoted_search_phrase,
