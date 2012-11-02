@@ -8099,14 +8099,14 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
     /* Call the script. */
 
-    clean_ip = g_strdup (ip);
-    clean_port = g_strdup (port);
+    clean_ip = g_shell_quote (ip);
+    clean_port = g_shell_quote (port);
 
-    command = g_strdup_printf ("/bin/sh %s \"%s\" \"%s\" %s %s > /dev/null"
+    command = g_strdup_printf ("/bin/sh %s %s %s %s %s > /dev/null"
                                " 2> /dev/null",
                                script,
-                               g_strdelimit (clean_ip, "\"'`", ' '),
-                               g_strdelimit (clean_port, "\"'`", ' '),
+                               clean_ip,
+                               clean_port,
                                pkcs12_file,
                                report_file);
     g_free (report_file);
@@ -8406,16 +8406,16 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
     /* Call the script. */
 
-    clean_url = g_strdup (url);
-    clean_username = g_strdup (username);
-    clean_password = g_strdup (password);
+    clean_url = g_shell_quote (url);
+    clean_username = g_shell_quote (username);
+    clean_password = g_shell_quote (password);
 
-    command = g_strdup_printf ("/bin/sh %s \"%s\" \"%s\" \"%s\" %s > /dev/null"
+    command = g_strdup_printf ("/bin/sh %s %s %s %s %s > /dev/null"
                                " 2> /dev/null",
                                script,
-                               g_strdelimit (clean_url, "\"'`", ' '),
-                               g_strdelimit (clean_username, "\"'`", ' '),
-                               g_strdelimit (clean_password, "\"'`", ' '),
+                               clean_url,
+                               clean_username,
+                               clean_password,
                                archive_file);
     g_free (archive_file);
     g_free (script);

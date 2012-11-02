@@ -1,3 +1,8 @@
+2012-11-02  Andre Heinecke <andre.heinecke@greenbone.net>
+
+	* src/manage_sql.c (send_to_verinice, send_to_sourcefire): Do proper
+	quoting.
+
 2012-11-02  Andre Heinecke <aheinecke@intevation.de>
 
 	* src/manage_sql.c (send_to_verinice): Correct parameter count in command.
