@@ -1,5 +1,10 @@
 2012-11-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/manage_sql.c (send_to_verinice, send_to_sourcefire): Add quotes
+	to preserve space where appropriate.
+
+2012-11-02  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/manage_sql.c (send_to_verinice, send_to_sourcefire): Drop
 	privileges when run as root.
 

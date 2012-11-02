@@ -8098,7 +8098,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
     /* Call the script. */
 
-    command = g_strdup_printf ("/bin/sh %s %s %s %s %s > /dev/null"
+    command = g_strdup_printf ("/bin/sh %s \"%s\" \"%s\" %s %s > /dev/null"
                                " 2> /dev/null",
                                script,
                                ip,
@@ -8399,7 +8399,7 @@ send_to_verinice (const char *ip, const char *port, const char *username,
 
     /* Call the script. */
 
-    command = g_strdup_printf ("/bin/sh %s %s %s %s %s %s > /dev/null"
+    command = g_strdup_printf ("/bin/sh %s \"%s\" \"%s\" \"%s\" \"%s\" %s > /dev/null"
                                " 2> /dev/null",
                                script,
                                ip,
