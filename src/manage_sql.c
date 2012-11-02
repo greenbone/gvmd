@@ -8410,7 +8410,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
     clean_username = g_strdup (username);
     clean_password = g_strdup (password);
 
-    command = g_strdup_printf ("/bin/sh %s \"%s\" \"%s\" \"%s\" \"%s\" %s > /dev/null"
+    command = g_strdup_printf ("/bin/sh %s \"%s\" \"%s\" \"%s\" %s > /dev/null"
                                " 2> /dev/null",
                                script,
                                g_strdelimit (clean_url, "\"'`", ' '),

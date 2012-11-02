@@ -1,5 +1,9 @@
 2012-11-02  Andre Heinecke <aheinecke@intevation.de>
 
+	* src/manage_sql.c (send_to_verinice): Correct parameter count in command.
+
+2012-11-02  Andre Heinecke <aheinecke@intevation.de>
+
 	* src/manage_sql.c (escalate_2): Create verinice archive with verinice-ism
 	and send it with send_to_verinice.
 	(send_to_verinice): Change parameters to be an url and an archive file
