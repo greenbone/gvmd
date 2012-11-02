@@ -1,3 +1,8 @@
+2012-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (buffer_notes_xml): Make in_use 0 so that notes can be moved
+	to the trashcan.
+
 2012-11-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/manage_sql.c (send_to_verinice, send_to_sourcefire): Add quotes
@@ -11,7 +16,7 @@
 2012-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (append_relation, manage_clean_filter): Preserve
-	quotation o keywords.
+	quotation of keywords.
 
 2012-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
