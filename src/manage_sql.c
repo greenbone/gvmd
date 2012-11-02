@@ -7990,6 +7990,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 {
   gchar *script, *script_dir;
   gchar *report_file, *pkcs12_file, *pkcs12;
+  gchar *clean_ip, *clean_port;
   char report_dir[] = "/tmp/openvasmd_escalate_XXXXXX";
   GError *error;
   gsize pkcs12_len;
@@ -8098,16 +8099,21 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
     /* Call the script. */
 
+    clean_ip = g_strdup (ip);
+    clean_port = g_strdup (port);
+
     command = g_strdup_printf ("/bin/sh %s \"%s\" \"%s\" %s %s > /dev/null"
                                " 2> /dev/null",
                                script,
-                               ip,
-                               port,
+                               g_strdelimit (clean_ip, "\"'`", ' '),
+                               g_strdelimit (clean_port, "\"'`", ' '),
                                pkcs12_file,
                                report_file);
     g_free (report_file);
     g_free (pkcs12_file);
     g_free (script);
+    g_free (clean_ip);
+    g_free (clean_port);
 
     g_debug ("   command: %s\n", command);
 
@@ -8317,6 +8323,7 @@ send_to_verinice (const char *ip, const char *port, const char *username,
 {
   gchar *script, *script_dir;
   gchar *report_file;
+  gchar *clean_ip, *clean_port, *clean_username, *clean_password;
   char report_dir[] = "/tmp/openvasmd_alert_XXXXXX";
   GError *error;
 
@@ -8399,16 +8406,25 @@ send_to_verinice (const char *ip, const char *port, const char *username,
 
     /* Call the script. */
 
+    clean_ip = g_strdup (ip);
+    clean_port = g_strdup (port);
+    clean_username = g_strdup (username);
+    clean_password = g_strdup (password);
+
     command = g_strdup_printf ("/bin/sh %s \"%s\" \"%s\" \"%s\" \"%s\" %s > /dev/null"
                                " 2> /dev/null",
                                script,
-                               ip,
-                               port,
-                               username,
-                               password,
+                               g_strdelimit (clean_ip, "\"'`", ' '),
+                               g_strdelimit (clean_port, "\"'`", ' '),
+                               g_strdelimit (clean_username, "\"'`", ' '),
+                               g_strdelimit (clean_password, "\"'`", ' '),
                                report_file);
     g_free (report_file);
     g_free (script);
+    g_free (clean_ip);
+    g_free (clean_port);
+    g_free (clean_username);
+    g_free (clean_password);
 
     g_debug ("   command: %s\n", command);
 
