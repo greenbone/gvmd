@@ -26381,6 +26381,12 @@ append_relation (GString *clean, keyword_t *keyword, const char relation)
                               relation,
                               max);
     }
+  else if (keyword->quoted)
+    g_string_append_printf (clean,
+                            " %s%c\"%s\"",
+                            keyword->column,
+                            relation,
+                            keyword->string);
   else
     g_string_append_printf (clean,
                             " %s%c%s",
@@ -26431,11 +26437,17 @@ manage_clean_filter (const gchar *filter)
               break;
 
             case KEYWORD_RELATION_APPROX:
-              g_string_append_printf (clean, " %s", keyword->string);
+              if (keyword->quoted)
+                g_string_append_printf (clean, " \"%s\"", keyword->string);
+              else
+                g_string_append_printf (clean, " %s", keyword->string);
               break;
           }
       else
-        g_string_append_printf (clean, " %s", keyword->string);
+        if (keyword->quoted)
+          g_string_append_printf (clean, " \"%s\"", keyword->string);
+        else
+          g_string_append_printf (clean, " %s", keyword->string);
       point++;
     }
   filter_free (split);

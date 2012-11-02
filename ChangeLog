@@ -1,5 +1,10 @@
 2012-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (append_relation, manage_clean_filter): Preserve
+	quotation o keywords.
+
+2012-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_asset_iterator, filtered_host_count): In the
 	"Text phrase" case, move the phrase filtering out to happen after the
 	host selection, as in the old slower SQL.
