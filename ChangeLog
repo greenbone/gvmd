@@ -1,3 +1,8 @@
+2012-11-02  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Let empty keywords match NULL.
+	This patch was developed by Matthew Mundell.
+
 2012-11-01  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* CHANGES: Updated.
