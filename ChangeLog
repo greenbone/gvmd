@@ -1,5 +1,12 @@
 2012-11-02  Andre Heinecke <aheinecke@intevation.de>
 
+	* src/manage_sql.c (escalate_2): Create verinice archive with verinice-ism
+	and send it with send_to_verinice.
+	(send_to_verinice): Change parameters to be an url and an archive file
+	instead of ip port and report. Fix call of the connector.
+
+2012-11-02  Andre Heinecke <aheinecke@intevation.de>
+
 	* src/manage_sql.c (manage_report): Initialize get structure
 
 2012-11-02  Michael Wiegand <michael.wiegand@greenbone.net>

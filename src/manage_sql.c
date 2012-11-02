@@ -8307,49 +8307,49 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 }
 
 /**
- * @brief Send a report to a verinice .PRO server.
+ * @brief Send a report to a verinice.PRO server.
  *
- * @param[in]  ip         IP of server.
- * @param[in]  port       Port of server.
- * @param[in]  username   Username for server access.
- * @param[in]  password   Password for server access.
- * @param[in]  report     Report in "verinice PRO" format.
+ * @param[in]  url          URL of the server.
+ * @param[in]  username     Username for server access.
+ * @param[in]  password     Password for server access.
+ * @param[in]  archive      Verinice archive that should be sent.
+ * @param[in]  archive_size Size of the verinice archive
  *
  * @return 0 success, -1 error.
  */
 static int
-send_to_verinice (const char *ip, const char *port, const char *username,
-                    const char *password, const char *report)
+send_to_verinice (const char *url, const char *username, const char *password,
+                  const char *archive, int archive_size)
 {
   gchar *script, *script_dir;
-  gchar *report_file;
-  gchar *clean_ip, *clean_port, *clean_username, *clean_password;
-  char report_dir[] = "/tmp/openvasmd_alert_XXXXXX";
+  gchar *archive_file;
+  gchar *clean_url, *clean_username, *clean_password;
+  char archive_dir[] = "/tmp/openvasmd_alert_XXXXXX";
   GError *error;
 
-  if ((report == NULL) || (ip == NULL) || (port == NULL))
+  if ((archive == NULL) || (url == NULL))
     return -1;
 
-  tracef ("send to verinice: %s:%s", ip, port);
-  tracef ("report: %s", report);
+  tracef ("send to verinice: %s", url);
+  tracef ("archive: %s", archive);
 
   /* Setup files. */
 
-  if (mkdtemp (report_dir) == NULL)
+  if (mkdtemp (archive_dir) == NULL)
     {
       g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
       return -1;
     }
 
-  report_file = g_strdup_printf ("%s/report.xml", report_dir);
+  archive_file = g_strdup_printf ("%s/archive.vna", archive_dir);
 
   error = NULL;
-  g_file_set_contents (report_file, report, strlen (report), &error);
+  g_file_set_contents (archive_file, archive, archive_size, &error);
   if (error)
     {
       g_warning ("%s", error->message);
       g_error_free (error);
-      g_free (report_file);
+      g_free (archive_file);
       return -1;
     }
 
@@ -8364,7 +8364,7 @@ send_to_verinice (const char *ip, const char *port, const char *username,
 
   if (!g_file_test (script, G_FILE_TEST_EXISTS))
     {
-      g_free (report_file);
+      g_free (archive_file);
       g_free (script);
       g_free (script_dir);
       return -1;
@@ -8384,7 +8384,7 @@ send_to_verinice (const char *ip, const char *port, const char *username,
         g_warning ("%s: Failed to getcwd: %s\n",
                    __FUNCTION__,
                    strerror (errno));
-        g_free (report_file);
+        g_free (archive_file);
         g_free (previous_dir);
         g_free (script);
         g_free (script_dir);
@@ -8396,7 +8396,7 @@ send_to_verinice (const char *ip, const char *port, const char *username,
         g_warning ("%s: Failed to chdir: %s\n",
                    __FUNCTION__,
                    strerror (errno));
-        g_free (report_file);
+        g_free (archive_file);
         g_free (previous_dir);
         g_free (script);
         g_free (script_dir);
@@ -8406,23 +8406,20 @@ send_to_verinice (const char *ip, const char *port, const char *username,
 
     /* Call the script. */
 
-    clean_ip = g_strdup (ip);
-    clean_port = g_strdup (port);
+    clean_url = g_strdup (url);
     clean_username = g_strdup (username);
     clean_password = g_strdup (password);
 
     command = g_strdup_printf ("/bin/sh %s \"%s\" \"%s\" \"%s\" \"%s\" %s > /dev/null"
                                " 2> /dev/null",
                                script,
-                               g_strdelimit (clean_ip, "\"'`", ' '),
-                               g_strdelimit (clean_port, "\"'`", ' '),
+                               g_strdelimit (clean_url, "\"'`", ' '),
                                g_strdelimit (clean_username, "\"'`", ' '),
                                g_strdelimit (clean_password, "\"'`", ' '),
-                               report_file);
-    g_free (report_file);
+                               archive_file);
+    g_free (archive_file);
     g_free (script);
-    g_free (clean_ip);
-    g_free (clean_port);
+    g_free (clean_url);
     g_free (clean_username);
     g_free (clean_password);
 
@@ -8444,7 +8441,6 @@ send_to_verinice (const char *ip, const char *port, const char *username,
             g_free (previous_dir);
             return -1;
           }
-        g_free (report_file);
 
         pid = fork ();
         switch (pid)
@@ -8611,7 +8607,7 @@ send_to_verinice (const char *ip, const char *port, const char *username,
 
     /* Remove the directory. */
 
-    file_utils_rmdir_rf (report_dir);
+    file_utils_rmdir_rf (archive_dir);
 
     return 0;
   }
@@ -9194,15 +9190,18 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
         }
       case ALERT_METHOD_VERINICE:
         {
-          char *ip, *port, *username, *password, *filt_id;
+          char *url, *username, *password, *filt_id;
           gchar *report_content;
           gsize content_length;
           report_format_t report_format;
           int ret;
 
-          if (lookup_report_format ("verinice PRO", &report_format)
+          if (lookup_report_format ("Verinice ISM", &report_format)
               || (report_format == 0))
-            return -1;
+            {
+              g_warning ("Could not find verinice RFP");
+              return -1;
+            }
 
           if (report == 0)
             switch (sql_int64 (&report, 0, 0,
@@ -9240,24 +9239,23 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           NULL,    /* Extension. */
                                           NULL);   /* Content type. */
           if (report_content == NULL)
-            return -1;
+            {
+              g_warning ("Empty Report");
+              return -1;
+            }
 
-          ip = alert_data (alert, "method", "verinice_server_ip");
-          port = alert_data (alert, "method", "verinice_server_port");
-          if (port == NULL)
-            port = g_strdup ("80");
+          url = alert_data (alert, "method", "verinice_server_url");
           username = alert_data (alert, "method", "verinice_server_username");
           password = alert_data (alert, "method", "verinice_server_password");
 
-          tracef ("    verinice   ip: %s", ip);
-          tracef ("    verinice port: %s", port);
+          tracef ("    verinice  url: %s", url);
           tracef ("verinice username: %s", username);
 
-          ret = send_to_verinice (ip, port, username, password, report_content);
+          ret = send_to_verinice (url, username, password, report_content,
+                                  content_length);
 
           free (filt_id);
-          free (ip);
-          free (port);
+          free (url);
           g_free (report_content);
 
           return ret;
