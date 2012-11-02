@@ -1,3 +1,19 @@
+2012-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Improve performance of the simple case of the Assets report.  Hence
+	increase database version to 64.  Add database migration from version 63
+	to 64.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 64.
+
+	* src/manage_sql.c (create_tables): Add report to results.  Add index
+	results_by_report_host.
+	(migrate_63_to_64): New function.
+	(migrators): Add migrate_63_to_64.
+	(init_asset_iterator, filtered_host_count): Rework SQL of most common
+	case, to take advantage of the new results report column and index.  For
+	the count add report status check and in_assets check.
+
 2012-11-02  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage_sql.c (filter_clause): Let empty keywords match NULL.

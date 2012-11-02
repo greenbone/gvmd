@@ -1473,8 +1473,9 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS report_results_by_report ON report_results (report);");
   sql ("CREATE INDEX IF NOT EXISTS report_results_by_result ON report_results (result);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress, slave_task_uuid, highs, mediums, lows, logs, fps, override_highs, override_mediums, override_lows, override_logs, override_fps);");
-  sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
+  sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description, report)");
   sql ("CREATE INDEX IF NOT EXISTS results_by_host ON results (host);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_report_host ON results (report, host);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_task ON results (task);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_type ON results (type);");
   sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration, timezone, initial_offset);");
@@ -6304,6 +6305,47 @@ migrate_62_to_63 ()
 }
 
 /**
+ * @brief Migrate the database from version 63 to version 64.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_63_to_64 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 63. */
+
+  if (manage_db_version () != 63)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* The results table got a report column. */
+
+  sql ("ALTER TABLE results ADD COLUMN report;");
+
+  sql ("UPDATE results SET report = (SELECT report FROM report_results"
+       "                             WHERE result = results.rowid);");
+
+  sql ("CREATE INDEX IF NOT EXISTS results_by_report_host"
+       " ON results (report, host);");
+
+  /* Set the database version to 64. */
+
+  set_db_version (64);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -6371,6 +6413,7 @@ static migrator_t database_migrators[]
     {61, migrate_60_to_61},
     {62, migrate_61_to_62},
     {63, migrate_62_to_63},
+    {64, migrate_63_to_64},
     /* End marker. */
     {-1, NULL}};
 
@@ -15862,37 +15905,42 @@ init_asset_iterator (iterator_t* iterator, int first_result,
         }
       else
         init_iterator (iterator,
-                       "SELECT host"
-                       " FROM report_hosts"
-                       " WHERE (SELECT reports.owner FROM reports"
-                       "        WHERE reports.ROWID = report_hosts.report)"
-                       "       = (SELECT ROWID FROM users"
-                       "          WHERE users.uuid = '%s')"
-                       " AND (SELECT tasks.hidden FROM tasks, reports"
-                       "      WHERE reports.task = tasks.ROWID"
-                       "      AND reports.ROWID = report_hosts.report)"
-                       "     = 0"
-                       " AND (SELECT value FROM task_preferences, tasks,"
-                       "                        reports"
-                       "      WHERE reports.task = tasks.ROWID"
-                       "      AND reports.ROWID = report_hosts.report"
-                       "      AND task_preferences.task = tasks.ROWID"
-                       "      AND task_preferences.name = 'in_assets')"
-                       "     = 'yes'"
-                       " AND (report_hosts.end_time IS NOT NULL"
-                       "      AND report_hosts.end_time != '')"
-                       " GROUP BY host"
-                       " HAVING"
-                       " EXISTS"
-                       " (SELECT results.ROWID, %s AS new_type"
-                       "  FROM results, report_results"
-                       "  WHERE results.host = report_hosts.host"
-                       "  %s"
-                       "  AND results.ROWID = report_results.result"
-                       "  AND report_results.report = report_hosts.report)"
-                       " ORDER BY host COLLATE collate_ip"
+                       "SELECT"
+                       " distinct_host,"
+                       " (SELECT report FROM report_hosts"
+                       "  WHERE report_hosts.host = distinct_host"
+                       "  AND end_time IS NOT NULL"
+                       "  AND end_time != ''"
+                       "  AND (SELECT owner FROM reports WHERE ROWID = report)"
+                       "      = (SELECT ROWID FROM users"
+                       "         WHERE users.uuid = '%s')"
+                       "  AND (SELECT reports.scan_run_status = %u"
+                       "       FROM reports"
+                       "       WHERE reports.ROWID = report)"
+                       "  AND (SELECT hidden FROM tasks"
+                       "       WHERE tasks.ROWID"
+                       "             = (SELECT task FROM reports"
+                       "                WHERE reports.ROWID = report))"
+                       "      = 0"
+                       "  AND (SELECT value FROM task_preferences"
+                       "       WHERE task_preferences.task"
+                       "             = (SELECT task FROM reports"
+                       "                WHERE reports.ROWID = report)"
+                       "       AND task_preferences.name = 'in_assets')"
+                       "      = 'yes'"
+                       "  ORDER BY ROWID DESC)"
+                       "  AS last_report"
+                       " FROM (SELECT DISTINCT host AS distinct_host"
+                       "       FROM report_hosts"
+                       "       ORDER BY host COLLATE collate_ip)"
+                       " WHERE EXISTS (SELECT results.ROWID, %s AS new_type"
+                       "               FROM results"
+                       "               WHERE results.report = last_report"
+                       "               AND results.host = distinct_host"
+                       "               %s)"
                        " LIMIT %i OFFSET %i;",
                        current_credentials.uuid,
+                       TASK_STATUS_DONE,
                        new_type_sql,
                        levels_sql ? levels_sql->str : "",
                        max_results,
@@ -19428,7 +19476,8 @@ filtered_host_count (const char *levels, const char *search_phrase,
                          "   WHERE results.host = report_hosts.host"
                          "   %s"
                          "   AND results.ROWID = report_results.result"
-                         "   AND report_results.report = report_hosts.report));",
+                         "   AND report_results.report"
+                         "       = report_hosts.report));",
                          current_credentials.uuid,
                          quoted_search_phrase,
                          quoted_search_phrase,
@@ -19438,29 +19487,41 @@ filtered_host_count (const char *levels, const char *search_phrase,
         }
       else
         ret = sql_int (0, 0,
-                       "SELECT count(*) FROM"
-                       " (SELECT host"
-                       "  FROM report_hosts"
-                       "  WHERE (SELECT reports.owner FROM reports"
-                       "         WHERE reports.ROWID = report_hosts.report)"
-                       "        = (SELECT ROWID FROM users"
-                       "           WHERE users.uuid = '%s')"
-                       "  AND (SELECT tasks.hidden FROM tasks, reports"
-                       "       WHERE reports.task = tasks.ROWID"
-                       "       AND reports.ROWID = report_hosts.report)"
+                       "SELECT"
+                       " count (*),"
+                       " distinct_host,"
+                       " (SELECT report FROM report_hosts"
+                       "  WHERE report_hosts.host = distinct_host"
+                       "  AND end_time IS NOT NULL"
+                       "  AND end_time != ''"
+                       "  AND (SELECT owner FROM reports WHERE ROWID = report)"
+                       "      = (SELECT ROWID FROM users"
+                       "         WHERE users.uuid = '%s')"
+                       "  AND (SELECT reports.scan_run_status = %u"
+                       "       FROM reports"
+                       "       WHERE reports.ROWID = report)"
+                       "  AND (SELECT hidden FROM tasks"
+                       "       WHERE tasks.ROWID"
+                       "             = (SELECT task FROM reports"
+                       "                WHERE reports.ROWID = report))"
                        "      = 0"
-                       " AND (report_hosts.end_time IS NOT NULL"
-                       "      AND report_hosts.end_time != '')"
-                       "  GROUP BY host"
-                       "  HAVING"
-                       "  EXISTS"
-                       "  (SELECT results.ROWID, %s AS new_type"
-                       "   FROM results, report_results"
-                       "   WHERE results.host = report_hosts.host"
-                       "   %s"
-                       "   AND results.ROWID = report_results.result"
-                       "   AND report_results.report = report_hosts.report));",
+                       "  AND (SELECT value FROM task_preferences"
+                       "       WHERE task_preferences.task"
+                       "             = (SELECT task FROM reports"
+                       "                WHERE reports.ROWID = report)"
+                       "       AND task_preferences.name = 'in_assets')"
+                       "      = 'yes'"
+                       "  ORDER BY ROWID DESC)"
+                       "  AS last_report"
+                       " FROM (SELECT DISTINCT host AS distinct_host"
+                       "       FROM report_hosts)"
+                       " WHERE EXISTS (SELECT results.ROWID, %s AS new_type"
+                       "               FROM results"
+                       "               WHERE results.report = last_report"
+                       "               AND results.host = distinct_host"
+                       "               %s);",
                        current_credentials.uuid,
+                       TASK_STATUS_DONE,
                        new_type_sql,
                        levels_sql ? levels_sql->str : "");
 
