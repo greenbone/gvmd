@@ -1,3 +1,7 @@
+2012-11-02  Andre Heinecke <aheinecke@intevation.de>
+
+	* src/manage_sql.c (manage_report): Initialize get structure
+
 2012-11-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/manage_sql.c (send_to_verinice, send_to_sourcefire): Sanitize

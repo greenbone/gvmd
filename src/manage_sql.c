@@ -22258,6 +22258,8 @@ manage_report (report_t report, report_format_t report_format,
   int ret;
   get_data_t get;
 
+  memset (&get, 0, sizeof (get));
+
   if (type && strcmp (type, "scan"))
     return NULL;
 
