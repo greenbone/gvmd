@@ -25,7 +25,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20121019
+VERSION=20121104
+RESTRICTED=1
 
 # SETTINGS
 # ========
@@ -63,12 +64,52 @@ SCAP_DB="$SCAP_DIR/scap.db"
 
 ACCESSKEY="/etc/openvas/gsf-access-key"
 
+SCRIPT_NAME="greenbone-scapdata-sync"
+
+TIMESTAMP="$SCAP_DIR/timestamp"
+
+if [ -z "$FEED_NAME" ] ; then
+  FEED_NAME="Greenbone SCAP Feed"
+fi
+
+if [ -z "$FEED_VENDOR" ] ; then
+  FEED_VENDOR="Greenbone Networks GmbH"
+fi
+
+if [ -z "$FEED_HOME" ] ; then
+  FEED_HOME="http://www.greenbone.net/solutions/gbn_feed.html"
+fi
+
+do_describe () {
+  echo "This script synchronizes a SCAP collection with the '$FEED_NAME'."
+  echo "The '$FEED_NAME' is provided by '$FEED_VENDOR'."
+  echo "Online information about this feed: '$FEED_HOME'."
+}
+
+do_feedversion () {
+  if [ -r $TIMESTAMP ] ; then
+      echo `cat $TIMESTAMP`
+  fi
+}
+
 while test $# -gt 0; do
  case "$1" in
         --version)
-                echo $VERSION
-                exit 0
-                ;;
+          echo $VERSION
+          exit 0
+           ;;
+        --identify)
+          echo "SCAPSYNC|$SCRIPT_NAME|$VERSION|$FEED_NAME|$RESTRICTED|SCAPSYNC"
+          exit 0
+          ;;
+        --describe)
+          do_describe
+          exit 0
+          ;;
+        --feedversion)
+          do_feedversion
+          exit 0
+          ;;
  esac
  shift
 done
