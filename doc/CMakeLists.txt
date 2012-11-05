@@ -90,7 +90,7 @@ if (XMLTOMAN_EXECUTABLE)
 
   add_custom_command (OUTPUT openvasmd.8
 					  COMMAND sh
-					  ARGS -c \"${XMLTOMAN_EXECUTABLE} openvasmd.8.xml > openvasmd.8\;\"
+					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.8\;\"
 					  DEPENDS openvasmd.8.xml)
 else (XMLTOMAN_EXECUTABLE)
   message (STATUS "WARNING: xmltoman is required to generate manpage.")
