@@ -1,3 +1,12 @@
+2012-11-06  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport from trunk r14404, r14405 and r14421. Initial commits by
+	Andre Heinecke and Michael Wiegand.
+
+	* src/manage_sql.c (send_to_sourcefire): Drop privileges when run as
+	root. Add quotes to preserve space where appropriate. Sanitize
+	parameters before they reach the shell with proper quoting.
+
 2012-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport from trunk r14320.

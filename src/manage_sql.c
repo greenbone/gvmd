@@ -6859,6 +6859,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 {
   gchar *script, *script_dir;
   gchar *report_file, *pkcs12_file, *pkcs12;
+  gchar *clean_ip, *clean_port;
   char report_dir[] = "/tmp/openvasmd_escalate_XXXXXX";
   GError *error;
   gsize pkcs12_len;
@@ -6967,39 +6968,192 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
     /* Call the script. */
 
+    clean_ip = g_shell_quote (ip);
+    clean_port = g_shell_quote (port);
+
     command = g_strdup_printf ("/bin/sh %s %s %s %s %s > /dev/null"
                                " 2> /dev/null",
                                script,
-                               ip,
-                               port,
+                               clean_ip,
+                               clean_port,
                                pkcs12_file,
                                report_file);
     g_free (report_file);
     g_free (pkcs12_file);
     g_free (script);
+    g_free (clean_ip);
+    g_free (clean_port);
 
     g_debug ("   command: %s\n", command);
 
-    /* RATS: ignore, command is defined above. */
-    if (ret = system (command),
-        /** @todo ret is always -1. */
-        0 && ((ret) == -1
-              || WEXITSTATUS (ret)))
+    if (getuid () == 0)
       {
-        g_warning ("%s: system failed with ret %i, %i, %s\n",
-                   __FUNCTION__,
-                   ret,
-                   WEXITSTATUS (ret),
-                   command);
-        if (chdir (previous_dir))
-          g_warning ("%s: and chdir failed\n",
-                     __FUNCTION__);
-        g_free (previous_dir);
-        g_free (command);
-        return -1;
-      }
+        pid_t pid;
+        struct passwd *nobody;
 
-    g_free (command);
+        /* Run the command with lower privileges in a fork. */
+
+        nobody = getpwnam ("nobody");
+        if ((nobody == NULL))
+          {
+            g_warning ("%s: Failed to get record for user nobody: %s\n",
+                       __FUNCTION__,
+                       strerror (errno));
+            g_free (previous_dir);
+            return -1;
+          }
+        g_free (report_file);
+
+        pid = fork ();
+        switch (pid)
+          {
+          case 0:
+              {
+                /* Child.  Drop privileges, run command, exit. */
+
+                /* Clear parent state, because these affect
+                 * cleanup_manage_process. */
+                current_scanner_task = 0;
+                current_report = 0;
+
+                if (setgid (nobody->pw_gid))
+                  {
+                    g_warning ("%s (child): setgid: %s\n",
+                               __FUNCTION__,
+                               strerror (errno));
+                    exit (EXIT_FAILURE);
+                  }
+                if (setuid (nobody->pw_uid))
+                  {
+                    g_warning ("%s (child): setuid: %s\n",
+                               __FUNCTION__,
+                               strerror (errno));
+                    exit (EXIT_FAILURE);
+                  }
+
+                /* RATS: ignore, command is defined above. */
+                if (ret = system (command),
+                    /** @todo ret is always -1. */
+                    0 && ((ret) == -1
+                          || WEXITSTATUS (ret)))
+                  {
+                    g_warning ("%s (child):"
+                               " system failed with ret %i, %i, %s\n",
+                               __FUNCTION__,
+                               ret,
+                               WEXITSTATUS (ret),
+                               command);
+                    exit (EXIT_FAILURE);
+                  }
+
+                exit (EXIT_SUCCESS);
+                break;
+              }
+
+          case -1:
+            /* Parent when error. */
+
+            g_warning ("%s: Failed to fork: %s\n",
+                       __FUNCTION__,
+                       strerror (errno));
+            if (chdir (previous_dir))
+              g_warning ("%s: and chdir failed\n",
+                         __FUNCTION__);
+            g_free (previous_dir);
+            g_free (command);
+            return -1;
+            break;
+
+          default:
+              {
+                int status;
+
+                /* Parent on success.  Wait for child, and check result. */
+
+                g_free (command);
+
+                while (waitpid (pid, &status, 0) < 0)
+                  {
+                    if (errno == ECHILD)
+                      {
+                        g_warning ("%s: Failed to get child exit status",
+                                   __FUNCTION__);
+                        if (chdir (previous_dir))
+                          g_warning ("%s: and chdir failed\n",
+                                     __FUNCTION__);
+                        g_free (previous_dir);
+                        return -1;
+                      }
+                    if (errno == EINTR)
+                      continue;
+                    g_warning ("%s: wait: %s",
+                               __FUNCTION__,
+                               strerror (errno));
+                    if (chdir (previous_dir))
+                      g_warning ("%s: and chdir failed\n",
+                                 __FUNCTION__);
+                    g_free (previous_dir);
+                    return -1;
+                  }
+                if (WIFEXITED (status))
+                  switch (WEXITSTATUS (status))
+                    {
+                    case EXIT_SUCCESS:
+                      break;
+                    case EXIT_FAILURE:
+                    default:
+                      g_warning ("%s: child failed, %s\n",
+                                 __FUNCTION__,
+                                 command);
+                      if (chdir (previous_dir))
+                        g_warning ("%s: and chdir failed\n",
+                                   __FUNCTION__);
+                      g_free (previous_dir);
+                      return -1;
+                    }
+                else
+                  {
+                    g_warning ("%s: child failed, %s\n",
+                               __FUNCTION__,
+                               command);
+                    if (chdir (previous_dir))
+                      g_warning ("%s: and chdir failed\n",
+                                 __FUNCTION__);
+                    g_free (previous_dir);
+                    return -1;
+                  }
+
+                /* Child succeeded, continue to process result. */
+
+                break;
+              }
+          }
+      }
+    else
+      {
+        /* Just run the command as the current user. */
+
+        /* RATS: ignore, command is defined above. */
+        if (ret = system (command),
+            /** @todo ret is always -1. */
+            0 && ((ret) == -1
+                  || WEXITSTATUS (ret)))
+          {
+            g_warning ("%s: system failed with ret %i, %i, %s\n",
+                       __FUNCTION__,
+                       ret,
+                       WEXITSTATUS (ret),
+                       command);
+            if (chdir (previous_dir))
+              g_warning ("%s: and chdir failed\n",
+                         __FUNCTION__);
+            g_free (previous_dir);
+            g_free (command);
+            return -1;
+          }
+
+        g_free (command);
+      }
 
     /* Change back to the previous directory. */
 
