@@ -26897,7 +26897,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
           if (first_order)
             {
-              if (strcmp (type, "note")
+              if ((strcmp (type, "note")
+                   && strcmp (type, "override"))
                   || (strcmp (keyword->string, "nvt")
                       && strcmp (keyword->string, "name")))
                 g_string_append_printf (order, " ORDER BY %s ASC",
@@ -26905,7 +26906,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
-                                        " ORDER BY nvt ASC, notes%s.text ASC",
+                                        " ORDER BY nvt ASC, %ss%s.text ASC",
+                                        type,
                                         trash ? "_trash" : "");
               first_order = 0;
             }
@@ -26929,7 +26931,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
           if (first_order)
             {
-              if (strcmp (type, "note")
+              if ((strcmp (type, "note")
+                   && strcmp (type, "override"))
                   || (strcmp (keyword->string, "nvt")
                       && strcmp (keyword->string, "name")))
                 g_string_append_printf (order, " ORDER BY %s DESC",
@@ -26937,7 +26940,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
-                                        " ORDER BY nvt ASC, notes%s.text ASC",
+                                        " ORDER BY nvt ASC, %ss%s.text ASC",
+                                        type,
                                         trash ? "_trash" : "");
               first_order = 0;
             }

@@ -1,5 +1,10 @@
 2012-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Add name special case for overrides
+	as for notes.
+
+2012-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add trashcan feature to overrides.
 
 	* src/omp.c (delete_lsc_credential_data_reset): Add ultimate.
