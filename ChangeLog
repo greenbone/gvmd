@@ -1,5 +1,12 @@
 2012-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db_postgres.sql (results): Add report.
+	(overrides_trash): New table.
+
+	* doc/db.png: Update from source.
+
+2012-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): Add name special case for overrides
 	as for notes.
 

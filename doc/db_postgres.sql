@@ -287,7 +287,8 @@ CREATE TABLE results (
 	port text,
 	nvt text,  -- OID of NVT
 	type text,
-	description text);
+	description text,
+	report integer REFERENCES reports (id) ON DELETE RESTRICT);
 
 CREATE TABLE reports (
 	id integer PRIMARY KEY,
@@ -479,6 +480,22 @@ CREATE TABLE notes_trash (
 	end_time integer);
 
 CREATE TABLE overrides (
+	id integer PRIMARY KEY,
+	uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	nvt text NOT NULL,  -- OID of NVT
+	creation_time date,
+	modification_time date,
+	text text,
+	hosts text,
+	new_threat text,
+	port text,
+	threat text,
+	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+	result integer REFERENCES results (id) ON DELETE RESTRICT,
+	end_time integer);
+
+CREATE TABLE overrides_trash (
 	id integer PRIMARY KEY,
 	uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
