@@ -2168,12 +2168,10 @@ get_nvt_feed_checksum_data_reset (get_nvt_feed_checksum_data_t *data)
  */
 typedef struct
 {
+  get_data_t get;        ///< Get args.
   char *override_id;   ///< ID of override to get.
   char *nvt_oid;       ///< OID of NVT to which to limit listing.
   char *task_id;       ///< ID of task to which to limit listing.
-  char *sort_field;    ///< Field to sort results on.
-  int sort_order;      ///< Result sort order: 0 descending, else ascending.
-  int details;         ///< Boolean.  Whether to include full override details.
   int result;          ///< Boolean.  Whether to include associated results.
 } get_overrides_data_t;
 
@@ -5285,6 +5283,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
 
+            get_data_parse_attributes (&get_overrides_data->get, "override",
+                                       attribute_names,
+                                       attribute_values);
+
             append_attribute (attribute_names, attribute_values, "override_id",
                               &get_overrides_data->override_id);
 
@@ -5295,25 +5297,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_overrides_data->task_id);
 
             if (find_attribute (attribute_names, attribute_values,
-                                "details", &attribute))
-              get_overrides_data->details = strcmp (attribute, "0");
-            else
-              get_overrides_data->details = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
                                 "result", &attribute))
               get_overrides_data->result = strcmp (attribute, "0");
             else
               get_overrides_data->result = 0;
-
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_overrides_data->sort_field);
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_overrides_data->sort_order = strcmp (attribute, "descending");
-            else
-              get_overrides_data->sort_order = 1;
 
             set_client_state (CLIENT_GET_OVERRIDES);
           }
@@ -7704,6 +7691,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             "<hosts>%s</hosts>"
             "<port>%s</port>"
             "<threat>%s</threat>"
+
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
             get_iterator_uuid (notes),
@@ -7768,14 +7756,19 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
  * @param[in]  overrides                  Overrides iterator.
  * @param[in]  include_overrides_details  Whether to include details of overrides.
  * @param[in]  include_result             Whether to include associated result.
+ * @param[out] count                      Number of overrides.
  */
 static void
 buffer_overrides_xml (GString *buffer, iterator_t *overrides,
-                      int include_overrides_details, int include_result)
+                      int include_overrides_details, int include_result,
+                      int *count)
 {
   while (next (overrides))
     {
       char *uuid_task, *uuid_result;
+
+      if (count)
+        (*count)++;
 
       if (override_iterator_task (overrides))
         task_uuid (override_iterator_task (overrides),
@@ -7793,26 +7786,29 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
         {
           const char *text = override_iterator_text (overrides);
           gchar *excerpt = g_strndup (text, 40);
+          /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
                                     "<override id=\"%s\">"
                                     "<nvt oid=\"%s\">"
                                     "<name>%s</name>"
                                     "</nvt>"
+                                    "<creation_time>%s</creation_time>"
+                                    "<modification_time>%s</modification_time>"
+                                    "<writable>1</writable>"
+                                    "<in_use>0</in_use>"
                                     "<active>%i</active>"
                                     "<text excerpt=\"%i\">%s</text>"
-                                    "<threat>%s</threat>"
                                     "<new_threat>%s</new_threat>"
                                     "<orphan>%i</orphan>"
                                     "</override>",
-                                    override_iterator_uuid (overrides),
+                                    get_iterator_uuid (overrides),
                                     override_iterator_nvt_oid (overrides),
                                     override_iterator_nvt_name (overrides),
+                                    get_iterator_creation_time (overrides),
+                                    get_iterator_modification_time (overrides),
                                     override_iterator_active (overrides),
                                     strlen (excerpt) < strlen (text),
                                     excerpt,
-                                    override_iterator_threat (overrides)
-                                     ? override_iterator_threat (overrides)
-                                     : "",
                                     override_iterator_new_threat (overrides),
                                     ((override_iterator_task (overrides)
                                       && (uuid_task == NULL))
@@ -7823,8 +7819,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
       else
         {
           char *name_task;
-          time_t creation_time, mod_time;
-          gchar *creation, *mod;
           int trash_task;
           time_t end_time;
 
@@ -7839,18 +7833,17 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
               trash_task = 0;
             }
 
-          creation_time = override_iterator_creation_time (overrides);
-          creation = g_strdup (iso_time (&creation_time));
-          mod_time = override_iterator_modification_time (overrides);
-          mod = g_strdup (iso_time (&mod_time));
           end_time = override_iterator_end_time (overrides);
 
+          /* This must match send_get_common. */
           buffer_xml_append_printf
            (buffer,
             "<override id=\"%s\">"
             "<nvt oid=\"%s\"><name>%s</name></nvt>"
             "<creation_time>%s</creation_time>"
             "<modification_time>%s</modification_time>"
+            "<writable>1</writable>"
+            "<in_use>0</in_use>"
             "<active>%i</active>"
             "<end_time>%s</end_time>"
             "<text>%s</text>"
@@ -7860,11 +7853,11 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             "<new_threat>%s</new_threat>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
-            override_iterator_uuid (overrides),
+            get_iterator_uuid (overrides),
             override_iterator_nvt_oid (overrides),
             override_iterator_nvt_name (overrides),
-            creation,
-            mod,
+            get_iterator_creation_time (overrides),
+            get_iterator_modification_time (overrides),
             override_iterator_active (overrides),
             end_time > 1 ? iso_time (&end_time) : "",
             override_iterator_text (overrides),
@@ -7882,8 +7875,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
              || (override_iterator_result (overrides) && (uuid_result == NULL))));
 
           free (name_task);
-          g_free (creation);
-          g_free (mod);
 
           if (include_result && override_iterator_result (overrides))
             {
@@ -7896,8 +7887,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                 buffer_results_xml (buffer,
                                     &results,
                                     0,
-                                    0,  /* Notes. */
-                                    0,  /* Note details. */
+                                    0,  /* Overrides. */
+                                    0,  /* Override details. */
                                     0,  /* Overrides. */
                                     0,  /* Override details. */
                                     NULL,
@@ -8162,18 +8153,20 @@ buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
 
   if (task)
     {
+      get_data_t get;
       iterator_t overrides;
+      memset (&get, '\0', sizeof (get));
+      get.filter = "sort-reverse=created";  /* Most recent first. */
       init_override_iterator (&overrides,
-                              0,
+                              &get,
                               0,
                               result,
-                              task,
-                              0, /* Most recent first. */
-                              "creation_time");
+                              task);
       buffer_overrides_xml (buffer,
                             &overrides,
                             include_overrides_details,
-                            0);
+                            0,
+                            NULL);
       cleanup_iterator (&overrides);
     }
 
@@ -9296,7 +9289,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_OVERRIDES:
         {
-          override_t override = 0;
           nvt_t nvt = 0;
           task_t task = 0;
 
@@ -9307,26 +9299,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_overrides",
                                 "Only one of NVT and the override_id attribute"
                                 " may be given"));
-          else if (get_overrides_data->override_id && get_overrides_data->task_id)
+          else if (get_overrides_data->override_id
+                   && get_overrides_data->task_id)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_overrides",
                                 "Only one of the override_id and task_id"
                                 " attributes may be given"));
-          else if (get_overrides_data->override_id
-              && find_override (get_overrides_data->override_id, &override))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_overrides"));
-          else if (get_overrides_data->override_id && override == 0)
-            {
-              if (send_find_error_to_client ("get_overrides",
-                                             "override",
-                                             get_overrides_data->override_id,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
           else if (get_overrides_data->task_id
                    && find_task (get_overrides_data->task_id, &task))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_overrides"));
@@ -9361,30 +9339,71 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               iterator_t overrides;
               GString *buffer;
+              int count, filtered, ret, first;
+              get_data_t * get;
 
-              SENDF_TO_CLIENT_OR_FAIL ("<get_overrides_response"
-                                       " status=\"" STATUS_OK "\""
-                                       " status_text=\"" STATUS_OK_TEXT "\">");
+              ret = init_override_iterator (&overrides,
+                                            &get_overrides_data->get, nvt, 0,
+                                            task);
+              if (ret)
+                {
+                  switch (ret)
+                    {
+                      case 1:
+                        if (send_find_error_to_client
+                             ("get_overrides",
+                              "override",
+                              get_overrides_data->get.id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case 2:
+                        if (send_find_error_to_client
+                             ("get_overrides",
+                              "filter",
+                              get_overrides_data->get.filt_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case -1:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("get_overrides"));
+                        break;
+                    }
+                  get_overrides_data_reset (get_overrides_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+
+              count = 0;
+              get = &get_overrides_data->get;
+              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+              SEND_GET_START ("override", &get_overrides_data->get);
 
               buffer = g_string_new ("");
 
-              init_override_iterator (&overrides,
-                                      override,
-                                      nvt,
-                                      0,
-                                      task,
-                                      get_overrides_data->sort_order,
-                                      get_overrides_data->sort_field);
-              buffer_overrides_xml (buffer, &overrides, get_overrides_data->details,
-                                    get_overrides_data->result);
-              cleanup_iterator (&overrides);
+              buffer_overrides_xml (buffer, &overrides,
+                                    get_overrides_data->get.details,
+                                    get_overrides_data->result, &count);
 
               SEND_TO_CLIENT_OR_FAIL (buffer->str);
               g_string_free (buffer, TRUE);
 
-              SEND_TO_CLIENT_OR_FAIL ("</get_overrides_response>");
+              cleanup_iterator (&overrides);
+              filtered = get_overrides_data->get.id
+                          ? 1
+                          : override_count (&get_overrides_data->get);
+              SEND_GET_END ("override", &get_overrides_data->get, count,
+                            filtered);
             }
-
           get_overrides_data_reset (get_overrides_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;

@@ -1677,9 +1677,12 @@ int
 modify_override (override_t, const char*, const char*, const char*, const char*,
                  const char*, const char*, task_t, result_t);
 
-void
-init_override_iterator (iterator_t*, override_t, nvt_t, result_t, task_t, int,
-                        const char*);
+int
+override_count (const get_data_t *);
+
+int
+init_override_iterator (iterator_t*, const get_data_t*, nvt_t, result_t,
+                        task_t);
 
 const char*
 override_iterator_uuid (iterator_t*);

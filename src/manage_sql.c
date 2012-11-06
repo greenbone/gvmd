@@ -35755,40 +35755,78 @@ modify_override (override_t override, const char *active, const char* text,
 }
 
 /**
- * @brief Database columns used in override iterators.
+ * @brief Filter columns for override iterator.
  */
-#define OVERRIDE_COLUMNS "overrides.ROWID, overrides.uuid, overrides.nvt,"     \
-                         " overrides.creation_time,"                           \
-                         " overrides.modification_time, overrides.text,"       \
-                         " overrides.hosts, overrides.port, overrides.threat," \
-                         " overrides.new_threat, overrides.task,"              \
-                         " overrides.result, overrides.end_time,"              \
-                         " (overrides.end_time = 0)"                           \
-                         "  OR (overrides.end_time >= now ())"
+#define OVERRIDE_ITERATOR_FILTER_COLUMNS                                     \
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "task_id",       \
+   "nvt_id", NULL }
+
+/**
+ * @brief Override iterator columns.
+ */
+#define OVERRIDE_ITERATOR_COLUMNS                                              \
+  /* ANON_GET_ITERATOR_COLUMNS, */  /* Need the overrides prefix. */           \
+  "overrides.ROWID, overrides.uuid,"                                           \
+  " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS name, '',"            \
+  " iso_time (overrides.creation_time),"                                       \
+  " iso_time (overrides.modification_time),"                                   \
+  " overrides.creation_time AS created,"                                       \
+  " overrides.modification_time AS modified,"                                  \
+  /* Columns specific to overrides. */                                         \
+  " overrides.nvt AS oid, overrides.text,"                                     \
+  " overrides.hosts, overrides.port, overrides.threat, overrides.new_threat, overrides.task, overrides.result,"      \
+  " overrides.end_time, (overrides.end_time = 0) OR (overrides.end_time >= now ()),"   \
+  " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS nvt,"                 \
+  " overrides.nvt AS nvt_id, '' AS task_id"
+
+/**
+ * @brief Override iterator columns for trash case.
+ */
+#define OVERRIDE_ITERATOR_TRASH_COLUMNS OVERRIDE_ITERATOR_COLUMNS
+
+/**
+ * @brief Count number of overrides.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of overrides in filtered set.
+ */
+int
+override_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = OVERRIDE_ITERATOR_FILTER_COLUMNS;
+  return count ("override", get, OVERRIDE_ITERATOR_COLUMNS, extra_columns,
+                TRUE);
+}
 
 /**
  * @brief Initialise an override iterator.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  override    Single override to iterate, 0 for all.
+ * @param[in]  get         GET data.
  * @param[in]  result      Result to limit overrides to, 0 for all.
  * @param[in]  task        If result is > 0, task whose overrides on result to
  *                         include, otherwise task to limit overrides to.  0 for
  *                         all tasks.
  * @param[in]  nvt         NVT to limit overrides to, 0 for all.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
  */
-void
-init_override_iterator (iterator_t* iterator, override_t override, nvt_t nvt,
-                        result_t result, task_t task, int ascending,
-                        const char* sort_field)
+int
+init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
+                        result_t result, task_t task)
 {
+  static const char *filter_columns[] = OVERRIDE_ITERATOR_FILTER_COLUMNS;
   gchar *result_clause, *join_clause = NULL;
+  int ret;
 
   assert (current_credentials.uuid);
-  assert ((nvt && override) == 0);
-  assert ((task && override) == 0);
+  assert ((nvt && get->id) == 0);
+  assert ((task && get->id) == 0);
+
+  assert (result ? nvt == 0 : 1);
+  assert (task ? nvt == 0 : 1);
 
   if (result)
     result_clause = g_strdup_printf (" AND"
@@ -35833,67 +35871,38 @@ init_override_iterator (iterator_t* iterator, override_t override, nvt_t nvt,
                         task);
       join_clause = g_strdup (", reports, report_results, results");
     }
+  else if (nvt)
+    {
+      result_clause = g_strdup_printf
+                       (" AND (overrides.nvt ="
+                        " (SELECT oid FROM nvts WHERE nvts.ROWID = %llu))"
+                        " AND ((overrides.owner IS NULL) OR (overrides.owner ="
+                        " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+                        nvt,
+                        current_credentials.uuid);
+    }
   else
     result_clause = NULL;
 
-  if (override)
-    init_iterator (iterator,
-                   "SELECT " OVERRIDE_COLUMNS
-                   " FROM overrides"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s;",
-                   override,
-                   current_credentials.uuid,
-                   result_clause ? result_clause : "");
-  else if (nvt)
-    init_iterator (iterator,
-                   "SELECT DISTINCT " OVERRIDE_COLUMNS ","
-                   " (SELECT name FROM nvts WHERE oid = overrides.nvt)"
-                   " AS overrides_nvt_name"
-                   " FROM overrides%s"
-                   " WHERE (overrides.nvt ="
-                   " (SELECT oid FROM nvts WHERE nvts.ROWID = %llu))"
-                   " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s"
-                   " ORDER BY %s %s;",
-                   join_clause ? join_clause : "",
-                   nvt,
-                   current_credentials.uuid,
-                   result_clause ? result_clause : "",
-                   sort_field ? sort_field : "overrides.ROWID",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT DISTINCT " OVERRIDE_COLUMNS ","
-                   " (SELECT name FROM nvts WHERE oid = overrides.nvt)"
-                   " AS overrides_nvt_name"
-                   " FROM overrides%s"
-                   " WHERE ((overrides.owner IS NULL) OR (overrides.owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s"
-                   " ORDER BY %s %s;",
-                   join_clause ? join_clause : "",
-                   current_credentials.uuid,
-                   result_clause ? result_clause : "",
-                   sort_field ? sort_field : "overrides.ROWID",
-                   ascending ? "ASC" : "DESC");
+  ret = init_get_iterator (iterator,
+                           "override",
+                           get,
+                           /* Columns. */
+                           OVERRIDE_ITERATOR_COLUMNS,
+                           /* Columns for trashcan. */
+                           OVERRIDE_ITERATOR_TRASH_COLUMNS,
+                           filter_columns,
+                           "task",
+                           task || nvt,
+                           join_clause,
+                           result_clause,
+                           TRUE);
 
   g_free (result_clause);
   g_free (join_clause);
-}
 
-/**
- * @brief Get the UUID from a override iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (override_iterator_uuid, 1);
+  return ret;
+}
 
 /**
  * @brief Get the NVT OID from a override iterator.
@@ -35903,39 +35912,7 @@ DEF_ACCESS (override_iterator_uuid, 1);
  * @return NVT OID, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (override_iterator_nvt_oid, 2);
-
-/**
- * @brief Get the creation time from an override iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Time override was created.
- */
-time_t
-override_iterator_creation_time (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 3);
-  return ret;
-}
-
-/**
- * @brief Get the modification time from an override iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Time override was last modified.
- */
-time_t
-override_iterator_modification_time (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 4);
-  return ret;
-}
+DEF_ACCESS (override_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT);
 
 /**
  * @brief Get the text from a override iterator.
@@ -35945,7 +35922,7 @@ override_iterator_modification_time (iterator_t* iterator)
  * @return Text, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (override_iterator_text, 5);
+DEF_ACCESS (override_iterator_text, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
  * @brief Get the hosts from a override iterator.
@@ -35955,7 +35932,7 @@ DEF_ACCESS (override_iterator_text, 5);
  * @return Hosts, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (override_iterator_hosts, 6);
+DEF_ACCESS (override_iterator_hosts, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the port from a override iterator.
@@ -35965,10 +35942,10 @@ DEF_ACCESS (override_iterator_hosts, 6);
  * @return Port, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (override_iterator_port, 7);
+DEF_ACCESS (override_iterator_port, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
- * @brief Get the threat from an override iterator.
+ * @brief Get the threat from a override iterator.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -35979,7 +35956,8 @@ override_iterator_threat (iterator_t *iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 8);
+  ret = (const char*) sqlite3_column_text (iterator->stmt,
+                                           GET_ITERATOR_COLUMN_COUNT + 4);
   if (ret == NULL) return NULL;
   return message_type_threat (ret);
 }
@@ -35996,13 +35974,14 @@ override_iterator_new_threat (iterator_t *iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 9);
+  ret = (const char*) sqlite3_column_text (iterator->stmt,
+                                           GET_ITERATOR_COLUMN_COUNT + 5);
   if (ret == NULL) return NULL;
   return message_type_threat (ret);
 }
 
 /**
- * @brief Get the task from an override iterator.
+ * @brief Get the task from a override iterator.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -36012,11 +35991,12 @@ task_t
 override_iterator_task (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) sqlite3_column_int64 (iterator->stmt, 10);
+  return (task_t) sqlite3_column_int64 (iterator->stmt,
+                                        GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
- * @brief Get the result from an override iterator.
+ * @brief Get the result from a override iterator.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -36026,7 +36006,8 @@ result_t
 override_iterator_result (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (result_t) sqlite3_column_int64 (iterator->stmt, 11);
+  return (result_t) sqlite3_column_int64 (iterator->stmt,
+                                          GET_ITERATOR_COLUMN_COUNT + 7);
 }
 
 /**
@@ -36042,7 +36023,8 @@ override_iterator_end_time (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 12);
+  ret = (time_t) sqlite3_column_int (iterator->stmt,
+                                     GET_ITERATOR_COLUMN_COUNT + 8);
   return ret;
 }
 
@@ -36058,27 +36040,20 @@ override_iterator_active (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = sqlite3_column_int (iterator->stmt, 13);
+  ret = sqlite3_column_int (iterator->stmt,
+                            GET_ITERATOR_COLUMN_COUNT + 9);
   return ret;
 }
 
 /**
- * @brief Get the NVT name from an override iterator.
+ * @brief Get the NVT name from a override iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The name of the NVT associated with the override, or NULL on error.
+ * @return NVT name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
  */
-const char*
-override_iterator_nvt_name (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, override_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_name (nvti);
-  return NULL;
-}
+DEF_ACCESS (override_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 10);
 
 
 /* Schedules. */

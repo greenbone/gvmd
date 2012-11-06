@@ -1,3 +1,25 @@
+2012-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add filtering to GET_OVERRIDES.
+
+	* src/manage_sql.c (OVERRIDE_COLUMNS): Remove.
+	(OVERRIDE_ITERATOR_FILTER_COLUMNS, OVERRIDE_ITERATOR_COLUMNS)
+	(OVERRIDE_ITERATOR_TRASH_COLUMNS): New defines.
+	(override_count): New function.
+	(init_override_iterator): Update to new GET style with filter, leaving
+	certain override-specific "filtering" params.  Adjust all accessors
+	accordingly.
+	(override_iterator_creation_time)
+	(override_iterator_modification_time): Remove
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (get_overrides_data_t): Switch to generic GET arg.
+	(omp_xml_handle_start_element): Parse generic GET data in GET_OVERRIDES.
+	(buffer_overrides_xml):  Add standard GET elements.  Add count return.
+	(buffer_result_overrides_xml, omp_xml_handle_end_element): Pass generic GET
+	arg to iterator.
+
 2012-11-05  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
