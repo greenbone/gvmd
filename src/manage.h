@@ -1674,7 +1674,7 @@ int
 copy_override (const char*, override_t*);
 
 int
-delete_override (override_t);
+delete_override (const char *, int);
 
 int
 modify_override (override_t, const char*, const char*, const char*, const char*,

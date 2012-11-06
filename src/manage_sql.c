@@ -1451,6 +1451,7 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_name ON nvts (name);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
   sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER, end_time);");
+  sql ("CREATE TABLE IF NOT EXISTS overrides_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER, end_time);");
   /* Overlapping port ranges will cause problems, at least for the port
    * counting.  OMP CREATE_PORT_LIST and CREATE_PORT_RANGE check for this,
    * but whoever creates a predefined port list must check this manually. */
@@ -35644,16 +35645,66 @@ copy_override (const char *override_id, override_t* new_override)
 }
 
 /**
- * @brief Delete an override.
+ * @brief Delete a override.
  *
- * @param[in]  override  Override.
+ * @param[in]  override_id  UUID of override.
+ * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
  *
- * @return 0 success.
+ * @return 0 success, 2 failed to find override, -1 error.
  */
 int
-delete_override (override_t override)
+delete_override (const char *override_id, int ultimate)
 {
+  override_t override;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  override = 0;
+
+  if (find_override (override_id, &override))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (override == 0)
+    {
+      if (find_trash ("override", override_id, &override))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (override == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      sql ("DELETE FROM overrides_trash WHERE ROWID = %llu;", override);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  if (ultimate == 0)
+    {
+      sql ("INSERT INTO overrides_trash"
+           " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
+           "  port, threat, new_threat, task, result, end_time)"
+           " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
+           "        hosts, port, threat, new_threat, task, result, end_time"
+           " FROM overrides WHERE ROWID = %llu;",
+           override);
+    }
+
   sql ("DELETE FROM overrides WHERE ROWID = %llu;", override);
+
+  sql ("COMMIT;");
   return 0;
 }
 
@@ -35802,7 +35853,21 @@ modify_override (override_t override, const char *active, const char* text,
 /**
  * @brief Override iterator columns for trash case.
  */
-#define OVERRIDE_ITERATOR_TRASH_COLUMNS OVERRIDE_ITERATOR_COLUMNS
+#define OVERRIDE_ITERATOR_TRASH_COLUMNS                                        \
+  /* ANON_GET_ITERATOR_TRASH_COLUMNS, */  /* Need the overrides prefix. */     \
+  "overrides_trash.ROWID, overrides_trash.uuid, '', '',"                       \
+  " iso_time (overrides_trash.creation_time),"                                 \
+  " iso_time (overrides_trash.modification_time),"                             \
+  " overrides_trash.creation_time AS created,"                                 \
+  " overrides_trash.modification_time AS modified,"                            \
+  /* Columns specific to overrides_trash. */                                   \
+  " overrides_trash.nvt AS oid, overrides_trash.text,"                         \
+  " overrides_trash.hosts, overrides_trash.port, overrides_trash.threat,"      \
+  " overrides_trash.new_threat, overrides_trash.task, overrides_trash.result," \
+  " overrides_trash.end_time,"                                                 \
+  " (overrides_trash.end_time = 0) OR (overrides_trash.end_time >= now ()),"   \
+  " (SELECT name FROM nvts WHERE oid = overrides_trash.nvt) AS nvt,"           \
+  " overrides_trash.nvt AS nvt_id, '' AS task_id"
 
 /**
  * @brief Count number of overrides.
@@ -42196,6 +42261,28 @@ manage_restore (const char *id)
            " FROM notes_trash WHERE ROWID = %llu;",
            resource);
       sql ("DELETE FROM notes_trash WHERE ROWID = %llu;", resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  /* Override. */
+
+  if (find_trash ("override", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      sql ("INSERT INTO overrides"
+           " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
+           "  port, threat, new_threat, task, result, end_time)"
+           " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
+           "        hosts, port, threat, new_threat, task, result, end_time"
+           " FROM overrides_trash WHERE ROWID = %llu;",
+           resource);
+      sql ("DELETE FROM overrides_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
       return 0;
     }

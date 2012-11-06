@@ -1,3 +1,18 @@
+2012-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add trashcan feature to overrides.
+
+	* src/omp.c (delete_lsc_credential_data_reset): Add ultimate.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add ultimate
+	flag to DELETE_OVERRIDE.
+
+	* src/manage_sql.c (create_tables): Add overrides_trash.
+	(delete_override): Add ultimate arg and trashcan handling.
+	(OVERRIDE_ITERATOR_TRASH_COLUMNS): Explicitly specify columns.
+	(manage_restore): Add overrides.
+
+	* src/manage.h: Update header accordingly.
+
 2012-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add COPY to CREATE_OVERRIDE for cloning.

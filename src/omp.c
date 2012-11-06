@@ -1639,6 +1639,7 @@ delete_note_data_reset (delete_note_data_t *data)
 typedef struct
 {
   char *override_id;   ///< ID of override to delete.
+  int ultimate;        ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_override_data_t;
 
 /**
@@ -4998,8 +4999,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DELETE_OVERRIDE", element_name) == 0)
           {
+            const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "override_id",
                               &delete_override_data->override_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_override_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_override_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_OVERRIDE);
           }
         else if (strcasecmp ("DELETE_PORT_LIST", element_name) == 0)
@@ -9565,13 +9572,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_OVERRIDE:
         assert (strcasecmp ("DELETE_OVERRIDE", element_name) == 0);
         if (delete_override_data->override_id)
-          {
-            override_t override;
-
-            if (find_override (delete_override_data->override_id, &override))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_override"));
-            else if (override == 0)
-              {
+          switch (delete_override (delete_override_data->override_id,
+                               delete_override_data->ultimate))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_override"));
+                g_log ("event override", G_LOG_LEVEL_MESSAGE,
+                       "Override %s has been deleted",
+                       delete_override_data->override_id);
+                break;
+              case 2:
                 if (send_find_error_to_client
                      ("delete_override",
                       "override",
@@ -9582,22 +9592,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     error_send_to_client (error);
                     return;
                   }
-              }
-            else switch (delete_override (override))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_override"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("delete_override"));
-                  break;
-              }
-          }
+                g_log ("event override", G_LOG_LEVEL_MESSAGE,
+                       "Override %s could not be deleted",
+                       delete_override_data->override_id);
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR
+                                         ("delete_override"));
+                g_log ("event override", G_LOG_LEVEL_MESSAGE,
+                       "Override %s could not be deleted",
+                       delete_override_data->override_id);
+            }
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("delete_override",
-                              "DELETE_OVERRIDE requires a override_id attribute"));
+                              "DELETE_OVERRIDE requires a override_id"
+                              " attribute"));
         delete_override_data_reset (delete_override_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
