@@ -1042,6 +1042,7 @@ create_note_data_reset (create_note_data_t *data)
 typedef struct
 {
   char *active;       ///< Whether the override is active.
+  char *copy;         ///< UUID of resource to copy.
   char *hosts;        ///< Hosts to which to limit override.
   char *new_threat;   ///< New threat value of overridden results.
   char *nvt_oid;      ///< NVT to which to limit override.
@@ -1061,6 +1062,7 @@ static void
 create_override_data_reset (create_override_data_t *data)
 {
   free (data->active);
+  free (data->copy);
   free (data->hosts);
   free (data->new_threat);
   free (data->nvt_oid);
@@ -3886,6 +3888,7 @@ typedef enum
   CLIENT_CREATE_NOTE_THREAT,
   CLIENT_CREATE_OVERRIDE,
   CLIENT_CREATE_OVERRIDE_ACTIVE,
+  CLIENT_CREATE_OVERRIDE_COPY,
   CLIENT_CREATE_OVERRIDE_HOSTS,
   CLIENT_CREATE_OVERRIDE_NEW_THREAT,
   CLIENT_CREATE_OVERRIDE_NVT,
@@ -7004,6 +7007,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_OVERRIDE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE_ACTIVE);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_OVERRIDE_COPY);
         else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE_HOSTS);
         else if (strcasecmp ("NEW_THREAT", element_name) == 0)
@@ -13113,6 +13118,47 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("create_override",
                                   "CREATE is forbidden for observer users"));
             }
+          else if (create_override_data->copy)
+            switch (copy_override (create_override_data->copy, &new_override))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    override_uuid (new_override, &uuid);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_override"),
+                                             uuid);
+                    g_log ("event override", G_LOG_LEVEL_MESSAGE,
+                           "Override %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_override",
+                                      "Override exists already"));
+                  g_log ("event override", G_LOG_LEVEL_MESSAGE,
+                         "Override could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_override",
+                                                 "override",
+                                                 create_override_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_log ("event override", G_LOG_LEVEL_MESSAGE,
+                         "Override could not be created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_override"));
+                  g_log ("event override", G_LOG_LEVEL_MESSAGE,
+                         "Override could not be created");
+                  break;
+              }
           else if (create_override_data->nvt_oid == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
@@ -13206,6 +13252,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_OVERRIDE, ACTIVE);
+      CLOSE (CLIENT_CREATE_OVERRIDE, COPY);
       CLOSE (CLIENT_CREATE_OVERRIDE, HOSTS);
       CLOSE (CLIENT_CREATE_OVERRIDE, NEW_THREAT);
       CLOSE (CLIENT_CREATE_OVERRIDE, NVT);
@@ -19286,6 +19333,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_OVERRIDE_ACTIVE,
               &create_override_data->active);
+
+      APPEND (CLIENT_CREATE_OVERRIDE_COPY,
+              &create_override_data->copy);
 
       APPEND (CLIENT_CREATE_OVERRIDE_HOSTS,
               &create_override_data->hosts);

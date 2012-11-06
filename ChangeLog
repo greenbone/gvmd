@@ -1,5 +1,19 @@
 2012-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add COPY to CREATE_OVERRIDE for cloning.
+
+	* src/manage_sql.c (copy_override): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (create_override_data_t, create_override_data_reset): Add
+	copy.
+	(client_state_t): Add CLIENT_CREATE_OVERRIDE_COPY.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add COPY to CREATE_OVERRIDE.
+
+2012-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add filtering to GET_OVERRIDES.
 
 	* src/manage_sql.c (OVERRIDE_COLUMNS): Remove.
