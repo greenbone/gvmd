@@ -1,3 +1,14 @@
+2012-11-07  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 3.0.4 release.
+
+	* CHANGES: Updated.
+
+	* CMakeLists.txt: Increased minimum required version 5.0.4
+	for openvas-libraries.
+
+	* INSTALL: Updated openvas-libraries dependency.
+
 2012-11-06  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport from trunk r14404, r14405 and r14421. Initial commits by

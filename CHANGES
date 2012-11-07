@@ -1,3 +1,29 @@
+openvas-manager 3.0.4 (2012-11-07)
+
+This is the fourth maintenance release of the openvas-manager 3.0 module for the
+Open Vulnerability Assessment System release 5 (OpenVAS-5). The OpenVAS Manager
+is the central management service between the actual security scanner and
+various user clients.
+
+This release contains a security bugfix for escalator parameters and fixes bugs
+related to scan config handling, hostname validation and slave tasks. It also
+adds support for the duration parameter for once-off tasks.
+
+Many thanks to everyone who has contributed to this release:
+Sebastien Aucouturier, Andre Heinecke, Matthew Mundell and Michael Wiegand.
+
+Main changes since 3.0.3:
+* Security bugfix that quotes escalator parameters.
+* Fixed a bug which made it impossible to create a scan config if there was
+  already a scan config with the same name owned by another user.
+* Improved hostname validation.
+* The schedule duration parameter is now used for once-off tasks as well.
+* Fixed a bug which caused scan configs to appear to be in use when they were
+  not.
+* Fixed a bug which caused port lists not to be transmitted for tasks executed
+  on slaves.
+
+
 openvas-manager 3.0.3 (2012-08-09)
 
 This is the third maintenance release of the openvas-manager 3.0 module for the
