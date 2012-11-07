@@ -2021,6 +2021,7 @@ create_override
        & create_override_nvt
        & create_override_active?
        & create_override_comment?
+       & create_override_copy?
        & create_override_hosts?
        & create_override_new_threat?
        & create_override_port?
@@ -2055,6 +2056,13 @@ create_override_comment
  = element comment
      {
        text
+     }
+
+# The UUID of an existing override.
+create_override_copy
+ = element copy
+     {
+       uuid
      }
 
 # A textual list of hosts.
@@ -2402,6 +2410,7 @@ create_target
      {
        create_target_name
        & create_target_comment?
+       & create_target_copy?
        & create_target_hosts
        & create_target_ssh_lsc_credential
        & create_target_smb_lsc_credential
@@ -2430,6 +2439,13 @@ create_target_comment
  = element comment
      {
        text
+     }
+
+# The UUID of an existing target.
+create_target_copy
+ = element copy
+     {
+       uuid
      }
 
 # A textual list of hosts, which may be empty.
@@ -2673,6 +2689,8 @@ delete_note
  = element delete_note
      {
        attribute note_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
      }
 
 ## Command delete_override
@@ -2683,6 +2701,8 @@ delete_override
  = element delete_override
      {
        attribute override_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
      }
 
 ## Command delete_report
@@ -2926,6 +2946,10 @@ get_notes
      {
        # ID of single note to get.
        attribute note_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query..
+       attribute filt_id { uuid }?
        & attribute nvt_oid { oid }?
        & attribute task_id { uuid }?
        & attribute details { boolean }?
@@ -2990,6 +3014,10 @@ get_overrides
      {
        # ID of single override to get.
        attribute override_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query..
+       attribute filt_id { uuid }?
        & attribute nvt_oid { oid }?
        & attribute task_id { uuid }?
        & attribute details { boolean }?
@@ -5582,6 +5610,74 @@ get_notes_response
        attribute status { status }
        & attribute status_text { text }
        & get_notes_response_note*
+       & get_notes_response_filters
+       & get_notes_response_sort
+       & get_notes_response_notes
+       & get_notes_response_note_count
+     }
+
+get_notes_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_notes_response_filters_term
+     }
+
+# Filter term.
+get_notes_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_notes_response_sort
+ = element sort
+     {
+       text
+       & get_notes_response_sort_field
+     }
+
+get_notes_response_sort_field
+ = element field
+     {
+       get_notes_response_sort_field_order
+     }
+
+get_notes_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_notes_response_notes
+ = element notes
+     {
+       # First note.
+       attribute start {  }
+       & # Maximum number of notes.
+       attribute max {  }
+     }
+
+get_notes_response_note_count
+ = element note_count
+     {
+       get_notes_response_note_count_filtered
+       & get_notes_response_note_count_page
+     }
+
+# Number of notes after filtering.
+get_notes_response_note_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of notes on current page.
+get_notes_response_note_count_page
+ = element page
+     {
+       integer
      }
 
 get_notes_response_note
@@ -6022,6 +6118,74 @@ get_overrides_response
        attribute status { status }
        & attribute status_text { text }
        & get_overrides_response_override*
+       & get_overrides_response_filters
+       & get_overrides_response_sort
+       & get_overrides_response_overrides
+       & get_overrides_response_override_count
+     }
+
+get_overrides_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_overrides_response_filters_term
+     }
+
+# Filter term.
+get_overrides_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_overrides_response_sort
+ = element sort
+     {
+       text
+       & get_overrides_response_sort_field
+     }
+
+get_overrides_response_sort_field
+ = element field
+     {
+       get_overrides_response_sort_field_order
+     }
+
+get_overrides_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_overrides_response_overrides
+ = element overrides
+     {
+       # First override.
+       attribute start {  }
+       & # Maximum number of overrides.
+       attribute max {  }
+     }
+
+get_overrides_response_override_count
+ = element override_count
+     {
+       get_overrides_response_override_count_filtered
+       & get_overrides_response_override_count_page
+     }
+
+# Number of overrides after filtering.
+get_overrides_response_override_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of overrides on current page.
+get_overrides_response_override_count_page
+ = element page
+     {
+       integer
      }
 
 get_overrides_response_override

@@ -2398,6 +2398,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>nvt</e>
       <o><e>active</e></o>
       <o><e>comment</e></o>
+      <o><e>copy</e></o>
       <o><e>hosts</e></o>
       <o><e>new_threat</e></o>
       <o><e>port</e></o>
@@ -2433,6 +2434,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A comment on the override</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing override</summary>
+      <pattern>
+        <t>uuid</t>
       </pattern>
     </ele>
     <ele>
@@ -3098,6 +3106,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <o><e>comment</e></o>
+      <o><e>copy</e></o>
       <e>hosts</e>
       <e>ssh_lsc_credential</e>
       <e>smb_lsc_credential</e>
@@ -3125,6 +3134,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A comment on the target</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing target</summary>
+      <pattern>
+        <t>uuid</t>
       </pattern>
     </ele>
     <ele>
@@ -3675,6 +3691,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
         <required>1</required>
       </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -3718,6 +3740,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>override_id</name>
         <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
         <required>1</required>
       </attrib>
     </pattern>
@@ -5930,6 +5958,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query.</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
         <name>nvt_oid</name>
         <type>oid</type>
       </attrib>
@@ -5967,7 +6005,86 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
         <any><e>note</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>notes</e>
+        <e>note_count</e>
       </pattern>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>notes</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First note</summary>
+            <type><t>number</t></type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of notes</summary>
+            <type><t>number</t></type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>note_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of notes after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of notes on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
       <ele>
         <name>note</name>
         <pattern>
@@ -6686,6 +6803,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query.</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
         <name>nvt_oid</name>
         <type>oid</type>
       </attrib>
@@ -6723,7 +6850,86 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
         <any><e>override</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>overrides</e>
+        <e>override_count</e>
       </pattern>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>overrides</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First override</summary>
+            <type><t>number</t></type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of overrides</summary>
+            <type><t>number</t></type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>override_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of overrides after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of overrides on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
       <ele>
         <name>override</name>
         <pattern>

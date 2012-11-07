@@ -1,3 +1,13 @@
+2012-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (create_override, create_target): Add
+	COPY.
+	(delete_note, delete_override): Add attribute ultimate.
+	(get_notes, get_overrides): Add new-style filter attributes and response
+	elements.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2012-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/db_postgres.sql (results): Add report.
@@ -14,7 +24,7 @@
 
 	Add trashcan feature to overrides.
 
-	* src/omp.c (delete_lsc_credential_data_reset): Add ultimate.
+	* src/omp.c (delete_override_data_reset): Add ultimate.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add ultimate
 	flag to DELETE_OVERRIDE.
 

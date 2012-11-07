@@ -5111,6 +5111,11 @@ create_note_threat
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing override.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>hosts</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
 <ul style="list-style: none"></ul>
@@ -5174,6 +5179,7 @@ create_note_threat
        &amp; create_override_nvt
        &amp; create_override_active?
        &amp; create_override_comment?
+       &amp; create_override_copy?
        &amp; create_override_hosts?
        &amp; create_override_new_threat?
        &amp; create_override_port?
@@ -5204,6 +5210,12 @@ create_override_comment
  = element comment
      {
        text
+     }
+
+create_override_copy
+ = element copy
+     {
+       uuid
      }
 
 create_override_hosts
@@ -6097,6 +6109,11 @@ create_slave_password
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing target.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>hosts</b>&gt;
               <div style="margin-left: 15px; display: inline;">A textual list of hosts, which may be empty.</div>
 <ul style="list-style: none"></ul>
@@ -6179,6 +6196,7 @@ create_slave_password
      {
        create_target_name
        &amp; create_target_comment?
+       &amp; create_target_copy?
        &amp; create_target_hosts
        &amp; create_target_ssh_lsc_credential
        &amp; create_target_smb_lsc_credential
@@ -6204,6 +6222,12 @@ create_target_comment
  = element comment
      {
        text
+     }
+
+create_target_copy
+ = element copy
+     {
+       uuid
      }
 
 create_target_hosts
@@ -6870,10 +6894,17 @@ create_task_rcfile
 <h4>7.23.1 Structure</h4>
 <ul style="list-style: none">
 <li>
-<i>Command</i><ul style="list-style: none"><li>
+<i>Command</i><ul style="list-style: none">
+<li>
           @<b>note_id</b>
           (<a href="#type_uuid">uuid</a>)
-          </li></ul>
+          </li>
+<li>
+          @<b>ultimate</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to remove entirely, or to the trashcan.
+          </li>
+</ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -6894,6 +6925,7 @@ create_task_rcfile
  = element delete_note
      {
        attribute note_id { uuid }
+       &amp; attribute ultimate { boolean }
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>delete_note_response
@@ -6929,10 +6961,17 @@ create_task_rcfile
 <h4>7.24.1 Structure</h4>
 <ul style="list-style: none">
 <li>
-<i>Command</i><ul style="list-style: none"><li>
+<i>Command</i><ul style="list-style: none">
+<li>
           @<b>override_id</b>
           (<a href="#type_uuid">uuid</a>)
-          </li></ul>
+          </li>
+<li>
+          @<b>ultimate</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to remove entirely, or to the trashcan.
+          </li>
+</ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -6953,6 +6992,7 @@ create_task_rcfile
  = element delete_override
      {
        attribute override_id { uuid }
+       &amp; attribute ultimate { boolean }
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>delete_override_response
@@ -10027,6 +10067,16 @@ get_lsc_credentials_response_lsc_credential_package
           ID of single note to get.
           </li>
 <li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query..
+          </li>
+<li>
           @<b>nvt_oid</b>
           (<a href="#type_oid">oid</a>)
           </li>
@@ -10199,6 +10249,61 @@ get_lsc_credentials_response_lsc_credential_package
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>notes</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_"></a>)
+          First note.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_"></a>)
+          Maximum number of notes.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>note_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of notes after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of notes on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -10208,6 +10313,8 @@ get_lsc_credentials_response_lsc_credential_package
  = element get_notes
      {
        attribute note_id { uuid }?
+       &amp; attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
        &amp; attribute nvt_oid { oid }?
        &amp; attribute task_id { uuid }?
        &amp; attribute details { boolean }?
@@ -10222,6 +10329,68 @@ get_lsc_credentials_response_lsc_credential_package
        attribute status { status }
        &amp; attribute status_text { text }
        &amp; get_notes_response_note*
+       &amp; get_notes_response_filters
+       &amp; get_notes_response_sort
+       &amp; get_notes_response_notes
+       &amp; get_notes_response_note_count
+     }
+
+get_notes_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_notes_response_filters_term
+     }
+
+get_notes_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_notes_response_sort
+ = element sort
+     {
+       text
+       &amp; get_notes_response_sort_field
+     }
+
+get_notes_response_sort_field
+ = element field
+     {
+       get_notes_response_sort_field_order
+     }
+
+get_notes_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_notes_response_notes
+ = element notes
+     {
+       attribute start {  }
+       &amp; attribute max {  }
+     }
+
+get_notes_response_note_count
+ = element note_count
+     {
+       get_notes_response_note_count_filtered
+       &amp; get_notes_response_note_count_page
+     }
+
+get_notes_response_note_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_notes_response_note_count_page
+ = element page
+     {
+       integer
      }
 
 get_notes_response_note
@@ -11176,6 +11345,16 @@ get_nvt_feed_checksum_response_checksum
           ID of single override to get.
           </li>
 <li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query..
+          </li>
+<li>
           @<b>nvt_oid</b>
           (<a href="#type_oid">oid</a>)
           </li>
@@ -11353,6 +11532,61 @@ get_nvt_feed_checksum_response_checksum
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>overrides</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_"></a>)
+          First override.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_"></a>)
+          Maximum number of overrides.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>override_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of overrides after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of overrides on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -11362,6 +11596,8 @@ get_nvt_feed_checksum_response_checksum
  = element get_overrides
      {
        attribute override_id { uuid }?
+       &amp; attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
        &amp; attribute nvt_oid { oid }?
        &amp; attribute task_id { uuid }?
        &amp; attribute details { boolean }?
@@ -11376,6 +11612,68 @@ get_nvt_feed_checksum_response_checksum
        attribute status { status }
        &amp; attribute status_text { text }
        &amp; get_overrides_response_override*
+       &amp; get_overrides_response_filters
+       &amp; get_overrides_response_sort
+       &amp; get_overrides_response_overrides
+       &amp; get_overrides_response_override_count
+     }
+
+get_overrides_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_overrides_response_filters_term
+     }
+
+get_overrides_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_overrides_response_sort
+ = element sort
+     {
+       text
+       &amp; get_overrides_response_sort_field
+     }
+
+get_overrides_response_sort_field
+ = element field
+     {
+       get_overrides_response_sort_field_order
+     }
+
+get_overrides_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_overrides_response_overrides
+ = element overrides
+     {
+       attribute start {  }
+       &amp; attribute max {  }
+     }
+
+get_overrides_response_override_count
+ = element override_count
+     {
+       get_overrides_response_override_count_filtered
+       &amp; get_overrides_response_override_count_page
+     }
+
+get_overrides_response_override_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_overrides_response_override_count_page
+ = element page
+     {
+       integer
      }
 
 get_overrides_response_override
