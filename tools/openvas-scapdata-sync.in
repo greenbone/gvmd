@@ -46,6 +46,20 @@ VERSION=@OPENVASMD_VERSION@
 RES_DIR=@OPENVAS_SCAP_RES_DIR@
 RESTRICTED=0
 
+TIMESTAMP="$SCAP_DIR/timestamp"
+
+if [ -z "$FEED_NAME" ] ; then
+  FEED_NAME="OpenVAS SCAP Feed"
+fi
+
+if [ -z "$FEED_VENDOR" ] ; then
+  FEED_VENDOR="The OpenVAS Project"
+fi
+
+if [ -z "$FEED_HOME" ] ; then
+  FEED_HOME="http://www.openvas.org/"
+fi
+
 # The URL of the plugin feed
 if [ -z "$OV_RSYNC_FEED" ]; then
   OV_RSYNC_FEED=rsync://feed.openvas.org:/scap-data
@@ -78,6 +92,8 @@ do_help () {
   echo " --selftest	perform self-test"
   echo " --identify	display information"
   echo " --version	display version"
+  echo " --describe	display current scap feed info"
+  echo " --feedversion   display current scap feed version"
   echo " --dst-dir <dir>	SCAP destination directory"
   echo ""
   echo "Environment variables:"
@@ -173,6 +189,19 @@ do_curl () {
 
 do_self_test () {
   chk_system_tools
+}
+
+do_describe () {
+  echo "This script synchronizes a SCAP collection with the '$FEED_NAME'."
+  echo "The '$FEED_NAME' is provided by '$FEED_VENDOR'."
+  echo "Online information about this feed: '$FEED_HOME'."
+
+}
+
+do_feedversion () {
+  if [ -r $TIMESTAMP ] ; then
+      echo `cat $TIMESTAMP`
+  fi
 }
 
 show_intro () {
@@ -324,6 +353,10 @@ if [ -n "$1" ]; then
         SELFTEST_FAIL=0
         do_self_test
         exit $SELFTEST_FAIL
+        ;;
+      --describe)
+        do_describe
+        exit 0
         ;;
       --feedversion)
         do_feedversion
