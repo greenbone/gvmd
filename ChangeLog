@@ -1,4 +1,9 @@
-2012-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-11-07  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* tools/greenbone-scapdata-sync: Add command line option --selftest
+	and moved command lin eparsing to bottom.
+
+2012-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (create_override, create_target): Add
 	COPY.
@@ -8,19 +13,19 @@
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
 
-2012-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/db_postgres.sql (results): Add report.
 	(overrides_trash): New table.
 
 	* doc/db.png: Update from source.
 
-2012-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (filter_clause): Add name special case for overrides
 	as for notes.
 
-2012-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add trashcan feature to overrides.
 

@@ -92,28 +92,6 @@ do_feedversion () {
   fi
 }
 
-while test $# -gt 0; do
- case "$1" in
-        --version)
-          echo $VERSION
-          exit 0
-           ;;
-        --identify)
-          echo "SCAPSYNC|$SCRIPT_NAME|$VERSION|$FEED_NAME|$RESTRICTED|SCAPSYNC"
-          exit 0
-          ;;
-        --describe)
-          do_describe
-          exit 0
-          ;;
-        --feedversion)
-          do_feedversion
-          exit 0
-          ;;
- esac
- shift
-done
-
 if [[ ! -w $LOGDIR ]]
 then
   NOLOG=1
@@ -361,4 +339,40 @@ sync_scapdata(){
   fi
 }
 
+do_self_test () {
+  if [ -z "$SQLITE" ]; then
+    echo "[e] Error: sqlite3 not found (required)";
+    SELFTEST_FAIL=1
+  fi
+}
+
+while test $# -gt 0; do
+ case "$1" in
+        --version)
+          echo $VERSION
+          exit 0
+           ;;
+        --identify)
+          echo "SCAPSYNC|$SCRIPT_NAME|$VERSION|$FEED_NAME|$RESTRICTED|SCAPSYNC"
+          exit 0
+          ;;
+        --describe)
+          do_describe
+          exit 0
+          ;;
+        --feedversion)
+          do_feedversion
+          exit 0
+          ;;
+        --selftest)
+          SELFTEST_FAIL=0
+          do_self_test
+          exit $SELFTEST_FAIL
+          ;;
+ esac
+ shift
+done
+
 sync_scapdata
+
+exit 0
