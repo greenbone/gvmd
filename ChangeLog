@@ -1,3 +1,11 @@
+2012-11-08  Andre Heinecke <andre.heinecke@greenbone.net>
+
+	* report_formats/verinice-ism/classification_generator.sh: New.
+	Generator to create XSL helper template for verinice system tags from
+	a csv file.
+	* report_formats/verinice-ism/classification.csv: New. CSV File
+	containting CPE's and tags for verinice ism
+
 2012-11-07  Hani Benhabiles  <kroosec@gmail.com>
 
 	* tools/openvas-scapdata-sync: Added command-line options --describe and
