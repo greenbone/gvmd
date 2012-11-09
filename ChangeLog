@@ -1,3 +1,32 @@
+2012-11-09  Andre Heinecke <aheinecke@intevation.de>
+
+	Version 1.1.5 of verinice ISM export
+
+	* report_formats/verinice-ism/classification-helpers.xsl,
+	report_formats/verinice-itg/classification-helpers.xsl: Moved
+	classification helpers file into itg.
+
+	* report_formats/verinice-itg/create_report_import: Update Path of
+	classification-helpers.xsl file
+
+	* report_formats/verinice-ism/classification_generator.sh: Remove check
+	for detail name. Fix syntax errors.
+
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl: Include generated 
+	classifcation.xsl
+	(extract_organization): New. Copied from classification-helpers
+	(report/host_start): Only generate tags based on best_os_cpe, set
+	gsm_ism_asset_type
+	(syncMapping): Add gsm_ism_asset_type, change from samt_topic to control
+	(create_links): Change releation from samt_topic_incident_scenario to
+	rel_control_incsen
+
+	* report_formats/verinice-ism/classification.xsl: New. generated from
+	classification.csv
+
+	* report_formats/verinice-ism/create_report_import.xsl: Update Version
+	number, include classification.xsl
+
 2012-10-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Account for nvt and task in GET_NOTES count, and handle the GET_NOTES

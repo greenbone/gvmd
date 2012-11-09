@@ -37,7 +37,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:str="http://exslt.org/strings" version="1.0" extension-element-prefixes="str">
   <xsl:param name="filename"/>
   <xsl:param name="filedate"/>
-  <xsl:include href="classification-helpers.xsl"/>
+  <xsl:include href="classification.xsl"/>
   <xsl:output method="xml" encoding="UTF-8"/>
 
   <xsl:template match="task">
@@ -47,6 +47,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:key name="scenarios" match="/report/results/result/nvt/@oid" use="." />
   <xsl:key name="vulnerabilities" match="/report/results/result/nvt/@oid" use="." />
   <xsl:key name="controls" match="/report/results/result/notes/note/@id" use="." />
+
+  <xsl:template name="extract_organization">
+      <xsl:choose>
+          <!-- TODO enter here the real path of the organization tag -->
+          <xsl:when test="string-length(report/task/tags/organization) &gt; 0">
+              <xsl:value-of select="report/task/tags/ogranization"/>
+          </xsl:when>
+          <xsl:when test="string-length(report/task/comment) &gt; 0">
+              <xsl:value-of select="report/task/comment"/>
+          </xsl:when>
+          <xsl:otherwise>
+              <xsl:value-of select="report/task/name"/>
+          </xsl:otherwise>
+      </xsl:choose>
+  </xsl:template>
 
   <!-- Generate the contents of the asset description field -->
   <xsl:template name="get-details">
@@ -228,16 +243,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </value>
       </syncAttribute>
       <syncAttribute>
-        <name>gsm_ism_asset_tags</name>
-        <value><xsl:call-template name="remove-duplicates">
-            <xsl:with-param name="string">
-              <xsl:for-each select="/report/host[ip=$addr]/detail">
-                <xsl:call-template name="generate-tags"/>
+          <name>gsm_ism_asset_tags</name>
+          <value>
+              <xsl:for-each select="/report/host[ip=$addr]/detail[name='best_os_cpe']">
+                  <xsl:call-template name="generate-tags"/>
               </xsl:for-each>
-            </xsl:with-param>
-            <xsl:with-param name="newstring" select="''"/>
-        </xsl:call-template></value>
-    </syncAttribute>
+          </value>
+      </syncAttribute>
+      <syncAttribute>
+          <!-- Everything we can scan is pyhsical -->
+          <name>gsm_ism_asset_type</name>
+          <value>asset_type_phys</value>
+      </syncAttribute>
       <xsl:for-each select="/report/host[ip=$addr]">
         <xsl:call-template name="get-details"/>
       </xsl:for-each>
@@ -363,7 +380,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <syncLink>
         <dependant><xsl:value-of select="$task_id"/>-<xsl:value-of select="@id"/>-control</dependant>
         <dependency><xsl:value-of select="$task_id"/>-<xsl:value-of select="$cur_oid"/>-scenario</dependency>
-        <relationId>rel_samt_topic_incident_scenario</relationId>
+        <relationId>rel_control_incscen</relationId>
       </syncLink>
     </xsl:for-each>
   </xsl:template>
@@ -518,6 +535,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ns2:mapObjectType intId="asset" extId="gsm_ism_asset">
         <ns2:mapAttributeType intId="asset_abbr" extId="gsm_ism_asset_abbr"/>
         <ns2:mapAttributeType intId="asset_name" extId="gsm_ism_asset_hostname"/>
+        <ns2:mapAttributeType intId="asset_type" extId="gsm_ism_asset_type"/>
         <ns2:mapAttributeType intId="gsm_asset_tag" extId="gsm_ism_asset_tags"/>
         <ns2:mapAttributeType intId="gsm_asset_description" extId="gsm_ism_asset_description"/>
         <ns2:mapAttributeType intId="gsm_installed_apps" extId="gsm_installed_apps"/>
@@ -543,8 +561,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ns2:mapObjectType>
 
       <!-- Control / Note on a vulnerability -->
-      <ns2:mapObjectType intId="samt_topic" extId="gsm_ism_control">
-       <ns2:mapAttributeType intId="samt_topic_name" extId="gsm_ism_control_name"/>
+      <ns2:mapObjectType intId="control" extId="gsm_ism_control">
+       <ns2:mapAttributeType intId="control_name" extId="gsm_ism_control_name"/>
        <ns2:mapAttributeType intId="gsm_ism_control_description" extId="gsm_ism_control_description"/>
       </ns2:mapObjectType>
 

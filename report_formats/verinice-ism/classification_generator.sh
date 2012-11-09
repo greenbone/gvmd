@@ -25,10 +25,8 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 cat << EOF
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
-<xsl:template name="generate-tags">
-  <xsl:choose>
-    <xsl:when test="name='OS' or name='best_os_cpe'">
-      <xsl:choose>
+  <xsl:template name="generate-tags">
+    <xsl:choose>
 EOF
 
 for line in $(tail -n +2 "$1")
@@ -42,9 +40,9 @@ done
 
 cat << EOF
       <xsl:otherwise>
-        <xsl:text>gsm_system_unkown</xsl:text>"
+        <xsl:text>gsm_system_unkown</xsl:text>
       </xsl:otherwise>
     </xsl:choose>
-  </xsl:choose>
-</xsl:template>
+  </xsl:template>
+</xsl:stylesheet>
 EOF

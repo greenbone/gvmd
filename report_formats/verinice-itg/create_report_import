@@ -7,7 +7,7 @@ DESCRIPTION="IT-Grundschutz Report for Verinice import, version 1.0.0"
 
 # Names must be in alphabetical order.
 FNAME1=classification-helpers.xsl
-FILE1=`base64 -w 0 ../verinice-ism/classification-helpers.xsl`
+FILE1=`base64 -w 0 classification-helpers.xsl`
 FNAME2=generate
 FILE2=`base64 -w 0 generate`
 FNAME3=gsm_verinice_itg.xsl
