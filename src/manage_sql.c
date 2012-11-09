@@ -27296,6 +27296,12 @@ filter_clause (const char* type, const char* filter, const char **columns,
  * @param[in]  get               GET params.
  * @param[in]  iterator_columns  Iterator columns.
  * @param[in]  extra_columns     Extra columns.
+ * @param[in]  distinct          Whether the query should be distinct.  Skipped
+ *                               for trash and single resource.
+ * @param[in]  extra_tables      Join tables.  Skipped for trash and single
+ *                               resource.
+ * @param[in]  extra_where       Extra WHERE clauses.  Skipped for trash and
+ *                               single resource.
  * @param[in]  owned             Only count items owned by current user.
  *
  * @return Total number of resources in filtered set.
@@ -27303,6 +27309,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
 static int
 count (const char *type, const get_data_t *get,
        const char *iterator_columns, const char **extra_columns,
+       int distinct, const char *extra_tables, const char *extra_where,
        int owned)
 {
   int actions, ret;
@@ -27324,9 +27331,11 @@ count (const char *type, const get_data_t *get,
   clause = filter_clause (type, filter ? filter : get->filter, extra_columns,
                           get->trash, NULL, NULL, NULL);
   if (owned)
-    owned_clause = g_strdup_printf ("((owner IS NULL) OR (owner ="
+    owned_clause = g_strdup_printf ("((%ss.owner IS NULL) OR (%ss.owner ="
                                     " (SELECT ROWID FROM users"
                                     " WHERE users.uuid = '%s')))",
+                                    type,
+                                    type,
                                     current_credentials.uuid);
   else
     owned_clause = g_strdup ("1");
@@ -27336,22 +27345,26 @@ count (const char *type, const get_data_t *get,
       || (actions = parse_actions (get->actions)) == 0)
     {
       ret = sql_int (0, 0,
-                     "SELECT count (*), %s"
-                     " FROM %ss"
+                     "SELECT count (%s%ss.ROWID), %s"
+                     " FROM %ss%s"
                      " WHERE %s"
-                     "%s%s;",
+                     "%s%s%s;",
+                     distinct ? "DISTINCT " : "",
+                     type,
                      iterator_columns,
                      type,
+                     extra_tables ? extra_tables : "",
                      owned_clause,
                      clause ? " AND " : "",
-                     clause ? clause : "");
+                     clause ? clause : "",
+                     extra_where ? extra_where : "");
       g_free (clause);
       return ret;
     }
 
   ret = sql_int (0, 0,
-                 "SELECT count (*), %s"
-                 " FROM %ss"
+                 "SELECT count (%s%ss.ROWID), %s"
+                 " FROM %ss%s"
                  " WHERE %s"
                  "  OR"
                  // FIX
@@ -27362,15 +27375,19 @@ count (const char *type, const get_data_t *get,
                  "   (SELECT ROWID FROM users"
                  "    WHERE users.uuid = '%s')"
                  "   AND actions & %u = %u))"
-                 "%s%s;",
+                 "%s%s%s;",
+                 distinct ? "DISTINCT " : "",
+                 type,
                  iterator_columns,
                  type,
+                 extra_tables ? extra_tables : "",
                  owned_clause,
                  current_credentials.uuid,
                  actions,
                  actions,
                  clause ? " AND " : "",
-                 clause ? clause : "");
+                 clause ? clause : "",
+                 extra_where ? extra_where : "");
 
   g_free (owned_clause);
   g_free (clause);
@@ -27388,7 +27405,8 @@ int
 target_count (const get_data_t *get)
 {
   static const char *extra_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
-  return count ("target", get, TARGET_ITERATOR_COLUMNS, extra_columns, TRUE);
+  return count ("target", get, TARGET_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
+                TRUE);
 }
 
 /**
@@ -34849,7 +34867,8 @@ int
 agent_count (const get_data_t *get)
 {
   static const char *extra_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
-  return count ("agent", get, AGENT_ITERATOR_COLUMNS, extra_columns, TRUE);
+  return count ("agent", get, AGENT_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
+                TRUE);
 }
 
 /**
@@ -35191,8 +35210,7 @@ modify_note (note_t note, const char *active, const char* text,
  * @brief Filter columns for note iterator.
  */
 #define NOTE_ITERATOR_FILTER_COLUMNS                                         \
- { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "task_id",       \
-   "nvt_id", NULL }
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "nvt_id", NULL }
 
 /**
  * @brief Note iterator columns.
@@ -35233,15 +35251,114 @@ modify_note (note_t note, const char *active, const char* text,
 /**
  * @brief Count number of notes.
  *
- * @param[in]  get  GET params.
+ * @param[in]  get         GET params.
+ * @param[in]  result      Result to limit notes to, 0 for all.
+ * @param[in]  task        If result is > 0, task whose notes on result to
+ *                         include, otherwise task to limit notes to.  0 for
+ *                         all tasks.
+ * @param[in]  nvt         NVT to limit notes to, 0 for all.
  *
  * @return Total number of notes in filtered set.
  */
 int
-note_count (const get_data_t *get)
+note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
 {
-  static const char *extra_columns[] = NOTE_ITERATOR_FILTER_COLUMNS;
-  return count ("note", get, NOTE_ITERATOR_COLUMNS, extra_columns, TRUE);
+  static const char *filter_columns[] = NOTE_ITERATOR_FILTER_COLUMNS;
+  gchar *result_clause, *join_clause, *filter, *task_id;
+  int ret;
+
+  join_clause = NULL;
+
+  /* Treat the "task_id" filter keyword as if the task was given in "task". */
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  task_id = filter_term_value (filter ? filter : get->filter, "task_id");
+
+  g_free (filter);
+
+  if (task_id)
+    {
+      find_task (task_id, &task);
+      g_free (task_id);
+    }
+
+  if (result)
+    result_clause = g_strdup_printf (" AND"
+                                     " (result = %llu"
+                                     "  OR (result = 0 AND nvt ="
+                                     "      (SELECT results.nvt FROM results"
+                                     "       WHERE results.ROWID = %llu)))"
+                                     " AND (hosts is NULL"
+                                     "      OR hosts = \"\""
+                                     "      OR hosts_contains (hosts,"
+                                     "      (SELECT results.host FROM results"
+                                     "       WHERE results.ROWID = %llu)))"
+                                     " AND (port is NULL"
+                                     "      OR port = \"\""
+                                     "      OR port ="
+                                     "      (SELECT results.port FROM results"
+                                     "       WHERE results.ROWID = %llu))"
+                                     " AND (threat is NULL"
+                                     "      OR threat = \"\""
+                                     "      OR threat ="
+                                     "      (SELECT results.type FROM results"
+                                     "       WHERE results.ROWID = %llu))"
+                                     " AND (task = 0 OR task = %llu)",
+                                     result,
+                                     result,
+                                     result,
+                                     result,
+                                     result,
+                                     task);
+  else if (task)
+    {
+      result_clause = g_strdup_printf
+                       (" AND (notes.task = %llu OR notes.task = 0)"
+                        " AND reports.task = %llu"
+                        " AND reports.ROWID = report_results.report"
+                        " AND report_results.result = results.ROWID"
+                        " AND results.nvt = notes.nvt"
+                        " AND"
+                        " (notes.result = 0"
+                        "  OR report_results.result = notes.result)",
+                        task,
+                        task);
+      join_clause = g_strdup (", reports, report_results, results");
+    }
+  else if (nvt)
+    {
+      result_clause = g_strdup_printf
+                       (" AND (notes.nvt ="
+                        " (SELECT oid FROM nvts WHERE nvts.ROWID = %llu))"
+                        " AND ((notes.owner IS NULL) OR (notes.owner ="
+                        " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+                        nvt,
+                        current_credentials.uuid);
+    }
+  else
+    result_clause = NULL;
+
+  ret = count ("note",
+               get,
+               NOTE_ITERATOR_COLUMNS,
+               filter_columns,
+               task || nvt,
+               join_clause,
+               result_clause,
+               TRUE);
+
+  g_free (result_clause);
+  g_free (join_clause);
+
+  return ret;
 }
 
 /**
@@ -35263,7 +35380,7 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                     result_t result, task_t task)
 {
   static const char *filter_columns[] = NOTE_ITERATOR_FILTER_COLUMNS;
-  gchar *result_clause, *join_clause = NULL;
+  gchar *result_clause, *join_clause, *filter, *task_id;
   int ret;
 
   assert (current_credentials.uuid);
@@ -35272,6 +35389,29 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
 
   assert (result ? nvt == 0 : 1);
   assert (task ? nvt == 0 : 1);
+
+  join_clause = NULL;
+
+  /* Treat the "task_id" filter keyword as if the task was given in "task". */
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  task_id = filter_term_value (filter ? filter : get->filter, "task_id");
+
+  g_free (filter);
+
+  if (task_id)
+    {
+      find_task (task_id, &task);
+      g_free (task_id);
+    }
 
   if (result)
     result_clause = g_strdup_printf (" AND"
@@ -35885,7 +36025,7 @@ override_count (const get_data_t *get)
 {
   static const char *extra_columns[] = OVERRIDE_ITERATOR_FILTER_COLUMNS;
   return count ("override", get, OVERRIDE_ITERATOR_COLUMNS, extra_columns,
-                TRUE);
+                0, 0, 0, TRUE);
 }
 
 /**
@@ -41217,6 +41357,42 @@ filter_term (const char *uuid)
 }
 
 /**
+ * @brief Return the value of a column keyword of a filter term.
+ *
+ * @param[in]  term    Filter term.
+ * @param[in]  column  Column name.
+ *
+ * @return Value of column keyword if one exists, else NULL.
+ */
+gchar*
+filter_term_value (const char *term, const char *column)
+{
+  keyword_t **point;
+  array_t *split;
+
+  if (term == NULL)
+    return NULL;
+
+  split = split_filter (term);
+  point = (keyword_t**) split->pdata;
+  while (*point)
+    {
+      keyword_t *keyword;
+
+      keyword = *point;
+      if (keyword->column && (strcasecmp (keyword->column, "task_id") == 0))
+        {
+          gchar *ret = g_strdup (keyword->string);
+          filter_free (split);
+          return ret;
+        }
+      point++;
+    }
+  filter_free (split);
+  return NULL;
+}
+
+/**
  * @brief Create a filter.
  *
  * @param[in]   name            Name of filter.
@@ -41524,7 +41700,8 @@ int
 filter_count (const get_data_t *get)
 {
   static const char *extra_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
-  return count ("filter", get, FILTER_ITERATOR_COLUMNS, extra_columns, TRUE);
+  return count ("filter", get, FILTER_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
+                TRUE);
 }
 
 /**
@@ -43235,7 +43412,8 @@ int
 cpe_info_count (const get_data_t *get)
 {
   static const char *extra_columns[] = CPE_INFO_ITERATOR_FILTER_COLUMNS;
-  return count ("cpe", get, CPE_INFO_ITERATOR_COLUMNS, extra_columns, FALSE);
+  return count ("cpe", get, CPE_INFO_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
+                FALSE);
 }
 
 /**

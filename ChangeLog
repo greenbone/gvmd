@@ -1,3 +1,25 @@
+2012-10-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Account for nvt and task in GET_NOTES count, and handle the GET_NOTES
+	task_id filter term correctly.
+
+	* src/manage_sql.c (count): Add args to give caller more control of SQL,
+	as in init_get_iterator.  Update callers.
+	(NOTE_ITERATOR_FILTER_COLUMNS): Remove task_id because it is now handled
+	specially.
+	(note_count): Add nvt, result and task args so that the count takes
+	these into account, just like init_note_iterator.  Add special handling
+	of task_id in the filter because it's more complex than just a column
+	match.
+	(init_note_iterator): Add special handling of task_id in the filter
+	because it's more complex than just a column match.
+	(filter_term_value): New function.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Add nvt and task args to
+	note_count in GET_NOTES.
+
 2012-11-08  Andre Heinecke <andre.heinecke@greenbone.net>
 
 	* report_formats/verinice-ism/classification_generator.sh: New.

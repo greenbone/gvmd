@@ -1612,7 +1612,7 @@ modify_note (note_t, const char*, const char*, const char*, const char*,
              const char*, task_t, result_t);
 
 int
-note_count (const get_data_t *);
+note_count (const get_data_t *, nvt_t, result_t, task_t);
 
 int
 init_note_iterator (iterator_t*, const get_data_t*, nvt_t, result_t, task_t);
@@ -2288,6 +2288,9 @@ filter_uuid (filter_t);
 
 gchar*
 filter_term (const char *);
+
+gchar*
+filter_term_value (const char *, const char *);
 
 int
 create_filter (const char*, const char*, const char*, const char*, int,

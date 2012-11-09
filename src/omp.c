@@ -9053,7 +9053,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               cleanup_iterator (&notes);
               filtered = get_notes_data->get.id
                           ? 1
-                          : note_count (&get_notes_data->get);
+                          : note_count (&get_notes_data->get, nvt, 0, task);
               SEND_GET_END ("note", &get_notes_data->get, count, filtered);
             }
           get_notes_data_reset (get_notes_data);
