@@ -35973,8 +35973,7 @@ modify_override (override_t override, const char *active, const char* text,
  * @brief Filter columns for override iterator.
  */
 #define OVERRIDE_ITERATOR_FILTER_COLUMNS                                     \
- { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "task_id",       \
-   "nvt_id", NULL }
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "nvt_id", NULL }
 
 /**
  * @brief Override iterator columns.
@@ -36016,16 +36015,114 @@ modify_override (override_t override, const char *active, const char* text,
 /**
  * @brief Count number of overrides.
  *
- * @param[in]  get  GET params.
+ * @param[in]  get         GET params.
+ * @param[in]  result      Result to limit overrides to, 0 for all.
+ * @param[in]  task        If result is > 0, task whose overrides on result to
+ *                         include, otherwise task to limit overrides to.  0 for
+ *                         all tasks.
+ * @param[in]  nvt         NVT to limit overrides to, 0 for all.
  *
  * @return Total number of overrides in filtered set.
  */
 int
-override_count (const get_data_t *get)
+override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
 {
-  static const char *extra_columns[] = OVERRIDE_ITERATOR_FILTER_COLUMNS;
-  return count ("override", get, OVERRIDE_ITERATOR_COLUMNS, extra_columns,
-                0, 0, 0, TRUE);
+  static const char *filter_columns[] = OVERRIDE_ITERATOR_FILTER_COLUMNS;
+  gchar *result_clause, *join_clause, *filter, *task_id;
+  int ret;
+
+  join_clause = NULL;
+
+  /* Treat the "task_id" filter keyword as if the task was given in "task". */
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  task_id = filter_term_value (filter ? filter : get->filter, "task_id");
+
+  g_free (filter);
+
+  if (task_id)
+    {
+      find_task (task_id, &task);
+      g_free (task_id);
+    }
+
+  if (result)
+    result_clause = g_strdup_printf (" AND"
+                                     " (result = %llu"
+                                     "  OR (result = 0 AND nvt ="
+                                     "      (SELECT results.nvt FROM results"
+                                     "       WHERE results.ROWID = %llu)))"
+                                     " AND (hosts is NULL"
+                                     "      OR hosts = \"\""
+                                     "      OR hosts_contains (hosts,"
+                                     "      (SELECT results.host FROM results"
+                                     "       WHERE results.ROWID = %llu)))"
+                                     " AND (port is NULL"
+                                     "      OR port = \"\""
+                                     "      OR port ="
+                                     "      (SELECT results.port FROM results"
+                                     "       WHERE results.ROWID = %llu))"
+                                     " AND (threat is NULL"
+                                     "      OR threat = \"\""
+                                     "      OR threat ="
+                                     "      (SELECT results.type FROM results"
+                                     "       WHERE results.ROWID = %llu))"
+                                     " AND (task = 0 OR task = %llu)",
+                                     result,
+                                     result,
+                                     result,
+                                     result,
+                                     result,
+                                     task);
+  else if (task)
+    {
+      result_clause = g_strdup_printf
+                       (" AND (overrides.task = %llu OR overrides.task = 0)"
+                        " AND reports.task = %llu"
+                        " AND reports.ROWID = report_results.report"
+                        " AND report_results.result = results.ROWID"
+                        " AND results.nvt = overrides.nvt"
+                        " AND"
+                        " (overrides.result = 0"
+                        "  OR report_results.result = overrides.result)",
+                        task,
+                        task);
+      join_clause = g_strdup (", reports, report_results, results");
+    }
+  else if (nvt)
+    {
+      result_clause = g_strdup_printf
+                       (" AND (overrides.nvt ="
+                        " (SELECT oid FROM nvts WHERE nvts.ROWID = %llu))"
+                        " AND ((overrides.owner IS NULL) OR (overrides.owner ="
+                        " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+                        nvt,
+                        current_credentials.uuid);
+    }
+  else
+    result_clause = NULL;
+
+  ret = count ("override",
+               get,
+               OVERRIDE_ITERATOR_COLUMNS,
+               filter_columns,
+               task || nvt,
+               join_clause,
+               result_clause,
+               TRUE);
+
+  g_free (result_clause);
+  g_free (join_clause);
+
+  return ret;
 }
 
 /**
@@ -36047,7 +36144,7 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                         result_t result, task_t task)
 {
   static const char *filter_columns[] = OVERRIDE_ITERATOR_FILTER_COLUMNS;
-  gchar *result_clause, *join_clause = NULL;
+  gchar *result_clause, *join_clause, *filter, *task_id;
   int ret;
 
   assert (current_credentials.uuid);
@@ -36056,6 +36153,29 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
 
   assert (result ? nvt == 0 : 1);
   assert (task ? nvt == 0 : 1);
+
+  join_clause = NULL;
+
+  /* Treat the "task_id" filter keyword as if the task was given in "task". */
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  task_id = filter_term_value (filter ? filter : get->filter, "task_id");
+
+  g_free (filter);
+
+  if (task_id)
+    {
+      find_task (task_id, &task);
+      g_free (task_id);
+    }
 
   if (result)
     result_clause = g_strdup_printf (" AND"

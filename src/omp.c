@@ -9412,7 +9412,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               cleanup_iterator (&overrides);
               filtered = get_overrides_data->get.id
                           ? 1
-                          : override_count (&get_overrides_data->get);
+                          : override_count (&get_overrides_data->get, nvt, 0,
+                                            task);
               SEND_GET_END ("override", &get_overrides_data->get, count,
                             filtered);
             }

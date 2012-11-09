@@ -1,3 +1,22 @@
+2012-10-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Account for nvt and task in GET_OVERRIDES count, and handle the GET_OVERRIDES
+	task_id filter term correctly.
+
+	* src/manage_sql.c (OVERRIDE_ITERATOR_FILTER_COLUMNS): Remove task_id
+	because it is now handled specially.
+	(override_count): Add nvt, result and task args so that the count takes
+	these into account, just like init_override_iterator.  Add special handling
+	of task_id in the filter because it's more complex than just a column
+	match.
+	(init_override_iterator): Add special handling of task_id in the filter
+	because it's more complex than just a column match.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Add nvt and task args to
+	override_count in GET_OVERRIDES.
+
 2012-11-09  Andre Heinecke <aheinecke@intevation.de>
 
 	Version 1.1.5 of verinice ISM export
@@ -12,7 +31,7 @@
 	* report_formats/verinice-ism/classification_generator.sh: Remove check
 	for detail name. Fix syntax errors.
 
-	* report_formats/verinice-ism/gsm_verinice_ism.xsl: Include generated 
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl: Include generated
 	classifcation.xsl
 	(extract_organization): New. Copied from classification-helpers
 	(report/host_start): Only generate tags based on best_os_cpe, set
