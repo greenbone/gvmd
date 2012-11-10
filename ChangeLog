@@ -1,9 +1,17 @@
 2012-10-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Account for nvt and task in GET_OVERRIDES count, and handle the GET_OVERRIDES
-	task_id filter term correctly.
+	* src/manage_sql.c (override_count, init_override_iterator): Rework the
+	SQL of the task case to take advantage of the new results.report column
+	and to select within the statement instead of joining.  This greatly
+	improves the performance of GET_OVERRIDES with a task_id when the
+	database is large.
 
-	* src/manage_sql.c (OVERRIDE_ITERATOR_FILTER_COLUMNS): Remove task_id
+2012-10-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (note_count, init_note_iterator): Rework the SQL of
+	the task case to take advantage of the new results.report column and to
+	select within the statement instead of joining.  This greatly improves
+	the performance of GET_NOTES with a task_id when the database is large.
 
 2012-10-09  Matthew Mundell <matthew.mundell@greenbone.net>
 

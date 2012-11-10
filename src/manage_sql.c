@@ -36032,10 +36032,8 @@ int
 override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
 {
   static const char *filter_columns[] = OVERRIDE_ITERATOR_FILTER_COLUMNS;
-  gchar *result_clause, *join_clause, *filter, *task_id;
+  gchar *result_clause, *filter, *task_id;
   int ret;
-
-  join_clause = NULL;
 
   /* Treat the "task_id" filter keyword as if the task was given in "task". */
 
@@ -36090,16 +36088,21 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
     {
       result_clause = g_strdup_printf
                        (" AND (overrides.task = %llu OR overrides.task = 0)"
-                        " AND reports.task = %llu"
-                        " AND reports.ROWID = report_results.report"
-                        " AND report_results.result = results.ROWID"
-                        " AND results.nvt = overrides.nvt"
-                        " AND"
-                        " (overrides.result = 0"
-                        "  OR report_results.result = overrides.result)",
+                        " AND nvt IN"
+                        " (SELECT DISTINCT nvt FROM results"
+                        "  WHERE (SELECT task FROM reports"
+                        "         WHERE reports.ROWID = results.report)"
+                        "        = %llu)"
+                        " AND (overrides.result = 0"
+                        "      OR (SELECT task FROM reports"
+                        "          WHERE reports.ROWID"
+                        "                = (SELECT report FROM results"
+                        "                   WHERE results.ROWID"
+                        "                         = overrides.result))"
+                        "         = %llu)",
+                        task,
                         task,
                         task);
-      join_clause = g_strdup (", reports, report_results, results");
     }
   else if (nvt)
     {
@@ -36119,12 +36122,11 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
                OVERRIDE_ITERATOR_COLUMNS,
                filter_columns,
                task || nvt,
-               join_clause,
+               NULL,
                result_clause,
                TRUE);
 
   g_free (result_clause);
-  g_free (join_clause);
 
   return ret;
 }
@@ -36148,7 +36150,7 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                         result_t result, task_t task)
 {
   static const char *filter_columns[] = OVERRIDE_ITERATOR_FILTER_COLUMNS;
-  gchar *result_clause, *join_clause, *filter, *task_id;
+  gchar *result_clause, *filter, *task_id;
   int ret;
 
   assert (current_credentials.uuid);
@@ -36157,8 +36159,6 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
 
   assert (result ? nvt == 0 : 1);
   assert (task ? nvt == 0 : 1);
-
-  join_clause = NULL;
 
   /* Treat the "task_id" filter keyword as if the task was given in "task". */
 
@@ -36213,16 +36213,21 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
     {
       result_clause = g_strdup_printf
                        (" AND (overrides.task = %llu OR overrides.task = 0)"
-                        " AND reports.task = %llu"
-                        " AND reports.ROWID = report_results.report"
-                        " AND report_results.result = results.ROWID"
-                        " AND results.nvt = overrides.nvt"
-                        " AND"
-                        " (overrides.result = 0"
-                        "  OR report_results.result = overrides.result)",
+                        " AND nvt IN"
+                        " (SELECT DISTINCT nvt FROM results"
+                        "  WHERE (SELECT task FROM reports"
+                        "         WHERE reports.ROWID = results.report)"
+                        "        = %llu)"
+                        " AND (overrides.result = 0"
+                        "      OR (SELECT task FROM reports"
+                        "          WHERE reports.ROWID"
+                        "                = (SELECT report FROM results"
+                        "                   WHERE results.ROWID"
+                        "                         = overrides.result))"
+                        "         = %llu)",
+                        task,
                         task,
                         task);
-      join_clause = g_strdup (", reports, report_results, results");
     }
   else if (nvt)
     {
@@ -36247,12 +36252,11 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                            filter_columns,
                            "task",
                            task || nvt,
-                           join_clause,
+                           NULL,
                            result_clause,
                            TRUE);
 
   g_free (result_clause);
-  g_free (join_clause);
 
   return ret;
 }
