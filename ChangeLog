@@ -1,3 +1,18 @@
+2012-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (cache_report_counts): New function.  Body from
+	report_counts_id_filt.  Use sql_giveup to run the SQL because it seems
+	that demanding a lock for the UPDATE can deadlock if another process
+	does a write.
+	(report_counts_id_filt): Call cache_report_counts to cache the counts.
+
+	* src/sql.c (sqlv): New function.  Body from sql.
+	(sql): Call through to sqlv.
+	(sql_giveup): New function.  Like sql but gives up if database locked
+	or busy.
+
+	* src/sql.h: Add header accordingly.
+
 2012-10-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (override_count, init_override_iterator): Rework the

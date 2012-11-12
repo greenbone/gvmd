@@ -47,6 +47,9 @@ void
 sql (char * sql, ...);
 
 void
+sql_giveup (char * sql, ...);
+
+void
 sql_quiet (char * sql, ...);
 
 int

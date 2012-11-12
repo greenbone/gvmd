@@ -17719,6 +17719,40 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
  * @brief Get the message counts for a report.
  *
  * @param[in]   report    Report.
+ * @param[in]   override  Whether to override the threat.
+ * @param[out]  holes     Number of hole messages.
+ * @param[out]  infos     Number of info messages.
+ * @param[out]  logs      Number of log messages.
+ * @param[out]  warnings  Number of warning messages.
+ * @param[out]  false_positives    Number of false positive messages.
+ */
+static void
+cache_report_counts (report_t report, int override, int holes, int warnings,
+                     int infos, int logs, int false_positives)
+{
+  /* Try cache results.  Give up if the database is locked because this could
+   * happen while the caller has an SQL statement open.  If another process
+   * tries to write to the database between the statement open and
+   * cache_report_counts then they'll deadlock. */
+  if (override)
+    sql_giveup ("UPDATE reports SET override_highs = %i,"
+                " override_mediums = %i, override_lows = %i,"
+                " override_logs = %i, override_fps = %i"
+                " WHERE ROWID = %llu;",
+                holes, warnings, infos, logs, false_positives,
+                report);
+  else
+    sql_giveup ("UPDATE reports SET highs = %i, mediums = %i, lows = %i,"
+                " logs = %i, fps = %i"
+                " WHERE ROWID = %llu;",
+                holes, warnings, infos, logs, false_positives,
+                report);
+}
+
+/**
+ * @brief Get the message counts for a report.
+ *
+ * @param[in]   report    Report.
  * @param[out]  debugs    Number of debug messages.
  * @param[out]  holes     Number of hole messages.
  * @param[out]  infos     Number of info messages.
@@ -18250,22 +18284,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
           report_scan_run_status (report, &status);
 
           if (autofp == 0 && host == NULL && status == TASK_STATUS_DONE)
-            {
-              /* Cache results. */
-              if (override)
-                sql ("UPDATE reports SET override_highs = %i,"
-                     " override_mediums = %i, override_lows = %i,"
-                     " override_logs = %i, override_fps = %i"
-                     " WHERE ROWID = %llu;",
-                     *holes, *warnings, *infos, *logs, *false_positives,
-                     report);
-              else
-                sql ("UPDATE reports SET highs = %i, mediums = %i, lows = %i,"
-                     " logs = %i, fps = %i"
-                     " WHERE ROWID = %llu;",
-                     *holes, *warnings, *infos, *logs, *false_positives,
-                     report);
-            }
+            cache_report_counts (report, override, *holes, *warnings, *infos,
+                                 *logs, *false_positives);
 
           return 0;
         }
@@ -18286,22 +18306,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 
       report_scan_run_status (report, &status);
       if (status == TASK_STATUS_DONE)
-        {
-          /* Cache results. */
-          if (override)
-            sql ("UPDATE reports SET override_highs = %i,"
-                 " override_mediums = %i, override_lows = %i,"
-                 " override_logs = %i, override_fps = %i"
-                 " WHERE ROWID = %llu;",
-                 *holes, *warnings, *infos, *logs, *false_positives,
-                 report);
-          else
-            sql ("UPDATE reports SET highs = %i, mediums = %i, lows = %i,"
-                 " logs = %i, fps = %i"
-                 " WHERE ROWID = %llu;",
-                 *holes, *warnings, *infos, *logs, *false_positives,
-                 report);
-        }
+        cache_report_counts (report, override, *holes, *warnings, *infos,
+                             *logs, *false_positives);
     }
 
   if (filtered_false_positives)

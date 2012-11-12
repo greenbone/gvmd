@@ -141,21 +141,19 @@ sql_insert (const char *string)
 /**
  * @brief Perform an SQL statement.
  *
+ * @param[in]  retry  Whether to keep retrying while database is busy or locked.
  * @param[in]  sql    Format string for SQL statement.
- * @param[in]  ...    Arguments for format string.
+ * @param[in]  args   Arguments for format string.
  */
-void
-sql (char* sql, ...)
+static void
+sqlv (int retry, char* sql, va_list args)
 {
   const char* tail;
   int ret;
   sqlite3_stmt* stmt;
-  va_list args;
   gchar* formatted;
 
-  va_start (args, sql);
   formatted = g_strdup_vprintf (sql, args);
-  va_end (args);
 
   tracef ("   sql: %s\n", formatted);
 
@@ -165,7 +163,11 @@ sql (char* sql, ...)
     {
       ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
       if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
-        continue;
+        {
+          if (retry)
+            continue;
+          return;
+        }
       g_free (formatted);
       if (ret == SQLITE_OK)
         {
@@ -189,7 +191,13 @@ sql (char* sql, ...)
   while (1)
     {
       ret = sqlite3_step (stmt);
-      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_BUSY)
+        {
+          if (retry)
+            continue;
+          sqlite3_finalize (stmt);
+          return;
+        }
       if (ret == SQLITE_DONE) break;
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
         {
@@ -197,7 +205,12 @@ sql (char* sql, ...)
             {
               ret = sqlite3_reset (stmt);
               if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
-                continue;
+                {
+                  if (retry)
+                    continue;
+                  sqlite3_finalize (stmt);
+                  return;
+                }
             }
           g_warning ("%s: sqlite3_step failed: %s\n",
                      __FUNCTION__,
@@ -207,6 +220,38 @@ sql (char* sql, ...)
     }
 
   sqlite3_finalize (stmt);
+}
+
+/**
+ * @brief Perform an SQL statement, retrying if database is busy or locked.
+ *
+ * @param[in]  sql    Format string for SQL statement.
+ * @param[in]  ...    Arguments for format string.
+ */
+void
+sql (char* sql, ...)
+{
+  va_list args;
+
+  va_start (args, sql);
+  sqlv (1, sql, args);
+  va_end (args);
+}
+
+/**
+ * @brief Perform an SQL statement, giving up if database is busy or locked.
+ *
+ * @param[in]  sql    Format string for SQL statement.
+ * @param[in]  ...    Arguments for format string.
+ */
+void
+sql_giveup (char* sql, ...)
+{
+  va_list args;
+
+  va_start (args, sql);
+  sqlv (0, sql, args);
+  va_end (args);
 }
 
 /**
