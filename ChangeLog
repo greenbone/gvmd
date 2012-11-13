@@ -1,3 +1,16 @@
+2012-11-13  Andre Heinecke <aheinecke@intevation.de>
+
+	Add SCAP DB Migration for new CVE info
+
+	* tools/openvas-scapdata-sync.in, tools/greenbone-scapdata-sync
+	(check_db_version): Migrate to 4 instead of reinitializing.
+	(migrate_3): Readded.
+	(migrate_4): New. Migrate to database version 4
+
+	* tools/migrate_db4.xsl: New. Add new CVSS information to CVE table
+
+	* CMakeLists.txt: Install migrate_db4.xsl
+
 2012-11-13  Andre Heinecke <andre.heinecke@greenbone.net>
 
 	Add iterable and filterable get_info for CVE

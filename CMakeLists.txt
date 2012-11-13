@@ -350,7 +350,7 @@ install (FILES src/wizards/quick_first_scan.xml
 install (FILES tools/db_init.sql tools/cpe_update.xsl
          tools/cpe_youngerthan.xsl tools/cve_update.xsl
          tools/cve_youngerthan.xsl tools/cpe_getbyname.xsl
-         tools/cve_getbyname.xsl
+         tools/cve_getbyname.xsl tools/migrate_db4.xsl
          DESTINATION ${OPENVAS_SCAP_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 

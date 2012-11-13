@@ -238,13 +238,49 @@ reinit () {
   $SQLITE $SEC_DB < $RES_DIR/db_init.sql
 }
 
+migrate_3 ()
+{
+  echo "[i] Database Version updated. Migrating to Version 3."
+  echo "[i] Updating CPEs.."
+  $SQLITE $SEC_DB "update cpes set modification_time = strftime('%s', modification_time), \
+                                   creation_time = strftime('%s', creation_time);"
+  echo "[i] Updating CVEs.."
+  $SQLITE $SEC_DB "update cves set modification_time = strftime('%s', modification_time), \
+                                   creation_time = strftime('%s', creation_time);"
+  echo "[i] Migration done."
+  $SQLITE $SEC_DB "update meta set value ='3' where name = 'database_version';"
+}
+
+migrate_4 ()
+{
+  echo "[i] Database Version updated. Migrating to Version 4."
+  echo "[i] Updating Tables.."
+  $SQLITE $SEC_DB "alter table cves add column vector;"
+  $SQLITE $SEC_DB "alter table cves add column complexity;"
+  $SQLITE $SEC_DB "alter table cves add column authentication;"
+  $SQLITE $SEC_DB "alter table cves add column confidentiality_impact;"
+  $SQLITE $SEC_DB "alter table cves add column integrity_impact;"
+  $SQLITE $SEC_DB "alter table cves add column availability_impact;"
+  $SQLITE $SEC_DB "alter table cves add column products;"
+
+  for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
+  do
+      echo "[i] Adding CVSS information of $cvefile to SCAP DB.."
+      xsltproc $RES_DIR/migrate_db4.xsl $cvefile | $SQLITE $SEC_DB
+  done
+
+  echo "[i] Migration done."
+  $SQLITE $SEC_DB "update meta set value ='4' where name = 'database_version';"
+}
+
 check_db_version () {
   DB_VERSION=`$SQLITE $SEC_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
-    2) reinit;;
-    3) reinit;;
+    2) migrate_3
+       migrate_4;;
+    3) migrate_4;;
   esac
 }
 
