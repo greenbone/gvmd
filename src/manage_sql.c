@@ -25936,6 +25936,7 @@ typedef enum
 struct keyword
 {
   gchar *column;                 ///< The column prefix, or NULL.
+  int equal;                     ///< Whether the keyword is like "=example".
   int number;                    ///< The number, if the keyword is a number.
   int quoted;                    ///< Whether the keyword was quoted.
   gchar *string;                 ///< The keyword string, outer quotes removed.
@@ -26162,6 +26163,15 @@ split_filter (const gchar* given_filter)
       switch (*filter)
         {
           case '=':
+            if (between)
+              {
+                /* Empty index.  Start a part. */
+                keyword = g_malloc0 (sizeof (keyword_t));
+                keyword->equal = 1;
+                current_part = filter + 1;
+                between = 0;
+                break;
+              }
           case '~':
           case '>':
           case '<':
@@ -26825,9 +26835,13 @@ manage_clean_filter (const gchar *filter)
           }
       else
         if (keyword->quoted)
-          g_string_append_printf (clean, " \"%s\"", keyword->string);
+          g_string_append_printf (clean, " %s\"%s\"",
+                                  keyword->equal ? "=" : "",
+                                  keyword->string);
         else
-          g_string_append_printf (clean, " %s", keyword->string);
+          g_string_append_printf (clean, " %s%s",
+                                  keyword->equal ? "=" : "",
+                                  keyword->string);
       point++;
     }
   filter_free (split);
@@ -27187,6 +27201,51 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                     quoted_column,
                                     quoted_keyword);
           g_free (quoted_column);
+        }
+      else if (keyword->equal)
+        {
+          const char *column;
+
+          /* Keyword like "=example". */
+
+          g_string_append_printf (clause,
+                                  "%s(",
+                                  (first_keyword
+                                    ? ""
+                                    : (last_was_and ? " AND " : " OR ")));
+
+          quoted_keyword = sql_quote (keyword->string);
+          if (last_was_not)
+            for (index = 0;
+                 (column = columns[index]) != NULL;
+                 index++)
+              {
+                quoted_column = sql_quote (column);
+                g_string_append_printf (clause,
+                                        "%s"
+                                        "(%s IS NULL"
+                                        " OR CAST (%s AS TEXT)"
+                                        " != '%s')",
+                                        (index ? " AND " : ""),
+                                        quoted_column,
+                                        quoted_column,
+                                        quoted_keyword);
+                g_free (quoted_column);
+              }
+          else
+            for (index = 0;
+                 (column = columns[index]) != NULL;
+                 index++)
+              {
+                quoted_column = sql_quote (column);
+                g_string_append_printf (clause,
+                                        "%sCAST (%s AS TEXT)"
+                                        " = '%s'",
+                                        (index ? " OR " : ""),
+                                        quoted_column,
+                                        quoted_keyword);
+                g_free (quoted_column);
+              }
         }
       else
         {

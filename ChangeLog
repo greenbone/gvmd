@@ -1,5 +1,15 @@
 2012-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	In a powerfilter if a term begins with =, then match term entirely
+	instead of as a substring.
+
+	* src/manage_sql.c (struct keyword): Add equal flag.
+	(split_filter): Flag keywords that have leading =.
+	(manage_clean_filter): Add leading equal if flag set.
+	(filter_clause): Add case for exact term match.
+
+2012-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_threat_level, task_previous_threat_level)
 	(init_result_iterator, init_asset_iterator, report_scan_result_count)
 	(filtered_host_count): Use coalesce instead of CASE, if only to make the
