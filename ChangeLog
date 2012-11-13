@@ -1,3 +1,8 @@
+2012-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/sql.c (sqlv): Retry a few times before giving up, to prevent the
+	function from giving up every time.
+
 2012-11-13  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/openvas-scapdata-sync.in, tools/greenbone-scapdata-sync:
@@ -48,7 +53,7 @@
 	* src/schema_formats/XML/OMP.xml: Update documentation of get_info
 
 	* tools/cve_update.xsl (cve:entry): Add more information to the database.
-	
+
 	* tools/db_init.sql (meta): Increase scap database version to 4
 	(cves): Add vector, complexity, authentication, confidentiality_impact,
 	integrity_impact, availability_impact and products column
@@ -59,7 +64,7 @@
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
 
-2012-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (cache_report_counts): New function.  Body from
 	report_counts_id_filt.  Use sql_giveup to run the SQL because it seems
@@ -74,7 +79,7 @@
 
 	* src/sql.h: Add header accordingly.
 
-2012-10-10  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (override_count, init_override_iterator): Rework the
 	SQL of the task case to take advantage of the new results.report column
@@ -82,14 +87,14 @@
 	improves the performance of GET_OVERRIDES with a task_id when the
 	database is large.
 
-2012-10-10  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (note_count, init_note_iterator): Rework the SQL of
 	the task case to take advantage of the new results.report column and to
 	select within the statement instead of joining.  This greatly improves
 	the performance of GET_NOTES with a task_id when the database is large.
 
-2012-10-09  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Account for nvt and task in GET_OVERRIDES count, and handle the GET_OVERRIDES
 	task_id filter term correctly.
@@ -137,7 +142,7 @@
 	* report_formats/verinice-ism/create_report_import.xsl: Update Version
 	number, include classification.xsl
 
-2012-10-08  Matthew Mundell <matthew.mundell@greenbone.net>
+2012-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Account for nvt and task in GET_NOTES count, and handle the GET_NOTES
 	task_id filter term correctly.

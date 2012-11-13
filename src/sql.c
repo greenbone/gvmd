@@ -149,7 +149,7 @@ static void
 sqlv (int retry, char* sql, va_list args)
 {
   const char* tail;
-  int ret;
+  int ret, retries;
   sqlite3_stmt* stmt;
   gchar* formatted;
 
@@ -159,12 +159,15 @@ sqlv (int retry, char* sql, va_list args)
 
   /* Prepare statement. */
 
+  retries = 10;
   while (1)
     {
       ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
       if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
         {
           if (retry)
+            continue;
+          if (retries--)
             continue;
           return;
         }
@@ -188,12 +191,15 @@ sqlv (int retry, char* sql, va_list args)
 
   /* Run statement. */
 
+  retries = 10;
   while (1)
     {
       ret = sqlite3_step (stmt);
       if (ret == SQLITE_BUSY)
         {
           if (retry)
+            continue;
+          if (retries--)
             continue;
           sqlite3_finalize (stmt);
           return;
