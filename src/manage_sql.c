@@ -26033,16 +26033,14 @@ parse_keyword (keyword_t* keyword)
         {
           time_t now;
           now = time (NULL);
-          /* 30 days. */
-          keyword->number = now + atoi (keyword->string) * 2592000;
+          keyword->number = add_months (now, atoi (keyword->string));
           keyword->type = KEYWORD_TYPE_NUMBER;
         }
       else if (next == '\0' && *string == 'y')
         {
           time_t now;
           now = time (NULL);
-          /* 365 days. */
-          keyword->number = now + (atoi (keyword->string) * 31536000);
+          keyword->number = add_months (now, atoi (keyword->string) * 12);
           keyword->type = KEYWORD_TYPE_NUMBER;
         }
       else if (strptime (keyword->string, "%Y-%m-%dT%H:%M", &date))
