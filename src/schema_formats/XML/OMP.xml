@@ -5502,6 +5502,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>comment</e>
           <e>creation_time</e>
           <e>modification_time</e>
+          <e>update_time</e>
           <o><e>cpe</e></o>
           <o><e>cve</e></o>
           <o><e>nvt</e></o>
@@ -5527,18 +5528,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
-          <name>cve</name>
-          <pattern>
-            text
-          </pattern>
-          <summary>A CVE info element</summary>
-        </ele>
-        <ele>
-          <name>nvt</name>
-          <pattern>
-            text
-          </pattern>
-          <summary>A NVT info element</summary>
+          <name>update_time</name>
+          <summary>Date and time the source of the info was read</summary>
+          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>cpe</name>
@@ -5547,7 +5539,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>max_cvss</e>
             <e>cve_refs</e>
             <e>status</e>
-            <o>deprecated_by</o>
+            <o><e>deprecated_by</e></o>
+            <o><e>cves</e></o>
+            <o><e>raw_data</e></o>
           </pattern>
           <summary>A CPE info element</summary>
           <ele>
@@ -5585,110 +5579,346 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <t>integer</t>
             </pattern>
           </ele>
-        </ele>
-      </ele>
-      <ele>
-          <name>filters</name>
-          <pattern>
-            <attrib>
-              <name>id</name>
-              <summary>UUID of filter if any, else 0</summary>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
-            <e>term</e>
-          </pattern>
           <ele>
-            <name>term</name>
-            <summary>Filter term</summary>
-            <type>text</type>
-          </ele>
-        </ele>
-        <ele>
-          <name>sort</name>
-          <pattern>
-            text
-            <e>field</e>
-          </pattern>
-          <ele>
-            <name>field</name>
+            <name>cves</name>
+            <summary>CVEs referring to this CPE. Only when details were requested</summary>
             <pattern>
-              <e>order</e>
+              <o><e>cve</e></o>
             </pattern>
             <ele>
-              <name>order</name>
+              <name>cve</name>
+              <summary>CVE refering to this CPE</summary>
               <pattern>
-                <t>
-                  <alts>
-                    <alt>ascending</alt>
-                    <alt>descending</alt>
-                  </alts>
-                </t>
+                text
+              </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>raw_data</name>
+            <summary>Source representation of the information. Only when details were requested</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+        </ele>
+      <ele>
+        <name>nvt</name>
+        <pattern>
+          text
+        </pattern>
+        <summary>A NVT info element</summary>
+      </ele>
+      <ele>
+        <name>cve</name>
+        <pattern>
+          <o><e>cvss</e></o>
+          <o><e>vector</e></o>
+          <o><e>complexity</e></o>
+          <o><e>authentication</e></o>
+          <o><e>confidentiality_impact</e></o>
+          <o><e>integrity_impact</e></o>
+          <o><e>availability_impact</e></o>
+          <e>description</e>
+          <e>products</e>
+          <o><e>nvts</e></o>
+          <o><e>raw_data</e></o>
+        </pattern>
+        <summary>A CVE info element</summary>
+        <ele>
+          <name>cvss</name>
+          <summary>CVSS Base Score</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>vector</name>
+          <summary>CVSS Access Vector metric</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>complexity</name>
+          <summary>CVSS Attack Complexity metric</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>authentication</name>
+          <summary>CVSS Authentication metric</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>confidentiality_impact</name>
+          <summary>CVSS Confidentiality impact metric</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>integrity_impact</name>
+          <summary>CVSS Integrety impact metric</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>availability_impact</name>
+          <summary>CVSS Availability impact metric</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>description</name>
+          <summary>The CVE's description</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>products</name>
+          <summary>Space seperated list of CPEs affected by this</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>nvts</name>
+          <summary>NVTs addressing this CVE. Only when details were requested</summary>
+          <pattern>
+            <o><e>nvt</e></o>
+          </pattern>
+          <ele>
+            <name>nvt</name>
+            <summary>NVT refering to this CPE</summary>
+            <pattern>
+              <attrib>
+                <name>oid</name>
+                <type>oid</type>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the NVT</summary>
+              <pattern>
+                text
               </pattern>
             </ele>
           </ele>
         </ele>
         <ele>
-          <name>filters</name>
+          <name>raw_data</name>
+          <summary>Source representation of the information. Only when details were requested</summary>
           <pattern>
-            <attrib>
-              <name>start</name>
-              <summary>First filter</summary>
-              <type>integer</type>
-              <required>1</required>
-            </attrib>
-            <attrib>
-              <name>max</name>
-              <summary>Maximum number of filters</summary>
-              <type>integer</type>
-              <required>1</required>
-            </attrib>
+            text
           </pattern>
         </ele>
+      </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+        </pattern>
         <ele>
-          <name>info_count</name>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <type>text</type>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
           <pattern>
-            <e>filtered</e>
-            <e>page</e>
+            <e>order</e>
           </pattern>
           <ele>
-            <name>filtered</name>
-            <summary>Number of info elements after filtering</summary>
-            <pattern><t>integer</t></pattern>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
           </ele>
-          <ele>
-            <name>page</name>
-            <summary>Number of info elements on current page</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First filter</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of filters</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>info_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of info elements after filtering</summary>
+          <pattern><t>integer</t></pattern>
         </ele>
         <ele>
-          <name>details</name>
-          <summary>Are details included in this response</summary>
-          <type>boolean</type>
+          <name>page</name>
+          <summary>Number of info elements on current page</summary>
+          <pattern><t>integer</t></pattern>
         </ele>
+      </ele>
+      <ele>
+        <name>details</name>
+        <summary>Are details included in this response</summary>
+        <type>boolean</type>
+      </ele>
     </response>
     <example>
-      <summary>Get a info about cpe:/a:gnu:gzip:1.3.3</summary>
+      <summary>Get a info about cpe:/a:gnu:gzip:1.3.3 with all details</summary>
       <request>
-        <get_info type="CPE" name="cpe:/a:gnu:gzip:1.3.3"/>
+        <get_info type="CPE" name="cpe:/a:gnu:gzip:1.3.3" details="1"/>
       </request>
       <response>
         <get_info_response status_text="OK" status="200">
           <info id="28139">
             <name>cpe:/a:gnu:gzip:1.3.3</name>
             <comment/>
-            <creation_time>2007-09-14T17:36:49.090Z</creation_time>
-            <modification_time>2007-09-14T17:36:49.090Z</modification_time>
+            <creation_time>2007-09-14T17:36:49Z</creation_time>
+            <modification_time>2007-09-14T17:36:49Z</modification_time>
             <writable>0</writable>
             <in_use>0</in_use>
+            <update_time>2012-10-26T13:18:00.000+0000</update_time>
             <cpe>
               <title>GNU Gzip 1.3.3</title>
               <max_cvss>10.0</max_cvss>
               <cve_refs>5</cve_refs>
               <status>DRAFT</status>
+              <cves>
+                <cve>
+                  <entry xmlns:vuln="http://scap.nist.gov/schema/vulnerability/0.4"
+                    xmlns="http://scap.nist.gov/schema/feed/vulnerability/2.0"
+                    xmlns:patch="http://scap.nist.gov/schema/patch/0.1"
+                    xmlns:cpe-lang="http://cpe.mitre.org/language/2.0"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xmlns:scap-core="http://scap.nist.gov/schema/scap-core/0.1"
+                    xmlns:cvss="http://scap.nist.gov/schema/cvss-v2/0.2"
+                    id="CVE-2004-0603">
+                    <vuln:cvss>
+                      <cvss:base_metrics>
+                        <cvss:score>10.0</cvss:score>
+                      </cvss:base_metrics>
+                    </vuln:cvss>
+                  </entry>
+                </cve>
+                <cve>
+                  <entry xmlns:vuln="http://scap.nist.gov/schema/vulnerability/0.4"
+                    xmlns="http://scap.nist.gov/schema/feed/vulnerability/2.0"
+                    xmlns:patch="http://scap.nist.gov/schema/patch/0.1"
+                    xmlns:cpe-lang="http://cpe.mitre.org/language/2.0"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xmlns:scap-core="http://scap.nist.gov/schema/scap-core/0.1"
+                    xmlns:cvss="http://scap.nist.gov/schema/cvss-v2/0.2"
+                    id="CVE-2010-0001">
+                    <vuln:cvss>
+                      <cvss:base_metrics>
+                        <cvss:score>6.8</cvss:score>
+                      </cvss:base_metrics>
+                    </vuln:cvss>
+                  </entry>
+                </cve>
+                <cve>
+                  <entry xmlns:vuln="http://scap.nist.gov/schema/vulnerability/0.4"
+                    xmlns="http://scap.nist.gov/schema/feed/vulnerability/2.0"
+                    xmlns:patch="http://scap.nist.gov/schema/patch/0.1"
+                    xmlns:cpe-lang="http://cpe.mitre.org/language/2.0"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xmlns:scap-core="http://scap.nist.gov/schema/scap-core/0.1"
+                    xmlns:cvss="http://scap.nist.gov/schema/cvss-v2/0.2"
+                    id="CVE-2009-2624">
+                    <vuln:cvss>
+                      <cvss:base_metrics>
+                        <cvss:score>6.8</cvss:score>
+                      </cvss:base_metrics>
+                    </vuln:cvss>
+                  </entry>
+                </cve>
+                <cve>
+                  <entry xmlns:vuln="http://scap.nist.gov/schema/vulnerability/0.4"
+                    xmlns="http://scap.nist.gov/schema/feed/vulnerability/2.0"
+                    xmlns:patch="http://scap.nist.gov/schema/patch/0.1"
+                    xmlns:cpe-lang="http://cpe.mitre.org/language/2.0"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xmlns:scap-core="http://scap.nist.gov/schema/scap-core/0.1"
+                    xmlns:cvss="http://scap.nist.gov/schema/cvss-v2/0.2"
+                    id="CVE-2005-1228">
+                    <vuln:cvss>
+                      <cvss:base_metrics>
+                        <cvss:score>5.0</cvss:score>
+                      </cvss:base_metrics>
+                    </vuln:cvss>
+                  </entry>
+                </cve>
+                <cve>
+                  <entry xmlns:vuln="http://scap.nist.gov/schema/vulnerability/0.4"
+                    xmlns="http://scap.nist.gov/schema/feed/vulnerability/2.0"
+                    xmlns:patch="http://scap.nist.gov/schema/patch/0.1"
+                    xmlns:cpe-lang="http://cpe.mitre.org/language/2.0"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xmlns:scap-core="http://scap.nist.gov/schema/scap-core/0.1"
+                    xmlns:cvss="http://scap.nist.gov/schema/cvss-v2/0.2"
+                    id="CVE-2005-0988">
+                    <vuln:cvss>
+                      <cvss:base_metrics>
+                        <cvss:score>3.7</cvss:score>
+                      </cvss:base_metrics>
+                    </vuln:cvss>
+                  </entry>
+                </cve>
+              </cves>
+              <raw_data>
+                <cpe-item xmlns:ns6="http://scap.nist.gov/schema/scap-core/0.1"
+                  xmlns:config="http://scap.nist.gov/schema/configuration/0.1"
+                  xmlns:meta="http://scap.nist.gov/schema/cpe-dictionary-metadata/0.2"
+                  xmlns="http://cpe.mitre.org/dictionary/2.0"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:scap-core="http://scap.nist.gov/schema/scap-core/0.3"
+                  name="cpe:/a:gnu:gzip:1.3.3">
+                  <title xml:lang="en-US">GNU Gzip 1.3.3</title>
+                  <meta:item-metadata nvd-id="28139" status="DRAFT" modification-date="2007-09-14T17:36:49.090Z"/>
+                </cpe-item>
+              </raw_data>
             </cpe>
           </info>
+          <details>1</details>
           <filters id="(null)">
             <term/>
           </filters>
@@ -5701,6 +5931,47 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <page>1</page>
           </info_count>
         </get_info_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get a info CVE-1999-0010 without details</summary>
+      <request>
+        <get_info name="CVE-2011-0018" type="cve"/>
+      </request>
+      <response>
+        <get_info_response status_text="OK" status="200">
+          <info id="CVE-2011-0018">
+            <name>CVE-2011-0018</name>
+            <comment/>
+            <creation_time>2011-01-28T16:00:02Z</creation_time>
+            <modification_time>2011-02-05T07:01:22Z</modification_time>
+            <writable>0</writable>
+            <in_use>0</in_use>
+            <update_time>2012-10-26T13:18:00.000+0000</update_time>
+            <cve>
+              <cvss>9.0</cvss>
+              <vector>NETWORK</vector>
+              <complexity>LOW</complexity>
+              <authentication>SINGLE_INSTANCE</authentication>
+              <confidentiality_impact>COMPLETE</confidentiality_impact>
+              <integrity_impact>COMPLETE</integrity_impact>
+              <availability_impact>COMPLETE</availability_impact>
+              <description>The email function in manage_sql.c in ...(truncated for example)</description>
+              <products>cpe:/a:openvas:openvas_manager:1.0.1 ...(truncated for example)</products>
+            </cve>
+          </info>
+          <filters id="(null)">
+            <term/>
+          </filters>
+          <sort>
+            <field>name<order>ascending</order></field>
+          </sort>
+          <info max="-1" start="1"/>
+          <info_count>
+            <filtered>1</filtered>
+            <page>1</page>
+          </info_count>
+        </get_info_response> 
       </response>
     </example>
   </command>

@@ -76,9 +76,19 @@
 #define G_LOG_DOMAIN "md manage"
 
 /**
+ * @brief CPE selection stylesheet location.
+ */
+#define CPE_GETBYNAME_XSL SCAP_RES_DIR "/cpe_getbyname.xsl"
+
+/**
  * @brief CVE selection stylesheet location.
  */
 #define CVE_GETBYNAME_XSL SCAP_RES_DIR "/cve_getbyname.xsl"
+
+/**
+ * @brief CPE dictionary location.
+ */
+#define CPE_DICT_FILENAME SCAP_DATA_DIR "/official-cpe-dictionary_v2.2.xml"
 
 /**
  * @brief CVE data files location format string.
@@ -4074,6 +4084,18 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
 }
 
 /**
+ * @brief Return the path to the CPE dictionary.
+ *
+ * @return A dynamically allocated string (to be g_free'd) containing the
+ *         path to the desired file.
+ */
+static char *
+get_cpe_filename ()
+{
+  return g_strdup (CPE_DICT_FILENAME);
+}
+
+/**
  * @brief Compute the filename where a given CVE can be found.
  *
  * @param[in] item_id   Full CVE identifier ("CVE-YYYY-ZZZZ").
@@ -4379,10 +4401,21 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
   gchar *pvalues[2] = { name, NULL };
 
   assert (result != NULL);
-  assert (g_ascii_strcasecmp ("CPE", type) != 0);
   *result = NULL;
 
-  if (g_ascii_strcasecmp ("CVE", type) == 0)
+  if (g_ascii_strcasecmp ("CPE", type) == 0)
+    {
+      fname = get_cpe_filename ();
+      if (fname)
+        {
+          gchar *cpe;
+          cpe = xsl_transform (CPE_GETBYNAME_XSL, fname, pnames, pvalues);
+          g_free (fname);
+          if (cpe)
+            *result = cpe;
+        }
+    }
+  else if (g_ascii_strcasecmp ("CVE", type) == 0)
     {
       fname = get_cve_filename (name);
       if (fname)
@@ -4391,35 +4424,7 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
           cve = xsl_transform (CVE_GETBYNAME_XSL, fname, pnames, pvalues);
           g_free (fname);
           if (cve)
-            {
-              iterator_t nvts;
-              GString *xml;
-
-              xml = g_string_new ("");
-
-              g_string_append_printf (xml,
-                                      "<cve>"
-                                      "<update_time>%s</update_time>"
-                                      "%s"
-                                      "<nvts>",
-                                      manage_scap_update_time (),
-                                      cve);
-              init_cve_nvt_iterator (&nvts, name, 1, NULL);
-              while (next (&nvts))
-                xml_string_append (xml,
-                                   "<nvt oid=\"%s\">"
-                                   "<name>%s</name>"
-                                   "</nvt>",
-                                   nvt_iterator_oid (&nvts),
-                                   nvt_iterator_name (&nvts));
-              cleanup_iterator (&nvts);
-              g_string_append (xml,
-                               "</nvts>"
-                               "</cve>");
-
-              *result = g_string_free (xml, FALSE);
-            }
-          g_free (cve);
+            *result = cve;
         }
     }
   else if (g_ascii_strcasecmp ("NVT", type) == 0)

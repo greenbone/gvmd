@@ -231,19 +231,6 @@ do_sync () {
   fi
 }
 
-migrate_3 ()
-{
-  echo "[i] Database Version updated. Migrating to Version 3."
-  echo "[i] Updating CPEs.."
-  $SQLITE $SEC_DB "update cpes set modification_time = strftime('%s', modification_time), \
-                                   creation_time = strftime('%s', creation_time);"
-  echo "[i] Updating CVEs.."
-  $SQLITE $SEC_DB "update cves set modification_time = strftime('%s', modification_time), \
-                                   creation_time = strftime('%s', creation_time);"
-  echo "[i] Migration done."
-  $SQLITE $SEC_DB "update meta set value ='3' where name = 'database_version';"
-}
-
 reinit () {
   echo "[i] Major change in internal SCAP data structures."
   echo "[i] Reinitialization of database necessary."
@@ -256,7 +243,8 @@ check_db_version () {
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
-    2) migrate_3;;
+    2) reinit;;
+    3) reinit;;
   esac
 }
 

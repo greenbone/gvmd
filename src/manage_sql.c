@@ -27239,7 +27239,28 @@ filter_clause (const char* type, const char* filter, const char **columns,
    "smb_credential", NULL }
 
 /**
- * @brief Filter columns for CPE iterator.
+ * @brief Filter columns for CVE iterator.
+ */
+#define CVE_INFO_ITERATOR_FILTER_COLUMNS                         \
+ { "uuid", "name", "comment", "published", "modified", "vector", \
+   "complexity", "authentication", "confidentiality_impact",     \
+   "integrity_impact", "availability_impact", "products",        \
+   "cvss", "description", NULL }
+
+/**
+ * @brief CVE iterator columns.
+ */
+#define CVE_INFO_ITERATOR_COLUMNS                               \
+   "ROWID, uuid, name, comment, iso_time (creation_time),"      \
+   " iso_time (modification_time), creation_time AS published," \
+   " modification_time AS modified,"                            \
+   " vector, complexity,"                                       \
+   " authentication, confidentiality_impact,"                   \
+   " integrity_impact, availability_impact, products,"          \
+   " cvss, description"
+
+/**
+ * @brief Filter columns for CVE iterator.
  */
 #define CPE_INFO_ITERATOR_FILTER_COLUMNS                    \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "status",          \
@@ -43596,6 +43617,65 @@ init_cpe_info_iterator (iterator_t* iterator, const get_data_t *get, const char 
 }
 
 /**
+ * @brief Count number of cve.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of cpes in filtered set.
+ */
+int
+cve_info_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
+  return count ("cve", get, CVE_INFO_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
+                FALSE);
+}
+
+/**
+ * @brief Initialise a info iterator.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ * @param[in]  name            Name of the info
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_cve_info_iterator (iterator_t* iterator, const get_data_t *get, const char *name)
+{
+  static const char *filter_columns[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
+  gchar *clause = NULL;
+  int ret;
+
+  if (get->id)
+    {
+      gchar *quoted = sql_quote (get->id);
+      clause = g_strdup_printf (" AND uuid = '%s'", quoted);
+      g_free (quoted);
+    }
+  else if (name)
+    {
+      gchar *quoted = sql_quote (name);
+      clause = g_strdup_printf (" AND name = '%s'", quoted);
+      g_free (quoted);
+    }
+  ret = init_get_iterator (iterator,
+                           "cve",
+                           get,
+                           /* Columns. */
+                           CVE_INFO_ITERATOR_COLUMNS,
+                           NULL,
+                           filter_columns,
+                           NULL,
+                           0,
+                           NULL,
+                           clause,
+                           FALSE);
+  g_free (clause);
+  return ret;
+}
+/**
  * @brief Get the title from a CPE iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -43644,5 +43724,95 @@ DEF_ACCESS (cpe_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 3);
  *         complete. Freed by cleanup_iterator.
  */
 DEF_ACCESS (cpe_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Get the CVSS attack vector for this CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The CVSS attack vector of this CVE, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cve_info_iterator_vector, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the CVSS attack complexity for this CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The CVSS attack complexity of this CVE, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cve_info_iterator_complexity, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the CVSS attack authentication for this CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The CVSS attack authentication of this CVE, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cve_info_iterator_authentication, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the CVSS confidentiality impact for this CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The CVSS confidentiality impact of this CVE, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cve_info_iterator_confidentiality_impact, GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get the CVSS integrity impact for this CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The CVSS integrity impact of this CVE, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cve_info_iterator_integrity_impact, GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Get the CVSS availability impact for this CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The CVSS availability impact of this CVE, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cve_info_iterator_availability_impact, GET_ITERATOR_COLUMN_COUNT + 5);
+
+/**
+ * @brief Get a space seperated list of CPEs affected by this CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return A space seperated list of CPEs or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cve_info_iterator_products, GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Get the CVSS base score for this CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The CVSS base score of this CVE, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cve_info_iterator_cvss, GET_ITERATOR_COLUMN_COUNT + 7);
+
+/**
+ * @brief Get the Summary for this CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The Summary of this CVE, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cve_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 8);
 
 #undef DEF_ACCESS

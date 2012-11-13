@@ -17120,8 +17120,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               init_info_iterator = init_cpe_info_iterator;
               info_count = cpe_info_count;
             }
-          else if (g_strcmp0 ("cve", get_info_data->type) == 0 ||
-                   g_strcmp0 ("nvt", get_info_data->type) == 0)
+          else if (g_strcmp0 ("cve", get_info_data->type) == 0)
+            {
+              init_info_iterator = init_cve_info_iterator;
+              info_count = cve_info_count;
+            }
+          else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
             {
               /* TODO: add proper iterator support for cpe / NVT */
               gchar *result = NULL;
@@ -17214,8 +17218,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                write_to_client, write_to_client_data, 0, 0);
 
               result = g_string_new ("");
-              g_string_append_printf (result, "<%s>", get_info_data->type);
-
+              g_string_append_printf (result, "<update_time>%s</update_time>"
+                                              "<%s>",
+                                              manage_scap_update_time (),
+                                              get_info_data->type);
               /* Information depending on type */
 
               if (g_strcmp0 ("cpe", get_info_data->type) == 0)
@@ -17269,11 +17275,56 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else if (g_strcmp0 ("cve", get_info_data->type) == 0)
                 {
-                  /* TODO */
+                   g_string_append_printf (result,
+                                           "<cvss>%s</cvss>"
+                                           "<vector>%s</vector>"
+                                           "<complexity>%s</complexity>"
+                                           "<authentication>%s</authentication>"
+                                           "<confidentiality_impact>%s</confidentiality_impact>"
+                                           "<integrity_impact>%s</integrity_impact>"
+                                           "<availability_impact>%s</availability_impact>"
+                                           "<description>%s</description>"
+                                           "<products>%s</products>",
+                                           cve_info_iterator_cvss (&info),
+                                           cve_info_iterator_vector (&info),
+                                           cve_info_iterator_complexity (&info),
+                                           cve_info_iterator_authentication (&info),
+                                           cve_info_iterator_confidentiality_impact (&info),
+                                           cve_info_iterator_integrity_impact (&info),
+                                           cve_info_iterator_availability_impact (&info),
+                                           cve_info_iterator_description (&info),
+                                           cve_info_iterator_products (&info));
+                   if (get_info_data->details == 1)
+                     {
+                       iterator_t nvts;
+                       init_cve_nvt_iterator (&nvts,  get_iterator_name (&info), 1, NULL);
+                       g_string_append (result, "<nvts>");
+                       while (next (&nvts))
+                         xml_string_append (result,
+                                            "<nvt oid=\"%s\">"
+                                            "<name>%s</name>"
+                                            "</nvt>",
+                                            nvt_iterator_oid (&nvts),
+                                            nvt_iterator_name (&nvts));
+                       g_string_append (result, "</nvts>");
+                       cleanup_iterator (&nvts);
+                     }
                 }
               else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
                 {
                   /* TODO */
+                }
+
+              /* Append raw data if full details are requested */
+
+              if (get_info_data->details == 1)
+                {
+                  gchar *raw_data = NULL;
+                  gchar *nonconst_name = g_strdup(get_iterator_name (&info));
+                  manage_read_info (get_info_data->type, nonconst_name, &raw_data);
+                  g_string_append_printf (result, "<raw_data>%s</raw_data>", raw_data);
+                  g_free(nonconst_name);
+                  g_free(raw_data);
                 }
 
               g_string_append_printf (result, "</%s></info>", get_info_data->type);

@@ -40,13 +40,38 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:output method="text"/>
 
 <xsl:template match="cve:entry">
-  INSERT OR REPLACE INTO cves (uuid,name,creation_time,modification_time,cvss,description) VALUES (
+  INSERT OR REPLACE INTO cves (
+  uuid,
+  name,
+  creation_time,
+  modification_time,
+  cvss,
+  description,
+  vector,
+  complexity,
+  authentication,
+  confidentiality_impact,
+  integrity_impact,
+  availability_impact,
+  products) VALUES (
   '<xsl:value-of select="@id"/>',
   '<xsl:value-of select="@id"/>',
   strftime('%s', '<xsl:value-of select="vuln:published-datetime"/>'),
   strftime('%s', '<xsl:value-of select="vuln:last-modified-datetime"/>'),
   '<xsl:value-of select="vuln:cvss/cvss:base_metrics/cvss:score"/>',
-  '<xsl:value-of select='str:replace(vuln:summary/text(), "&#39;", "&#39;&#39;")'/>');
+  '<xsl:value-of select='str:replace(vuln:summary/text(), "&#39;", "&#39;&#39;")'/>',
+  '<xsl:value-of select="vuln:cvss/cvss:base_metrics/cvss:access-vector"/>',
+  '<xsl:value-of select="vuln:cvss/cvss:base_metrics/cvss:access-complexity"/>',
+  '<xsl:value-of select="vuln:cvss/cvss:base_metrics/cvss:authentication"/>',
+  '<xsl:value-of select="vuln:cvss/cvss:base_metrics/cvss:confidentiality-impact"/>',
+  '<xsl:value-of select="vuln:cvss/cvss:base_metrics/cvss:integrity-impact"/>',
+  '<xsl:value-of select="vuln:cvss/cvss:base_metrics/cvss:availability-impact"/>',
+  '<xsl:for-each select="vuln:vulnerable-software-list/vuln:product">
+    <xsl:value-of select='str:replace(str:replace(
+      str:decode-uri(text()), "%7E", "~"),
+      "&#39;", "&#39;&#39;")'/>
+    <xsl:text> </xsl:text>
+  </xsl:for-each>');
 
   <xsl:for-each select="vuln:vulnerable-software-list/vuln:product">
     <xsl:variable name="decoded_cpe" select='

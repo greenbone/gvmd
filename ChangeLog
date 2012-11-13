@@ -1,3 +1,46 @@
+2012-11-13  Andre Heinecke <andre.heinecke@greenbone.net>
+
+	Add iterable and filterable get_info for CVE
+
+	* src/manage_sql.c (CVE_INFO_ITERATOR_FILTER_COLUMNS)
+	(CVE_INFO_ITERATOR_COLUMNS): New Defines.
+	(cve_info_count): New. Count cve_info elements.
+	(init_cve_info_iterator): New. Initialize cve_info iterator.
+	(cve_info_iterator_vector, cve_info_iterator_complexity)
+	(cve_info_iterator_authentication)
+	(cve_info_iterator_confidentiality_impact)
+	(cve_info_iterator_integrity_impact)
+	(cve_info_iterator_availability_impact)
+	(cve_info_iterator_products, cve_info_iterator_cvss)
+	(cve_info_iterator_description): New. Accessors to cve_info columns.
+	Updated header accordingly.
+
+	* src/manage.c (CPE_GETBYNAME_XSL, CPE_DICT_FILENAME): Readded defines for
+	direct CPE access.
+	(get_cpe_filename): Readded.
+	(manage_read_info): Add support for cpe again. Reduce result to only
+	untampered raw data for CVE and CPE.
+
+	* src/manage.h (manage_scap_update_time): Add prototype to header
+
+	* src/omp.c (omp_xml_handle_end_element): Iterator based support for CVE.
+	Add raw_data to get_info_result if details are requested. Add update_time
+	elment to get_info responses.
+
+	* src/schema_formats/XML/OMP.xml: Update documentation of get_info
+
+	* tools/cve_update.xsl (cve:entry): Add more information to the database.
+	
+	* tools/db_init.sql (meta): Increase scap database version to 4
+	(cves): Add vector, complexity, authentication, confidentiality_impact,
+	integrity_impact, availability_impact and products column
+
+	* tools/openvas-scapdata-sync.in, tools/greenbone-scapdata-sync
+	(check_db_version): Reinitialize versions older then 4.
+	(migrate_3): Removed.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2012-10-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (cache_report_counts): New function.  Body from

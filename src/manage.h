@@ -2368,6 +2368,11 @@ manage_scap_loaded ();
 int
 manage_read_info (gchar *, gchar *, gchar **);
 
+char *
+manage_scap_update_time ();
+
+/* CPE. */
+
 void
 init_cpe_cve_iterator (iterator_t *, const char *, int, const char *);
 
@@ -2392,11 +2397,46 @@ cpe_info_iterator_deprecated_by_id (iterator_t*);
 const char*
 cpe_info_iterator_cve_refs (iterator_t*);
 
+/* CVE. */
+
 const char*
 cve_iterator_name (iterator_t*);
 
 const char*
 cve_iterator_cvss (iterator_t*);
+
+const char*
+cve_info_iterator_cvss (iterator_t*);
+
+const char*
+cve_info_iterator_vector (iterator_t*);
+
+const char*
+cve_info_iterator_complexity (iterator_t*);
+
+const char*
+cve_info_iterator_authentication (iterator_t*);
+
+const char*
+cve_info_iterator_confidentiality_impact (iterator_t*);
+
+const char*
+cve_info_iterator_integrity_impact (iterator_t*);
+
+const char*
+cve_info_iterator_availability_impact (iterator_t*);
+
+const char*
+cve_info_iterator_description (iterator_t*);
+
+const char*
+cve_info_iterator_products (iterator_t*);
+
+int
+init_cve_info_iterator (iterator_t* iterator, const get_data_t *get, const char *name);
+
+int
+cve_info_count (const get_data_t *get);
 
 
 /* Settings. */

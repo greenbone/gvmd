@@ -5347,6 +5347,7 @@ get_info_response_info
        & get_info_response_info_comment
        & get_info_response_info_creation_time
        & get_info_response_info_modification_time
+       & get_info_response_info_update_time
        & get_info_response_info_cpe?
        & get_info_response_info_cve?
        & get_info_response_info_nvt?
@@ -5380,18 +5381,11 @@ get_info_response_info_modification_time
        iso_time
      }
 
-# A CVE info element.
-get_info_response_info_cve
- = element cve
+# Date and time the source of the info was read.
+get_info_response_info_update_time
+ = element update_time
      {
-       text
-     }
-
-# A NVT info element.
-get_info_response_info_nvt
- = element nvt
-     {
-       text
+       iso_time
      }
 
 # A CPE info element.
@@ -5402,7 +5396,9 @@ get_info_response_info_cpe
        & get_info_response_info_cpe_max_cvss
        & get_info_response_info_cpe_cve_refs
        & get_info_response_info_cpe_status
-       & ?
+       & get_info_response_info_cpe_deprecated_by?
+       & get_info_response_info_cpe_cves?
+       & get_info_response_info_cpe_raw_data?
      }
 
 # The title of the CPE.
@@ -5438,6 +5434,143 @@ get_info_response_info_cpe_deprecated_by
  = element deprecated_by
      {
        integer
+     }
+
+# CVEs referring to this CPE. Only when details were requested.
+get_info_response_info_cpe_cves
+ = element cves
+     {
+       get_info_response_info_cpe_cves_cve?
+     }
+
+# CVE refering to this CPE.
+get_info_response_info_cpe_cves_cve
+ = element cve
+     {
+       text
+     }
+
+# Source representation of the information. Only when details were requested.
+get_info_response_info_cpe_raw_data
+ = element raw_data
+     {
+       text
+     }
+
+# A NVT info element.
+get_info_response_info_nvt
+ = element nvt
+     {
+       text
+     }
+
+# A CVE info element.
+get_info_response_info_cve
+ = element cve
+     {
+       get_info_response_info_cve_cvss?
+       & get_info_response_info_cve_vector?
+       & get_info_response_info_cve_complexity?
+       & get_info_response_info_cve_authentication?
+       & get_info_response_info_cve_confidentiality_impact?
+       & get_info_response_info_cve_integrity_impact?
+       & get_info_response_info_cve_availability_impact?
+       & get_info_response_info_cve_description
+       & get_info_response_info_cve_products
+       & get_info_response_info_cve_nvts?
+       & get_info_response_info_cve_raw_data?
+     }
+
+# CVSS Base Score.
+get_info_response_info_cve_cvss
+ = element cvss
+     {
+       text
+     }
+
+# CVSS Access Vector metric.
+get_info_response_info_cve_vector
+ = element vector
+     {
+       text
+     }
+
+# CVSS Attack Complexity metric.
+get_info_response_info_cve_complexity
+ = element complexity
+     {
+       text
+     }
+
+# CVSS Authentication metric.
+get_info_response_info_cve_authentication
+ = element authentication
+     {
+       text
+     }
+
+# CVSS Confidentiality impact metric.
+get_info_response_info_cve_confidentiality_impact
+ = element confidentiality_impact
+     {
+       text
+     }
+
+# CVSS Integrety impact metric.
+get_info_response_info_cve_integrity_impact
+ = element integrity_impact
+     {
+       text
+     }
+
+# CVSS Availability impact metric.
+get_info_response_info_cve_availability_impact
+ = element availability_impact
+     {
+       text
+     }
+
+# The CVE's description.
+get_info_response_info_cve_description
+ = element description
+     {
+       text
+     }
+
+# Space seperated list of CPEs affected by this.
+get_info_response_info_cve_products
+ = element products
+     {
+       text
+     }
+
+# NVTs addressing this CVE. Only when details were requested.
+get_info_response_info_cve_nvts
+ = element nvts
+     {
+       get_info_response_info_cve_nvts_nvt?
+     }
+
+# NVT refering to this CPE.
+get_info_response_info_cve_nvts_nvt
+ = element nvt
+     {
+       attribute oid { oid }?
+       & get_info_response_info_cve_nvts_nvt_name
+     }
+
+# Name of the NVT.
+get_info_response_info_cve_nvts_nvt_name
+ = element name
+     {
+       text
+     }
+
+# Source representation of the information. Only when details were requested.
+get_info_response_info_cve_raw_data
+ = element raw_data
+     {
+       text
      }
 
 get_info_response_filters

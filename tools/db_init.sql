@@ -31,7 +31,7 @@ DROP TABLE IF EXISTS affected_products;
 DROP TABLE IF EXISTS meta;
 
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "3");
+INSERT INTO meta (name, value) VALUES ("database_version", "4");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
 CREATE TABLE cves (
@@ -42,6 +42,13 @@ CREATE TABLE cves (
   description,
   creation_time DATE,
   modification_time DATE,
+  vector,
+  complexity,
+  authentication,
+  confidentiality_impact,
+  integrity_impact,
+  availability_impact,
+  products,
   cvss FLOAT DEFAULT 0
 );
 CREATE UNIQUE INDEX cve_idx ON cves (name);

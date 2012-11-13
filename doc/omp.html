@@ -9437,6 +9437,11 @@ get_filters_response_filter_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>update_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the source of the info was read.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>cpe</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A CPE info element.</div>
 <ul style="list-style: none">
@@ -9460,12 +9465,101 @@ get_filters_response_filter_count_page
               <div style="margin-left: 15px; display: inline;">The status of this CPE.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>deprecated_by</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">NVD id of the deprecating CPE.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>cves</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">CVEs referring to this CPE. Only when details were requested.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>cve</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">CVE refering to this CPE.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>raw_data</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Source representation of the information. Only when details were requested.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li>
               &lt;<b>cve</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A CVE info element.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>cvss</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">CVSS Base Score.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>vector</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">CVSS Access Vector metric.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>complexity</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">CVSS Attack Complexity metric.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>authentication</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">CVSS Authentication metric.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>confidentiality_impact</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">CVSS Confidentiality impact metric.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>integrity_impact</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">CVSS Integrety impact metric.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>availability_impact</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">CVSS Availability impact metric.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>description</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The CVE's description.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>products</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Space seperated list of CPEs affected by this.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>nvts</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">NVTs addressing this CVE. Only when details were requested.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>nvt</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">NVT refering to this CPE.</div>
+<ul style="list-style: none">
+<li>
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>raw_data</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Source representation of the information. Only when details were requested.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>nvt</b>&gt;
@@ -9567,6 +9661,7 @@ get_info_response_info
        &amp; get_info_response_info_comment
        &amp; get_info_response_info_creation_time
        &amp; get_info_response_info_modification_time
+       &amp; get_info_response_info_update_time
        &amp; get_info_response_info_cpe?
        &amp; get_info_response_info_cve?
        &amp; get_info_response_info_nvt?
@@ -9596,16 +9691,10 @@ get_info_response_info_modification_time
        iso_time
      }
 
-get_info_response_info_cve
- = element cve
+get_info_response_info_update_time
+ = element update_time
      {
-       text
-     }
-
-get_info_response_info_nvt
- = element nvt
-     {
-       text
+       iso_time
      }
 
 get_info_response_info_cpe
@@ -9615,7 +9704,9 @@ get_info_response_info_cpe
        &amp; get_info_response_info_cpe_max_cvss
        &amp; get_info_response_info_cpe_cve_refs
        &amp; get_info_response_info_cpe_status
-       &amp; ?
+       &amp; get_info_response_info_cpe_deprecated_by?
+       &amp; get_info_response_info_cpe_cves?
+       &amp; get_info_response_info_cpe_raw_data?
      }
 
 get_info_response_info_cpe_title
@@ -9646,6 +9737,125 @@ get_info_response_info_cpe_deprecated_by
  = element deprecated_by
      {
        integer
+     }
+
+get_info_response_info_cpe_cves
+ = element cves
+     {
+       get_info_response_info_cpe_cves_cve?
+     }
+
+get_info_response_info_cpe_cves_cve
+ = element cve
+     {
+       text
+     }
+
+get_info_response_info_cpe_raw_data
+ = element raw_data
+     {
+       text
+     }
+
+get_info_response_info_nvt
+ = element nvt
+     {
+       text
+     }
+
+get_info_response_info_cve
+ = element cve
+     {
+       get_info_response_info_cve_cvss?
+       &amp; get_info_response_info_cve_vector?
+       &amp; get_info_response_info_cve_complexity?
+       &amp; get_info_response_info_cve_authentication?
+       &amp; get_info_response_info_cve_confidentiality_impact?
+       &amp; get_info_response_info_cve_integrity_impact?
+       &amp; get_info_response_info_cve_availability_impact?
+       &amp; get_info_response_info_cve_description
+       &amp; get_info_response_info_cve_products
+       &amp; get_info_response_info_cve_nvts?
+       &amp; get_info_response_info_cve_raw_data?
+     }
+
+get_info_response_info_cve_cvss
+ = element cvss
+     {
+       text
+     }
+
+get_info_response_info_cve_vector
+ = element vector
+     {
+       text
+     }
+
+get_info_response_info_cve_complexity
+ = element complexity
+     {
+       text
+     }
+
+get_info_response_info_cve_authentication
+ = element authentication
+     {
+       text
+     }
+
+get_info_response_info_cve_confidentiality_impact
+ = element confidentiality_impact
+     {
+       text
+     }
+
+get_info_response_info_cve_integrity_impact
+ = element integrity_impact
+     {
+       text
+     }
+
+get_info_response_info_cve_availability_impact
+ = element availability_impact
+     {
+       text
+     }
+
+get_info_response_info_cve_description
+ = element description
+     {
+       text
+     }
+
+get_info_response_info_cve_products
+ = element products
+     {
+       text
+     }
+
+get_info_response_info_cve_nvts
+ = element nvts
+     {
+       get_info_response_info_cve_nvts_nvt?
+     }
+
+get_info_response_info_cve_nvts_nvt
+ = element nvt
+     {
+       attribute oid { oid }?
+       &amp; get_info_response_info_cve_nvts_nvt_name
+     }
+
+get_info_response_info_cve_nvts_nvt_name
+ = element name
+     {
+       text
+     }
+
+get_info_response_info_cve_raw_data
+ = element raw_data
+     {
+       text
      }
 
 get_info_response_filters
@@ -9711,26 +9921,133 @@ get_info_response_details
      }
 </pre></div>
 </div>
-<h4>7.39.3 Example: Get a info about cpe:/a:gnu:gzip:1.3.3</h4>
+<h4>7.39.3 Example: Get a info about cpe:/a:gnu:gzip:1.3.3 with all details</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_info type="CPE"
-           name="cpe:/a:gnu:gzip:1.3.3"/&gt;
+           name="cpe:/a:gnu:gzip:1.3.3"
+           details="1"/&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_info_response status_text="OK"
                     status="200"&gt;
    &lt;info id="28139"&gt;
      &lt;name&gt;cpe:/a:gnu:gzip:1.3.3&lt;/name&gt;
      &lt;comment/&gt;
-     &lt;creation_time&gt;2007-09-14T17:36:49.090Z&lt;/creation_time&gt;
-     &lt;modification_time&gt;2007-09-14T17:36:49.090Z&lt;/modification_time&gt;
+     &lt;creation_time&gt;2007-09-14T17:36:49Z&lt;/creation_time&gt;
+     &lt;modification_time&gt;2007-09-14T17:36:49Z&lt;/modification_time&gt;
      &lt;writable&gt;0&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;update_time&gt;2012-10-26T13:18:00.000+0000&lt;/update_time&gt;
      &lt;cpe&gt;
        &lt;title&gt;GNU Gzip 1.3.3&lt;/title&gt;
        &lt;max_cvss&gt;10.0&lt;/max_cvss&gt;
        &lt;cve_refs&gt;5&lt;/cve_refs&gt;
        &lt;status&gt;DRAFT&lt;/status&gt;
+       &lt;cves&gt;
+         &lt;cve&gt;
+           &lt;entry id="CVE-2004-0603"&gt;
+             &lt;vuln:cvss&gt;
+               &lt;cvss:base_metrics&gt;
+                 &lt;cvss:score&gt;10.0&lt;/cvss:score&gt;
+               &lt;/cvss:base_metrics&gt;
+             &lt;/vuln:cvss&gt;
+           &lt;/entry&gt;
+         &lt;/cve&gt;
+         &lt;cve&gt;
+           &lt;entry id="CVE-2010-0001"&gt;
+             &lt;vuln:cvss&gt;
+               &lt;cvss:base_metrics&gt;
+                 &lt;cvss:score&gt;6.8&lt;/cvss:score&gt;
+               &lt;/cvss:base_metrics&gt;
+             &lt;/vuln:cvss&gt;
+           &lt;/entry&gt;
+         &lt;/cve&gt;
+         &lt;cve&gt;
+           &lt;entry id="CVE-2009-2624"&gt;
+             &lt;vuln:cvss&gt;
+               &lt;cvss:base_metrics&gt;
+                 &lt;cvss:score&gt;6.8&lt;/cvss:score&gt;
+               &lt;/cvss:base_metrics&gt;
+             &lt;/vuln:cvss&gt;
+           &lt;/entry&gt;
+         &lt;/cve&gt;
+         &lt;cve&gt;
+           &lt;entry id="CVE-2005-1228"&gt;
+             &lt;vuln:cvss&gt;
+               &lt;cvss:base_metrics&gt;
+                 &lt;cvss:score&gt;5.0&lt;/cvss:score&gt;
+               &lt;/cvss:base_metrics&gt;
+             &lt;/vuln:cvss&gt;
+           &lt;/entry&gt;
+         &lt;/cve&gt;
+         &lt;cve&gt;
+           &lt;entry id="CVE-2005-0988"&gt;
+             &lt;vuln:cvss&gt;
+               &lt;cvss:base_metrics&gt;
+                 &lt;cvss:score&gt;3.7&lt;/cvss:score&gt;
+               &lt;/cvss:base_metrics&gt;
+             &lt;/vuln:cvss&gt;
+           &lt;/entry&gt;
+         &lt;/cve&gt;
+       &lt;/cves&gt;
+       &lt;raw_data&gt;
+         &lt;cpe-item name="cpe:/a:gnu:gzip:1.3.3"&gt;
+           &lt;title xml:lang="en-US"&gt;GNU Gzip 1.3.3&lt;/title&gt;
+           &lt;meta:item-metadata nvd-id="28139"
+                               status="DRAFT"
+                               modification-date="2007-09-14T17:36:49.090Z"/&gt;
+         &lt;/cpe-item&gt;
+       &lt;/raw_data&gt;
      &lt;/cpe&gt;
+   &lt;/info&gt;
+   &lt;details&gt;1&lt;/details&gt;
+   &lt;filters id="(null)"&gt;
+     &lt;term/&gt;
+   &lt;/filters&gt;
+   &lt;sort&gt;
+     &lt;field&gt;
+       name
+       &lt;order&gt;ascending&lt;/order&gt;
+     &lt;/field&gt;
+   &lt;/sort&gt;
+   &lt;info max="-1"
+         start="1"/&gt;
+   &lt;info_count&gt;
+     &lt;filtered&gt;1&lt;/filtered&gt;
+     &lt;page&gt;1&lt;/page&gt;
+   &lt;/info_count&gt;
+ &lt;/get_info_response&gt;
+</pre></div>
+</div>
+<h4>7.39.3 Example: Get a info CVE-1999-0010 without details</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_info name="CVE-2011-0018"
+           type="cve"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_info_response status_text="OK"
+                    status="200"&gt;
+   &lt;info id="CVE-2011-0018"&gt;
+     &lt;name&gt;CVE-2011-0018&lt;/name&gt;
+     &lt;comment/&gt;
+     &lt;creation_time&gt;2011-01-28T16:00:02Z&lt;/creation_time&gt;
+     &lt;modification_time&gt;2011-02-05T07:01:22Z&lt;/modification_time&gt;
+     &lt;writable&gt;0&lt;/writable&gt;
+     &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;update_time&gt;2012-10-26T13:18:00.000+0000&lt;/update_time&gt;
+     &lt;cve&gt;
+       &lt;cvss&gt;9.0&lt;/cvss&gt;
+       &lt;vector&gt;NETWORK&lt;/vector&gt;
+       &lt;complexity&gt;LOW&lt;/complexity&gt;
+       &lt;authentication&gt;SINGLE_INSTANCE&lt;/authentication&gt;
+       &lt;confidentiality_impact&gt;COMPLETE&lt;/confidentiality_impact&gt;
+       &lt;integrity_impact&gt;COMPLETE&lt;/integrity_impact&gt;
+       &lt;availability_impact&gt;COMPLETE&lt;/availability_impact&gt;
+       &lt;description&gt;
+         The email function in manage_sql.c in ...(truncated for example)
+       &lt;/description&gt;
+       &lt;products&gt;
+         cpe:/a:openvas:openvas_manager:1.0.1 ...(truncated for example)
+       &lt;/products&gt;
+     &lt;/cve&gt;
    &lt;/info&gt;
    &lt;filters id="(null)"&gt;
      &lt;term/&gt;
