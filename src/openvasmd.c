@@ -66,8 +66,6 @@
  * The OTP and Manage libraries both use the Comm library to communication
  * with the OTP server (src/\ref ovas-mngr-comm.c).
  *
- * The Manager tests share some code in src/tests/\ref common.c.
- *
  * \subsection Forking
  *
  * The main daemon manager process will fork for every incoming connection and
