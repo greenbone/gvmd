@@ -1,3 +1,8 @@
+2012-11-13  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* tools/openvas-scapdata-sync.in, tools/greenbone-scapdata-sync:
+	Consistently use variable name SCAP_RES_DIR.
+
 2012-11-13  Andre Heinecke <aheinecke@intevation.de>
 
 	Add SCAP DB Migration for new CVE info

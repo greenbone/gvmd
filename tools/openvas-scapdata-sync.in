@@ -43,7 +43,7 @@ SEC_DB="$SCAP_DIR/scap.db"
 # command line options and automated tools.
 SCRIPT_NAME="openvas-scapdata-sync"
 VERSION=@OPENVASMD_VERSION@
-RES_DIR=@OPENVAS_SCAP_RES_DIR@
+SCAP_RES_DIR=@OPENVAS_SCAP_RES_DIR@
 RESTRICTED=0
 
 TIMESTAMP="$SCAP_DIR/timestamp"
@@ -235,7 +235,7 @@ reinit () {
   echo "[i] Major change in internal SCAP data structures."
   echo "[i] Reinitialization of database necessary."
   echo "[i] This update might take a while.."
-  $SQLITE $SEC_DB < $RES_DIR/db_init.sql
+  $SQLITE $SEC_DB < $SCAP_RES_DIR/db_init.sql
 }
 
 migrate_3 ()
@@ -266,7 +266,7 @@ migrate_4 ()
   for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
   do
       echo "[i] Adding CVSS information of $cvefile to SCAP DB.."
-      xsltproc $RES_DIR/migrate_db4.xsl $cvefile | $SQLITE $SEC_DB
+      xsltproc $SCAP_RES_DIR/migrate_db4.xsl $cvefile | $SQLITE $SEC_DB
   done
 
   echo "[i] Migration done."
@@ -288,7 +288,7 @@ update_sec_db () {
   if [ ! -f $SEC_DB ]
   then
     echo "[i] Initializing scap database"
-    $SQLITE $SEC_DB < $RES_DIR/db_init.sql
+    $SQLITE $SEC_DB < $SCAP_RES_DIR/db_init.sql
     DB_LASTUPDATE=0
     REFDATE=0
   else
@@ -308,7 +308,7 @@ update_sec_db () {
     # Happens when initial sync was aborted
     echo "Error: Inconsistent data. Resetting SCAP database."
     rm -f $SEC_DB
-    $SQLITE $SEC_DB < $RES_DIR/db_init.sql
+    $SQLITE $SEC_DB < $SCAP_RES_DIR/db_init.sql
     REFDATE=0
     DB_LASTUPDATE=0
   fi
@@ -320,8 +320,8 @@ update_sec_db () {
     then
       echo "[i] Updating CPEs"
       sed 's/&/&amp;/g' $CPEBASE | \
-        xsltproc --stringparam refdate $REFDATE $RES_DIR/cpe_youngerthan.xsl - | \
-        xsltproc $RES_DIR/cpe_update.xsl - | \
+        xsltproc --stringparam refdate $REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - | \
+        xsltproc $SCAP_RES_DIR/cpe_update.xsl - | \
         $SQLITE $SEC_DB
     else
       echo "[i] Skipping CPEs, file is older than last revision"
@@ -333,8 +333,8 @@ update_sec_db () {
     if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
     then
       echo "[i] Updating $cvefile"
-      xsltproc --stringparam refdate $REFDATE $RES_DIR/cve_youngerthan.xsl $cvefile | \
-        xsltproc $RES_DIR/cve_update.xsl - | \
+      xsltproc --stringparam refdate $REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
+        xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
         $SQLITE $SEC_DB
     else
       echo "[i] Skipping $cvefile, file is older than last revision"

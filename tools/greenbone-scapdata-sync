@@ -58,7 +58,7 @@ ENABLED=1
 BASE_SYNC_DIR="/var/lib/openvas"
 SCAP_DIR="$BASE_SYNC_DIR/scap-data"
 
-SCAP_RES="/usr/share/openvas/scap"
+SCAP_RES_DIR="/usr/share/openvas/scap"
 
 SCAP_DB="$SCAP_DIR/scap.db"
 
@@ -195,7 +195,7 @@ migrate_4 ()
   for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
   do
       log_write " Adding CVSS information of $cvefile to SCAP DB.."
-      xsltproc $RES_DIR/migrate_db4.xsl $cvefile | sqlite3 $SCAP_DB
+      xsltproc $SCAP_RES_DIR/migrate_db4.xsl $cvefile | sqlite3 $SCAP_DB
   done
 
   log_write " Migration done."
@@ -205,7 +205,7 @@ migrate_4 ()
 reinit () {
   log_write " Reinitialization of the database necessary."
   rm -f $SCAP_DB
-  sqlite3 $SCAP_DB < $SCAP_RES/db_init.sql
+  sqlite3 $SCAP_DB < $SCAP_RES_DIR/db_init.sql
 }
 
 check_db_version () {
@@ -223,7 +223,7 @@ update_scap_db() {
   if [ ! -f $SCAP_DB ]
   then
     log_write "Initializing SCAP database."
-    sqlite3 $SCAP_DB < $SCAP_RES/db_init.sql
+    sqlite3 $SCAP_DB < $SCAP_RES_DIR/db_init.sql
     REFDATE=0
   else
     check_db_version
@@ -242,7 +242,7 @@ update_scap_db() {
     # Happens when initial sync was aborted
     log_write "Error: Inconsistent data. Resetting SCAP database."
     rm -f $SCAP_DB
-    sqlite3 $SCAP_DB < $SCAP_RES/db_init.sql
+    sqlite3 $SCAP_DB < $SCAP_RES_DIR/db_init.sql
     REFDATE=0
     DB_LASTUPDATE=0
   fi
@@ -254,8 +254,8 @@ update_scap_db() {
     then
       log_write "Updating CPEs"
       sed 's/&/&amp;/g' $CPEBASE | \
-        xsltproc --stringparam refdate $REFDATE $SCAP_RES/cpe_youngerthan.xsl - | \
-        xsltproc $SCAP_RES/cpe_update.xsl - | \
+        xsltproc --stringparam refdate $REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - | \
+        xsltproc $SCAP_RES_DIR/cpe_update.xsl - | \
         sqlite3 $SCAP_DB
     else
       log_write "Skipping CPEs, file is older than last revision (this is not an error)."
@@ -267,8 +267,8 @@ update_scap_db() {
     if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
     then
       log_write "Updating $cvefile"
-      xsltproc --stringparam refdate $REFDATE $SCAP_RES/cve_youngerthan.xsl $cvefile | \
-        xsltproc $SCAP_RES/cve_update.xsl - | \
+      xsltproc --stringparam refdate $REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
+        xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
         sqlite3 $SCAP_DB
     else
       log_write "Skipping $cvefile, file is older than last revision (this is not an error)."
