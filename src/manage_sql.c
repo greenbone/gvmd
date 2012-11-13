@@ -25991,8 +25991,61 @@ parse_keyword (keyword_t* keyword)
   if (*string)
     {
       struct tm date;
+      gchar next;
       memset (&date, 0, sizeof (date));
-      if (strptime (keyword->string, "%Y-%m-%dT%H:%M", &date))
+      next = *(string + 1);
+      if (next == '\0' && *string == 's')
+        {
+          time_t now;
+          now = time (NULL);
+          keyword->number = now + atoi (keyword->string);
+          keyword->type = KEYWORD_TYPE_NUMBER;
+        }
+      else if (next == '\0' && *string == 'm')
+        {
+          time_t now;
+          now = time (NULL);
+          keyword->number = now + (atoi (keyword->string) * 60);
+          keyword->type = KEYWORD_TYPE_NUMBER;
+        }
+      else if (next == '\0' && *string == 'h')
+        {
+          time_t now;
+          now = time (NULL);
+          keyword->number = now + (atoi (keyword->string) * 3600);
+          keyword->type = KEYWORD_TYPE_NUMBER;
+        }
+      else if (next == '\0' && *string == 'd')
+        {
+          time_t now;
+          now = time (NULL);
+          keyword->number = now + (atoi (keyword->string) * 86400);
+          keyword->type = KEYWORD_TYPE_NUMBER;
+        }
+      else if (next == '\0' && *string == 'w')
+        {
+          time_t now;
+          now = time (NULL);
+          keyword->number = now + atoi (keyword->string) * 604800;
+          keyword->type = KEYWORD_TYPE_NUMBER;
+        }
+      else if (next == '\0' && *string == 'M')
+        {
+          time_t now;
+          now = time (NULL);
+          /* 30 days. */
+          keyword->number = now + atoi (keyword->string) * 2592000;
+          keyword->type = KEYWORD_TYPE_NUMBER;
+        }
+      else if (next == '\0' && *string == 'y')
+        {
+          time_t now;
+          now = time (NULL);
+          /* 365 days. */
+          keyword->number = now + (atoi (keyword->string) * 31536000);
+          keyword->type = KEYWORD_TYPE_NUMBER;
+        }
+      else if (strptime (keyword->string, "%Y-%m-%dT%H:%M", &date))
         {
           keyword->number = mktime (&date);
           keyword->type = KEYWORD_TYPE_NUMBER;
