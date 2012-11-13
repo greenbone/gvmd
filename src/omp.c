@@ -699,8 +699,8 @@ omp_parser_free (omp_parser_t *omp_parser)
 /**
  * @brief Check if command has been disabled.
  *
- * @param[in]  parser  Parser.
- * @param[in]  name    Command name.
+ * @param[in]  omp_parser  Parser.
+ * @param[in]  name        Command name.
  *
  * @return 1 disabled, 0 enabled.
  */
@@ -4350,7 +4350,6 @@ internal_error_send_to_client (GError** error)
  * @brief Expand to XML for a STATUS_SERVICE_UNAVAILABLE response.
  *
  * @param  tag   Name of the command generating the response.
- * @param  text  Text for the status_text attribute of the response.
  */
 #define XML_ERROR_UNAVAILABLE(tag)                        \
  "<" tag "_response"                                      \
@@ -7988,7 +7987,6 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
 /**
  * @brief Compare two string with the "diff" command.
  *
- * @param[in]  buffer  Buffer into which to buffer results.
  * @param[in]  one     First string.
  * @param[in]  two     Second string.
  *
@@ -8604,7 +8602,8 @@ convert_to_manage_ranges (array_t *ranges)
 /**
  * @brief Insert else clause for omp_xml_handle_start_element.
  *
- * @param[in]  op  Operation.
+ * @param[in]  parent   Parent element.
+ * @param[in]  element  Element.
  */
 #define CLOSE(parent, element)                                           \
   case parent ## _ ## element:                                           \
@@ -8617,7 +8616,8 @@ convert_to_manage_ranges (array_t *ranges)
  *
  * Stop the parser from reading over elements at the same time.
  *
- * @param[in]  op  Operation.
+ * @param[in]  parent   Parent element.
+ * @param[in]  element  Element.
  */
 #define CLOSE_READ_OVER(parent, element)                                 \
   case parent ## _ ## element:                                           \
@@ -8629,10 +8629,11 @@ convert_to_manage_ranges (array_t *ranges)
 /**
  * @brief Handle the end of an OMP XML element.
  *
- * @param[in]  targets  Resource iterator.
- * @param[in]  get      GET command data.
- * @param[out] first    First.
- * @param[out] count    Count.
+ * @param[in]  resources  Resource iterator.
+ * @param[in]  get        GET command data.
+ * @param[out] first      First.
+ * @param[out] count      Count.
+ * @param[in]  init       Init function, to reset the iterator.
  *
  * @return What to do next: 0 continue, 1 end, -1 fail.
  */

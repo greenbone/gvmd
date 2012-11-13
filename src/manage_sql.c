@@ -936,7 +936,7 @@ iso_time (time_t *epoch_time)
  * @brief Create an ISO time from seconds since epoch, given a timezone.
  *
  * @param[in]  epoch_time  Time in seconds from epoch.
- * @param[in]  Timezone    Timezone.
+ * @param[in]  timezone    Timezone.
  *
  * @return Pointer to ISO time in static memory, or NULL on error.
  */
@@ -1044,6 +1044,7 @@ current_offset (const char *zone)
  * @brief Get the offset from UTC of a timezone at a particular time.
  *
  * @param[in]  zone  Timezone, or NULL for UTC.
+ * @param[in]  time  Time.
  *
  * @return Seconds east of UTC.
  */
@@ -13259,9 +13260,9 @@ set_task_schedule_next_time (task_t task, time_t time)
 }
 
 /**
- * @brief Find a user given an identifier.
+ * @brief Find a user given a name.
  *
- * @param[in]   uuid  A user identifier.
+ * @param[in]   name  A user name.
  * @param[out]  user  User return, 0 if succesfully failed to find user.
  *
  * @return FALSE on success (including if failed to find user), TRUE on error.
@@ -13821,8 +13822,7 @@ detect_cleanup:
 /**
  * @brief Return highest CVE for an App.
  *
- * @param[in]  iterator  Iterator.
- * @param[in]  cpe       CPE.
+ * @param[in]  cpe  CPE.
  */
 double
 cpe_highest_cvss (const char *cpe)
@@ -15060,6 +15060,7 @@ where_search_phrase (const char* search_phrase)
  * @brief Return SQL WHERE for restricting a SELECT for auto FP filter.
  *
  * @param[in] autofp  Whether to apply the auto FP filter.
+ * @param[in] report  Report.
  *
  * @return WHERE clause for autofp if desired, else NULL.
  */
@@ -19576,8 +19577,8 @@ print_host_ports_by_type_asc (gpointer key, gpointer value, gpointer stream)
 /**
  * @brief Free delta host ports.
  *
- * @param[in]  ports  Ports.
- * @param[in]  dummy  Dummy.
+ * @param[in]  host_ports  Ports.
+ * @param[in]  dummy       Dummy.
  */
 static gboolean
 free_host_ports (GTree *host_ports, gpointer dummy)
@@ -20006,7 +20007,6 @@ buffer_cve (array_t *cves, iterator_t *details)
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
  * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
  *                                results if NULL.
- * @param[in]  report_format  Format of report that will be created from XML.
  * @param[in]  levels         String describing threat levels (message types)
  *                            to include in count (for example, "hmlgd" for
  *                            High, Medium, Low, loG and Debug).  All levels if
@@ -20072,21 +20072,21 @@ report_filter_term (int sort_order, const char* sort_field,
  * @param[in]  xml_file    File name.
  * @param[in]  get         GET command data.
  * @param[in]  sort_order  Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "type".
+ * @param[in]  given_sort_field   Field to sort on, or NULL for "type".
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
- * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
- *                                results if NULL.
+ * @param[in]  given_min_cvss_base  Minimum CVSS base of included results.  All
+ *                                  results if NULL.
  * @param[in]  report_format  Format of report that will be created from XML.
- * @param[in]  levels         String describing threat levels (message types)
+ * @param[in]  given_levels   String describing threat levels (message types)
  *                            to include in count (for example, "hmlgd" for
  *                            High, Medium, Low, loG and Debug).  All levels if
  *                            NULL.
- * @param[in]  delta_states   String describing delta states to include in count
- *                            (for example, "sngc" Same, New, Gone and Changed).
- *                            All levels if NULL.
+ * @param[in]  given_delta_states  String describing delta states to include in
+ *                                 count (for example, "sngc" Same, New, Gone
+ *                                 and Changed).  All levels if NULL.
  * @param[in]  apply_overrides    Whether to apply overrides.
- * @param[in]  search_phrase      Phrase that results must include.  All results
- *                                if NULL or "".
+ * @param[in]  given_search_phrase  Phrase that results must include.  All
+ *                                  results if NULL or "".
  * @param[in]  autofp             Whether to apply the auto FP filter.
  * @param[in]  show_closed_cves   Whether to include the Closed CVEs host detail.
  * @param[in]  notes              Whether to include notes.
@@ -23234,8 +23234,12 @@ task_finished_report_count (task_t task)
 /**
  * @brief Return the trend of a task, given counts.
  *
- * @param[in]  task      Task.
- * @param[in]  override  Whether to override the threat.
+ * @param[in]  holes_a   Number of holes on earlier report.
+ * @param[in]  warns_a   Number of warnings on earlier report.
+ * @param[in]  infos_a   Number of infos on earlier report.
+ * @param[in]  holes_b   Number of holes on later report.
+ * @param[in]  warns_b   Number of warnings on later report.
+ * @param[in]  infos_b   Number of infos on later report.
  *
  * @return "up", "down", "more", "less", "same" or if too few reports "".
  */
@@ -23309,7 +23313,12 @@ task_trend_calc (int holes_a, int warns_a, int infos_a, int holes_b,
  * @brief Return the trend of a task, given counts.
  *
  * @param[in]  task      Task.
- * @param[in]  override  Whether to override the threat.
+ * @param[in]  holes_a   Number of holes on earlier report.
+ * @param[in]  warns_a   Number of warnings on earlier report.
+ * @param[in]  infos_a   Number of infos on earlier report.
+ * @param[in]  holes_b   Number of holes on later report.
+ * @param[in]  warns_b   Number of warnings on later report.
+ * @param[in]  infos_b   Number of infos on later report.
  *
  * @return "up", "down", "more", "less", "same" or if too few reports "".
  */
@@ -24477,7 +24486,7 @@ contains_alpha (const char *string)
 /**
  * @brief Validate a host.
  *
- * @param[in]  host  Host
+ * @param[in]  string  Host
  *
  * @return 0 if validate, else 1;
  */
@@ -25064,7 +25073,7 @@ manage_transaction_start ()
  * was received) but delivers good enough performances when facing
  * bursts of messages.
  *
- * @param[in] force_close  Force committing the pending transaction.
+ * @param[in] force_commit  Force committing the pending transaction.
  */
 void manage_transaction_stop (gboolean force_commit)
 {
@@ -26131,7 +26140,7 @@ keyword_applies (array_t *array, const keyword_t *keyword)
 /**
  * @brief Free a split filter.
  *
- * @param[in]  filter  Split filter.
+ * @param[in]  split  Split filter.
  */
 static void
 filter_free (array_t *split)
@@ -26145,7 +26154,7 @@ filter_free (array_t *split)
 /**
  * @brief Split the filter term into parts.
  *
- * @param[in]  filter         Filter term.
+ * @param[in]  given_filter  Filter term.
  *
  * @return Array of strings, the parts.
  */
@@ -26535,6 +26544,22 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  * @param[out]  max         Max number of rows.
  * @param[out]  sort_field  Sort field.
  * @param[out]  sort_order  Sort order.
+ * @param[out]  result_hosts_only  Whether to show only hosts with results.
+ * @param[out]  min_cvss_base      Minimum CVSS base of included results.  All
+ *                                 results if NULL.
+ * @param[out]  levels         String describing threat levels (message types)
+ *                             to include in count (for example, "hmlgd" for
+ *                             High, Medium, Low, loG and Debug).  All levels if
+ *                             NULL.
+ * @param[out]  delta_states   String describing delta states to include in count
+ *                             (for example, "sngc" Same, New, Gone and Changed).
+ *                             All levels if NULL.
+ * @param[out]  search_phrase      Phrase that results must include.  All results
+ *                                 if NULL or "".
+ * @param[out]  autofp             Whether to apply auto FP filter.
+ * @param[out]  show_closed_cves   Whether to include the Closed CVEs host detail.
+ * @param[out]  notes              Whether to include notes.
+ * @param[out]  overrides          Whether to include overrides.
  */
 void
 manage_report_filter_controls (const gchar *filter, int *first, int *max,
@@ -26869,9 +26894,11 @@ get_join (int first, int last_was_and, int last_was_not)
  *
  * @param[in]  type     Resource type.
  * @param[in]  filter   Filter term.
- * @param[in]  columns  Columns in the SQL statement.
- * @param[out] order    If given then order clause.
  * @param[out] trash    Whether the trash table is being queried.
+ * @param[in]  columns  Columns in the SQL statement.
+ * @param[out] order_return  If given then order clause.
+ * @param[out] first_return  If given then first row.
+ * @param[out] max_return    If given then max rows.
  *
  * @return WHERE clause for filter if one is required, else NULL.
  */
@@ -27371,6 +27398,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
 /**
  * @brief Count number of a particular resource.
  *
+ * @param[in]  type              Type of resource.
  * @param[in]  get               GET params.
  * @param[in]  iterator_columns  Iterator columns.
  * @param[in]  extra_columns     Extra columns.
@@ -28360,7 +28388,6 @@ trash_target_writable (target_t target)
  *
  * @param[in]  iterator   Iterator.
  * @param[in]  target     Target.
- * @param[in]  ascending  Whether to sort ascending or descending.
  */
 void
 init_target_task_iterator (iterator_t* iterator, target_t target)
@@ -32989,7 +33016,7 @@ find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
  * @param[in]   uuid            UUID of LSC credential.
  * @param[out]  lsc_credential  LSC credential return, 0 if succesfully failed
  *                              to find credential.
- * @param[in]   actions_string  Actions.
+ * @param[in]   actions         Actions.
  *
  * @return FALSE on success (including if failed to find LSC credential),
  *         TRUE on error.
@@ -35089,8 +35116,6 @@ create_note (const char* active, const char* nvt, const char* text,
 /**
  * @brief Create a note from an existing note.
  *
- * @param[in]  name      Name of new note.  NULL to copy from existing.
- * @param[in]  comment   Comment on new note.  NULL to copy from existing.
  * @param[in]  note_id   UUID of existing note.
  * @param[out] new_note  New note.
  *
@@ -35853,8 +35878,6 @@ override_uuid (override_t override, char ** id)
 /**
  * @brief Create a override from an existing override.
  *
- * @param[in]  name      Name of new override.  NULL to copy from existing.
- * @param[in]  comment   Comment on new override.  NULL to copy from existing.
  * @param[in]  override_id   UUID of existing override.
  * @param[out] new_override  New override.
  *
@@ -40378,7 +40401,6 @@ port_range_ranges (const char *port_range)
  *
  * @param[in]   name            Name of port list.
  * @param[in]   comment         Comment on port list.
- * @param[in]   ranges          range_t array.  NULL to use port_range instead.
  * @param[in]   port_range      Traditional OTP style port range.  NULL for "default".
  * @param[out]  port_list       Created port list.
  *
@@ -40610,7 +40632,7 @@ create_port_list (const char* id, const char* name, const char* comment,
  * @param[in]   start             Start port.
  * @param[in]   end               End port.
  * @param[in]   comment           Comment.
- * @param[out]  port_list_return  Created port range.
+ * @param[out]  port_range_return  Created port range.
  *
  * @return 0 success, 1 syntax error in start, 2 syntax error in end, 3 failed
  *         to find port list, 4 syntax error in type, 5 port list in use,
@@ -41546,7 +41568,7 @@ filter_uuid (filter_t filter)
 /**
  * @brief Return the term of a filter.
  *
- * @param[in]  filter  Filter UUID.
+ * @param[in]  uuid  Filter UUID.
  *
  * @return Newly allocated term if available, else NULL.
  */
@@ -41974,7 +41996,6 @@ DEF_ACCESS (filter_iterator_term, GET_ITERATOR_COLUMN_COUNT + 1);
  *
  * @param[in]  iterator   Iterator.
  * @param[in]  filter     Filter.
- * @param[in]  ascending  Whether to sort ascending or descending.
  */
 void
 init_filter_alert_iterator (iterator_t* iterator, filter_t filter)
@@ -43416,9 +43437,9 @@ setting_value_int (const char *uuid, int *value)
 /**
  * @brief Set the value of a setting.
  *
- * @param[in]  uuid   UUID of setting.
- * @param[in]  name   Setting name.  For Timezone and Password.
- * @param[in]  value  New setting value, base64 encoded.
+ * @param[in]  uuid      UUID of setting.
+ * @param[in]  name      Setting name.  For Timezone and Password.
+ * @param[in]  value_64  New setting value, base64 encoded.
  *
  * @return 0 success, 1 failed to find setting, 2 syntax error in value, -1 on
  *         error.
@@ -43564,7 +43585,7 @@ manage_scap_loaded ()
  * @brief Initialise an CVE iterator, for CVEs reported for a certain CPE.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  cpe         CPE.
+ * @param[in]  cve         CVE.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */

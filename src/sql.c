@@ -950,7 +950,6 @@ sql_current_offset (sqlite3_context *context, int argc, sqlite3_value** argv)
 /**
  * @brief Prepare a statement.
  *
- * @param[in]  iterator  Iterator.
  * @param[in]  sql       Format string for SQL.
  */
 sqlite3_stmt *
@@ -1000,7 +999,7 @@ sql_prepare (const char* sql, ...)
  * @brief Initialise an iterator.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  sql       Format string for SQL.
+ * @param[in]  stmt      Statement.
  */
 void
 init_prepared_iterator (iterator_t* iterator, sqlite3_stmt* stmt)

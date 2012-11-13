@@ -1,5 +1,9 @@
 2012-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c, src/omp.c, src/sql.c: Clean up doc @params.
+
+2012-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (parse_keyword): Add actual months instead of fixed
 	approximations.
 
