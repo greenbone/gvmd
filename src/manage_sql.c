@@ -14713,17 +14713,17 @@ where_levels (const char* levels)
   if (strchr (levels, 'h'))
     {
       count = 1;
-      levels_sql = g_string_new (" AND (new_type = 'Security Hole'");
+      levels_sql = g_string_new (" AND new_type IN ('Security Hole'");
     }
 
   /* Medium. */
   if (strchr (levels, 'm'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (new_type = 'Security Warning'");
+        levels_sql = g_string_new (" AND new_type IN ('Security Warning'");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type = 'Security Warning'");
+                                      ", 'Security Warning'");
       count++;
     }
 
@@ -14731,10 +14731,10 @@ where_levels (const char* levels)
   if (strchr (levels, 'l'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (new_type = 'Security Note'");
+        levels_sql = g_string_new (" AND new_type IN ('Security Note'");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type = 'Security Note'");
+                                      ", 'Security Note'");
       count++;
     }
 
@@ -14742,10 +14742,10 @@ where_levels (const char* levels)
   if (strchr (levels, 'g'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (new_type = 'Log Message'");
+        levels_sql = g_string_new (" AND new_type IN ('Log Message'");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type = 'Log Message'");
+                                      ", 'Log Message'");
       count++;
     }
 
@@ -14753,10 +14753,10 @@ where_levels (const char* levels)
   if (strchr (levels, 'd'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (new_type = 'Debug Message'");
+        levels_sql = g_string_new (" AND new_type IN ('Debug Message'");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type = 'Debug Message'");
+                                      ", 'Debug Message'");
       count++;
     }
 
@@ -14764,10 +14764,10 @@ where_levels (const char* levels)
   if (strchr (levels, 'f'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (new_type = 'False Positive')");
+        levels_sql = g_string_new (" AND new_type IN ('False Positive')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type = 'False Positive')");
+                                      ", 'False Positive')");
       count++;
     }
   else if (count)
@@ -14811,17 +14811,17 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'h'))
     {
       count = 1;
-      levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'Security Hole'");
+      levels_sql = g_string_new (" AND (((auto_type IS NULL) AND new_type IN ('Security Hole'");
     }
 
   /* Medium. */
   if (strchr (levels, 'm'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'Security Warning'");
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND new_type IN ('Security Warning'");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type = 'Security Warning'");
+                                      ", 'Security Warning'");
       count++;
     }
 
@@ -14829,10 +14829,10 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'l'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'Security Note'");
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND new_type IN ('Security Note'");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type = 'Security Note'");
+                                      ", 'Security Note'");
       count++;
     }
 
@@ -14840,10 +14840,10 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'g'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'Log Message'");
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND new_type IN ('Log Message'");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type = 'Log Message'");
+                                      ", 'Log Message'");
       count++;
     }
 
@@ -14851,10 +14851,10 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'd'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'Debug Message'");
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND new_type IN ('Debug Message'");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type = 'Debug Message'");
+                                      ", 'Debug Message'");
       count++;
     }
 
@@ -14862,10 +14862,10 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'f'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (new_type = 'False Positive')) OR auto_type = 1)");
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND new_type IN ('False Positive')) OR auto_type = 1)");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type = 'False Positive')) OR auto_type = 1)");
+                                      ", 'False Positive')) OR auto_type = 1)");
       count++;
     }
   else if (count)

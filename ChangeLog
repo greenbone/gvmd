@@ -1,5 +1,11 @@
 2012-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (where_levels): Use IN instead of multiple
+	comparisons.  It's neater, and apparently allows for an index to be
+	used.
+
+2012-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (mainpage): Remove ref to test code.
 
 2012-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
