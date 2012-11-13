@@ -12997,9 +12997,7 @@ task_threat_level (task_t task)
          " COLLATE collate_message_type ASC",
          current_credentials.uuid);
 
-  new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
-                                  " THEN type ELSE (%s) END)",
-                                  ov, ov);
+  new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
   g_free (ov);
 
@@ -13107,9 +13105,7 @@ task_previous_threat_level (task_t task)
          " COLLATE collate_message_type ASC",
          current_credentials.uuid);
 
-  new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
-                                  " THEN type ELSE (%s) END)",
-                                  ov, ov);
+  new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
   g_free (ov);
 
@@ -15220,9 +15216,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  " COLLATE collate_message_type ASC",
                  current_credentials.uuid);
 
-          new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
-                                          " THEN type ELSE (%s) END)",
-                                          ov, ov);
+          new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
           g_free (ov);
         }
@@ -15412,9 +15406,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  " COLLATE collate_message_type ASC",
                  current_credentials.uuid);
 
-          new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
-                                          " THEN type ELSE (%s) END)",
-                                          ov, ov);
+          new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
           g_free (ov);
         }
@@ -16147,9 +16139,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                  " COLLATE collate_message_type ASC",
                  current_credentials.uuid);
 
-          new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
-                                          " THEN type ELSE (%s) END)",
-                                          ov, ov);
+          new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
           g_free (ov);
         }
@@ -16779,10 +16769,7 @@ report_scan_result_count (report_t report, const char* levels,
              " COLLATE collate_message_type ASC",
              current_credentials.uuid);
 
-      new_type_sql = g_strdup_printf (", (CASE WHEN (%s) IS NULL"
-                                      " THEN type ELSE (%s) END)"
-                                      " AS new_type",
-                                      ov, ov);
+      new_type_sql = g_strdup_printf (", coalesce ((%s), type) AS new_type", ov);
 
       g_free (ov);
     }
@@ -19755,9 +19742,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  " COLLATE collate_message_type ASC",
                  current_credentials.uuid);
 
-          new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
-                                          " THEN type ELSE (%s) END)",
-                                          ov, ov);
+          new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
           g_free (ov);
         }

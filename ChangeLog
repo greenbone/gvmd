@@ -1,5 +1,12 @@
 2012-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_threat_level, task_previous_threat_level)
+	(init_result_iterator, init_asset_iterator, report_scan_result_count)
+	(filtered_host_count): Use coalesce instead of CASE, if only to make the
+	resulting SQL more readable.
+
+2012-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (where_levels): Use IN instead of multiple
 	comparisons.  It's neater, and apparently allows for an index to be
 	used.
