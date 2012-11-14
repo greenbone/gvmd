@@ -29,10 +29,10 @@ cat << EOF
     <xsl:choose>
 EOF
 
-for line in $(tail -n +2 "$1")
+for line in $(tail -n +2 "$1" | tr -d '\015') #remove CR
 do
-    CPE=$(echo $line | awk -F , '{print $1}')
-    TAG=$(echo $line | awk -F , '{print $2}')
+    CPE=$(echo $line | sed 's/;/,/g' | awk -F , '{print $1}')
+    TAG=$(echo $line | sed 's/;/,/g' | awk -F , '{print $2}')
     echo "        <xsl:when test=\"contains(value, '${CPE}')\">"
     echo "          <xsl:text>${TAG}</xsl:text>"
     echo "        </xsl:when>"

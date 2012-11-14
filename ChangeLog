@@ -1,3 +1,13 @@
+2012-11-14  Andre Heinecke <andre.heinecke@greenbone.net>
+
+	* report_formats/verinice-ism/classification_generator.sh: Allow semicolon
+	seperated files.
+
+	* report_formats/verinice-ism/classification.xsl: Use more generic tags
+
+	* report_formats/verinice-ism/create_report_import: Increase Version
+	number and fix broken filename.
+
 2012-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	In a powerfilter if a term begins with =, then match term entirely

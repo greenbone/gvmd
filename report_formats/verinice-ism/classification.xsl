@@ -7,17 +7,17 @@
         <xsl:when test="contains(value, 'cpe:/o:alcatel')">
           <xsl:text>gsm_system_alcatel</xsl:text>
         </xsl:when>
-        <xsl:when test="contains(value, 'cpe:/o:apple')">
-          <xsl:text>gsm_system_apple</xsl:text>
-        </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:apple:iphone')">
           <xsl:text>gsm_system_iphone</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:apple:mac_os')">
           <xsl:text>gsm_system_mac</xsl:text>
         </xsl:when>
+        <xsl:when test="contains(value, 'cpe:/o:apple')">
+          <xsl:text>gsm_system_apple</xsl:text>
+        </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:bluecoat')">
-          <xsl:text>gsm_system_bloecoat</xsl:text>
+          <xsl:text>gsm_system_bluecoat</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:brocade')">
           <xsl:text>gsm_system_brocade</xsl:text>
@@ -41,16 +41,16 @@
           <xsl:text>gsm_system_connectiva</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:corel')">
-          <xsl:text>gsm_system_corel</xsl:text>
+          <xsl:text>gsm_system_Linux</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:cray')">
           <xsl:text>gsm_system_cray</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:debian')">
-          <xsl:text>gsm_system_debian</xsl:text>
+          <xsl:text>gsm_system_Linux</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:engardelinux')">
-          <xsl:text>gsm_system_engardelinux</xsl:text>
+          <xsl:text>gsm_system_Linux</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:extremenetworks')">
           <xsl:text>gsm_system_extremenetworks</xsl:text>
@@ -59,7 +59,7 @@
           <xsl:text>gsm_system_f5</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:fedoraproject')">
-          <xsl:text>gsm_system_fedora</xsl:text>
+          <xsl:text>gsm_system_Linux</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:freebsd')">
           <xsl:text>gsm_system_freebsd</xsl:text>
@@ -92,16 +92,16 @@
           <xsl:text>gsm_system_linux</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:mandrakesoft')">
-          <xsl:text>gsm_system_mandrakesoft</xsl:text>
+          <xsl:text>gsm_system_Linux</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:mandriva')">
-          <xsl:text>gsm_system_mandriva</xsl:text>
+          <xsl:text>gsm_system_Linux</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:ms-dos')">
-          <xsl:text>gsm_system_dos</xsl:text>
+          <xsl:text>gsm_system_Windows_Client</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows-9x')">
-          <xsl:text>gsm_system_win9x</xsl:text>
+          <xsl:text>gsm_system_Windows_Client</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows-ce')">
           <xsl:text>gsm_system_wince</xsl:text>
@@ -110,37 +110,37 @@
           <xsl:text>gsm_system_windows_mobile</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_2000')">
-          <xsl:text>gsm_system_win2k</xsl:text>
+          <xsl:text>gsm_system_Windows_Server</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_vista')">
-          <xsl:text>gsm_system_vista</xsl:text>
+          <xsl:text>gsm_system_Windows_Client</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows-nt')">
-          <xsl:text>gsm_system_winnt</xsl:text>
+          <xsl:text>gsm_system_Windows_Client</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_nt')">
-          <xsl:text>gsm_system_winnt</xsl:text>
+          <xsl:text>gsm_system_Windows_Client</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_server_2003')">
-          <xsl:text>gsm_system_win2003</xsl:text>
+          <xsl:text>gsm_system_Windows_Server</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_2003')">
-          <xsl:text>gsm_system_win2003</xsl:text>
+          <xsl:text>gsm_system_Windows_Server</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_7')">
-          <xsl:text>gsm_system_win7</xsl:text>
+          <xsl:text>gsm_system_Windows_Client</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_server_2008')">
-          <xsl:text>gsm_system_win2008</xsl:text>
+          <xsl:text>gsm_system_Windows_Server</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_2008')">
-          <xsl:text>gsm_system_win2008</xsl:text>
+          <xsl:text>gsm_system_Windows_Server</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows_xp')">
-          <xsl:text>gsm_system_winxp</xsl:text>
+          <xsl:text>gsm_system_Windows_Client</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows')">
-          <xsl:text>gsm_system_windows_unknown</xsl:text>
+          <xsl:text>gsm_system_Windows_Client</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft')">
           <xsl:text>gsm_system_microsoft</xsl:text>
@@ -161,10 +161,10 @@
           <xsl:text>gsm_system_novell</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:openbsd')">
-          <xsl:text>gsm_system_openbsd</xsl:text>
+          <xsl:text>gsm_system_Linux</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:redhat')">
-          <xsl:text>gsm_system_redhat</xsl:text>
+          <xsl:text>gsm_system_Linux</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:rim:blackberry')">
           <xsl:text>gsm_system_blackberry</xsl:text>
@@ -185,10 +185,10 @@
           <xsl:text>gsm_system_sun</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:suse')">
-          <xsl:text>gsm_system_suse</xsl:text>
+          <xsl:text>gsm_system_Linux</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:trustix')">
-          <xsl:text>gsm_system_tustix</xsl:text>
+          <xsl:text>gsm_system_Linux</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:univention')">
           <xsl:text>gsm_system_univention</xsl:text>
