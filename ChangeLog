@@ -1,3 +1,23 @@
+2012-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Mimic the new powerfilter "match entire column" term in the report filter.
+
+	* src/manage_sql.c (where_search_phrase): Add exact arg.
+	(init_result_iterator, report_scan_result_count, report_counts_match)
+	(report_count_filtered, report_counts_id_filt): Add search_phrase_exact
+	arg.  Update callers.
+	(report_filter_term): Quote phrase.  Prepend = if exact.  Add 1 to
+	first_result for 1 indexing.
+	(print_report_xml): Add search_phrase_exact handling.
+	(split_filter): For quotes, check for the exact case too.
+	(manage_report_filter_controls): Add search_phrase_exact arg.  Switch
+	first to 0 indexing.  Default max to 100 instead of all.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (buffer_notes_xml, omp_xml_handle_end_element): Update
+	init_result_iterator call.
+
 2012-11-14  Andre Heinecke <andre.heinecke@greenbone.net>
 
 	* report_formats/verinice-ism/classification_generator.sh: Allow semicolon

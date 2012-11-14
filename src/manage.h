@@ -801,7 +801,7 @@ char *
 report_slave_task_uuid (report_t);
 
 int
-report_scan_result_count (report_t, const char*, const char*, const char*,
+report_scan_result_count (report_t, const char*, const char*, int, const char*,
                           int, int, int*);
 
 int
@@ -858,7 +858,7 @@ report_iterator_uuid (iterator_t*);
 
 void
 init_result_iterator (iterator_t*, task_t, result_t, int, int, int,
-                      const char *, const char *, int, const char *,
+                      const char *, const char *, int, const char *, int,
                       const char *, int);
 
 gboolean
@@ -977,7 +977,7 @@ manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
 void
 manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
                                int *, gchar **, gchar **, gchar **, gchar **,
-                               int *, int *, int *, int *);
+                               int *, int *, int *, int *, int *);
 
 gchar *
 manage_clean_filter (const gchar *);
