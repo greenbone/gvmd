@@ -87,11 +87,6 @@ int socket(int domain, int type, int protocol);
 #endif
 
 /**
- * @brief Seconds of client idleness before manager closes client connection.
- */
-#define CLIENT_TIMEOUT 900
-
-/**
  * @brief File descriptor set mask: selecting on client read.
  */
 #define FD_CLIENT_READ  1
@@ -634,7 +629,6 @@ serve_omp (gnutls_session_t* client_session,
            const gchar* database, gchar **disable)
 {
   int nfds, ret;
-  time_t last_client_activity_time;
   fd_set readfds, exceptfds, writefds;
   int scanner_socket = *scanner_socket_addr;
   /* True if processing of the client input is waiting for space in the
@@ -772,18 +766,6 @@ serve_omp (gnutls_session_t* client_session,
           assert (0);
           client_input_stalled = 0;
         }
-
-      /* Record the start time. */
-      if (time (&last_client_activity_time) == -1)
-        {
-          g_warning ("%s: failed to get current time: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          openvas_server_free (client_socket,
-                               *client_session,
-                               *client_credentials);
-          return -1;
-        }
     }
   else
     client_input_stalled = 0;
@@ -843,35 +825,18 @@ serve_omp (gnutls_session_t* client_session,
 
       if (client_active)
         {
-          if ((CLIENT_TIMEOUT - (time (NULL) - last_client_activity_time))
-              <= 0)
+          FD_SET (client_socket, &exceptfds);
+          /* See whether to read from the client.  */
+          if (from_client_end < from_buffer_size)
             {
-              tracef ("client timeout (1)\n");
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-              if (scanner_is_active ())
-                {
-                  client_active = 0;
-                }
-              else
-                return 0;
+              FD_SET (client_socket, &readfds);
+              fd_info |= FD_CLIENT_READ;
             }
-          else
+          /* See whether to write to the client.  */
+          if (to_client_start < to_client_end)
             {
-              FD_SET (client_socket, &exceptfds);
-              /* See whether to read from the client.  */
-              if (from_client_end < from_buffer_size)
-                {
-                  FD_SET (client_socket, &readfds);
-                  fd_info |= FD_CLIENT_READ;
-                }
-              /* See whether to write to the client.  */
-              if (to_client_start < to_client_end)
-                {
-                  FD_SET (client_socket, &writefds);
-                  fd_info |= FD_CLIENT_WRITE;
-                }
+              FD_SET (client_socket, &writefds);
+              fd_info |= FD_CLIENT_WRITE;
             }
         }
 
@@ -1026,17 +991,6 @@ serve_omp (gnutls_session_t* client_session,
                 break;
               default:       /* Programming error. */
                 assert (0);
-            }
-
-          if (time (&last_client_activity_time) == -1)
-            {
-              g_warning ("%s: failed to get current time (1): %s\n",
-                         __FUNCTION__,
-                         strerror (errno));
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-              return -1;
             }
 
 #if TRACE || LOG
@@ -1320,17 +1274,6 @@ serve_omp (gnutls_session_t* client_session,
               default:      /* Programming error. */
                 assert (0);
             }
-
-          if (time (&last_client_activity_time) == -1)
-            {
-              g_warning ("%s: failed to get current time (2): %s\n",
-                         __FUNCTION__,
-                         strerror (errno));
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-              return -1;
-            }
         }
 
       if (client_input_stalled)
@@ -1492,34 +1435,6 @@ serve_omp (gnutls_session_t* client_session,
                                  *client_session,
                                  *client_credentials);
           return -1;
-        }
-
-      if (client_active)
-        {
-          /* Check if client connection is out of time. */
-          time_t current_time;
-          if (time (&current_time) == -1)
-            {
-              g_warning ("%s: failed to get current time (3): %s\n",
-                         __FUNCTION__,
-                         strerror (errno));
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-              return -1;
-            }
-          if ((CLIENT_TIMEOUT - (current_time - last_client_activity_time))
-              <= 0)
-            {
-              tracef ("client timeout (2)\n");
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-              if (scanner_is_active ())
-                client_active = 0;
-              else
-                return 0;
-            }
         }
 
     } /* while (1) */

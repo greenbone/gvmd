@@ -1,5 +1,12 @@
 2012-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/ompd.c (CLIENT_TIMEOUT): Remove.
+	(serve_omp): Remove client timeout, because the current implementation
+	causes the client to timeout right at the end of very long operations,
+	like getting big reports.
+
+2012-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Remove prefix arg.  Update
 	callers.
 	(manage_send_report): Send the prefix by hand instead of passing it
