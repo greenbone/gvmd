@@ -1,5 +1,10 @@
 2012-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (manage_run_wizard): Allocate empty string because it
+	will be freed.
+
+2012-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/ompd.c (CLIENT_TIMEOUT): Remove.
 	(serve_omp): Remove client timeout, because the current implementation
 	causes the client to timeout right at the end of very long operations,

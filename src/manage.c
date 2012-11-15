@@ -4636,12 +4636,12 @@ manage_run_wizard (const gchar *name,
                   pair_name = pair->name
                                ? g_markup_escape_text
                                   (pair->name, strlen (pair->name))
-                               : "";
+                               : g_strdup ("");
 
                   pair_value = pair->value
                                 ? g_markup_escape_text
                                    (pair->value, strlen (pair->value))
-                                : "";
+                                : g_strdup ("");
 
                   if (fprintf (xml_file,
                                "<param>"
