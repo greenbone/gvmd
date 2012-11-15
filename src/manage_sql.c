@@ -20172,7 +20172,6 @@ report_filter_term (int sort_order, const char* sort_field,
  * @param[in]  host_first_result   The host result to start from.  The results
  *                                 are 0 indexed.
  * @param[in]  host_max_results    The host maximum number of results returned.
- * @param[in]  prefix              Text to send to client before the report.
  *
  * @return 0 on success, -1 error, 2 failed to find filter (before any printing).
  */
@@ -20187,8 +20186,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   int overrides, int overrides_details, int first_result,
                   int max_results, const char *type, const char *host, int pos,
                   const char *host_search_phrase, const char *host_levels,
-                  int host_first_result, int host_max_results,
-                  const gchar *prefix)
+                  int host_first_result, int host_max_results)
 {
   FILE *out;
   gchar *term, *sort_field, *levels, *search_phrase, *min_cvss_base;
@@ -20288,9 +20286,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       g_free (delta_states);
       return -1;
     }
-
-  if (prefix)
-    PRINT_XML (out, prefix);
 
   if (delta && report)
     {
@@ -22363,7 +22358,7 @@ manage_report (report_t report, report_format_t report_format,
                           levels, NULL, apply_overrides, search_phrase, autofp,
                           show_closed_cves, notes, notes_details, overrides,
                           overrides_details, first_result, max_results, type,
-                          NULL, 0, NULL, NULL, 0, 0, NULL);
+                          NULL, 0, NULL, NULL, 0, 0);
   g_free (get.filt_id);
   if (ret)
     {
@@ -22873,7 +22868,7 @@ manage_send_report (report_t report, report_t delta_report,
                           notes_details, overrides, overrides_details,
                           first_result, max_results, type,
                           host, pos, host_search_phrase, host_levels,
-                          host_first_result, host_max_results, prefix);
+                          host_first_result, host_max_results);
   if (ret)
     {
       g_free (xml_file);
@@ -23185,6 +23180,13 @@ manage_send_report (report_t report, report_t delta_report,
             g_warning ("%s: %s\n",
                        __FUNCTION__,
                        strerror (errno));
+            return -1;
+          }
+
+        if (prefix && send (prefix, send_data_1, send_data_2))
+          {
+            fclose (stream);
+            g_warning ("%s: send prefix error\n", __FUNCTION__);
             return -1;
           }
 
