@@ -1,3 +1,16 @@
+2012-11-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Set the report on the result when adding a result to a report.  Add a
+	migrator to set the report in all existing results.  Hence increase
+	database version to 65.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 65.
+
+	* src/manage_sql.c (migrate_64_to_65): New function.
+	(migrators): Add migrate_64_to_65.
+	(init_manage, create_report): Use report_add_result to add result.
+	(report_add_result): Set report on result.
+
 2012-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (manage_run_wizard): Allocate empty string because it

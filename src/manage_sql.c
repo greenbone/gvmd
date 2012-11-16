@@ -6348,6 +6348,44 @@ migrate_63_to_64 ()
 }
 
 /**
+ * @brief Migrate the database from version 64 to version 65.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_64_to_65 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 64. */
+
+  if (manage_db_version () != 64)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* The report column on new results was left blank. */
+
+  sql ("UPDATE results SET report = (SELECT report FROM report_results"
+       "                             WHERE result = results.rowid);");
+
+  sql ("REINDEX results_by_report_host;");
+
+  /* Set the database version to 65. */
+
+  set_db_version (65);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -6416,6 +6454,7 @@ static migrator_t database_migrators[]
     {62, migrate_61_to_62},
     {63, migrate_62_to_63},
     {64, migrate_63_to_64},
+    {65, migrate_64_to_65},
     /* End marker. */
     {-1, NULL}};
 
@@ -11479,8 +11518,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
                " 'A telnet server seems to be running on this port');",
                task);
           result = sqlite3_last_insert_rowid (task_db);
-          sql ("INSERT into report_results (report, result) VALUES (%llu, %llu)",
-               report, result);
+          report_add_result (report, result);
           sql ("INSERT into report_hosts (report, host, start_time, end_time)"
                " VALUES (%llu, '127.0.0.1', 1251236906, 1251237135)",
                report);
@@ -14436,9 +14474,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       g_free (quoted_nvt_oid);
       g_free (quoted_description);
 
-      sql ("INSERT INTO report_results (report, result) VALUES (%llu, %llu);",
-           report,
-           sqlite3_last_insert_rowid (task_db));
+      report_add_result (report, sqlite3_last_insert_rowid (task_db));
     }
 
   index = 0;
@@ -14572,6 +14608,8 @@ report_add_result (report_t report, result_t result)
 {
   sql ("INSERT into report_results (report, result)"
        " VALUES (%llu, %llu);",
+       report, result);
+  sql ("UPDATE results SET report = %llu WHERE ROWID = %llu;",
        report, result);
 }
 
