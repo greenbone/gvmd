@@ -497,6 +497,7 @@ result_nvt
      {
        attribute oid { oid }
        & result_nvt_name
+       & result_nvt_family
        & result_nvt_cvss_base
        & result_nvt_risk_factor
      }
@@ -504,6 +505,13 @@ result_nvt
 # The name of the NVT.
 result_nvt_name
  = element name
+     {
+       name
+     }
+
+# The family the NVT is in.
+result_nvt_family
+ = element family
      {
        name
      }

@@ -13525,6 +13525,24 @@ result_iterator_nvt_name (iterator_t *iterator)
 }
 
 /**
+ * @brief Get the NVT family from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The family of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_family (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_family (nvti);
+  return NULL;
+}
+
+/**
  * @brief Get the NVT CVSS base value from a result iterator.
  *
  * @param[in]  iterator  Iterator.

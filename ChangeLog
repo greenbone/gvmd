@@ -1,3 +1,17 @@
+2012-11-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add family to NVT in results.  Backport from trunk r13934.
+
+	* src/manage_sql.c (result_iterator_nvt_family): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (buffer_results_xml): Add NVT family to response.
+
+	* src/schema_formats/XML/OMP.xml (result): Add NVT family.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2012-11-07  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
