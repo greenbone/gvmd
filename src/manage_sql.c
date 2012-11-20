@@ -27256,14 +27256,14 @@ filter_clause (const char* type, const char* filter, const char **columns,
               quoted_column = sql_quote (keyword->column);
               if (strcmp (quoted_keyword, ""))
                 g_string_append_printf (clause,
-                                        "%s(CAST (%s AS TEXT) IS '%s'",
+                                        "%s(CAST (%s AS TEXT) = '%s'",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
                                         quoted_column,
                                         quoted_keyword);
               else
                 g_string_append_printf (clause,
-                                        "%s((%s IS NULL OR CAST (%s AS TEXT) IS '%s')",
+                                        "%s((%s IS NULL OR CAST (%s AS TEXT) = '%s')",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
                                         quoted_column,

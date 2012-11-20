@@ -1,3 +1,8 @@
+2012-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Compare text with = instead of IS in
+	SQL, because Sqlite3 only accepts text as rvalue of IS from 3.6.19.
+
 2012-11-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/db.png: Update for version change.
