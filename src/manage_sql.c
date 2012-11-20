@@ -42339,6 +42339,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   if (filter_id == NULL)
     return 4;
 
+  type = type_db_name (type);
   if (type && !((strcmp (type, "") == 0) || valid_type (type)))
     return 3;
 
