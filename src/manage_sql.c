@@ -1179,6 +1179,99 @@ valid_type (const char* type)
 }
 
 /**
+ * @brief Return pretty name of type.
+ *
+ * @param[in]  type  Database name.
+ *
+ * @return 1 yes, 0 no.
+ */
+const char *
+type_pretty_name (const char* type)
+{
+  if (strcasecmp (type, "agent") == 0)
+    return "Agent";
+  if (strcasecmp (type, "alert") == 0)
+    return "Alert";
+  if (strcasecmp (type, "config") == 0)
+    return "Config";
+  if (strcasecmp (type, "lsc_credential") == 0)
+    return "Credential";
+  if (strcasecmp (type, "filter") == 0)
+    return "Filter";
+  if (strcasecmp (type, "note") == 0)
+    return "Note";
+  if (strcasecmp (type, "override") == 0)
+    return "Override";
+  if (strcasecmp (type, "port_list") == 0)
+    return "Port List";
+  if (strcasecmp (type, "report") == 0)
+    return "Report";
+  if (strcasecmp (type, "report_format") == 0)
+    return "Report Format";
+  if (strcasecmp (type, "result") == 0)
+    return "Result";
+  if (strcasecmp (type, "schedule") == 0)
+    return "Schedule";
+  if (strcasecmp (type, "slave") == 0)
+    return "Slave";
+  if (strcasecmp (type, "target") == 0)
+    return "Target";
+  if (strcasecmp (type, "task") == 0)
+    return "Task";
+  if (strcasecmp (type, "info") == 0);
+    return "SecInfo";
+  return NULL;
+}
+
+/**
+ * @brief Return DB name of type.
+ *
+ * @param[in]  type  Database or pretty name.
+ *
+ * @return 1 yes, 0 no.
+ */
+const char *
+type_db_name (const char* type)
+{
+  if (valid_type (type))
+    return type;
+
+  if (strcasecmp (type, "Agent") == 0)
+    return "agent";
+  if (strcasecmp (type, "Alert") == 0)
+    return "alert";
+  if (strcasecmp (type, "Config") == 0)
+    return "config";
+  if (strcasecmp (type, "Credential") == 0)
+    return "lsc_credential";
+  if (strcasecmp (type, "Filter") == 0)
+    return "filter";
+  if (strcasecmp (type, "Note") == 0)
+    return "note";
+  if (strcasecmp (type, "Override") == 0)
+    return "override";
+  if (strcasecmp (type, "Port List") == 0)
+    return "port_list";
+  if (strcasecmp (type, "Report") == 0)
+    return "report";
+  if (strcasecmp (type, "Report Format") == 0)
+    return "report_format";
+  if (strcasecmp (type, "Result") == 0)
+    return "result";
+  if (strcasecmp (type, "Schedule") == 0)
+    return "schedule";
+  if (strcasecmp (type, "Slave") == 0)
+    return "slave";
+  if (strcasecmp (type, "Target") == 0)
+    return "target";
+  if (strcasecmp (type, "Task") == 0)
+    return "task";
+  if (strcasecmp (type, "SecInfo") == 0);
+    return "info";
+  return NULL;
+}
+
+/**
  * @brief Check whether a type has a name and comment.
  *
  * @param[in]  type          Type of resource.
@@ -41831,6 +41924,7 @@ create_filter (const char *name, const char *comment, const char *type,
 
   assert (current_credentials.uuid);
 
+  type = type_db_name (type);
   if (type && !((strcmp (type, "") == 0) || valid_type (type)))
     return 2;
 
@@ -42167,7 +42261,7 @@ filter_iterator_type (iterator_t* iterator)
   if (iterator->done) return NULL;
   ret = (const char*) sqlite3_column_text (iterator->stmt,
                                            GET_ITERATOR_COLUMN_COUNT);
-  return ret ? ret : "";
+  return ret ? type_pretty_name (ret) : "";
 }
 
 /**

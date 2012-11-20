@@ -1,5 +1,11 @@
 2012-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (type_pretty_name, type_db_name): New functions.
+	(create_filter): Ensure type name is db style.
+	(filter_iterator_type): Return pretty version of type name.
+
+2012-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (valid_type): Add report_format.
 
 2012-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
