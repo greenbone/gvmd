@@ -1,5 +1,11 @@
 2012-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (client_state_t): Add NVT FAMILY.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Parse
+	FAMILY in CREATE_REPORT RESULT/NVT.
+
+2012-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): Compare text with = instead of IS in
 	SQL, because Sqlite3 only accepts text as rvalue of IS from 3.6.19.
 
