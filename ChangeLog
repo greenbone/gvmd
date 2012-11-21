@@ -1,8 +1,26 @@
 2012-11-21  Hani Benhabiles <kroosec@gmail.com>
 
-	* src/manage_sql.c src/manage.h (schedule_copy, schedule_count,
-	schedule_writable, schedule_in_use, trash_schedule_writable,
-	trash_schedule_in_use): New functions.
+	Add modification_time and creation_time to schedules. Fixed indentation
+	from previous commit.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 66, for
+	adding creation_time and modification_time columns to schedules and
+	schedules_trash tables.
+
+	* src/manage_sql.c (modify_schedule): modification_time is updated too.
+	(create_schedule): creation_time and modification_time are inserted and
+	deleted too.
+	(delete_schedule): creation_time and modification_time are inserted too
+	when moving the schedule to the trash.
+	(schedule_writable, schedule_in_use, SCHEDULE_ITERATOR_FILTER_COLUMNS)
+	(SCHEDULE_ITERATOR_TRASH_COLUMNS): Fixed indentation.
+
+
+2012-11-21  Hani Benhabiles <kroosec@gmail.com>
+
+	* src/manage_sql.c src/manage.h (schedule_copy, schedule_count)
+	(schedule_writable, schedule_in_use, trash_schedule_writable)
+	(trash_schedule_in_use): New functions.
 
 2012-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 

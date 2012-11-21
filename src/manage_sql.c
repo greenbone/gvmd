@@ -6480,6 +6480,47 @@ migrate_64_to_65 ()
 }
 
 /**
+ * @brief Migrate the database from version 65 to version 66.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_65_to_66 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 65. */
+
+  if (manage_db_version () != 65)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Schedules got creation and modification times. */
+
+  sql ("ALTER TABLE schedules ADD COLUMN creation_time;");
+  sql ("ALTER TABLE schedules ADD COLUMN modification_time;");
+  sql ("UPDATE schedules SET creation_time = 0, modification_time = 0;");
+
+  sql ("ALTER TABLE schedules_trash ADD COLUMN creation_time;");
+  sql ("ALTER TABLE schedules_trash ADD COLUMN modification_time;");
+  sql ("UPDATE schedules_trash SET creation_time = 0, modification_time = 0;");
+
+  /* Set the database version to 66. */
+
+  set_db_version (66);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -6549,6 +6590,7 @@ static migrator_t database_migrators[]
     {63, migrate_62_to_63},
     {64, migrate_63_to_64},
     {65, migrate_64_to_65},
+    {66, migrate_65_to_66},
     /* End marker. */
     {-1, NULL}};
 
@@ -36889,13 +36931,14 @@ create_schedule (const char* name, const char *comment, time_t first_time,
       gchar *quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO schedules"
            " (uuid, name, owner, comment, first_time, period, period_months,"
-           "  duration, timezone, initial_offset)"
+           "  duration, timezone, initial_offset, creation_time,"
+           "  modification_time)"
            " VALUES"
            " (make_uuid (), '%s',"
            "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
            "  '%s', %i, %i, %i, %i,"
            "  (SELECT timezone FROM users WHERE users.uuid = '%s'),"
-           "  %li);",
+           "  %li, now(), now());",
            quoted_name, current_credentials.uuid, quoted_comment, first_time,
            period, period_months, duration, current_credentials.uuid, offset);
       g_free (quoted_comment);
@@ -36903,13 +36946,14 @@ create_schedule (const char* name, const char *comment, time_t first_time,
   else
     sql ("INSERT INTO schedules"
          " (uuid, name, owner, comment, first_time, period, period_months,"
-         "  duration, timezone, initial_offset)"
+         "  duration, timezone, initial_offset, creation_time,"
+         "  modification_time)"
          " VALUES"
          " (make_uuid (), '%s',"
          "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
          "  '', %i, %i, %i, %i,"
          "  (SELECT timezone FROM users WHERE users.uuid = '%s'),"
-         "  %li);",
+         "  %li, now(), now());",
          quoted_name, current_credentials.uuid, first_time, period,
          period_months, duration, current_credentials.uuid, offset);
 
@@ -37016,9 +37060,11 @@ delete_schedule (const char *schedule_id, int ultimate)
     {
       sql ("INSERT INTO schedules_trash"
            " (uuid, owner, name, comment, first_time, period, period_months,"
-           "  duration, timezone, initial_offset)"
+           "  duration, timezone, initial_offset, creation_time,"
+           "  modification_time)"
            " SELECT uuid, owner, name, comment, first_time, period, period_months,"
-           "        duration, timezone, initial_offset"
+           "        duration, timezone, initial_offset, creation_time,"
+           "        modification_time"
            " FROM schedules WHERE ROWID = %llu;",
            schedule);
 
@@ -37233,7 +37279,7 @@ schedule_name (schedule_t schedule)
  */
 #define SCHEDULE_ITERATOR_FILTER_COLUMNS                                      \
  { GET_ITERATOR_FILTER_COLUMNS, "first_time", "period", "period_months",      \
-     "duration", "timezone", "initial_offset", NULL }
+   "duration", "timezone", "initial_offset", NULL }
 
 /**
  * @brief Schedule iterator columns.
@@ -37247,7 +37293,7 @@ schedule_name (schedule_t schedule)
  */
 #define SCHEDULE_ITERATOR_TRASH_COLUMNS                                       \
   GET_ITERATOR_COLUMNS ", first_time, period, period_months, duration, "      \
-                       " timezone, initial_offset"
+  " timezone, initial_offset"
 
 /**
  * @brief Count the number of schedules.
@@ -37985,7 +38031,8 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        " period = %s,"
        " period_months = %s,"
        " duration = %s,"
-       " initial_offset = %s"
+       " initial_offset = %s,"
+       " modification_time = now()"
        " WHERE ROWID = %llu;",
        quoted_name ? "'" : "",
        quoted_name ? quoted_name : "name",
