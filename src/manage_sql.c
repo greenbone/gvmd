@@ -43370,9 +43370,11 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO schedules"
            " (uuid, owner, name, comment, first_time, period, period_months,"
-           "  duration, timezone, initial_offset)"
+           "  duration, timezone, initial_offset, creation_time," 
+           "  modification_time)"
            " SELECT uuid, owner, name, comment, first_time, period,"
-           "        period_months, duration, timezone, initial_offset"
+           "        period_months, duration, timezone, initial_offset,"
+           "        creation_time, modification_time"
            " FROM schedules_trash WHERE ROWID = %llu;",
            resource);
 

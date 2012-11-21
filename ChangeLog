@@ -1,5 +1,10 @@
 2012-11-21  Hani Benhabiles <kroosec@gmail.com>
 
+	* src/manage_sql.c (manage_restore): Restore creation_time and
+	modification_time too.
+
+2012-11-21  Hani Benhabiles <kroosec@gmail.com>
+
 	Add modification_time and creation_time to schedules. Fixed indentation
 	from previous commit.
 
