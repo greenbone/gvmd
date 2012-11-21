@@ -1,3 +1,18 @@
+2012-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add COPY to OMP CREATE_TASK, for cloning.
+
+	* src/manage_sql.c (copy_task): New function.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/manage_sql.c (create_task_data_t, create_task_data_reset)
+	(client_state_t): Add CREATE_TASK copy.
+	(send_get_end): Remove the task in the create_task case, because it is
+	created early.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add CREATE_TASK/COPY.
+
 2012-11-21  Hani Benhabiles <kroosec@gmail.com>
 
 	* src/manage_sql.c (manage_restore): Restore creation_time and
@@ -19,7 +34,6 @@
 	when moving the schedule to the trash.
 	(schedule_writable, schedule_in_use, SCHEDULE_ITERATOR_FILTER_COLUMNS)
 	(SCHEDULE_ITERATOR_TRASH_COLUMNS): Fixed indentation.
-
 
 2012-11-21  Hani Benhabiles <kroosec@gmail.com>
 

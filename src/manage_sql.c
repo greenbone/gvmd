@@ -23922,6 +23922,132 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
 }
 
 /**
+ * @brief Create a task from an existing task.
+ *
+ * @param[in]  name        Name of new task.  NULL to copy from existing.
+ * @param[in]  comment     Comment on new task.  NULL to copy from existing.
+ * @param[in]  task_id     UUID of existing task.
+ * @param[out] new_task    New task.
+ *
+ * @return 0 success, 2 failed to find existing task, -1 error.
+ */
+int
+copy_task (const char* name, const char* comment, const char *task_id,
+           task_t* new_task)
+{
+  task_t task;
+  gchar *quoted_name, *quoted_uuid;
+
+  assert (current_credentials.uuid);
+
+  if (task_id == NULL)
+    return -1;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (name && strlen (name))
+    quoted_name = sql_quote (name);
+  else
+    quoted_name = NULL;
+
+  quoted_uuid = sql_quote (task_id);
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM tasks"
+               " WHERE uuid = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+               quoted_uuid,
+               current_credentials.uuid)
+      == 0)
+    {
+      sql ("ROLLBACK;");
+      g_free (quoted_name);
+      return 2;
+    }
+
+  /* Copy the existing task. */
+
+  if (comment && strlen (comment))
+    {
+      gchar *quoted_comment;
+      quoted_comment = sql_nquote (comment, strlen (comment));
+      sql ("INSERT INTO tasks"
+           " (uuid, owner, name, hidden, time, comment, config, target,"
+           "  schedule, schedule_next_time, slave, config_location,"
+           "  target_location, schedule_location, slave_location,"
+#if 0
+           "  target_location, schedule_location, slave_location,"
+           "  creation_time, modification_time)"
+#else
+           "  target_location, schedule_location, slave_location)"
+#endif
+           " SELECT make_uuid (),"
+           " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+           " %s%s%s, 0, time, '%s', config, target,"
+           " schedule, schedule_next_time, slave, config_location,"
+#if 0
+           " target_location, schedule_location, slave_location,"
+           " now (), now ()"
+#else
+           " target_location, schedule_location, slave_location"
+#endif
+           " FROM tasks WHERE uuid = '%s';",
+           current_credentials.uuid,
+           quoted_name ? "'" : "",
+           quoted_name
+            ? quoted_name
+            : "uniquify ('task', name, owner, ' Clone')",
+           quoted_name ? "'" : "",
+           quoted_comment ? quoted_comment : "",
+           quoted_uuid);
+      g_free (quoted_comment);
+    }
+  else
+    sql ("INSERT into tasks"
+         " (uuid, owner, name, hidden, time, comment, config, target,"
+         "  schedule, schedule_next_time, slave, config_location,"
+#if 0
+         "  target_location, schedule_location, slave_location,"
+         "  creation_time, modification_time)"
+#else
+         "  target_location, schedule_location, slave_location)"
+#endif
+         " SELECT make_uuid (),"
+         " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+         " %s%s%s, 0, time, comment, config, target,"
+         " schedule, schedule_next_time, slave, config_location,"
+#if 0
+         " target_location, schedule_location, slave_location,"
+         " now (), now ()"
+#else
+         " target_location, schedule_location, slave_location"
+#endif
+         " FROM tasks WHERE uuid = '%s';",
+         current_credentials.uuid,
+         quoted_name ? "'" : "",
+         quoted_name
+          ? quoted_name
+          : "uniquify ('task', name, owner, ' Clone')",
+         quoted_name ? "'" : "",
+         quoted_uuid);
+
+  task = sqlite3_last_insert_rowid (task_db);
+
+  if (new_task)
+    *new_task = task;
+
+  set_task_run_status (task, TASK_STATUS_NEW);
+  sql ("INSERT INTO task_preferences (task, name, value)"
+       " VALUES (%llu, 'in_assets', 'yes')",
+       task);
+
+  sql ("COMMIT;");
+  g_free (quoted_uuid);
+  g_free (quoted_name);
+  return 0;
+}
+
+/**
  * @brief Request deletion of a task.
  *
  * Stop the task beforehand with \ref stop_task, if it is running.
@@ -36971,7 +37097,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
  * @brief Create a schedule from an existing schedule.
  *
  * @param[in]  name          Name of new schedule. NULL to copy from existing.
- * @param[in]  comment       Comment on new schedule. NULL to copy from 
+ * @param[in]  comment       Comment on new schedule. NULL to copy from
  *                           existing.
  * @param[in]  schedule_id   UUID of existing filter.
  * @param[out] new_schedule  New schedule.
@@ -37306,7 +37432,7 @@ int
 schedule_count (const get_data_t *get)
 {
   static const char *extra_columns[] = SCHEDULE_ITERATOR_FILTER_COLUMNS;
-  return count ("schedule", get, SCHEDULE_ITERATOR_COLUMNS, extra_columns, 0, 0, 
+  return count ("schedule", get, SCHEDULE_ITERATOR_COLUMNS, extra_columns, 0, 0,
                 0, TRUE);
 }
 
@@ -43370,7 +43496,7 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO schedules"
            " (uuid, owner, name, comment, first_time, period, period_months,"
-           "  duration, timezone, initial_offset, creation_time," 
+           "  duration, timezone, initial_offset, creation_time,"
            "  modification_time)"
            " SELECT uuid, owner, name, comment, first_time, period,"
            "        period_months, duration, timezone, initial_offset,"

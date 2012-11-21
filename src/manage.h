@@ -530,6 +530,9 @@ make_task (/*@only@*/ char*, unsigned int, /*@only@*/ char*)
   /*@ensures isnull result->description@*/;
 
 int
+copy_task (const char*, const char*, const char *, task_t*);
+
+int
 load_tasks ();
 
 int

@@ -1459,6 +1459,7 @@ typedef struct
 {
   char *config_id;      ///< ID of task config.
   array_t *alerts;      ///< IDs of alerts.
+  char *copy;           ///< UUID of resource to copy.
   char *observers;      ///< Space separated names of observer users.
   name_value_t *preference;  ///< Current preference.
   array_t *preferences; ///< Preferences.
@@ -1477,6 +1478,7 @@ static void
 create_task_data_reset (create_task_data_t *data)
 {
   free (data->config_id);
+  free (data->copy);
   array_free (data->alerts);
   free (data->observers);
   if (data->preferences)
@@ -4038,6 +4040,7 @@ typedef enum
   CLIENT_CREATE_TASK,
   CLIENT_CREATE_TASK_COMMENT,
   CLIENT_CREATE_TASK_CONFIG,
+  CLIENT_CREATE_TASK_COPY,
   CLIENT_CREATE_TASK_ALERT,
   CLIENT_CREATE_TASK_NAME,
   CLIENT_CREATE_TASK_OBSERVERS,
@@ -4727,6 +4730,9 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
 #define ELSE_ERROR(op)                                          \
   else                                                          \
     {                                                           \
+      if ((strcmp (op, "create_task") == 0)                     \
+          && create_task_data->task)                            \
+        request_delete_task (&create_task_data->task);          \
       if (send_element_error_to_client (op, element_name,       \
                                         write_to_client,        \
                                         write_to_client_data))  \
@@ -7132,7 +7138,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("create_target");
 
       case CLIENT_CREATE_TASK:
-        if (strcasecmp ("RCFILE", element_name) == 0)
+        if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TASK_COPY);
+        else if (strcasecmp ("RCFILE", element_name) == 0)
           {
             /* Initialise the task description. */
             if (create_task_data->task)
@@ -14570,6 +14578,66 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
+          if (create_task_data->copy)
+            {
+              int ret;
+              gchar *name, *comment;
+              task_t new_task;
+
+              name = task_name (create_task_data->task);
+              comment = task_comment (create_task_data->task);
+              ret = copy_task (name,
+                               comment,
+                               create_task_data->copy,
+                               &new_task);
+              g_free (name);
+              g_free (comment);
+              request_delete_task (&create_task_data->task);
+              switch (ret)
+                {
+                  case 0:
+                    {
+                      char *uuid;
+                      task_uuid (new_task, &uuid);
+                      SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_task"),
+                                               uuid);
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has been created", uuid);
+                      free (uuid);
+                      break;
+                    }
+                  case 1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_task",
+                                        "Task exists already"));
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task could not be created");
+                    break;
+                  case 2:
+                    if (send_find_error_to_client ("create_task",
+                                                   "task",
+                                                   create_task_data->copy,
+                                                   write_to_client,
+                                                   write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task could not be created");
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("create_task"));
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task could not be created");
+                    break;
+                }
+              create_task_data_reset (create_task_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
           /* Get the task ID. */
 
           if (task_uuid (create_task_data->task, &tsk_uuid))
@@ -14919,6 +14987,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_CREATE_TASK, COMMENT);
       CLOSE (CLIENT_CREATE_TASK, CONFIG);
+      CLOSE (CLIENT_CREATE_TASK, COPY);
       CLOSE (CLIENT_CREATE_TASK, ALERT);
       CLOSE (CLIENT_CREATE_TASK, NAME);
       CLOSE (CLIENT_CREATE_TASK, OBSERVERS);
@@ -19660,6 +19729,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TASK_COMMENT:
         append_to_task_comment (create_task_data->task, text, text_len);
         break;
+
+      APPEND (CLIENT_CREATE_TASK_COPY,
+              &create_task_data->copy);
 
       case CLIENT_CREATE_TASK_NAME:
         append_to_task_name (create_task_data->task, text, text_len);
