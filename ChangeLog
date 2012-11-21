@@ -1,3 +1,9 @@
+2012-11-21  Hani Benhabiles <kroosec@gmail.com>
+
+	* src/manage_sql.c src/manage.h (schedule_copy, schedule_count,
+	schedule_writable, schedule_in_use, trash_schedule_writable,
+	trash_schedule_in_use): New functions.
+
 2012-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (modify_filter): Ensure type name is db style.

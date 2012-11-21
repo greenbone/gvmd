@@ -1798,6 +1798,9 @@ create_schedule (const char*, const char *, time_t, time_t, time_t,
                  time_t, schedule_t *);
 
 int
+copy_schedule (const char*, const char*, const char *, schedule_t *);
+
+int
 delete_schedule (const char*, int);
 
 void
@@ -1861,7 +1864,22 @@ time_t
 schedule_iterator_initial_offset (iterator_t *);
 
 int
+trash_schedule_in_use (schedule_t);
+
+int
+schedule_in_use (schedule_t);
+
+int
+trash_schedule_writable (schedule_t);
+
+int
+schedule_writable (schedule_t);
+
+int
 schedule_iterator_in_use (iterator_t*);
+
+int
+schedule_count (const get_data_t *);
 
 void
 init_schedule_task_iterator (iterator_t*, schedule_t);

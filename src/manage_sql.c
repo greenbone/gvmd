@@ -36924,6 +36924,28 @@ create_schedule (const char* name, const char *comment, time_t first_time,
 }
 
 /**
+ * @brief Create a schedule from an existing schedule.
+ *
+ * @param[in]  name          Name of new schedule. NULL to copy from existing.
+ * @param[in]  comment       Comment on new schedule. NULL to copy from 
+ *                           existing.
+ * @param[in]  schedule_id   UUID of existing filter.
+ * @param[out] new_schedule  New schedule.
+ *
+ * @return 0 success, 1 schedule exists already, 2 failed to find existing
+ *         schedule, -1 error.
+ */
+int
+copy_schedule (const char* name, const char* comment, const char *schedule_id,
+             schedule_t* new_schedule)
+{
+  return copy_resource ("schedule", name, comment, schedule_id,
+                        "first_time, period, period_months, duration,"
+                        " timezone, initial_offset",
+                        new_schedule);
+}
+
+/**
  * @brief Delete a schedule.
  *
  * @param[in]  schedule_id  Schedule.
@@ -37014,6 +37036,64 @@ delete_schedule (const char *schedule_id, int ultimate)
 
   sql ("COMMIT;");
   return 0;
+}
+
+/**
+ * @brief Return whether a schedule is in use by a task.
+ *
+ * @param[in]  schedule  Schedule.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+schedule_in_use (schedule_t schedule)
+{
+  return sql_int (0, 0,
+                  "SELECT count (*) FROM tasks WHERE schedule = %llu;",
+                  schedule);
+}
+
+/**
+ * @brief Return whether a trashcan schedule is in use by a task.
+ *
+ * @param[in]  schedule  schedule.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+trash_schedule_in_use (schedule_t schedule)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM tasks"
+                  " WHERE schedule = %llu"
+                  " AND schedule_location = " G_STRINGIFY (LOCATION_TRASH),
+                  schedule);
+}
+
+/**
+ * @brief Return whether a schedule is writable.
+ *
+ * @param[in]  schedule  Schedule.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+schedule_writable (schedule_t schedule)
+{
+    return (schedule_in_use(schedule) == 0);
+}
+
+/**
+ * @brief Return whether a trashcan schedule is writable.
+ *
+ * @param[in]  schedule  Schedule.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+trash_schedule_writable (schedule_t schedule)
+{
+    return (trash_schedule_in_use(schedule) == 0);
 }
 
 /**
@@ -37146,6 +37226,42 @@ schedule_name (schedule_t schedule)
   return sql_string (0, 0,
                      "SELECT name FROM schedules WHERE ROWID = %llu;",
                      schedule);
+}
+
+/**
+ * @brief Filter columns for schedule iterator.
+ */
+#define SCHEDULE_ITERATOR_FILTER_COLUMNS                                      \
+ { GET_ITERATOR_FILTER_COLUMNS, "first_time", "period", "period_months",      \
+     "duration", "timezone", "initial_offset", NULL }
+
+/**
+ * @brief Schedule iterator columns.
+ */
+#define SCHEDULE_ITERATOR_COLUMNS                                             \
+  GET_ITERATOR_COLUMNS ", first_time, period, period_months, duration,"       \
+  " timezone, initial_offset"
+
+/**
+ * @brief Schedule iterator columns for trash case.
+ */
+#define SCHEDULE_ITERATOR_TRASH_COLUMNS                                       \
+  GET_ITERATOR_COLUMNS ", first_time, period, period_months, duration, "      \
+                       " timezone, initial_offset"
+
+/**
+ * @brief Count the number of schedules.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of schedules filtered set.
+ */
+int
+schedule_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = SCHEDULE_ITERATOR_FILTER_COLUMNS;
+  return count ("schedule", get, SCHEDULE_ITERATOR_COLUMNS, extra_columns, 0, 0, 
+                0, TRUE);
 }
 
 /**
