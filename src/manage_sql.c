@@ -2787,6 +2787,19 @@ type_has_users (const char *type)
 }
 
 /**
+ * @brief Check whether the trash is in the real table.
+ *
+ * @param[in]  type  Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+type_trash_in_table (const char *type)
+{
+  return strcasecmp (type, "task") == 0;
+}
+
+/**
  * @brief Find a resource given a UUID.
  *
  * @param[in]   type       Type of resource.
@@ -3021,8 +3034,8 @@ copy_resource (const char *type, const char *name, const char *comment,
  *                             for trash and single resource.
  * @param[in]  extra_tables    Join tables.  Skipped for trash and single
  *                             resource.
- * @param[in]  extra_where     Extra WHERE clauses.  Skipped for trash and
- *                             single resource.
+ * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
+ *                             resource.
  *
  * @return 0 success, 2 failed to find filter.
  */
@@ -3056,26 +3069,30 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
   if (resource && get->trash)
     init_iterator (iterator,
                    "SELECT %s"
-                   " FROM %ss_trash"
+                   " FROM %ss%s"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    "%s;",
                    trash_columns ? trash_columns : columns,
                    type,
+                   type_trash_in_table (type) ? "" : "_trash",
                    resource,
                    current_credentials.uuid,
                    order);
   else if (get->trash)
     init_iterator (iterator,
                    "SELECT %s"
-                   " FROM %ss_trash"
+                   " FROM %ss%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   "%s"
                    "%s;",
                    trash_columns ? trash_columns : columns,
                    type,
+                   type_trash_in_table (type) ? "" : "_trash",
                    current_credentials.uuid,
+                   extra_where ? extra_where : "",
                    order);
   else if (resource)
     init_iterator (iterator,
@@ -3130,8 +3147,8 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
  *                             for trash and single resource.
  * @param[in]  extra_tables    Join tables.  Skipped for trash and single
  *                             resource.
- * @param[in]  extra_where     Extra WHERE clauses.  Skipped for trash and
- *                             single resource.
+ * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
+ *                             resource.
  * @param[in]  owned           Only get items owned by the current user.
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
@@ -3256,25 +3273,29 @@ init_get_iterator (iterator_t* iterator, const char *type,
   if (resource && get->trash)
     init_iterator (iterator,
                    "SELECT %s"
-                   " FROM %ss_trash"
+                   " FROM %ss%s"
                    " WHERE ROWID = %llu"
                    " AND %s"
                    "%s;",
                    trash_columns ? trash_columns : columns,
                    type,
+                   type_trash_in_table (type) ? "" : "_trash",
                    resource,
                    owned_and_used_by_clause,
                    order);
   else if (get->trash)
     init_iterator (iterator,
                    "SELECT %s"
-                   " FROM %ss_trash"
+                   " FROM %ss%s"
                    " WHERE"
+                   "%s"
                    "%s"
                    "%s;",
                    trash_columns ? trash_columns : columns,
                    type,
+                   type_trash_in_table (type) ? "" : "_trash",
                    owned_and_used_by_clause,
+                   extra_where ? extra_where : "",
                    order);
   else if (resource)
     init_iterator (iterator,
@@ -3308,7 +3329,6 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    order,
                    max,
                    first);
-
     }
 
   g_free (owned_and_used_by_clause);
@@ -11616,52 +11636,6 @@ append_to_task_string (task_t task, const char* field, const char* value)
 }
 
 /**
- * @brief Initialise a task iterator, limited to current user's tasks.
- *
- * @param[in]  iterator    Task iterator.
- * @param[in]  task        Task to limit iteration to.  0 for all.
- * @param[in]  trash       Whether to iterate over trashcan tasks.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
- */
-void
-init_user_task_iterator (iterator_t* iterator,
-                         task_t task,
-                         int trash,
-                         int ascending,
-                         const char *sort_field)
-{
-  assert (current_credentials.uuid);
-
-  if (task)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, run_status FROM tasks"
-                   /* Include NULL so everyone can see the example task. */
-                   " WHERE ((owner IS NULL) OR owner ="
-                   " (SELECT ROWID FROM users"
-                   "  WHERE users.uuid = '%s'))"
-                   " AND ROWID = %llu"
-                   "%s"
-                   " ORDER BY %s %s;",
-                   current_credentials.uuid,
-                   task,
-                   trash ? " AND hidden = 2" : " AND hidden < 2",
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, run_status FROM tasks WHERE owner ="
-                   " (SELECT ROWID FROM users"
-                   "  WHERE users.uuid = '%s')"
-                   "%s"
-                   " ORDER BY %s %s;",
-                   current_credentials.uuid,
-                   trash ? " AND hidden = 2" : " AND hidden < 2",
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-}
-
-/**
  * @brief Filter columns for task iterator.
  */
 #define TASK_ITERATOR_FILTER_COLUMNS                   \
@@ -11678,6 +11652,28 @@ init_user_task_iterator (iterator_t* iterator,
  */
 #define TASK_ITERATOR_TRASH_COLUMNS                       \
   GET_ITERATOR_COLUMNS ", run_status"
+
+/**
+ * @brief Initialise a task iterator, limited to current user's tasks.
+ *
+ * @param[in]  iterator    Task iterator.
+ * @param[in]  task        Task to limit iteration to.  0 for all.
+ * @param[in]  trash       Whether to iterate over trashcan tasks.
+ */
+void
+init_user_task_iterator (iterator_t* iterator,
+                         task_t task,
+                         int trash)
+{
+  static const char *filter_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
+  get_data_t get;
+  memset (&get, '\0', sizeof (get));
+  get.trash = trash;
+  init_user_get_iterator (iterator, "task", &get, TASK_ITERATOR_COLUMNS,
+                          TASK_ITERATOR_TRASH_COLUMNS, filter_columns,
+                          task, 0, 0,
+                          trash ? " AND hidden = 2" : " AND hidden < 2");
+}
 
 /**
  * @brief Initialise a task iterator.
@@ -26216,7 +26212,7 @@ delete_trash_tasks ()
 {
   iterator_t tasks;
 
-  init_user_task_iterator (&tasks, 0, 1, 1, NULL);
+  init_user_task_iterator (&tasks, 0, 1);
   while (next (&tasks))
     {
       task_t task;
@@ -37667,7 +37663,7 @@ schedule_iterator_first_time (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 
+  ret = (time_t) sqlite3_column_int (iterator->stmt,
                                      GET_ITERATOR_COLUMN_COUNT);
   return ret;
 }
@@ -37708,7 +37704,7 @@ schedule_iterator_period (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 
+  ret = (time_t) sqlite3_column_int (iterator->stmt,
                                      GET_ITERATOR_COLUMN_COUNT + 1);
   return ret;
 }
@@ -37725,7 +37721,7 @@ schedule_iterator_period_months (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 
+  ret = (time_t) sqlite3_column_int (iterator->stmt,
                                      GET_ITERATOR_COLUMN_COUNT + 2);
   return ret;
 }

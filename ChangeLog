@@ -1,3 +1,16 @@
+2012-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Get tasks trash working with new style changes.
+
+	* src/manage_sql.c (type_trash_in_table): New function.
+	(init_user_get_iterator, init_get_iterator): Use the main tasks table
+	for the trash cases too.  In the all trash iterator, include the extra
+	WHERE clauses if given.
+	(init_user_task_iterator): Move below column defines.  Use GET iterator.
+	Reduce number of args.  Adjust caller.
+	(schedule_iterator_first_time, schedule_iterator_period)
+	(schedule_iterator_period_months): Flush trailing whitespace.
+
 2012-11-22  Hani Benhabiles <kroosec@gmail.com>
 
 	Switching Schedules to the New Object Management.
