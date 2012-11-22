@@ -206,6 +206,42 @@ typedef struct
 } iterator_t;
 
 
+/* OMP GET. */
+
+/**
+ * @brief Command data for a get command.
+ */
+typedef struct
+{
+  char *actions;       ///< Actions.
+  int details;         ///< Boolean.  Whether to include full details.
+  char *filt_id;       ///< Filter ID.  Overrides "filter".
+  char *filter;        ///< Filter term.
+  int first;           ///< Skip over items before this number.
+  char *id;            ///< ID of single item to get.
+  int max;             ///< Maximum number of items returned.
+  int trash;           ///< Boolean.  Whether to return from trashcan.
+} get_data_t;
+
+resource_t
+get_iterator_resource (iterator_t*);
+
+const char*
+get_iterator_uuid (iterator_t*);
+
+const char*
+get_iterator_name (iterator_t*);
+
+const char*
+get_iterator_comment (iterator_t*);
+
+const char*
+get_iterator_creation_time (iterator_t*);
+
+const char*
+get_iterator_modification_time (iterator_t*);
+
+
 /* Events and Alerts. */
 
 /**
@@ -358,8 +394,8 @@ task_count ();
 unsigned int
 trash_task_count ();
 
-void
-init_task_iterator (iterator_t*, task_t, int, int, const char*, const char *);
+int
+init_task_iterator (iterator_t*, const get_data_t *);
 
 task_t
 task_iterator_task (iterator_t*);
@@ -378,6 +414,18 @@ task_uuid (task_t, /*@out@*/ char **);
 
 int
 task_in_trash (task_t);
+
+int
+task_in_use (task_t);
+
+int
+trash_task_in_use (task_t);
+
+int
+task_writable (task_t);
+
+int
+trash_task_writable (task_t);
 
 char*
 task_owner_name (task_t);
@@ -662,42 +710,6 @@ typedef enum
   MANAGE_ACTION_MODIFY = 2,
   MANAGE_ACTION_USE = 3
 } action_t;
-
-
-/* OMP GET. */
-
-/**
- * @brief Command data for a get command.
- */
-typedef struct
-{
-  char *actions;       ///< Actions.
-  int details;         ///< Boolean.  Whether to include full details.
-  char *filt_id;       ///< Filter ID.  Overrides "filter".
-  char *filter;        ///< Filter term.
-  int first;           ///< Skip over items before this number.
-  char *id;            ///< ID of single item to get.
-  int max;             ///< Maximum number of items returned.
-  int trash;           ///< Boolean.  Whether to return from trashcan.
-} get_data_t;
-
-resource_t
-get_iterator_resource (iterator_t*);
-
-const char*
-get_iterator_uuid (iterator_t*);
-
-const char*
-get_iterator_name (iterator_t*);
-
-const char*
-get_iterator_comment (iterator_t*);
-
-const char*
-get_iterator_creation_time (iterator_t*);
-
-const char*
-get_iterator_modification_time (iterator_t*);
 
 
 /* Results. */

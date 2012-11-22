@@ -1,7 +1,39 @@
 2012-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Switch much of GET_TASKS to the new GET style.  As a requirement move
+	many functions in manage_sql.c to better sections.
+
+	* src/manage_sql.c (vector_find_string): Move up to General Helpers.
+	(keyword_type_t, keyword_relation_t, struct keyword, keyword_t)
+	(keyword_free, parse_keyword, keyword_applies, filter_free)
+	(split_filter, manage_filter_controls, filter_control_int)
+	(filter_control_str, manage_report_filter_controls, append_relation)
+	(manage_clean_filter, get_join, filter_clause): Move up to new page
+	Filter Utilities.
+	(ANON_GET_ITERATOR_FILTER_COLUMNS, GET_ITERATOR_FILTER_COLUMNS)
+	(ANON_GET_ITERATOR_COLUMNS, GET_ITERATOR_COLUMNS)
+	(GET_ITERATOR_COLUMN_COUNT): Move up to Resources.
+	(type_has_users): New function.
+	(init_user_get_iterator, init_get_iterator): Move up to Resources.
+	(TASK_ITERATOR_FILTER_COLUMNS, TASK_ITERATOR_COLUMNS)
+	(TASK_ITERATOR_TRASH_COLUMNS): New defines.
+	(init_task_iterator): Switch to GET arg and use init_get_iterator.
+	(task_in_use, trash_task_in_use, task_writable)
+	(trash_task_writable): New functions.
+	(init_manage): Pass init_task_iterator args via GET struct.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (get_tasks_data_t, get_tasks_data_reset): Switch to GET
+	field.
+	(omp_xml_handle_start_element): Parse GET_TASKS GET field.
+	(omp_xml_handle_end_element): IN CLIENT_GET_TASKS use the GET field and
+	SEND_GET_COMMON.
+
+2012-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add creation and modification times to tasks.  Hence increase database
-	version to 64.  Add database migration from version 66 to 67.
+	version to 67.  Add database migration from version 66 to 67.
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 67.
 

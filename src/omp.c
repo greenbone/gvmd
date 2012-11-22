@@ -2521,14 +2521,9 @@ typedef struct
  */
 typedef struct
 {
-  char *actions;         ///< Actions.
-  int apply_overrides;   ///< Boolean.  Whether to apply overrides.
-  int details;           ///< Boolean.  Whether to include task details.
-  char *task_id;         ///< ID of single task to get.
+  int apply_overrides;   ///< Boolean.  Whether to apply overrides.  FIX
+  get_data_t get;        ///< Get args.
   int rcfile;            ///< Boolean.  Whether to include RC defining task.
-  char *sort_field;      ///< Field to sort results on.
-  int sort_order;        ///< Result sort order: 0 descending, else ascending.
-  int trash;             ///< Boolean.  Whether to return tasks from trashcan.
 } get_tasks_data_t;
 
 /**
@@ -2539,9 +2534,7 @@ typedef struct
 static void
 get_tasks_data_reset (get_tasks_data_t *data)
 {
-  free (data->actions);
-  free (data->task_id);
-  free (data->sort_field);
+  get_data_reset (&data->get);
 
   memset (data, 0, sizeof (get_tasks_data_t));
 }
@@ -5721,44 +5714,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
 
-            append_attribute (attribute_names, attribute_values, "task_id",
-                              &get_tasks_data->task_id);
-
-            append_attribute (attribute_names, attribute_values, "actions",
-                              &get_tasks_data->actions);
+            get_data_parse_attributes (&get_tasks_data->get, "task",
+                                       attribute_names,
+                                       attribute_values);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "rcfile", &attribute))
               get_tasks_data->rcfile = atoi (attribute);
             else
               get_tasks_data->rcfile = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "details", &attribute))
-              get_tasks_data->details = strcmp (attribute, "0");
-            else
-              get_tasks_data->details = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "apply_overrides", &attribute))
-              get_tasks_data->apply_overrides = strcmp (attribute, "0");
-            else
-              get_tasks_data->apply_overrides = 0;
-
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_tasks_data->sort_field);
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "trash", &attribute))
-              get_tasks_data->trash = strcmp (attribute, "0");
-            else
-              get_tasks_data->trash = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_tasks_data->sort_order = strcmp (attribute, "descending");
-            else
-              get_tasks_data->sort_order = 1;
 
             set_client_state (CLIENT_GET_TASKS);
           }
@@ -18062,20 +18026,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_TASKS", element_name) == 0);
 
-          if (get_tasks_data->details && get_tasks_data->trash)
+          if (get_tasks_data->get.details && get_tasks_data->get.trash)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_task",
                                 "GET_TASKS details given with trash"));
-          else if (get_tasks_data->task_id
-                   && find_task_for_actions (get_tasks_data->task_id,
+          else if (get_tasks_data->get.id
+                   && find_task_for_actions (get_tasks_data->get.id,
                                              &task,
-                                             get_tasks_data->actions))
+                                             get_tasks_data->get.actions))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_tasks"));
-          else if (get_tasks_data->task_id && task == 0)
+          else if (get_tasks_data->get.id && task == 0)
             {
               if (send_find_error_to_client ("get_tasks",
                                              "task",
-                                             get_tasks_data->task_id,
+                                             get_tasks_data->get.id,
                                              write_to_client,
                                              write_to_client_data))
                 {
@@ -18093,7 +18057,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               response = g_strdup_printf ("<task_count>%u</task_count>",
                                           task ? 1
-                                               : (get_tasks_data->trash
+                                               : (get_tasks_data->get.trash
                                                    ? trash_task_count ()
                                                    : task_count ()));
               if (send_to_client (response,
@@ -18106,25 +18070,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               g_free (response);
 
+#if 0
+              // FIX filter
               SENDF_TO_CLIENT_OR_FAIL
                ("<sort>"
                 "<field>%s<order>%s</order></field>"
                 "</sort>"
                 "<apply_overrides>%i</apply_overrides>",
-                get_tasks_data->sort_field
-                 ? get_tasks_data->sort_field
+                get_tasks_data->get.sort_field
+                 ? get_tasks_data->get.sort_field
                  : "ROWID",
-                get_tasks_data->sort_order ? "ascending" : "descending",
+                get_tasks_data->get.sort_order ? "ascending" : "descending",
                 get_tasks_data->apply_overrides);
+#endif
 
-              init_task_iterator (&tasks,
-                                  task,
-                                  get_tasks_data->trash,
-                                  get_tasks_data->sort_order,
-                                  get_tasks_data->sort_field,
-                                  get_tasks_data->actions);
+              init_task_iterator (&tasks, &get_tasks_data->get);
               while (next (&tasks))
-                if (get_tasks_data->details)
+                if (get_tasks_data->get.details)
                   {
                     /* The detailed version. */
 
@@ -18132,10 +18094,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     gchar *response, *progress_xml;
                     target_t target;
                     slave_t slave;
-                    char *name, *config, *config_uuid;
+                    char *config, *config_uuid;
                     char *task_target_uuid, *task_target_name, *hosts;
                     char *task_slave_uuid, *task_slave_name;
-                    char *task_schedule_uuid, *task_schedule_name, *comment;
+                    char *task_schedule_uuid, *task_schedule_name;
                     gchar *first_report_id, *first_report;
                     char *description, *owner, *observers;
                     gchar *description64, *last_report_id, *last_report;
@@ -18400,8 +18362,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       description64 = g_strdup ("");
 
-                    name = task_name (task);
-                    comment = task_comment (task);
+                    SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
+
                     owner = task_owner_name (task);
                     observers = task_observers (task);
                     config = task_config_name (task);
@@ -18423,10 +18385,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                     next_time = task_schedule_next_time_tz (task);
                     response = g_strdup_printf
-                                ("<task id=\"%s\">"
-                                 "<name>%s</name>"
-                                 "<comment>%s</comment>"
-                                 "<owner><name>%s</name></owner>"
+                                ("<owner><name>%s</name></owner>"
                                  "<observers>%s</observers>"
                                  "<config id=\"%s\">"
                                  "<name>%s</name>"
@@ -18449,9 +18408,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<next_time>%s</next_time>"
                                  "</schedule>"
                                  "%s%s%s",
-                                 task_iterator_uuid (&tasks),
-                                 name,
-                                 comment,
                                  owner ? owner : "",
                                  ((owner == NULL)
                                   || (strcmp (owner, current_credentials.username)))
@@ -18489,8 +18445,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           write_to_client,
                                           write_to_client_data);
                     g_free (response);
-                    g_free (name);
-                    g_free (comment);
                     g_free (owner);
                     g_free (observers);
                     g_free (description64);
@@ -18575,8 +18529,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     task_t index = task_iterator_task (&tasks);
                     gchar *line, *progress_xml;
-                    char *name = task_name (index);
-                    char *comment = task_comment (index);
                     char *observers = task_observers (index);
                     char *owner = task_owner_name (index);
                     target_t target;
@@ -18869,6 +18821,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       progress_xml = g_strdup ("-1");
 
+                    SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
+
                     config = task_config_name (index);
                     config_uuid = task_config_uuid (index);
                     alert = task_alert_name (index);
@@ -18908,11 +18862,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                     next_time = task_schedule_next_time_tz (index);
                     line = g_strdup_printf
-                             ("<task"
-                              " id=\"%s\">"
-                              "<name>%s</name>"
-                              "<comment>%s</comment>"
-                              "<owner><name>%s</name></owner>"
+                             ("<owner><name>%s</name></owner>"
                               "<observers>%s</observers>"
                               "<config id=\"%s\">"
                               "<name>%s</name>"
@@ -18943,9 +18893,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               "<trash>%i</trash>"
                               "</schedule>"
                               "%s%s%s",
-                              tsk_uuid,
-                              name,
-                              comment,
                               owner ? owner : "",
                               ((owner == NULL)
                                || (strcmp (owner,
@@ -18992,8 +18939,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (first_report);
                     g_free (last_report);
                     g_free (second_last_report);
-                    free (name);
-                    free (comment);
                     free (owner);
                     free (observers);
                     g_free (description64);
