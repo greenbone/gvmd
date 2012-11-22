@@ -1586,7 +1586,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_alerts (id INTEGER PRIMARY KEY, task INTEGER, alert INTEGER, alert_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_preferences (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER, upload_result_count INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER, upload_result_count INTEGER, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS task_users (id INTEGER PRIMARY KEY, task INTEGER, user INTEGER, actions INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password, timezone);");
 
@@ -6521,6 +6521,43 @@ migrate_65_to_66 ()
 }
 
 /**
+ * @brief Migrate the database from version 66 to version 67.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_66_to_67 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 66. */
+
+  if (manage_db_version () != 66)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Tasks got creation and modification times. */
+
+  sql ("ALTER TABLE tasks ADD COLUMN creation_time;");
+  sql ("ALTER TABLE tasks ADD COLUMN modification_time;");
+  sql ("UPDATE tasks SET creation_time = 0, modification_time = 0;");
+
+  /* Set the database version to 67. */
+
+  set_db_version (67);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -6591,6 +6628,7 @@ static migrator_t database_migrators[]
     {64, migrate_63_to_64},
     {65, migrate_64_to_65},
     {66, migrate_65_to_66},
+    {67, migrate_66_to_67},
     /* End marker. */
     {-1, NULL}};
 
@@ -9758,7 +9796,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
     }
   else
     quote = sql_nquote (value, strlen (value));
-  sql ("UPDATE tasks SET %s = '%s' WHERE ROWID = %llu;",
+  sql ("UPDATE tasks SET %s = '%s', modification_time = now ()"
+       " WHERE ROWID = %llu;",
        field,
        quote,
        task);
@@ -11608,13 +11647,14 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       == 0)
     {
       sql ("INSERT into tasks (uuid, owner, name, hidden, comment,"
-           " run_status, start_time, end_time, config, target, slave)"
+           " run_status, start_time, end_time, config, target, slave,"
+           " creation_time, modification_time)"
            " VALUES ('" MANAGE_EXAMPLE_TASK_UUID "', NULL, 'Example task',"
            " 1, 'This is an example task for the help pages.', %u,"
            " 1251236905, 1251237136,"
            " (SELECT ROWID FROM configs WHERE name = 'Full and fast'),"
            " (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
-           " 0);",
+           " 0, now (), now ());",
            TASK_STATUS_DONE);
     }
 
@@ -12395,7 +12435,10 @@ task_config_in_trash (task_t task)
 void
 set_task_config (task_t task, config_t config)
 {
-  sql ("UPDATE tasks SET config = %llu WHERE ROWID = %llu;", config, task);
+  sql ("UPDATE tasks SET config = %llu, modification_time = now ()"
+       "WHERE ROWID = %llu;",
+       config,
+       task);
 }
 
 /**
@@ -12434,7 +12477,10 @@ task_target (task_t task)
 void
 set_task_target (task_t task, target_t target)
 {
-  sql ("UPDATE tasks SET target = %llu WHERE ROWID = %llu;", target, task);
+  sql ("UPDATE tasks SET target = %llu, modification_time = now ()"
+       " WHERE ROWID = %llu;",
+       target,
+       task);
 }
 
 /**
@@ -12490,7 +12536,10 @@ task_slave (task_t task)
 void
 set_task_slave (task_t task, slave_t slave)
 {
-  sql ("UPDATE tasks SET slave = %llu WHERE ROWID = %llu;", slave, task);
+  sql ("UPDATE tasks SET slave = %llu, modification_time = now ()"
+       " WHERE ROWID = %llu;",
+       slave,
+       task);
 }
 
 /**
@@ -12535,7 +12584,8 @@ void
 set_task_description (task_t task, char* description, gsize length)
 {
   gchar* quote = sql_nquote (description, strlen (description));
-  sql ("UPDATE tasks SET description = '%s' WHERE ROWID = %llu;",
+  sql ("UPDATE tasks SET description = '%s', modification_time = now ()"
+       " WHERE ROWID = %llu;",
        quote,
        task);
   g_free (quote);
@@ -12746,7 +12796,8 @@ task_start_time (task_t task)
 void
 set_task_start_time (task_t task, char* time)
 {
-  sql ("UPDATE tasks SET start_time = %i WHERE ROWID = %llu;",
+  sql ("UPDATE tasks SET start_time = %i, modification_time = now ()"
+       " WHERE ROWID = %llu;",
        parse_iso_time (time),
        task);
   free (time);
@@ -12761,7 +12812,8 @@ set_task_start_time (task_t task, char* time)
 void
 set_task_start_time_otp (task_t task, char* time)
 {
-  sql ("UPDATE tasks SET start_time = %i WHERE ROWID = %llu;",
+  sql ("UPDATE tasks SET start_time = %i, modification_time = now ()"
+       " WHERE ROWID = %llu;",
        parse_otp_time (time),
        task);
   free (time);
@@ -13116,7 +13168,8 @@ set_task_schedule (task_t task, schedule_t schedule)
       }
 
   sql ("UPDATE tasks SET schedule = %llu, schedule_next_time = "
-       " (SELECT schedules.first_time FROM schedules WHERE ROWID = %llu)"
+       " (SELECT schedules.first_time FROM schedules WHERE ROWID = %llu),"
+       " modification_time = now ()"
        " WHERE ROWID = %llu;",
        schedule,
        schedule,
@@ -23692,9 +23745,10 @@ make_task (char* name, unsigned int time, char* comment)
   sql ("INSERT into tasks"
        " (owner, uuid, name, hidden, time, comment, schedule,"
        "  schedule_next_time, slave, config_location, target_location,"
-       "  schedule_location, slave_location)"
+       "  schedule_location, slave_location, creation_time, modification_time)"
        " VALUES ((SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "         '%s', '%s', 0, %u, '%s', 0, 0, 0, 0, 0, 0, 0);",
+       "         '%s', '%s', 0, %u, '%s', 0, 0, 0, 0, 0, 0, 0, now (),"
+       "         now ());",
        current_credentials.uuid,
        uuid,
        quoted_name ? quoted_name : "",
@@ -23784,7 +23838,8 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
       /* Update task description (rcfile). */
 
       quoted_rc = sql_quote ((gchar*) rc);
-      sql ("UPDATE tasks SET description = '%s' WHERE ROWID = %llu;",
+      sql ("UPDATE tasks SET description = '%s', modification_time = now ()"
+           " WHERE ROWID = %llu;",
            quoted_rc,
            task);
       g_free (quoted_rc);
@@ -23900,7 +23955,8 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
   else if (strcasecmp ("NAME", parameter) == 0)
     {
       gchar* quote = sql_nquote (value, strlen (value));
-      sql ("UPDATE tasks SET name = '%s' WHERE ROWID = %llu;",
+      sql ("UPDATE tasks SET name = '%s', modification_time = now ()"
+           " WHERE ROWID = %llu;",
            value,
            task);
       g_free (quote);
@@ -23908,7 +23964,8 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
   else if (strcasecmp ("COMMENT", parameter) == 0)
     {
       gchar* quote = sql_nquote (value, strlen (value));
-      sql ("UPDATE tasks SET comment = '%s' WHERE ROWID = %llu;",
+      sql ("UPDATE tasks SET comment = '%s', modification_time = now ()"
+           " WHERE ROWID = %llu;",
            quote,
            task);
       g_free (quote);
@@ -23975,22 +24032,13 @@ copy_task (const char* name, const char* comment, const char *task_id,
            " (uuid, owner, name, hidden, time, comment, config, target,"
            "  schedule, schedule_next_time, slave, config_location,"
            "  target_location, schedule_location, slave_location,"
-#if 0
-           "  target_location, schedule_location, slave_location,"
            "  creation_time, modification_time)"
-#else
-           "  target_location, schedule_location, slave_location)"
-#endif
            " SELECT make_uuid (),"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
            " %s%s%s, 0, time, '%s', config, target,"
            " schedule, schedule_next_time, slave, config_location,"
-#if 0
            " target_location, schedule_location, slave_location,"
            " now (), now ()"
-#else
-           " target_location, schedule_location, slave_location"
-#endif
            " FROM tasks WHERE uuid = '%s';",
            current_credentials.uuid,
            quoted_name ? "'" : "",
@@ -24006,22 +24054,14 @@ copy_task (const char* name, const char* comment, const char *task_id,
     sql ("INSERT into tasks"
          " (uuid, owner, name, hidden, time, comment, config, target,"
          "  schedule, schedule_next_time, slave, config_location,"
-#if 0
          "  target_location, schedule_location, slave_location,"
          "  creation_time, modification_time)"
-#else
-         "  target_location, schedule_location, slave_location)"
-#endif
          " SELECT make_uuid (),"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
          " %s%s%s, 0, time, comment, config, target,"
          " schedule, schedule_next_time, slave, config_location,"
-#if 0
          " target_location, schedule_location, slave_location,"
          " now (), now ()"
-#else
-         " target_location, schedule_location, slave_location"
-#endif
          " FROM tasks WHERE uuid = '%s';",
          current_credentials.uuid,
          quoted_name ? "'" : "",
@@ -24640,6 +24680,9 @@ manage_task_update_file (task_t task, const char *name,
            quoted_content);
     }
 
+  sql ("UPDATE tasks SET modification_time = now () WHERE ROWID = %llu;",
+       task);
+
   g_free (quoted_name);
   g_free (quoted_content);
 }
@@ -24664,6 +24707,8 @@ manage_task_remove_file (task_t task, const char *name)
       sql ("DELETE FROM task_files WHERE task = %llu AND name = '%s';",
            task,
            quoted_name);
+      sql ("UPDATE tasks SET modification_time = now () WHERE ROWID = %llu;",
+           task);
       g_free (quoted_name);
       return 0;
     }
@@ -33413,6 +33458,9 @@ set_task_preferences (task_t task, array_t *preferences)
                 sql ("DELETE FROM task_preferences WHERE name = '%s';",
                      quoted_name);
               g_free (quoted_name);
+              sql ("UPDATE tasks SET modification_time = now ()"
+                   " WHERE ROWID = %llu;",
+                   task);
             }
         }
     }

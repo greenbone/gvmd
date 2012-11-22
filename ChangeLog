@@ -1,3 +1,24 @@
+2012-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add creation and modification times to tasks.  Hence increase database
+	version to 64.  Add database migration from version 66 to 67.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 67.
+
+	* src/manage_sql.c (create_tables): Add time fields to task.
+	(migrate_66_to_67): New function.
+	(migrators): Add migrate_66_to_67.
+	(append_to_task_string, init_manage, task_config_in_trash, task_target)
+	(task_slave, set_task_description, task_start_time, set_task_start_time)
+	(set_task_schedule, set_task_parameter, set_task_parameter): Update task
+	modification time.
+	(make_task): Set task modification time.
+	(copy_task): Enable time code.
+	(manage_task_update_file, manage_task_remove_file)
+	(set_task_preferences): Update task preferences.
+
+	* doc/db.png: Update for version changes.
+
 2012-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add COPY to OMP CREATE_TASK, for cloning.
@@ -82,7 +103,7 @@
 	(migrators): Add migrate_64_to_65.
 	(init_manage, create_report): Use report_add_result to add result.
 	(report_add_result): Set report on result.
-
+3~
 2012-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (manage_run_wizard): Allocate empty string because it
