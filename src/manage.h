@@ -1839,8 +1839,8 @@ schedule_uuid (schedule_t);
 char *
 schedule_name (schedule_t);
 
-void
-init_schedule_iterator (iterator_t*, schedule_t, int, int, const char*);
+int
+init_schedule_iterator (iterator_t*, const get_data_t *);
 
 schedule_t
 schedule_iterator_schedule (iterator_t*);

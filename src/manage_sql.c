@@ -15310,7 +15310,14 @@ int
 task_schedule_next_time_tz (task_t task)
 {
   int next_time;
+  int ret;
   iterator_t schedules;
+  get_data_t get;
+  schedule_t schedule;
+
+  schedule = task_schedule (task);
+  get.id = schedule_uuid (schedule);
+  get.filter = NULL;
 
   next_time = sql_int (0, 0,
                        "SELECT schedule_next_time FROM tasks"
@@ -15319,8 +15326,11 @@ task_schedule_next_time_tz (task_t task)
   if (next_time == 0)
     return 0;
 
-  init_schedule_iterator (&schedules, task_schedule (task),
-                          task_schedule_in_trash (task), 0, NULL);
+  ret = init_schedule_iterator (&schedules, &get);
+
+  if (ret)
+    return next_time;
+
   if (next (&schedules))
     next_time += schedule_iterator_initial_offset (&schedules)
                   - time_offset (schedule_iterator_timezone (&schedules),
@@ -37576,77 +37586,29 @@ schedule_count (const get_data_t *get)
  * @brief Initialise a schedule iterator.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  schedule  Single schedule to iterate over, or 0 for all.
- * @param[in]  trash       Whether to iterate over trashcan targets.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find filter, failed to find filter (filt_id),
+ *         -1 error.
  */
-void
-init_schedule_iterator (iterator_t* iterator, schedule_t schedule, int trash,
-                        int ascending, const char* sort_field)
+int
+init_schedule_iterator (iterator_t* iterator, const get_data_t *get)
 {
-  if (schedule && trash)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment, first_time,"
-                   " period, period_months, duration, timezone, initial_offset,"
-                   " (SELECT count(*) > 0 FROM tasks"
-                   "  WHERE tasks.schedule = schedules_trash.ROWID"
-                   "  AND schedule_location = " G_STRINGIFY (LOCATION_TRASH) ")"
-                   " FROM schedules_trash"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   schedule,
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else if (schedule)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment, first_time,"
-                   " period, period_months, duration, timezone, initial_offset,"
-                   " (SELECT count(*) > 0 FROM tasks"
-                   "  WHERE tasks.schedule = schedules.ROWID"
-                   "  AND (hidden = 0 OR hidden = 1)"
-                   "  AND schedule_location = " G_STRINGIFY (LOCATION_TABLE) ")"
-                   " FROM schedules"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   schedule,
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else if (trash)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment, first_time,"
-                   " period, period_months, duration, timezone, initial_offset,"
-                   " (SELECT count(*) > 0 FROM tasks"
-                   "  WHERE tasks.schedule = schedules_trash.ROWID"
-                   "  AND schedule_location = " G_STRINGIFY (LOCATION_TRASH) ")"
-                   " FROM schedules_trash"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment, first_time,"
-                   " period, period_months, duration, timezone, initial_offset,"
-                   " (SELECT count(*) > 0 FROM tasks"
-                   "  WHERE tasks.schedule = schedules.ROWID"
-                   "  AND (hidden = 0 OR hidden = 1)"
-                   "  AND schedule_location = " G_STRINGIFY (LOCATION_TABLE) ")"
-                   " FROM schedules"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
+  static const char *filter_columns[] = SCHEDULE_ITERATOR_FILTER_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "schedule",
+                            get,
+                            /* Columns. */
+                            SCHEDULE_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            SCHEDULE_ITERATOR_TRASH_COLUMNS,
+                            filter_columns,
+                            "task",
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
 }
 
 /**
@@ -37705,7 +37667,8 @@ schedule_iterator_first_time (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 4);
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 
+                                     GET_ITERATOR_COLUMN_COUNT);
   return ret;
 }
 
@@ -37720,15 +37683,15 @@ time_t
 schedule_iterator_next_time (iterator_t* iterator)
 {
   time_t period = schedule_iterator_period (iterator);
+  time_t first = schedule_iterator_first_time (iterator);
   time_t now = time (NULL);
-  if (period > 0)
+  if (first >= now)
     {
-      time_t first = schedule_iterator_first_time (iterator);
-      return first + ((((now - first) / period) + 1) * period);
+      return first;
     }
-  else if (schedule_iterator_first_time (iterator) >= now)
+  else if (period > 0)
     {
-      return schedule_iterator_first_time (iterator);
+      return first + ((((now - first) / period) + 1) * period);
     }
   return 0;
 }
@@ -37745,7 +37708,8 @@ schedule_iterator_period (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 5);
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 
+                                     GET_ITERATOR_COLUMN_COUNT + 1);
   return ret;
 }
 
@@ -37761,7 +37725,8 @@ schedule_iterator_period_months (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 6);
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 
+                                     GET_ITERATOR_COLUMN_COUNT + 2);
   return ret;
 }
 
@@ -37777,7 +37742,8 @@ schedule_iterator_duration (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 7);
+  ret = (time_t) sqlite3_column_int (iterator->stmt,
+                                     GET_ITERATOR_COLUMN_COUNT + 3);
   return ret;
 }
 
@@ -37789,7 +37755,7 @@ schedule_iterator_duration (iterator_t* iterator)
  * @return Timezone, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (schedule_iterator_timezone, 8);
+DEF_ACCESS (schedule_iterator_timezone, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
  * @brief Get the initial offset from a schedule iterator.
@@ -37804,7 +37770,8 @@ schedule_iterator_initial_offset (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 9);
+  ret = (time_t) sqlite3_column_int (iterator->stmt,
+                                     GET_ITERATOR_COLUMN_COUNT + 5);
   return ret;
 }
 
@@ -38254,7 +38221,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   else
     first_time_string = g_strdup_printf ("%li", first_time);
 
-  if (period_months == -1)
+  if ((period_months == -1) || (period_months == 0))
     {
       if (period == -1)
         {

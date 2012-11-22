@@ -1343,6 +1343,7 @@ typedef struct
 {
   char *name;                    ///< Name for new schedule.
   char *comment;                 ///< Comment.
+  char *copy;                    ///< UUID of resource to copy.
   char *first_time_day_of_month; ///< Day of month schedule must first run.
   char *first_time_hour;         ///< Hour schedule must first run.
   char *first_time_minute;       ///< Minute schedule must first run.
@@ -2369,11 +2370,8 @@ get_results_data_reset (get_results_data_t *data)
  */
 typedef struct
 {
-  char *schedule_id;   ///< ID of single schedule to get.
-  char *sort_field;    ///< Field to sort results on.
-  int sort_order;      ///< Result sort order: 0 descending, else ascending.
-  int details;         ///< Boolean.  Whether to include full details.
-  int trash;           ///< Boolean.  Whether to return schedules from trashcan.
+  get_data_t get;      ///< Get args.
+  int tasks;           ///< Boolean.  Whether to include tasks that use this schedule.
 } get_schedules_data_t;
 
 /**
@@ -2384,8 +2382,7 @@ typedef struct
 static void
 get_schedules_data_reset (get_schedules_data_t *data)
 {
-  free (data->schedule_id);
-
+  get_data_reset (&data->get);
   memset (data, 0, sizeof (get_schedules_data_t));
 }
 
@@ -3999,6 +3996,7 @@ typedef enum
   CLIENT_CREATE_SCHEDULE,
   CLIENT_CREATE_SCHEDULE_NAME,
   CLIENT_CREATE_SCHEDULE_COMMENT,
+  CLIENT_CREATE_SCHEDULE_COPY,
   CLIENT_CREATE_SCHEDULE_FIRST_TIME,
   CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH,
   CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR,
@@ -5586,33 +5584,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_SCHEDULES", element_name) == 0)
           {
-            const gchar* attribute;
-
-            append_attribute (attribute_names, attribute_values,
-                              "schedule_id",
-                              &get_schedules_data->schedule_id);
-
+            const gchar *attribute;
+            get_data_parse_attributes (&get_schedules_data->get, "schedule",
+                                       attribute_names,
+                                       attribute_values);
             if (find_attribute (attribute_names, attribute_values,
-                                "details", &attribute))
-              get_schedules_data->details = strcmp (attribute, "0");
+                                "tasks", &attribute))
+              get_schedules_data->tasks = strcmp (attribute, "0");
             else
-              get_schedules_data->details = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "trash", &attribute))
-              get_schedules_data->trash = strcmp (attribute, "0");
-            else
-              get_schedules_data->trash = 0;
-
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_schedules_data->sort_field);
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_schedules_data->sort_order = strcmp (attribute, "descending");
-            else
-              get_schedules_data->sort_order = 1;
-
+              get_schedules_data->tasks = 0;
             set_client_state (CLIENT_GET_SCHEDULES);
           }
         else if (strcasecmp ("GET_SETTINGS", element_name) == 0)
@@ -5928,6 +5908,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_SCHEDULE:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_COMMENT);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_COPY);
         else if (strcasecmp ("DURATION", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_DURATION);
         else if (strcasecmp ("FIRST_TIME", element_name) == 0)
@@ -8347,186 +8329,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 #undef ADD_DETAIL
 
 /**
- * @brief Buffer XML for some schedules.
- *
- * @param[in]  buffer           Buffer.
- * @param[in]  schedules        Schedules iterator.
- * @param[in]  include_details  Whether to include details.
- */
-static void
-buffer_schedules_xml (GString *buffer, iterator_t *schedules,
-                      int include_details)
-{
-  while (next (schedules))
-    {
-      if (include_details == 0)
-        {
-          buffer_xml_append_printf (buffer,
-                                    "<schedule id=\"%s\">"
-                                    "<name>%s</name>"
-                                    "</schedule>",
-                                    schedule_iterator_uuid (schedules),
-                                    schedule_iterator_name (schedules));
-        }
-      else
-        {
-          iterator_t tasks;
-          time_t first_time, next_time;
-          gchar *iso;
-          const char *timezone;
-          char *simple_period_unit, *simple_duration_unit;
-          int period, period_minutes, period_hours, period_days, period_weeks;
-          int period_months, duration, duration_minutes, duration_hours;
-          int duration_days, duration_weeks, simple_period, simple_duration;
-
-          timezone = schedule_iterator_timezone (schedules);
-          first_time = schedule_iterator_first_time (schedules);
-          next_time = schedule_iterator_next_time (schedules);
-
-          first_time += schedule_iterator_initial_offset (schedules)
-                         - time_offset (timezone, first_time);
-          if (next_time)
-            next_time += schedule_iterator_initial_offset (schedules)
-                           - time_offset (timezone, next_time);
-
-          /* Duplicate static string because there's an iso_time_tz below. */
-          iso = g_strdup (iso_time_tz (&first_time, timezone));
-
-          period = schedule_iterator_period (schedules);
-          if (period)
-            {
-              period_minutes = period / 60;
-              period_hours = period_minutes / 60;
-              period_days = period_hours / 24;
-              period_weeks = period_days / 7;
-            }
-          simple_period_unit = "";
-          if (period == 0)
-            simple_period = 0;
-          else if (period_weeks)
-            {
-              if (period % (60 * 60 * 24 * 7))
-                simple_period = 0;
-              else
-                simple_period = period_weeks;
-              simple_period_unit = "week";
-            }
-          else if (period_days)
-            {
-              if (period % (60 * 60 * 24))
-                simple_period = 0;
-              else
-                simple_period = period_days;
-              simple_period_unit = "day";
-            }
-          else if (period_hours)
-            {
-              if (period % (60 * 60))
-                simple_period = 0;
-              else
-                simple_period = period_hours;
-              simple_period_unit = "hour";
-            }
-          /* The granularity of the "simple" GSA interface stops at hours. */
-          else
-            simple_period = 0;
-
-          period_months = schedule_iterator_period_months (schedules);
-          if (period_months && (period_months < 25))
-            {
-              simple_period = period_months;
-              simple_period_unit = "month";
-            }
-
-          duration = schedule_iterator_duration (schedules);
-          if (duration)
-            {
-              duration_minutes = duration / 60;
-              duration_hours = duration_minutes / 60;
-              duration_days = duration_hours / 24;
-              duration_weeks = duration_days / 7;
-            }
-          simple_duration_unit = "";
-          if (duration == 0)
-            simple_duration = 0;
-          else if (duration_weeks)
-            {
-              if (duration % (60 * 60 * 24 * 7))
-                simple_duration = 0;
-              else
-                simple_duration = duration_weeks;
-              simple_duration_unit = "week";
-            }
-          else if (duration_days)
-            {
-              if (duration % (60 * 60 * 24))
-                simple_duration = 0;
-              else
-                simple_duration = duration_days;
-              simple_duration_unit = "day";
-            }
-          else if (duration_hours)
-            {
-              if (duration % (60 * 60))
-                simple_duration = 0;
-              else
-                simple_duration = duration_hours;
-              simple_duration_unit = "hour";
-            }
-          /* The granularity of the "simple" GSA interface stops at hours. */
-          else
-            simple_duration = 0;
-
-          buffer_xml_append_printf
-           (buffer,
-            "<schedule id=\"%s\">"
-            "<name>%s</name>"
-            "<comment>%s</comment>"
-            "<first_time>%s</first_time>"
-            "<next_time>%s</next_time>"
-            "<period>%i</period>"
-            "<period_months>%i</period_months>"
-            "<simple_period>%i<unit>%s</unit></simple_period>"
-            "<duration>%i</duration>"
-            "<simple_duration>%i<unit>%s</unit></simple_duration>"
-            "<timezone>%s</timezone>"
-            "<in_use>%i</in_use>",
-            schedule_iterator_uuid (schedules),
-            schedule_iterator_name (schedules),
-            schedule_iterator_comment (schedules),
-            iso,
-            (next_time == 0 ? "over" : iso_time_tz (&next_time, timezone)),
-            schedule_iterator_period (schedules),
-            schedule_iterator_period_months (schedules),
-            simple_period,
-            simple_period_unit,
-            schedule_iterator_duration (schedules),
-            simple_duration,
-            simple_duration_unit,
-            schedule_iterator_timezone (schedules),
-            schedule_iterator_in_use (schedules));
-
-          g_free (iso);
-
-          buffer_xml_append_printf (buffer, "<tasks>");
-          init_schedule_task_iterator (&tasks,
-                                       schedule_iterator_schedule (schedules));
-          while (next (&tasks))
-            buffer_xml_append_printf (buffer,
-                                      "<task id=\"%s\">"
-                                      "<name>%s</name>"
-                                      "</task>",
-                                      schedule_task_iterator_uuid (&tasks),
-                                      schedule_task_iterator_name (&tasks));
-          cleanup_iterator (&tasks);
-          buffer_xml_append_printf (buffer,
-                                    "</tasks>"
-                                    "</schedule>");
-        }
-    }
-}
-
-/**
  * @brief Convert ranges to manage ranges.
  *
  * @param[in]  ranges  Ranges buffered in CREATE_PORT_LIST.
@@ -10575,51 +10377,227 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_SCHEDULES:
         {
-          schedule_t schedule = 0;
-
           assert (strcasecmp ("GET_SCHEDULES", element_name) == 0);
 
-          if (get_schedules_data->schedule_id
-              && find_schedule (get_schedules_data->schedule_id, &schedule))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_schedules"));
-          else if (get_schedules_data->schedule_id && schedule == 0)
-            {
-              if (send_find_error_to_client ("get_schedules",
-                                             "schedule",
-                                             get_schedules_data->schedule_id,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
+          if (get_schedules_data->tasks && get_schedules_data->get.trash)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_schedules",
+                                "GET_SCHEDULES tasks given with trash"));
           else
             {
               iterator_t schedules;
-              GString *buffer;
+              int count, filtered, ret, first;
+              get_data_t * get;
 
-              SENDF_TO_CLIENT_OR_FAIL ("<get_schedules_response"
-                                       " status=\"" STATUS_OK "\""
-                                       " status_text=\"" STATUS_OK_TEXT "\">");
+              ret = init_schedule_iterator (&schedules, &get_schedules_data->get);
+              if (ret)
+                {
+                  switch (ret)
+                    {
+                      case 1:
+                        if (send_find_error_to_client ("get_schedules",
+                                                       "schedule",
+                                                       get_schedules_data->get.id,
+                                                       write_to_client,
+                                                       write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case 2:
+                        if (send_find_error_to_client
+                             ("get_schedules",
+                              "filter",
+                              get_schedules_data->get.filt_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case -1:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("get_schedules"));
+                        break;
+                    }
+                  get_schedules_data_reset (get_schedules_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
 
-              buffer = g_string_new ("");
+              count = 0;
+              get = &get_schedules_data->get;
+              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+              SEND_GET_START ("schedule", &get_schedules_data->get);
+              while (1)
+                {
+                  ret = get_next (&schedules, get, &first, &count,
+                                  init_schedule_iterator);
+                  if (ret == 1)
+                    break;
+                  if (ret == -1)
+                    {
+                      internal_error_send_to_client (error);
+                      return;
+                    }
 
-              init_schedule_iterator (&schedules,
-                                      schedule,
-                                      get_schedules_data->trash,
-                                      get_schedules_data->sort_order,
-                                      get_schedules_data->sort_field);
-              buffer_schedules_xml (buffer, &schedules, get_schedules_data->details
-                                    /* get_schedules_data->tasks */);
+                  SEND_GET_COMMON (schedule, &get_schedules_data->get, &schedules);
+
+                  time_t first_time, next_time;
+                  gchar *iso;
+                  const char *timezone;
+                  char *simple_period_unit, *simple_duration_unit;
+                  int period, period_minutes, period_hours, period_days, period_weeks;
+                  int period_months, duration, duration_minutes, duration_hours;
+                  int duration_days, duration_weeks, simple_period, simple_duration;
+
+                  timezone = schedule_iterator_timezone (&schedules);
+                  first_time = schedule_iterator_first_time (&schedules);
+                  next_time = schedule_iterator_next_time (&schedules);
+
+                  first_time += schedule_iterator_initial_offset (&schedules)
+                                 - time_offset (timezone, first_time);
+                  if (next_time)
+                    next_time += schedule_iterator_initial_offset (&schedules)
+                                   - time_offset (timezone, next_time);
+
+                  /* Duplicate static string because there's an iso_time_tz below. */
+                  iso = g_strdup (iso_time_tz (&first_time, timezone));
+
+                  period = schedule_iterator_period (&schedules);
+                  if (period)
+                    {
+                      period_minutes = period / 60;
+                      period_hours = period_minutes / 60;
+                      period_days = period_hours / 24;
+                      period_weeks = period_days / 7;
+                    }
+                  simple_period_unit = "";
+                  if (period == 0)
+                    simple_period = 0;
+                  else if (period_weeks)
+                    {
+                      if (period % (60 * 60 * 24 * 7))
+                        simple_period = 0;
+                      else
+                        simple_period = period_weeks;
+                      simple_period_unit = "week";
+                    }
+                  else if (period_days)
+                    {
+                      if (period % (60 * 60 * 24))
+                        simple_period = 0;
+                      else
+                        simple_period = period_days;
+                      simple_period_unit = "day";
+                    }
+                  else if (period_hours)
+                    {
+                      if (period % (60 * 60))
+                        simple_period = 0;
+                      else
+                        simple_period = period_hours;
+                      simple_period_unit = "hour";
+                    }
+                  /* The granularity of the "simple" GSA interface stops at hours. */
+                  else
+                    simple_period = 0;
+
+                  period_months = schedule_iterator_period_months (&schedules);
+                  if (period_months && (period_months < 25))
+                    {
+                      simple_period = period_months;
+                      simple_period_unit = "month";
+                    }
+
+                  duration = schedule_iterator_duration (&schedules);
+                  if (duration)
+                    {
+                      duration_minutes = duration / 60;
+                      duration_hours = duration_minutes / 60;
+                      duration_days = duration_hours / 24;
+                      duration_weeks = duration_days / 7;
+                    }
+                  simple_duration_unit = "";
+                  if (duration == 0)
+                    simple_duration = 0;
+                  else if (duration_weeks)
+                    {
+                      if (duration % (60 * 60 * 24 * 7))
+                        simple_duration = 0;
+                      else
+                        simple_duration = duration_weeks;
+                      simple_duration_unit = "week";
+                    }
+                  else if (duration_days)
+                    {
+                      if (duration % (60 * 60 * 24))
+                        simple_duration = 0;
+                      else
+                        simple_duration = duration_days;
+                      simple_duration_unit = "day";
+                    }
+                  else if (duration_hours)
+                    {
+                      if (duration % (60 * 60))
+                        simple_duration = 0;
+                      else
+                        simple_duration = duration_hours;
+                      simple_duration_unit = "hour";
+                    }
+                  /* The granularity of the "simple" GSA interface stops at hours. */
+                  else
+                    simple_duration = 0;
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<first_time>%s</first_time>"
+                    "<next_time>%s</next_time>"
+                    "<period>%ld</period>"
+                    "<period_months>%ld</period_months>"
+                    "<simple_period>%i<unit>%s</unit></simple_period>"
+                    "<duration>%ld</duration>"
+                    "<simple_duration>%i<unit>%s</unit></simple_duration>"
+                    "<timezone>%s</timezone>",
+                    iso,
+                    (next_time == 0 ? "over" : iso_time_tz (&next_time, timezone)),
+                    schedule_iterator_period (&schedules),
+                    schedule_iterator_period_months (&schedules),
+                    simple_period,
+                    simple_period_unit,
+                    schedule_iterator_duration (&schedules),
+                    simple_duration,
+                    simple_duration_unit,
+                    schedule_iterator_timezone (&schedules));
+
+                  g_free (iso);
+                  if (get_schedules_data->tasks)
+                    {
+                      iterator_t tasks;
+
+                      SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+                      init_schedule_task_iterator (&tasks,
+                                                 schedule_iterator_schedule
+                                                  (&schedules));
+                      while (next (&tasks))
+                        SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                                 "<name>%s</name>"
+                                                 "</task>",
+                                                 schedule_task_iterator_uuid (&tasks),
+                                                 schedule_task_iterator_name (&tasks));
+                      cleanup_iterator (&tasks);
+                      SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+                    }
+                  SEND_TO_CLIENT_OR_FAIL ("</schedule>");
+                  count++;
+                }
               cleanup_iterator (&schedules);
-
-              SEND_TO_CLIENT_OR_FAIL (buffer->str);
-              g_string_free (buffer, TRUE);
-
-              SEND_TO_CLIENT_OR_FAIL ("</get_schedules_response>");
+              filtered = get_schedules_data->get.id
+                          ? 1
+                          : schedule_count (&get_schedules_data->get);
+              SEND_GET_END ("schedule", &get_schedules_data->get, count, filtered);
             }
-
           get_schedules_data_reset (get_schedules_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
@@ -14084,6 +14062,50 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("create_schedule",
                                   "CREATE is forbidden for observer users"));
             }
+          else if (create_schedule_data->copy)
+            switch (copy_schedule (create_schedule_data->name,
+                                   create_schedule_data->comment,
+                                   create_schedule_data->copy,
+                                   &new_schedule))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = schedule_uuid (new_schedule);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_schedule"),
+                                             uuid);
+                    g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                           "Schedule %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_schedule",
+                                      "Schedule exists already"));
+                  g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                         "Schedule could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_schedule",
+                                                 "schedule",
+                                                 create_schedule_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                         "Schedule could not be created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_schedule"));
+                  g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                         "Schedule could not be created");
+                  break;
+              }
           else if (create_schedule_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
@@ -14169,6 +14191,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_SCHEDULE, COMMENT);
+      CLOSE (CLIENT_CREATE_SCHEDULE, COPY);
       CLOSE (CLIENT_CREATE_SCHEDULE, DURATION);
       CLOSE (CLIENT_CREATE_SCHEDULE, FIRST_TIME);
       CLOSE (CLIENT_CREATE_SCHEDULE, NAME);
@@ -19589,6 +19612,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_SCHEDULE_COMMENT,
               &create_schedule_data->comment);
+
+      APPEND (CLIENT_CREATE_SCHEDULE_COPY,
+              &create_schedule_data->copy);
 
       APPEND (CLIENT_CREATE_SCHEDULE_DURATION,
               &create_schedule_data->duration);

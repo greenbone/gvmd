@@ -1,3 +1,34 @@
+2012-11-22  Hani Benhabiles <kroosec@gmail.com>
+
+	Switching Schedules to the New Object Management.
+
+	* src/manage.h, src/manage_sql.c (init_schedule_iterator): Code
+	refactored. Now takes two parameters (iterator and get) instead of five.
+	Also returns an integer value to reflect the success of the operation.
+	Updated to use init_get_iterator.
+	* src/manage_sql.c (task_schedule_next_by_tz): Updated to use the new
+	init_schedule_iterator.
+	(schedule_iterator_first_time, schedule_iterator_next_time)
+	(schedule_iterator_period, schedule_iterator_period_months)
+	(schedule_iterator_duration, schedule_iterator_timezone)
+	(schedule_iterator_initial_offset): Updated to use
+	GET_ITERATOR_COLUMN_COUNT.
+	(schedule_iterator_next_time): Removed repetitive
+	schedule_iterator_first_time calls.
+	(modify_schedule): Added check for when period_months equals zero.
+
+	* src/omp.c (create_schedule_data_t): Added copy element for cloning.
+	(get_schedules_data_t): Now has two elements: get_data_t get and int
+	tasks.
+	(get_schedules_data_reset): Updated for the get_schedules_data_t
+	change.
+	(client_state_t): Added CLIENT_CREATE_SCHEDULE_COPY.
+	(omp_xml_handle_start_element): Updated GET_SCHEDULES and
+	CLIENT_CREATE_SCHEDULE.
+	(buffer_schedules_xml): Function removed.
+	(omp_xml_handle_end_element): Updated CLIENT_GET_SCHEDULES to reflect
+	schedules management changes and new schedule cloning feature.
+
 2012-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Switch much of GET_TASKS to the new GET style.  As a requirement move
