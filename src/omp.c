@@ -10433,6 +10433,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_GET_START ("schedule", &get_schedules_data->get);
               while (1)
                 {
+                  time_t first_time, next_time;
+                  gchar *iso;
+                  const char *timezone;
+                  char *simple_period_unit, *simple_duration_unit;
+                  int period, period_minutes, period_hours, period_days; 
+                  int period_weeks, period_months, duration, duration_minutes;
+                  int duration_hours, duration_days, duration_weeks;
+                  int simple_period, simple_duration;
+
                   ret = get_next (&schedules, get, &first, &count,
                                   init_schedule_iterator);
                   if (ret == 1)
@@ -10444,14 +10453,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
 
                   SEND_GET_COMMON (schedule, &get_schedules_data->get, &schedules);
-
-                  time_t first_time, next_time;
-                  gchar *iso;
-                  const char *timezone;
-                  char *simple_period_unit, *simple_duration_unit;
-                  int period, period_minutes, period_hours, period_days, period_weeks;
-                  int period_months, duration, duration_minutes, duration_hours;
-                  int duration_days, duration_weeks, simple_period, simple_duration;
 
                   timezone = schedule_iterator_timezone (&schedules);
                   first_time = schedule_iterator_first_time (&schedules);

@@ -1,3 +1,10 @@
+2012-11-23  Hani Benhabiles <kroosec@gmail.com>
+
+	* ChangeLog: Detailed previous commit.
+	
+	* src/omp.c(omp_xml_handle_end_element): Moved variables declarations to
+	be consistent with the coding style.
+
 2012-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_get_iterator): Make the current_credentials
@@ -50,7 +57,9 @@
 	(schedule_iterator_initial_offset): Updated to use
 	GET_ITERATOR_COLUMN_COUNT.
 	(schedule_iterator_next_time): Removed repetitive
-	schedule_iterator_first_time calls.
+	schedule_iterator_first_time calls. The check for period's value is now
+	applied after the comparaison between the first and current time's
+	values.
 	(modify_schedule): Added check for when period_months equals zero.
 
 	* src/omp.c (create_schedule_data_t): Added copy element for cloning.
