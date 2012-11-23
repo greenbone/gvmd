@@ -2716,11 +2716,14 @@ type_pretty_name (const char* type)
  *
  * @param[in]  type  Database or pretty name.
  *
- * @return 1 yes, 0 no.
+ * @return Database name of type if possible, else NULL.
  */
 const char *
 type_db_name (const char* type)
 {
+  if (type == NULL)
+    return NULL;
+
   if (valid_type (type))
     return type;
 

@@ -1,5 +1,10 @@
 2012-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (type_db_name): Add NULL check, else filter ops
+	segfault when type is --.
+
+2012-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (CVE_INFO_ITERATOR_FILTER_COLUMNS)
 	(CVE_INFO_ITERATOR_COLUMNS, CPE_INFO_ITERATOR_FILTER_COLUMNS)
 	(CPE_INFO_ITERATOR_COLUMNS): Move onto SCAP page.
