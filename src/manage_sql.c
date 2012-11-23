@@ -3165,7 +3165,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
   gchar *clause, *order, *used_by_clause, *filter, *owned_and_used_by_clause;
   resource_t resource = 0;
 
-  assert (current_credentials.uuid);
+  assert ((used_by || owned) ? current_credentials.uuid : "1");
   assert (get);
 
   if (columns == NULL)
@@ -11692,55 +11692,25 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
 
-  if (current_credentials.uuid)
-    {
-      return init_get_iterator (iterator,
-                                "task",
-                                get,
-                                /* Columns. */
-                                TASK_ITERATOR_COLUMNS,
-                                /* Columns for trashcan. */
-                                TASK_ITERATOR_TRASH_COLUMNS,
-                                filter_columns,
-                                NULL,
-                                0,
-                                NULL,
-                                (get->id
-                                 && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
-                                     == 0))
-                                 ? " AND hidden = 1"
-                                 : (get->trash
-                                     ? " AND hidden = 2"
-                                     : " AND hidden = 0"),
-                                TRUE);
-    }
-  else
-    {
-      if (get->id)
-        {
-          gchar *quoted_task_id;
-
-          quoted_task_id = sql_quote (get->id);
-          init_iterator (iterator,
-                         "SELECT ROWID, uuid, run_status FROM tasks"
-                         " WHERE uuid = '%s'"
-                         "%s"
-                         " ORDER BY %s %s;",
-                         quoted_task_id,
-                         get->trash ? " AND hidden = 2" : " AND hidden < 2",
-                         "ROWID",
-                         "ASC");
-        }
-      else
-        init_iterator (iterator,
-                       "SELECT ROWID, uuid, run_status FROM tasks"
-                       "%s"
-                       " ORDER BY %s %s;",
-                       get->trash ? " WHERE hidden = 2" : " WHERE hidden < 2",
-                       "ROWID",
-                       "ASC");
-      return 0;
-    }
+  return init_get_iterator (iterator,
+                            "task",
+                            get,
+                            /* Columns. */
+                            TASK_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            TASK_ITERATOR_TRASH_COLUMNS,
+                            filter_columns,
+                            NULL,
+                            0,
+                            NULL,
+                            (get->id
+                             && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
+                                 == 0))
+                             ? " AND hidden = 1"
+                             : (get->trash
+                                 ? " AND hidden = 2"
+                                 : " AND hidden = 0"),
+                            current_credentials.uuid ? TRUE : FALSE);
 }
 
 /**

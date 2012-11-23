@@ -1,5 +1,12 @@
 2012-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_get_iterator): Make the current_credentials
+	assertion more accurate.
+	(init_task_iterator): Use init_get_iterator in both cases, so that the
+	same columns are used.
+
+2012-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_iterator_task, task_iterator_uuid): Remove,
 	there are GET iterator accessors to do this now.
 	(task_iterator_run_status): Adjust column for GET change.
