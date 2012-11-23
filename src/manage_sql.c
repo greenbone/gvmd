@@ -11705,9 +11705,13 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
                                 NULL,
                                 0,
                                 NULL,
-                                get->trash
-                                 ? " AND hidden = 2"
-                                 : " AND hidden < 2",
+                                (get->id
+                                 && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
+                                     == 0))
+                                 ? " AND hidden = 1"
+                                 : (get->trash
+                                     ? " AND hidden = 2"
+                                     : " AND hidden = 0"),
                                 TRUE);
     }
   else

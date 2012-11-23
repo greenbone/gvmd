@@ -1,3 +1,8 @@
+2012-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_task_iterator): Ensure that hidden tasks are
+	hidden but that it is possible to select the Example Task.
+
 2012-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Get tasks trash working with new style changes.
