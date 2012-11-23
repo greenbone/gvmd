@@ -28143,41 +28143,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
    "smb_credential", NULL }
 
 /**
- * @brief Filter columns for CVE iterator.
- */
-#define CVE_INFO_ITERATOR_FILTER_COLUMNS                         \
- { "uuid", "name", "comment", "published", "modified", "vector", \
-   "complexity", "authentication", "confidentiality_impact",     \
-   "integrity_impact", "availability_impact", "products",        \
-   "cvss", "description", NULL }
-
-/**
- * @brief CVE iterator columns.
- */
-#define CVE_INFO_ITERATOR_COLUMNS                               \
-   "ROWID, uuid, name, comment, iso_time (creation_time),"      \
-   " iso_time (modification_time), creation_time AS published," \
-   " modification_time AS modified,"                            \
-   " vector, complexity,"                                       \
-   " authentication, confidentiality_impact,"                   \
-   " integrity_impact, availability_impact, products,"          \
-   " cvss, description"
-
-/**
- * @brief Filter columns for CVE iterator.
- */
-#define CPE_INFO_ITERATOR_FILTER_COLUMNS                    \
- { GET_ITERATOR_FILTER_COLUMNS, "title", "status",          \
-   "deprecated_by_id", "max_cvss", "cves",  NULL }
-
-/**
- * @brief CPE iterator columns.
- */
-#define CPE_INFO_ITERATOR_COLUMNS                           \
-  GET_ITERATOR_COLUMNS ", title, status, deprecated_by_id," \
-  "max_cvss, cve_refs AS cves"
-
-/**
  * @brief Target iterator columns.
  */
 #define TARGET_ITERATOR_COLUMNS                             \
@@ -44190,6 +44155,41 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 
 
 /* SCAP. */
+
+/**
+ * @brief Filter columns for CVE iterator.
+ */
+#define CVE_INFO_ITERATOR_FILTER_COLUMNS                         \
+ { "uuid", "name", "comment", "published", "modified", "vector", \
+   "complexity", "authentication", "confidentiality_impact",     \
+   "integrity_impact", "availability_impact", "products",        \
+   "cvss", "description", NULL }
+
+/**
+ * @brief CVE iterator columns.
+ */
+#define CVE_INFO_ITERATOR_COLUMNS                               \
+   "ROWID, uuid, name, comment, iso_time (creation_time),"      \
+   " iso_time (modification_time), creation_time AS published," \
+   " modification_time AS modified,"                            \
+   " vector, complexity,"                                       \
+   " authentication, confidentiality_impact,"                   \
+   " integrity_impact, availability_impact, products,"          \
+   " cvss, description"
+
+/**
+ * @brief Filter columns for CVE iterator.
+ */
+#define CPE_INFO_ITERATOR_FILTER_COLUMNS                    \
+ { GET_ITERATOR_FILTER_COLUMNS, "title", "status",          \
+   "deprecated_by_id", "max_cvss", "cves",  NULL }
+
+/**
+ * @brief CPE iterator columns.
+ */
+#define CPE_INFO_ITERATOR_COLUMNS                           \
+  GET_ITERATOR_COLUMNS ", title, status, deprecated_by_id," \
+  "max_cvss, cve_refs AS cves"
 
 /**
  * @brief Check whether SCAP is available.

@@ -1,8 +1,14 @@
+2012-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (CVE_INFO_ITERATOR_FILTER_COLUMNS)
+	(CVE_INFO_ITERATOR_COLUMNS, CPE_INFO_ITERATOR_FILTER_COLUMNS)
+	(CPE_INFO_ITERATOR_COLUMNS): Move onto SCAP page.
+
 2012-11-23  Hani Benhabiles <kroosec@gmail.com>
 
 	* ChangeLog: Detailed previous commit.
-	
-	* src/omp.c(omp_xml_handle_end_element): Moved variables declarations to
+
+	* src/omp.c (omp_xml_handle_end_element): Moved variables declarations to
 	be consistent with the coding style.
 
 2012-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
