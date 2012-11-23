@@ -18128,7 +18128,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     report_t running_report;
                     schedule_t schedule;
                     time_t next_time;
-                    task_t task = task_iterator_task (&tasks);
+                    task_t task = get_iterator_resource (&tasks);
                     iterator_t alerts;
 
                     target = task_target (task);
@@ -18550,7 +18550,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     /** @todo This block is very similar to the one above. */
 
-                    task_t index = task_iterator_task (&tasks);
+                    task_t index = get_iterator_resource (&tasks);
                     gchar *line, *progress_xml;
                     char *observers = task_observers (index);
                     char *owner = task_owner_name (index);

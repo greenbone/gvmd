@@ -1,5 +1,16 @@
 2012-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_iterator_task, task_iterator_uuid): Remove,
+	there are GET iterator accessors to do this now.
+	(task_iterator_run_status): Adjust column for GET change.
+	(init_manage, delete_trash_tasks): Use generic accessors for task
+	iterator.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS use
+	generic accessors for task iterator.
+
+2012-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_task_iterator): Ensure that hidden tasks are
 	hidden but that it is possible to select the Example Task.
 

@@ -11744,36 +11744,6 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
 }
 
 /**
- * @brief Get the task from a task iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The task.
- */
-task_t
-task_iterator_task (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (task_t) sqlite3_column_int64 (iterator->stmt, 0);
-}
-
-/**
- * @brief Get the UUID from a task iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Task UUID.
- */
-const char *
-task_iterator_uuid (iterator_t *iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
-  return ret;
-}
-
-/**
  * @brief Get the run status from a task iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -11785,7 +11755,8 @@ task_iterator_run_status (iterator_t* iterator)
 {
   task_status_t ret;
   if (iterator->done) return TASK_STATUS_INTERNAL_ERROR;
-  ret = (unsigned int) sqlite3_column_int (iterator->stmt, 2);
+  ret = (unsigned int) sqlite3_column_int (iterator->stmt,
+                                           GET_ITERATOR_COLUMN_COUNT);
   return ret;
 }
 
@@ -13863,7 +13834,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
               case TASK_STATUS_STOP_REQUESTED:
               case TASK_STATUS_STOP_WAITING:
                 {
-                  task_t index = task_iterator_task (&tasks);
+                  task_t index = get_iterator_resource (&tasks);
                   /* Set the current user, for event checks. */
                   current_credentials.uuid = task_owner_uuid (index);
                   set_task_run_status (index, TASK_STATUS_STOPPED);
@@ -26221,7 +26192,7 @@ delete_trash_tasks ()
     {
       task_t task;
 
-      task = task_iterator_task (&tasks);
+      task = get_iterator_resource (&tasks);
 
       if (delete_reports (task))
         {
