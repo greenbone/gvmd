@@ -1,3 +1,9 @@
+2012-11-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (task_schedule_next_time_tz): Clear the get structure,
+	to ensure that all fields are initialised, especially filt_id, which is
+	used in init_get_iterator via init_schedule_iterator.
+
 2012-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (type_db_name): Add NULL check, else filter ops

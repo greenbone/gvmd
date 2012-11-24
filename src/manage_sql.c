@@ -15260,8 +15260,8 @@ task_schedule_next_time_tz (task_t task)
   schedule_t schedule;
 
   schedule = task_schedule (task);
+  memset (&get, '\0', sizeof (get));
   get.id = schedule_uuid (schedule);
-  get.filter = NULL;
 
   next_time = sql_int (0, 0,
                        "SELECT schedule_next_time FROM tasks"
