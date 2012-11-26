@@ -26608,32 +26608,7 @@ task_file_iterator_length (iterator_t* iterator)
 gboolean
 find_target (const char* uuid, target_t* target)
 {
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("target", quoted_uuid) == 0)
-    {
-      g_free (quoted_uuid);
-      *target = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (target, 0, 0,
-                     "SELECT ROWID FROM targets WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *target = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
+  return find_resource ("target", uuid, target);
 }
 
 /**
@@ -37034,32 +37009,7 @@ DEF_ACCESS (override_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 10);
 gboolean
 find_schedule (const char* uuid, schedule_t* schedule)
 {
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("schedule", quoted_uuid) == 0)
-    {
-      g_free (quoted_uuid);
-      *schedule = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (schedule, 0, 0,
-                     "SELECT ROWID FROM schedules WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *schedule = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
+  return find_resource ("schedule", uuid, schedule);
 }
 
 /**
@@ -40066,32 +40016,7 @@ DEF_ACCESS (param_option_iterator_value, 1);
 gboolean
 find_slave (const char* uuid, slave_t* slave)
 {
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("slave", quoted_uuid) == 0)
-    {
-      g_free (quoted_uuid);
-      *slave = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (slave, 0, 0,
-                     "SELECT ROWID FROM slaves WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *slave = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
+  return find_resource ("slave", uuid, slave);
 }
 
 /**

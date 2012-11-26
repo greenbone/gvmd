@@ -1,5 +1,10 @@
 2012-11-24  Hani Benhabiles <kroosec@gmail.com>
 
+	* src/manage_sql.c (find_target, find_schedule, find_slave): Code
+	refactored to use find_resource function.
+
+2012-11-24  Hani Benhabiles <kroosec@gmail.com>
+
 	* src/manage_sql.c (copy_slave): New function.
 	(copy_schedule): Fixed documentation.
 
