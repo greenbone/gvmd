@@ -1,3 +1,8 @@
+2012-11-24  Hani Benhabiles <kroosec@gmail.com>
+
+	* src/manage_sql.c (copy_slave): New function.
+	(copy_schedule): Fixed documentation.
+
 2012-11-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_schedule_next_time_tz): Clear the get structure,

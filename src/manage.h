@@ -2114,6 +2114,9 @@ create_slave (const char*, const char*, const char*, const char*,
               const char*, const char*, slave_t*);
 
 int
+copy_slave (const char*, const char*, const char *, slave_t *);
+
+int
 delete_slave (const char*, int);
 
 void

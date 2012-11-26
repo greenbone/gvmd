@@ -37154,7 +37154,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
  * @param[in]  name          Name of new schedule. NULL to copy from existing.
  * @param[in]  comment       Comment on new schedule. NULL to copy from
  *                           existing.
- * @param[in]  schedule_id   UUID of existing filter.
+ * @param[in]  schedule_id   UUID of existing schedule.
  * @param[out] new_schedule  New schedule.
  *
  * @return 0 success, 1 schedule exists already, 2 failed to find existing
@@ -40179,6 +40179,27 @@ create_slave (const char* name, const char* comment, const char* host,
   sql ("COMMIT;");
 
   return 0;
+}
+
+/**
+ * @brief Create a slave from an existing slave.
+ *
+ * @param[in]  name          Name of new slave. NULL to copy from existing.
+ * @param[in]  comment       Comment on new slave. NULL to copy from
+ *                           existing.
+ * @param[in]  slave_id      UUID of existing slave.
+ * @param[out] new_slave     New slave.
+ *
+ * @return 0 success, 1 slave exists already, 2 failed to find existing slave,
+ *         -1 error.
+ */
+int
+copy_slave (const char* name, const char* comment, const char *slave_id,
+             slave_t* new_slave)
+{
+  return copy_resource ("slave", name, comment, slave_id,
+                        "host, port, login, password",
+                        new_slave);
 }
 
 /**
