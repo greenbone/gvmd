@@ -1,9 +1,9 @@
-2012-11-24  Hani Benhabiles <kroosec@gmail.com>
+2012-11-27  Hani Benhabiles <kroosec@gmail.com>
 
 	* src/manage_sql.c (create_slave, delete_slave): creation_time and
 	modification_time are modified appropriately.
 
-2012-11-24  Hani Benhabiles <kroosec@gmail.com>
+2012-11-27  Hani Benhabiles <kroosec@gmail.com>
 
 	Migrate Database to version 68 to add modification_time and
 	creation_time to slaves.
@@ -14,12 +14,12 @@
 	(migrators): Add migrate_67_to_68.
 	(manage_restore): Add slave creation_time and modification_time columns.
 
-2012-11-24  Hani Benhabiles <kroosec@gmail.com>
+2012-11-26  Hani Benhabiles <kroosec@gmail.com>
 
 	* src/manage_sql.c (find_target, find_schedule, find_slave): Code
 	refactored to use find_resource function.
 
-2012-11-24  Hani Benhabiles <kroosec@gmail.com>
+2012-11-26  Hani Benhabiles <kroosec@gmail.com>
 
 	* src/manage_sql.c (copy_slave): New function.
 	(copy_schedule): Fixed documentation.
