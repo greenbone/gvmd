@@ -1,5 +1,17 @@
 2012-11-27  Hani Benhabiles <kroosec@gmail.com>
 
+	Adding support for editing a slave.
+	
+	* src/omp.c (omp_command): Added MODIFY_SLAVE command.
+	(modify_slave_data_t): New data structure.
+	(modify_slave_data_reset): New function.
+	(command_data_t): Added modify_slave.
+	(client_state_t): Added states for modify slave.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Added slave modification handling.
+
+2012-11-27  Hani Benhabiles <kroosec@gmail.com>
+
 	* src/manage.h, src/manage_sql.c (modify_slave): New function.
 
 2012-11-27  Hani Benhabiles <kroosec@gmail.com>

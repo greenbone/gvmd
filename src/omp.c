@@ -500,6 +500,7 @@ static command_t omp_commands[]
     {"MODIFY_REPORT_FORMAT", "Modify an existing report format."},
     {"MODIFY_SCHEDULE", "Modify an existing schedule."},
     {"MODIFY_SETTING", "Modify an existing setting."},
+    {"MODIFY_SLAVE", "Modify an existing slave."},
     {"MODIFY_TARGET", "Modify an existing target."},
     {"MODIFY_TASK", "Update an existing task."},
     {"PAUSE_TASK", "Pause a running task."},
@@ -2745,6 +2746,39 @@ modify_schedule_data_reset (modify_schedule_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_slave command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *name;                    ///< Name of slave.
+  char *slave_id;                ///< Slave UUID.
+  char *host;                    ///< Slave hostname.
+  char *port;                    ///< Slave port.
+  char *login;                   ///< Slave login.
+  char *password;                ///< Slave password.
+} modify_slave_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_slave_data_reset (modify_slave_data_t *data)
+{
+  free (data->comment);
+  free (data->name);
+  free (data->slave_id);
+  free (data->host);
+  free (data->port);
+  free (data->login);
+  free (data->password);
+
+  memset (data, 0, sizeof (modify_slave_data_t));
+}
+
+/**
  * @brief Command data for the modify_setting command.
  */
 typedef struct
@@ -3261,6 +3295,7 @@ typedef union
   modify_report_format_data_t modify_report_format;   ///< modify_report_format
   modify_schedule_data_t modify_schedule;             ///< modify_schedule
   modify_setting_data_t modify_setting;               ///< modify_setting
+  modify_slave_data_t modify_slave;                   ///< modify_slave
   modify_target_data_t modify_target;                 ///< modify_target
   modify_task_data_t modify_task;                     ///< modify_task
   pause_task_data_t pause_task;                       ///< pause_task
@@ -3676,6 +3711,12 @@ modify_schedule_data_t *modify_schedule_data
  */
 modify_setting_data_t *modify_setting_data
  = &(command_data.modify_setting);
+
+/**
+ * @brief Parser callback data for MODIFY_SLAVE.
+ */
+modify_slave_data_t *modify_slave_data
+ = &(command_data.modify_slave);
 
 /**
  * @brief Parser callback data for MODIFY_TARGET.
@@ -4155,6 +4196,13 @@ typedef enum
   CLIENT_MODIFY_SETTING,
   CLIENT_MODIFY_SETTING_NAME,
   CLIENT_MODIFY_SETTING_VALUE,
+  CLIENT_MODIFY_SLAVE,
+  CLIENT_MODIFY_SLAVE_COMMENT,
+  CLIENT_MODIFY_SLAVE_NAME,
+  CLIENT_MODIFY_SLAVE_HOST,
+  CLIENT_MODIFY_SLAVE_PORT,
+  CLIENT_MODIFY_SLAVE_LOGIN,
+  CLIENT_MODIFY_SLAVE_PASSWORD,
   CLIENT_MODIFY_TARGET,
   CLIENT_MODIFY_TARGET_COMMENT,
   CLIENT_MODIFY_TARGET_HOSTS,
@@ -5793,6 +5841,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_setting_data->setting_id);
             set_client_state (CLIENT_MODIFY_SETTING);
           }
+        else if (strcasecmp ("MODIFY_SLAVE", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "slave_id",
+                              &modify_slave_data->slave_id);
+            set_client_state (CLIENT_MODIFY_SLAVE);
+          }
         else if (strcasecmp ("MODIFY_TARGET", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "target_id",
@@ -6143,6 +6197,39 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_SETTING_VALUE);
           }
         ELSE_ERROR ("modify_setting");
+
+      case CLIENT_MODIFY_SLAVE:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_append_string (&modify_slave_data->comment, "");
+            set_client_state (CLIENT_MODIFY_SLAVE_COMMENT);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&modify_slave_data->name, "");
+            set_client_state (CLIENT_MODIFY_SLAVE_NAME);
+          }
+        else if (strcasecmp ("HOST", element_name) == 0)
+          {
+            openvas_append_string (&modify_slave_data->host, "");
+            set_client_state (CLIENT_MODIFY_SLAVE_HOST);
+          }
+        else if (strcasecmp ("PORT", element_name) == 0)
+          {
+            openvas_append_string (&modify_slave_data->port, "");
+            set_client_state (CLIENT_MODIFY_SLAVE_PORT);
+          }
+        else if (strcasecmp ("LOGIN", element_name) == 0)
+          {
+            openvas_append_string (&modify_slave_data->login, "");
+            set_client_state (CLIENT_MODIFY_SLAVE_LOGIN);
+          }
+        else if (strcasecmp ("PASSWORD", element_name) == 0)
+          {
+            openvas_append_string (&modify_slave_data->password, "");
+            set_client_state (CLIENT_MODIFY_SLAVE_PASSWORD);
+          }
+        ELSE_ERROR ("modify_slave");
 
       case CLIENT_MODIFY_TARGET:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -15458,6 +15545,77 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       CLOSE (CLIENT_MODIFY_SCHEDULE_PERIOD, UNIT);
 
+      case CLIENT_MODIFY_SLAVE:
+        {
+          assert (strcasecmp ("MODIFY_SLAVE", element_name) == 0);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_slave",
+                                  "MODIFY is forbidden for observer users"));
+            }
+          else switch (modify_slave
+                        (modify_slave_data->slave_id,
+                         modify_slave_data->name,
+                         modify_slave_data->comment,
+                         modify_slave_data->host,
+                         modify_slave_data->port,
+                         modify_slave_data->login,
+                         modify_slave_data->password))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_slave"));
+                g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                       "Slave %s has been modified",
+                       modify_slave_data->slave_id);
+                break;
+              case 1:
+                if (send_find_error_to_client ("modify_slave",
+                                               "slave",
+                                               modify_slave_data->slave_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                       "Slave could not be modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_slave",
+                                    "Slave with new name exists already"));
+                g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                       "Slave could not be modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_slave",
+                                    "MODIFY_SLAVE requires a slave_id"));
+                g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                       "Slave could not be modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_slave"));
+                g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                       "Slave could not be modified");
+                break;
+            }
+
+          modify_slave_data_reset (modify_slave_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_SLAVE, COMMENT);
+      CLOSE (CLIENT_MODIFY_SLAVE, NAME);
+      CLOSE (CLIENT_MODIFY_SLAVE, HOST);
+      CLOSE (CLIENT_MODIFY_SLAVE, PORT);
+      CLOSE (CLIENT_MODIFY_SLAVE, LOGIN);
+      CLOSE (CLIENT_MODIFY_SLAVE, PASSWORD);
+
       case CLIENT_MODIFY_TARGET:
         {
           assert (strcasecmp ("MODIFY_TARGET", element_name) == 0);
@@ -19810,6 +19968,24 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_SCHEDULE_TIMEZONE,
               &modify_schedule_data->timezone);
 
+
+      APPEND (CLIENT_MODIFY_SLAVE_COMMENT,
+              &modify_slave_data->comment);
+
+      APPEND (CLIENT_MODIFY_SLAVE_NAME,
+              &modify_slave_data->name);
+
+      APPEND (CLIENT_MODIFY_SLAVE_HOST,
+              &modify_slave_data->host);
+
+      APPEND (CLIENT_MODIFY_SLAVE_PORT,
+              &modify_slave_data->port);
+
+      APPEND (CLIENT_MODIFY_SLAVE_LOGIN,
+              &modify_slave_data->login);
+
+      APPEND (CLIENT_MODIFY_SLAVE_PASSWORD,
+              &modify_slave_data->password);
 
       APPEND (CLIENT_MODIFY_TARGET_COMMENT,
               &modify_target_data->comment);
