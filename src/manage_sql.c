@@ -40117,20 +40117,22 @@ create_slave (const char* name, const char* comment, const char* host,
     {
       gchar *quoted_comment = sql_quote (comment);
       sql ("INSERT INTO slaves"
-           " (uuid, name, owner, comment, host, port, login, password)"
+           " (uuid, name, owner, comment, host, port, login, password,"
+           "  creation_time, modification_time)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', '%s', '%s', '%s');",
+           " '%s', '%s', '%s', '%s', '%s', now (), now ());",
            quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
            quoted_port, quoted_login, quoted_password);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO slaves"
-         " (uuid, name, owner, comment, host, port, login, password)"
+         " (uuid, name, owner, comment, host, port, login, password,"
+         " creation_time, modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', '%s', '%s', '%s');",
+         " '%s', '', '%s', '%s', '%s', now (), now ());",
          quoted_name, current_credentials.uuid, quoted_host, quoted_port,
          quoted_login, quoted_password);
 
@@ -40240,9 +40242,11 @@ delete_slave (const char *slave_id, int ultimate)
   if (ultimate == 0)
     {
       sql ("INSERT INTO slaves_trash"
-           "  (uuid, owner, name, comment, host, port, login, password)"
+           "  (uuid, owner, name, comment, host, port, login, password,"
+           "   creation_time, modification_time)"
            " SELECT"
-           "  uuid, owner, name, comment, host, port, login, password"
+           "  uuid, owner, name, comment, host, port, login, password,"
+           "  creation_time, modification_time"
            " FROM slaves WHERE ROWID = %llu;",
            slave);
 

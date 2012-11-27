@@ -1,5 +1,10 @@
 2012-11-24  Hani Benhabiles <kroosec@gmail.com>
 
+	* src/manage_sql.c (create_slave, delete_slave): creation_time and
+	modification_time are modified appropriately.
+
+2012-11-24  Hani Benhabiles <kroosec@gmail.com>
+
 	Migrate Database to version 68 to add modification_time and
 	creation_time to slaves.
 
