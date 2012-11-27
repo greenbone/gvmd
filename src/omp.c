@@ -1386,6 +1386,7 @@ typedef struct
 {
   char *comment;                 ///< Comment.
   char *host;                    ///< Host for new slave.
+  char *copy;                    ///< UUID of slave to copy.
   char *login;                   ///< Login on slave.
   char *name;                    ///< Name of new slave.
   char *password;                ///< Password for login.
@@ -4050,6 +4051,7 @@ typedef enum
   CLIENT_CREATE_SCHEDULE_PERIOD_UNIT,
   CLIENT_CREATE_SLAVE,
   CLIENT_CREATE_SLAVE_COMMENT,
+  CLIENT_CREATE_SLAVE_COPY,
   CLIENT_CREATE_SLAVE_HOST,
   CLIENT_CREATE_SLAVE_LOGIN,
   CLIENT_CREATE_SLAVE_NAME,
@@ -7102,6 +7104,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_SLAVE:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SLAVE_COMMENT);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SLAVE_COPY);
         else if (strcasecmp ("HOST", element_name) == 0)
           set_client_state (CLIENT_CREATE_SLAVE_HOST);
         else if (strcasecmp ("LOGIN", element_name) == 0)
@@ -14307,6 +14311,50 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("create_slave",
                                   "CREATE is forbidden for observer users"));
             }
+          else if (create_slave_data->copy)
+            switch (copy_slave (create_slave_data->name,
+                                create_slave_data->comment,
+                                create_slave_data->copy,
+                                &new_slave))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = slave_uuid (new_slave);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_slave"),
+                                             uuid);
+                    g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                           "Slave %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_slave",
+                                      "Slave exists already"));
+                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                         "Slave could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_slave",
+                                                 "slave",
+                                                 create_slave_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                         "Slave could not be created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_slave"));
+                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                         "Slave could not be created");
+                  break;
+              }
           else if (create_slave_data->host == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_slave",
@@ -14384,6 +14432,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_SLAVE, COMMENT);
+      CLOSE (CLIENT_CREATE_SLAVE, COPY);
       CLOSE (CLIENT_CREATE_SLAVE, HOST);
       CLOSE (CLIENT_CREATE_SLAVE, LOGIN);
       CLOSE (CLIENT_CREATE_SLAVE, NAME);
@@ -19811,6 +19860,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_SLAVE_HOST,
               &create_slave_data->host);
+
+      APPEND (CLIENT_CREATE_SLAVE_COPY,
+              &create_slave_data->copy);
 
       APPEND (CLIENT_CREATE_SLAVE_LOGIN,
               &create_slave_data->login);

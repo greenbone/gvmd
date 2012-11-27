@@ -1,5 +1,16 @@
 2012-11-27  Hani Benhabiles <kroosec@gmail.com>
 
+	Adding support for slave cloning.
+	
+	* src/omp.c (create_slave_data_t): Added copy member.
+	(client_state_t): Added CLINET_CREATE_SLAVE_COPY state.
+	(omp_xml_handle_start_element): Added slave copy case handling.
+	(omp_xml_handle_end_element): Added handling for slave copying in slave
+	creation case.
+	(omp_xml_handle_text): Added CLIENT_CREATE_SLAVE_COPY value handling.
+
+2012-11-27  Hani Benhabiles <kroosec@gmail.com>
+
 	Adding support for editing a slave.
 	
 	* src/omp.c (omp_command): Added MODIFY_SLAVE command.
