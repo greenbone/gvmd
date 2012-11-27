@@ -8392,6 +8392,47 @@ migrate_66_to_67 ()
 }
 
 /**
+ * @brief Migrate the database from version 67 to version 68.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_67_to_68 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 67. */
+
+  if (manage_db_version () != 67)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Schedules got creation and modification times. */
+
+  sql ("ALTER TABLE slaves ADD COLUMN creation_time;");
+  sql ("ALTER TABLE slaves ADD COLUMN modification_time;");
+  sql ("UPDATE slaves SET creation_time = 0, modification_time = 0;");
+
+  sql ("ALTER TABLE slaves_trash ADD COLUMN creation_time;");
+  sql ("ALTER TABLE slaves_trash ADD COLUMN modification_time;");
+  sql ("UPDATE slaves_trash SET creation_time = 0, modification_time = 0;");
+
+  /* Set the database version to 68. */
+
+  set_db_version (68);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8463,6 +8504,7 @@ static migrator_t database_migrators[]
     {65, migrate_64_to_65},
     {66, migrate_65_to_66},
     {67, migrate_66_to_67},
+    {68, migrate_67_to_68},
     /* End marker. */
     {-1, NULL}};
 
@@ -43500,9 +43542,11 @@ manage_restore (const char *id)
         }
 
       sql ("INSERT INTO slaves"
-           "  (uuid, owner, name, comment, host, port, login, password)"
+           "  (uuid, owner, name, comment, host, port, login, password,"
+           "   creation_time, modification_time)"
            " SELECT"
-           "  uuid, owner, name, comment, host, port, login, password"
+           "  uuid, owner, name, comment, host, port, login, password,"
+           "  creation_time, modification_time"
            " FROM slaves_trash WHERE ROWID = %llu;",
            resource);
 
