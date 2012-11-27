@@ -40172,6 +40172,118 @@ copy_slave (const char* name, const char* comment, const char *slave_id,
 }
 
 /**
+ * @brief Modify a slave.
+ *
+ * @param[in]   slave_id        UUID of slave.
+ * @param[in]   name            Name of slave.
+ * @param[in]   comment         Comment on slave.
+ * @param[in]   host            Host of slave.
+ * @param[in]   port            Port on host.
+ * @param[in]   login           Host login name.
+ * @param[in]   password        Password for \p login.
+ *
+ * @return 0 success, 1 failed to find slave, 2 slave with new name exists,
+ *         3 slave_id required, -1 internal error.
+ */
+int
+modify_slave (const char *slave_id, const char *name, const char *comment,
+              const char *host, const char *port, const char *login,
+              const char *password)
+{
+  gchar *quoted_name, *quoted_comment, *quoted_host, *quoted_port;
+  gchar *quoted_login, *quoted_password;
+  slave_t slave;
+
+  if (slave_id == NULL)
+    return 3;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+
+  slave = 0;
+  if (find_slave (slave_id, &slave))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (slave == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  /* Check whether a slave with the same name exists already. */
+  if (name)
+    {
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM slaves"
+                   " WHERE name = '%s'"
+                   " AND ROWID != %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   slave,
+                   current_credentials.uuid))
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+    }
+  else
+    quoted_name = NULL;
+
+  quoted_comment = comment ? sql_quote (comment) : NULL;
+  quoted_host = host ? sql_quote (host) : NULL;
+  quoted_port = sql_quote (port ? port : "");
+  quoted_login = sql_quote (login ? login : "");
+  quoted_password = sql_quote (password ? password : "");
+
+  sql ("UPDATE slaves SET"
+       " name = %s%s%s,"
+       " comment = %s%s%s,"
+       " host = %s%s%s,"
+       " port = %s%s%s,"
+       " login = %s%s%s,"
+       " password = %s%s%s,"
+       " modification_time = now ()"
+       " WHERE ROWID = %llu;",
+       quoted_name ? "'" : "",
+       quoted_name ? quoted_name : "name",
+       quoted_name ? "'" : "",
+       quoted_comment ? "'" : "",
+       quoted_comment ? quoted_comment : "comment",
+       quoted_comment ? "'" : "",
+       quoted_host ? "'" : "",
+       quoted_host ? quoted_host : "host",
+       quoted_host ? "'" : "",
+       quoted_port ? "'" : "",
+       quoted_port ? quoted_port : "port",
+       quoted_port ? "'" : "",
+       quoted_login ? "'" : "",
+       quoted_login ? quoted_login : "login",
+       quoted_login ? "'" : "",
+       quoted_password ? "'" : "",
+       quoted_password ? quoted_password : "password",
+       quoted_password ? "'" : "",
+       slave);
+
+  g_free (quoted_comment);
+  g_free (quoted_name);
+  g_free (quoted_host);
+  g_free (quoted_port);
+  g_free (quoted_login);
+  g_free (quoted_password);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Delete a slave.
  *
  * @param[in]  slave_id  UUID of slave.

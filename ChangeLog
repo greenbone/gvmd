@@ -1,5 +1,9 @@
 2012-11-27  Hani Benhabiles <kroosec@gmail.com>
 
+	* src/manage.h, src/manage_sql.c (modify_slave): New function.
+
+2012-11-27  Hani Benhabiles <kroosec@gmail.com>
+
 	* src/manage_sql.c (create_slave, delete_slave): creation_time and
 	modification_time are modified appropriately.
 
