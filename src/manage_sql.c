@@ -40243,12 +40243,12 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
   quoted_password = sql_quote (password ? password : "");
 
   sql ("UPDATE slaves SET"
-       " name = %s,"
-       " comment = %s,"
-       " host = %s,"
-       " port = %s,"
-       " login = %s,"
-       " password = %s,"
+       " name = '%s',"
+       " comment = '%s',"
+       " host = '%s',"
+       " port = '%s',"
+       " login = '%s',"
+       " password = '%s',"
        " modification_time = now ()"
        " WHERE ROWID = %llu;",
        quoted_name,
@@ -42780,10 +42780,10 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   quoted_type = sql_quote (type ? type : "");
 
   sql ("UPDATE filters SET"
-       " name = %s,"
-       " comment = %s,"
-       " term = %s,"
-       " type = %s,"
+       " name = '%s',"
+       " comment = '%s',"
+       " term = '%s',"
+       " type = '%s',"
        " modification_time = now ()"
        " WHERE ROWID = %llu;",
        quoted_name, 
