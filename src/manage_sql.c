@@ -40234,41 +40234,29 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
         }
     }
   else
-    quoted_name = NULL;
+    quoted_name = sql_quote("");
 
-  quoted_comment = comment ? sql_quote (comment) : NULL;
-  quoted_host = host ? sql_quote (host) : NULL;
+  quoted_comment = sql_quote (comment ? comment : "");
+  quoted_host = sql_quote (host ? host : "");
   quoted_port = sql_quote (port ? port : "");
   quoted_login = sql_quote (login ? login : "");
   quoted_password = sql_quote (password ? password : "");
 
   sql ("UPDATE slaves SET"
-       " name = %s%s%s,"
-       " comment = %s%s%s,"
-       " host = %s%s%s,"
-       " port = %s%s%s,"
-       " login = %s%s%s,"
-       " password = %s%s%s,"
+       " name = %s,"
+       " comment = %s,"
+       " host = %s,"
+       " port = %s,"
+       " login = %s,"
+       " password = %s,"
        " modification_time = now ()"
        " WHERE ROWID = %llu;",
-       quoted_name ? "'" : "",
-       quoted_name ? quoted_name : "name",
-       quoted_name ? "'" : "",
-       quoted_comment ? "'" : "",
-       quoted_comment ? quoted_comment : "comment",
-       quoted_comment ? "'" : "",
-       quoted_host ? "'" : "",
-       quoted_host ? quoted_host : "host",
-       quoted_host ? "'" : "",
-       quoted_port ? "'" : "",
-       quoted_port ? quoted_port : "port",
-       quoted_port ? "'" : "",
-       quoted_login ? "'" : "",
-       quoted_login ? quoted_login : "login",
-       quoted_login ? "'" : "",
-       quoted_password ? "'" : "",
-       quoted_password ? quoted_password : "password",
-       quoted_password ? "'" : "",
+       quoted_name,
+       quoted_comment,
+       quoted_host,
+       quoted_port,
+       quoted_login,
+       quoted_password,
        slave);
 
   g_free (quoted_comment);
@@ -42785,31 +42773,23 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
         }
     }
   else
-    quoted_name = NULL;
+    quoted_name = sql_quote("");
 
-  quoted_term = term ? sql_quote (term) : NULL;
-  quoted_comment = comment ? sql_quote (comment) : NULL;
+  quoted_term = sql_quote (term ? term : "");
+  quoted_comment = sql_quote (comment ? comment : "");
   quoted_type = sql_quote (type ? type : "");
 
   sql ("UPDATE filters SET"
-       " name = %s%s%s,"
-       " comment = %s%s%s,"
-       " term = %s%s%s,"
-       " type = %s%s%s,"
+       " name = %s,"
+       " comment = %s,"
+       " term = %s,"
+       " type = %s,"
        " modification_time = now ()"
        " WHERE ROWID = %llu;",
-       quoted_name ? "'" : "",
-       quoted_name ? quoted_name : "name",
-       quoted_name ? "'" : "",
-       quoted_comment ? "'" : "",
-       quoted_comment ? quoted_comment : "comment",
-       quoted_comment ? "'" : "",
-       quoted_term ? "'" : "",
-       quoted_term ? quoted_term : "term",
-       quoted_term ? "'" : "",
-       quoted_type ? "'" : "",
-       quoted_type ? quoted_type : "type",
-       quoted_type ? "'" : "",
+       quoted_name, 
+       quoted_comment,
+       quoted_term,
+       quoted_type,
        filter);
 
   g_free (quoted_comment);

@@ -1,5 +1,10 @@
 2012-11-27  Hani Benhabiles <kroosec@gmail.com>
 
+	* src/manage_sql.c (modify_filter, modify_slave): Consistently
+	sql_quote() for quoted variables.
+
+2012-11-27  Hani Benhabiles <kroosec@gmail.com>
+
 	Adding support for slave cloning.
 	
 	* src/omp.c (create_slave_data_t): Added copy member.
