@@ -10512,7 +10512,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   gchar *iso;
                   const char *timezone;
                   char *simple_period_unit, *simple_duration_unit;
-                  int period, period_minutes, period_hours, period_days; 
+                  int period, period_minutes, period_hours, period_days;
                   int period_weeks, period_months, duration, duration_minutes;
                   int duration_hours, duration_days, duration_weeks;
                   int simple_period, simple_duration;
