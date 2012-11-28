@@ -1,3 +1,8 @@
+2012-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (type_pretty_name): Remove stray semicolon that was
+	causing SecInfo to be the default.
+
 2012-11-28  Hani Benhabiles <kroosec@gmail.com>
 
 	* src/manage_sql.c, src/manage.h (slave_in_use): Now checks for tasks
@@ -34,7 +39,7 @@
 2012-11-27  Hani Benhabiles <kroosec@gmail.com>
 
 	Adding support for slave cloning.
-	
+
 	* src/omp.c (create_slave_data_t): Added copy member.
 	(client_state_t): Added CLINET_CREATE_SLAVE_COPY state.
 	(omp_xml_handle_start_element): Added slave copy case handling.
@@ -45,7 +50,7 @@
 2012-11-27  Hani Benhabiles <kroosec@gmail.com>
 
 	Adding support for editing a slave.
-	
+
 	* src/omp.c (omp_command): Added MODIFY_SLAVE command.
 	(modify_slave_data_t): New data structure.
 	(modify_slave_data_reset): New function.

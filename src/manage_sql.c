@@ -2706,7 +2706,7 @@ type_pretty_name (const char* type)
     return "Target";
   if (strcasecmp (type, "task") == 0)
     return "Task";
-  if (strcasecmp (type, "info") == 0);
+  if (strcasecmp (type, "info") == 0)
     return "SecInfo";
   return NULL;
 }
