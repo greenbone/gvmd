@@ -1,5 +1,10 @@
 2012-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (cleanup_manage_process): Add a warning on close
+	failure.
+
+2012-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (type_pretty_name): Make the default "" instead of
 	NULL because caller prints it directly.
 
