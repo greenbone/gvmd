@@ -2708,7 +2708,7 @@ type_pretty_name (const char* type)
     return "Task";
   if (strcasecmp (type, "info") == 0)
     return "SecInfo";
-  return NULL;
+  return "";
 }
 
 /**
@@ -40430,7 +40430,7 @@ slave_count (const get_data_t *get)
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find slave, failed to find filter, 
+ * @return 0 success, 1 failed to find slave, failed to find filter,
  *         -1 error.
  */
 int
@@ -42821,7 +42821,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
        " type = '%s',"
        " modification_time = now ()"
        " WHERE ROWID = %llu;",
-       quoted_name, 
+       quoted_name,
        quoted_comment,
        quoted_term,
        quoted_type,

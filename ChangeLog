@@ -1,5 +1,10 @@
 2012-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (type_pretty_name): Make the default "" instead of
+	NULL because caller prints it directly.
+
+2012-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (type_pretty_name): Remove stray semicolon that was
 	causing SecInfo to be the default.
 
