@@ -1,5 +1,10 @@
 2012-11-28  Hani Benhabiles <kroosec@gmail.com>
 
+	* src/manage_sql.c, src/manage.h (slave_in_use): Now checks for tasks
+	using the slave independently of their location.
+
+2012-11-28  Hani Benhabiles <kroosec@gmail.com>
+
 	Migrate Slave object to the new GET style object management.
 
 	* src/manage_sql.c, src/manage.h (slave_count, slave_writable)

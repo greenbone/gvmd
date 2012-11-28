@@ -40693,10 +40693,7 @@ int
 slave_in_use (slave_t slave)
 {
   return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks"
-                  " WHERE slave = %llu"
-                  " AND slave_location = " G_STRINGIFY (LOCATION_TABLE)
-                  " AND (hidden = 0 OR hidden = 1);",
+                  "SELECT count(*) FROM tasks WHERE slave = %llu;",
                   slave);
 }
 
