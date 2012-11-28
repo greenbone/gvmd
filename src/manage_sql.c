@@ -40366,46 +40366,91 @@ delete_slave (const char *slave_id, int ultimate)
 }
 
 /**
+ * @brief Return whether a slave is writable.
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+slave_writable (slave_t slave)
+{
+  return (slave_in_use (slave) == 0);
+}
+
+/**
+ * @brief Return whether a trashcan slave is writable.
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+trash_slave_writable (slave_t slave)
+{
+  return (trash_slave_in_use (slave) == 0);
+}
+
+/**
+ * @brief Filter columns for slave iterator.
+ */
+#define SLAVE_ITERATOR_FILTER_COLUMNS                                         \
+ { GET_ITERATOR_FILTER_COLUMNS, "host", "port", "login", NULL }
+
+/**
+ * @brief Slave iterator columns.
+ */
+#define SLAVE_ITERATOR_COLUMNS                                                \
+  GET_ITERATOR_COLUMNS ", host, port, login, password"
+
+/**
+ * @brief Slave iterator columns for trash case.
+ */
+#define SLAVE_ITERATOR_TRASH_COLUMNS                                          \
+  GET_ITERATOR_COLUMNS ", host, port, login, password"
+
+/**
+ * @brief Count the number of slaves.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of slaves filtered set.
+ */
+int
+slave_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = SLAVE_ITERATOR_FILTER_COLUMNS;
+  return count ("slave", get, SLAVE_ITERATOR_COLUMNS, extra_columns, 0, 0,
+                0, TRUE);
+}
+
+/**
  * @brief Initialise a slave iterator.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  slave       Slave to limit iteration to.  0 for all.
- * @param[in]  trash       Whether to iterate over trashcan report formats.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find slave, failed to find filter, 
+ *         -1 error.
  */
-void
-init_slave_iterator (iterator_t* iterator, slave_t slave, int trash,
-                     int ascending, const char* sort_field)
+int
+init_slave_iterator (iterator_t* iterator, const get_data_t *get)
 {
-  assert (current_credentials.uuid);
+  static const char *filter_columns[] = SLAVE_ITERATOR_FILTER_COLUMNS;
 
-  if (slave)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment, host, port, login,"
-                   " password"
-                   " FROM slaves%s"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   trash ? "_trash" : "",
-                   slave,
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment, host, port, login,"
-                   " password"
-                   " FROM slaves%s"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   trash ? "_trash" : "",
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
+  return init_get_iterator (iterator,
+                            "slave",
+                            get,
+                            /* Columns. */
+                            SLAVE_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            SLAVE_ITERATOR_TRASH_COLUMNS,
+                            filter_columns,
+                            "task",
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
 }
 
 /**
@@ -40463,7 +40508,7 @@ slave_iterator_comment (iterator_t* iterator)
  *
  * @return Host of the slave or NULL if iteration is complete.
  */
-DEF_ACCESS (slave_iterator_host, 4);
+DEF_ACCESS (slave_iterator_host, GET_ITERATOR_COLUMN_COUNT);
 
 /**
  * @brief Get the port of the slave from a slave iterator.
@@ -40472,7 +40517,7 @@ DEF_ACCESS (slave_iterator_host, 4);
  *
  * @return Port of the slave or NULL if iteration is complete.
  */
-DEF_ACCESS (slave_iterator_port, 5);
+DEF_ACCESS (slave_iterator_port, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
  * @brief Get the login of the slave from a slave iterator.
@@ -40481,7 +40526,7 @@ DEF_ACCESS (slave_iterator_port, 5);
  *
  * @return Login of the slave or NULL if iteration is complete.
  */
-DEF_ACCESS (slave_iterator_login, 6);
+DEF_ACCESS (slave_iterator_login, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the password of the slave from a slave iterator.
@@ -40490,7 +40535,7 @@ DEF_ACCESS (slave_iterator_login, 6);
  *
  * @return Password of the slave or NULL if iteration is complete.
  */
-DEF_ACCESS (slave_iterator_password, 7);
+DEF_ACCESS (slave_iterator_password, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Return the UUID of a slave.
@@ -40679,23 +40724,16 @@ trash_slave_in_use (slave_t slave)
  *
  * @param[in]  iterator   Iterator.
  * @param[in]  slave      Slave.
- * @param[in]  ascending  Whether to sort ascending or descending.
  */
 void
-init_slave_task_iterator (iterator_t* iterator, slave_t slave, int ascending)
+init_slave_task_iterator (iterator_t* iterator, slave_t slave)
 {
   assert (current_credentials.uuid);
 
   init_iterator (iterator,
-                 "SELECT name, uuid FROM tasks"
-                 " WHERE slave = %llu"
-                 " AND hidden = 0"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                 " ORDER BY name %s;",
-                 slave,
-                 current_credentials.uuid,
-                 ascending ? "ASC" : "DESC");
+                 "SELECT ROWID, uuid, name FROM tasks"
+                 " WHERE slave = %llu AND hidden = 0;",
+                 slave);
 }
 
 /**
@@ -40706,7 +40744,7 @@ init_slave_task_iterator (iterator_t* iterator, slave_t slave, int ascending)
  * @return The name of the host, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (slave_task_iterator_name, 0);
+DEF_ACCESS (slave_task_iterator_name, 2);
 
 /**
  * @brief Get the uuid from a slave task iterator.

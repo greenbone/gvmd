@@ -1,3 +1,26 @@
+2012-11-28  Hani Benhabiles <kroosec@gmail.com>
+
+	Migrate Slave object to the new GET style object management.
+
+	* src/manage_sql.c, src/manage.h (slave_count, slave_writable)
+	(trash_slave_writable): New functions.
+	(init_slave_iterator): Interface changed to take two parameters instead
+	of Three. Code refactored to take advantage of new defines.
+	(init_slave_task_iterator): Interface changed to take Two parameters
+	instead of Five. Code refactored to use new defines.
+
+	* src/manage_sql.c (SLAVE_ITERATOR_FILTER_COLUMNS)
+	(SLAVE_ITERATOR_COLUMNS, SLAVE_ITERATOR_TRASH_COLUMNS): new defines.
+	(slave_task_iterator_name): Column number value changed to Two.
+	(slave_iterator_host,slave_iterator_port,slave_iterator_login)
+	(slae_iterator_password): Now use GET_ITERATOR_COLUMN_COUNT accordingly.
+
+	* src/omp.c (get_slaves_data_t): Now has two elements. get and task.
+	(get_slaves_data_reset): Adapted to the modified get_slaves_data_t.
+	(omp_xml_handle_start_element): Refactored CLIENT_GET_SLAVES case to use
+	new GET style and refactored slave iterator. Added count and filter
+	support.
+
 2012-11-27  Hani Benhabiles <kroosec@gmail.com>
 
 	* src/manage_sql.c (modify_filter, modify_slave): Consistently

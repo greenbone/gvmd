@@ -2123,8 +2123,8 @@ modify_slave (const char*, const char*, const char*, const char*, const char*,
 int
 delete_slave (const char*, int);
 
-void
-init_slave_iterator (iterator_t*, slave_t, int, int, const char*);
+int
+init_slave_iterator (iterator_t*, const get_data_t *);
 
 slave_t
 slave_iterator_slave (iterator_t*);
@@ -2180,8 +2180,17 @@ slave_in_use (slave_t);
 int
 trash_slave_in_use (slave_t);
 
+int
+trash_slave_writable (slave_t);
+
+int
+slave_writable (slave_t);
+
+int
+slave_count (const get_data_t *);
+
 void
-init_slave_task_iterator (iterator_t*, slave_t, int);
+init_slave_task_iterator (iterator_t*, slave_t);
 
 const char*
 slave_task_iterator_name (iterator_t*);

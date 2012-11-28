@@ -2421,11 +2421,8 @@ get_settings_data_reset (get_settings_data_t *data)
  */
 typedef struct
 {
-  char *sort_field;    ///< Field to sort results on.
-  int sort_order;      ///< Result sort order: 0 descending, else ascending.
-  char *slave_id;      ///< ID of single slave to get.
-  int tasks;           ///< Boolean.  Whether to include tasks that use slave.
-  int trash;           ///< Boolean.  Whether to return agents from trashcan.
+  get_data_t get;      ///< Get args.
+  int tasks;           ///< Boolean.  Whether to include tasks that use this slave.
 } get_slaves_data_t;
 
 /**
@@ -2436,9 +2433,7 @@ typedef struct
 static void
 get_slaves_data_reset (get_slaves_data_t *data)
 {
-  free (data->slave_id);
-  free (data->sort_field);
-
+  get_data_reset (&data->get);
   memset (data, 0, sizeof (get_slaves_data_t));
 }
 
@@ -5686,25 +5681,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_SLAVES", element_name) == 0)
           {
             const gchar* attribute;
-            append_attribute (attribute_names, attribute_values, "slave_id",
-                              &get_slaves_data->slave_id);
+            get_data_parse_attributes (&get_slaves_data->get, "slave",
+                                       attribute_names,
+                                       attribute_values);
             if (find_attribute (attribute_names, attribute_values,
                                 "tasks", &attribute))
               get_slaves_data->tasks = strcmp (attribute, "0");
             else
               get_slaves_data->tasks = 0;
-            if (find_attribute (attribute_names, attribute_values,
-                                "trash", &attribute))
-              get_slaves_data->trash = strcmp (attribute, "0");
-            else
-              get_slaves_data->trash = 0;
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_slaves_data->sort_field);
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_slaves_data->sort_order = strcmp (attribute, "descending");
-            else
-              get_slaves_data->sort_order = 1;
             set_client_state (CLIENT_GET_SLAVES);
           }
         else if (strcasecmp ("GET_TARGET_LOCATORS", element_name) == 0)
@@ -17881,63 +17865,81 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_SLAVES:
         {
-          slave_t slave = 0;
 
           assert (strcasecmp ("GET_SLAVES", element_name) == 0);
 
-          if (get_slaves_data->tasks && get_slaves_data->trash)
+          if (get_slaves_data->tasks && get_slaves_data->get.trash)
             SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_slave",
+             (XML_ERROR_SYNTAX ("get_slaves",
                                 "GET_SLAVES tasks given with trash"));
-          else if (get_slaves_data->slave_id
-              && find_slave (get_slaves_data->slave_id, &slave))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_slaves"));
-          else if (get_slaves_data->slave_id && slave == 0)
-            {
-              if (send_find_error_to_client ("get_slaves",
-                                             "slave",
-                                             get_slaves_data->slave_id,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
           else
             {
               iterator_t slaves;
+              int count, filtered, ret, first;
+              get_data_t * get;
 
-              SEND_TO_CLIENT_OR_FAIL ("<get_slaves_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              init_slave_iterator (&slaves,
-                                   slave,
-                                   get_slaves_data->trash,
-                                   get_slaves_data->sort_order,
-                                   get_slaves_data->sort_field);
-              while (next (&slaves))
+              ret = init_slave_iterator (&slaves, &get_slaves_data->get);
+              if (ret)
                 {
-                  SENDF_TO_CLIENT_OR_FAIL ("<slave id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<comment>%s</comment>"
-                                           "<host>%s</host>"
+                  switch (ret)
+                    {
+                      case 1:
+                        if (send_find_error_to_client ("get_slaves",
+                                                       "slave",
+                                                       get_slaves_data->get.id,
+                                                       write_to_client,
+                                                       write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case 2:
+                        if (send_find_error_to_client
+                             ("get_slaves",
+                              "filter",
+                              get_slaves_data->get.filt_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case -1:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("get_slaves"));
+                        break;
+                    }
+                  get_slaves_data_reset (get_slaves_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+
+              get = &get_slaves_data->get;
+              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+              SEND_GET_START ("slave", &get_slaves_data->get);
+              while (1)
+                {
+
+                  ret = get_next (&slaves, get, &first, &count,
+                                  init_slave_iterator);
+                  if (ret == 1)
+                    break;
+                  if (ret == -1)
+                    {
+                      internal_error_send_to_client (error);
+                      return;
+                    }
+
+                  SEND_GET_COMMON (slave, &get_slaves_data->get, &slaves);
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<host>%s</host>"
                                            "<port>%s</port>"
-                                           "<login>%s</login>"
-                                           "<in_use>%i</in_use>",
-                                           slave_iterator_uuid (&slaves),
-                                           slave_iterator_name (&slaves),
-                                           slave_iterator_comment (&slaves),
+                                           "<login>%s</login>",
                                            slave_iterator_host (&slaves),
                                            slave_iterator_port (&slaves),
-                                           slave_iterator_login (&slaves),
-                                           get_slaves_data->trash
-                                            ? trash_slave_in_use
-                                               (slave_iterator_slave
-                                                 (&slaves))
-                                            : slave_in_use
-                                               (slave_iterator_slave
-                                                 (&slaves)));
+                                           slave_iterator_login (&slaves));
 
                   if (get_slaves_data->tasks)
                     {
@@ -17946,23 +17948,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                       init_slave_task_iterator (&tasks,
                                                 slave_iterator_slave
-                                                 (&slaves),
-                                                get_slaves_data->sort_order);
+                                                 (&slaves));
                       while (next (&tasks))
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<task id=\"%s\">"
-                          "<name>%s</name>"
-                          "</task>",
-                          slave_task_iterator_uuid (&tasks),
-                          slave_task_iterator_name (&tasks));
+                        SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                                 "<name>%s</name>"
+                                                 "</task>",
+                                                 slave_task_iterator_uuid (&tasks),
+                                                 slave_task_iterator_name (&tasks));
                       cleanup_iterator (&tasks);
                       SEND_TO_CLIENT_OR_FAIL ("</tasks>");
                     }
 
                   SEND_TO_CLIENT_OR_FAIL ("</slave>");
+                  count++;
                 }
               cleanup_iterator (&slaves);
-              SEND_TO_CLIENT_OR_FAIL ("</get_slaves_response>");
+              filtered = get_slaves_data->get.id
+                          ? 1
+                          : slave_count (&get_slaves_data->get);
+              SEND_GET_END ("slave", &get_slaves_data->get, count, filtered);
             }
           get_slaves_data_reset (get_slaves_data);
           set_client_state (CLIENT_AUTHENTIC);
