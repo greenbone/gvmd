@@ -16752,15 +16752,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   switch (format)
                     {
                       case 1: /* installer */
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<package format=\"installer\">"
-                          "<filename>%s</filename>"
-                          "%s"
-                          "</package>"
-                          "<in_use>0</in_use>"
-                          "</agent>",
-                          agent_iterator_installer_filename (&agents),
-                          agent_iterator_installer_64 (&agents));
+                        {
+                          time_t trust_time;
+                          trust_time = agent_iterator_trust_time (&agents);
+
+                          SENDF_TO_CLIENT_OR_FAIL
+                           ("<package format=\"installer\">"
+                            "<filename>%s</filename>"
+                            "%s"
+                            "</package>"
+                            "<in_use>0</in_use>"
+                            "<installer>"
+                            "<trust>%s<time>%s</time></trust>"
+                            "</installer>"
+                            "</agent>",
+                            agent_iterator_installer_filename (&agents),
+                            agent_iterator_installer_64 (&agents),
+                            agent_iterator_trust (&agents),
+                            iso_time (&trust_time));
+                        }
                         break;
                       case 2: /* howto_install */
                         SENDF_TO_CLIENT_OR_FAIL
