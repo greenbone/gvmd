@@ -1,5 +1,11 @@
 2012-11-29  Hani Benhabiles <kroosec@gmail.com>
 
+	* src/manage_sql.c (): for CLIENT_GET_AGENTS case, agent installer is
+	returned too when details attribute is set. Also repeated call to
+	SEND_GET_COMMON in all switch cases has been refactored.
+
+2012-11-29  Hani Benhabiles <kroosec@gmail.com>
+
 	* src/manage_sql.c (init_schedule_task_iterator)
 	(init_slave_task_iterator): Reverted prior change so that the name of
 	tasks using them are returned ordered by name. Also added check for user

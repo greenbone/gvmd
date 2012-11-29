@@ -16676,6 +16676,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else
                 format = 0;
             }
+          else if (get_agents_data->get.details == 1) /* For exporting */
+            format = 1;
           else
             format = 0;
           if (format == -1)
@@ -16745,11 +16747,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       return;
                     }
 
+                  SEND_GET_COMMON (agent, &get_agents_data->get,
+                                   &agents);
                   switch (format)
                     {
                       case 1: /* installer */
-                        SEND_GET_COMMON (agent, &get_agents_data->get,
-                                         &agents);
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<package format=\"installer\">"
                           "<filename>%s</filename>"
@@ -16761,8 +16763,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           agent_iterator_installer_64 (&agents));
                         break;
                       case 2: /* howto_install */
-                        SEND_GET_COMMON (agent, &get_agents_data->get,
-                                         &agents);
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<package format=\"howto_install\">%s</package>"
                           "<in_use>0</in_use>"
@@ -16770,8 +16770,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           agent_iterator_howto_install (&agents));
                         break;
                       case 3: /* howto_use */
-                        SEND_GET_COMMON (agent, &get_agents_data->get,
-                                         &agents);
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<package format=\"howto_use\">%s</package>"
                           "<in_use>0</in_use>"
@@ -16784,8 +16782,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                           trust_time = agent_iterator_trust_time (&agents);
 
-                          SEND_GET_COMMON (agent, &get_agents_data->get,
-                                           &agents);
                           SENDF_TO_CLIENT_OR_FAIL
                            ("<in_use>0</in_use>"
                             "<installer>"
