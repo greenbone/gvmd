@@ -38017,10 +38017,16 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
 void
 init_schedule_task_iterator (iterator_t* iterator, schedule_t schedule)
 {
+  assert (current_credentials.uuid);
+
   init_iterator (iterator,
                  "SELECT ROWID, uuid, name FROM tasks"
-                 " WHERE schedule = %llu AND hidden = 0;",
-                 schedule);
+                 " WHERE schedule = %llu AND hidden = 0"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                 " ORDER BY name ASC;",
+                 schedule,
+                 current_credentials.uuid);
 }
 
 /**
@@ -40731,8 +40737,12 @@ init_slave_task_iterator (iterator_t* iterator, slave_t slave)
 
   init_iterator (iterator,
                  "SELECT ROWID, uuid, name FROM tasks"
-                 " WHERE slave = %llu AND hidden = 0;",
-                 slave);
+                 " WHERE slave = %llu AND hidden = 0"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                 " ORDER BY name ASC;",
+                 slave,
+                 current_credentials.uuid);
 }
 
 /**
