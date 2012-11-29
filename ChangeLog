@@ -1,8 +1,9 @@
 2012-11-29  Hani Benhabiles <kroosec@gmail.com>
 
-	* src/manage_sql.c (): for CLIENT_GET_AGENTS case, agent installer is
-	returned too when details attribute is set. Also repeated call to
-	SEND_GET_COMMON in all switch cases has been refactored.
+	* src/manage_sql.c (omp_xml_handle_end_element ): for CLIENT_GET_AGENTS
+	case, agent installer is returned too when details attribute is set.
+	Also repeated call to SEND_GET_COMMON in all switch cases has been
+	refactored.
 
 2012-11-29  Hani Benhabiles <kroosec@gmail.com>
 
