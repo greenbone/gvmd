@@ -107,4 +107,7 @@ void manage_update_nvti_cache ();
 
 int manage_report_host_detail (report_t, const char *, const char *);
 
+const char*
+run_status_name_internal (task_status_t);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

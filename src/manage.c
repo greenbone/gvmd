@@ -489,6 +489,52 @@ run_status_name (task_status_t status)
 }
 
 /**
+ * @brief Get the unique name of a run status.
+ *
+ * @param[in]  status  Run status.
+ *
+ * @return The name of the status (for example, "Done" or "Running").
+ */
+const char*
+run_status_name_internal (task_status_t status)
+{
+  switch (status)
+    {
+      case TASK_STATUS_DELETE_REQUESTED: return "Delete Requested";
+      case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
+        return "Ultimate Delete Requested";
+      case TASK_STATUS_DONE:             return "Done";
+      case TASK_STATUS_NEW:              return "New";
+
+      case TASK_STATUS_PAUSE_REQUESTED:
+        return "Pause Requested";
+
+      case TASK_STATUS_PAUSE_WAITING:
+        return "Pause Waiting";
+
+      case TASK_STATUS_PAUSED:           return "Paused";
+      case TASK_STATUS_REQUESTED:        return "Requested";
+
+      case TASK_STATUS_RESUME_REQUESTED:
+        return "Resume Requested";
+
+      case TASK_STATUS_RESUME_WAITING:
+        return "Resume Waiting";
+
+      case TASK_STATUS_RUNNING:          return "Running";
+
+      case TASK_STATUS_STOP_REQUESTED:
+        return "Stop Requested";
+
+      case TASK_STATUS_STOP_WAITING:
+        return "Stop Waiting";
+
+      case TASK_STATUS_STOPPED:          return "Stopped";
+      default:                           return "Internal Error";
+    }
+}
+
+/**
  * @brief Get the name of the status of a task.
  *
  * @param[in]  task  The task.

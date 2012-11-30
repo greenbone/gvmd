@@ -11440,7 +11440,8 @@ event_applies (event_t event, const void *event_data, task_t task,
             return 0;
           ret = (task_run_status (task) == (task_status_t) event_data)
                 && (strcmp (alert_event_data,
-                            run_status_name ((task_status_t) event_data))
+                            run_status_name_internal ((task_status_t)
+                                                      event_data))
                     == 0);
           free (alert_event_data);
           return ret;

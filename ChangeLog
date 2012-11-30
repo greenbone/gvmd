@@ -1,3 +1,12 @@
+2012-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (run_status_name_internal): New function.
+
+	* src/manage_sql.h: Add header accordingly.
+
+	* src/manage_sql.c (event): Compare with unique run status name, else
+	the waiting states are considered as events.
+
 2012-11-29  Hani Benhabiles <kroosec@gmail.com>
 
 	* src/omp.c (omp_xml_handle_end_element): Also send trust state and
