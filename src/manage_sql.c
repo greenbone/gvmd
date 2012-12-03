@@ -8433,6 +8433,48 @@ migrate_67_to_68 ()
 }
 
 /**
+ * @brief Migrate the database from version 68 to version 69.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_68_to_69 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 68. */
+
+  if (manage_db_version () != 68)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Schedules got creation and modification times. */
+
+  sql ("ALTER TABLE report_formats ADD COLUMN creation_time;");
+  sql ("ALTER TABLE report_formats ADD COLUMN modification_time;");
+  sql ("UPDATE report_formats SET creation_time = 0, modification_time = 0;");
+
+  sql ("ALTER TABLE report_formats_trash ADD COLUMN creation_time;");
+  sql ("ALTER TABLE report_formats_trash ADD COLUMN modification_time;");
+  sql ("UPDATE report_formats_trash SET"
+       " creation_time = 0, modification_time = 0;");
+
+  /* Set the database version to 69. */
+
+  set_db_version (69);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8505,6 +8547,7 @@ static migrator_t database_migrators[]
     {66, migrate_65_to_66},
     {67, migrate_66_to_67},
     {68, migrate_67_to_68},
+    {69, migrate_68_to_69},
     /* End marker. */
     {-1, NULL}};
 
@@ -13561,11 +13604,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
+           " extension, content_type, signature, trust, trust_time, flags,"
+           " creation_time, modification_time)"
            " VALUES ('910200ca-dc05-11e1-954f-406186ea4fc5', NULL, 'ARF',"
            " 'Asset Reporting Format v1.0.0.',"
            " 'NIST Asset Reporting Format 1.1 compliant document.\n',"
-           " 'xml', 'text/xml', '', %i, %i, 1);",
+           " 'xml', 'text/xml', '', %i, %i, 1, now (), now ());",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -13579,7 +13623,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
+           " extension, content_type, signature, trust, trust_time, flags,"
+           " creation_time, modification_time)"
            " VALUES ('5ceff8ba-1f62-11e1-ab9f-406186ea4fc5', NULL, 'CPE',"
            " 'Common Product Enumeration CSV table.',"
            " 'CPE stands for Common Product Enumeration.  It is a structured naming scheme for\n"
@@ -13592,7 +13637,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            "\n"
            "The report selects all CPE tables from the results and forms a single table\n"
            "as a comma separated values file.\n',"
-           " 'csv', 'text/csv', '', %i, %i, 1);",
+           " 'csv', 'text/csv', '', %i, %i, 1, now (), now ());",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -13606,12 +13651,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
+           " extension, content_type, signature, trust, trust_time, flags,"
+           " creation_time, modification_time)"
            " VALUES ('6c248850-1f62-11e1-b082-406186ea4fc5', NULL, 'HTML',"
            " 'Single page HTML report.',"
            " 'A single HTML page listing results of a scan.  Style information is embedded in\n"
            "the HTML, so the page is suitable for viewing in a browser as is.\n',"
-           " 'html', 'text/html', '', %i, %i, 1);",
+           " 'html', 'text/html', '', %i, %i, 1, now (), now ());",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -13625,12 +13671,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
+           " extension, content_type, signature, trust, trust_time, flags,"
+           " creation_time, modification_time)"
            " VALUES ('77bd6c4a-1f62-11e1-abf0-406186ea4fc5', NULL, 'ITG',"
            " 'German \"IT-Grundschutz-Kataloge\" report.',"
            " 'Tabular report on the German \"IT-Grundschutz-Kataloge\",\n"
            "as published and maintained by the German Federal Agency for IT-Security.\n',"
-           " 'csv', 'text/csv', '', %i, %i, 1);",
+           " 'csv', 'text/csv', '', %i, %i, 1, now (), now ());",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -13644,11 +13691,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
+           " extension, content_type, signature, trust, trust_time, flags,"
+           " creation_time, modification_time)"
            " VALUES ('a684c02c-b531-11e1-bdc2-406186ea4fc5', NULL, 'LaTeX',"
            " 'LaTeX source file.',"
            " 'Report as LaTeX source file for further processing.\n',"
-           " 'tex', 'text/plain', '', %i, %i, 1);",
+           " 'tex', 'text/plain', '', %i, %i, 1, now (), now ());",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -13662,11 +13710,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
+           " extension, content_type, signature, trust, trust_time, flags,"
+           " creation_time, modification_time)"
            " VALUES ('9ca6fe72-1f62-11e1-9e7c-406186ea4fc5', NULL, 'NBE',"
            " 'Legacy OpenVAS report.',"
            " 'The traditional OpenVAS Scanner text based format.',"
-           " 'nbe', 'text/plain', '', %i, %i, 1);",
+           " 'nbe', 'text/plain', '', %i, %i, 1, now (), now ());",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -13680,11 +13729,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
+           " extension, content_type, signature, trust, trust_time, flags,"
+           " creation_time, modification_time)"
            " VALUES ('c402cc3e-b531-11e1-9163-406186ea4fc5', NULL, 'PDF',"
            " 'Portable Document Format report.',"
            " 'Scan results in Portable Document Format (PDF).',"
-           "'pdf', 'application/pdf', '', %i, %i, 1);",
+           "'pdf', 'application/pdf', '', %i, %i, 1, now (), now ());",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -13698,11 +13748,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
+           " extension, content_type, signature, trust, trust_time, flags,"
+           " creation_time, modification_time)"
            " VALUES ('a3810a62-1f62-11e1-9219-406186ea4fc5', NULL, 'TXT',"
            " 'Plain text report.',"
            " 'Plain text report, best viewed with fixed font size.',"
-           " 'txt', 'text/plain', '', %i, %i, 1);",
+           " 'txt', 'text/plain', '', %i, %i, 1, now (), now ());",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -13716,11 +13767,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time, flags)"
+           " extension, content_type, signature, trust, trust_time, flags,"
+           " creation_time, modification_time)"
            " VALUES ('a994b278-1f62-11e1-96ac-406186ea4fc5', NULL, 'XML',"
            " 'Raw XML report.',"
            " 'Complete scan report in OpenVAS Manager XML format.',"
-           " 'xml', 'text/xml', '', %i, %i, 1);",
+           " 'xml', 'text/xml', '', %i, %i, 1, now (), now ());",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -38650,8 +38702,10 @@ create_report_format (const char *uuid, const char *name,
   if (global)
     sql ("INSERT INTO report_formats"
          " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust, trust_time, flags)"
-         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', %i, %i, 0);",
+         "  signature, trust, trust_time, flags, creation_time,"
+         "  modification_time)"
+         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', %i, %i, 0,"
+         "         now (), now ());",
          uuid,
          quoted_name,
          quoted_summary ? quoted_summary : "",
@@ -38664,10 +38718,11 @@ create_report_format (const char *uuid, const char *name,
   else
     sql ("INSERT INTO report_formats"
          " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust, trust_time, flags)"
+         "  signature, trust, trust_time, flags, creation_time,"
+         "  modification_time)"
          " VALUES ('%s', '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '%s', '%s', '%s', '%s', %i, %i, 0);",
+         " '%s', '%s', '%s', '%s', '%s', %i, %i, 0, now (), now ());",
          uuid,
          quoted_name,
          current_credentials.uuid,
@@ -38992,10 +39047,12 @@ delete_report_format (const char *report_format_id, int ultimate)
 
       sql ("INSERT INTO report_formats_trash"
            " (uuid, owner, name, extension, content_type, summary,"
-           "  description, signature, trust, trust_time, flags, original_uuid)"
+           "  description, signature, trust, trust_time, flags, original_uuid,"
+           "  creation_date, modification_time)"
            " SELECT"
            "  make_uuid (), owner, name, extension, content_type, summary,"
-           "  description, signature, trust, trust_time, flags, uuid"
+           "  description, signature, trust, trust_time, flags, uuid,"
+           "  creation_time, modification_time"
            " FROM report_formats"
            " WHERE ROWID = %llu;",
            report_format);
@@ -43502,10 +43559,12 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO report_formats"
            " (uuid, owner, name, extension, content_type, summary,"
-           "  description, signature, trust, trust_time, flags)"
+           "  description, signature, trust, trust_time, flags,"
+           "  creation_time, modification_time)"
            " SELECT"
            "  original_uuid, owner, name, extension, content_type, summary,"
-           "  description, signature, trust, trust_time, flags"
+           "  description, signature, trust, trust_time, flags,"
+           "  creation_time, modification_time"
            " FROM report_formats_trash"
            " WHERE ROWID = %llu;",
            resource);
