@@ -10591,28 +10591,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   simple_period_unit = "";
                   if (period == 0)
                     simple_period = 0;
-                  else if (period_weeks)
+                  else if (period_weeks && (period % (60 * 60 * 24 * 7) == 0))
                     {
-                      if (period % (60 * 60 * 24 * 7))
-                        simple_period = 0;
-                      else
-                        simple_period = period_weeks;
+                      simple_period = period_weeks;
                       simple_period_unit = "week";
                     }
-                  else if (period_days)
+                  else if (period_days && (period % (60 * 60 * 24) == 0))
                     {
-                      if (period % (60 * 60 * 24))
-                        simple_period = 0;
-                      else
-                        simple_period = period_days;
+                      simple_period = period_days;
                       simple_period_unit = "day";
                     }
-                  else if (period_hours)
+                  else if (period_hours && (period % (60 * 60) == 0))
                     {
-                      if (period % (60 * 60))
-                        simple_period = 0;
-                      else
-                        simple_period = period_hours;
+                      simple_period = period_hours;
                       simple_period_unit = "hour";
                     }
                   /* The granularity of the "simple" GSA interface stops at hours. */
@@ -10637,28 +10628,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   simple_duration_unit = "";
                   if (duration == 0)
                     simple_duration = 0;
-                  else if (duration_weeks)
+                  else if (duration_weeks
+                           && (duration % (60 * 60 * 24 * 7) == 0))
                     {
-                      if (duration % (60 * 60 * 24 * 7))
-                        simple_duration = 0;
-                      else
-                        simple_duration = duration_weeks;
+                      simple_duration = duration_weeks;
                       simple_duration_unit = "week";
                     }
-                  else if (duration_days)
+                  else if (duration_days
+                           && (duration % (60 * 60 * 24) == 0))
                     {
-                      if (duration % (60 * 60 * 24))
-                        simple_duration = 0;
-                      else
-                        simple_duration = duration_days;
+                      simple_duration = duration_days;
                       simple_duration_unit = "day";
                     }
-                  else if (duration_hours)
+                  else if (duration_hours
+                           && (duration % (60 * 60) == 0))
                     {
-                      if (duration % (60 * 60))
-                        simple_duration = 0;
-                      else
-                        simple_duration = duration_hours;
+                      simple_duration = duration_hours;
                       simple_duration_unit = "hour";
                     }
                   /* The granularity of the "simple" GSA interface stops at hours. */

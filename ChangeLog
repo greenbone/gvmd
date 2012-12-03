@@ -1,5 +1,12 @@
 2012-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In GET_SCHEDULES when trying
+	to convert to the simple intervals, drop the assumption that the number
+	of units is smaller than the size of the next higher unit.  This caters
+	for values like 36 hours, now that the GSA allows this to be input.
+
+2012-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (interval_from_strings): Ensure that value fits in an
 	integer.
 	(omp_xml_handle_end_element): In CREATE_SCHEDULE and EDIT_SCHEDULE add
