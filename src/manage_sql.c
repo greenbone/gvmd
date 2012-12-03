@@ -3397,8 +3397,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS report_format_param_options_trash (id INTEGER PRIMARY KEY, report_format_param, value);");
   sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value, type_min, type_max, type_regex, fallback);");
   sql ("CREATE TABLE IF NOT EXISTS report_format_params_trash (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value, type_min, type_max, type_regex, fallback);");
-  sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS report_formats_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER, original_uuid);");
+  sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS report_formats_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER, original_uuid, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE INDEX IF NOT EXISTS report_results_by_report ON report_results (report);");
   sql ("CREATE INDEX IF NOT EXISTS report_results_by_result ON report_results (result);");
@@ -3408,10 +3408,10 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS results_by_report_host ON results (report, host);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_task ON results (task);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_type ON results (type);");
-  sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration, timezone, initial_offset);");
-  sql ("CREATE TABLE IF NOT EXISTS schedules_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration, timezone, initial_offset);");
-  sql ("CREATE TABLE IF NOT EXISTS slaves (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
-  sql ("CREATE TABLE IF NOT EXISTS slaves_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
+  sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration, timezone, initial_offset, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS schedules_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration, timezone, initial_offset, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS slaves (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS slaves_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");
   /* port_range in the following two is actually a port list.  Migrating a
    * column rename is lots of work. */
