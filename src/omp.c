@@ -323,37 +323,75 @@ interval_from_strings (const char *value, const char *unit, time_t *months)
     return -1;
 
   if ((unit == NULL) || (strcasecmp (unit, "second") == 0))
-    return atoi (value);
+    {
+      long int val;
+      val = strtol (value, NULL, 10);
+      if ((val >= INT_MAX) || (val < 0))
+        return -3;
+      return val;
+    }
 
   if (strcasecmp (unit, "minute") == 0)
-    return atoi (value) * 60;
+    {
+      long int val;
+      val = strtol (value, NULL, 10);
+      if ((val >= (INT_MAX / 60)) || (val < 0))
+        return -3;
+      return val * 60;
+    }
 
   if (strcasecmp (unit, "hour") == 0)
-    return atoi (value) * 60 * 60;
+    {
+      long int val;
+      val = strtol (value, NULL, 10);
+      if ((val >= (INT_MAX / (60 * 60))) || (val < 0))
+        return -3;
+      return val * 60 * 60;
+    }
 
   if (strcasecmp (unit, "day") == 0)
-    return atoi (value) * 60 * 60 * 24;
+    {
+      long int val;
+      val = strtol (value, NULL, 10);
+      if ((val >= (INT_MAX / (60 * 60 * 24))) || (val < 0))
+        return -3;
+      return val * 60 * 60 * 24;
+    }
 
   if (strcasecmp (unit, "week") == 0)
-    return atoi (value) * 60 * 60 * 24 * 7;
+    {
+      long int val;
+      val = strtol (value, NULL, 10);
+      if ((val >= (INT_MAX / (60 * 60 * 24 * 7))) || (val < 0))
+        return -3;
+      return val * 60 * 60 * 24 * 7;
+    }
 
   if (months)
     {
       if (strcasecmp (unit, "month") == 0)
         {
           *months = atoi (value);
+          if ((*months >= INT_MAX) || (*months < 0))
+            return -3;
           return 0;
         }
 
       if (strcasecmp (unit, "year") == 0)
         {
-          *months = atoi (value) * 12;
+          *months = atoi (value);
+          if ((*months >= (INT_MAX / 12)) || (*months < 0))
+            return -3;
+          *months = *months * 12;
           return 0;
         }
 
       if (strcasecmp (unit, "decade") == 0)
         {
-          *months = atoi (value) * 12 * 10;
+          *months = atoi (value);
+          if ((*months >= (INT_MAX / (12 * 10))) || (*months < 0))
+            return -3;
+          *months = *months * 12 * 10;
           return 0;
         }
     }
@@ -14202,7 +14240,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               (create_schedule_data->period,
                                create_schedule_data->period_unit,
                                &period_months))
-                   == -2)
+                   == -3)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_schedule",
+                                "PERIOD out of range"));
+          else if (period < 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
                                 "Failed to create interval from PERIOD"));
@@ -14210,15 +14252,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 (create_schedule_data->duration,
                                  create_schedule_data->duration_unit,
                                  NULL))
-                   == -2)
+                   == -3)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_schedule",
+                                "DURATION out of range"));
+          else if (duration < 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
                                 "Failed to create interval from DURATION"));
+#if 0
+          /* The actual time of a period in months can vary, so it's extremely
+           * hard to do this check.  The schedule will still work fine if the
+           * duration is longer than the period. */
           else if (period_months
                    && (duration > (period_months * 60 * 60 * 24 * 28)))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
                                 "Duration too long for number of months"));
+#endif
           else if (period && (duration > period))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
@@ -15478,7 +15529,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               (modify_schedule_data->period,
                                modify_schedule_data->period_unit,
                                &period_months))
-                   == -2)
+                   == -3)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_schedule",
+                                "PERIOD out of range"));
+          else if (period < 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_schedule",
                                 "Failed to create interval from PERIOD"));
@@ -15486,15 +15541,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 (modify_schedule_data->duration,
                                  modify_schedule_data->duration_unit,
                                  NULL))
-                   == -2)
+                   == -3)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_schedule",
+                                "DURATION out of range"));
+          else if (duration < 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_schedule",
                                 "Failed to create interval from DURATION"));
+#if 0
+          /* The actual time of a period in months can vary, so it's extremely
+           * hard to do this check.  The schedule will still work fine if the
+           * duration is longer than the period. */
           else if (period_months
                    && (duration > (period_months * 60 * 60 * 24 * 28)))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_schedule",
                                 "Duration too long for number of months"));
+#endif
           else if (period && (duration > period))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_schedule",

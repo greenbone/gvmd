@@ -1,6 +1,13 @@
+2012-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (interval_from_strings): Ensure that value fits in an
+	integer.
+	(omp_xml_handle_end_element): In CREATE_SCHEDULE and EDIT_SCHEDULE add
+	checks for new interval out-of-range returns.
+
 2012-12-02  Hani Benhabiles  <kroosec@gmail.com>
 
-	* src/manage_sql.c (create_tables()): Added missing creation and
+	* src/manage_sql.c (create_tables): Added missing creation and
 	modification columns.
 
 2012-12-02  Hani Benhabiles  <kroosec@gmail.com>
@@ -8,14 +15,13 @@
 	Migrate Database to version 69, adding creation and modification time to
 	Report formats.
 
-	* src/manage_sql.c (migrate_67_to_68): New function.
+	* src/manage_sql.c (migrate_68_to_69): New function.
 	(database_migrators): Add migrate_68_to_69.
 	(init_manage, create_format_report, delete_format_report)
 	(manage_resotre): Insert and update creation and modification times in
 	report_format and report_formats_trash accordingly.
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 69.
-
 
 2012-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
