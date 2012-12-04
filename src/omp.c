@@ -314,7 +314,7 @@ time_from_strings (const char *hour, const char *minute,
  * @param[out]  months  Months return.
  *
  * @return Interval described by arguments on success, -2 if value was NULL,
- *         -1 on error.
+ *         -1 if value was NULL.
  */
 static time_t
 interval_from_strings (const char *value, const char *unit, time_t *months)
@@ -14229,7 +14229,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
                                 "PERIOD out of range"));
-          else if (period < 0)
+          else if (period < -1)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
                                 "Failed to create interval from PERIOD"));
@@ -14241,7 +14241,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
                                 "DURATION out of range"));
-          else if (duration < 0)
+          else if (duration < -1)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
                                 "Failed to create interval from DURATION"));
@@ -15518,7 +15518,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_schedule",
                                 "PERIOD out of range"));
-          else if (period < 0)
+          else if (period < -1)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_schedule",
                                 "Failed to create interval from PERIOD"));
@@ -15530,7 +15530,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_schedule",
                                 "DURATION out of range"));
-          else if (duration < 0)
+          else if (duration < -1)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_schedule",
                                 "Failed to create interval from DURATION"));

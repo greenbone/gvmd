@@ -1,5 +1,14 @@
 2012-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_schedule): Also use the duration string in
+	the SQL when the duration is 0.
+
+	* src/omp.c (omp_xml_handle_end_element): In CREATE_SCHEDULE and
+	MODIFY_SCHEDULE adjust the period/duration error checks to be less than
+	-1 because -1 indicates that the period/duration was NULL.
+
+2012-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_filter): Lowercase the type so that it is
 	always lowercase in the db and in GET_FILTERS.
 
@@ -404,7 +413,7 @@
 	(migrators): Add migrate_64_to_65.
 	(init_manage, create_report): Use report_add_result to add result.
 	(report_add_result): Set report on result.
-3~
+
 2012-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (manage_run_wizard): Allocate empty string because it

@@ -38237,7 +38237,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        first_time ? first_time_string : "first_time",
        period_string ? period_string : "period",
        period_months_string ? period_months_string : "period_months",
-       duration ? duration_string : "duration",
+       (duration >= 0) ? duration_string : "duration",
        offset_string ? offset_string : "initial_offset",
        schedule);
 
