@@ -1,3 +1,8 @@
+2012-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (type_db_name): Remove stray semicolon that was
+	causing SecInfo to be the default.
+
 2012-12-04  Andre Heinecke <andre.heinecke@greenbone.net>
 
 	* report_formats/verinice-ism/classification.xsl: Classify

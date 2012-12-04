@@ -2757,7 +2757,7 @@ type_db_name (const char* type)
     return "target";
   if (strcasecmp (type, "Task") == 0)
     return "task";
-  if (strcasecmp (type, "SecInfo") == 0);
+  if (strcasecmp (type, "SecInfo") == 0)
     return "info";
   return NULL;
 }
