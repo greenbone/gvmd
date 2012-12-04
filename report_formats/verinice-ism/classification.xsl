@@ -140,7 +140,7 @@
           <xsl:text>gsm_system_Windows_Client</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft:windows')">
-          <xsl:text>gsm_system_Windows_Client</xsl:text>
+          <xsl:text>gsm_system_windows_unknown</xsl:text>
         </xsl:when>
         <xsl:when test="contains(value, 'cpe:/o:microsoft')">
           <xsl:text>gsm_system_microsoft</xsl:text>
