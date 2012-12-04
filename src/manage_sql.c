@@ -13321,6 +13321,14 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
   else
     sql ("INSERT INTO meta (name, value) VALUES ('update_nvti_cache', 0);");
 
+  /* Ensure that the highest number in a port range is 65535.  At some
+   * point ranges were initialised to 65536.
+   *
+   * This should be a migrator, but this way is easier to backport.  */
+
+  sql ("UPDATE port_ranges SET end = 65535 WHERE end = 65536;");
+  sql ("UPDATE port_ranges SET start = 65535 WHERE start = 65536;");
+
   /* Ensure every part of the predefined selector exists.
    *
    * This restores entries lost due to the error solved 2010-08-13 by r8805.  */
