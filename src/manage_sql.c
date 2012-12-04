@@ -42888,7 +42888,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
        " name = '%s',"
        " comment = '%s',"
        " term = '%s',"
-       " type = '%s',"
+       " type = lower ('%s'),"
        " modification_time = now ()"
        " WHERE ROWID = %llu;",
        quoted_name,
