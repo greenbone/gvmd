@@ -1,5 +1,14 @@
 2012-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (make_task_complete): New function.
+
+	* src/manage_sql.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Call make_task_complete on
+	success so that any alert runs for the status change to New.
+
+2012-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_schedule): Also use the duration string in
 	the SQL when the duration is 0.
 

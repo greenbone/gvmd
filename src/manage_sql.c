@@ -25678,6 +25678,25 @@ make_task (char* name, unsigned int time, char* comment)
   return task;
 }
 
+/**
+ * @brief Complete the creation of a task.
+ *
+ * @param[in]  uuid     The UUID of the task.
+ */
+void
+make_task_complete (const char *uuid)
+{
+  task_t task;
+
+  if (find_task (uuid, &task))
+    return;
+
+  if (task == 0)
+    return;
+
+  event (task, EVENT_TASK_RUN_STATUS_CHANGED, (void*) TASK_STATUS_NEW);
+}
+
 #ifdef S_SPLINT_S
 typedef /*@only@*/ struct dirent * only_dirent_pointer;
 #endif

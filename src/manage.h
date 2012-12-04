@@ -577,6 +577,9 @@ make_task (/*@only@*/ char*, unsigned int, /*@only@*/ char*)
   /*@defines result->open_ports@*/
   /*@ensures isnull result->description@*/;
 
+void
+make_task_complete (const char *);
+
 int
 copy_task (const char*, const char*, const char *, task_t*);
 

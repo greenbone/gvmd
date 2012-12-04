@@ -15122,6 +15122,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_task"),
                                    tsk_uuid);
+          make_task_complete (tsk_uuid);
           g_log ("event task", G_LOG_LEVEL_MESSAGE,
                  "Task %s has been created", tsk_uuid);
           free (tsk_uuid);
