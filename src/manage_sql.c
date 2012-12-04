@@ -13151,7 +13151,7 @@ update_report_format_uuid (const char *old, const char *new)
   g_free (dir);
 
   sql ("UPDATE report_formats"
-       " SET uuid = '%s'"
+       " SET uuid = '%s', modification_time = now ()"
        " WHERE uuid = '%s';",
        new,
        old);
@@ -39310,7 +39310,8 @@ verify_report_format (report_format_t report_format)
     }
   cleanup_iterator (&formats);
 
-  sql ("UPDATE report_formats SET trust = %i, trust_time = %i"
+  sql ("UPDATE report_formats SET trust = %i, trust_time = %i,"
+       "                          modification_time = now ()"
        " WHERE ROWID = %llu;",
        format_trust,
        time (NULL),
@@ -39345,11 +39346,15 @@ void
 set_report_format_active (report_format_t report_format, int active)
 {
   if (active)
-    sql ("UPDATE report_formats SET flags = (flags | %llu) WHERE ROWID = %llu;",
+    sql ("UPDATE report_formats SET flags = (flags | %llu), "
+         "                          modification_time = now ()"
+         " WHERE ROWID = %llu;",
          (long long int) REPORT_FORMAT_FLAG_ACTIVE,
          report_format);
   else
-    sql ("UPDATE report_formats SET flags = (flags & ~ %llu) WHERE ROWID = %llu;",
+    sql ("UPDATE report_formats SET flags = (flags & ~ %llu), "
+         "                          modification_time = now ()"
+         " WHERE ROWID = %llu;",
          (long long int) REPORT_FORMAT_FLAG_ACTIVE,
          report_format);
 }
@@ -39471,7 +39476,8 @@ void
 set_report_format_name (report_format_t report_format, const char *name)
 {
   gchar *quoted_name = sql_quote (name);
-  sql ("UPDATE report_formats SET name = '%s' WHERE ROWID = %llu;",
+  sql ("UPDATE report_formats SET name = '%s', modification_time = now ()"
+       " WHERE ROWID = %llu;",
        quoted_name,
        report_format);
   g_free (quoted_name);
@@ -39575,7 +39581,8 @@ void
 set_report_format_summary (report_format_t report_format, const char *summary)
 {
   gchar *quoted_summary = sql_quote (summary);
-  sql ("UPDATE report_formats SET summary = '%s' WHERE ROWID = %llu;",
+  sql ("UPDATE report_formats SET summary = '%s', modification_time = now ()"
+       " WHERE ROWID = %llu;",
        quoted_summary,
        report_format);
   g_free (quoted_summary);
