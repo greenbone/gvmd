@@ -1,3 +1,16 @@
+2012-12-04  Hani Benhabiles  <kroosec@gmail.com>
+
+	Add Report Format in_use, writable and count functions and other
+	defines.
+
+	* src/manage_sql.c (trash_report_format_in_use, report_format_in_use)
+	(report_format_writable, report_format_count)
+	(trash_report_format_writable): New Functions.
+	(REPORT_FORMAT_ITERATOR_FILTER_COLUMNS, REPORT_FORMAT_ITERATOR_COLUMNS)
+	(REPORT_FORMAT_ITERATOR_TRASH_COLUMNS): New defines.
+
+	* src/manage.h: Add headers accordingly.
+
 2012-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (make_task_complete): New function.

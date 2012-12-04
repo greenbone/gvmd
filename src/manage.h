@@ -1981,6 +1981,21 @@ report_format_active (report_format_t);
 int
 report_format_trust (report_format_t);
 
+int
+report_format_in_use (report_format_t);
+
+int
+trash_report_format_in_use (report_format_t);
+
+int
+trash_report_format_writable (report_format_t);
+
+int
+report_format_writable (report_format_t);
+
+int
+report_format_count (const get_data_t *);
+
 void
 init_report_format_iterator (iterator_t*, report_format_t, int, int,
                              const char*);

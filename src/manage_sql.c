@@ -39384,6 +39384,67 @@ report_format_content_type (report_format_t report_format)
                      report_format);
 }
 
+/**
+ * @brief Return whether a report format is referenced by an alert
+ *
+ * @param[in]  report format  Report Format.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+report_format_in_use (report_format_t report_format)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM alert_method_data WHERE data = "
+                  " ( SELECT uuid FROM report_formats where ROWID = %llu)"
+                  " AND (name = 'notice_attach_format' OR "
+                  "      name = 'notice_report_format');",
+                  report_format);
+}
+
+/**
+ * @brief Return whether a report_format in trash is referenced by an alert
+ *
+ * @param[in]  report_format  Report Format.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+trash_report_format_in_use (report_format_t report_format)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM alert_method_data WHERE data = "
+                  " (SELECT uuid FROM report_formats_trash where ROWID = %llu)"
+                  " AND (name = 'notice_attach_format' OR "
+                  "      name = 'notice_report_format');",
+                  report_format);
+}
+
+/**
+ * @brief Return whether a report format is writable.
+ *
+ * @param[in]  report_format Report Format.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+report_format_writable (report_format_t report_format)
+{
+  return (report_format_in_use (report_format) == 0);
+}
+
+/**
+ * @brief Return whether a trashcan report_format is writable.
+ *
+ * @param[in]  report_format  Report Format.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+trash_report_format_writable (report_format_t report_format)
+{
+  return (trash_report_format_in_use (report_format) == 0);
+}
 
 /**
  * @brief Return the extension of a report format.
@@ -39754,6 +39815,48 @@ report_format_trust (report_format_t report_format)
   return sql_int (0, 0,
                   "SELECT trust FROM report_formats WHERE ROWID = %llu;",
                   report_format);
+}
+
+/**
+ * @brief Filter columns for Report Format iterator.
+ */
+#define REPORT_FORMAT_ITERATOR_FILTER_COLUMNS                                 \
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "extension", "content_type",     \
+   "summary", "description", NULL }
+
+/**
+ * @brief Report Format iterator columns.
+ */
+#define REPORT_FORMAT_ITERATOR_COLUMNS                                        \
+    /* ANON doesn't have name column */                                       \
+  "ROWID, uuid, name, '', iso_time (creation_time),"                          \
+  " iso_time (modification_time), creation_time AS created,"                  \
+  " modification_time AS modified, extension, content_type, summary, "        \
+  " description, signature, trust, trust_time, flags"
+
+/**
+ * @brief Report Format iterator columns for trash case.
+ */
+#define REPORT_FORMAT_ITERATOR_TRASH_COLUMNS                                  \
+    /* ANON doesn't have name column */                                       \
+  "ROWID, uuid, name, '', iso_time (creation_time),"                          \
+  " iso_time (modification_time), creation_time AS created,"                  \
+  " modification_time AS modified, extension, content_type, summary, "        \
+  " description, signature, trust, trust_time, flags"
+
+/**
+ * @brief Count the number of Report Formats.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of Report Formats filtered set.
+ */
+int
+report_format_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = REPORT_FORMAT_ITERATOR_FILTER_COLUMNS;
+  return count ("report_format", get, REPORT_FORMAT_ITERATOR_COLUMNS, 
+                extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
