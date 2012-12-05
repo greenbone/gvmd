@@ -1,7 +1,41 @@
 2012-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS in the big if share
-	common variables.
+	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS for the big if
+	share the progress calculation.
+
+2012-12-05  Hani Benhabiles  <kroosec@gmail.com>
+
+	Port Report Formats to new GET style.
+
+	* src/manage_sql.c (init_report_format_iterator): Follow the new GET
+	style.
+	(manage_report, manage_send_report, verify_report_format): Adapt to the
+	new init_report_format_iterator.
+	(verify_report_format): Use report_format_global instead of
+	report_format_iterator_global
+	(report_format_writable, trash_report_format_writable): Base result on
+	return value of report_format_global, too.
+	(report_format_iterator_extension, report_format_iterator_content_type)
+	(report_format_iterator_summary, report_format_iterator_description)
+	(report_format_iterator_signature, report_format_iterator_trust)
+	(report_format_iterator_trust_time, report_format_iterator_active): Use
+	GET_ITERATOR_COLUMN_COUNT as base value.
+	(report_format_iterator_global): Remove unused function.
+
+	* src/manage.h: Change and remove headers accordingly.
+
+	* src/omp.c (get_report_formats_data_t): Add get_data_t element. Remove
+	sort_field, sort_order, report_format_id and trash.
+	(get_report_formats_data_reset): Adapt to new get_report_formats_data_t.
+	(omp_xml_handle_start_element): Follow new style for GET_REPORT_FORMATS.
+	(omp_xml_handle_end_element): Adapt GET_REPORT_FORMATS case for new
+	init_report_format_iterator. Send params and file element when details
+	attribute is set.
+
+2012-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS for the big if
+	share common variables.
 
 2012-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
@@ -38,35 +72,6 @@
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS move iterator
 	init up and check get.id instead of task.
-
-2012-12-05  Hani Benhabiles  <kroosec@gmail.com>
-
-	Port Report Formats to new GET style.
-
-	* src/manage_sql.c (init_report_format_iterator): Follow the new GET
-	style.
-	(manage_report, manage_send_report, verify_report_format): Adapt to the
-	new init_report_format_iterator.
-	(verify_report_format): Use report_format_global instead of
-	report_format_iterator_global
-	(report_format_writable, trash_report_format_writable): Base result on
-	return value of report_format_global, too.
-	(report_format_iterator_extension, report_format_iterator_content_type)
-	(report_format_iterator_summary, report_format_iterator_description)
-	(report_format_iterator_signature, report_format_iterator_trust)
-	(report_format_iterator_trust_time, report_format_iterator_active): Use
-	GET_ITERATOR_COLUMN_COUNT as base value.
-	(report_format_iterator_global): Remove unused function.
-
-	* src/manage.h: Change and remove headers accordingly.
-
-	* src/omp.c (get_report_formats_data_t): Add get_data_t element. Remove
-	sort_field, sort_order, report_format_id and trash.
-	(get_report_formats_data_reset): Adapt to new get_report_formats_data_t.
-	(omp_xml_handle_start_element): Follow new style for GET_REPORT_FORMATS.
-	(omp_xml_handle_end_element): Adapt GET_REPORT_FORMATS case for new
-	init_report_format_iterator. Send params and file element when details
-	attribute is set.
 
 2012-12-05  Michael Wiegand <michael.wiegand@greenbone.net>
 
