@@ -18398,16 +18398,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     report_t running_report;
                     schedule_t schedule;
                     time_t next_time;
-                    task_t task = get_iterator_resource (&tasks);
+                    task_t index = get_iterator_resource (&tasks);
                     iterator_t alerts;
 
-                    target = task_target (task);
+                    target = task_target (index);
                     hosts = target ? target_hosts (target) : NULL;
                     maximum_hosts = hosts ? manage_max_hosts (hosts) : 0;
 
-                    slave = task_slave (task);
+                    slave = task_slave (index);
 
-                    first_report_id = task_first_report_id (task);
+                    first_report_id = task_first_report_id (index);
                     if (first_report_id)
                       {
                         int debugs, holes, infos, logs, warnings, false_positives;
@@ -18456,7 +18456,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       first_report = g_strdup ("");
 
-                    last_report_id = task_last_report_id (task);
+                    last_report_id = task_last_report_id (index);
                     if (last_report_id)
                       {
                         int debugs, holes, infos, logs, warnings;
@@ -18506,7 +18506,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       last_report = g_strdup ("");
 
-                    second_last_report_id = task_second_last_report_id (task);
+                    second_last_report_id = task_second_last_report_id (index);
                     if (second_last_report_id)
                       {
                         int debugs, holes, infos, logs, warnings;
@@ -18558,12 +18558,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       second_last_report = g_strdup ("");
 
-                    running_report = task_current_report (task);
+                    running_report = task_current_report (index);
                     if ((target == 0)
-                        && (task_run_status (task) == TASK_STATUS_RUNNING))
+                        && (task_run_status (index) == TASK_STATUS_RUNNING))
                       progress_xml = g_strdup_printf
                                       ("%i",
-                                       task_upload_progress (task));
+                                       task_upload_progress (index));
                     else if (running_report
                              && report_slave_task_uuid (running_report))
                       progress_xml = g_strdup_printf ("%i",
@@ -18636,7 +18636,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     if (get_tasks_data->rcfile)
                       {
-                        description = task_description (task);
+                        description = task_description (index);
                         if (description && strlen (description))
                           {
                             gchar *d64;
@@ -18657,15 +18657,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
 
-                    owner = task_owner_name (task);
-                    observers = task_observers (task);
-                    config = task_config_name (task);
-                    config_uuid = task_config_uuid (task);
+                    owner = task_owner_name (index);
+                    observers = task_observers (index);
+                    config = task_config_name (index);
+                    config_uuid = task_config_uuid (index);
                     task_target_uuid = target_uuid (target);
                     task_target_name = target_name (target);
                     task_slave_uuid = slave_uuid (slave);
                     task_slave_name = slave_name (slave);
-                    schedule = task_schedule (task);
+                    schedule = task_schedule (index);
                     if (schedule)
                       {
                         task_schedule_uuid = schedule_uuid (schedule);
@@ -18676,7 +18676,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         task_schedule_uuid = (char*) g_strdup ("");
                         task_schedule_name = (char*) g_strdup ("");
                       }
-                    next_time = task_schedule_next_time_tz (task);
+                    next_time = task_schedule_next_time_tz (index);
                     response = g_strdup_printf
                                 ("<owner><name>%s</name></owner>"
                                  "<observers>%s</observers>"
@@ -18712,12 +18712,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  task_target_name ? task_target_name : "",
                                  task_slave_uuid ? task_slave_uuid : "",
                                  task_slave_name ? task_slave_name : "",
-                                 task_run_status_name (task),
+                                 task_run_status_name (index),
                                  progress_xml,
                                  description64,
-                                 task_report_count (task),
-                                 task_finished_report_count (task),
-                                 task_trend (task,
+                                 task_report_count (index),
+                                 task_finished_report_count (index),
+                                 task_trend (index,
                                              get_tasks_data->apply_overrides),
                                  task_schedule_uuid,
                                  task_schedule_name,
@@ -18752,7 +18752,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         return;
                       }
 
-                    init_alert_iterator (&alerts, 0, task, 0, 0, 1, NULL);
+                    init_alert_iterator (&alerts, 0, index, 0, 0, 1, NULL);
                     while (next (&alerts))
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<alert id=\"%s\">"
@@ -18768,7 +18768,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                      * buffer errors.  Both should probably just lead to aborts
                      * at the SQL or buffer output level.
                      */
-                    (void) send_reports (task,
+                    (void) send_reports (index,
                                          get_tasks_data->apply_overrides,
                                          write_to_client,
                                          write_to_client_data);
@@ -18776,9 +18776,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       gchar *in_assets, *max_checks, *max_hosts;
 
-                      in_assets = task_preference_value (task, "in_assets");
-                      max_checks = task_preference_value (task, "max_checks");
-                      max_hosts = task_preference_value (task, "max_hosts");
+                      in_assets = task_preference_value (index, "in_assets");
+                      max_checks = task_preference_value (index, "max_checks");
+                      max_hosts = task_preference_value (index, "max_hosts");
 
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<preferences>"
