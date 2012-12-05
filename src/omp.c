@@ -18313,31 +18313,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_TASKS:
         {
-          task_t task = 0;
-
           assert (strcasecmp ("GET_TASKS", element_name) == 0);
 
           if (get_tasks_data->get.details && get_tasks_data->get.trash)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_task",
                                 "GET_TASKS details given with trash"));
-          else if (get_tasks_data->get.id
-                   && find_task_for_actions (get_tasks_data->get.id,
-                                             &task,
-                                             get_tasks_data->get.actions))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_tasks"));
-          else if (get_tasks_data->get.id && task == 0)
-            {
-              if (send_find_error_to_client ("get_tasks",
-                                             "task",
-                                             get_tasks_data->get.id,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
           else
             {
               gchar* response;

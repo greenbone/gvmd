@@ -1,5 +1,10 @@
 2012-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS remove the task
+	find, because the iterator init does that now.
+
+2012-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS rename variable
 	"task" to "index" in the detailed case, to match the brief case.
 
