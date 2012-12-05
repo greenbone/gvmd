@@ -18315,6 +18315,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           gchar* response;
           iterator_t tasks;
+          int ret;
 
           assert (strcasecmp ("GET_TASKS", element_name) == 0);
 
@@ -18328,7 +18329,43 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          init_task_iterator (&tasks, &get_tasks_data->get);
+          ret = init_task_iterator (&tasks, &get_tasks_data->get);
+          if (ret)
+            {
+              switch (ret)
+                {
+                  case 1:
+                    if (send_find_error_to_client ("get_tasks",
+                                                   "task",
+                                                   get_tasks_data->get.id,
+                                                   write_to_client,
+                                                   write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case 2:
+                    if (send_find_error_to_client
+                         ("get_tasks",
+                          "task",
+                          get_tasks_data->get.filt_id,
+                          write_to_client,
+                          write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("get_tasks"));
+                    break;
+                }
+              get_tasks_data_reset (get_tasks_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
 
           SEND_TO_CLIENT_OR_FAIL ("<get_tasks_response"
                                   " status=\"" STATUS_OK "\""
@@ -18368,7 +18405,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 /* The detailed version. */
 
-                int ret, maximum_hosts;
+                int maximum_hosts;
                 gchar *response, *progress_xml;
                 target_t target;
                 slave_t slave;
