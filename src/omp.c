@@ -10169,7 +10169,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0);
 
 
-          if (get_report_formats_data->params && 
+          if (get_report_formats_data->params &&
               get_report_formats_data->get.trash)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_report_formats",
@@ -18528,6 +18528,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else
                 progress_xml = g_strdup ("-1");
 
+              if (get_tasks_data->rcfile)
+                {
+                  description = task_description (index);
+                  if (description && strlen (description))
+                    {
+                      gchar *d64;
+                      d64 = g_base64_encode ((guchar*) description,
+                                             strlen (description));
+                      description64 = g_strdup_printf ("<rcfile>"
+                                                       "%s"
+                                                       "</rcfile>",
+                                                       d64);
+                      g_free (d64);
+                    }
+                  else
+                    description64 = g_strdup ("<rcfile></rcfile>");
+                  free (description);
+                }
+              else
+                description64 = g_strdup ("");
+
               if (get_tasks_data->get.details)
                 {
                   /* The detailed version. */
@@ -18685,27 +18706,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   else
                     second_last_report = g_strdup ("");
-
-                  if (get_tasks_data->rcfile)
-                    {
-                      description = task_description (index);
-                      if (description && strlen (description))
-                        {
-                          gchar *d64;
-                          d64 = g_base64_encode ((guchar*) description,
-                                                 strlen (description));
-                          description64 = g_strdup_printf ("<rcfile>"
-                                                           "%s"
-                                                           "</rcfile>",
-                                                           d64);
-                          g_free (d64);
-                        }
-                      else
-                        description64 = g_strdup ("<rcfile></rcfile>");
-                      free (description);
-                    }
-                  else
-                    description64 = g_strdup ("");
 
                   SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
 
@@ -19047,27 +19047,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   g_free (first_report_id);
                   g_free (second_last_report_id);
-
-                  if (get_tasks_data->rcfile)
-                    {
-                      description = task_description (index);
-                      if (description && strlen (description))
-                        {
-                          gchar *d64;
-                          d64 = g_base64_encode ((guchar*) description,
-                                                 strlen (description));
-                          description64 = g_strdup_printf ("<rcfile>"
-                                                           "%s"
-                                                           "</rcfile>",
-                                                           d64);
-                          g_free (d64);
-                        }
-                      else
-                        description64 = g_strdup ("<rcfile></rcfile>");
-                      free (description);
-                    }
-                  else
-                    description64 = g_strdup ("");
 
                   SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
 
