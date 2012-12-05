@@ -249,21 +249,6 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 </xsl:text>
   </xsl:template>
 
-  <!-- Assuming a "\verb==" environment, "escape" '=' characters by placing them
-       in a "verb\-\-" environment. -->
-  <xsl:template name="escape_verb_env">
-    <xsl:param name="string"/>
-    <xsl:choose>
-      <xsl:when test="contains($string, '=')">
-        <xsl:value-of select="concat(substring-before($string, '='), '=\verb-=-\verb=')"/>
-        <xsl:call-template name="escape_verb_env"><xsl:with-param name="string" select="substring-after($string, '=')"/></xsl:call-template>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:value-of select="$string"/>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
   <!-- Replaces backslash characters by $\backslash$ and $ by \$ -->
   <xsl:template name="latex-replace-backslash-dollar">
     <xsl:param name="string"/>
@@ -365,9 +350,7 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     <xsl:text>\rowcolor{</xsl:text>
     <xsl:value-of select="$color"/>
     <xsl:text>}{$\hookrightarrow$\verb=</xsl:text>
-    <xsl:call-template name="escape_verb_env">
-      <xsl:with-param name="string" select="$line"/>
-    </xsl:call-template>
+    <xsl:value-of select="str:replace($line, '=', '=\verb-=-\verb=')"/>
     <!-- Inline latex-newline for speed. -->
     <xsl:text>=}\\
 </xsl:text>
@@ -381,9 +364,7 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     <xsl:text>\rowcolor{</xsl:text>
     <xsl:value-of select="$color"/>
     <xsl:text>}{\verb=</xsl:text>
-    <xsl:call-template name="escape_verb_env">
-      <xsl:with-param name="string" select="$line"/>
-    </xsl:call-template>
+    <xsl:value-of select="str:replace($line, '=', '=\verb-=-\verb=')"/>
     <!-- Inline latex-newline for speed. -->
     <xsl:text>=}\\
 </xsl:text>

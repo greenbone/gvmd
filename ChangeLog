@@ -1,3 +1,10 @@
+2012-12-06  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/report_formats/LaTeX/latex.xsl (escape_verb_env): Replaced
+	this template by a single call of str:replace and therefore removed
+	the template and replaced 3-line calls by single line direct execution.
+	This improves performance by a few percent.
+
 2012-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS for the big if
