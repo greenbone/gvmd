@@ -18343,14 +18343,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               gchar* response;
               iterator_t tasks;
 
+              init_task_iterator (&tasks, &get_tasks_data->get);
+
               SEND_TO_CLIENT_OR_FAIL ("<get_tasks_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               response = g_strdup_printf ("<task_count>%u</task_count>",
-                                          task ? 1
-                                               : (get_tasks_data->get.trash
-                                                   ? trash_task_count ()
-                                                   : task_count ()));
+                                          get_tasks_data->get.id
+                                           ? 1
+                                           : (get_tasks_data->get.trash
+                                               ? trash_task_count ()
+                                               : task_count ()));
               if (send_to_client (response,
                                   write_to_client,
                                   write_to_client_data))
@@ -18375,7 +18378,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 get_tasks_data->apply_overrides);
 #endif
 
-              init_task_iterator (&tasks, &get_tasks_data->get);
               while (next (&tasks))
                 if (get_tasks_data->get.details)
                   {
