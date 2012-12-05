@@ -18316,10 +18316,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("GET_TASKS", element_name) == 0);
 
           if (get_tasks_data->get.details && get_tasks_data->get.trash)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_task",
-                                "GET_TASKS details given with trash"));
-          else
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("get_task",
+                                  "GET_TASKS details given with trash"));
+              get_tasks_data_reset (get_tasks_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
             {
               gchar* response;
               iterator_t tasks;
