@@ -1,7 +1,12 @@
 2012-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS in the big if share
+	common variables.
+
+2012-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS wrap the big if
-	in a block so that common cases case be shared.
+	in a block so that common cases can be shared.
 
 2012-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 

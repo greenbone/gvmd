@@ -18402,26 +18402,31 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           while (next (&tasks))
             {
+              int maximum_hosts;
+              task_t index;
+              gchar *progress_xml;
+              target_t target;
+              slave_t slave;
+              char *config, *config_uuid;
+              char *task_target_uuid, *task_target_name, *hosts;
+              char *task_slave_uuid, *task_slave_name;
+              char *task_schedule_uuid, *task_schedule_name;
+              gchar *first_report_id, *first_report;
+              char *description;
+              gchar *description64, *last_report_id, *last_report;
+              gchar *second_last_report_id, *second_last_report;
+              report_t running_report;
+              schedule_t schedule;
+              time_t next_time;
+              char *owner, *observers;
+
+              index = get_iterator_resource (&tasks);
+
               if (get_tasks_data->get.details)
                 {
                   /* The detailed version. */
 
-                  int maximum_hosts;
-                  gchar *response, *progress_xml;
-                  target_t target;
-                  slave_t slave;
-                  char *config, *config_uuid;
-                  char *task_target_uuid, *task_target_name, *hosts;
-                  char *task_slave_uuid, *task_slave_name;
-                  char *task_schedule_uuid, *task_schedule_name;
-                  gchar *first_report_id, *first_report;
-                  char *description, *owner, *observers;
-                  gchar *description64, *last_report_id, *last_report;
-                  gchar *second_last_report_id, *second_last_report;
-                  report_t running_report;
-                  schedule_t schedule;
-                  time_t next_time;
-                  task_t index = get_iterator_resource (&tasks);
+                  gchar *response;
                   iterator_t alerts;
 
                   target = task_target (index);
@@ -18843,28 +18848,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   /** @todo This block is very similar to the one above. */
 
-                  task_t index = get_iterator_resource (&tasks);
-                  gchar *line, *progress_xml;
-                  char *observers = task_observers (index);
-                  char *owner = task_owner_name (index);
-                  target_t target;
-                  slave_t slave;
-                  char *tsk_uuid, *config, *config_uuid;
+                  gchar *line;
+                  char *tsk_uuid;
                   char *alert, *alert_uuid;
-                  char *task_target_uuid, *task_target_name, *hosts;
-                  char *task_slave_uuid, *task_slave_name;
-                  char *task_schedule_uuid, *task_schedule_name;
-                  gchar *first_report_id, *first_report;
-                  char *description;
-                  gchar *description64, *last_report_id, *last_report;
-                  gchar *second_last_report_id, *second_last_report;
-                  report_t running_report;
-                  int maximum_hosts, target_in_trash, schedule_in_trash;
-                  schedule_t schedule;
-                  time_t next_time;
+                  int target_in_trash, schedule_in_trash;
                   int debugs, holes, infos, logs, warnings;
                   int holes_2, infos_2, warnings_2;
                   int false_positives;
+
+                  observers = task_observers (index);
+                  owner = task_owner_name (index);
 
                   /** @todo Buffer entire response so respond with error.
                    *
