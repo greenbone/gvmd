@@ -1,3 +1,8 @@
+2012-12-05  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/report_formats/create_signatures: Add quoting in case the RFP
+	name contains a space.
+
 2012-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Reset 65536 in port ranges to 65535.

@@ -40,13 +40,13 @@ for uuid in `sqlite3 -noheader -init "" $DB 'SELECT uuid FROM report_formats' 2>
   id=`sqlite3 -noheader -init "" $DB "SELECT ROWID FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
   if [ -d "$name" ]; then
     echo "  Format $name with UUID $uuid and ROWID $id"
-    rm -f ${name}/${uuid}.asc
+    rm -f "${name}/${uuid}.asc"
     rm -f ${uuid}
     fore=`sqlite3 -separator '' -noheader -init "" $DB "SELECT uuid, extension, content_type, '1' FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
     echo -n "$fore" > ${uuid}
-    for file in `ls $name`; do
+    for file in `ls "$name"`; do
       echo "    File $name/$file"
-      case $file in
+      case "$file" in
         *.BAK)
           ;;
         *.CKP)
@@ -56,8 +56,8 @@ for uuid in `sqlite3 -noheader -init "" $DB 'SELECT uuid FROM report_formats' 2>
         *.bak)
           ;;
         *)
-          echo -n `basename $name/$file` >> ${uuid}
-          base64 -w 0 $name/$file >> ${uuid}
+          echo -n `basename "$name/$file"` >> ${uuid}
+          base64 -w 0 "$name/$file" >> ${uuid}
           ;;
       esac
     done
@@ -97,7 +97,7 @@ for uuid in `sqlite3 -noheader -init "" $DB 'SELECT uuid FROM report_formats' 2>
     echo >> ${uuid}
     gpg --detach-sign --armor ${uuid}
     rm -f ${uuid}
-    mv ${uuid}.asc ${name}/${uuid}.asc
+    mv ${uuid}.asc "${name}/${uuid}.asc"
   fi
 done
 echo -n Remove fake latex.xsl
