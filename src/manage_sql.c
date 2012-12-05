@@ -24505,9 +24505,9 @@ manage_report (report_t report, report_format_t report_format,
                           show_closed_cves, notes, notes_details, overrides,
                           overrides_details, first_result, max_results, type,
                           NULL, 0, NULL, NULL, 0, 0);
-  g_free (get.filt_id);
   if (ret)
     {
+      g_free (get.filt_id);
       g_free (xml_file);
       return NULL;
     }
@@ -24522,7 +24522,8 @@ manage_report (report_t report, report_format_t report_format,
 
     /* Setup file names. */
 
-    init_report_format_iterator (&formats, report_format, 0, 1, NULL);
+    init_report_format_iterator (&formats, &get);
+    g_free (get.filt_id);
     if (next (&formats) == FALSE)
       {
         g_free (xml_file);
@@ -25033,7 +25034,7 @@ manage_send_report (report_t report, report_t delta_report,
 
     /* Setup file names. */
 
-    init_report_format_iterator (&formats, report_format, 0, 1, NULL);
+    init_report_format_iterator (&formats, get);
     if (next (&formats) == FALSE)
       {
         g_free (xml_file);
@@ -39181,10 +39182,13 @@ verify_report_format (report_format_t report_format)
 {
   int format_trust = TRUST_UNKNOWN;
   iterator_t formats;
+  get_data_t get;
 
   sql ("BEGIN IMMEDIATE;");
 
-  init_report_format_iterator (&formats, report_format, 0, 1, NULL);
+  memset(&get, '\0', sizeof (get));
+  get.id = report_format_uuid (report_format);
+  init_report_format_iterator (&formats, &get);
   if (next (&formats))
     {
       const char *signature;
@@ -39214,7 +39218,9 @@ verify_report_format (report_format_t report_format)
             report_format_iterator_uuid (&formats),
             report_format_iterator_extension (&formats),
             report_format_iterator_content_type (&formats),
-            report_format_iterator_global (&formats) & 1);
+            report_format_global
+             (report_format_iterator_report_format
+              (&formats)) & 1);
 
           report_format = report_format_iterator_report_format (&formats);
 
@@ -39443,7 +39449,8 @@ trash_report_format_in_use (report_format_t report_format)
 int
 report_format_writable (report_format_t report_format)
 {
-  return (report_format_in_use (report_format) == 0);
+  return (report_format_in_use (report_format) == 0
+          && report_format_global (report_format) == 0);
 }
 
 /**
@@ -39456,7 +39463,8 @@ report_format_writable (report_format_t report_format)
 int
 trash_report_format_writable (report_format_t report_format)
 {
-  return (trash_report_format_in_use (report_format) == 0);
+  return (trash_report_format_in_use (report_format) == 0
+          && report_format_global (report_format) == 0);
 }
 
 /**
@@ -39875,46 +39883,33 @@ report_format_count (const get_data_t *get)
 }
 
 /**
- * @brief Initialise a report format iterator.
+ * @brief Initialise a Report Format iterator, including observed Report
+ *        Formats.
  *
- * @param[in]  iterator  Iterator.
- * @param[in]  report_format  Single report_format to iterate over, or 0 for all.
- * @param[in]  trash       Whether to iterate over trashcan report formats.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find Report Format, 2 failed to find filter,
+ *         -1 error.
  */
-void
-init_report_format_iterator (iterator_t* iterator, report_format_t report_format,
-                             int trash, int ascending, const char* sort_field)
+int
+init_report_format_iterator (iterator_t* iterator, const get_data_t *get)
 {
-  if (report_format)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, extension, content_type,"
-                   " summary, description, owner IS NULL, signature, trust,"
-                   " trust_time, flags"
-                   " FROM report_formats%s"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   trash ? "_trash" : "",
-                   report_format,
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, extension, content_type,"
-                   " summary, description, owner is NULL, signature, trust,"
-                   " trust_time, flags"
-                   " FROM report_formats%s"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   trash ? "_trash" : "",
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
+  static const char *filter_columns[] = REPORT_FORMAT_ITERATOR_FILTER_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "report_format",
+                            get,
+                            /* Columns. */
+                            REPORT_FORMAT_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            REPORT_FORMAT_ITERATOR_TRASH_COLUMNS,
+                            filter_columns,
+                            NULL,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
 }
 
 /**
@@ -39959,7 +39954,7 @@ DEF_ACCESS (report_format_iterator_name, 2);
  * @return Extension, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (report_format_iterator_extension, 3);
+DEF_ACCESS (report_format_iterator_extension, GET_ITERATOR_COLUMN_COUNT);
 
 /**
  * @brief Get the content type from a report format iterator.
@@ -39969,7 +39964,7 @@ DEF_ACCESS (report_format_iterator_extension, 3);
  * @return Content type, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (report_format_iterator_content_type, 4);
+DEF_ACCESS (report_format_iterator_content_type, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
  * @brief Get the summary from a report format iterator.
@@ -39979,7 +39974,7 @@ DEF_ACCESS (report_format_iterator_content_type, 4);
  * @return Summary, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (report_format_iterator_summary, 5);
+DEF_ACCESS (report_format_iterator_summary, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the description from a report format iterator.
@@ -39989,21 +39984,7 @@ DEF_ACCESS (report_format_iterator_summary, 5);
  * @return Description, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (report_format_iterator_description, 6);
-
-/**
- * @brief Get the global state from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Global flag, or -1 if iteration is complete.
- */
-int
-report_format_iterator_global (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return sqlite3_column_int (iterator->stmt, 7);
-}
+DEF_ACCESS (report_format_iterator_description, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Get the signature from a report format iterator.
@@ -40013,7 +39994,7 @@ report_format_iterator_global (iterator_t* iterator)
  * @return Signature, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (report_format_iterator_signature, 8);
+DEF_ACCESS (report_format_iterator_signature, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
  * @brief Get the trust value from a report format iterator.
@@ -40026,7 +40007,7 @@ const char*
 report_format_iterator_trust (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  switch (sqlite3_column_int (iterator->stmt, 9))
+  switch (sqlite3_column_int (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 5))
     {
       case 1:  return "yes";
       case 2:  return "no";
@@ -40047,7 +40028,8 @@ report_format_iterator_trust_time (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 10);
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 
+                                     GET_ITERATOR_COLUMN_COUNT + 6);
   return ret;
 }
 
@@ -40062,8 +40044,8 @@ int
 report_format_iterator_active (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return (sqlite3_column_int64 (iterator->stmt, 11) & REPORT_FORMAT_FLAG_ACTIVE)
-          ? 1 : 0;
+  return (sqlite3_column_int64 (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 7)
+          & REPORT_FORMAT_FLAG_ACTIVE) ? 1 : 0;
 }
 
 /**

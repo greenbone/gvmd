@@ -1996,9 +1996,8 @@ report_format_writable (report_format_t);
 int
 report_format_count (const get_data_t *);
 
-void
-init_report_format_iterator (iterator_t*, report_format_t, int, int,
-                             const char*);
+int
+init_report_format_iterator (iterator_t*, const get_data_t *);
 
 report_format_t
 report_format_iterator_report_format (iterator_t*);
@@ -2017,9 +2016,6 @@ report_format_iterator_content_type (iterator_t *);
 
 const char*
 report_format_iterator_description (iterator_t *);
-
-int
-report_format_iterator_global (iterator_t *);
 
 int
 report_format_iterator_active (iterator_t *);

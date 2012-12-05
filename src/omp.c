@@ -2354,12 +2354,9 @@ get_reports_data_reset (get_reports_data_t *data)
  */
 typedef struct
 {
+  get_data_t get;        ///< Get args.
   int export;            ///< Boolean.  Whether to format for importing.
   int params;            ///< Boolean.  Whether to include params.
-  char *sort_field;       ///< Field to sort results on.
-  int sort_order;         ///< Result sort order: 0 descending, else ascending.
-  char *report_format_id; ///< ID of single report format to get.
-  int trash;              ///< Boolean.  Whether to return agents from trashcan.
 } get_report_formats_data_t;
 
 /**
@@ -2370,9 +2367,7 @@ typedef struct
 static void
 get_report_formats_data_reset (get_report_formats_data_t *data)
 {
-  free (data->report_format_id);
-  free (data->sort_field);
-
+  get_data_reset (&data->get);
   memset (data, 0, sizeof (get_report_formats_data_t));
 }
 
@@ -5583,11 +5578,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
 
-            append_attribute (attribute_names,
-                              attribute_values,
-                              "report_format_id",
-                              &get_report_formats_data->report_format_id);
-
+            get_data_parse_attributes (&get_report_formats_data->get,
+                                       "report_format",
+                                       attribute_names,
+                                       attribute_values);
             if (find_attribute (attribute_names, attribute_values,
                                 "export", &attribute))
               get_report_formats_data->export = strcmp (attribute, "0");
@@ -5599,21 +5593,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_report_formats_data->params = strcmp (attribute, "0");
             else
               get_report_formats_data->params = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "trash", &attribute))
-              get_report_formats_data->trash = strcmp (attribute, "0");
-            else
-              get_report_formats_data->trash = 0;
-
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_report_formats_data->sort_field);
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_report_formats_data->sort_order = strcmp (attribute, "descending");
-            else
-              get_report_formats_data->sort_order = 1;
 
             set_client_state (CLIENT_GET_REPORT_FORMATS);
           }
@@ -10186,77 +10165,113 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_REPORT_FORMATS:
         {
-          report_format_t report_format = 0;
 
           assert (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0);
 
-          if (get_report_formats_data->report_format_id
-              && find_report_format (get_report_formats_data->report_format_id,
-                                     &report_format))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report_formats"));
-          else if (get_report_formats_data->report_format_id
-                   && report_format == 0)
-            {
-              if (send_find_error_to_client
-                   ("get_report_formats",
-                    "report_format",
-                    get_report_formats_data->report_format_id,
-                    write_to_client,
-                    write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
+
+          if (get_report_formats_data->params && 
+              get_report_formats_data->get.trash)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_report_formats",
+                                "GET_REPORT_FORMATS params given with trash"));
           else
             {
               iterator_t report_formats;
+              int count, filtered, ret, first;
+              get_data_t * get;
 
-              SEND_TO_CLIENT_OR_FAIL ("<get_report_formats_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              init_report_format_iterator (&report_formats,
-                                           report_format,
-                                           get_report_formats_data->trash,
-                                           get_report_formats_data->sort_order,
-                                           get_report_formats_data->sort_field);
-              while (next (&report_formats))
+              ret = init_report_format_iterator (&report_formats,
+                                                 &get_report_formats_data->get);
+              if (ret)
+                {
+                  switch (ret)
+                    {
+                      case 1:
+                        if (send_find_error_to_client ("get_report_formats",
+                                                       "report_format",
+                                                       get_report_formats_data->get.id,
+                                                       write_to_client,
+                                                       write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case 2:
+                        if (send_find_error_to_client
+                             ("get_report_formats",
+                              "filter",
+                              get_report_formats_data->get.filt_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case -1:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("get_report_formats"));
+                        break;
+                    }
+                  get_report_formats_data_reset (get_report_formats_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+
+              get = &get_report_formats_data->get;
+              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+              SEND_GET_START ("report_format", &get_report_formats_data->get);
+              while (1)
                 {
                   time_t trust_time;
+
+                  ret = get_next (&report_formats, get, &first, &count,
+                                  init_slave_iterator);
+                  if (ret == 1)
+                    break;
+                  if (ret == -1)
+                    {
+                      internal_error_send_to_client (error);
+                      return;
+                    }
+
+                  SEND_GET_COMMON (report_format,
+                                   &get_report_formats_data->get,
+                                   &report_formats);
 
                   trust_time = report_format_iterator_trust_time
                                 (&report_formats);
 
                   SENDF_TO_CLIENT_OR_FAIL
-                   ("<report_format id=\"%s\">"
-                    "<name>%s</name>"
-                    "<extension>%s</extension>"
+                   ("<extension>%s</extension>"
                     "<content_type>%s</content_type>"
                     "<summary>%s</summary>"
                     "<description>%s</description>"
                     "<global>%i</global>"
                     "<predefined>%i</predefined>",
-                    report_format_iterator_uuid (&report_formats),
-                    report_format_iterator_name (&report_formats),
                     report_format_iterator_extension (&report_formats),
                     report_format_iterator_content_type (&report_formats),
                     report_format_iterator_summary (&report_formats),
                     report_format_iterator_description (&report_formats),
-                    report_format_iterator_global (&report_formats),
-                    get_report_formats_data->trash
+                    report_format_global
+                     (report_format_iterator_report_format
+                      (&report_formats)),
+                    get_report_formats_data->get.trash
                       ? 0
                       : report_format_predefined
                          (report_format_iterator_report_format
                            (&report_formats)));
 
                   if (get_report_formats_data->params
-                      || get_report_formats_data->export)
+                      || get_report_formats_data->export
+                      || get_report_formats_data->get.details)
                     {
                       iterator_t params;
                       init_report_format_param_iterator
                        (&params,
                         report_format_iterator_report_format (&report_formats),
-                        get_report_formats_data->trash,
+                        get_report_formats_data->get.trash,
                         1,
                         NULL);
                       while (next (&params))
@@ -10309,7 +10324,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       cleanup_iterator (&params);
                     }
 
-                  if (get_report_formats_data->export)
+                  if (get_report_formats_data->export
+                      || get_report_formats_data->get.details)
                     {
                       file_iterator_t files;
                       init_report_format_file_iterator
@@ -10341,7 +10357,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL ("</report_format>");
                 }
               cleanup_iterator (&report_formats);
-              SEND_TO_CLIENT_OR_FAIL ("</get_report_formats_response>");
+              filtered = get_report_formats_data->get.id
+                          ? 1
+                          : report_format_count (&get_report_formats_data->get);
+              SEND_GET_END ("report_format", &get_report_formats_data->get,
+                            count, filtered);
             }
           get_report_formats_data_reset (get_report_formats_data);
           set_client_state (CLIENT_AUTHENTIC);
