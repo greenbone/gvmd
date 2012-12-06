@@ -18943,6 +18943,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       gchar *timestamp;
 
+                      /* If the first report is the second last report then skip
+                       * doing the count again. */
                       if (((first_report_id == NULL)
                            || (strcmp (second_last_report_id, first_report_id)))
                           && report_counts (second_last_report_id,
@@ -18991,6 +18993,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       gchar *timestamp;
 
+                      /* If the last report is the first report or the second
+                       * last report, then reuse the counts from before. */
                       if ((first_report_id == NULL)
                           || (second_last_report_id == NULL)
                           || (strcmp (last_report_id, first_report_id)
