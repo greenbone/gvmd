@@ -18906,15 +18906,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   /** @todo This block is very similar to the one above. */
 
                   gchar *line;
-                  char *tsk_uuid;
                   char *alert, *alert_uuid;
-
-                  /** @todo Buffer entire response so respond with error.
-                   *
-                   * As above, this is some kind of internal error.  It may
-                   * be best to just abort within task_uuid.
-                   */
-                  if (task_uuid (index, &tsk_uuid)) abort ();
 
                   alert = task_alert_name (index);
                   alert_uuid = task_alert_uuid (index);
@@ -19000,7 +18992,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (owner);
                   free (observers);
                   g_free (description64);
-                  free (tsk_uuid);
                   free (task_schedule_uuid);
                   free (task_schedule_name);
                   free (task_slave_uuid);
