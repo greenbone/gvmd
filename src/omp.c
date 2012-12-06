@@ -18600,110 +18600,126 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else
                 first_report = g_strdup ("");
 
+              second_last_report_id = task_second_last_report_id (index);
+              if (second_last_report_id)
+                {
+                  gchar *timestamp;
+
+                  /* If the first report is the second last report then skip
+                   * doing the count again. */
+                  if (((first_report_id == NULL)
+                       || (strcmp (second_last_report_id, first_report_id)))
+                      && report_counts (second_last_report_id,
+                                        &debugs, &holes_2, &infos_2,
+                                        &logs, &warnings_2,
+                                        &false_positives,
+                                        get_tasks_data->apply_overrides,
+                                        0))
+                    /** @todo Either fail better or abort at SQL level. */
+                    abort ();
+
+                  if (report_timestamp (second_last_report_id, &timestamp))
+                    abort ();
+
+                  second_last_report = g_strdup_printf
+                                        ("<second_last_report>"
+                                         "<report id=\"%s\">"
+                                         "<timestamp>%s</timestamp>"
+                                         "<result_count>"
+                                         "<debug>%i</debug>"
+                                         "<hole>%i</hole>"
+                                         "<info>%i</info>"
+                                         "<log>%i</log>"
+                                         "<warning>%i</warning>"
+                                         "<false_positive>"
+                                         "%i"
+                                         "</false_positive>"
+                                         "</result_count>"
+                                         "</report>"
+                                         "</second_last_report>",
+                                         second_last_report_id,
+                                         timestamp,
+                                         debugs,
+                                         holes_2,
+                                         infos_2,
+                                         logs,
+                                         warnings_2,
+                                         false_positives);
+                  g_free (timestamp);
+                }
+              else
+                second_last_report = g_strdup ("");
+
+              last_report_id = task_last_report_id (index);
+              if (last_report_id)
+                {
+                  gchar *timestamp;
+
+                  /* If the last report is the first report or the second
+                   * last report, then reuse the counts from before. */
+                  if ((first_report_id == NULL)
+                      || (second_last_report_id == NULL)
+                      || (strcmp (last_report_id, first_report_id)
+                          && strcmp (last_report_id,
+                                     second_last_report_id)))
+                    {
+                      if (report_counts
+                           (last_report_id,
+                            &debugs, &holes, &infos, &logs,
+                            &warnings, &false_positives,
+                            get_tasks_data->apply_overrides,
+                            0))
+                        /** @todo Either fail better or abort at SQL level. */
+                        abort ();
+                    }
+                  else
+                    {
+                      holes = holes_2;
+                      infos = infos_2;
+                      warnings = warnings_2;
+                    }
+
+                  if (report_timestamp (last_report_id, &timestamp))
+                    abort ();
+
+                  last_report = g_strdup_printf ("<last_report>"
+                                                 "<report id=\"%s\">"
+                                                 "<timestamp>%s</timestamp>"
+                                                 "<result_count>"
+                                                 "<debug>%i</debug>"
+                                                 "<hole>%i</hole>"
+                                                 "<info>%i</info>"
+                                                 "<log>%i</log>"
+                                                 "<warning>%i</warning>"
+                                                 "<false_positive>"
+                                                 "%i"
+                                                 "</false_positive>"
+                                                 "</result_count>"
+                                                 "</report>"
+                                                 "</last_report>",
+                                                 last_report_id,
+                                                 timestamp,
+                                                 debugs,
+                                                 holes,
+                                                 infos,
+                                                 logs,
+                                                 warnings,
+                                                 false_positives);
+                  g_free (timestamp);
+                  g_free (last_report_id);
+                }
+              else
+                last_report = g_strdup ("");
+
+              g_free (first_report_id);
+              g_free (second_last_report_id);
+
               if (get_tasks_data->get.details)
                 {
                   /* The detailed version. */
 
                   gchar *response;
                   iterator_t alerts;
-
-                  last_report_id = task_last_report_id (index);
-                  if (last_report_id)
-                    {
-                      gchar *timestamp;
-
-                      if (report_counts (last_report_id,
-                                         &debugs, &holes, &infos, &logs,
-                                         &warnings, &false_positives,
-                                         get_tasks_data->apply_overrides,
-                                         0))
-                        /** @todo Either fail better or abort at SQL level. */
-                        abort ();
-
-                      if (report_timestamp (last_report_id, &timestamp))
-                        /** @todo Either fail better or abort at SQL level. */
-                        abort ();
-
-                      last_report = g_strdup_printf ("<last_report>"
-                                                     "<report id=\"%s\">"
-                                                     "<timestamp>"
-                                                     "%s"
-                                                     "</timestamp>"
-                                                     "<result_count>"
-                                                     "<debug>%i</debug>"
-                                                     "<hole>%i</hole>"
-                                                     "<info>%i</info>"
-                                                     "<log>%i</log>"
-                                                     "<warning>%i</warning>"
-                                                     "<false_positive>"
-                                                     "%i"
-                                                     "</false_positive>"
-                                                     "</result_count>"
-                                                     "</report>"
-                                                     "</last_report>",
-                                                     last_report_id,
-                                                     timestamp,
-                                                     debugs,
-                                                     holes,
-                                                     infos,
-                                                     logs,
-                                                     warnings,
-                                                     false_positives);
-                      g_free (timestamp);
-                      g_free (last_report_id);
-                    }
-                  else
-                    last_report = g_strdup ("");
-
-                  second_last_report_id = task_second_last_report_id (index);
-                  if (second_last_report_id)
-                    {
-                      gchar *timestamp;
-
-                      if (report_counts (second_last_report_id,
-                                         &debugs, &holes, &infos, &logs,
-                                         &warnings, &false_positives,
-                                         get_tasks_data->apply_overrides,
-                                         0))
-                        /** @todo Either fail better or abort at SQL level. */
-                        abort ();
-
-                      if (report_timestamp (second_last_report_id,
-                                            &timestamp))
-                        /** @todo Either fail better or abort at SQL level. */
-                        abort ();
-
-                      second_last_report = g_strdup_printf
-                                            ("<second_last_report>"
-                                             "<report id=\"%s\">"
-                                             "<timestamp>"
-                                             "%s"
-                                             "</timestamp>"
-                                             "<result_count>"
-                                             "<debug>%i</debug>"
-                                             "<hole>%i</hole>"
-                                             "<info>%i</info>"
-                                             "<log>%i</log>"
-                                             "<warning>%i</warning>"
-                                             "<false_positive>"
-                                             "%i"
-                                             "</false_positive>"
-                                             "</result_count>"
-                                             "</report>"
-                                             "</second_last_report>",
-                                             second_last_report_id,
-                                             timestamp,
-                                             debugs,
-                                             holes,
-                                             infos,
-                                             logs,
-                                             warnings,
-                                             false_positives);
-                      g_free (timestamp);
-                      g_free (second_last_report_id);
-                    }
-                  else
-                    second_last_report = g_strdup ("");
 
                   SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
 
@@ -18884,120 +18900,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    * be best to just abort within task_uuid.
                    */
                   if (task_uuid (index, &tsk_uuid)) abort ();
-
-                  second_last_report_id = task_second_last_report_id (index);
-                  if (second_last_report_id)
-                    {
-                      gchar *timestamp;
-
-                      /* If the first report is the second last report then skip
-                       * doing the count again. */
-                      if (((first_report_id == NULL)
-                           || (strcmp (second_last_report_id, first_report_id)))
-                          && report_counts (second_last_report_id,
-                                            &debugs, &holes_2, &infos_2,
-                                            &logs, &warnings_2,
-                                            &false_positives,
-                                            get_tasks_data->apply_overrides,
-                                            0))
-                        /** @todo Either fail better or abort at SQL level. */
-                        abort ();
-
-                      if (report_timestamp (second_last_report_id, &timestamp))
-                        abort ();
-
-                      second_last_report = g_strdup_printf
-                                            ("<second_last_report>"
-                                             "<report id=\"%s\">"
-                                             "<timestamp>%s</timestamp>"
-                                             "<result_count>"
-                                             "<debug>%i</debug>"
-                                             "<hole>%i</hole>"
-                                             "<info>%i</info>"
-                                             "<log>%i</log>"
-                                             "<warning>%i</warning>"
-                                             "<false_positive>"
-                                             "%i"
-                                             "</false_positive>"
-                                             "</result_count>"
-                                             "</report>"
-                                             "</second_last_report>",
-                                             second_last_report_id,
-                                             timestamp,
-                                             debugs,
-                                             holes_2,
-                                             infos_2,
-                                             logs,
-                                             warnings_2,
-                                             false_positives);
-                      g_free (timestamp);
-                    }
-                  else
-                    second_last_report = g_strdup ("");
-
-                  last_report_id = task_last_report_id (index);
-                  if (last_report_id)
-                    {
-                      gchar *timestamp;
-
-                      /* If the last report is the first report or the second
-                       * last report, then reuse the counts from before. */
-                      if ((first_report_id == NULL)
-                          || (second_last_report_id == NULL)
-                          || (strcmp (last_report_id, first_report_id)
-                              && strcmp (last_report_id,
-                                         second_last_report_id)))
-                        {
-                          if (report_counts
-                               (last_report_id,
-                                &debugs, &holes, &infos, &logs,
-                                &warnings, &false_positives,
-                                get_tasks_data->apply_overrides,
-                                0))
-                            /** @todo Either fail better or abort at SQL level. */
-                            abort ();
-                        }
-                      else
-                        {
-                          holes = holes_2;
-                          infos = infos_2;
-                          warnings = warnings_2;
-                        }
-
-                      if (report_timestamp (last_report_id, &timestamp))
-                        abort ();
-
-                      last_report = g_strdup_printf ("<last_report>"
-                                                     "<report id=\"%s\">"
-                                                     "<timestamp>%s</timestamp>"
-                                                     "<result_count>"
-                                                     "<debug>%i</debug>"
-                                                     "<hole>%i</hole>"
-                                                     "<info>%i</info>"
-                                                     "<log>%i</log>"
-                                                     "<warning>%i</warning>"
-                                                     "<false_positive>"
-                                                     "%i"
-                                                     "</false_positive>"
-                                                     "</result_count>"
-                                                     "</report>"
-                                                     "</last_report>",
-                                                     last_report_id,
-                                                     timestamp,
-                                                     debugs,
-                                                     holes,
-                                                     infos,
-                                                     logs,
-                                                     warnings,
-                                                     false_positives);
-                      g_free (timestamp);
-                      g_free (last_report_id);
-                    }
-                  else
-                    last_report = g_strdup ("");
-
-                  g_free (first_report_id);
-                  g_free (second_last_report_id);
 
                   SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
 
