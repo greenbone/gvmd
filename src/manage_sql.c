@@ -10243,8 +10243,6 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                                clean_port,
                                pkcs12_file,
                                report_file);
-    g_free (report_file);
-    g_free (pkcs12_file);
     g_free (script);
     g_free (clean_ip);
     g_free (clean_port);
@@ -10259,15 +10257,21 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
         /* Run the command with lower privileges in a fork. */
 
         nobody = getpwnam ("nobody");
-        if ((nobody == NULL))
+        if ((nobody == NULL)
+            || chown (report_dir, nobody->pw_uid, nobody->pw_gid)
+            || chown (report_file, nobody->pw_uid, nobody->pw_gid)
+            || chown (pkcs12_file, nobody->pw_uid, nobody->pw_gid))
           {
-            g_warning ("%s: Failed to get record for user nobody: %s\n",
+            g_warning ("%s: Failed to set permissions for user nobody: %s\n",
                        __FUNCTION__,
                        strerror (errno));
+            g_free (report_file);
+            g_free (pkcs12_file);
             g_free (previous_dir);
             return -1;
           }
         g_free (report_file);
+        g_free (pkcs12_file);
 
         pid = fork ();
         switch (pid)
@@ -10397,6 +10401,8 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
     else
       {
         /* Just run the command as the current user. */
+        g_free (report_file);
+        g_free (pkcs12_file);
 
         /* RATS: ignore, command is defined above. */
         if (ret = system (command),
@@ -10551,7 +10557,6 @@ send_to_verinice (const char *url, const char *username, const char *password,
                                clean_username,
                                clean_password,
                                archive_file);
-    g_free (archive_file);
     g_free (script);
     g_free (clean_url);
     g_free (clean_username);
@@ -10567,14 +10572,18 @@ send_to_verinice (const char *url, const char *username, const char *password,
         /* Run the command with lower privileges in a fork. */
 
         nobody = getpwnam ("nobody");
-        if ((nobody == NULL))
+        if ((nobody == NULL)
+            || chown (archive_dir, nobody->pw_uid, nobody->pw_gid)
+            || chown (archive_file, nobody->pw_uid, nobody->pw_gid))
           {
-            g_warning ("%s: Failed to get record for user nobody: %s\n",
+            g_warning ("%s: Failed to set permissions for user nobody: %s\n",
                        __FUNCTION__,
                        strerror (errno));
             g_free (previous_dir);
+            g_free (archive_file);
             return -1;
           }
+        g_free (archive_file);
 
         pid = fork ();
         switch (pid)
@@ -10704,6 +10713,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
     else
       {
         /* Just run the command as the current user. */
+        g_free (archive_file);
 
         /* RATS: ignore, command is defined above. */
         if (ret = system (command),

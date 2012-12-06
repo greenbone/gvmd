@@ -1,3 +1,8 @@
+2012-12-06  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_sql.c (send_to_verinice, send_to_sourcefire): Ensure
+	files have the correct permissions when dropping privileges.
+
 2012-12-06  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl (escape_verb_env): Replaced
