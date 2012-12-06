@@ -18444,6 +18444,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int holes_2, infos_2, warnings_2;
               int false_positives;
               gchar *response;
+              iterator_t alerts;
               gchar *in_assets, *max_checks, *max_hosts;
 
               index = get_iterator_resource (&tasks);
@@ -18843,21 +18844,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               g_free (response);
 
+              init_alert_iterator (&alerts, 0, index, 0, 0, 1, NULL);
+              while (next (&alerts))
+                SENDF_TO_CLIENT_OR_FAIL
+                 ("<alert id=\"%s\">"
+                  "<name>%s</name>"
+                  "</alert>",
+                  alert_iterator_uuid (&alerts),
+                  alert_iterator_name (&alerts));
+              cleanup_iterator (&alerts);
+
               if (get_tasks_data->get.details)
                 {
                   /* The detailed version. */
-
-                  iterator_t alerts;
-
-                  init_alert_iterator (&alerts, 0, index, 0, 0, 1, NULL);
-                  while (next (&alerts))
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<alert id=\"%s\">"
-                      "<name>%s</name>"
-                      "</alert>",
-                      alert_iterator_uuid (&alerts),
-                      alert_iterator_name (&alerts));
-                  cleanup_iterator (&alerts);
 
                   /** @todo Handle error cases.
                    *
