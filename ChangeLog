@@ -1,3 +1,21 @@
+2012-12-06  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Reduce amount of time spent in wrap_row to 0.15% of what
+	was spent before. This lets wrap_row drop from #1 to #15
+	in profiling analysis (measureing total time spent in function).
+	The overall performance gain measured for a very big report was 15%.
+	Main reason is that template parameter are expensive, especially
+	when used in recursion.
+
+	* src/report_formats/LaTeX/latex.xsl (wrap-row): Drop parameter "color"
+	and use white.
+	(wrap-row-color): A copy of the old wrap-row with parameter "color".
+	(break-into-rows-indented, break-into-rows-indented-color): Dito.
+	(break-into-rows, break-into-rows-color): Dito.
+	(text-to-escaped-row, text-to-escaped-row-color): Dito.
+	All over the code: Were other colors than white were used,
+	replace the old call by the -color call.
+
 2012-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS share the
