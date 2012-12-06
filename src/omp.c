@@ -17134,9 +17134,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SENDF_TO_CLIENT_OR_FAIL ("</config>");
                 }
               cleanup_iterator (&configs);
+              SEND_TO_CLIENT_OR_FAIL ("</get_configs_response>");
             }
           get_configs_data_reset (get_configs_data);
-          SEND_TO_CLIENT_OR_FAIL ("</get_configs_response>");
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
