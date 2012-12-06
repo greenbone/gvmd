@@ -18444,6 +18444,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int holes_2, infos_2, warnings_2;
               int false_positives;
               gchar *response;
+              gchar *in_assets, *max_checks, *max_hosts;
 
               index = get_iterator_resource (&tasks);
               target = task_target (index);
@@ -18868,95 +18869,44 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        get_tasks_data->apply_overrides,
                                        write_to_client,
                                        write_to_client_data);
-
-                  {
-                    gchar *in_assets, *max_checks, *max_hosts;
-
-                    in_assets = task_preference_value (index, "in_assets");
-                    max_checks = task_preference_value (index, "max_checks");
-                    max_hosts = task_preference_value (index, "max_hosts");
-
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<preferences>"
-                      "<preference>"
-                      "<name>"
-                      "Maximum concurrently executed NVTs per host"
-                      "</name>"
-                      "<scanner_name>max_checks</scanner_name>"
-                      "<value>%s</value>"
-                      "</preference>"
-                      "<preference>"
-                      "<name>"
-                      "Maximum concurrently scanned hosts"
-                      "</name>"
-                      "<scanner_name>max_hosts</scanner_name>"
-                      "<value>%s</value>"
-                      "</preference>"
-                      "<preference>"
-                      "<name>"
-                      "Add results to Asset Management"
-                      "</name>"
-                      "<scanner_name>in_assets</scanner_name>"
-                      "<value>%s</value>"
-                      "</preference>"
-                      "</preferences>"
-                      "</task>",
-                      max_checks ? max_checks : "4",
-                      max_hosts ? max_hosts : "20",
-                      in_assets ? in_assets : "yes");
-
-                    g_free (in_assets);
-                    g_free (max_checks);
-                    g_free (max_hosts);
-                  }
                 }
-              else
-                {
-                  /* The brief version. */
 
-                  /** @todo This block is very similar to the one above. */
+              in_assets = task_preference_value (index, "in_assets");
+              max_checks = task_preference_value (index, "max_checks");
+              max_hosts = task_preference_value (index, "max_hosts");
 
-                  {
-                    gchar *in_assets, *max_checks, *max_hosts;
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<preferences>"
+                "<preference>"
+                "<name>"
+                "Maximum concurrently executed NVTs per host"
+                "</name>"
+                "<scanner_name>max_checks</scanner_name>"
+                "<value>%s</value>"
+                "</preference>"
+                "<preference>"
+                "<name>"
+                "Maximum concurrently scanned hosts"
+                "</name>"
+                "<scanner_name>max_hosts</scanner_name>"
+                "<value>%s</value>"
+                "</preference>"
+                "<preference>"
+                "<name>"
+                "Add results to Asset Management"
+                "</name>"
+                "<scanner_name>in_assets</scanner_name>"
+                "<value>%s</value>"
+                "</preference>"
+                "</preferences>"
+                "</task>",
+                max_checks ? max_checks : "4",
+                max_hosts ? max_hosts : "20",
+                in_assets ? in_assets : "yes");
 
-                    in_assets = task_preference_value (index, "in_assets");
-                    max_checks = task_preference_value (index, "max_checks");
-                    max_hosts = task_preference_value (index, "max_hosts");
-
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<preferences>"
-                      "<preference>"
-                      "<name>"
-                      "Maximum concurrently executed NVTs per host"
-                      "</name>"
-                      "<scanner_name>max_checks</scanner_name>"
-                      "<value>%s</value>"
-                      "</preference>"
-                      "<preference>"
-                      "<name>"
-                      "Maximum concurrently scanned hosts"
-                      "</name>"
-                      "<scanner_name>max_hosts</scanner_name>"
-                      "<value>%s</value>"
-                      "</preference>"
-                      "<preference>"
-                      "<name>"
-                      "Add results to Asset Management"
-                      "</name>"
-                      "<scanner_name>in_assets</scanner_name>"
-                      "<value>%s</value>"
-                      "</preference>"
-                      "</preferences>"
-                      "</task>",
-                      max_checks ? max_checks : "4",
-                      max_hosts ? max_hosts : "20",
-                      in_assets ? in_assets : "yes");
-
-                    g_free (in_assets);
-                    g_free (max_checks);
-                    g_free (max_hosts);
-                  }
-                }
+              g_free (in_assets);
+              g_free (max_checks);
+              g_free (max_hosts);
             }
           cleanup_iterator (&tasks);
           SEND_TO_CLIENT_OR_FAIL ("</get_tasks_response>");
