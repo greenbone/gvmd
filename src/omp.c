@@ -18443,6 +18443,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int debugs, holes, infos, logs, warnings;
               int holes_2, infos_2, warnings_2;
               int false_positives;
+              gchar *response;
 
               index = get_iterator_resource (&tasks);
               target = task_target (index);
@@ -18755,87 +18756,97 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               next_time = task_schedule_next_time_tz (index);
 
+              response = g_strdup_printf
+                          ("<owner><name>%s</name></owner>"
+                           "<observers>%s</observers>"
+                           "<config id=\"%s\">"
+                           "<name>%s</name>"
+                           "<trash>%i</trash>"
+                           "</config>"
+                           "<target id=\"%s\">"
+                           "<name>%s</name>"
+                           "<trash>%i</trash>"
+                           "</target>"
+                           "<slave id=\"%s\">"
+                           "<name>%s</name>"
+                           "<trash>%i</trash>"
+                           "</slave>"
+                           "<status>%s</status>"
+                           "<progress>%s</progress>"
+                           "%s"
+                           "<report_count>"
+                           "%u<finished>%u</finished>"
+                           "</report_count>"
+                           "<trend>%s</trend>"
+                           "<schedule id=\"%s\">"
+                           "<name>%s</name>"
+                           "<next_time>%s</next_time>"
+                           "<trash>%i</trash>"
+                           "</schedule>"
+                           "%s%s%s",
+                           owner ? owner : "",
+                           ((owner == NULL)
+                            || (strcmp (owner,
+                                        current_credentials.username)))
+                             ? ""
+                             : observers,
+                           config_uuid ? config_uuid : "",
+                           config ? config : "",
+                           task_config_in_trash (index),
+                           task_target_uuid ? task_target_uuid : "",
+                           task_target_name ? task_target_name : "",
+                           target_in_trash,
+                           task_slave_uuid ? task_slave_uuid : "",
+                           task_slave_name ? task_slave_name : "",
+                           task_slave_in_trash (index),
+                           task_run_status_name (index),
+                           progress_xml,
+                           description64,
+                           task_report_count (index),
+                           task_finished_report_count (index),
+                           task_trend_counts
+                            (index, holes, warnings, infos,
+                             holes_2, warnings_2, infos_2),
+                           task_schedule_uuid,
+                           task_schedule_name,
+                           (next_time == 0
+                             ? "over"
+                             : iso_time (&next_time)),
+                           schedule_in_trash,
+                           first_report,
+                           last_report,
+                           second_last_report);
+              free (config);
+              free (task_target_name);
+              free (task_target_uuid);
+              g_free (progress_xml);
+              g_free (first_report);
+              g_free (last_report);
+              g_free (second_last_report);
+              free (owner);
+              free (observers);
+              g_free (description64);
+              free (task_schedule_uuid);
+              free (task_schedule_name);
+              free (task_slave_uuid);
+              free (task_slave_name);
+              if (send_to_client (response,
+                                  write_to_client,
+                                  write_to_client_data))
+                {
+                  g_free (response);
+                  cleanup_iterator (&tasks);
+                  error_send_to_client (error);
+                  cleanup_iterator (&tasks);
+                  return;
+                }
+              g_free (response);
+
               if (get_tasks_data->get.details)
                 {
                   /* The detailed version. */
 
-                  gchar *response;
                   iterator_t alerts;
-
-                  response = g_strdup_printf
-                              ("<owner><name>%s</name></owner>"
-                               "<observers>%s</observers>"
-                               "<config id=\"%s\">"
-                               "<name>%s</name>"
-                               "</config>"
-                               "<target id=\"%s\">"
-                               "<name>%s</name>"
-                               "</target>"
-                               "<slave id=\"%s\">"
-                               "<name>%s</name>"
-                               "</slave>"
-                               "<status>%s</status>"
-                               "<progress>%s</progress>"
-                               "%s"
-                               "<report_count>"
-                               "%u<finished>%u</finished>"
-                               "</report_count>"
-                               "<trend>%s</trend>"
-                               "<schedule id=\"%s\">"
-                               "<name>%s</name>"
-                               "<next_time>%s</next_time>"
-                               "</schedule>"
-                               "%s%s%s",
-                               owner ? owner : "",
-                               ((owner == NULL)
-                                || (strcmp (owner, current_credentials.username)))
-                                 ? ""
-                                 : observers,
-                               config_uuid ? config_uuid : "",
-                               config ? config : "",
-                               task_target_uuid ? task_target_uuid : "",
-                               task_target_name ? task_target_name : "",
-                               task_slave_uuid ? task_slave_uuid : "",
-                               task_slave_name ? task_slave_name : "",
-                               task_run_status_name (index),
-                               progress_xml,
-                               description64,
-                               task_report_count (index),
-                               task_finished_report_count (index),
-                               task_trend (index,
-                                           get_tasks_data->apply_overrides),
-                               task_schedule_uuid,
-                               task_schedule_name,
-                               (next_time == 0
-                                 ? "over"
-                                 : iso_time (&next_time)),
-                               first_report,
-                               last_report,
-                               second_last_report);
-                  free (config);
-                  free (task_target_name);
-                  free (task_target_uuid);
-                  g_free (progress_xml);
-                  g_free (first_report);
-                  g_free (last_report);
-                  g_free (second_last_report);
-                  ret = send_to_client (response,
-                                        write_to_client,
-                                        write_to_client_data);
-                  g_free (response);
-                  g_free (owner);
-                  g_free (observers);
-                  g_free (description64);
-                  free (task_schedule_uuid);
-                  free (task_schedule_name);
-                  free (task_slave_uuid);
-                  free (task_slave_name);
-                  if (ret)
-                    {
-                      cleanup_iterator (&tasks);
-                      error_send_to_client (error);
-                      return;
-                    }
 
                   init_alert_iterator (&alerts, 0, index, 0, 0, 1, NULL);
                   while (next (&alerts))
@@ -18904,109 +18915,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   /* The brief version. */
 
                   /** @todo This block is very similar to the one above. */
-
-                  gchar *line;
-                  char *alert, *alert_uuid;
-
-                  alert = task_alert_name (index);
-                  alert_uuid = task_alert_uuid (index);
-
-                  line = g_strdup_printf
-                           ("<owner><name>%s</name></owner>"
-                            "<observers>%s</observers>"
-                            "<config id=\"%s\">"
-                            "<name>%s</name>"
-                            "<trash>%i</trash>"
-                            "</config>"
-                            "<alert id=\"%s\">"
-                            "<name>%s</name>"
-                            "<trash>%i</trash>"
-                            "</alert>"
-                            "<target id=\"%s\">"
-                            "<name>%s</name>"
-                            "<trash>%i</trash>"
-                            "</target>"
-                            "<slave id=\"%s\">"
-                            "<name>%s</name>"
-                            "<trash>%i</trash>"
-                            "</slave>"
-                            "<status>%s</status>"
-                            "<progress>%s</progress>"
-                            "%s"
-                            "<report_count>"
-                            "%u<finished>%u</finished>"
-                            "</report_count>"
-                            "<trend>%s</trend>"
-                            "<schedule id=\"%s\">"
-                            "<name>%s</name>"
-                            "<next_time>%s</next_time>"
-                            "<trash>%i</trash>"
-                            "</schedule>"
-                            "%s%s%s",
-                            owner ? owner : "",
-                            ((owner == NULL)
-                             || (strcmp (owner,
-                                         current_credentials.username)))
-                              ? ""
-                              : observers,
-                            config_uuid ? config_uuid : "",
-                            config ? config : "",
-                            task_config_in_trash (index),
-                            alert_uuid ? alert_uuid : "",
-                            alert ? alert : "",
-                            alert
-                             ? task_alert_in_trash (index)
-                             : 0,
-                            task_target_uuid ? task_target_uuid : "",
-                            task_target_name ? task_target_name : "",
-                            target_in_trash,
-                            task_slave_uuid ? task_slave_uuid : "",
-                            task_slave_name ? task_slave_name : "",
-                            task_slave_in_trash (index),
-                            task_run_status_name (index),
-                            progress_xml,
-                            description64,
-                            task_report_count (index),
-                            task_finished_report_count (index),
-                            task_trend_counts
-                             (index, holes, warnings, infos,
-                              holes_2, warnings_2, infos_2),
-                            task_schedule_uuid,
-                            task_schedule_name,
-                            (next_time == 0
-                              ? "over"
-                              : iso_time (&next_time)),
-                            schedule_in_trash,
-                            first_report,
-                            last_report,
-                            second_last_report);
-                  free (config);
-                  free (alert);
-                  free (alert_uuid);
-                  free (task_target_name);
-                  free (task_target_uuid);
-                  g_free (progress_xml);
-                  g_free (first_report);
-                  g_free (last_report);
-                  g_free (second_last_report);
-                  free (owner);
-                  free (observers);
-                  g_free (description64);
-                  free (task_schedule_uuid);
-                  free (task_schedule_name);
-                  free (task_slave_uuid);
-                  free (task_slave_name);
-                  if (send_to_client (line,
-                                      write_to_client,
-                                      write_to_client_data))
-                    {
-                      g_free (line);
-                      cleanup_iterator (&tasks);
-                      error_send_to_client (error);
-                      cleanup_iterator (&tasks);
-                      return;
-                    }
-                  g_free (line);
 
                   {
                     gchar *in_assets, *max_checks, *max_hosts;

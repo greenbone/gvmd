@@ -1,5 +1,12 @@
 2012-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS share the bulk of
+	the response between the brief and detailed cases.  This removes ALERT
+	from the brief case, as there are multiple alerts now.  This also brings
+	TRASH to CONFIG, TARGET, SLAVE and SCHEDULE in the detailed case.
+
+2012-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS remove variable
 	tsk_uuid, which is out of use.
 
