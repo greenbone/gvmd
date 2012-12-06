@@ -18439,7 +18439,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               schedule_t schedule;
               time_t next_time;
               char *owner, *observers;
-              int target_in_trash;
+              int target_in_trash, schedule_in_trash;
               int debugs, holes, infos, logs, warnings;
               int holes_2, infos_2, warnings_2;
               int false_positives;
@@ -18714,6 +18714,47 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_free (first_report_id);
               g_free (second_last_report_id);
 
+              SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
+
+              owner = task_owner_name (index);
+              observers = task_observers (index);
+              config = task_config_name (index);
+              config_uuid = task_config_uuid (index);
+              if (target_in_trash)
+                {
+                  task_target_uuid = trash_target_uuid (target);
+                  task_target_name = trash_target_name (target);
+                }
+              else
+                {
+                  task_target_uuid = target_uuid (target);
+                  task_target_name = target_name (target);
+                }
+              if (task_slave_in_trash (index))
+                {
+                  task_slave_uuid = trash_slave_uuid (slave);
+                  task_slave_name = trash_slave_name (slave);
+                }
+              else
+                {
+                  task_slave_uuid = slave_uuid (slave);
+                  task_slave_name = slave_name (slave);
+                }
+              schedule = task_schedule (index);
+              if (schedule)
+                {
+                  task_schedule_uuid = schedule_uuid (schedule);
+                  task_schedule_name = schedule_name (schedule);
+                  schedule_in_trash = task_schedule_in_trash (index);
+                }
+              else
+                {
+                  task_schedule_uuid = (char*) g_strdup ("");
+                  task_schedule_name = (char*) g_strdup ("");
+                  schedule_in_trash = 0;
+                }
+              next_time = task_schedule_next_time_tz (index);
+
               if (get_tasks_data->get.details)
                 {
                   /* The detailed version. */
@@ -18721,28 +18762,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   gchar *response;
                   iterator_t alerts;
 
-                  SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
-
-                  owner = task_owner_name (index);
-                  observers = task_observers (index);
-                  config = task_config_name (index);
-                  config_uuid = task_config_uuid (index);
-                  task_target_uuid = target_uuid (target);
-                  task_target_name = target_name (target);
-                  task_slave_uuid = slave_uuid (slave);
-                  task_slave_name = slave_name (slave);
-                  schedule = task_schedule (index);
-                  if (schedule)
-                    {
-                      task_schedule_uuid = schedule_uuid (schedule);
-                      task_schedule_name = schedule_name (schedule);
-                    }
-                  else
-                    {
-                      task_schedule_uuid = (char*) g_strdup ("");
-                      task_schedule_name = (char*) g_strdup ("");
-                    }
-                  next_time = task_schedule_next_time_tz (index);
                   response = g_strdup_printf
                               ("<owner><name>%s</name></owner>"
                                "<observers>%s</observers>"
@@ -18889,10 +18908,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   gchar *line;
                   char *tsk_uuid;
                   char *alert, *alert_uuid;
-                  int schedule_in_trash;
-
-                  observers = task_observers (index);
-                  owner = task_owner_name (index);
 
                   /** @todo Buffer entire response so respond with error.
                    *
@@ -18901,46 +18916,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    */
                   if (task_uuid (index, &tsk_uuid)) abort ();
 
-                  SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
-
-                  config = task_config_name (index);
-                  config_uuid = task_config_uuid (index);
                   alert = task_alert_name (index);
                   alert_uuid = task_alert_uuid (index);
-                  if (target_in_trash)
-                    {
-                      task_target_uuid = trash_target_uuid (target);
-                      task_target_name = trash_target_name (target);
-                    }
-                  else
-                    {
-                      task_target_uuid = target_uuid (target);
-                      task_target_name = target_name (target);
-                    }
-                  if (task_slave_in_trash (index))
-                    {
-                      task_slave_uuid = trash_slave_uuid (slave);
-                      task_slave_name = trash_slave_name (slave);
-                    }
-                  else
-                    {
-                      task_slave_uuid = slave_uuid (slave);
-                      task_slave_name = slave_name (slave);
-                    }
-                  schedule = task_schedule (index);
-                  if (schedule)
-                    {
-                      task_schedule_uuid = schedule_uuid (schedule);
-                      task_schedule_name = schedule_name (schedule);
-                      schedule_in_trash = task_schedule_in_trash (index);
-                    }
-                  else
-                    {
-                      task_schedule_uuid = (char*) g_strdup ("");
-                      task_schedule_name = (char*) g_strdup ("");
-                      schedule_in_trash = 0;
-                    }
-                  next_time = task_schedule_next_time_tz (index);
+
                   line = g_strdup_printf
                            ("<owner><name>%s</name></owner>"
                             "<observers>%s</observers>"

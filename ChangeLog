@@ -1,6 +1,13 @@
 2012-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS share the
+	SEND_GET_COMMON and some variable inits between the brief and
+	detailed cases.  This corrects the detailed version when the target,
+	slave or schedule is in the trashcan.
+
+2012-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS share the
 	creation of SECOND_LAST_REPORT and LAST_REPORT between the brief and
 	detailed cases.  This brings the report count optimisation from the
 	brief case to the detailed case.
