@@ -18333,7 +18333,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_TASKS:
         {
-          gchar* response;
+//          gchar* response;
           iterator_t tasks;
           int count, filtered, ret, first;
           get_data_t * get;
@@ -18394,7 +18394,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
           SEND_GET_START ("task", &get_tasks_data->get);
 
-          // FIX add to SEND_GET_END
+#if 0
+          // FIX add to SEND_GET_END (full task count for owner)
           response = g_strdup_printf ("<task_count>%u</task_count>",
                                       get_tasks_data->get.id
                                        ? 1
@@ -18410,6 +18411,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               return;
             }
           g_free (response);
+#endif
 
 #if 0
           // FIX in filter?

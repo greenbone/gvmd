@@ -3340,6 +3340,111 @@ init_get_iterator (iterator_t* iterator, const char *type,
   return 0;
 }
 
+/**
+ * @brief Count number of a particular resource.
+ *
+ * @param[in]  type              Type of resource.
+ * @param[in]  get               GET params.
+ * @param[in]  iterator_columns  Iterator columns.
+ * @param[in]  extra_columns     Extra columns.
+ * @param[in]  distinct          Whether the query should be distinct.  Skipped
+ *                               for trash and single resource.
+ * @param[in]  extra_tables      Join tables.  Skipped for trash and single
+ *                               resource.
+ * @param[in]  extra_where       Extra WHERE clauses.  Skipped for trash and
+ *                               single resource.
+ * @param[in]  owned             Only count items owned by current user.
+ *
+ * @return Total number of resources in filtered set.
+ */
+static int
+count (const char *type, const get_data_t *get,
+       const char *iterator_columns, const char **extra_columns,
+       int distinct, const char *extra_tables, const char *extra_where,
+       int owned)
+{
+  int actions, ret;
+  gchar *clause, *owned_clause;
+  gchar *filter;
+
+  assert (current_credentials.uuid);
+  assert (get);
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return -1;
+    }
+  else
+    filter = NULL;
+
+  clause = filter_clause (type, filter ? filter : get->filter, extra_columns,
+                          get->trash, NULL, NULL, NULL);
+  if (owned)
+    owned_clause = g_strdup_printf ("((%ss.owner IS NULL) OR (%ss.owner ="
+                                    " (SELECT ROWID FROM users"
+                                    " WHERE users.uuid = '%s')))",
+                                    type,
+                                    type,
+                                    current_credentials.uuid);
+  else
+    owned_clause = g_strdup ("1");
+
+  if (get->actions == NULL
+      || strlen (get->actions) == 0
+      || (actions = parse_actions (get->actions)) == 0)
+    {
+      ret = sql_int (0, 0,
+                     "SELECT count (%s%ss.ROWID), %s"
+                     " FROM %ss%s"
+                     " WHERE %s"
+                     "%s%s%s;",
+                     distinct ? "DISTINCT " : "",
+                     type,
+                     iterator_columns,
+                     type,
+                     extra_tables ? extra_tables : "",
+                     owned_clause,
+                     clause ? " AND " : "",
+                     clause ? clause : "",
+                     extra_where ? extra_where : "");
+      g_free (clause);
+      return ret;
+    }
+
+  ret = sql_int (0, 0,
+                 "SELECT count (%s%ss.ROWID), %s"
+                 " FROM %ss%s"
+                 " WHERE %s"
+                 "  OR"
+                 // FIX
+                 "  (SELECT tasks.ROWID FROM tasks"
+                 "   WHERE target = targets.ROWID)"
+                 "  IN"
+                 "  (SELECT task FROM task_users WHERE user ="
+                 "   (SELECT ROWID FROM users"
+                 "    WHERE users.uuid = '%s')"
+                 "   AND actions & %u = %u))"
+                 "%s%s%s;",
+                 distinct ? "DISTINCT " : "",
+                 type,
+                 iterator_columns,
+                 type,
+                 extra_tables ? extra_tables : "",
+                 owned_clause,
+                 current_credentials.uuid,
+                 actions,
+                 actions,
+                 clause ? " AND " : "",
+                 clause ? clause : "",
+                 extra_where ? extra_where : "");
+
+  g_free (owned_clause);
+  g_free (clause);
+  return ret;
+}
+
 
 /* Creation. */
 
@@ -14092,17 +14197,23 @@ authenticate (credentials_t* credentials)
 /**
  * @brief Return the number of tasks associated with the current user.
  *
+ * @param[in]  get  GET params.
+ *
  * @return The number of tasks associated with the current user.
  */
 unsigned int
-task_count ()
+task_count (const get_data_t *get)
 {
-  return (unsigned int) sql_int (0, 0,
-                                 "SELECT count(*) FROM tasks WHERE owner ="
-                                 " (SELECT ROWID FROM users"
-                                 "  WHERE users.uuid = '%s')"
-                                 " AND hidden < 2;",
-                                 current_credentials.uuid);
+  static const char *extra_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
+  return count ("task", get, TASK_ITERATOR_COLUMNS, extra_columns, 0, NULL,
+                (get->id
+                 && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
+                     == 0))
+                 ? " AND hidden = 1"
+                 : (get->trash
+                     ? " AND hidden = 2"
+                     : " AND hidden = 0"),
+                TRUE);
 }
 
 /**
@@ -28300,111 +28411,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   " port_list_location = " G_STRINGIFY (LOCATION_TRASH)
 
 /**
- * @brief Count number of a particular resource.
- *
- * @param[in]  type              Type of resource.
- * @param[in]  get               GET params.
- * @param[in]  iterator_columns  Iterator columns.
- * @param[in]  extra_columns     Extra columns.
- * @param[in]  distinct          Whether the query should be distinct.  Skipped
- *                               for trash and single resource.
- * @param[in]  extra_tables      Join tables.  Skipped for trash and single
- *                               resource.
- * @param[in]  extra_where       Extra WHERE clauses.  Skipped for trash and
- *                               single resource.
- * @param[in]  owned             Only count items owned by current user.
- *
- * @return Total number of resources in filtered set.
- */
-static int
-count (const char *type, const get_data_t *get,
-       const char *iterator_columns, const char **extra_columns,
-       int distinct, const char *extra_tables, const char *extra_where,
-       int owned)
-{
-  int actions, ret;
-  gchar *clause, *owned_clause;
-  gchar *filter;
-
-  assert (current_credentials.uuid);
-  assert (get);
-
-  if (get->filt_id && strcmp (get->filt_id, "0"))
-    {
-      filter = filter_term (get->filt_id);
-      if (filter == NULL)
-        return -1;
-    }
-  else
-    filter = NULL;
-
-  clause = filter_clause (type, filter ? filter : get->filter, extra_columns,
-                          get->trash, NULL, NULL, NULL);
-  if (owned)
-    owned_clause = g_strdup_printf ("((%ss.owner IS NULL) OR (%ss.owner ="
-                                    " (SELECT ROWID FROM users"
-                                    " WHERE users.uuid = '%s')))",
-                                    type,
-                                    type,
-                                    current_credentials.uuid);
-  else
-    owned_clause = g_strdup ("1");
-
-  if (get->actions == NULL
-      || strlen (get->actions) == 0
-      || (actions = parse_actions (get->actions)) == 0)
-    {
-      ret = sql_int (0, 0,
-                     "SELECT count (%s%ss.ROWID), %s"
-                     " FROM %ss%s"
-                     " WHERE %s"
-                     "%s%s%s;",
-                     distinct ? "DISTINCT " : "",
-                     type,
-                     iterator_columns,
-                     type,
-                     extra_tables ? extra_tables : "",
-                     owned_clause,
-                     clause ? " AND " : "",
-                     clause ? clause : "",
-                     extra_where ? extra_where : "");
-      g_free (clause);
-      return ret;
-    }
-
-  ret = sql_int (0, 0,
-                 "SELECT count (%s%ss.ROWID), %s"
-                 " FROM %ss%s"
-                 " WHERE %s"
-                 "  OR"
-                 // FIX
-                 "  (SELECT tasks.ROWID FROM tasks"
-                 "   WHERE target = targets.ROWID)"
-                 "  IN"
-                 "  (SELECT task FROM task_users WHERE user ="
-                 "   (SELECT ROWID FROM users"
-                 "    WHERE users.uuid = '%s')"
-                 "   AND actions & %u = %u))"
-                 "%s%s%s;",
-                 distinct ? "DISTINCT " : "",
-                 type,
-                 iterator_columns,
-                 type,
-                 extra_tables ? extra_tables : "",
-                 owned_clause,
-                 current_credentials.uuid,
-                 actions,
-                 actions,
-                 clause ? " AND " : "",
-                 clause ? clause : "",
-                 extra_where ? extra_where : "");
-
-  g_free (owned_clause);
-  g_free (clause);
-  return ret;
-}
-
-/**
  * @brief Count number of targets.
  *
  * @param[in]  get  GET params.
@@ -39888,7 +39894,7 @@ int
 report_format_count (const get_data_t *get)
 {
   static const char *extra_columns[] = REPORT_FORMAT_ITERATOR_FILTER_COLUMNS;
-  return count ("report_format", get, REPORT_FORMAT_ITERATOR_COLUMNS, 
+  return count ("report_format", get, REPORT_FORMAT_ITERATOR_COLUMNS,
                 extra_columns, 0, 0, 0, TRUE);
 }
 
@@ -40038,7 +40044,7 @@ report_format_iterator_trust_time (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 
+  ret = (time_t) sqlite3_column_int (iterator->stmt,
                                      GET_ITERATOR_COLUMN_COUNT + 6);
   return ret;
 }

@@ -389,7 +389,7 @@ extern /*@null@*/ report_t current_report;
 /* Task code specific to the representation of tasks. */
 
 unsigned int
-task_count ();
+task_count (const get_data_t *);
 
 unsigned int
 trash_task_count ();
