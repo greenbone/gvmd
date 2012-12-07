@@ -18335,7 +18335,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           gchar* response;
           iterator_t tasks;
-          int ret;
+          int count, filtered, ret, first;
+          get_data_t * get;
 
           assert (strcasecmp ("GET_TASKS", element_name) == 0);
 
@@ -18387,9 +18388,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          SEND_TO_CLIENT_OR_FAIL ("<get_tasks_response"
-                                  " status=\"" STATUS_OK "\""
-                                  " status_text=\"" STATUS_OK_TEXT "\">");
+          count = 0;
+          get = &get_tasks_data->get;
+          // FIX what about filt_id?
+          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+          SEND_GET_START ("task", &get_tasks_data->get);
+
+          // FIX add to SEND_GET_END
           response = g_strdup_printf ("<task_count>%u</task_count>",
                                       get_tasks_data->get.id
                                        ? 1
@@ -18407,16 +18412,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           g_free (response);
 
 #if 0
-          // FIX filter
+          // FIX in filter?
           SENDF_TO_CLIENT_OR_FAIL
-           ("<sort>"
-            "<field>%s<order>%s</order></field>"
-            "</sort>"
-            "<apply_overrides>%i</apply_overrides>",
-            get_tasks_data->get.sort_field
-             ? get_tasks_data->get.sort_field
-             : "ROWID",
-            get_tasks_data->get.sort_order ? "ascending" : "descending",
+           ("<apply_overrides>%i</apply_overrides>",
             get_tasks_data->apply_overrides);
 #endif
 
@@ -18906,9 +18904,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_free (in_assets);
               g_free (max_checks);
               g_free (max_hosts);
+
+              count++;
             }
           cleanup_iterator (&tasks);
-          SEND_TO_CLIENT_OR_FAIL ("</get_tasks_response>");
+          filtered = get_tasks_data->get.id
+                      ? 1
+                      : task_count (&get_tasks_data->get);
+          SEND_GET_END ("task", &get_tasks_data->get, count, filtered);
         }
 
         get_tasks_data_reset (get_tasks_data);
