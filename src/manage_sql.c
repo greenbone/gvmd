@@ -24692,9 +24692,9 @@ manage_report (report_t report, report_format_t report_format,
                           show_closed_cves, notes, notes_details, overrides,
                           overrides_details, first_result, max_results, type,
                           NULL, 0, NULL, NULL, 0, 0);
+  g_free (get.filt_id);
   if (ret)
     {
-      g_free (get.filt_id);
       g_free (xml_file);
       return NULL;
     }
@@ -24706,11 +24706,14 @@ manage_report (report_t report, report_format_t report_format,
     iterator_t formats;
     const char *uuid_format;
     gchar *script, *script_dir;
+    get_data_t report_format_get;
 
     /* Setup file names. */
 
-    init_report_format_iterator (&formats, &get);
-    g_free (get.filt_id);
+    memset (&report_format_get, '\0', sizeof (report_format_get));
+    report_format_get.id = report_format_uuid (report_format);
+
+    init_report_format_iterator (&formats, &report_format_get);
     if (next (&formats) == FALSE)
       {
         g_free (xml_file);
@@ -25218,10 +25221,14 @@ manage_send_report (report_t report, report_t delta_report,
     iterator_t formats;
     const char *uuid_format;
     gchar *script, *script_dir;
+    get_data_t report_format_get;
 
     /* Setup file names. */
 
-    init_report_format_iterator (&formats, get);
+    memset (&report_format_get, '\0', sizeof (report_format_get));
+    report_format_get.id = report_format_uuid (report_format);
+
+    init_report_format_iterator (&formats, &report_format_get);
     if (next (&formats) == FALSE)
       {
         g_free (xml_file);
