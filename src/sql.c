@@ -944,6 +944,80 @@ sql_current_offset (sqlite3_context *context, int argc, sqlite3_value** argv)
     (int) current_offset ((const char *) sqlite3_value_text (argv[0])));
 }
 
+/**
+ * @brief Calculate the trend of a task.
+ *
+ * This is a callback for a scalar SQL function of two argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_task_trend (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  unsigned int overrides;
+  task_t task;
+
+  assert (argc == 2);
+
+  task = sqlite3_value_int64 (argv[0]);
+  if (task == 0)
+    {
+      sqlite3_result_error (context, "Task argument was 0", -1);
+      return;
+    }
+
+  overrides = sqlite3_value_int (argv[1]);
+
+  sqlite3_result_text (context, task_trend (task, overrides), -1,
+                       SQLITE_TRANSIENT);
+}
+
+/**
+ * @brief Calculate the threat level of a task.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  task_t task;
+  report_t last_report;
+  const char *threat;
+
+  assert (argc == 1);
+
+  task = sqlite3_value_int64 (argv[0]);
+  if (task == 0)
+    {
+      sqlite3_result_error (context, "Task argument was 0", -1);
+      return;
+    }
+
+  threat = task_threat_level (task);
+  tracef ("   %s: %llu: %s\n", __FUNCTION__, task, threat);
+  if (threat)
+    {
+      sqlite3_result_text (context, threat, -1, SQLITE_TRANSIENT);
+      return;
+    }
+
+  task_last_report (task, &last_report);
+  if (last_report == 0)
+    {
+      sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
+      return;
+    }
+
+  sqlite3_result_text (context, "None", -1, SQLITE_TRANSIENT);
+  return;
+}
+
 
 /* Iterators. */
 

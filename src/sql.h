@@ -97,11 +97,17 @@ sql_common_cve (sqlite3_context *, int argc, sqlite3_value **);
 void
 sql_current_offset (sqlite3_context *, int, sqlite3_value **);
 
-sqlite3_stmt *
-sql_prepare (const char* sql, ...);
+void
+sql_task_trend (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_threat_level (sqlite3_context *, int argc, sqlite3_value **);
 
 
 /* Iterators. */
+
+sqlite3_stmt *
+sql_prepare (const char* sql, ...);
 
 void
 init_prepared_iterator (iterator_t*, sqlite3_stmt*);

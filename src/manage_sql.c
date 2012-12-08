@@ -11843,19 +11843,56 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * @brief Filter columns for task iterator.
  */
 #define TASK_ITERATOR_FILTER_COLUMNS                   \
- { GET_ITERATOR_FILTER_COLUMNS, NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first", "last", "threat", \
+   "trend", NULL }
 
 /**
  * @brief Task iterator columns.
  */
-#define TASK_ITERATOR_COLUMNS                             \
-  GET_ITERATOR_COLUMNS ", run_status"
+#define TASK_ITERATOR_COLUMNS                              \
+  /* FIX run_status_name (run_status) AS status */         \
+  GET_ITERATOR_COLUMNS ", run_status AS status,"           \
+  " (SELECT count(*) FROM reports"                         \
+  /* TODO 1 == TASK_STATUS_DONE */                         \
+  "  WHERE task = tasks.ROWID AND scan_run_status = 1)"    \
+  " AS total,"                                             \
+  " (SELECT date FROM reports WHERE task = tasks.ROWID"    \
+  /* TODO 1 == TASK_STATUS_DONE */                         \
+  "  AND scan_run_status = 1"                              \
+  "  ORDER BY date ASC LIMIT 1)"                           \
+  " AS first,"                                             \
+  " (SELECT ROWID FROM reports WHERE task = tasks.ROWID"   \
+  /* TODO 1 == TASK_STATUS_DONE */                         \
+  "  AND scan_run_status = 1"                              \
+  "  ORDER BY date DESC LIMIT 1)"                          \
+  " AS last,"                                              \
+  " task_threat_level (ROWID) AS threat,"                  \
+  /* FIX second arg is overrides */                        \
+  " task_trend (ROWID, 0) AS trend"
 
 /**
  * @brief Task iterator columns for trash case.
  */
-#define TASK_ITERATOR_TRASH_COLUMNS                       \
-  GET_ITERATOR_COLUMNS ", run_status"
+#define TASK_ITERATOR_TRASH_COLUMNS                        \
+  /* FIX run_status_name (run_status) AS status */         \
+  GET_ITERATOR_COLUMNS ", run_status AS status,"           \
+  " (SELECT count(*) FROM reports"                         \
+  /* TODO 1 == TASK_STATUS_DONE */                         \
+  "  WHERE task = tasks.ROWID AND scan_run_status = 1)"    \
+  " AS total,"                                             \
+  " (SELECT date FROM reports WHERE task = tasks.ROWID"    \
+  /* TODO 1 == TASK_STATUS_DONE */                         \
+  "  AND scan_run_status = 1"                              \
+  "  ORDER BY date ASC LIMIT 1)"                           \
+  " AS first,"                                             \
+  " (SELECT ROWID FROM reports WHERE task = tasks.ROWID"   \
+  /* TODO 1 == TASK_STATUS_DONE */                         \
+  "  AND scan_run_status = 1"                              \
+  "  ORDER BY date DESC LIMIT 1)"                          \
+  " AS last,"                                              \
+  " task_threat_level (ROWID) AS threat,"                  \
+  /* FIX second arg is overrides */                        \
+  " task_trend (ROWID, 0) AS trend"
 
 /**
  * @brief Initialise a task iterator, limited to current user's tasks.
@@ -12273,6 +12310,34 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           != SQLITE_OK)
         {
           g_warning ("%s: failed to create current_offset", __FUNCTION__);
+          abort ();
+        }
+
+      if (sqlite3_create_function (task_db,
+                                   "task_trend",
+                                   2,               /* Number of args. */
+                                   SQLITE_UTF8,
+                                   NULL,            /* Callback data. */
+                                   sql_task_trend,
+                                   NULL,            /* xStep. */
+                                   NULL)            /* xFinal. */
+          != SQLITE_OK)
+        {
+          g_warning ("%s: failed to create task_trend", __FUNCTION__);
+          abort ();
+        }
+
+      if (sqlite3_create_function (task_db,
+                                   "task_threat_level",
+                                   1,               /* Number of args. */
+                                   SQLITE_UTF8,
+                                   NULL,            /* Callback data. */
+                                   sql_threat_level,
+                                   NULL,            /* xStep. */
+                                   NULL)            /* xFinal. */
+          != SQLITE_OK)
+        {
+          g_warning ("%s: failed to create task_threat_level", __FUNCTION__);
           abort ();
         }
     }
@@ -14872,7 +14937,7 @@ task_end_time (task_t task)
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 task_last_report (task_t task, report_t *report)
 {
   switch (sql_int64 (report, 0, 0,
@@ -15222,7 +15287,8 @@ task_threat_level (task_t task)
   char *type;
   gchar *ov, *new_type_sql;
 
-  assert (current_credentials.uuid);
+  if (current_credentials.uuid == NULL)
+    return NULL;
 
   ov = g_strdup_printf
         ("SELECT overrides.new_threat"

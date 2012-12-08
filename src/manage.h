@@ -532,11 +532,17 @@ task_report_count (task_t);
 unsigned int
 task_finished_report_count (task_t);
 
+int
+task_last_report (task_t, report_t*);
+
 const char *
 task_trend_counts (task_t, int, int, int, int, int, int);
 
 const char *
 task_trend (task_t, int);
+
+const char *
+task_threat_level (task_t);
 
 schedule_t
 task_schedule (task_t);
