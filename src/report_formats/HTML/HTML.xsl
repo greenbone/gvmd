@@ -41,11 +41,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <!-- This is called within a PRE. -->
 <xsl:template name="wrap">
-  <xsl:param name="string"></xsl:param>
+  <xsl:param name="string"/>
 
   <xsl:for-each select="str:tokenize($string, '&#10;')">
     <xsl:call-template name="wrap-line">
-      <xsl:with-param name="string"><xsl:value-of select="."/></xsl:with-param>
+      <xsl:with-param name="string" select="."/>
     </xsl:call-template>
     <xsl:text>
 </xsl:text>
@@ -54,7 +54,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <!-- This is called within a PRE. -->
 <xsl:template name="wrap-line">
-  <xsl:param name="string"></xsl:param>
+  <xsl:param name="string"/>
 
   <xsl:variable name="to-next-newline">
     <xsl:value-of select="substring-before($string, '&#10;')"/>
@@ -69,7 +69,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:value-of select="substring($string, 1, 90)"/>
       <xsl:if test="string-length($string) &gt; 90">&#8629;
 <xsl:call-template name="wrap-line">
-  <xsl:with-param name="string"><xsl:value-of select="substring($string, 91, string-length($string))"/></xsl:with-param>
+  <xsl:with-param name="string" select="substring($string, 91, string-length($string))"/>
 </xsl:call-template>
       </xsl:if>
     </xsl:when>
@@ -77,7 +77,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <!-- There's a newline before the edge, so output the line. -->
 <xsl:value-of select="substring($string, 1, string-length($to-next-newline) + 1)"/>
 <xsl:call-template name="wrap-line">
-  <xsl:with-param name="string"><xsl:value-of select="substring($string, string-length($to-next-newline) + 2, string-length($string))"/></xsl:with-param>
+  <xsl:with-param name="string" select="substring($string, string-length($to-next-newline) + 2, string-length($string))"/>
 </xsl:call-template>
     </xsl:when>
     <xsl:otherwise>
@@ -85,7 +85,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:value-of select="substring($string, 1, 90)"/>
       <xsl:if test="string-length($string) &gt; 90">&#8629;
 <xsl:call-template name="wrap-line">
-  <xsl:with-param name="string"><xsl:value-of select="substring($string, 91, string-length($string))"/></xsl:with-param>
+  <xsl:with-param name="string" select="substring($string, 91, string-length($string))"/>
 </xsl:call-template>
       </xsl:if>
     </xsl:otherwise>
@@ -94,18 +94,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 </xsl:template>
 
 <xsl:template name="highlight-diff">
-  <xsl:param name="string"></xsl:param>
+  <xsl:param name="string"/>
 
   <xsl:for-each select="str:tokenize($string, '&#10;')">
       <xsl:call-template name="highlight-diff-line">
-        <xsl:with-param name="string"><xsl:value-of select="."/></xsl:with-param>
+        <xsl:with-param name="string" select="."/>
       </xsl:call-template>
   </xsl:for-each>
 </xsl:template>
 
 <!-- This is called within a PRE. -->
 <xsl:template name="highlight-diff-line">
-  <xsl:param name="string"></xsl:param>
+  <xsl:param name="string"/>
 
   <xsl:variable name="to-next-newline">
     <xsl:value-of select="substring-before($string, '&#10;')"/>
@@ -141,7 +141,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:choose>
       <xsl:if test="string-length($string) &gt; 90">&#8629;
 <xsl:call-template name="highlight-diff-line">
-  <xsl:with-param name="string"><xsl:value-of select="substring($string, 91, string-length($string))"/></xsl:with-param>
+  <xsl:with-param name="string" select="substring($string, 91, string-length($string))"/>
 </xsl:call-template>
       </xsl:if>
     </xsl:when>
@@ -170,7 +170,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:otherwise>
       </xsl:choose>
 <xsl:call-template name="highlight-diff-line">
-  <xsl:with-param name="string"><xsl:value-of select="substring($string, string-length($to-next-newline) + 2, string-length($string))"/></xsl:with-param>
+  <xsl:with-param name="string" select="substring($string, string-length($to-next-newline) + 2, string-length($string))"/>
 </xsl:call-template>
     </xsl:when>
     <xsl:otherwise>
@@ -199,7 +199,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:choose>
       <xsl:if test="string-length($string) &gt; 90">&#8629;
 <xsl:call-template name="hightlight-diff-line">
-  <xsl:with-param name="string"><xsl:value-of select="substring($string, 91, string-length($string))"/></xsl:with-param>
+  <xsl:with-param name="string" select="substring($string, 91, string-length($string))"/>
 </xsl:call-template>
       </xsl:if>
     </xsl:otherwise>
@@ -235,7 +235,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <b>Note</b><xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if><br/>
       <pre>
         <xsl:call-template name="wrap">
-          <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
+          <xsl:with-param name="string" select="text"/>
         </xsl:call-template>
       </pre>
       <xsl:choose>
@@ -267,7 +267,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         to <xsl:value-of select="new_threat"/></b><xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if><br/>
       <pre>
         <xsl:call-template name="wrap">
-          <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
+          <xsl:with-param name="string" select="text"/>
         </xsl:call-template>
       </pre>
       <xsl:choose>
@@ -360,7 +360,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
           <pre>
             <xsl:call-template name="wrap">
-              <xsl:with-param name="string"><xsl:apply-templates select="description"/></xsl:with-param>
+              <xsl:with-param name="string" select="description"/>
             </xsl:call-template>
           </pre>
         </div>
@@ -431,7 +431,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </xsl:choose>
           <pre>
             <xsl:call-template name="wrap">
-              <xsl:with-param name="string"><xsl:apply-templates select="description"/></xsl:with-param>
+              <xsl:with-param name="string" select="description"/>
             </xsl:call-template>
           </pre>
         </div>
@@ -442,7 +442,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <b>Result 2</b>
                 <pre>
                   <xsl:call-template name="wrap">
-                    <xsl:with-param name="string"><xsl:value-of select="delta/result/description"/></xsl:with-param>
+                    <xsl:with-param name="string" select="delta/result/description"/>
                   </xsl:call-template>
                 </pre>
               </div>
@@ -450,7 +450,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <b>Different Lines</b>
                 <p>
                   <xsl:call-template name="highlight-diff">
-                    <xsl:with-param name="string"><xsl:value-of select="delta/diff"/></xsl:with-param>
+                    <xsl:with-param name="string" select="delta/diff"/>
                   </xsl:call-template>
                 </p>
               </div>

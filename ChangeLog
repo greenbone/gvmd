@@ -1,5 +1,14 @@
 2012-12-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* src/report_formats/HTML/HTML.xsl: Reduced all occurences of
+	xsl:with-param where inly a value-of operation was inside to direct
+	"select" inside with-param.
+	Also reduced all /xsl:param closing tags where content was empty
+	anyway. The gain was minimal. This report is fast anyway compared
+	to the other report format plugins.
+
+2012-12-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* src/report_formats/LaTeX/latex.xsl: Reduced all occurences of
 	xsl:with-param where inly a value-of operation was inside to direct
 	"select" inside with-param.
