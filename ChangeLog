@@ -1,5 +1,12 @@
 2012-12-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* src/report_formats/LaTeX/latex.xsl: Reduced all occurences of
+	xsl:with-param where inly a value-of operation was inside to direct
+	"select" inside with-param.
+	This gained clearly less than 1% performance improvement.
+
+2012-12-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* src/report_formats/TXT/TXT.xsl: Reduced all occurences of
 	xsl:with-param where inly a value-of operation was inside to direct
 	"select" inside with-param.

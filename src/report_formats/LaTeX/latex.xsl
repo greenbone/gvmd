@@ -802,23 +802,23 @@ advice given in each description, in order to rectify the issue.
     </xsl:call-template>
     <xsl:call-template name="single-host-overview-table-row">
       <xsl:with-param name="threat">High</xsl:with-param>
-      <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
+      <xsl:with-param name="host" select="$host"/>
     </xsl:call-template>
     <xsl:call-template name="single-host-overview-table-row">
       <xsl:with-param name="threat">Medium</xsl:with-param>
-      <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
+      <xsl:with-param name="host" select="$host"/>
     </xsl:call-template>
     <xsl:call-template name="single-host-overview-table-row">
       <xsl:with-param name="threat">Low</xsl:with-param>
-      <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
+      <xsl:with-param name="host" select="$host"/>
     </xsl:call-template>
     <xsl:call-template name="single-host-overview-table-row">
       <xsl:with-param name="threat">Log</xsl:with-param>
-      <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
+      <xsl:with-param name="host" select="$host"/>
     </xsl:call-template>
     <xsl:call-template name="single-host-overview-table-row">
       <xsl:with-param name="threat">False Positive</xsl:with-param>
-      <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
+      <xsl:with-param name="host" select="$host"/>
     </xsl:call-template>
     <xsl:text>\end{longtable}</xsl:text><xsl:call-template name="newline"/>
   </xsl:template>
@@ -1273,48 +1273,48 @@ advice given in each description, in order to rectify the issue.
     <xsl:for-each select="openvas:report()/ports/port[host=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">High</xsl:with-param>
-        <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
-        <xsl:with-param name="port_service"><xsl:value-of select="text()"/></xsl:with-param>
+        <xsl:with-param name="host" select="$host"/>
+        <xsl:with-param name="port_service" select="text()"/>
       </xsl:call-template>
     </xsl:for-each>
 
     <xsl:for-each select="openvas:report()/ports/port[host=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Medium</xsl:with-param>
-        <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
-        <xsl:with-param name="port_service"><xsl:value-of select="text()"/></xsl:with-param>
+        <xsl:with-param name="host" select="$host"/>
+        <xsl:with-param name="port_service" select="text()"/>
       </xsl:call-template>
     </xsl:for-each>
 
     <xsl:for-each select="openvas:report()/ports/port[host=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Low</xsl:with-param>
-        <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
-        <xsl:with-param name="port_service"><xsl:value-of select="text()"/></xsl:with-param>
+        <xsl:with-param name="host" select="$host"/>
+        <xsl:with-param name="port_service" select="text()"/>
       </xsl:call-template>
     </xsl:for-each>
 
     <xsl:for-each select="openvas:report()/ports/port[host=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Log</xsl:with-param>
-        <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
-        <xsl:with-param name="port_service"><xsl:value-of select="text()"/></xsl:with-param>
+        <xsl:with-param name="host" select="$host"/>
+        <xsl:with-param name="port_service" select="text()"/>
       </xsl:call-template>
     </xsl:for-each>
 
     <xsl:for-each select="openvas:report()/ports/port[host=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">Debug</xsl:with-param>
-        <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
-        <xsl:with-param name="port_service"><xsl:value-of select="text()"/></xsl:with-param>
+        <xsl:with-param name="host" select="$host"/>
+        <xsl:with-param name="port_service" select="text()"/>
       </xsl:call-template>
     </xsl:for-each>
 
     <xsl:for-each select="openvas:report()/ports/port[host=$host]">
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">False Positive</xsl:with-param>
-        <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
-        <xsl:with-param name="port_service"><xsl:value-of select="text()"/></xsl:with-param>
+        <xsl:with-param name="host" select="$host"/>
+        <xsl:with-param name="port_service" select="text()"/>
       </xsl:call-template>
     </xsl:for-each>
   </xsl:template>
