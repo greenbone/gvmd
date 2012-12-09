@@ -109,11 +109,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
 <xsl:template name="wrap">
-  <xsl:param name="string"></xsl:param>
+  <xsl:param name="string"/>
 
   <xsl:for-each select="str:tokenize($string, '&#10;')">
     <xsl:call-template name="wrap-line">
-      <xsl:with-param name="string"><xsl:value-of select="."/></xsl:with-param>
+      <xsl:with-param name="string" select="."/>
     </xsl:call-template>
     <xsl:text>
 </xsl:text>
@@ -123,8 +123,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <!-- Split long comma-separated lists into several lines of items_per_line
      elements without cutting in the middle of an item. -->
 <xsl:template name="wrapped_list">
-  <xsl:param name="list"></xsl:param>
-  <xsl:param name="items_per_line"></xsl:param>
+  <xsl:param name="list"/>
+  <xsl:param name="items_per_line"/>
 
   <xsl:for-each select="str:tokenize($list, ',')">
     <xsl:choose>
@@ -200,7 +200,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <!-- This is called within a PRE. -->
 <xsl:template name="wrap-line">
-  <xsl:param name="string"></xsl:param>
+  <xsl:param name="string"/>
 
   <xsl:variable name="to-next-newline">
     <xsl:value-of select="substring-before($string, '&#10;')"/>
@@ -215,7 +215,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:value-of select="substring($string, 1, 80)"/>
       <xsl:if test="string-length($string) &gt; 80">!
 <xsl:call-template name="wrap-line">
-  <xsl:with-param name="string"><xsl:value-of select="substring($string, 81, string-length($string))"/></xsl:with-param>
+  <xsl:with-param name="string" select="substring($string, 81, string-length($string))"/>
 </xsl:call-template>
       </xsl:if>
     </xsl:when>
@@ -223,7 +223,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <!-- There's a newline before the edge, so output the line. -->
 <xsl:value-of select="substring($string, 1, string-length($to-next-newline) + 1)"/>
 <xsl:call-template name="wrap-line">
-  <xsl:with-param name="string"><xsl:value-of select="substring($string, string-length($to-next-newline) + 2, string-length($string))"/></xsl:with-param>
+  <xsl:with-param name="string" select="substring($string, string-length($to-next-newline) + 2, string-length($string))"/>
 </xsl:call-template>
     </xsl:when>
     <xsl:otherwise>
@@ -231,7 +231,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:value-of select="substring($string, 1, 80)"/>
       <xsl:if test="string-length($string) &gt; 80">!
 <xsl:call-template name="wrap-line">
-  <xsl:with-param name="string"><xsl:value-of select="substring($string, 81, string-length($string))"/></xsl:with-param>
+  <xsl:with-param name="string" select="substring($string, 81, string-length($string))"/>
 </xsl:call-template>
       </xsl:if>
     </xsl:otherwise>
