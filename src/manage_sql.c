@@ -3731,7 +3731,7 @@ manage_db_version ()
 {
   int number;
   char *version = sql_string (0, 0,
-                              "SELECT value FROM meta"
+                              "SELECT value FROM main.meta"
                               " WHERE name = 'database_version' LIMIT 1;");
   if (version)
     {
@@ -3751,7 +3751,7 @@ static void
 set_db_version (int version)
 {
   /** @todo Check that this (and others) still works with id column. */
-  sql ("INSERT OR REPLACE INTO meta (name, value)"
+  sql ("INSERT OR REPLACE INTO main.meta (name, value)"
        " VALUES ('database_version', '%i');",
        version);
 }
@@ -12063,7 +12063,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           sql ("BEGIN EXCLUSIVE;");
           sql ("DELETE FROM nvts;");
           sql ("DELETE FROM nvt_preferences;");
-          sql ("DELETE FROM meta WHERE name = 'nvts_checksum';");
+          sql ("DELETE FROM main.meta WHERE name = 'nvts_checksum';");
         }
       return;
     }
@@ -12132,7 +12132,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           sql ("BEGIN EXCLUSIVE;");
           sql ("DELETE FROM nvts;");
           sql ("DELETE FROM nvt_preferences;");
-          sql ("DELETE FROM meta WHERE name = 'nvts_checksum';");
+          sql ("DELETE FROM main.meta WHERE name = 'nvts_checksum';");
         }
     }
   else
@@ -12516,10 +12516,11 @@ void
 manage_update_nvti_cache ()
 {
   if (sql_int (0, 0,
-               "SELECT value FROM meta WHERE name = 'update_nvti_cache';"))
+               "SELECT value FROM main.meta"
+               " WHERE name = 'update_nvti_cache';"))
     {
       update_nvti_cache ();
-      sql ("UPDATE meta SET value = 0 WHERE name = 'update_nvti_cache';");
+      sql ("UPDATE main.meta SET value = 0 WHERE name = 'update_nvti_cache';");
     }
 }
 
@@ -13420,7 +13421,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
   /* Check that the version of the database is correct. */
 
   database_version = sql_string (0, 0,
-                                 "SELECT value FROM meta"
+                                 "SELECT value FROM main.meta"
                                  " WHERE name = 'database_version';");
   if (nvt_cache_mode)
     {
@@ -13473,7 +13474,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
        */
 
       if (sql_int64 (&count, 0, 0,
-                     "SELECT count(*) FROM meta"
+                     "SELECT count(*) FROM main.meta"
                      " WHERE name = 'nvts_md5sum'"
                      " OR name = 'nvt_preferences_enabled';")
           || count < 2)
@@ -13496,10 +13497,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
   /* Ensure the nvti cache update flag exists and is clear. */
 
   if (sql_int (0, 0,
-               "SELECT count(*) FROM meta WHERE name = 'update_nvti_cache';"))
-    sql ("UPDATE meta SET value = 0 WHERE name = 'update_nvti_cache';");
+               "SELECT count(*) FROM main.meta"
+               " WHERE name = 'update_nvti_cache';"))
+    sql ("UPDATE main.meta SET value = 0 WHERE name = 'update_nvti_cache';");
   else
-    sql ("INSERT INTO meta (name, value) VALUES ('update_nvti_cache', 0);");
+    sql ("INSERT INTO main.meta (name, value)"
+         " VALUES ('update_nvti_cache', 0);");
 
   /* Ensure that the highest number in a port range is 65535.  At some
    * point ranges were initialised to 65536.
@@ -31260,7 +31263,8 @@ char*
 nvts_md5sum ()
 {
   return sql_string (0, 0,
-                     "SELECT value FROM meta WHERE name = 'nvts_md5sum';");
+                     "SELECT value FROM main.meta"
+                     " WHERE name = 'nvts_md5sum';");
 }
 
 /**
@@ -31274,12 +31278,12 @@ void
 set_nvts_md5sum (const char *md5sum)
 {
   gchar* quoted = sql_quote (md5sum);
-  sql ("INSERT OR REPLACE INTO meta (name, value)"
+  sql ("INSERT OR REPLACE INTO main.meta (name, value)"
        " VALUES ('nvts_md5sum', '%s');",
        quoted);
   g_free (quoted);
 
-  sql ("UPDATE meta SET value = 1 WHERE name = 'update_nvti_cache';");
+  sql ("UPDATE main.meta SET value = 1 WHERE name = 'update_nvti_cache';");
 }
 
 /**
@@ -33295,7 +33299,7 @@ manage_nvt_preference_add (const char* name, const char* value, int remove)
 void
 manage_nvt_preferences_enable ()
 {
-  sql ("INSERT OR REPLACE INTO meta (name, value)"
+  sql ("INSERT OR REPLACE INTO main.meta (name, value)"
        " VALUES ('nvt_preferences_enabled', 1);");
 }
 
