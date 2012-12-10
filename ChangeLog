@@ -1,5 +1,11 @@
 2012-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (sql_task_trend, sql_threat_level): When passed a 0
+	task just return "", because this happens for count queries when the
+	result set is empty.
+
+2012-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_get_iterator): When current_credentials.uuid is
 	NULL and the resource is owned, then always grant access.  This allows the
 	GET iterators to be used by the main process, and before processing the

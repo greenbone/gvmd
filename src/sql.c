@@ -964,7 +964,7 @@ sql_task_trend (sqlite3_context *context, int argc, sqlite3_value** argv)
   task = sqlite3_value_int64 (argv[0]);
   if (task == 0)
     {
-      sqlite3_result_error (context, "Task argument was 0", -1);
+      sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
       return;
     }
 
@@ -995,7 +995,7 @@ sql_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
   task = sqlite3_value_int64 (argv[0]);
   if (task == 0)
     {
-      sqlite3_result_error (context, "Task argument was 0", -1);
+      sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
       return;
     }
 
