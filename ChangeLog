@@ -1,3 +1,18 @@
+2012-12-10  Hani Benhabiles  <kroosec@gmail.com>
+
+	Migrate Database to version 70, add creation and modification time
+	support to Port Lists.
+
+	* src/manage_sql.c (migrate_69_to_70): New function.
+	(database_migrators): Add migrate_69_to_70.
+	(create_tables): Add creation_time and modification_time to port_lists
+	and port_lists_trash tables. 
+	(ensure_predefined_port_lists_exist, create_port_list_lock,
+	create_port_list, delete_port_list, manage_restore): Insert current time
+	value into creation_time and modification_time. 
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 70.
+
 2012-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_db_version, set_db_version)

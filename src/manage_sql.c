@@ -3489,8 +3489,8 @@ create_tables ()
   /* Overlapping port ranges will cause problems, at least for the port
    * counting.  OMP CREATE_PORT_LIST and CREATE_PORT_RANGE check for this,
    * but whoever creates a predefined port list must check this manually. */
-  sql ("CREATE TABLE IF NOT EXISTS port_lists (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment);");
-  sql ("CREATE TABLE IF NOT EXISTS port_lists_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment);");
+  sql ("CREATE TABLE IF NOT EXISTS port_lists (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS port_lists_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS port_ranges (id INTEGER PRIMARY KEY, uuid UNIQUE, port_list INTEGER, type, start, end, comment, exclude);");
   sql ("CREATE TABLE IF NOT EXISTS port_ranges_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, port_list INTEGER, type, start, end, comment, exclude);");
   sql ("CREATE TABLE IF NOT EXISTS report_host_details (id INTEGER PRIMARY KEY, report_host INTEGER, source_type, source_name, source_description, name, value);");
@@ -8580,6 +8580,48 @@ migrate_68_to_69 ()
 }
 
 /**
+ * @brief Migrate the database from version 69 to version 70.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_69_to_70 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 69. */
+
+  if (manage_db_version () != 69)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Add creation and modification times to Port Lists. */
+
+  sql ("ALTER TABLE port_lists ADD COLUMN creation_time;");
+  sql ("ALTER TABLE port_lists ADD COLUMN modification_time;");
+  sql ("UPDATE port_lists SET creation_time = 0, modification_time = 0;");
+
+  sql ("ALTER TABLE port_lists_trash ADD COLUMN creation_time;");
+  sql ("ALTER TABLE port_lists_trash ADD COLUMN modification_time;");
+  sql ("UPDATE port_lists_trash SET"
+       " creation_time = 0, modification_time = 0;");
+
+  /* Set the database version to 70. */
+
+  set_db_version (70);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8653,6 +8695,7 @@ static migrator_t database_migrators[]
     {67, migrate_66_to_67},
     {68, migrate_67_to_68},
     {69, migrate_68_to_69},
+    {70, migrate_69_to_70},
     /* End marker. */
     {-1, NULL}};
 
@@ -13197,9 +13240,10 @@ ensure_predefined_port_lists_exist ()
       == 0)
     {
       port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
+           "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " '')");
+           " '', now (), now ())");
       list = sqlite3_last_insert_rowid (task_db);
       make_port_ranges_openvas_default (list);
     }
@@ -13210,9 +13254,10 @@ ensure_predefined_port_lists_exist ()
       == 0)
     {
       port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
+           "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_TCP "', NULL, 'All TCP',"
-           " '')");
+           " '', now(), now())");
       list = sqlite3_last_insert_rowid (task_db);
       RANGE (PORT_PROTOCOL_TCP, 1, 65535);
     }
@@ -13223,9 +13268,10 @@ ensure_predefined_port_lists_exist ()
       == 0)
     {
       port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
+           "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "', NULL,"
-           " 'All TCP and Nmap 5.51 top 100 UDP', '')");
+           " 'All TCP and Nmap 5.51 top 100 UDP', '', now (), now ())");
       list = sqlite3_last_insert_rowid (task_db);
       make_port_ranges_all_tcp_nmap_5_51_top_100 (list);
     }
@@ -13236,9 +13282,10 @@ ensure_predefined_port_lists_exist ()
       == 0)
     {
       port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
+           "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "', NULL,"
-           " 'All TCP and Nmap 5.51 top 1000 UDP', '')");
+           " 'All TCP and Nmap 5.51 top 1000 UDP', '', now (), now ())");
       list = sqlite3_last_insert_rowid (task_db);
       make_port_ranges_all_tcp_nmap_5_51_top_1000 (list);
     }
@@ -13249,9 +13296,10 @@ ensure_predefined_port_lists_exist ()
       == 0)
     {
       port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
+           "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_PRIV_TCP "', NULL,"
-           " 'All privileged TCP', '')");
+           " 'All privileged TCP', '', now (), now ())");
       list = sqlite3_last_insert_rowid (task_db);
       RANGE (PORT_PROTOCOL_TCP, 1, 1023);
     }
@@ -13262,9 +13310,10 @@ ensure_predefined_port_lists_exist ()
       == 0)
     {
       port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
+           "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "', NULL,"
-           " 'All privileged TCP and UDP', '')");
+           " 'All privileged TCP and UDP', '', now (), now ())");
       list = sqlite3_last_insert_rowid (task_db);
       RANGE (PORT_PROTOCOL_TCP, 1, 1023);
       RANGE (PORT_PROTOCOL_UDP, 1, 1023);
@@ -13276,9 +13325,10 @@ ensure_predefined_port_lists_exist ()
       == 0)
     {
       port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
+           "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_IANA_TCP_2012 "', NULL,"
-           " 'All IANA assigned TCP 2012-02-10', '')");
+           " 'All IANA assigned TCP 2012-02-10', '', now (), now ())");
       list = sqlite3_last_insert_rowid (task_db);
       make_port_ranges_iana_tcp_2012 (list);
     }
@@ -13289,9 +13339,10 @@ ensure_predefined_port_lists_exist ()
       == 0)
     {
       port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
+           "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "', NULL,"
-           " 'All IANA assigned TCP and UDP 2012-02-10', '')");
+           " 'All IANA assigned TCP and UDP 2012-02-10', '', now (), now ())");
       list = sqlite3_last_insert_rowid (task_db);
       make_port_ranges_iana_tcp_udp_2012 (list);
     }
@@ -13302,9 +13353,10 @@ ensure_predefined_port_lists_exist ()
       == 0)
     {
       port_list_t list;
-      sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
+      sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
+           "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "', NULL,"
-           " 'Nmap 5.51 top 2000 TCP and top 100 UDP', '')");
+           " 'Nmap 5.51 top 2000 TCP and top 100 UDP', '', now (), now ())");
       list = sqlite3_last_insert_rowid (task_db);
       make_port_ranges_nmap_5_51_top_2000_top_100 (list);
     }
@@ -41234,20 +41286,20 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
   quoted_comment = sql_quote (comment);
   if (quoted_id)
     sql ("INSERT INTO port_lists"
-         " (uuid, owner, name, comment)"
+         " (uuid, owner, name, comment, creation_time, modification_time)"
          " VALUES"
          " ('%s', (SELECT ROWID FROM users WHERE uuid = '%s'), '%s',"
-         "  '%s');",
+         "  '%s', now (), now ());",
          quoted_id,
          current_credentials.uuid,
          quoted_name,
          quoted_comment);
   else
     sql ("INSERT INTO port_lists"
-         " (uuid, owner, name, comment)"
+         " (uuid, owner, name, comment, creation_time, modification_time)"
          " VALUES"
          " (make_uuid (), (SELECT ROWID FROM users WHERE uuid = '%s'), '%s',"
-         "  '%s');",
+         "  '%s', now (), now ());",
          current_credentials.uuid,
          quoted_name,
          quoted_comment);
@@ -41583,10 +41635,10 @@ create_port_list (const char* id, const char* name, const char* comment,
       quoted_name = sql_quote (name);
       quoted_comment = sql_quote (comment ? comment : "");
       sql ("INSERT INTO port_lists"
-           " (uuid, owner, name, comment)"
+           " (uuid, owner, name, comment, creation_time, modification_time)"
            " VALUES"
            " (make_uuid (), (SELECT ROWID FROM users WHERE uuid = '%s'), '%s',"
-           "  '%s');",
+           "  '%s', now (), now ());",
            current_credentials.uuid,
            quoted_name,
            quoted_comment);
@@ -41826,8 +41878,9 @@ delete_port_list (const char *port_list_id, int ultimate)
       port_list_t trash_port_list;
 
       sql ("INSERT INTO port_lists_trash"
-           " (uuid, owner, name, comment)"
-           " SELECT uuid, owner, name, comment"
+           " (uuid, owner, name, comment, creation_time, modification_time)"
+           " SELECT uuid, owner, name, comment, creation_time,"
+           "        modification_time"
            " FROM port_lists WHERE ROWID = %llu;",
            port_list);
 
@@ -43709,8 +43762,8 @@ manage_restore (const char *id)
         }
 
       sql ("INSERT INTO port_lists"
-           " (uuid, owner, name, comment)"
-           " SELECT uuid, owner, name, comment"
+           " (uuid, owner, name, comment, creation_time, modification_time)"
+           " SELECT uuid, owner, name, comment, creation_time, modification_time"
            " FROM port_lists_trash WHERE ROWID = %llu;",
            resource);
 
