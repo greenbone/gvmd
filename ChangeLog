@@ -1,5 +1,14 @@
 2012-12-10  Hani Benhabiles  <kroosec@gmail.com>
 
+	* src/manage_sql.c (port_list_count): New function.
+	(PORT_LIST_ITERATOR_FILTER_COLUMNS, PORT_LIST_ITERATOR_COLUMNS)
+	(PORT_LIST_ITERATOR_TRASH_COLUMNS): New defines.
+
+	* src/manage.h (port_list_iterator_exclude): Correct typo. Rename into
+	port_range_iterator_exclude.
+
+2012-12-10  Hani Benhabiles  <kroosec@gmail.com>
+
 	Migrate Database to version 70, add creation and modification time
 	support to Port Lists.
 

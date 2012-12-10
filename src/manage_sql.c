@@ -41962,6 +41962,37 @@ delete_port_range (const char *port_range_id)
 }
 
 /**
+ * @brief Filter columns for Port List iterator.
+ */
+#define PORT_LIST_ITERATOR_FILTER_COLUMNS                                     \
+ { GET_ITERATOR_FILTER_COLUMNS,  NULL }
+
+/**
+ * @brief Port List iterator columns.
+ */
+#define PORT_LIST_ITERATOR_COLUMNS GET_ITERATOR_COLUMNS 
+
+/**
+ * @brief Port List iterator columns for trash case.
+ */
+#define PORT_LIST_ITERATOR_TRASH_COLUMNS GET_ITERATOR_COLUMNS 
+
+/**
+ * @brief Count the number of Port Lists.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of Port Lists filtered set.
+ */
+int
+port_list_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = PORT_LIST_ITERATOR_FILTER_COLUMNS;
+  return count ("port_list", get, PORT_LIST_ITERATOR_COLUMNS,
+                extra_columns, 0, 0, 0, TRUE);
+}
+
+/**
  * @brief Initialise a port list iterator, limited to the current user's lists.
  *
  * @param[in]  iterator    Iterator.

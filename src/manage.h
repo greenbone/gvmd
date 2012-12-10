@@ -2255,6 +2255,9 @@ delete_port_list (const char*, int);
 int
 delete_port_range (const char *);
 
+int
+port_list_count (const get_data_t *);
+
 void
 init_port_list_iterator (iterator_t*, port_list_t, int, int, const char*);
 
@@ -2332,7 +2335,7 @@ port_protocol_t
 port_range_iterator_type_int (iterator_t* iterator);
 
 int
-port_list_iterator_exclude (iterator_t*);
+port_range_iterator_exclude (iterator_t*);
 
 void
 init_port_list_target_iterator (iterator_t*, port_list_t, int);
