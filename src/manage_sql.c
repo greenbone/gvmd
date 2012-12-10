@@ -3168,7 +3168,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
   gchar *clause, *order, *used_by_clause, *filter, *owned_and_used_by_clause;
   resource_t resource = 0;
 
-  assert ((used_by || owned) ? current_credentials.uuid : "1");
+  assert (used_by ? current_credentials.uuid : "1");
   assert (get);
 
   if (columns == NULL)
@@ -3177,7 +3177,29 @@ init_get_iterator (iterator_t* iterator, const char *type,
       return -1;
     }
 
-  if (get->id && owned)
+  if (get->id && owned && (current_credentials.uuid == NULL))
+    {
+      gchar *quoted_uuid = sql_quote (get->id);
+      switch (sql_int64 (&resource, 0, 0,
+                         "SELECT ROWID FROM %ss WHERE uuid = '%s';",
+                         type, quoted_uuid))
+        {
+          case 0:
+            break;
+          case 1:        /* Too few rows in result of query. */
+            g_free (quoted_uuid);
+            return 1;
+            break;
+          default:       /* Programming error. */
+            assert (0);
+          case -1:
+            g_free (quoted_uuid);
+            return -1;
+            break;
+        }
+      g_free (quoted_uuid);
+    }
+  else if (get->id && owned)
     {
       if (find_resource_for_actions (type, get->id, &resource, get->actions))
         return -1;
@@ -3228,7 +3250,11 @@ init_get_iterator (iterator_t* iterator, const char *type,
 
   if (owned)
     {
-      if (resource || get->trash)
+      if (current_credentials.uuid == NULL)
+        owned_and_used_by_clause
+         = g_strdup_printf (" (%s)",
+                            used_by_clause ? used_by_clause : "1");
+      else if (resource || get->trash)
         owned_and_used_by_clause = g_strdup_printf (" ((owner IS NULL) OR (owner ="
                                                     "  (SELECT ROWID FROM users"
                                                     "   WHERE users.uuid = '%s'))"
@@ -41970,12 +41996,12 @@ delete_port_range (const char *port_range_id)
 /**
  * @brief Port List iterator columns.
  */
-#define PORT_LIST_ITERATOR_COLUMNS GET_ITERATOR_COLUMNS 
+#define PORT_LIST_ITERATOR_COLUMNS GET_ITERATOR_COLUMNS
 
 /**
  * @brief Port List iterator columns for trash case.
  */
-#define PORT_LIST_ITERATOR_TRASH_COLUMNS GET_ITERATOR_COLUMNS 
+#define PORT_LIST_ITERATOR_TRASH_COLUMNS GET_ITERATOR_COLUMNS
 
 /**
  * @brief Count the number of Port Lists.
