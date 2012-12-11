@@ -11932,12 +11932,16 @@ append_to_task_string (task_t task, const char* field, const char* value)
   " (SELECT ROWID FROM reports WHERE task = tasks.ROWID"   \
   /* TODO 1 == TASK_STATUS_DONE */                         \
   "  AND scan_run_status = 1"                              \
-  "  ORDER BY date DESC LIMIT 1)"                          \
-  " AS last,"                                              \
+  "  ORDER BY date DESC LIMIT 1),"                         \
   " task_threat_level (ROWID) AS threat,"                  \
   /* FIX second arg is overrides */                        \
   " task_trend (ROWID, 0) AS trend,"                       \
-  " run_status_name (run_status) AS status"
+  " run_status_name (run_status) AS status,"               \
+  " (SELECT date FROM reports WHERE task = tasks.ROWID"    \
+  /* TODO 1 == TASK_STATUS_DONE */                         \
+  "  AND scan_run_status = 1"                              \
+  "  ORDER BY date DESC LIMIT 1)"                          \
+  " AS last"
 
 /**
  * @brief Task iterator columns for trash case.
@@ -11956,12 +11960,16 @@ append_to_task_string (task_t task, const char* field, const char* value)
   " (SELECT ROWID FROM reports WHERE task = tasks.ROWID"   \
   /* TODO 1 == TASK_STATUS_DONE */                         \
   "  AND scan_run_status = 1"                              \
-  "  ORDER BY date DESC LIMIT 1)"                          \
-  " AS last,"                                              \
+  "  ORDER BY date DESC LIMIT 1),"                          \
   " task_threat_level (ROWID) AS threat,"                  \
   /* FIX second arg is overrides */                        \
   " task_trend (ROWID, 0) AS trend,"                       \
-  " run_status_name (run_status) AS status"
+  " run_status_name (run_status) AS status,"               \
+  " (SELECT date FROM reports WHERE task = tasks.ROWID"    \
+  /* TODO 1 == TASK_STATUS_DONE */                         \
+  "  AND scan_run_status = 1"                              \
+  "  ORDER BY date DESC LIMIT 1)"                          \
+  " AS last"
 
 /**
  * @brief Initialise a task iterator, limited to current user's tasks.

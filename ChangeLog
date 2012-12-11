@@ -1,6 +1,12 @@
 2012-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (TASK_ITERATOR_COLUMNS)
+	(TASK_ITERATOR_TRASH_COLUMNS): Add last report date as "last", to
+	replace report id as "last".
+
+2012-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (TASK_ITERATOR_COLUMNS)
 	(TASK_ITERATOR_TRASH_COLUMNS): Add run status name as status so that
 	status filtering is by name instead of number.
 	(init_manage_process): Create SQL function run_status_name.
