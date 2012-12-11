@@ -40016,7 +40016,8 @@ report_format_trust (report_format_t report_format)
  */
 #define REPORT_FORMAT_ITERATOR_FILTER_COLUMNS                                 \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "extension", "content_type",     \
-   "summary", "description", "trust", "trust_time", "flags", NULL }
+   "summary", "description", "trust", "trust_time", "active"                  \
+   , NULL }
 
 /**
  * @brief Report Format iterator columns.
@@ -40026,7 +40027,7 @@ report_format_trust (report_format_t report_format)
   "ROWID, uuid, name, '', iso_time (creation_time),"                          \
   " iso_time (modification_time), creation_time AS created,"                  \
   " modification_time AS modified, extension, content_type, summary, "        \
-  " description, signature, trust, trust_time, flags"
+  " description, signature, trust, trust_time, flags & 1 AS active"
 
 /**
  * @brief Report Format iterator columns for trash case.

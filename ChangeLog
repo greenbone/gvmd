@@ -1,5 +1,12 @@
 2012-12-11  Hani Benhabiles  <kroosec@gmail.com>
 
+	* src/manage_sql.c (REPORT_FORMAT_ITERATOR_FILTER_COLUMNS): Rename flags
+	into active.
+	(REPORT_FORMAT_ITERATOR_COLUMNS): Extract active flag value only from
+	flags and rename it into active.
+
+2012-12-11  Hani Benhabiles  <kroosec@gmail.com>
+
 	* src/manage_sql.c (REPORT_FORMAT_ITERATOR_FILTER_COLUMNS): Add trust,
 	trust_time and flags columns.
 
