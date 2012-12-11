@@ -1018,6 +1018,30 @@ sql_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
   return;
 }
 
+/**
+ * @brief Get the name of a task run status.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_run_status_name (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  const char *name;
+  int status;
+
+  assert (argc == 1);
+
+  status = sqlite3_value_int (argv[0]);
+
+  name = run_status_name (status);
+  sqlite3_result_text (context, name ? name : "", -1, SQLITE_TRANSIENT);
+  return;
+}
+
 
 /* Iterators. */
 

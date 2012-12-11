@@ -11919,8 +11919,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * @brief Task iterator columns.
  */
 #define TASK_ITERATOR_COLUMNS                              \
-  /* FIX run_status_name (run_status) AS status */         \
-  GET_ITERATOR_COLUMNS ", run_status AS status,"           \
+  GET_ITERATOR_COLUMNS ", run_status,"                     \
   " (SELECT count(*) FROM reports"                         \
   /* TODO 1 == TASK_STATUS_DONE */                         \
   "  WHERE task = tasks.ROWID AND scan_run_status = 1)"    \
@@ -11937,14 +11936,14 @@ append_to_task_string (task_t task, const char* field, const char* value)
   " AS last,"                                              \
   " task_threat_level (ROWID) AS threat,"                  \
   /* FIX second arg is overrides */                        \
-  " task_trend (ROWID, 0) AS trend"
+  " task_trend (ROWID, 0) AS trend,"                       \
+  " run_status_name (run_status) AS status"
 
 /**
  * @brief Task iterator columns for trash case.
  */
 #define TASK_ITERATOR_TRASH_COLUMNS                        \
-  /* FIX run_status_name (run_status) AS status */         \
-  GET_ITERATOR_COLUMNS ", run_status AS status,"           \
+  GET_ITERATOR_COLUMNS ", run_status,"                     \
   " (SELECT count(*) FROM reports"                         \
   /* TODO 1 == TASK_STATUS_DONE */                         \
   "  WHERE task = tasks.ROWID AND scan_run_status = 1)"    \
@@ -11961,7 +11960,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
   " AS last,"                                              \
   " task_threat_level (ROWID) AS threat,"                  \
   /* FIX second arg is overrides */                        \
-  " task_trend (ROWID, 0) AS trend"
+  " task_trend (ROWID, 0) AS trend,"                       \
+  " run_status_name (run_status) AS status"
 
 /**
  * @brief Initialise a task iterator, limited to current user's tasks.
@@ -12407,6 +12407,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           != SQLITE_OK)
         {
           g_warning ("%s: failed to create task_threat_level", __FUNCTION__);
+          abort ();
+        }
+
+      if (sqlite3_create_function (task_db,
+                                   "run_status_name",
+                                   1,               /* Number of args. */
+                                   SQLITE_UTF8,
+                                   NULL,            /* Callback data. */
+                                   sql_run_status_name,
+                                   NULL,            /* xStep. */
+                                   NULL)            /* xFinal. */
+          != SQLITE_OK)
+        {
+          g_warning ("%s: failed to create run_status_name", __FUNCTION__);
           abort ();
         }
     }
