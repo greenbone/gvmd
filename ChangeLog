@@ -1,5 +1,25 @@
 2012-12-11  Hani Benhabiles  <kroosec@gmail.com>
 
+	Move Port Lists to the new GET object management style.
+
+	* src/manage_sql.c (init_port_list_iterator): Change interface to use
+	an iterator and a get_data_t parameters. Use init_get_iterator.
+	(trash_port_list_in_use, port_list_writable)
+	(trash_port_list_writable): New functions.
+
+	* src/omp.c (get_port_lists_data_t): Change structure to contain ranges
+	and targets booleans and get get_data_t element.
+	(get_port_lists_data_reset): Adapt to change in get_port_lists_data_t.
+	(omp_xml_handle_start_element): Add ranges and targets attributes. Use
+	get_data_parse_attributes.
+	(omp_xml_handle_end_element): Adapt to changes in
+	init_port_list_iterator and use SEND_GET_START, SEND_GET_COMMON and
+	SEND_GET_END macros.
+
+	* src/manage.h: Add and modify headers accrodingly.
+
+2012-12-11  Hani Benhabiles  <kroosec@gmail.com>
+
 	* src/manage_sql.c (REPORT_FORMAT_ITERATOR_FILTER_COLUMNS): Rename flags
 	into active.
 	(REPORT_FORMAT_ITERATOR_COLUMNS): Extract active flag value only from

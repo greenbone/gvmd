@@ -42020,80 +42020,32 @@ port_list_count (const get_data_t *get)
 }
 
 /**
- * @brief Initialise a port list iterator, limited to the current user's lists.
+ * @brief Initialise a Port List  iterator, including observed Port Lists.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  port_list   Port_List to limit iteration to.  0 for all.
- * @param[in]  trash       Whether to iterate over trashcan port lists.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find Port List, 2 failed to find filter,
+ *         -1 error.
  */
-void
-init_port_list_iterator (iterator_t* iterator, port_list_t port_list,
-                         int trash, int ascending, const char* sort_field)
+int
+init_port_list_iterator (iterator_t* iterator, const get_data_t *get)
 {
-  assert (current_credentials.uuid);
+  static const char *filter_columns[] = PORT_LIST_ITERATOR_FILTER_COLUMNS;
 
-  if (port_list && trash)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment,"
-                   " (SELECT count(*) FROM targets_trash"
-                   "  WHERE targets_trash.port_range = port_lists_trash.ROWID"
-                   "  AND port_list_location"
-                   "      = " G_STRINGIFY (LOCATION_TRASH) ")"
-                   " > 0"
-                   " FROM port_lists_trash"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   port_list,
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else if (port_list)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment,"
-                   " (SELECT count(*) FROM targets"
-                   "  WHERE targets.port_range = port_lists.ROWID)"
-                   " > 0"
-                   " FROM port_lists"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   port_list,
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else if (trash)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment,"
-                   " (SELECT count(*) FROM targets_trash"
-                   "  WHERE targets_trash.port_range = port_lists_trash.ROWID"
-                   "  AND port_list_location"
-                   "      = " G_STRINGIFY (LOCATION_TRASH) ")"
-                   " > 0"
-                   " FROM port_lists_trash"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment,"
-                   " (SELECT count(*) FROM targets"
-                   "  WHERE targets.port_range = port_lists.ROWID)"
-                   " > 0"
-                   " FROM port_lists"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
+  return init_get_iterator (iterator,
+                            "port_list",
+                            get,
+                            /* Columns. */
+                            PORT_LIST_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            PORT_LIST_ITERATOR_TRASH_COLUMNS,
+                            filter_columns,
+                            NULL,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
 }
 
 /**
@@ -42399,6 +42351,64 @@ port_list_in_use (port_list_t port_list)
                   "SELECT count(*) FROM targets"
                   " WHERE port_range = %llu",
                   port_list);
+}
+
+/**
+ * @brief Check whether a trashcan Port List is in use.
+ *
+ * @param[in]  port_list Port List.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_port_list_in_use (port_list_t port_list)
+{
+  return sql_int (0, 0,
+                  "SELECT count (*) FROM targets_trash"
+                  " WHERE port_range = %llu"
+                  " AND port_list_location = "
+                  G_STRINGIFY (LOCATION_TRASH) ";",
+                  port_list)
+         == 0;
+}
+
+/**
+ * @brief Check whether a Port List is writable.
+ *
+ * @param[in]  port_list  Port List.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+port_list_writable (port_list_t port_list)
+{
+  const char *uuid;
+
+  uuid = port_list_uuid (port_list);
+  if (strcmp (uuid, PORT_LIST_UUID_DEFAULT) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_TCP) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_PRIV_TCP) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_PRIV_TCP_UDP) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_IANA_TCP_2012) == 0
+      || strcmp (uuid, PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012) == 0
+      || strcmp (uuid, PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100) == 0)
+    return 1;
+  return (port_list_in_use (port_list) == 0);
+}
+
+/**
+ * @brief Check whether a trashcan Port List is writable.
+ *
+ * @param[in]  port_list  Port List.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_port_list_writable (port_list_t port_list)
+{
+  return (trash_port_list_in_use (port_list) == 0);
 }
 
 #if 0

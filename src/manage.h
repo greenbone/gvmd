@@ -2258,8 +2258,8 @@ delete_port_range (const char *);
 int
 port_list_count (const get_data_t *);
 
-void
-init_port_list_iterator (iterator_t*, port_list_t, int, int, const char*);
+int
+init_port_list_iterator (iterator_t*, const get_data_t *);
 
 port_list_t
 port_list_iterator_port_list (iterator_t*);
@@ -2307,6 +2307,15 @@ trash_port_list_name (port_list_t);
 
 int
 port_list_in_use (port_list_t);
+
+int
+trash_port_list_in_use (port_list_t);
+
+int
+trash_port_list_writable (port_list_t);
+
+int
+port_list_writable (port_list_t);
 
 #if 0
 int
