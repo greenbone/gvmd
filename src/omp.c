@@ -10219,6 +10219,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
+              count = 0;
               get = &get_report_formats_data->get;
               manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
               SEND_GET_START ("report_format", &get_report_formats_data->get);
@@ -10227,7 +10228,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   time_t trust_time;
 
                   ret = get_next (&report_formats, get, &first, &count,
-                                  init_slave_iterator);
+                                  init_report_format_iterator);
                   if (ret == 1)
                     break;
                   if (ret == -1)
@@ -10355,6 +10356,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       report_format_iterator_active (&report_formats));
 
                   SEND_TO_CLIENT_OR_FAIL ("</report_format>");
+                  count++;
                 }
               cleanup_iterator (&report_formats);
               filtered = get_report_formats_data->get.id
@@ -17992,6 +17994,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
+              count = 0;
               get = &get_slaves_data->get;
               manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
               SEND_GET_START ("slave", &get_slaves_data->get);

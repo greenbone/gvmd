@@ -40016,7 +40016,7 @@ report_format_trust (report_format_t report_format)
  */
 #define REPORT_FORMAT_ITERATOR_FILTER_COLUMNS                                 \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "extension", "content_type",     \
-   "summary", "description", NULL }
+   "summary", "description", "trust", "trust_time", "flags", NULL }
 
 /**
  * @brief Report Format iterator columns.

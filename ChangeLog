@@ -1,3 +1,12 @@
+2012-12-11  Hani Benhabiles  <kroosec@gmail.com>
+
+	* src/manage_sql.c (REPORT_FORMAT_ITERATOR_FILTER_COLUMNS): Add trust,
+	trust_time and flags columns.
+
+	* src/omp.c (omp_xml_handle_end_element): Fixed counter variables for
+	CLIENT_GET_REPORT_FORMATS and CLIENT_GET_SLAVES cases. Fixed typo in
+	get_next parameter in CLIENT_GET_REPORT_FORMATS case.
+
 2012-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (sql_task_trend, sql_threat_level): When passed a 0
