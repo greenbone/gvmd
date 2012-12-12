@@ -2544,7 +2544,6 @@ typedef struct
  */
 typedef struct
 {
-  int apply_overrides;   ///< Boolean.  Whether to apply overrides.  FIX
   get_data_t get;        ///< Get args.
   int rcfile;            ///< Boolean.  Whether to include RC defining task.
 } get_tasks_data_t;
@@ -10192,9 +10191,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_REPORT_FORMATS:
         {
-
           assert (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0);
-
 
           if (get_report_formats_data->params &&
               get_report_formats_data->get.trash)
@@ -18382,8 +18379,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
 //          gchar* response;
           iterator_t tasks;
-          int count, filtered, ret, first;
+          int count, filtered, ret, first, apply_overrides;
           get_data_t * get;
+          gchar *overrides, *filter, *clean_filter;
 
           assert (strcasecmp ("GET_TASKS", element_name) == 0);
 
@@ -18437,6 +18435,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           count = 0;
           get = &get_tasks_data->get;
+
+          if (get->filt_id && strcmp (get->filt_id, "0"))
+            {
+              filter = filter_term (get->filt_id);
+              if (filter == NULL)
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else
+            filter = NULL;
+
+          clean_filter = manage_clean_filter (filter ? filter : get->filter);
+
           // FIX what about filt_id?
           manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
           SEND_GET_START ("task", &get_tasks_data->get);
@@ -18460,12 +18473,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           g_free (response);
 #endif
 
-#if 0
-          // FIX in filter?
-          SENDF_TO_CLIENT_OR_FAIL
-           ("<apply_overrides>%i</apply_overrides>",
-            get_tasks_data->apply_overrides);
-#endif
+          overrides = filter_term_value (clean_filter, "apply_overrides");
+          g_free (clean_filter);
+          apply_overrides = overrides ? strcmp (overrides, "0") : 0;
+          g_free (overrides);
+          SENDF_TO_CLIENT_OR_FAIL ("<apply_overrides>%i</apply_overrides>",
+                                   apply_overrides);
 
           while (next (&tasks))
             {
@@ -18611,7 +18624,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (report_counts (first_report_id,
                                      &debugs, &holes_2, &infos_2, &logs,
                                      &warnings_2, &false_positives,
-                                     get_tasks_data->apply_overrides,
+                                     apply_overrides,
                                      0))
                     /** @todo Either fail better or abort at SQL level. */
                     abort ();
@@ -18663,7 +18676,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         &debugs, &holes_2, &infos_2,
                                         &logs, &warnings_2,
                                         &false_positives,
-                                        get_tasks_data->apply_overrides,
+                                        apply_overrides,
                                         0))
                     /** @todo Either fail better or abort at SQL level. */
                     abort ();
@@ -18717,7 +18730,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            (last_report_id,
                             &debugs, &holes, &infos, &logs,
                             &warnings, &false_positives,
-                            get_tasks_data->apply_overrides,
+                            apply_overrides,
                             0))
                         /** @todo Either fail better or abort at SQL level. */
                         abort ();
@@ -18851,6 +18864,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            task_run_status_name (index),
                            progress_xml,
                            description64,
+                           /* FIX these must come from iterator now */
                            task_report_count (index),
                            task_finished_report_count (index),
                            task_trend_counts
@@ -18912,7 +18926,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    * at the SQL or buffer output level.
                    */
                   (void) send_reports (index,
-                                       get_tasks_data->apply_overrides,
+                                       apply_overrides,
                                        write_to_client,
                                        write_to_client_data);
                 }

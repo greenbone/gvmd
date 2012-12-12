@@ -1351,34 +1351,21 @@ keyword_applies (array_t *array, const keyword_t *keyword)
                   || (strcmp (item->column, "sort-reverse") == 0)))
             return 0;
         }
+      return 1;
     }
 
-  if (keyword->column
-      && (strcmp (keyword->column, "first") == 0))
+  if (keyword->column)
     {
       int index;
+
+      /* Skip duplicate column keywords. */
 
       index = array->len;
       while (index--)
         {
           keyword_t *item;
           item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "first") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "rows") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "rows") == 0))
+          if (item->column && (strcmp (item->column, keyword->column) == 0))
             return 0;
         }
     }
@@ -42733,7 +42720,7 @@ filter_term_value (const char *term, const char *column)
       keyword_t *keyword;
 
       keyword = *point;
-      if (keyword->column && (strcasecmp (keyword->column, "task_id") == 0))
+      if (keyword->column && (strcasecmp (keyword->column, column) == 0))
         {
           gchar *ret = g_strdup (keyword->string);
           filter_free (split);
