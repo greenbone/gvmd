@@ -2351,7 +2351,7 @@ get_reports_data_reset (get_reports_data_t *data)
 typedef struct
 {
   get_data_t get;        ///< Get args.
-  int export;            ///< Boolean.  Whether to format for importing.
+  int alerts;   ///< Boolean.  Whether to include alerts that use Report Format
   int params;            ///< Boolean.  Whether to include params.
 } get_report_formats_data_t;
 
@@ -5570,10 +5570,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                        attribute_names,
                                        attribute_values);
             if (find_attribute (attribute_names, attribute_values,
-                                "export", &attribute))
-              get_report_formats_data->export = strcmp (attribute, "0");
+                                "alerts", &attribute))
+              get_report_formats_data->alerts = strcmp (attribute, "0");
             else
-              get_report_formats_data->export = 0;
+              get_report_formats_data->alerts = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "params", &attribute))
@@ -10291,8 +10291,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          (report_format_iterator_report_format
                            (&report_formats)));
 
+                  if (get_report_formats_data->alerts)
+                    {
+                      iterator_t alerts;
+
+                      SEND_TO_CLIENT_OR_FAIL ("<alerts>");
+                      init_report_format_alert_iterator (&alerts,
+                                                  get_iterator_resource
+                                                   (&report_formats));
+                      while (next (&alerts))
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<alert id=\"%s\">"
+                          "<name>%s</name>"
+                          "</alert>",
+                          report_format_alert_iterator_uuid (&alerts),
+                          report_format_alert_iterator_name (&alerts));
+                      cleanup_iterator (&alerts);
+                      SEND_TO_CLIENT_OR_FAIL ("</alerts>");
+                    }
+
                   if (get_report_formats_data->params
-                      || get_report_formats_data->export
                       || get_report_formats_data->get.details)
                     {
                       iterator_t params;
@@ -10352,8 +10370,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       cleanup_iterator (&params);
                     }
 
-                  if (get_report_formats_data->export
-                      || get_report_formats_data->get.details)
+                  if (get_report_formats_data->get.details)
                     {
                       file_iterator_t files;
                       init_report_format_file_iterator

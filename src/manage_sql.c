@@ -40243,6 +40243,52 @@ report_format_iterator_active (iterator_t* iterator)
 }
 
 /**
+ * @brief Initialise a Report Format alert iterator.
+ *
+ * Iterates over all alerts that use the Report Format.
+ *
+ * @param[in]  iterator          Iterator.
+ * @param[in]  report_format     Report Format.
+ */
+void
+init_report_format_alert_iterator (iterator_t* iterator,
+                                   report_format_t report_format)
+{
+  assert (current_credentials.uuid);
+
+  init_iterator (iterator,
+                 "SELECT DISTINCT alerts.name, alerts.uuid"
+                 " FROM alerts, alert_method_data"
+                 " WHERE alert_method_data.data = '%s'"
+                 " AND alert_method_data.alert = alerts.ROWID"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                 " ORDER BY alerts.name ASC;",
+                 report_format_uuid(report_format),
+                 current_credentials.uuid);
+}
+
+/**
+ * @brief Get the name from a report_format_alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the Report Format, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (report_format_alert_iterator_name, 0);
+
+/**
+ * @brief Get the UUID from a report_format_alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The UUID of the Report Format, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (report_format_alert_iterator_uuid, 1);
+
+/**
  * @brief Initialise a report format iterator.
  *
  * @param[in]  iterator       Iterator.

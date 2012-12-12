@@ -2038,6 +2038,15 @@ report_format_iterator_summary (iterator_t *);
 time_t
 report_format_iterator_trust_time (iterator_t *);
 
+void
+init_report_format_alert_iterator (iterator_t*, report_format_t);
+
+const char*
+report_format_alert_iterator_name (iterator_t*);
+
+const char*
+report_format_alert_iterator_uuid (iterator_t*);
+
 /**
  * @brief A report format file iterator.
  */
