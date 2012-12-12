@@ -1,5 +1,10 @@
 2012-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (count): Get the case working where actions are
+	given.
+
+2012-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Support apply_overrides in GET_TASKS filter.
 
 	* src/manage_sql.c (keyword_applies): Instead of checking only first and

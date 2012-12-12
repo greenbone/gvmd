@@ -3404,7 +3404,8 @@ count (const char *type, const get_data_t *get,
   else
     owned_clause = g_strdup ("1");
 
-  if (get->actions == NULL
+  if (type_has_users (type) == 0
+      || get->actions == NULL
       || strlen (get->actions) == 0
       || (actions = parse_actions (get->actions)) == 0)
     {
@@ -3422,6 +3423,7 @@ count (const char *type, const get_data_t *get,
                      clause ? " AND " : "",
                      clause ? clause : "",
                      extra_where ? extra_where : "");
+      g_free (owned_clause);
       g_free (clause);
       return ret;
     }
@@ -3429,16 +3431,12 @@ count (const char *type, const get_data_t *get,
   ret = sql_int (0, 0,
                  "SELECT count (%s%ss.ROWID), %s"
                  " FROM %ss%s"
-                 " WHERE %s"
-                 "  OR"
-                 // FIX
-                 "  (SELECT tasks.ROWID FROM tasks"
-                 "   WHERE target = targets.ROWID)"
-                 "  IN"
-                 "  (SELECT task FROM task_users WHERE user ="
-                 "   (SELECT ROWID FROM users"
-                 "    WHERE users.uuid = '%s')"
-                 "   AND actions & %u = %u))"
+                 " WHERE (%s OR"
+                 "  (ROWID IN"
+                 "   (SELECT %s FROM %s_users WHERE user ="
+                 "    (SELECT ROWID FROM users"
+                 "     WHERE users.uuid = '%s')"
+                 "    AND actions & %u = %u)))"
                  "%s%s%s;",
                  distinct ? "DISTINCT " : "",
                  type,
@@ -3446,6 +3444,8 @@ count (const char *type, const get_data_t *get,
                  type,
                  extra_tables ? extra_tables : "",
                  owned_clause,
+                 type,
+                 type,
                  current_credentials.uuid,
                  actions,
                  actions,
