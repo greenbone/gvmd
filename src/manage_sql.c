@@ -37953,22 +37953,6 @@ schedule_iterator_initial_offset (iterator_t* iterator)
 }
 
 /**
- * @brief Get whether a schedule iterator is in use by any tasks.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if schedule is in use, else 0.
- */
-int
-schedule_iterator_in_use (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 10);
-  return ret;
-}
-
-/**
  * @brief Initialise a task schedule iterator.
  *
  * Lock the database before initialising.
@@ -42162,48 +42146,6 @@ port_list_iterator_comment (iterator_t* iterator)
   if (iterator->done) return "";
   ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
   return ret ? ret : "";
-}
-
-/**
- * @brief Get whether a port list iterator is in use by any target.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if port list is in use, else 0.
- */
-int
-port_list_iterator_in_use (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 4);
-  return ret;
-}
-
-/**
- * @brief Get whether a port list iterator is writable.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if port list is writable, else 0.
- */
-int
-port_list_iterator_writable (iterator_t* iterator)
-{
-  const char *uuid;
-  if (iterator->done) return -1;
-  uuid = (const char*) sqlite3_column_text (iterator->stmt, 1);
-  if (strcmp (uuid, PORT_LIST_UUID_DEFAULT) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_TCP) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_PRIV_TCP) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_PRIV_TCP_UDP) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_IANA_TCP_2012) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012) == 0
-      || strcmp (uuid, PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100) == 0)
-    return 1;
-  return port_list_iterator_in_use (iterator);
 }
 
 /**

@@ -1900,9 +1900,6 @@ int
 schedule_writable (schedule_t);
 
 int
-schedule_iterator_in_use (iterator_t*);
-
-int
 schedule_count (const get_data_t *);
 
 void
@@ -2281,12 +2278,6 @@ port_list_iterator_name (iterator_t*);
 
 const char*
 port_list_iterator_comment (iterator_t*);
-
-int
-port_list_iterator_in_use (iterator_t*);
-
-int
-port_list_iterator_writable (iterator_t*);
 
 int
 port_list_iterator_count (iterator_t*);
