@@ -9548,6 +9548,98 @@ alert_method (alert_t alert)
 }
 
 /**
+ * @brief Filter columns for alert iterator.
+ */
+#define ALERT_ITERATOR_FILTER_COLUMNS                                         \
+ { GET_ITERATOR_FILTER_COLUMNS, "event", "condition", "method",               \
+   "filter",  NULL }
+
+/**
+ * @brief Alert iterator columns.
+ */
+#define ALERT_ITERATOR_COLUMNS                                                \
+  GET_ITERATOR_COLUMNS ", event, condition, method, filter"
+
+/**
+ * @brief Alert iterator columns for trash case.
+ */
+#define ALERT_ITERATOR_TRASH_COLUMNS                                          \
+  GET_ITERATOR_COLUMNS ", event, condition, method, filter"
+
+/**
+ * @brief Count the number of alerts.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of alerts filtered set.
+ */
+int
+alert_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = ALERT_ITERATOR_FILTER_COLUMNS;
+  return count ("alert", get, ALERT_ITERATOR_COLUMNS, extra_columns, 0, 0,
+                0, TRUE);
+}
+
+/**
+ * @brief Return whether a alert is in use by a task.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+alert_in_use (alert_t alert)
+{
+  return sql_int (0, 0,
+                  "SELECT count (*) FROM task_alerts WHERE alert = %llu;",
+                  alert);
+}
+
+/**
+ * @brief Return whether a trashcan alert is in use by a task.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+trash_alert_in_use (alert_t alert)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM task_alerts"
+                  " WHERE alert = %llu"
+                  " AND alert_location = " G_STRINGIFY (LOCATION_TRASH),
+                  alert);
+}
+
+/**
+ * @brief Return whether a alert is writable.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+alert_writable (alert_t alert)
+{
+    return (alert_in_use (alert) == 0);
+}
+
+/**
+ * @brief Return whether a trashcan alert is writable.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+trash_alert_writable (alert_t alert)
+{
+    return (trash_alert_in_use (alert) == 0);
+}
+
+/**
  * @brief Initialise an alert iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -37562,7 +37654,7 @@ trash_schedule_in_use (schedule_t schedule)
 int
 schedule_writable (schedule_t schedule)
 {
-    return (schedule_in_use(schedule) == 0);
+    return (schedule_in_use (schedule) == 0);
 }
 
 /**
@@ -37575,7 +37667,7 @@ schedule_writable (schedule_t schedule)
 int
 trash_schedule_writable (schedule_t schedule)
 {
-    return (trash_schedule_in_use(schedule) == 0);
+    return (trash_schedule_in_use (schedule) == 0);
 }
 
 /**

@@ -294,6 +294,21 @@ find_alert (const char*, alert_t*);
 int
 manage_alert (alert_t, task_t, event_t, const void*);
 
+int
+alert_in_use (alert_t);
+
+int
+trash_alert_in_use (alert_t);
+
+int
+alert_writable (alert_t);
+
+int
+trash_alert_writable (alert_t);
+
+int
+alert_count (const get_data_t *);
+
 void
 init_alert_iterator (iterator_t*, alert_t, task_t, event_t, int, int,
                          const char*);
