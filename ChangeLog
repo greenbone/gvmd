@@ -1,5 +1,23 @@
 2012-12-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Follow overrides flag in task iterator.
+
+	* src/manage_sql.c (TASK_ITERATOR_COLUMNS)
+	(TASK_ITERATOR_TRASH_COLUMNS): Add overrides arg.
+	(init_user_task_iterator): Pass 0 to columns macros, because
+	get->overrides is always 0.
+	(init_task_iterator, task_count): Pass the overrides value from the
+	filter into the columns macros, so that the threat and trend match the
+	overrides flag.
+	(init_manage_process): Add extra arg to task_threat_level.
+	(task_threat_level): Add overrides arg.  Update callers.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/sql.c (sql_threat_level): Add overrides arg.
+
+2012-12-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_get_iterator): Drop the owner clause when
 	getting a single resource, because the find_resource_for_actions does
 	the owner check.  This makes the iterator work again for single

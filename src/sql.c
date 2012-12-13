@@ -989,8 +989,9 @@ sql_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
   task_t task;
   report_t last_report;
   const char *threat;
+  unsigned int overrides;
 
-  assert (argc == 1);
+  assert (argc == 2);
 
   task = sqlite3_value_int64 (argv[0]);
   if (task == 0)
@@ -999,7 +1000,9 @@ sql_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
       return;
     }
 
-  threat = task_threat_level (task);
+  overrides = sqlite3_value_int (argv[1]);
+
+  threat = task_threat_level (task, overrides);
   tracef ("   %s: %llu: %s\n", __FUNCTION__, task, threat);
   if (threat)
     {

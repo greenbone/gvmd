@@ -557,7 +557,7 @@ const char *
 task_trend (task_t, int);
 
 const char *
-task_threat_level (task_t);
+task_threat_level (task_t, int);
 
 schedule_t
 task_schedule (task_t);

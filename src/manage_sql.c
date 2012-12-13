@@ -294,7 +294,7 @@ int
 family_count ();
 
 const char*
-task_threat_level (task_t);
+task_threat_level (task_t, int);
 
 static const char*
 task_previous_threat_level (task_t);
@@ -11830,7 +11830,7 @@ condition_met (task_t task, alert_t alert,
            * least the given level. */
 
           condition_level = alert_data (alert, "condition", "level");
-          report_level = task_threat_level (task);
+          report_level = task_threat_level (task, 1);
           if (condition_level
               && report_level
               && (collate_threat (NULL,
@@ -11856,7 +11856,7 @@ condition_met (task_t task, alert_t alert,
            * report. */
 
           direction = alert_data (alert, "condition", "direction");
-          last_level = task_threat_level (task);
+          last_level = task_threat_level (task, 1);
           second_last_level = task_previous_threat_level (task);
           if (direction
               && last_level
@@ -12041,7 +12041,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
 /**
  * @brief Task iterator columns.
  */
-#define TASK_ITERATOR_COLUMNS                              \
+#define TASK_ITERATOR_COLUMNS(overrides)                   \
   GET_ITERATOR_COLUMNS ", run_status,"                     \
   " (SELECT count(*) FROM reports"                         \
   /* TODO 1 == TASK_STATUS_DONE */                         \
@@ -12056,9 +12056,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
   /* TODO 1 == TASK_STATUS_DONE */                         \
   "  AND scan_run_status = 1"                              \
   "  ORDER BY date DESC LIMIT 1),"                         \
-  " task_threat_level (ROWID) AS threat,"                  \
-  /* FIX second arg is overrides */                        \
-  " task_trend (ROWID, 0) AS trend,"                       \
+  " task_threat_level (ROWID, " overrides ") AS threat,"   \
+  " task_trend (ROWID, " overrides ") AS trend,"           \
   " run_status_name (run_status) AS status,"               \
   " (SELECT date FROM reports WHERE task = tasks.ROWID"    \
   /* TODO 1 == TASK_STATUS_DONE */                         \
@@ -12069,7 +12068,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
 /**
  * @brief Task iterator columns for trash case.
  */
-#define TASK_ITERATOR_TRASH_COLUMNS                        \
+#define TASK_ITERATOR_TRASH_COLUMNS(overrides)             \
   GET_ITERATOR_COLUMNS ", run_status,"                     \
   " (SELECT count(*) FROM reports"                         \
   /* TODO 1 == TASK_STATUS_DONE */                         \
@@ -12083,10 +12082,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
   " (SELECT ROWID FROM reports WHERE task = tasks.ROWID"   \
   /* TODO 1 == TASK_STATUS_DONE */                         \
   "  AND scan_run_status = 1"                              \
-  "  ORDER BY date DESC LIMIT 1),"                          \
-  " task_threat_level (ROWID) AS threat,"                  \
-  /* FIX second arg is overrides */                        \
-  " task_trend (ROWID, 0) AS trend,"                       \
+  "  ORDER BY date DESC LIMIT 1),"                         \
+  " task_threat_level (ROWID, " overrides ") AS threat,"   \
+  " task_trend (ROWID, " overrides ") AS trend,"           \
   " run_status_name (run_status) AS status,"               \
   " (SELECT date FROM reports WHERE task = tasks.ROWID"    \
   /* TODO 1 == TASK_STATUS_DONE */                         \
@@ -12110,8 +12108,8 @@ init_user_task_iterator (iterator_t* iterator,
   get_data_t get;
   memset (&get, '\0', sizeof (get));
   get.trash = trash;
-  init_user_get_iterator (iterator, "task", &get, TASK_ITERATOR_COLUMNS,
-                          TASK_ITERATOR_TRASH_COLUMNS, filter_columns,
+  init_user_get_iterator (iterator, "task", &get, TASK_ITERATOR_COLUMNS ("0"),
+                          TASK_ITERATOR_TRASH_COLUMNS ("0"), filter_columns,
                           task, 0, 0,
                           trash ? " AND hidden = 2" : " AND hidden < 2");
 }
@@ -12132,14 +12130,34 @@ int
 init_task_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
+  char *filter;
+  gchar *value;
+  int overrides;
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+  value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
+  free (filter);
+  overrides = value && strcmp (value, "0");
+  g_free (value);
 
   return init_get_iterator (iterator,
                             "task",
                             get,
                             /* Columns. */
-                            TASK_ITERATOR_COLUMNS,
+                            overrides
+                             ? TASK_ITERATOR_COLUMNS ("1")
+                             : TASK_ITERATOR_COLUMNS ("0"),
                             /* Columns for trashcan. */
-                            TASK_ITERATOR_TRASH_COLUMNS,
+                            overrides
+                             ? TASK_ITERATOR_TRASH_COLUMNS ("1")
+                             : TASK_ITERATOR_TRASH_COLUMNS ("0"),
                             filter_columns,
                             NULL,
                             0,
@@ -12529,7 +12547,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
       if (sqlite3_create_function (task_db,
                                    "task_threat_level",
-                                   1,               /* Number of args. */
+                                   2,               /* Number of args. */
                                    SQLITE_UTF8,
                                    NULL,            /* Callback data. */
                                    sql_threat_level,
@@ -14496,7 +14514,28 @@ unsigned int
 task_count (const get_data_t *get)
 {
   static const char *extra_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
-  return count ("task", get, TASK_ITERATOR_COLUMNS, extra_columns, 0, NULL,
+  char *filter;
+  gchar *value;
+  int overrides;
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+  value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
+  free (filter);
+  overrides = value && strcmp (value, "0");
+  g_free (value);
+
+  return count ("task", get,
+                overrides
+                 ? TASK_ITERATOR_COLUMNS ("1")
+                 : TASK_ITERATOR_COLUMNS ("0"),
+                extra_columns, 0, NULL,
                 (get->id
                  && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
                      == 0))
@@ -15502,13 +15541,14 @@ set_task_schedule (task_t task, schedule_t schedule)
 /**
  * @brief Return the threat level of a task, taking overrides into account.
  *
- * @param[in]  task  Task.
+ * @param[in]  task       Task.
+ * @param[in]  overrides  Whether to apply overrides.
  *
  * @return Threat level of last report on task if there is one, as a static
  *         string, else NULL.
  */
 const char*
-task_threat_level (task_t task)
+task_threat_level (task_t task, int overrides)
 {
   char *type;
   gchar *ov, *new_type_sql;
@@ -15516,39 +15556,44 @@ task_threat_level (task_t task)
   if (current_credentials.uuid == NULL)
     return NULL;
 
-  ov = g_strdup_printf
-        ("SELECT overrides.new_threat"
-         " FROM overrides"
-         " WHERE overrides.nvt = results.nvt"
-         " AND ((overrides.owner IS NULL)"
-         " OR (overrides.owner ="
-         " (SELECT ROWID FROM users"
-         "  WHERE users.uuid = '%s')))"
-         " AND ((overrides.end_time = 0)"
-         "      OR (overrides.end_time >= now ()))"
-         " AND (overrides.task ="
-         "      (SELECT reports.task FROM reports"
-         "       WHERE report_results.report = reports.ROWID)"
-         "      OR overrides.task = 0)"
-         " AND (overrides.result = results.ROWID"
-         "      OR overrides.result = 0)"
-         " AND (overrides.hosts is NULL"
-         "      OR overrides.hosts = \"\""
-         "      OR hosts_contains (overrides.hosts, results.host))"
-         " AND (overrides.port is NULL"
-         "      OR overrides.port = \"\""
-         "      OR overrides.port = results.port)"
-         " AND (overrides.threat is NULL"
-         "      OR overrides.threat = \"\""
-         "      OR overrides.threat = results.type)"
-         " ORDER BY overrides.result DESC, overrides.task DESC,"
-         " overrides.port DESC, overrides.threat"
-         " COLLATE collate_message_type ASC",
-         current_credentials.uuid);
+  if (overrides)
+    {
+      ov = g_strdup_printf
+            ("SELECT overrides.new_threat"
+             " FROM overrides"
+             " WHERE overrides.nvt = results.nvt"
+             " AND ((overrides.owner IS NULL)"
+             " OR (overrides.owner ="
+             " (SELECT ROWID FROM users"
+             "  WHERE users.uuid = '%s')))"
+             " AND ((overrides.end_time = 0)"
+             "      OR (overrides.end_time >= now ()))"
+             " AND (overrides.task ="
+             "      (SELECT reports.task FROM reports"
+             "       WHERE report_results.report = reports.ROWID)"
+             "      OR overrides.task = 0)"
+             " AND (overrides.result = results.ROWID"
+             "      OR overrides.result = 0)"
+             " AND (overrides.hosts is NULL"
+             "      OR overrides.hosts = \"\""
+             "      OR hosts_contains (overrides.hosts, results.host))"
+             " AND (overrides.port is NULL"
+             "      OR overrides.port = \"\""
+             "      OR overrides.port = results.port)"
+             " AND (overrides.threat is NULL"
+             "      OR overrides.threat = \"\""
+             "      OR overrides.threat = results.type)"
+             " ORDER BY overrides.result DESC, overrides.task DESC,"
+             " overrides.port DESC, overrides.threat"
+             " COLLATE collate_message_type ASC",
+             current_credentials.uuid);
 
-  new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
+      new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
-  g_free (ov);
+      g_free (ov);
+    }
+  else
+    new_type_sql = g_strdup ("type");
 
   type = sql_string (0, 0,
                      " SELECT %s AS new_type FROM results, report_results"
