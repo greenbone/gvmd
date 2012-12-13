@@ -3479,8 +3479,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS alert_event_data_trash (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS alert_method_data (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS alert_method_data_trash (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER, filter INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS alerts_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER, filter INTEGER, filter_location INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER, filter INTEGER, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS alerts_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER, filter INTEGER, filter_location INTEGER, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS filters (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, type, term, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS filters_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, type, term, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
@@ -8635,6 +8635,48 @@ migrate_69_to_70 ()
 }
 
 /**
+ * @brief Migrate the database from version 70 to version 71.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_70_to_71 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 70. */
+
+  if (manage_db_version () != 70)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Add creation and modification times to alerts. */
+
+  sql ("ALTER TABLE alerts ADD COLUMN creation_time;");
+  sql ("ALTER TABLE alerts ADD COLUMN modification_time;");
+  sql ("UPDATE alerts SET creation_time = 0, modification_time = 0;");
+
+  sql ("ALTER TABLE alerts_trash ADD COLUMN creation_time;");
+  sql ("ALTER TABLE alerts_trash ADD COLUMN modification_time;");
+  sql ("UPDATE alerts_trash SET"
+       " creation_time = 0, modification_time = 0;");
+
+  /* Set the database version to 71. */
+
+  set_db_version (71);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8709,6 +8751,7 @@ static migrator_t database_migrators[]
     {68, migrate_67_to_68},
     {69, migrate_68_to_69},
     {70, migrate_69_to_70},
+    {71, migrate_70_to_71},
     /* End marker. */
     {-1, NULL}};
 
@@ -9277,10 +9320,10 @@ create_alert (const char* name, const char* comment, const char* filter_id,
   quoted_comment = comment ? sql_quote (comment) : NULL;
 
   sql ("INSERT INTO alerts (uuid, owner, name, comment, event, condition,"
-       " method, filter)"
+       " method, filter, creation_time, modification_time)"
        " VALUES (make_uuid (),"
        " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', %i, %i, %i, %llu);",
+       " '%s', '%s', %i, %i, %i, %llu, now (), now ());",
        current_credentials.uuid,
        quoted_name,
        quoted_comment ? quoted_comment : "",
@@ -9433,9 +9476,10 @@ delete_alert (const char *alert_id, int ultimate)
 
       sql ("INSERT INTO alerts_trash"
            " (uuid, owner, name, comment, event, condition, method, filter,"
-           "  filter_location)"
+           "  filter_location, creation_time, modification_time)"
            " SELECT uuid, owner, name, comment, event, condition, method,"
-           "        filter, " G_STRINGIFY (LOCATION_TABLE)
+           "        filter, " G_STRINGIFY (LOCATION_TABLE) ", creation_time,"
+           "        now ()"
            " FROM alerts WHERE ROWID = %llu;",
            alert);
 
@@ -43699,9 +43743,10 @@ manage_restore (const char *id)
         }
 
       sql ("INSERT INTO alerts"
-           " (uuid, owner, name, comment, event, condition, method, filter)"
+           " (uuid, owner, name, comment, event, condition, method, filter,"
+           "  creation_time, modification_time)"
            " SELECT uuid, owner, name, comment, event, condition, method,"
-           "        filter"
+           "        filter, creation_time, modification_time"
            " FROM alerts_trash WHERE ROWID = %llu;",
            resource);
 

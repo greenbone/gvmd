@@ -1,5 +1,21 @@
 2012-12-13  Hani Benhabiles  <kroosec@gmail.com>
 
+	Migrate database to version 71, add creation and modification time
+	support to alerts.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 71.
+
+	* src/manage_sql.c (create_tables): Add creation_time and
+	modification_time to alerts.
+	(migrate_70_to_71): New function.
+	(database_migrators): Add migrate_70_to_71.
+	(create_alert, delete_alert, manage_restore): Set creation_time and
+	modification_time columns adequately.
+
+	* doc/db.png: Update to version 71.
+
+2012-12-13  Hani Benhabiles  <kroosec@gmail.com>
+
 	* src/manage_sql.c (alert_count, alert_in_use, trash_alert_in_use)
 	(alert_writable, trash_alert_writable): New functions.
 	(schedule_in_use, trash_schedule_in_use): Style fix.
