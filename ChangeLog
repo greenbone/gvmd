@@ -1,3 +1,10 @@
+2012-12-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_get_iterator): Drop the owner clause when
+	getting a single resource, because the find_resource_for_actions does
+	the owner check.  This makes the iterator work again for single
+	observed tasks.
+
 2012-12-13  Hani Benhabiles  <kroosec@gmail.com>
 
 	Migrate database to version 71, add creation and modification time
