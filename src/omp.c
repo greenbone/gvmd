@@ -12725,7 +12725,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   case 0:
                     {
                       char *uuid;
-                      alert_uuid (new_alert, &uuid);
+                      uuid = alert_uuid (new_alert);
                       SENDF_TO_CLIENT_OR_FAIL
                        (XML_OK_CREATED_ID ("create_alert"), uuid);
                       g_log ("event alert", G_LOG_LEVEL_MESSAGE,

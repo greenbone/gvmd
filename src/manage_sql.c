@@ -9525,18 +9525,16 @@ delete_alert (const char *alert_id, int ultimate)
 /**
  * @brief Return the UUID of an alert.
  *
- * @param[in]   alert  Alert.
- * @param[out]  id     Pointer to a newly allocated string.
+ * @param[in]  alert  Alert.
  *
- * @return 0.
+ * @return UUID of alert.
  */
-int
-alert_uuid (alert_t alert, char ** id)
+char *
+alert_uuid (alert_t alert)
 {
-  *id = sql_string (0, 0,
-                    "SELECT uuid FROM alerts WHERE ROWID = %llu;",
-                    alert);
-  return 0;
+  return sql_string (0, 0,
+                     "SELECT uuid FROM alerts WHERE ROWID = %llu;",
+                     alert);
 }
 
 /**

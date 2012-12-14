@@ -285,8 +285,8 @@ create_alert (const char*, const char*, const char*, event_t, GPtrArray*,
 int
 delete_alert (const char *, int);
 
-int
-alert_uuid (alert_t, char **);
+char *
+alert_uuid (alert_t);
 
 gboolean
 find_alert (const char*, alert_t*);
