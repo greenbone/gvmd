@@ -532,18 +532,6 @@ task_end_time (task_t);
 void
 set_task_end_time (task_t task, char* time);
 
-char*
-task_alert_name (task_t);
-
-char*
-task_alert_uuid (task_t);
-
-alert_t
-task_alert (task_t);
-
-int
-task_alert_in_trash (task_t);
-
 void
 add_task_alert (task_t, alert_t);
 
@@ -2393,6 +2381,9 @@ find_filter_for_actions (const char*, filter_t*, const char*);
 
 char*
 filter_uuid (filter_t);
+
+char*
+filter_name (filter_t);
 
 gchar*
 filter_term (const char *);

@@ -1,5 +1,13 @@
 2012-12-14  Hani Benhabiles <kroosec@gmail.com>
 
+	* src/manage_sql.c (filter_name): New function.
+	(task_alert_name, task_alert_uuid, task_alert, task_alert_in_trash):
+	Remove unused functions.
+
+	* src/manage.h: Add and remove headers accordingly.
+
+2012-12-14  Hani Benhabiles <kroosec@gmail.com>
+
 	* src/manage_sql.c (init_task_alert_iterator, task_alert_iterator_alert)
 	(task_alert_iterator_uuid, task_alert_iterator_name): New functions.
 	(event): Use init_task_alert_iterator instead of init_alert_iterator.

@@ -15415,88 +15415,6 @@ task_second_last_report_id (task_t task)
 }
 
 /**
- * @brief Return the name of the alert of a task.
- *
- * @param[in]  task  Task.
- *
- * @return Name of alert of task if any, else NULL.
- */
-char*
-task_alert_name (task_t task)
-{
-  return sql_string (0, 0,
-                     "SELECT name FROM alerts"
-                     " WHERE ROWID ="
-                     " (SELECT alert FROM task_alerts"
-                     "  WHERE task = %llu LIMIT 1);",
-                     task);
-}
-
-/**
- * @brief Return the UUID of the alert of a task.
- *
- * @param[in]  task  Task.
- *
- * @return UUID of alert of task if any, else NULL.
- */
-char*
-task_alert_uuid (task_t task)
-{
-  return sql_string (0, 0,
-                     "SELECT uuid FROM alerts"
-                     " WHERE ROWID ="
-                     " (SELECT alert FROM task_alerts"
-                     "  WHERE task = %llu LIMIT 1);",
-                     task);
-}
-
-/**
- * @brief Return the alert of a task.
- *
- * @param[in]  task  Task.
- *
- * @return Alert of task if any, else NULL.
- */
-alert_t
-task_alert (task_t task)
-{
-  alert_t alert = 0;
-  switch (sql_int64 (&alert, 0, 0,
-                     "SELECT alert FROM tasks WHERE ROWID = %llu;",
-                     task))
-    {
-      case 0:
-        return alert;
-        break;
-      case 1:        /* Too few rows in result of query. */
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        return 0;
-        break;
-    }
-}
-
-/**
- * @brief Return whether the alert of a task is in the trashcan.
- *
- * Caller must check that there is an alert on the task.
- *
- * @param[in]  task  Task.
- *
- * @return 1 if in trashcan, else 0.
- */
-int
-task_alert_in_trash (task_t task)
-{
-  return sql_int (0, 0,
-                 "SELECT alert_location = " G_STRINGIFY (LOCATION_TRASH)
-                 " FROM task_alerts"
-                 " WHERE task = %llu;",
-                 task);
-}
-
-/**
  * @brief Add an alert to a task.
  *
  * @param[in]  task       Task.
@@ -42922,6 +42840,21 @@ filter_uuid (filter_t filter)
 {
   return sql_string (0, 0,
                      "SELECT uuid FROM filters WHERE ROWID = %llu;",
+                     filter);
+}
+
+/**
+ * @brief Return the name of a filter.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return name of filter.
+ */
+char*
+filter_name (filter_t filter)
+{
+  return sql_string (0, 0,
+                     "SELECT name FROM filters WHERE ROWID = %llu;",
                      filter);
 }
 
