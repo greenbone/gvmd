@@ -10136,6 +10136,75 @@ alert_data (alert_t alert, const char *type, const char *name)
   return data;
 }
 
+/*
+ * @brief Initialise a task alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  task      Task.
+ * @param[in]  event     Event.
+ */
+void
+init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
+{
+  assert (current_credentials.uuid);
+
+  if (event)
+    init_iterator (iterator,
+                   "SELECT alerts.ROWID, alerts.uuid, alerts.name"
+                   " FROM alerts, task_alerts"
+                   " WHERE task_alerts.task = %llu AND event = %llu"
+                   " AND task_alerts.alert = alerts.ROWID"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   task,
+                   event,
+                   current_credentials.uuid);
+  else
+    init_iterator (iterator,
+                   "SELECT alerts.ROWID, alerts.uuid, alerts.name"
+                   " FROM alerts, task_alerts"
+                   " WHERE task_alerts.task = %llu"
+                   " AND task_alerts.alert = alerts.ROWID"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   task,
+                   current_credentials.uuid);
+}
+
+/**
+ * @brief Get the alert from a task alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return alert.
+ */
+alert_t
+task_alert_iterator_alert (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (task_t) sqlite3_column_int64 (iterator->stmt, 0);
+}
+
+/**
+ * @brief Get the UUID from a task alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (task_alert_iterator_uuid, 1);
+
+/**
+ * @brief Get the name from a task alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (task_alert_iterator_name, 2);
+
 /**
  * @brief Send an email.
  *
@@ -11911,21 +11980,21 @@ event (task_t task, event_t event, void* event_data)
 {
   iterator_t alerts;
   tracef ("   EVENT %i on task %llu", event, task);
-  init_alert_iterator (&alerts, 0, task, event, 0, 1, NULL);
+  init_task_alert_iterator (&alerts, task, event);
   while (next (&alerts))
     {
-      alert_t alert = alert_iterator_alert (&alerts);
+      alert_t alert = task_alert_iterator_alert (&alerts);
       if (event_applies (event, event_data, task, alert))
         {
           alert_condition_t condition;
 
-          condition = alert_iterator_condition (&alerts);
+          condition = alert_condition (alert);
           if (condition_met (task, alert, condition))
             escalate_1 (alert,
                         task,
                         event,
                         event_data,
-                        alert_iterator_method (&alerts),
+                        alert_method (alert),
                         condition);
         }
     }

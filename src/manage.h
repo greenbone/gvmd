@@ -388,6 +388,18 @@ alert_task_iterator_name (iterator_t*);
 const char*
 alert_task_iterator_uuid (iterator_t*);
 
+void
+init_task_alert_iterator (iterator_t*, task_t, event_t event);
+
+alert_t
+task_alert_iterator_alert (iterator_t*);
+
+const char*
+task_alert_iterator_uuid (iterator_t*);
+
+const char*
+task_alert_iterator_name (iterator_t*);
+
 
 /* Task global variables and preprocessor variables. */
 

@@ -1,5 +1,16 @@
 2012-12-14  Hani Benhabiles <kroosec@gmail.com>
 
+	* src/manage_sql.c (init_task_alert_iterator, task_alert_iterator_alert)
+	(task_alert_iterator_uuid, task_alert_iterator_name): New functions.
+	(event): Use init_task_alert_iterator instead of init_alert_iterator.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Use init_task_alert_iterator
+	in GET_TASKS case instead of init_alert_iterator.
+
+2012-12-14  Hani Benhabiles <kroosec@gmail.com>
+
 	* src/manage_sql.c (alert_uuid): Change interface to match the same
 	style of other objects.
 

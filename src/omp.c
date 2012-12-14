@@ -18905,14 +18905,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               g_free (response);
 
-              init_alert_iterator (&alerts, 0, index, 0, 0, 1, NULL);
+              init_task_alert_iterator (&alerts, index, 0);
               while (next (&alerts))
                 SENDF_TO_CLIENT_OR_FAIL
                  ("<alert id=\"%s\">"
                   "<name>%s</name>"
                   "</alert>",
-                  alert_iterator_uuid (&alerts),
-                  alert_iterator_name (&alerts));
+                  task_alert_iterator_uuid (&alerts),
+                  task_alert_iterator_name (&alerts));
               cleanup_iterator (&alerts);
 
               if (get_tasks_data->get.details)
