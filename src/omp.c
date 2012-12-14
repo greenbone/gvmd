@@ -2012,10 +2012,8 @@ get_dependencies_data_reset (get_dependencies_data_t *data)
  */
 typedef struct
 {
-  char *alert_id;        ///< ID of single alert to get.
-  char *sort_field;      ///< Field to sort results on.
-  int sort_order;        ///< Result sort order: 0 descending, else ascending.
-  int trash;             ///< Boolean.  Whether to return alerts from trashcan.
+  get_data_t get;    ///< Get args.
+  int tasks;        ///< Boolean.  Whether to include tasks that use alert.
 } get_alerts_data_t;
 
 /**
@@ -2026,9 +2024,7 @@ typedef struct
 static void
 get_alerts_data_reset (get_alerts_data_t *data)
 {
-  free (data->alert_id);
-  free (data->sort_field);
-
+  get_data_reset (&data->get);
   memset (data, 0, sizeof (get_alerts_data_t));
 }
 
@@ -5220,22 +5216,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_ALERTS", element_name) == 0)
           {
             const gchar* attribute;
-            append_attribute (attribute_names, attribute_values,
-                              "alert_id",
-                              &get_alerts_data->alert_id);
+
+            get_data_parse_attributes (&get_alerts_data->get,
+                                       "alert",
+                                       attribute_names,
+                                       attribute_values);
             if (find_attribute (attribute_names, attribute_values,
-                                "trash", &attribute))
-              get_alerts_data->trash = strcmp (attribute, "0");
+                                "tasks", &attribute))
+              get_alerts_data->tasks = strcmp (attribute, "0");
             else
-              get_alerts_data->trash = 0;
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_alerts_data->sort_field);
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_alerts_data->sort_order = strcmp (attribute,
-                                                        "descending");
-            else
-              get_alerts_data->sort_order = 1;
+              get_alerts_data->tasks = 0;
+
             set_client_state (CLIENT_GET_ALERTS);
           }
         else if (strcasecmp ("GET_FILTERS", element_name) == 0)
@@ -17186,66 +17177,80 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_ALERTS:
         {
-          alert_t alert = 0;
+          iterator_t alerts;
+          int count, filtered, ret, first;
+          get_data_t * get;
 
           assert (strcasecmp ("GET_ALERTS", element_name) == 0);
 
-          if (get_alerts_data->alert_id && get_alerts_data->trash)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_alerts",
-                                "GET_ALERTS trash given with"
-                                " alert_id"));
-          else if (get_alerts_data->alert_id
-              && find_alert (get_alerts_data->alert_id, &alert))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_alerts"));
-          else if (get_alerts_data->alert_id && alert == 0)
+          ret = init_alert_iterator (&alerts, &get_alerts_data->get);
+          if (ret)
             {
-              if (send_find_error_to_client ("get_alerts",
-                                             "alert",
-                                             get_alerts_data->alert_id,
-                                             write_to_client,
-                                             write_to_client_data))
+              switch (ret)
                 {
-                  error_send_to_client (error);
+                  case 1:
+                    if (send_find_error_to_client ("get_alerts",
+                                                   "alert",
+                                                   get_alerts_data->get.id,
+                                                   write_to_client,
+                                                   write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case 2:
+                    if (send_find_error_to_client
+                         ("get_alerts",
+                          "alert",
+                          get_alerts_data->get.filt_id,
+                          write_to_client,
+                          write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("get_alerts"));
+                    break;
+                }
+              get_alerts_data_reset (get_alerts_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          count = 0;
+          get = &get_alerts_data->get;
+          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+          SEND_GET_START ("alert", &get_alerts_data->get);
+          while (1)
+            {
+              iterator_t data;
+              filter_t filter;
+
+              ret = get_next (&alerts, &get_alerts_data->get, &first,
+                              &count, init_alert_iterator);
+              if (ret == 1)
+                break;
+              if (ret == -1)
+                {
+                  internal_error_send_to_client (error);
                   return;
                 }
-            }
-          else
-            {
-              iterator_t alerts;
+              SEND_GET_COMMON (alert, &get_alerts_data->get,
+                               &alerts);
 
-              SEND_TO_CLIENT_OR_FAIL ("<get_alerts_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              init_alert_iterator (&alerts,
-                                       alert,
-                                       (task_t) 0,
-                                       (event_t) 0,
-                                       get_alerts_data->trash,
-                                       get_alerts_data->sort_order,
-                                       get_alerts_data->sort_field);
-              while (next (&alerts))
+              if((filter = alert_iterator_filter (&alerts)))
+                SENDF_TO_CLIENT_OR_FAIL ("<filter id=\"%s\">"
+                                         "<name>%s</name>"
+                                         "</filter>",
+                                         filter_uuid (filter),
+                                         filter_name (filter));
+
+              if (get_alerts_data->get.details)
                 {
-                  iterator_t data;
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<alert id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<comment>%s</comment>"
-                                           "<filter id=\"%s\">"
-                                           "<name>%s</name>"
-                                           "<trash>%i</trash>"
-                                           "</filter>"
-                                           "<in_use>%i</in_use>",
-                                           alert_iterator_uuid (&alerts),
-                                           alert_iterator_name (&alerts),
-                                           alert_iterator_comment (&alerts),
-                                           alert_iterator_filter_id (&alerts),
-                                           alert_iterator_filter_name (&alerts),
-                                           (get_alerts_data->trash
-                                             && alert_iterator_filter_trash
-                                                 (&alerts)),
-                                           alert_iterator_in_use (&alerts));
-
                   /* Condition. */
 
                   SENDF_TO_CLIENT_OR_FAIL ("<condition>%s",
@@ -17253,10 +17258,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             (alert_iterator_condition
                                               (&alerts)));
                   init_alert_data_iterator (&data,
-                                                alert_iterator_alert
-                                                 (&alerts),
-                                                get_alerts_data->trash,
-                                                "condition");
+                                            alert_iterator_alert
+                                             (&alerts),
+                                            get_alerts_data->get.trash,
+                                            "condition");
                   while (next (&data))
                     SENDF_TO_CLIENT_OR_FAIL ("<data>"
                                              "<name>%s</name>"
@@ -17275,7 +17280,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_alert_data_iterator (&data,
                                                 alert_iterator_alert
                                                  (&alerts),
-                                                get_alerts_data->trash,
+                                                get_alerts_data->get.trash,
                                                 "event");
                   while (next (&data))
                     SENDF_TO_CLIENT_OR_FAIL ("<data>"
@@ -17296,7 +17301,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_alert_data_iterator (&data,
                                                 alert_iterator_alert
                                                  (&alerts),
-                                                get_alerts_data->trash,
+                                                get_alerts_data->get.trash,
                                                 "method");
                   while (next (&data))
                     SENDF_TO_CLIENT_OR_FAIL ("<data>"
@@ -17307,40 +17312,37 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                              alert_data_iterator_data (&data));
                   cleanup_iterator (&data);
                   SEND_TO_CLIENT_OR_FAIL ("</method>");
-
-                  /**
-                   * @todo
-                   * (OMP) For consistency, the operations should respond the
-                   * same way if one, some or all elements are requested.  The
-                   * level of details in the response should instead be controlled
-                   * by some other mechanism, like a details flag.
-                   */
-
-                  if (alert)
-                    {
-                      iterator_t tasks;
-
-                      SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-                      init_alert_task_iterator
-                       (&tasks,
-                        alert,
-                        get_alerts_data->sort_order);
-                      while (next (&tasks))
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<task id=\"%s\">"
-                          "<name>%s</name>"
-                          "</task>",
-                          alert_task_iterator_uuid (&tasks),
-                          alert_task_iterator_name (&tasks));
-                      cleanup_iterator (&tasks);
-                      SEND_TO_CLIENT_OR_FAIL ("</tasks>");
-                    }
-
-                  SEND_TO_CLIENT_OR_FAIL ("</alert>");
                 }
-              cleanup_iterator (&alerts);
-              SEND_TO_CLIENT_OR_FAIL ("</get_alerts_response>");
+
+              if (get_alerts_data->tasks)
+                {
+                  iterator_t tasks;
+
+                  SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+                  init_alert_task_iterator (&tasks,
+                                            alert_iterator_alert
+                                             (&alerts),
+                                            0);
+                  while (next (&tasks))
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<task id=\"%s\">"
+                      "<name>%s</name>"
+                      "</task>",
+                      alert_task_iterator_uuid (&tasks),
+                      alert_task_iterator_name (&tasks));
+                  cleanup_iterator (&tasks);
+                  SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+                }
+
+              SEND_TO_CLIENT_OR_FAIL ("</alert>");
+              count++;
             }
+          cleanup_iterator (&alerts);
+          filtered = get_alerts_data->get.id
+                      ? 1
+                      : filter_count (&get_alerts_data->get);
+          SEND_GET_END ("alert", &get_alerts_data->get, count, filtered);
+
           get_alerts_data_reset (get_alerts_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;

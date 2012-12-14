@@ -1,5 +1,31 @@
 2012-12-14  Hani Benhabiles <kroosec@gmail.com>
 
+	Move Alerts to use new GET style.
+
+	* src/manage_sql.c (init_alert_iterator): Change interface to take an
+	iterator and a get_data_t as parameters.
+	(alert_iterator_filter): New function
+	(alert_iterator_in_use, alert_iterator_filter_id)
+	(alert_iterator_filter_name, alert_iterator_filter_trash): Remove unused
+	function.
+	(alert_iterator_uuid,alert_iterator_name,alert_iterator_comment): Define
+	with DEF_ACCESS.
+	(alert_iterator_event, alert_iterator_condition)
+	(alert_iterator_method): Adjust column position.
+
+	* src/manage.h: Add, change and remove headers accordingly.
+
+	* src/omp.c (get_alerts_data_t): Remove alert_id, sort_field, sort_order
+	and trash. Add get and tasks.
+	(get_alerts_data_reset): Use get_data_reset.
+	(omp_xml_handle_start_element): Adapt GET_ALERTS to get data interfce
+	changes.
+	(omp_xml_handle_end_element): Use new init_alert_iterator interface in
+	CLIENT_GET_ALERTS case. Check details get element when sending alert
+	data. Adjust to follow same style with new get based style.
+
+2012-12-14  Hani Benhabiles <kroosec@gmail.com>
+
 	* src/manage_sql.c (filter_name): New function.
 	(task_alert_name, task_alert_uuid, task_alert, task_alert_in_trash):
 	Remove unused functions.

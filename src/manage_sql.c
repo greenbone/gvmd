@@ -9559,6 +9559,7 @@ alert_filter_id (alert_t alert)
                      alert,
                      alert);
 }
+
 /**
  * @brief Return the condition associated with an alert.
  *
@@ -9682,211 +9683,32 @@ trash_alert_writable (alert_t alert)
 }
 
 /**
- * @brief Initialise an alert iterator.
+ * @brief Initialise an alert iterator, including observed alerts.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  alert   Single alert to iterator over, 0 for all.
- * @param[in]  task        Iterate over alerts for this task.  0 for all.
- * @param[in]  event       Iterate over alerts handling this event.  0 for
- *                         all.
- * @param[in]  trash       Whether to iterate over trashcan alerts.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find alert, failed to find filter (filt_id),
+ *         -1 error.
  */
-void
-init_alert_iterator (iterator_t *iterator, alert_t alert,
-                     task_t task, event_t event, int trash, int ascending,
-                     const char *sort_field)
+int
+init_alert_iterator (iterator_t* iterator, const get_data_t *get)
 {
-  assert (alert ? task == 0 : (task ? alert == 0 : 1));
-  assert (alert ? event == 0 : (event ? alert == 0 : 1));
-  assert (event ? task : 1);
-  assert (current_credentials.uuid);
-  assert (task ? trash == 0 : 1);
+  static const char *filter_columns[] = ALERT_ITERATOR_FILTER_COLUMNS;
 
-  if (alert)
-    init_iterator (iterator,
-                   "SELECT alerts%s.ROWID, uuid, name, comment,"
-                   " 0, event, condition, method,"
-                   " (SELECT count(*) > 0 FROM task_alerts"
-                   "  WHERE task_alerts.alert = alerts%s.ROWID"
-                   "  %s),"
-                   "%s%s"
-                   " FROM alerts%s"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   (trash
-                     ? "  AND alert_location"
-                       "      = " G_STRINGIFY (LOCATION_TRASH)
-                     : "  AND alert_location"
-                       "      = " G_STRINGIFY (LOCATION_TABLE)
-                       "  AND (SELECT hidden FROM tasks"
-                       "       WHERE ROWID = task_alerts.task)"
-                       "      < 2"), /* Task in table. */
-                   trash
-                    ? " (CASE WHEN (filter IS NULL OR filter = 0)"
-                      "  THEN ''"
-                      "  ELSE (CASE WHEN (filter_location"
-                      "                   = " G_STRINGIFY (LOCATION_TABLE) ")"
-                      "        THEN (SELECT filters.uuid FROM filters"
-                      "              WHERE filters.ROWID = filter)"
-                      "        ELSE (SELECT filters_trash.uuid"
-                      "              FROM filters_trash"
-                      "              WHERE filters_trash.ROWID = filter)"
-                      "        END)"
-                      "  END),"
-                      " (CASE WHEN (filter IS NULL OR filter = 0)"
-                      "  THEN ''"
-                      "  ELSE (CASE WHEN (filter_location"
-                      "                   = " G_STRINGIFY (LOCATION_TABLE) ")"
-                      "        THEN (SELECT filters.name FROM filters"
-                      "              WHERE filters.ROWID = filter)"
-                      "        ELSE (SELECT filters_trash.name"
-                      "              FROM filters_trash"
-                      "              WHERE filters_trash.ROWID = filter)"
-                      "        END)"
-                      "  END),"
-                    : " (CASE WHEN (filter IS NULL OR filter = 0)"
-                      "  THEN ''"
-                      "  ELSE (SELECT filters.uuid FROM filters"
-                      "        WHERE filters.ROWID = filter)"
-                      "  END),"
-                      " (CASE WHEN (filter IS NULL OR filter = 0)"
-                      "  THEN ''"
-                      "  ELSE (SELECT filters.name FROM filters"
-                      "        WHERE filters.ROWID = filter)"
-                      "  END),",
-                   trash
-                    ? " filter_location = " G_STRINGIFY (LOCATION_TRASH)
-                    : " 0",
-                   trash ? "_trash" : "",
-                   alert,
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "alerts.ROWID",
-                   ascending ? "ASC" : "DESC");
-  else if (task && event)
-    init_iterator (iterator,
-                   "SELECT alerts.ROWID, uuid, name, comment,"
-                   " task_alerts.task, event, condition, method, 1,"
-                   " (CASE WHEN (filter IS NULL OR filter = 0)"
-                   "  THEN ''"
-                   "  ELSE (SELECT filters.uuid FROM filters"
-                   "        WHERE filters.ROWID = filter)"
-                   "  END),"
-                   " (CASE WHEN (filter IS NULL OR filter = 0)"
-                   "  THEN ''"
-                   "  ELSE (SELECT filters.name FROM filters"
-                   "        WHERE filters.ROWID = filter)"
-                   "  END),"
-                   "%s"
-                   " FROM alerts, task_alerts"
-                   " WHERE task_alerts.alert = alerts.ROWID"
-                   " AND task_alerts.task = %llu AND event = %i"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   trash
-                    ? " filter_location = " G_STRINGIFY (LOCATION_TRASH)
-                    : " 0",
-                   task,
-                   event,
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "alerts.ROWID",
-                   ascending ? "ASC" : "DESC");
-  else if (task)
-    init_iterator (iterator,
-                   "SELECT alerts.ROWID, uuid, name, comment,"
-                   " task_alerts.task, event, condition, method, 1,"
-                   " (CASE WHEN (filter IS NULL OR filter = 0)"
-                   "  THEN ''"
-                   "  ELSE (SELECT filters.uuid FROM filters"
-                   "        WHERE filters.ROWID = filter)"
-                   "  END),"
-                   " (CASE WHEN (filter IS NULL OR filter = 0)"
-                   "  THEN ''"
-                   "  ELSE (SELECT filters.name FROM filters"
-                   "        WHERE filters.ROWID = filter)"
-                   "  END),"
-                   "%s"
-                   " FROM alerts, task_alerts"
-                   " WHERE task_alerts.alert = alerts.ROWID"
-                   " AND task_alerts.task = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   trash
-                    ? " filter_location = " G_STRINGIFY (LOCATION_TRASH)
-                    : " 0",
-                   task,
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "alerts.ROWID",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT alerts%s.ROWID, uuid, name, comment,"
-                   " 0, event, condition, method,"
-                   " (SELECT count(*) > 0 FROM task_alerts"
-                   "  WHERE task_alerts.alert = alerts%s.ROWID"
-                   "  %s),"
-                   "%s%s"
-                   " FROM alerts%s"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY %s %s;",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   (trash
-                     ? "  AND alert_location"
-                       "      = " G_STRINGIFY (LOCATION_TRASH)
-                     : "  AND alert_location"
-                       "      = " G_STRINGIFY (LOCATION_TABLE)
-                       "  AND (SELECT hidden FROM tasks"
-                       "       WHERE ROWID = task_alerts.task)"
-                       "      < 2"), /* Task in table. */
-                   trash
-                    ? " (CASE WHEN (filter IS NULL OR filter = 0)"
-                      "  THEN ''"
-                      "  ELSE (CASE WHEN (filter_location"
-                      "                   = " G_STRINGIFY (LOCATION_TABLE) ")"
-                      "        THEN (SELECT filters.uuid FROM filters"
-                      "              WHERE filters.ROWID = filter)"
-                      "        ELSE (SELECT filters_trash.uuid"
-                      "              FROM filters_trash"
-                      "              WHERE filters_trash.ROWID = filter)"
-                      "        END)"
-                      "  END),"
-                      " (CASE WHEN (filter IS NULL OR filter = 0)"
-                      "  THEN ''"
-                      "  ELSE (CASE WHEN (filter_location"
-                      "                   = " G_STRINGIFY (LOCATION_TABLE) ")"
-                      "        THEN (SELECT filters.name FROM filters"
-                      "              WHERE filters.ROWID = filter)"
-                      "        ELSE (SELECT filters_trash.name"
-                      "              FROM filters_trash"
-                      "              WHERE filters_trash.ROWID = filter)"
-                      "        END)"
-                      "  END),"
-                    : " (CASE WHEN (filter IS NULL OR filter = 0)"
-                      "  THEN ''"
-                      "  ELSE (SELECT filters.uuid FROM filters"
-                      "        WHERE filters.ROWID = filter)"
-                      "  END),"
-                      " (CASE WHEN (filter IS NULL OR filter = 0)"
-                      "  THEN ''"
-                      "  ELSE (SELECT filters.name FROM filters"
-                      "        WHERE filters.ROWID = filter)"
-                      "  END),",
-                   trash
-                    ? " filter_location = " G_STRINGIFY (LOCATION_TRASH)
-                    : " 0",
-                   trash ? "_trash" : "",
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "alerts.ROWID",
-                   ascending ? "ASC" : "DESC");
+  return init_get_iterator (iterator,
+                            "alert",
+                            get,
+                            /* Columns. */
+                            ALERT_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            ALERT_ITERATOR_TRASH_COLUMNS,
+                            filter_columns,
+                            NULL,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
 }
 
 /**
@@ -9904,52 +9726,34 @@ alert_iterator_alert (iterator_t* iterator)
 }
 
 /**
- * @brief Return the UUID from an alert iterator.
+ * @brief Get the UUID from an alert iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return UUID of the alert or NULL if iteration is complete.
+ * @return UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
  */
-const char*
-alert_iterator_uuid (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
-  return ret;
-}
+DEF_ACCESS (alert_iterator_uuid, 1);
 
 /**
- * @brief Return the name from an alert iterator.
+ * @brief Get the name from an alert iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Name the alert or NULL if iteration is complete.
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
  */
-const char*
-alert_iterator_name (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
-  return ret;
-}
+DEF_ACCESS (alert_iterator_name, 2);
 
 /**
- * @brief Return the comment on an alert iterator.
+ * @brief Get the comment from an alert iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Comment on the alert or NULL if iteration is complete.
+ * @return Comment, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
  */
-const char *
-alert_iterator_comment (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
-  return ret;
-}
+DEF_ACCESS (alert_iterator_comment, 3);
 
 /**
  * @brief Return the event from an alert iterator.
@@ -9963,7 +9767,7 @@ alert_iterator_event (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 5);
+  ret = (int) sqlite3_column_int (iterator->stmt, GET_ITERATOR_COLUMN_COUNT);
   return ret;
 }
 
@@ -9979,7 +9783,8 @@ alert_iterator_condition (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 6);
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT + 1);
   return ret;
 }
 
@@ -9995,59 +9800,25 @@ alert_iterator_method (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 7);
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT + 2);
   return ret;
 }
 
 /**
- * @brief Return whether an alert is in use.
+ * @brief Return the filter from an alert iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Use state of the alert or -1 if iteration is complete.
+ * @return Filter of the alert or NULL if iteration is complete.
  */
 int
-alert_iterator_in_use (iterator_t* iterator)
+alert_iterator_filter (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 8);
-  return ret;
-}
-
-/**
- * @brief Get the filter ID from an alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (alert_iterator_filter_id, 9);
-
-/**
- * @brief Get the filter name from an alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (alert_iterator_filter_name, 10);
-
-/**
- * @brief Return whether an alert filter is in the trashcan.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Filter trashcan state of the alert or -1 if iteration is complete.
- */
-int
-alert_iterator_filter_trash (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 11);
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT + 3);
   return ret;
 }
 
