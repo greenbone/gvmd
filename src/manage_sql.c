@@ -35264,7 +35264,7 @@ trash_agent_in_use (agent_t agent)
 int
 agent_writable (agent_t agent)
 {
-  return 0;
+  return (agent_in_use (agent) == 0);
 }
 
 /**
@@ -35277,7 +35277,7 @@ agent_writable (agent_t agent)
 int
 trash_agent_writable (agent_t agent)
 {
-  return 0;
+  return (trash_agent_in_use (agent) == 0);
 }
 
 /**
@@ -37499,7 +37499,7 @@ trash_schedule_in_use (schedule_t schedule)
 int
 schedule_writable (schedule_t schedule)
 {
-    return (schedule_in_use (schedule) == 0);
+  return (schedule_in_use (schedule) == 0);
 }
 
 /**
@@ -37512,7 +37512,7 @@ schedule_writable (schedule_t schedule)
 int
 trash_schedule_writable (schedule_t schedule)
 {
-    return (trash_schedule_in_use (schedule) == 0);
+  return (trash_schedule_in_use (schedule) == 0);
 }
 
 /**

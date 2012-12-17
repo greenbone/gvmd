@@ -1,5 +1,14 @@
 2012-12-17  Hani Benhabiles <kroosec@gmail.com>
 
+	* src/omp.c (omp_xml_handle_end_element): Remove superfluous in_use tags
+	in CLIENT_GET_AGENTS case.
+
+	* src/manage_sql.c (agent_writable, trash_agent_writable): Use
+	agent_in_use and trash_agent_in_use functions.
+	(schedule_writable, trash_schedule_writable): Style fix.
+
+2012-12-17  Hani Benhabiles <kroosec@gmail.com>
+
 	* src/manage_sql.c (init_target_iterator): Set to NULL used_by parameter
 	which was causing sql syntax error when requesting a single target with
 	target_id and actions parameters set.

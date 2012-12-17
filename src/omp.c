@@ -16879,14 +16879,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       case 2: /* howto_install */
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<package format=\"howto_install\">%s</package>"
-                          "<in_use>0</in_use>"
                           "</agent>",
                           agent_iterator_howto_install (&agents));
                         break;
                       case 3: /* howto_use */
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<package format=\"howto_use\">%s</package>"
-                          "<in_use>0</in_use>"
                           "</agent>",
                           agent_iterator_howto_use (&agents));
                         break;
