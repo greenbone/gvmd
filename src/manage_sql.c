@@ -22652,6 +22652,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       PRINT (out, "<report id=\"%s\">", uuid);
       free (uuid);
     }
+  else if (type && (strcmp (type, "assets") == 0))
+    PRINT (out, "<report scap_loaded=\"%i\" type=\"%s\">",
+           manage_scap_loaded (),
+           type);
   else
     PRINT (out, "<report type=\"%s\">", type);
 
