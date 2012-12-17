@@ -17240,6 +17240,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_GET_COMMON (alert, &get_alerts_data->get,
                                &alerts);
 
+              /* Filter. */
+
               if((filter = alert_iterator_filter (&alerts)))
                 SENDF_TO_CLIENT_OR_FAIL ("<filter id=\"%s\">"
                                          "<name>%s</name>"
@@ -17247,70 +17249,68 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          filter_uuid (filter),
                                          filter_name (filter));
 
-              if (get_alerts_data->get.details)
-                {
-                  /* Condition. */
+              /* Condition. */
 
-                  SENDF_TO_CLIENT_OR_FAIL ("<condition>%s",
-                                           alert_condition_name
-                                            (alert_iterator_condition
-                                              (&alerts)));
-                  init_alert_data_iterator (&data,
-                                            alert_iterator_alert
-                                             (&alerts),
-                                            get_alerts_data->get.trash,
-                                            "condition");
-                  while (next (&data))
-                    SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                             "<name>%s</name>"
-                                             "%s"
-                                             "</data>",
-                                             alert_data_iterator_name (&data),
-                                             alert_data_iterator_data (&data));
-                  cleanup_iterator (&data);
-                  SEND_TO_CLIENT_OR_FAIL ("</condition>");
+              SENDF_TO_CLIENT_OR_FAIL ("<condition>%s",
+                                       alert_condition_name
+                                        (alert_iterator_condition
+                                          (&alerts)));
+              init_alert_data_iterator (&data,
+                                        alert_iterator_alert
+                                         (&alerts),
+                                        get_alerts_data->get.trash,
+                                        "condition");
+              while (next (&data))
+                SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                         "<name>%s</name>"
+                                         "%s"
+                                         "</data>",
+                                         alert_data_iterator_name (&data),
+                                         alert_data_iterator_data (&data));
+              cleanup_iterator (&data);
 
-                  /* Event. */
+              SEND_TO_CLIENT_OR_FAIL ("</condition>");
 
-                  SENDF_TO_CLIENT_OR_FAIL ("<event>%s",
-                                           event_name (alert_iterator_event
-                                            (&alerts)));
-                  init_alert_data_iterator (&data,
-                                                alert_iterator_alert
-                                                 (&alerts),
-                                                get_alerts_data->get.trash,
-                                                "event");
-                  while (next (&data))
-                    SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                             "<name>%s</name>"
-                                             "%s"
-                                             "</data>",
-                                             alert_data_iterator_name (&data),
-                                             alert_data_iterator_data (&data));
-                  cleanup_iterator (&data);
-                  SEND_TO_CLIENT_OR_FAIL ("</event>");
+              /* Event. */
 
-                  /* Method. */
+              SENDF_TO_CLIENT_OR_FAIL ("<event>%s",
+                                       event_name (alert_iterator_event
+                                        (&alerts)));
+              init_alert_data_iterator (&data,
+                                        alert_iterator_alert
+                                         (&alerts),
+                                        get_alerts_data->get.trash,
+                                        "event");
+              while (next (&data))
+                SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                         "<name>%s</name>"
+                                         "%s"
+                                         "</data>",
+                                         alert_data_iterator_name (&data),
+                                         alert_data_iterator_data (&data));
+              cleanup_iterator (&data);
+              SEND_TO_CLIENT_OR_FAIL ("</event>");
 
-                  SENDF_TO_CLIENT_OR_FAIL ("<method>%s",
-                                           alert_method_name
-                                            (alert_iterator_method
-                                              (&alerts)));
-                  init_alert_data_iterator (&data,
-                                                alert_iterator_alert
-                                                 (&alerts),
-                                                get_alerts_data->get.trash,
-                                                "method");
-                  while (next (&data))
-                    SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                             "<name>%s</name>"
-                                             "%s"
-                                             "</data>",
-                                             alert_data_iterator_name (&data),
-                                             alert_data_iterator_data (&data));
-                  cleanup_iterator (&data);
-                  SEND_TO_CLIENT_OR_FAIL ("</method>");
-                }
+              /* Method. */
+
+              SENDF_TO_CLIENT_OR_FAIL ("<method>%s",
+                                       alert_method_name
+                                        (alert_iterator_method
+                                          (&alerts)));
+              init_alert_data_iterator (&data,
+                                        alert_iterator_alert
+                                         (&alerts),
+                                        get_alerts_data->get.trash,
+                                        "method");
+              while (next (&data))
+                SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                         "<name>%s</name>"
+                                         "%s"
+                                         "</data>",
+                                         alert_data_iterator_name (&data),
+                                         alert_data_iterator_data (&data));
+              cleanup_iterator (&data);
+              SEND_TO_CLIENT_OR_FAIL ("</method>");
 
               if (get_alerts_data->tasks)
                 {
