@@ -28571,7 +28571,7 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
                             /* Columns for trashcan. */
                             TARGET_ITERATOR_TRASH_COLUMNS,
                             filter_columns,
-                            "task",
+                            NULL,
                             0,
                             NULL,
                             NULL,
