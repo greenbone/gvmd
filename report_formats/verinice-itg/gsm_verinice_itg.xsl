@@ -123,12 +123,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:choose>
       <xsl:when test="$elem = 'ip'">
         <xsl:if test="contains($string, '|')">
-          <syncAttribute>
-            <name>gsm_itg_result_ip</name>
-            <value>
-              <xsl:value-of select="substring(substring-before($string, '|'), 2, string-length(substring-before($string, '|')) - 2)"/>
-            </value>
-          </syncAttribute>
           <xsl:call-template name="itgsplit">
             <xsl:with-param name="string">
               <xsl:value-of select="substring-after($string, '|')"/>
@@ -322,7 +316,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ns2:mapAttributeType intId="bstumsetzung_name" extId="gsm_itg_result_group_name"/>
         </ns2:mapObjectType>
         <ns2:mapObjectType intId="mnums" extId="gsm_itg_result">
-          <ns2:mapAttributeType intId="mnums_gsm_ip" extId="gsm_itg_result_ip"/>
           <ns2:mapAttributeType intId="mnums_id" extId="gsm_itg_result_massnahme"/>
           <ns2:mapAttributeType intId="mnums_umsetzung" extId="gsm_itg_result_status"/>
           <ns2:mapAttributeType intId="mnums_erlaeuterung" extId="gsm_itg_result_kommentar"/>
