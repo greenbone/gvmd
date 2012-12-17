@@ -342,11 +342,6 @@ nvtis_t* nvti_cache = NULL;
 gchar* task_db_name = NULL;
 
 /**
- * @brief Whether the SCAP database was present.
- */
-static int scap_loaded = 0;
-
-/**
  * @brief Whether a transaction has been opened and not committed yet.
  */
 static gboolean in_transaction;
@@ -12214,9 +12209,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
         {
           sql ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
                " AS scap;");
-          scap_loaded = !!sql_int (0, 0,
-                                   "SELECT count(*) FROM scap.sqlite_master"
-                                   " WHERE type = 'table' AND name = 'cves';");
+          manage_scap_loaded ();
         }
 
       /* Define functions for SQL. */
@@ -22997,7 +22990,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                              report_host_details_iterator_source_name (&details),
                              report_host_details_iterator_source_desc (&details));
 
-                      if (scap_loaded
+                      if (manage_scap_loaded ()
                           && get->details
                           && (strcmp (report_host_details_iterator_name
                                        (&details),
@@ -23051,7 +23044,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                           cleanup_iterator (&prognosis);
                         }
 
-                      if (scap_loaded
+                      if (manage_scap_loaded ()
                           && (strcmp (report_host_details_iterator_name
                                        (&details),
                                       "App")
@@ -44678,7 +44671,27 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 int
 manage_scap_loaded ()
 {
-  return scap_loaded;
+  struct stat state;
+  int err;
+
+  err = stat (OPENVAS_STATE_DIR "/scap-data/scap.db", &state);
+  if (err)
+    switch (errno)
+      {
+        case ENOENT:
+          return 0;
+          break;
+        default:
+          g_warning ("%s: failed to stat SCAP database: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          abort ();
+          return 0;
+      }
+
+  return !!sql_int (0, 0,
+                    "SELECT count(*) FROM scap.sqlite_master"
+                    " WHERE type = 'table' AND name = 'cves';");
 }
 
 /**

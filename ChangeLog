@@ -1,3 +1,13 @@
+2012-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Check SCAP availability every time instead of on startup.
+
+	* src/manage_sql.c (scap_loaded): Remove.
+	(init_manage_process, print_report_xml): Use manage_scap_loaded to check
+	SCAP availability.
+	(manage_scap_loaded): Do the actual check instead of checking
+	scap_loaded.
+
 2012-12-17  Hani Benhabiles <kroosec@gmail.com>
 
 	* src/omp.c (omp_xml_handle_end_element): Remove superfluous in_use tags
@@ -23,8 +33,8 @@
 	(alert_iterator_in_use, alert_iterator_filter_id)
 	(alert_iterator_filter_name, alert_iterator_filter_trash): Remove unused
 	function.
-	(alert_iterator_uuid,alert_iterator_name,alert_iterator_comment): Define
-	with DEF_ACCESS.
+	(alert_iterator_uuid, alert_iterator_name)
+	(alert_iterator_comment): Define with DEF_ACCESS.
 	(alert_iterator_event, alert_iterator_condition)
 	(alert_iterator_method): Adjust column position.
 
