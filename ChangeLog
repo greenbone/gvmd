@@ -1,3 +1,9 @@
+2012-12-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_note_iterator, init_override_iterator): Remove
+	the used_by arg, because the user only ever sees his own notes and
+	overrides.
+
 2012-12-18  Hani Benhabiles <kroosec@gmail.com>
 
 	* src/omp.c (omp_xml_handle_end_element): Fix alert counts for
