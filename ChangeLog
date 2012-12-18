@@ -2,19 +2,19 @@
 
 	Patch developed by: Timo Pollmeier
 
-	* CMakeLists.txt: Add the two new OVAL XSLT stylesheets to be 
+	* CMakeLists.txt: Add the two new OVAL XSLT stylesheets to be
 	installed in ${OPENVAS_SCAP_RES_DIR}
-	
+
 	* tools/dbinit.sql: Add creation of table "oval_def" for OVAL
 	definitions. Change database version to 5.
-	
+
 	* tools/openvas-scapdata-sync.in: Add sync of OVAL data and database
 	migration to version 5.
-	
-	* tools/oval_timestamp.xsl: New XSLT stylesheet for getting generator 
+
+	* tools/oval_timestamp.xsl: New XSLT stylesheet for getting generator
 	timestamps from OVAL XML files.
-	
-	* tools/oval_update.xsl: New XSLT stylesheet for creating SQL inserts 
+
+	* tools/oval_update.xsl: New XSLT stylesheet for creating SQL inserts
 	to add definition data from OVAL XML files.
 
 2012-12-18  Hani Benhabiles <kroosec@gmail.com>
@@ -33,7 +33,6 @@
 	(lsc_credential_writable, trash_lsc_credential_writable): New functions.
 
 	* src/manage.h: Add headers accordingly.
->>>>>>> * src/manage_sql.c (lsc_credential_in_use, trash_lsc_credential_in_use)
 
 2012-12-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
