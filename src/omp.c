@@ -17338,7 +17338,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           cleanup_iterator (&alerts);
           filtered = get_alerts_data->get.id
                       ? 1
-                      : filter_count (&get_alerts_data->get);
+                      : alert_count (&get_alerts_data->get);
           SEND_GET_END ("alert", &get_alerts_data->get, count, filtered);
 
           get_alerts_data_reset (get_alerts_data);
