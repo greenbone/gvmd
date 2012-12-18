@@ -6,9 +6,10 @@
 #
 # Authors:
 # Henri Doreau <henri.doreau@greenbone.net>
+# Timo Pollmeier <timo.pollmeier@greenbone.net>
 #
 # Copyright:
-# Copyright (C) 2011 Greenbone Networks GmbH
+# Copyright (C) 2011-2012 Greenbone Networks GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2,
@@ -273,14 +274,29 @@ migrate_4 ()
   $SQLITE $SEC_DB "update meta set value ='4' where name = 'database_version';"
 }
 
+
+migrate_5 () {
+  echo "[i] Database Version updated. Migrating to Version 5."
+  echo "[i] Adding Tables.."
+  $SQLITE $SEC_DB "CREATE TABLE oval_def (id INTEGER PRIMARY KEY AUTOINCREMENT, oval_id TEXT UNIQUE, version INTEGER, oval_timestamp DATE, deprecated BOOLEAN, def_class TEXT, title TEXT, description TEXT); CREATE UNIQUE INDEX oval_def_idx ON oval_def (oval_id);"
+  
+  $SQLITE $SEC_DB "update meta set value ='5' where name = 'database_version';"
+  
+  echo "[i] Migration done."
+
+}
+
 check_db_version () {
   DB_VERSION=`$SQLITE $SEC_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
     2) migrate_3
-       migrate_4;;
-    3) migrate_4;;
+       migrate_4
+       migrate_5;;
+    3) migrate_4
+       migrate_5;;
+    4) migrate_5;;
   esac
 }
 
@@ -290,17 +306,24 @@ update_sec_db () {
     echo "[i] Initializing scap database"
     $SQLITE $SEC_DB < $SCAP_RES_DIR/db_init.sql
     DB_LASTUPDATE=0
-    REFDATE=0
+    CVE_REFDATE=0
+    OVAL_REFDATE=0
   else
     check_db_version
-    REFDATE=`$SQLITE $SEC_DB "select max(modification_time) from cves;" | sed -e 's/T.*//' | tr -d "-"`
+    CVE_REFDATE=`$SQLITE $SEC_DB "select max(modification_time) from cves;" | sed -e 's/T.*//' | tr -d "-"`
+    OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT max(oval_timestamp) FROM oval_def;"`
   fi
 
   DB_LASTUPDATE=`$SQLITE $SEC_DB "select value from meta where name = 'last_update';"`
 
-  if [ -z "$REFDATE" ]
+  if [ -z "$CVE_REFDATE" ]
   then
-    REFDATE=0
+    CVE_REFDATE=0
+  fi
+  
+  if [ -z "$OVAL_REFDATE" ]
+  then
+    OVAL_REFDATE=0
   fi
 
   if [ -z "$DB_LASTUPDATE" ]
@@ -309,7 +332,8 @@ update_sec_db () {
     echo "Error: Inconsistent data. Resetting SCAP database."
     rm -f $SEC_DB
     $SQLITE $SEC_DB < $SCAP_RES_DIR/db_init.sql
-    REFDATE=0
+    CVE_REFDATE=0
+    OVAL_REFDATE=0
     DB_LASTUPDATE=0
   fi
 
@@ -320,7 +344,7 @@ update_sec_db () {
     then
       echo "[i] Updating CPEs"
       sed 's/&/&amp;/g' $CPEBASE | \
-        xsltproc --stringparam refdate $REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - | \
+        xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - | \
         xsltproc $SCAP_RES_DIR/cpe_update.xsl - | \
         $SQLITE $SEC_DB
     else
@@ -333,13 +357,35 @@ update_sec_db () {
     if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
     then
       echo "[i] Updating $cvefile"
-      xsltproc --stringparam refdate $REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
+      xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
         xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
         $SQLITE $SEC_DB
     else
       echo "[i] Skipping $cvefile, file is older than last revision"
     fi
   done
+  
+  echo "[i] Updating OVAL data"
+  for ovalfile in `ls $SCAP_DIR/oval/*.xml`
+  do
+    if [ `stat -c "%Y" $ovalfile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+    then
+      sqlquery=`xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile`
+      oval_timestamp=`$SQLITE $SEC_DB "$sqlquery"`
+      
+      if [ $oval_timestamp -ge $OVAL_REFDATE ]
+      then
+        echo "[i] Updating $ovalfile"
+        xsltproc $SCAP_RES_DIR/oval_update.xsl $ovalfile | \
+        $SQLITE $SEC_DB
+      else
+        echo "[i] Skipping $ovalfile, file has older timestamp than latest OVAL definition in database."
+      fi
+    else
+      echo "[i] Skipping $ovalfile, file is older than last revision."
+    fi
+  done
+  
   $SQLITE $SEC_DB "update meta set value ='`date +%s`' where name = 'last_update';"
 }
 

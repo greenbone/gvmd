@@ -5,9 +5,10 @@
  *
  * Authors:
  * Henri Doreau <henri.doreau@greenbone.net>
+ * Timo Pollmeier <timo.pollmeier@greenbone.net>
  *
  * Copyright:
- * Copyright (C) 2011 Greenbone Networks GmbH
+ * Copyright (C) 2011-2012 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -25,13 +26,17 @@
  */
 
 /* --- TABLES CREATION --- */
+/* delete old tables */
 DROP TABLE IF EXISTS cves;
 DROP TABLE IF EXISTS cpes;
 DROP TABLE IF EXISTS affected_products;
 DROP TABLE IF EXISTS meta;
+DROP TABLE IF EXISTS oval_def;
 
+
+/* create new tables and indices */
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "4");
+INSERT INTO meta (name, value) VALUES ("database_version", "5");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
 CREATE TABLE cves (
@@ -78,6 +83,20 @@ CREATE TABLE affected_products (
 );
 CREATE INDEX afp_idx ON affected_products (cve,cpe);
 
+CREATE TABLE oval_def (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  oval_id TEXT UNIQUE,
+  version INTEGER,
+  oval_timestamp DATE,
+  deprecated BOOLEAN,
+  def_class TEXT, /* enum */ 
+  title TEXT,
+  description TEXT
+);
+CREATE UNIQUE INDEX oval_def_idx ON oval_def (oval_id);
+
+
+/* deletion triggers */
 CREATE TRIGGER cves_delete AFTER DELETE ON cves
 BEGIN
   DELETE FROM affected_products where cve = old.id;

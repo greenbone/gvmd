@@ -1,3 +1,22 @@
+2012-12-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Patch developed by: Timo Pollmeier
+
+	* CMakeLists.txt: Add the two new OVAL XSLT stylesheets to be 
+	installed in ${OPENVAS_SCAP_RES_DIR}
+	
+	* tools/dbinit.sql: Add creation of table "oval_def" for OVAL
+	definitions. Change database version to 5.
+	
+	* tools/openvas-scapdata-sync.in: Add sync of OVAL data and database
+	migration to version 5.
+	
+	* tools/oval_timestamp.xsl: New XSLT stylesheet for getting generator 
+	timestamps from OVAL XML files.
+	
+	* tools/oval_update.xsl: New XSLT stylesheet for creating SQL inserts 
+	to add definition data from OVAL XML files.
+
 2012-12-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_note_iterator, init_override_iterator): Remove
