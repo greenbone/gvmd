@@ -1541,6 +1541,18 @@ lsc_credential_target_iterator_uuid (iterator_t*);
 const char*
 lsc_credential_target_iterator_name (iterator_t*);
 
+int
+trash_lsc_credential_in_use (lsc_credential_t);
+
+int
+lsc_credential_in_use (lsc_credential_t);
+
+int
+trash_lsc_credential_writable (lsc_credential_t);
+
+int
+lsc_credential_writable (lsc_credential_t);
+
 
 /* Agents. */
 

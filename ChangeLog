@@ -17,6 +17,14 @@
 	* tools/oval_update.xsl: New XSLT stylesheet for creating SQL inserts 
 	to add definition data from OVAL XML files.
 
+2012-12-18  Hani Benhabiles <kroosec@gmail.com>
+
+	* src/manage_sql.c (lsc_credential_in_use, trash_lsc_credential_in_use)
+	(lsc_credential_writable, trash_lsc_credential_writable): New functions.
+
+	* src/manage.h: Add headers accordingly.
+>>>>>>> * src/manage_sql.c (lsc_credential_in_use, trash_lsc_credential_in_use)
+
 2012-12-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_note_iterator, init_override_iterator): Remove

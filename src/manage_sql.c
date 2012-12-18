@@ -34085,6 +34085,69 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
 }
 
 /**
+ * @brief Check whether a LSC Credential is in use.
+ *
+ * @param[in]  lsc_credential  LSC Credential.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+lsc_credential_in_use (lsc_credential_t lsc_credential)
+{
+  return (sql_int (0, 0,
+                   "SELECT count (*) FROM targets WHERE lsc_credential = %llu"
+                   " OR smb_lsc_credential = %llu;",
+                   lsc_credential,
+                   lsc_credential) > 0);
+}
+
+/**
+ * @brief Check whether a trashcan LSC Credential is in use.
+ *
+ * @param[in]  lsc_credential  LSC Credential.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_lsc_credential_in_use (lsc_credential_t lsc_credential)
+{
+  return (sql_int (0, 0,
+                   "SELECT count (*) FROM targets_trash"
+                   " WHERE (lsc_credential = %llu"
+                   " AND ssh_location = " G_STRINGIFY (LOCATION_TRASH)")"
+                   " OR (smb_lsc_credential = %llu"
+                   " AND smb_location = " G_STRINGIFY (LOCATION_TRASH) ");",
+                   lsc_credential,
+                   lsc_credential) > 0);
+}
+
+/**
+ * @brief Check whether a LSC Credential is writable.
+ *
+ * @param[in]  lsc_credential  LSC Credential.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+lsc_credential_writable (lsc_credential_t lsc_credential)
+{
+  return (lsc_credential_in_use (lsc_credential) == 0);
+}
+
+/**
+ * @brief Check whether a trashcan LSC Credential is writable.
+ *
+ * @param[in]  lsc_credential  LSC Credential.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_lsc_credential_writable (lsc_credential_t lsc_credential)
+{
+  return (trash_lsc_credential_in_use (lsc_credential) == 0);
+}
+
+/**
  * @brief Set the name of an LSC credential.
  *
  * @param[in]  lsc_credential  The LSC credential.
