@@ -9629,9 +9629,9 @@ alert_count (const get_data_t *get)
 int
 alert_in_use (alert_t alert)
 {
-  return sql_int (0, 0,
-                  "SELECT count (*) FROM task_alerts WHERE alert = %llu;",
-                  alert);
+  return (sql_int (0, 0,
+                   "SELECT count (*) FROM task_alerts WHERE alert = %llu;",
+                   alert) > 0);
 }
 
 /**
@@ -9644,11 +9644,11 @@ alert_in_use (alert_t alert)
 int
 trash_alert_in_use (alert_t alert)
 {
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM task_alerts"
-                  " WHERE alert = %llu"
-                  " AND alert_location = " G_STRINGIFY (LOCATION_TRASH),
-                  alert);
+  return (sql_int (0, 0,
+                   "SELECT count(*) FROM task_alerts"
+                   " WHERE alert = %llu"
+                   " AND alert_location = " G_STRINGIFY (LOCATION_TRASH),
+                   alert) > 0);
 }
 
 /**
@@ -29035,12 +29035,12 @@ set_target_hosts (target_t target, const char *hosts)
 int
 target_in_use (target_t target)
 {
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks"
-                  " WHERE target = %llu"
-                  " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-                  " AND (hidden = 0 OR hidden = 1);",
-                  target);
+  return (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE target = %llu"
+                   " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
+                   " AND (hidden = 0 OR hidden = 1);",
+                   target) > 0);
 }
 
 /**
@@ -29053,11 +29053,11 @@ target_in_use (target_t target)
 int
 trash_target_in_use (target_t target)
 {
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks"
-                  " WHERE target = %llu"
-                  " AND target_location = " G_STRINGIFY (LOCATION_TRASH),
-                  target);
+  return (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE target = %llu"
+                   " AND target_location = " G_STRINGIFY (LOCATION_TRASH),
+                   target) > 0);
 }
 
 /**
@@ -37527,9 +37527,9 @@ delete_schedule (const char *schedule_id, int ultimate)
 int
 schedule_in_use (schedule_t schedule)
 {
-  return sql_int (0, 0,
-                  "SELECT count (*) FROM tasks WHERE schedule = %llu;",
-                  schedule);
+  return (sql_int (0, 0,
+                   "SELECT count (*) FROM tasks WHERE schedule = %llu;",
+                   schedule) > 0);
 }
 
 /**
@@ -37542,11 +37542,11 @@ schedule_in_use (schedule_t schedule)
 int
 trash_schedule_in_use (schedule_t schedule)
 {
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks"
-                  " WHERE schedule = %llu"
-                  " AND schedule_location = " G_STRINGIFY (LOCATION_TRASH),
-                  schedule);
+  return (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE schedule = %llu"
+                   " AND schedule_location = " G_STRINGIFY (LOCATION_TRASH),
+                   schedule) > 0);
 }
 
 /**
@@ -39574,12 +39574,12 @@ report_format_content_type (report_format_t report_format)
 int
 report_format_in_use (report_format_t report_format)
 {
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM alert_method_data WHERE data = "
-                  " ( SELECT uuid FROM report_formats where ROWID = %llu)"
-                  " AND (name = 'notice_attach_format' OR "
-                  "      name = 'notice_report_format');",
-                  report_format);
+  return (sql_int (0, 0,
+                   "SELECT count(*) FROM alert_method_data WHERE data = "
+                   " ( SELECT uuid FROM report_formats where ROWID = %llu)"
+                   " AND (name = 'notice_attach_format' OR "
+                   "      name = 'notice_report_format');",
+                   report_format) > 0);
 }
 
 /**
@@ -39592,12 +39592,12 @@ report_format_in_use (report_format_t report_format)
 int
 trash_report_format_in_use (report_format_t report_format)
 {
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM alert_method_data WHERE data = "
-                  " (SELECT uuid FROM report_formats_trash where ROWID = %llu)"
-                  " AND (name = 'notice_attach_format' OR "
-                  "      name = 'notice_report_format');",
-                  report_format);
+  return (sql_int (0, 0,
+                   "SELECT count(*) FROM alert_method_data WHERE data = "
+                   " (SELECT uuid FROM report_formats_trash where ROWID = %llu)"
+                   " AND (name = 'notice_attach_format' OR "
+                   "      name = 'notice_report_format');",
+                   report_format) > 0);
 }
 
 /**
@@ -41085,9 +41085,9 @@ set_slave_host (slave_t slave, const char *host)
 int
 slave_in_use (slave_t slave)
 {
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks WHERE slave = %llu;",
-                  slave);
+  return (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks WHERE slave = %llu;",
+                   slave) > 0);
 }
 
 /**
@@ -41100,11 +41100,11 @@ slave_in_use (slave_t slave)
 int
 trash_slave_in_use (slave_t slave)
 {
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks"
-                  " WHERE slave = %llu"
-                  " AND slave_location = " G_STRINGIFY (LOCATION_TRASH),
-                  slave);
+  return (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE slave = %llu"
+                   " AND slave_location = " G_STRINGIFY (LOCATION_TRASH),
+                   slave) > 0);
 }
 
 /**
@@ -42357,13 +42357,12 @@ port_list_in_use (port_list_t port_list)
 int
 trash_port_list_in_use (port_list_t port_list)
 {
-  return sql_int (0, 0,
-                  "SELECT count (*) FROM targets_trash"
-                  " WHERE port_range = %llu"
-                  " AND port_list_location = "
-                  G_STRINGIFY (LOCATION_TRASH) ";",
-                  port_list)
-         == 0;
+  return (sql_int (0, 0,
+                   "SELECT count (*) FROM targets_trash"
+                   " WHERE port_range = %llu"
+                   " AND port_list_location = "
+                   G_STRINGIFY (LOCATION_TRASH) ";",
+                   port_list) > 0);
 }
 
 /**
@@ -42404,25 +42403,6 @@ trash_port_list_writable (port_list_t port_list)
 {
   return (trash_port_list_in_use (port_list) == 0);
 }
-
-#if 0
-/**
- * @brief Return whether a trashcan port_list is referenced by a task.
- *
- * @param[in]  port_list  Port_List.
- *
- * @return 1 if in use, else 0.
- */
-int
-trash_port_list_in_use (port_list_t port_list)
-{
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks"
-                  " WHERE port_list = %llu"
-                  " AND port_list_location = " G_STRINGIFY (LOCATION_TRASH),
-                  port_list);
-}
-#endif
 
 /**
  * @brief Initialise a port_range iterator.
@@ -42975,9 +42955,9 @@ delete_filter (const char *filter_id, int ultimate)
 int
 filter_in_use (filter_t filter)
 {
-  return sql_int (0, 0,
-                  "SELECT count (*) FROM alerts WHERE filter = %llu;",
-                  filter);
+  return (sql_int (0, 0,
+                   "SELECT count (*) FROM alerts WHERE filter = %llu;",
+                   filter) > 0);
 }
 
 /**
@@ -42990,12 +42970,11 @@ filter_in_use (filter_t filter)
 int
 trash_filter_in_use (filter_t filter)
 {
-  return sql_int (0, 0,
-                  "SELECT count (*) FROM alerts_trash"
-                  " WHERE filter = %llu"
-                  " AND filter_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-                  filter)
-         == 0;
+  return (sql_int (0, 0,
+                   "SELECT count (*) FROM alerts_trash"
+                   " WHERE filter = %llu"
+                   " AND filter_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+                   filter) > 0);
 }
 
 /**
