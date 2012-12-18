@@ -350,41 +350,56 @@ update_sec_db () {
     else
       echo "[i] Skipping CPEs, file is older than last revision"
     fi
+  else  
+    echo "[w] No CPE dictionary found in $SCAP_DIR"
   fi
 
-  for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
-  do
-    if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
-    then
-      echo "[i] Updating $cvefile"
-      xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
-        xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
-        $SQLITE $SEC_DB
-    else
-      echo "[i] Skipping $cvefile, file is older than last revision"
-    fi
-  done
+
+  xmlcount=$(ls $SCAP_DIR/nvdcve-2.0-*.xml 2> /dev/null | wc -l)
+  if [ $xmlcount -ne 0 ]
+  then
+    for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
+    do
+      if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+      then
+        echo "[i] Updating $cvefile"
+        xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
+          xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
+          $SQLITE $SEC_DB
+      else
+        echo "[i] Skipping $cvefile, file is older than last revision"
+      fi
+    done
+  else 
+    echo "[w] No CVEs found in $SCAP_DIR"
+  fi
   
   echo "[i] Updating OVAL data"
-  for ovalfile in `ls $SCAP_DIR/oval/*.xml`
-  do
-    if [ `stat -c "%Y" $ovalfile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
-    then
-      sqlquery=`xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile`
-      oval_timestamp=`$SQLITE $SEC_DB "$sqlquery"`
-      
-      if [ $oval_timestamp -ge $OVAL_REFDATE ]
+  xmlcount=$(ls $SCAP_DIR/oval/*.xml 2> /dev/null | wc -l)
+  if [ $xmlcount -ne 0 ]
+  then
+    for ovalfile in `ls $SCAP_DIR/oval/*.xml`
+    do
+      if [ `stat -c "%Y" $ovalfile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
       then
-        echo "[i] Updating $ovalfile"
-        xsltproc $SCAP_RES_DIR/oval_update.xsl $ovalfile | \
-        $SQLITE $SEC_DB
+        sqlquery=`xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile`
+        oval_timestamp=`$SQLITE $SEC_DB "$sqlquery"`
+      
+        if [ $oval_timestamp -ge $OVAL_REFDATE ]
+        then
+          echo "[i] Updating $ovalfile"
+          xsltproc $SCAP_RES_DIR/oval_update.xsl $ovalfile | \
+          $SQLITE $SEC_DB
+        else
+          echo "[i] Skipping $ovalfile, file has older timestamp than latest OVAL definition in database."
+        fi
       else
-        echo "[i] Skipping $ovalfile, file has older timestamp than latest OVAL definition in database."
+        echo "[i] Skipping $ovalfile, file is older than last revision."
       fi
-    else
-      echo "[i] Skipping $ovalfile, file is older than last revision."
-    fi
-  done
+    done
+  else
+    echo "[w] No XML files found in $SCAP_DIR/oval/."
+  fi
   
   $SQLITE $SEC_DB "update meta set value ='`date +%s`' where name = 'last_update';"
 }
