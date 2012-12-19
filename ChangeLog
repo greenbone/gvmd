@@ -11,6 +11,15 @@
 	migration to version 5 and checks if xml files for CVE and
 	OVAL exist in SCAP directory.
 
+2012-12-19  Hani Benhabiles <kroosec@gmail.com>
+
+	* src/manage_sql.c (filter_in_use, trash_filter_in_use, target_in_use)
+	(trash_target_in_use, alert_in_use, trash_alert_in_use, schedule_in_use)
+	(trash_schedule_in_use, report_format_in_use)
+	(trash_report_format_in_use, slave_in_use, trash_slave_in_use)
+	(trash_port_list_in_use, lsc_credential_in_use)
+	(trash_lsc_credential_in_use): Style update.
+
 2012-12-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Patch developed by: Timo Pollmeier
@@ -39,10 +48,10 @@
 
 2012-12-18  Hani Benhabiles <kroosec@gmail.com>
 
-	* src/manage_sql.c (filter_in_use, trash_filter_in_use, target_in_use,
-	trash_target_in_use, alert_in_use, trash_alert_in_use, schedule_in_use,
-	trash_schedule_in_use, report_format_in_use, trash_report_format_in_use,
-	slave_in_use, trash_slave_in_use, trash_port_list_in_use): Comply with
+	* src/manage_sql.c (filter_in_use, trash_filter_in_use, target_in_use)
+	(trash_target_in_use, alert_in_use, trash_alert_in_use, schedule_in_use)
+	(trash_schedule_in_use, report_format_in_use, trash_report_format_in_use)
+	(slave_in_use, trash_slave_in_use, trash_port_list_in_use): Comply with
 	function's description and return 1 for "in use" case.
 
 	(trash_port_list_in_use): Remove inused code between "#if 0 #endif".
