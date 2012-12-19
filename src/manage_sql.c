@@ -3478,8 +3478,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS alerts_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER, filter INTEGER, filter_location INTEGER, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS filters (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, type, term, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS filters_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, type, term, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS notes_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, result INTEGER, end_time);");
@@ -8672,6 +8672,48 @@ migrate_70_to_71 ()
 }
 
 /**
+ * @brief Migrate the database from version 71 to version 72.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_71_to_72 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 71. */
+
+  if (manage_db_version () != 71)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Add creation and modification times to LSC Credentials. */
+
+  sql ("ALTER TABLE lsc_credentials ADD COLUMN creation_time;");
+  sql ("ALTER TABLE lsc_credentials ADD COLUMN modification_time;");
+  sql ("UPDATE lsc_credentials SET creation_time = 0, modification_time = 0;");
+
+  sql ("ALTER TABLE lsc_credentials_trash ADD COLUMN creation_time;");
+  sql ("ALTER TABLE lsc_credentials_trash ADD COLUMN modification_time;");
+  sql ("UPDATE lsc_credentials_trash SET"
+       " creation_time = 0, modification_time = 0;");
+
+  /* Set the database version to 72. */
+
+  set_db_version (72);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8747,6 +8789,7 @@ static migrator_t database_migrators[]
     {69, migrate_68_to_69},
     {70, migrate_69_to_70},
     {71, migrate_70_to_71},
+    {72, migrate_71_to_72},
     /* End marker. */
     {-1, NULL}};
 
@@ -33852,11 +33895,12 @@ create_lsc_credential (const char* name, const char* comment,
 
       sql ("INSERT INTO lsc_credentials"
            " (uuid, name, owner, login, password, comment, public_key,"
-           "  private_key, rpm, deb, exe)"
+           "  private_key, rpm, deb, exe, creation_time, modification_time)"
            " VALUES"
            " (make_uuid (), '%s',"
            "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           "  '%s', '%s', '%s', '%s', '%s', NULL, NULL, NULL);",
+           "  '%s', '%s', '%s', '%s', '%s', NULL, NULL, NULL,"
+           "  now (), now ());",
            quoted_name,
            current_credentials.uuid,
            quoted_login,
@@ -33889,11 +33933,12 @@ create_lsc_credential (const char* name, const char* comment,
 
       sql ("INSERT INTO lsc_credentials"
            " (uuid, name, owner, login, password, comment, public_key,"
-           "  private_key, rpm, deb, exe)"
+           "  private_key, rpm, deb, exe, creation_time, modification_time)"
            " VALUES"
            " (make_uuid (), '%s',"
            "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           "  '%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL);",
+           "  '%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL,"
+           "  now (), now ());",
            quoted_name,
            current_credentials.uuid,
            quoted_login,
@@ -33953,11 +33998,13 @@ create_lsc_credential (const char* name, const char* comment,
 
     sql_quiet ("INSERT INTO lsc_credentials"
                " (uuid, name, owner, login, password, comment, public_key,"
-               "  private_key, rpm, deb, exe)"
+               "  private_key, rpm, deb, exe,"
+               "  creation_time, modification_time)"
                " VALUES"
                " (make_uuid (), '%s',"
                "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-               "  '%s', '%s', '%s', '%s', '%s', NULL, NULL, NULL);",
+               "  '%s', '%s', '%s', '%s', '%s', NULL, NULL, NULL,"
+               "  now (), now ());",
                quoted_name,
                current_credentials.uuid,
                quoted_login,
@@ -34056,9 +34103,9 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
     {
       sql ("INSERT INTO lsc_credentials_trash"
            " (uuid, owner, name, login, password, comment, public_key,"
-           "  private_key, rpm, deb, exe)"
+           "  private_key, rpm, deb, exe, creation_time, modification_time)"
            " SELECT uuid, owner, name, login, password, comment, public_key,"
-           "  private_key, rpm, deb, exe"
+           "  private_key, rpm, deb, exe, creation_time, modification_time"
            " FROM lsc_credentials WHERE ROWID = %llu;",
            lsc_credential);
       /* Update the credential references in any trashcan targets.  This
@@ -34157,7 +34204,8 @@ void
 set_lsc_credential_name (lsc_credential_t lsc_credential, const char *name)
 {
   gchar *quoted_name = sql_quote (name);
-  sql ("UPDATE lsc_credentials SET name = '%s' WHERE ROWID = %llu;",
+  sql ("UPDATE lsc_credentials SET name = '%s', modification_time = now ()"
+       " WHERE ROWID = %llu;",
        quoted_name,
        lsc_credential);
   g_free (quoted_name);
@@ -34174,7 +34222,8 @@ set_lsc_credential_comment (lsc_credential_t lsc_credential,
                             const char *comment)
 {
   gchar *quoted_comment = sql_quote (comment);
-  sql ("UPDATE lsc_credentials SET comment = '%s' WHERE ROWID = %llu;",
+  sql ("UPDATE lsc_credentials SET comment = '%s', modification_time = now ()"
+       " WHERE ROWID = %llu;",
        quoted_comment,
        lsc_credential);
   g_free (quoted_comment);
@@ -34190,7 +34239,8 @@ void
 set_lsc_credential_login (lsc_credential_t lsc_credential, const char *login)
 {
   gchar *quoted_login = sql_quote (login);
-  sql ("UPDATE lsc_credentials SET login = '%s' WHERE ROWID = %llu;",
+  sql ("UPDATE lsc_credentials SET login = '%s', modification_time = now ()"
+       " WHERE ROWID = %llu;",
        quoted_login,
        lsc_credential);
   g_free (quoted_login);
@@ -34207,7 +34257,8 @@ set_lsc_credential_password (lsc_credential_t lsc_credential,
                              const char *password)
 {
   gchar *quoted_password = sql_quote (password);
-  sql ("UPDATE lsc_credentials SET password = '%s' WHERE ROWID = %llu;",
+  sql ("UPDATE lsc_credentials SET password = '%s', modification_time = now ()"
+       " WHERE ROWID = %llu;",
        quoted_password,
        lsc_credential);
   g_free (quoted_password);
@@ -43722,9 +43773,9 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO lsc_credentials"
            " (uuid, owner, name, login, password, comment, public_key,"
-           "  private_key, rpm, deb, exe)"
+           "  private_key, rpm, deb, exe, creation_time, modification_time)"
            " SELECT uuid, owner, name, login, password, comment, public_key,"
-           "  private_key, rpm, deb, exe"
+           "  private_key, rpm, deb, exe, creation_time, modification_time"
            " FROM lsc_credentials_trash WHERE ROWID = %llu;",
            resource);
 

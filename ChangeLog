@@ -1,3 +1,22 @@
+2012-12-19  Hani Benhabiles  <kroosec@gmail.com>
+
+	Migrate database to version 72, add creation and modification time
+	to LSC Credentials.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 72.
+
+	* src/manage_sql.c (create_tables): Add creation_time and
+	modification_time columns in lsc_credentials.
+	(migrate_71_to_72): New function.
+	(database_migrators): Add migrate_71_to_72.
+	(create_lsc_credential, delete_lsc_credential, set_lsc_credential_name)
+	(set_lsc_credential_login, set_lsc_credential_comment)
+	(set_lsc_credential_password, manage_restore): Insert into and update
+	creation_time and modification_time lsc_credentials table columns
+	accordingly.
+
+	* doc/db.png: Update to version 72.
+
 2012-12-19  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Add parameter --refresh to
