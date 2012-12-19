@@ -12113,6 +12113,16 @@ trash_task_in_use (task_t task)
 int
 task_writable (task_t task)
 {
+  char *uuid;
+
+  task_uuid (task, &uuid);
+  if (user_has_access_uuid ("task", uuid, "w") == 0)
+    {
+      free (uuid);
+      return 0;
+    }
+  free (uuid);
+
   return sql_int (0, 0,
                   "SELECT hidden = 0 FROM tasks"
                   " WHERE ROWID = %llu",
@@ -12129,6 +12139,16 @@ task_writable (task_t task)
 int
 trash_task_writable (task_t task)
 {
+  char *uuid;
+
+  task_uuid (task, &uuid);
+  if (user_has_access_uuid ("task", uuid, "w") == 0)
+    {
+      free (uuid);
+      return 0;
+    }
+  free (uuid);
+
   return sql_int (0, 0,
                   "SELECT hidden = 2 FROM tasks"
                   " WHERE ROWID = %llu",
