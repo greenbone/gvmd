@@ -7,6 +7,7 @@
 # Authors:
 # Henri Doreau <henri.doreau@greenbone.net>
 # Michael Wiegand <michael.wiegand@greenbone.net>
+# Timo Pollmeier <timo.pollmeier@greenbone.net>
 #
 # Copyright:
 # Copyright (C) 2011, 2012 Greenbone Networks GmbH
@@ -202,6 +203,17 @@ migrate_4 ()
   sqlite3 $SCAP_DB "update meta set value ='4' where name = 'database_version';"
 }
 
+migrate_5 () {
+  log_write " Database Version updated. Migrating to Version 5."
+  log_write " Adding Tables.."
+  sqlite3 $SCAP_DB "CREATE TABLE oval_def (id INTEGER PRIMARY KEY AUTOINCREMENT, oval_id TEXT UNIQUE, version INTEGER, oval_timestamp DATE, deprecated BOOLEAN, def_class TEXT, title TEXT, description TEXT); CREATE UNIQUE INDEX oval_def_idx ON oval_def (oval_id);"
+  
+  sqlite3 $SCAP_DB "update meta set value ='5' where name = 'database_version';"
+  
+  log_write " Migration done."
+
+}
+
 reinit () {
   log_write " Reinitialization of the database necessary."
   rm -f $SCAP_DB
@@ -214,8 +226,11 @@ check_db_version () {
     0) reinit;;
     1) reinit;;
     2) migrate_3
-       migrate_4;;
-    3) migrate_4;;
+       migrate_4
+       migrate_5;;
+    3) migrate_4
+       migrate_5;;
+    4) migrate_5;;
   esac
 }
 
@@ -224,17 +239,24 @@ update_scap_db() {
   then
     log_write "Initializing SCAP database."
     sqlite3 $SCAP_DB < $SCAP_RES_DIR/db_init.sql
-    REFDATE=0
+    CVE_REFDATE=0
+    OVAL_REFDATE=0
   else
     check_db_version
-    REFDATE=`sqlite3 $SCAP_DB "select max(modification_time) from cves;" | sed -e 's/T.*//' | tr -d "-"`
+    CVE_REFDATE=`sqlite3 $SCAP_DB "select max(modification_time) from cves;" | sed -e 's/T.*//' | tr -d "-"`
+    OVAL_REFDATE=`sqlite3 $SCAP_DB "SELECT max(oval_timestamp) FROM oval_def;"`
   fi
 
   DB_LASTUPDATE=`sqlite3 $SCAP_DB "select value from meta where name = 'last_update';"`
 
-  if [ -z "$REFDATE" ]
+  if [ -z "$CVE_REFDATE" ]
   then
-    REFDATE=0
+    CVE_REFDATE=0
+  fi
+  
+  if [ -z "$OVAL_REFDATE" ]
+  then
+    OVAL_REFDATE=0
   fi
 
   if [ -z "$DB_LASTUPDATE" ];
@@ -243,7 +265,7 @@ update_scap_db() {
     log_write "Error: Inconsistent data. Resetting SCAP database."
     rm -f $SCAP_DB
     sqlite3 $SCAP_DB < $SCAP_RES_DIR/db_init.sql
-    REFDATE=0
+    CVE_REFDATE=0
     DB_LASTUPDATE=0
   fi
 
@@ -254,26 +276,61 @@ update_scap_db() {
     then
       log_write "Updating CPEs"
       sed 's/&/&amp;/g' $CPEBASE | \
-        xsltproc --stringparam refdate $REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - | \
+        xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - | \
         xsltproc $SCAP_RES_DIR/cpe_update.xsl - | \
         sqlite3 $SCAP_DB
     else
-      log_write "Skipping CPEs, file is older than last revision (this is not an error)."
+      log_write " Skipping CPEs, file is older than last revision (this is not an error)."
     fi
+  else
+    echo " Warning: No CPE dictionary found in $SCAP_DIR"
   fi
 
-  for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
-  do
-    if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
-    then
-      log_write "Updating $cvefile"
-      xsltproc --stringparam refdate $REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
-        xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
-        sqlite3 $SCAP_DB
-    else
-      log_write "Skipping $cvefile, file is older than last revision (this is not an error)."
-    fi
-  done
+  xmlcount=$(ls $SCAP_DIR/nvdcve-2.0-*.xml 2> /dev/null | wc -l)
+  if [ $xmlcount -ne 0 ]
+  then
+    for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
+    do
+      if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+      then
+        log_write "Updating $cvefile"
+        xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
+          xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
+          sqlite3 $SCAP_DB
+      else
+        log_write "Skipping $cvefile, file is older than last revision (this is not an error)."
+      fi
+    done
+  else
+    log_write " Warning: No CVEs found in $SCAP_DIR."
+  fi
+  
+  log_write " Updating OVAL data"
+  xmlcount=$(ls $SCAP_DIR/oval/*.xml 2> /dev/null | wc -l)
+  if [ $xmlcount -ne 0 ]
+  then
+    for ovalfile in `ls $SCAP_DIR/oval/*.xml`
+    do
+      if [ `stat -c "%Y" $ovalfile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+      then
+        sqlquery=`xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile`
+        oval_timestamp=`sqlite3 $SCAP_DB "$sqlquery"`
+      
+        if [ $oval_timestamp -ge $OVAL_REFDATE ]
+        then
+          log_write " Updating $ovalfile"
+          xsltproc $SCAP_RES_DIR/oval_update.xsl $ovalfile | \
+          sqlite3 $SCAP_DB
+        else
+          log_write " Skipping $ovalfile, file has older timestamp than latest OVAL definition in database (this is not an error)."
+        fi
+      else
+        log_write " Skipping $ovalfile, file is older than last revision (this is not an error)."
+      fi
+    done
+  else
+    log_write " Warning: No XML files found in $SCAP_DIR/oval/."
+  fi
 }
 
 sync_scapdata(){
