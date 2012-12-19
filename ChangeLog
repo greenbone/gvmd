@@ -1,5 +1,10 @@
 2012-12-19  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* tools/greenbone-scapdata-sync: Add parameter --refresh to
+	run only the database update, but no downloads.
+
+2012-12-19  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	Patch developed by: Timo Pollmeier
 
 	* tools/greenbone-scapdata-sync: Add sync of OVAL data, database

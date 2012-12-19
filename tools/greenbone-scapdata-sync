@@ -54,6 +54,10 @@ LOGFILE="greenbone-scapdata-sync.log"
 # If ENABLED is set to 0, the sync script will not perform a synchronization.
 ENABLED=1
 
+# If REFRESH_ONLY is set to 1, the sync script will only update the OpenVAS
+# Manager database. This can be controlled via the --refresh parameter.
+REFRESH_ONLY=0
+
 [ -r /etc/openvas/greenbone-scapdata-sync.conf ] && . /etc/openvas/greenbone-scapdata-sync.conf
 
 BASE_SYNC_DIR="/var/lib/openvas"
@@ -340,6 +344,11 @@ sync_scapdata(){
     notsynced=1
     retried=0
 
+    if [ $REFRESH_ONLY -eq 1 ]
+    then
+      notsynced=0
+    fi
+
     mkdir -p "$BASE_SYNC_DIR"
     read feeduser < $ACCESSKEY
     read -d "@" custid < $ACCESSKEY
@@ -444,6 +453,9 @@ while test $# -gt 0; do
         --feedversion)
           do_feedversion
           exit 0
+          ;;
+        --refresh)
+          REFRESH_ONLY=1
           ;;
         --selftest)
           SELFTEST_FAIL=0
