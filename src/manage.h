@@ -1486,9 +1486,8 @@ void
 init_user_lsc_credential_iterator (iterator_t*, lsc_credential_t, int, int,
                                    const char*);
 
-void
-init_lsc_credential_iterator (iterator_t*, lsc_credential_t, int, int,
-                              const char*, const char*);
+int
+init_lsc_credential_iterator (iterator_t*, const get_data_t *);
 
 lsc_credential_t
 lsc_credential_iterator_lsc_credential (iterator_t*);
@@ -1519,9 +1518,6 @@ lsc_credential_iterator_deb (iterator_t*);
 
 const char*
 lsc_credential_iterator_exe (iterator_t*);
-
-int
-lsc_credential_iterator_in_use (iterator_t*);
 
 char*
 lsc_credential_uuid (lsc_credential_t);

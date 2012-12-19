@@ -34396,117 +34396,32 @@ init_user_lsc_credential_iterator (iterator_t* iterator,
 }
 
 /**
- * @brief Initialise an LSC Credential iterator, limiting to user's credentials.
+ * @brief Initialise a LSC Credential iterator.
  *
- * @param[in]  iterator        Iterator.
- * @param[in]  lsc_credential  Single LSC credential to iterate, 0 for all.
- * @param[in]  trash           Whether to iterate over trashcan credentials.
- * @param[in]  ascending       Whether to sort ascending or descending.
- * @param[in]  sort_field      Field to sort on, or NULL for "ROWID".
- * @param[in]  actions_string  Actions.
+ * @param[in]  iterator  Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find filter, failed to find filter (filt_id),
+ *         -1 error.
  */
-void
-init_lsc_credential_iterator (iterator_t* iterator,
-                              lsc_credential_t lsc_credential, int trash,
-                              int ascending, const char* sort_field,
-                              const char *actions_string)
+int
+init_lsc_credential_iterator (iterator_t* iterator, const get_data_t *get)
 {
-  int actions;
+  static const char *filter_columns[] = LSC_CREDENTIAL_ITERATOR_FILTER_COLUMNS;
 
-  assert (current_credentials.uuid);
-
-  if (actions_string == NULL || strlen (actions_string) == 0)
-    {
-      init_user_lsc_credential_iterator (iterator, lsc_credential, trash,
-                                         ascending, sort_field);
-      return;
-    }
-
-  actions = parse_actions (actions_string);
-
-  if (actions == 0)
-    {
-      init_user_lsc_credential_iterator (iterator, lsc_credential, trash,
-                                         ascending, sort_field);
-      return;
-    }
-
-  if (lsc_credential)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, login, password, comment,"
-                   " public_key, private_key, rpm, deb, exe,"
-                   " (SELECT count(*) > 0 FROM targets%s"
-                   "  WHERE lsc_credential = lsc_credentials%s.ROWID)"
-                   " + (SELECT count(*) > 0 FROM targets%s"
-                   "    WHERE smb_lsc_credential = lsc_credentials%s.ROWID)"
-                   " FROM lsc_credentials%s"
-                   " WHERE ROWID = %llu"
-                   " AND"
-                   " ((owner IS NULL) OR (owner ="
-                   "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
-                   "  OR"
-                   "  (SELECT tasks.ROWID FROM tasks"
-                   "   WHERE tasks.target ="
-                   "   (SELECT ROWID FROM targets"
-                   "    WHERE lsc_credential = lsc_credentials%s.ROWID"
-                   "    OR smb_lsc_credential = lsc_credentials%s.ROWID))"
-                   "  IN"
-                   "  (SELECT task FROM task_users WHERE user ="
-                   "   (SELECT ROWID FROM users"
-                   "    WHERE users.uuid = '%s')"
-                   "   AND actions & %u = %u))"
-                   " ORDER BY %s %s;",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   lsc_credential,
-                   current_credentials.uuid,
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   current_credentials.uuid,
-                   actions,
-                   actions,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, login, password, comment,"
-                   " public_key, private_key, rpm, deb, exe,"
-                   " (SELECT count(*) > 0 FROM targets%s"
-                   "  WHERE lsc_credential = lsc_credentials%s.ROWID)"
-                   " + (SELECT count(*) > 0 FROM targets%s"
-                   "    WHERE smb_lsc_credential = lsc_credentials%s.ROWID)"
-                   " FROM lsc_credentials%s"
-                   " WHERE"
-                   " ((owner IS NULL) OR (owner ="
-                   "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
-                   "  OR"
-                   "  (SELECT tasks.ROWID FROM tasks"
-                   "   WHERE target ="
-                   "   (SELECT ROWID FROM targets"
-                   "    WHERE lsc_credential = lsc_credentials%s.ROWID"
-                   "    OR smb_lsc_credential = lsc_credentials%s.ROWID))"
-                   "  IN"
-                   "  (SELECT task FROM task_users WHERE user ="
-                   "   (SELECT ROWID FROM users"
-                   "    WHERE users.uuid = '%s')"
-                   "   AND actions & %u = %u))"
-                   " ORDER BY %s %s;",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   current_credentials.uuid,
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   current_credentials.uuid,
-                   actions,
-                   actions,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
+  return init_get_iterator (iterator,
+                            "lsc_credential",
+                            get,
+                            /* Columns. */
+                            LSC_CREDENTIAL_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS,
+                            filter_columns,
+                            NULL,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
 }
 
 /**
@@ -34544,6 +34459,16 @@ DEF_ACCESS (lsc_credential_iterator_uuid, 1);
 DEF_ACCESS (lsc_credential_iterator_name, 2);
 
 /**
+ * @brief Get the comment from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Comment, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (lsc_credential_iterator_comment, 3);
+
+/**
  * @brief Get the login from an LSC credential iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -34551,7 +34476,7 @@ DEF_ACCESS (lsc_credential_iterator_name, 2);
  * @return Login, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (lsc_credential_iterator_login, 3);
+DEF_ACCESS (lsc_credential_iterator_login, GET_ITERATOR_COLUMN_COUNT);
 
 /**
  * @brief Get the password from an LSC credential iterator.
@@ -34561,23 +34486,7 @@ DEF_ACCESS (lsc_credential_iterator_login, 3);
  * @return Password, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (lsc_credential_iterator_password, 4);
-
-/**
- * @brief Get the comment from an LSC credential iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return LSC credential.
- */
-const char*
-lsc_credential_iterator_comment (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 5);
-  return ret ? ret : "";
-}
+DEF_ACCESS (lsc_credential_iterator_password, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
  * @brief Get the public_key from an LSC credential iterator.
@@ -34587,7 +34496,7 @@ lsc_credential_iterator_comment (iterator_t* iterator)
  * @return Public_key, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (lsc_credential_iterator_public_key, 6);
+DEF_ACCESS (lsc_credential_iterator_public_key, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the private_key from an LSC credential iterator.
@@ -34597,7 +34506,8 @@ DEF_ACCESS (lsc_credential_iterator_public_key, 6);
  * @return Private_key, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (lsc_credential_iterator_private_key, 7);
+DEF_ACCESS (lsc_credential_iterator_private_key,
+            GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Get the rpm from an LSC credential iterator.
@@ -34617,8 +34527,8 @@ lsc_credential_iterator_rpm (iterator_t *iterator)
 
   if (iterator->done) return NULL;
 
-  public_key = (const char*) sqlite3_column_text (iterator->stmt, 6);
-  name = (const char*) sqlite3_column_text (iterator->stmt, 3);
+  public_key = lsc_credential_iterator_public_key (iterator);
+  name = lsc_credential_iterator_name (iterator);
   if (lsc_user_rpm_recreate (name, public_key, &rpm, &rpm_size))
     return NULL;
   rpm64 = (rpm && rpm_size)
@@ -34646,8 +34556,8 @@ lsc_credential_iterator_deb (iterator_t *iterator)
 
   if (iterator->done) return NULL;
 
-  public_key = (const char*) sqlite3_column_text (iterator->stmt, 6);
-  name = (const char*) sqlite3_column_text (iterator->stmt, 3);
+  public_key = lsc_credential_iterator_public_key (iterator);
+  name = lsc_credential_iterator_name (iterator);
   if (lsc_user_rpm_recreate (name, public_key, &rpm, &rpm_size))
     return NULL;
 
@@ -34682,8 +34592,8 @@ lsc_credential_iterator_exe (iterator_t *iterator)
 
   if (iterator->done) return NULL;
 
-  name = (const char*) sqlite3_column_text (iterator->stmt, 3);
-  password = (const char*) sqlite3_column_text (iterator->stmt, 4);
+  name = lsc_credential_iterator_name (iterator);
+  password = lsc_credential_iterator_password (iterator);
   if (lsc_user_exe_recreate (name, password, &exe, &exe_size))
     return NULL;
   exe64 = (exe && exe_size)
@@ -34691,22 +34601,6 @@ lsc_credential_iterator_exe (iterator_t *iterator)
           : g_strdup ("");
   free (exe);
   return exe64;
-}
-
-/**
- * @brief Get the "in use" state from an LSC credential iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return "In use" flag.
- */
-int
-lsc_credential_iterator_in_use (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 11);
-  return ret;
 }
 
 /**

@@ -2080,12 +2080,8 @@ get_info_data_reset (get_info_data_t *data)
  */
 typedef struct
 {
-  char *actions;           ///< Actions.
   char *format;            ///< Format requested: "key", "deb", ....
-  char *lsc_credential_id; ///< Single LSC credential to iterate over.
-  char *sort_field;        ///< Field to sort results on.
-  int sort_order;          ///< Result sort order: 0 descending, else ascending.
-  int trash;         ///< Boolean.  Whether to return agents from trashcan.
+  get_data_t get;         ///< Boolean.  Whether to return agents from trashcan.
 } get_lsc_credentials_data_t;
 
 /**
@@ -2096,11 +2092,7 @@ typedef struct
 static void
 get_lsc_credentials_data_reset (get_lsc_credentials_data_t *data)
 {
-  free (data->actions);
-  free (data->format);
-  free (data->lsc_credential_id);
-  free (data->sort_field);
-
+  get_data_reset (&data->get);
   memset (data, 0, sizeof (get_lsc_credentials_data_t));
 }
 
@@ -5244,27 +5236,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0)
           {
-            const gchar* attribute;
-            append_attribute (attribute_names, attribute_values,
-                              "lsc_credential_id",
-                              &get_lsc_credentials_data->lsc_credential_id);
-            append_attribute (attribute_names, attribute_values, "actions",
-                              &get_lsc_credentials_data->actions);
+            get_data_parse_attributes (&get_lsc_credentials_data->get,
+                                       "lsc_credential",
+                                       attribute_names,
+                                       attribute_values);
             append_attribute (attribute_names, attribute_values, "format",
                               &get_lsc_credentials_data->format);
-            if (find_attribute (attribute_names, attribute_values,
-                                "trash", &attribute))
-              get_lsc_credentials_data->trash = strcmp (attribute, "0");
-            else
-              get_lsc_credentials_data->trash = 0;
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_lsc_credentials_data->sort_field);
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_lsc_credentials_data->sort_order = strcmp (attribute,
-                                                             "descending");
-            else
-              get_lsc_credentials_data->sort_order = 1;
             set_client_state (CLIENT_GET_LSC_CREDENTIALS);
           }
         else if (strcasecmp ("GET_NOTES", element_name) == 0)
@@ -17722,8 +17699,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_LSC_CREDENTIALS:
         {
           iterator_t credentials;
+          int count, filtered, ret, first;
           int format;
-          lsc_credential_t lsc_credential = 0;
+          get_data_t* get;
           char *data_format;
 
           assert (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0);
@@ -17755,168 +17733,154 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_lsc_credentials",
                                 "GET_LSC_CREDENTIALS format attribute should"
                                 " be 'key', 'rpm', 'deb' or 'exe'."));
-          else if (get_lsc_credentials_data->lsc_credential_id
-                   && find_lsc_credential_for_actions
-                       (get_lsc_credentials_data->lsc_credential_id,
-                        &lsc_credential,
-                        get_lsc_credentials_data->actions))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_lsc_credentials"));
-          else if (get_lsc_credentials_data->lsc_credential_id
-                   && (lsc_credential == 0))
+
+          get = &get_lsc_credentials_data->get;
+          ret = init_lsc_credential_iterator (&credentials, get);
+          if (ret)
             {
-              if (send_find_error_to_client
-                   ("get_lsc_credentials",
-                    "LSC credential",
-                    get_lsc_credentials_data->lsc_credential_id,
-                    write_to_client,
-                    write_to_client_data))
+              switch (ret)
                 {
-                  error_send_to_client (error);
+                  case 1:
+                    if (send_find_error_to_client ("get_lsc_credentials",
+                                                   "lsc_credential",
+                                                   get_lsc_credentials_data->get.id,
+                                                   write_to_client,
+                                                   write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case 2:
+                    if (send_find_error_to_client
+                         ("get_lsc_credentials",
+                          "lsc_credential",
+                          get_lsc_credentials_data->get.filt_id,
+                          write_to_client,
+                          write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("get_lsc_credentials"));
+                    break;
+                }
+              get_lsc_credentials_data_reset (get_lsc_credentials_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+          count = 0;
+          get = &get_lsc_credentials_data->get;
+          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+          SEND_GET_START("lsc_credential", &get_lsc_credentials_data->get);
+
+          while (1)
+            {
+              ret = get_next (&credentials, &get_lsc_credentials_data->get,
+                              &first, &count, init_lsc_credential_iterator);
+              if (ret == 1)
+                break;
+              if (ret == -1)
+                {
+                  internal_error_send_to_client (error);
                   return;
                 }
-            }
-          else
-            {
-              SEND_TO_CLIENT_OR_FAIL ("<get_lsc_credentials_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              init_lsc_credential_iterator (&credentials,
-                                            lsc_credential,
-                                            get_lsc_credentials_data->trash,
-                                            get_lsc_credentials_data->sort_order,
-                                            get_lsc_credentials_data->sort_field,
-                                            get_lsc_credentials_data->actions);
-              while (next (&credentials))
+
+              SEND_GET_COMMON (lsc_credential, &get_lsc_credentials_data->get,
+                               &credentials);
+              switch (format)
                 {
-                  switch (format)
+                  case 1: /* key */
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<login>%s</login>"
+                      "<type>%s</type>"
+                      "<public_key>%s</public_key>",
+                      lsc_credential_iterator_login (&credentials),
+                      lsc_credential_iterator_public_key (&credentials)
+                        ? "gen" : "pass",
+                      lsc_credential_iterator_public_key (&credentials)
+                        ? lsc_credential_iterator_public_key (&credentials)
+                        : "");
+                    break;
+                  case 2: /* rpm */
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<login>%s</login>"
+                      "<type>%s</type>"
+                      "<package format=\"rpm\">%s</package>",
+                      lsc_credential_iterator_login (&credentials),
+                      lsc_credential_iterator_public_key (&credentials)
+                        ? "gen" : "pass",
+                      lsc_credential_iterator_rpm (&credentials)
+                        ? lsc_credential_iterator_rpm (&credentials)
+                        : "");
+                    break;
+                  case 3: /* deb */
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<login>%s</login>"
+                      "<type>%s</type>"
+                      "<package format=\"deb\">%s</package>",
+                      lsc_credential_iterator_login (&credentials),
+                      lsc_credential_iterator_public_key (&credentials)
+                        ? "gen" : "pass",
+                      lsc_credential_iterator_deb (&credentials)
+                        ? lsc_credential_iterator_deb (&credentials)
+                        : "");
+                    break;
+                  case 4: /* exe */
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<login>%s</login>"
+                      "<type>%s</type>"
+                      "<package format=\"exe\">%s</package>",
+                      lsc_credential_iterator_login (&credentials),
+                      lsc_credential_iterator_public_key (&credentials)
+                        ? "gen" : "pass",
+                      lsc_credential_iterator_exe (&credentials)
+                        ? lsc_credential_iterator_exe (&credentials)
+                        : "");
+                    break;
+                  default:
                     {
-                      case 1: /* key */
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<lsc_credential id=\"%s\">"
-                          "<name>%s</name>"
-                          "<login>%s</login>"
-                          "<comment>%s</comment>"
-                          "<in_use>%i</in_use>"
-                          "<type>%s</type>"
-                          "<public_key>%s</public_key>"
-                          "</lsc_credential>",
-                          lsc_credential_iterator_uuid (&credentials),
-                          lsc_credential_iterator_name (&credentials),
-                          lsc_credential_iterator_login (&credentials),
-                          lsc_credential_iterator_comment (&credentials),
-                          lsc_credential_iterator_in_use (&credentials),
-                          lsc_credential_iterator_public_key (&credentials)
-                            ? "gen" : "pass",
-                          lsc_credential_iterator_public_key (&credentials)
-                            ? lsc_credential_iterator_public_key (&credentials)
-                            : "");
-                        break;
-                      case 2: /* rpm */
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<lsc_credential id=\"%s\">"
-                          "<name>%s</name>"
-                          "<login>%s</login>"
-                          "<comment>%s</comment>"
-                          "<in_use>%i</in_use>"
-                          "<type>%s</type>"
-                          "<package format=\"rpm\">%s</package>"
-                          "</lsc_credential>",
-                          lsc_credential_iterator_uuid (&credentials),
-                          lsc_credential_iterator_name (&credentials),
-                          lsc_credential_iterator_login (&credentials),
-                          lsc_credential_iterator_comment (&credentials),
-                          lsc_credential_iterator_in_use (&credentials),
-                          lsc_credential_iterator_public_key (&credentials)
-                            ? "gen" : "pass",
-                          lsc_credential_iterator_rpm (&credentials)
-                            ? lsc_credential_iterator_rpm (&credentials)
-                            : "");
-                        break;
-                      case 3: /* deb */
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<lsc_credential id=\"%s\">"
-                          "<name>%s</name>"
-                          "<login>%s</login>"
-                          "<comment>%s</comment>"
-                          "<in_use>%i</in_use>"
-                          "<type>%s</type>"
-                          "<package format=\"deb\">%s</package>"
-                          "</lsc_credential>",
-                          lsc_credential_iterator_uuid (&credentials),
-                          lsc_credential_iterator_name (&credentials),
-                          lsc_credential_iterator_login (&credentials),
-                          lsc_credential_iterator_comment (&credentials),
-                          lsc_credential_iterator_in_use (&credentials),
-                          lsc_credential_iterator_public_key (&credentials)
-                            ? "gen" : "pass",
-                          lsc_credential_iterator_deb (&credentials)
-                            ? lsc_credential_iterator_deb (&credentials)
-                            : "");
-                        break;
-                      case 4: /* exe */
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<lsc_credential id=\"%s\">"
-                          "<name>%s</name>"
-                          "<login>%s</login>"
-                          "<comment>%s</comment>"
-                          "<in_use>%i</in_use>"
-                          "<type>%s</type>"
-                          "<package format=\"exe\">%s</package>"
-                          "</lsc_credential>",
-                          lsc_credential_iterator_uuid (&credentials),
-                          lsc_credential_iterator_name (&credentials),
-                          lsc_credential_iterator_login (&credentials),
-                          lsc_credential_iterator_comment (&credentials),
-                          lsc_credential_iterator_in_use (&credentials),
-                          lsc_credential_iterator_public_key (&credentials)
-                            ? "gen" : "pass",
-                          lsc_credential_iterator_exe (&credentials)
-                            ? lsc_credential_iterator_exe (&credentials)
-                            : "");
-                        break;
-                      default:
-                        {
-                          iterator_t targets;
+                      iterator_t targets;
 
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("<lsc_credential id=\"%s\">"
-                            "<name>%s</name>"
-                            "<login>%s</login>"
-                            "<comment>%s</comment>"
-                            "<in_use>%i</in_use>"
-                            "<type>%s</type>"
-                            "<targets>",
-                            lsc_credential_iterator_uuid (&credentials),
-                            lsc_credential_iterator_name (&credentials),
-                            lsc_credential_iterator_login (&credentials),
-                            lsc_credential_iterator_comment (&credentials),
-                            lsc_credential_iterator_in_use (&credentials),
-                            lsc_credential_iterator_public_key (&credentials)
-                              ? "gen" : "pass");
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<login>%s</login>"
+                        "<type>%s</type>"
+                        "<targets>",
+                        lsc_credential_iterator_login (&credentials),
+                        lsc_credential_iterator_public_key (&credentials)
+                          ? "gen" : "pass");
 
-                          init_lsc_credential_target_iterator
-                           (&targets,
-                            lsc_credential_iterator_lsc_credential
-                             (&credentials),
-                            get_lsc_credentials_data->sort_order);
-                          while (next (&targets))
-                            SENDF_TO_CLIENT_OR_FAIL
-                             ("<target id=\"%s\">"
-                              "<name>%s</name>"
-                              "</target>",
-                              lsc_credential_target_iterator_uuid (&targets),
-                              lsc_credential_target_iterator_name (&targets));
-                          cleanup_iterator (&targets);
+                      init_lsc_credential_target_iterator
+                       (&targets,
+                        lsc_credential_iterator_lsc_credential
+                         (&credentials),
+                        0);
+                      while (next (&targets))
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<target id=\"%s\">"
+                          "<name>%s</name>"
+                          "</target>",
+                          lsc_credential_target_iterator_uuid (&targets),
+                          lsc_credential_target_iterator_name (&targets));
+                      cleanup_iterator (&targets);
 
-                          SEND_TO_CLIENT_OR_FAIL ("</targets>"
-                                                  "</lsc_credential>");
-                          break;
-                        }
+                      SEND_TO_CLIENT_OR_FAIL ("</targets>");
+                      break;
                     }
                 }
-              cleanup_iterator (&credentials);
-              SEND_TO_CLIENT_OR_FAIL ("</get_lsc_credentials_response>");
+              SEND_TO_CLIENT_OR_FAIL ("</lsc_credential>");
+              count++;
             }
+
+          cleanup_iterator (&credentials);
+          filtered = get_lsc_credentials_data->get.id
+                      ? 1
+                      : lsc_credential_count (&get_lsc_credentials_data->get);
+          SEND_GET_END ("lsc_credential", &get_lsc_credentials_data->get,
+                        count, filtered);
           get_lsc_credentials_data_reset (get_lsc_credentials_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
