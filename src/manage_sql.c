@@ -34152,6 +34152,41 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
 }
 
 /**
+ * @brief Filter columns for LSC Credential iterator.
+ */
+#define LSC_CREDENTIAL_ITERATOR_FILTER_COLUMNS                                 \
+ { GET_ITERATOR_FILTER_COLUMNS, "login", NULL }
+
+/**
+ * @brief LSC Credential iterator columns.
+ */
+#define LSC_CREDENTIAL_ITERATOR_COLUMNS                                       \
+  GET_ITERATOR_COLUMNS ", login, password, public_key, private_key, rpm, "    \
+  " deb, exe"
+
+/**
+ * @brief LSC Credential iterator columns for trash case.
+ */
+#define LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS                                 \
+  GET_ITERATOR_COLUMNS ", login, password, public_key, private_key, rpm, "    \
+  " deb, exe"
+
+/**
+ * @brief Count number of LSC Credentials.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of LSC Credentials in filtered set.
+ */
+int
+lsc_credential_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = LSC_CREDENTIAL_ITERATOR_FILTER_COLUMNS;
+  return count ("lsc_credential", get, LSC_CREDENTIAL_ITERATOR_COLUMNS,
+                extra_columns, 0, 0, 0, TRUE);
+}
+
+/**
  * @brief Check whether a LSC Credential is in use.
  *
  * @param[in]  lsc_credential  LSC Credential.
