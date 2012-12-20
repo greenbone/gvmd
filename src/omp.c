@@ -1884,6 +1884,8 @@ get_data_reset (get_data_t *data)
   free (data->id);
   free (data->filter);
   free (data->filt_id);
+  free (data->subtype);
+  free (data->type);
 
   memset (data, 0, sizeof (get_data_t));
 }
@@ -1905,6 +1907,8 @@ get_data_parse_attributes (get_data_t *data, const gchar *type,
 {
   gchar *name;
   const gchar *attribute;
+
+  data->type = g_strdup (type);
 
   append_attribute (attribute_names, attribute_values, "actions",
                     &data->actions);
@@ -17482,16 +17486,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               init_info_iterator = init_cpe_info_iterator;
               info_count = cpe_info_count;
+              get_info_data->get.subtype = g_strdup ("cpe");
             }
           else if (g_strcmp0 ("cve", get_info_data->type) == 0)
             {
               init_info_iterator = init_cve_info_iterator;
               info_count = cve_info_count;
+              get_info_data->get.subtype = g_strdup ("cve");
             }
           else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
             {
               /* TODO: add proper iterator support for cpe / NVT */
               gchar *result = NULL;
+
+              get_info_data->get.subtype = g_strdup ("nvt");
+
               manage_read_info (get_info_data->type, get_info_data->name, &result);
               if (result)
                 {

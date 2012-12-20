@@ -221,6 +221,8 @@ typedef struct
   char *id;            ///< ID of single item to get.
   int max;             ///< Maximum number of items returned.
   int trash;           ///< Boolean.  Whether to return from trashcan.
+  gchar *type;         ///< Type of resource.
+  gchar *subtype;      ///< Subtype, or NULL.
 } get_data_t;
 
 resource_t

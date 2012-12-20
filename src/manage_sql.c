@@ -2774,6 +2774,19 @@ type_has_users (const char *type)
 }
 
 /**
+ * @brief Check whether a resource type has an owner.
+ *
+ * @param[in]  type  Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+type_owned (const char* type)
+{
+  return strcasecmp (type, "info");
+}
+
+/**
  * @brief Check whether the trash is in the real table.
  *
  * @param[in]  type  Type of resource.
@@ -14417,9 +14430,8 @@ resource_count (const char *type, const get_data_t *get)
   count_get.filter = "rows=-1 first=1";
   count_get.actions = "g";
 
-  return count (type, &count_get,
-                "1",
-                NULL, 0, NULL,
+  return count (get->subtype ? get->subtype : type,
+                &count_get, "1", NULL, 0, NULL,
                 strcmp (type, "task")
                  ? NULL
                  : (get->id
@@ -14429,7 +14441,7 @@ resource_count (const char *type, const get_data_t *get)
                     : (get->trash
                         ? " AND hidden = 2"
                         : " AND hidden = 0"),
-                TRUE);
+                type_owned (type));
 }
 
 /**
