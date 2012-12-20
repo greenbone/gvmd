@@ -1,4 +1,4 @@
-2012-12-19  Hani Benhabiles <kroosec@gmail.com>
+2012-12-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_lsc_credential_iterator): Change interface to
 	use iterator_t and a get_data_t as arguments. Use init_get_iterator.
@@ -22,7 +22,7 @@
 	(omp_xml_handle_end_element): Adapt to new init_lsc_credential_iterator
 	interface. Use SEND_GET_START, SEND_GET_COMMON and SEND_GET_END macros.
 
-2012-12-19  Hani Benhabiles <kroosec@gmail.com>
+2012-12-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (lsc_credential_count): New function.
 	(LSC_CREDENTIAL_FILTER_COLUMNS, LSC_CREDENTIAL_ITERATOR_COLUMNS)
@@ -35,7 +35,7 @@
 	* src/manage_sql.c (task_writable, trash_task_writable): Check if the
 	user has write access too.
 
-2012-12-19  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Migrate database to version 72, add creation and modification time
 	to LSC Credentials.
@@ -67,7 +67,7 @@
 	migration to version 5 and checks if xml files for CVE and
 	OVAL exist in SCAP directory.
 
-2012-12-19  Hani Benhabiles <kroosec@gmail.com>
+2012-12-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (filter_in_use, trash_filter_in_use, target_in_use)
 	(trash_target_in_use, alert_in_use, trash_alert_in_use, schedule_in_use)
@@ -102,7 +102,7 @@
 	* tools/oval_update.xsl: New XSLT stylesheet for creating SQL inserts
 	to add definition data from OVAL XML files.
 
-2012-12-18  Hani Benhabiles <kroosec@gmail.com>
+2012-12-18  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (filter_in_use, trash_filter_in_use, target_in_use)
 	(trash_target_in_use, alert_in_use, trash_alert_in_use, schedule_in_use)
@@ -112,7 +112,7 @@
 
 	(trash_port_list_in_use): Remove inused code between "#if 0 #endif".
 
-2012-12-18  Hani Benhabiles <kroosec@gmail.com>
+2012-12-18  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (lsc_credential_in_use, trash_lsc_credential_in_use)
 	(lsc_credential_writable, trash_lsc_credential_writable): New functions.
@@ -125,7 +125,7 @@
 	the used_by arg, because the user only ever sees his own notes and
 	overrides.
 
-2012-12-18  Hani Benhabiles <kroosec@gmail.com>
+2012-12-18  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Fix alert counts for
 	CLIENT_GET_ALERTS case.
@@ -150,12 +150,12 @@
 	(manage_scap_loaded): Do the actual check instead of checking
 	scap_loaded.
 
-2012-12-17  Hani Benhabiles <kroosec@gmail.com>
+2012-12-17  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Remove get.details check for
 	CLIENT_GET_ALERTS case.
 
-2012-12-17  Hani Benhabiles <kroosec@gmail.com>
+2012-12-17  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Remove superfluous in_use tags
 	in CLIENT_GET_AGENTS case.
@@ -164,13 +164,13 @@
 	agent_in_use and trash_agent_in_use functions.
 	(schedule_writable, trash_schedule_writable): Style fix.
 
-2012-12-17  Hani Benhabiles <kroosec@gmail.com>
+2012-12-17  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_target_iterator): Set to NULL used_by parameter
 	which was causing sql syntax error when requesting a single target with
 	target_id and actions parameters set.
 
-2012-12-14  Hani Benhabiles <kroosec@gmail.com>
+2012-12-14  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Move Alerts to use new GET style.
 
@@ -196,7 +196,7 @@
 	CLIENT_GET_ALERTS case. Check details get element when sending alert
 	data. Adjust to follow same style with new get based style.
 
-2012-12-14  Hani Benhabiles <kroosec@gmail.com>
+2012-12-14  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (filter_name): New function.
 	(task_alert_name, task_alert_uuid, task_alert, task_alert_in_trash):
@@ -204,7 +204,7 @@
 
 	* src/manage.h: Add and remove headers accordingly.
 
-2012-12-14  Hani Benhabiles <kroosec@gmail.com>
+2012-12-14  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_task_alert_iterator, task_alert_iterator_alert)
 	(task_alert_iterator_uuid, task_alert_iterator_name): New functions.
@@ -215,7 +215,7 @@
 	* src/omp.c (omp_xml_handle_end_element): Use init_task_alert_iterator
 	in GET_TASKS case instead of init_alert_iterator.
 
-2012-12-14  Hani Benhabiles <kroosec@gmail.com>
+2012-12-14  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (alert_uuid): Change interface to match the same
 	style of other objects.
@@ -250,7 +250,7 @@
 	the owner check.  This makes the iterator work again for single
 	observed tasks.
 
-2012-12-13  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Migrate database to version 71, add creation and modification time
 	support to alerts.
@@ -266,7 +266,7 @@
 
 	* doc/db.png: Update to version 71.
 
-2012-12-13  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (alert_count, alert_in_use, trash_alert_in_use)
 	(alert_writable, trash_alert_writable): New functions.
@@ -293,13 +293,13 @@
 	(omp_xml_handle_end_element): For GET_TASKS send APPLY_OVERRIDES,
 	getting the value from the filter.
 
-2012-12-12  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.h, src/manage_sql.c (port_list_iterator_writable)
 	(port_list_iterator_in_use, schedule_iterator_in_use): Remove unused
 	functions.
 
-2012-12-12  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Add Alerts for GET_REPORT_FORMATS. Remove unneeded export checks.
 
@@ -333,7 +333,7 @@
 
 	* src/sql.h: Add header accordingly.
 
-2012-12-11  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Move Port Lists to the new GET object management style.
 
@@ -353,14 +353,14 @@
 
 	* src/manage.h: Add and modify headers accrodingly.
 
-2012-12-11  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (REPORT_FORMAT_ITERATOR_FILTER_COLUMNS): Rename flags
 	into active.
 	(REPORT_FORMAT_ITERATOR_COLUMNS): Extract active flag value only from
 	flags and rename it into active.
 
-2012-12-11  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (REPORT_FORMAT_ITERATOR_FILTER_COLUMNS): Add trust,
 	trust_time and flags columns.
@@ -384,7 +384,7 @@
 	(PORT_LIST_ITERATOR_FILTER_COLUMNS)
 	(PORT_LIST_ITERATOR_TRASH_COLUMNS): Flush trailing whitespace.
 
-2012-12-10  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (port_list_count): New function.
 	(PORT_LIST_ITERATOR_FILTER_COLUMNS, PORT_LIST_ITERATOR_COLUMNS)
@@ -393,7 +393,7 @@
 	* src/manage.h (port_list_iterator_exclude): Correct typo. Rename into
 	port_range_iterator_exclude.
 
-2012-12-10  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Migrate Database to version 70, add creation and modification time
 	support to Port Lists.
@@ -488,7 +488,7 @@
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS use
 	SEND_GET_START and SEND_GET_END.
 
-2012-12-06  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Moved closing tag for
 	CLIENT_GET_CONFIGS within the appropriate else statement, which was
@@ -582,7 +582,7 @@
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS for the big if
 	share the progress calculation.
 
-2012-12-05  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Port Report Formats to new GET style.
 
@@ -661,7 +661,7 @@
 
 	* src/manage_sql.c (init_manage): Reset 65536 in port ranges to 65535.
 
-2012-12-04  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Update modification_time value for Report Formats accordingly.
 
@@ -669,7 +669,7 @@
 	(set_report_format_active, set_report_format_summary): Update
 	modification_time column to current time.
 
-2012-12-04  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Add Report Format in_use, writable and count functions and other
 	defines.
@@ -729,12 +729,12 @@
 	(omp_xml_handle_end_element): In CREATE_SCHEDULE and EDIT_SCHEDULE add
 	checks for new interval out-of-range returns.
 
-2012-12-02  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (create_tables): Added missing creation and
 	modification columns.
 
-2012-12-02  Hani Benhabiles  <kroosec@gmail.com>
+2012-12-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Migrate Database to version 69, adding creation and modification time to
 	Report formats.
@@ -756,19 +756,19 @@
 	* src/manage_sql.c (event): Compare with unique run status name, else
 	the waiting states are considered as events.
 
-2012-11-29  Hani Benhabiles <kroosec@gmail.com>
+2012-11-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Also send trust state and
 	trust time with installer for get agents case.
 
-2012-11-29  Hani Benhabiles <kroosec@gmail.com>
+2012-11-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): for CLIENT_GET_AGENTS case,
 	agent installer is returned too when details attribute is set. Also
 	repeated call to SEND_GET_COMMON in all switch cases has been
 	refactored.
 
-2012-11-29  Hani Benhabiles <kroosec@gmail.com>
+2012-11-29  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_schedule_task_iterator)
 	(init_slave_task_iterator): Reverted prior change so that the name of
@@ -790,12 +790,12 @@
 	* src/manage_sql.c (type_pretty_name): Remove stray semicolon that was
 	causing SecInfo to be the default.
 
-2012-11-28  Hani Benhabiles <kroosec@gmail.com>
+2012-11-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c, src/manage.h (slave_in_use): Now checks for tasks
 	using the slave independently of their location.
 
-2012-11-28  Hani Benhabiles <kroosec@gmail.com>
+2012-11-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Migrate Slave object to the new GET style object management.
 
@@ -818,12 +818,12 @@
 	new GET style and refactored slave iterator. Added count and filter
 	support.
 
-2012-11-27  Hani Benhabiles <kroosec@gmail.com>
+2012-11-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (modify_filter, modify_slave): Consistently
 	sql_quote() for quoted variables.
 
-2012-11-27  Hani Benhabiles <kroosec@gmail.com>
+2012-11-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Adding support for slave cloning.
 
@@ -834,7 +834,7 @@
 	creation case.
 	(omp_xml_handle_text): Added CLIENT_CREATE_SLAVE_COPY value handling.
 
-2012-11-27  Hani Benhabiles <kroosec@gmail.com>
+2012-11-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Adding support for editing a slave.
 
@@ -846,16 +846,16 @@
 	(omp_xml_handle_start_element, omp_xml_handle_end_element)
 	(omp_xml_handle_text): Added slave modification handling.
 
-2012-11-27  Hani Benhabiles <kroosec@gmail.com>
+2012-11-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.h, src/manage_sql.c (modify_slave): New function.
 
-2012-11-27  Hani Benhabiles <kroosec@gmail.com>
+2012-11-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (create_slave, delete_slave): creation_time and
 	modification_time are modified appropriately.
 
-2012-11-27  Hani Benhabiles <kroosec@gmail.com>
+2012-11-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Migrate Database to version 68 to add modification_time and
 	creation_time to slaves.
@@ -866,12 +866,12 @@
 	(migrators): Add migrate_67_to_68.
 	(manage_restore): Add slave creation_time and modification_time columns.
 
-2012-11-26  Hani Benhabiles <kroosec@gmail.com>
+2012-11-26  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (find_target, find_schedule, find_slave): Code
 	refactored to use find_resource function.
 
-2012-11-26  Hani Benhabiles <kroosec@gmail.com>
+2012-11-26  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (copy_slave): New function.
 	(copy_schedule): Fixed documentation.
@@ -893,7 +893,7 @@
 	(CVE_INFO_ITERATOR_COLUMNS, CPE_INFO_ITERATOR_FILTER_COLUMNS)
 	(CPE_INFO_ITERATOR_COLUMNS): Move onto SCAP page.
 
-2012-11-23  Hani Benhabiles <kroosec@gmail.com>
+2012-11-23  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* ChangeLog: Detailed previous commit.
 
@@ -936,7 +936,7 @@
 	(schedule_iterator_first_time, schedule_iterator_period)
 	(schedule_iterator_period_months): Flush trailing whitespace.
 
-2012-11-22  Hani Benhabiles <kroosec@gmail.com>
+2012-11-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Switching Schedules to the New Object Management.
 
@@ -1037,12 +1037,12 @@
 	(omp_xml_handle_start_element, omp_xml_handle_end_element)
 	(omp_xml_handle_text): Add CREATE_TASK/COPY.
 
-2012-11-21  Hani Benhabiles <kroosec@gmail.com>
+2012-11-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_restore): Restore creation_time and
 	modification_time too.
 
-2012-11-21  Hani Benhabiles <kroosec@gmail.com>
+2012-11-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Add modification_time and creation_time to schedules. Fixed indentation
 	from previous commit.
@@ -1059,7 +1059,7 @@
 	(schedule_writable, schedule_in_use, SCHEDULE_ITERATOR_FILTER_COLUMNS)
 	(SCHEDULE_ITERATOR_TRASH_COLUMNS): Fixed indentation.
 
-2012-11-21  Hani Benhabiles <kroosec@gmail.com>
+2012-11-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c src/manage.h (schedule_copy, schedule_count)
 	(schedule_writable, schedule_in_use, trash_schedule_writable)
@@ -1372,7 +1372,7 @@
 	* report_formats/verinice-ism/classification.csv: New. CSV File
 	containting CPE's and tags for verinice ism
 
-2012-11-07  Hani Benhabiles  <kroosec@gmail.com>
+2012-11-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* tools/openvas-scapdata-sync: Added command-line options --describe and
 	--feedversion as well as needed variables.
