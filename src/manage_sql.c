@@ -9827,7 +9827,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     /* The port list was wrong for a while, so make sure it's correct. */
     sql ("UPDATE targets SET port_range = "
          " (SELECT ROWID FROM port_lists"
-         "  WHERE uuid = '" PORT_LIST_UUID_DEFAULT "')");
+         "  WHERE uuid = '" PORT_LIST_UUID_DEFAULT "')"
+         " WHERE uuid = '" TARGET_UUID_LOCALHOST "';");
 
   /* Ensure the predefined example task and report exists. */
 
@@ -34567,8 +34568,8 @@ range_compare (gconstpointer one, gconstpointer two)
 {
   range_t *range_one, *range_two;
 
-  range_one = (range_t*) one;
-  range_two = (range_t*) two;
+  range_one = *((range_t**) one);
+  range_two = *((range_t**) two);
 
   if (range_one->type > range_two->type)
     return 1;
@@ -34576,10 +34577,10 @@ range_compare (gconstpointer one, gconstpointer two)
   if (range_one->type < range_two->type)
     return -1;
 
-  if (range_one->start < range_two->start)
+  if (range_one->start > range_two->start)
     return 1;
 
-  if (range_one->start > range_two->start)
+  if (range_one->start < range_two->start)
     return -1;
 
   return 0;
