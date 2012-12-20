@@ -1088,7 +1088,6 @@ parse_scanner_plugin_list_tags (char** messages)
           parse_tags (value, &tags, &cvss_base, &risk_factor);
           nvti_set_tag (current_plugin, tags);
           nvti_set_cvss_base (current_plugin, cvss_base);
-          nvti_set_risk_factor (current_plugin, risk_factor);
           g_free (tags);
           g_free (cvss_base);
           g_free (risk_factor);

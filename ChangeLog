@@ -1,3 +1,13 @@
+2012-12-20  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/otp.c (parse_scanner_plugin_list_tags): Don't set the risk factor
+	for the nvti anymore. Will be computed from the cvss automatically.
+
+	* src/manage_sql.c (update_nvti_cache): Don't set the risk factor
+	anymore.
+	(make_nvt_from_nvti): Simplified risk factor retrieval because
+	always a sensible string is return.
+
 2012-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.h (get_data_t): Add type and subtype.

@@ -12641,7 +12641,6 @@ update_nvti_cache ()
       nvti_set_name (nvti, nvt_iterator_name (&nvts));
       nvti_set_family (nvti, nvt_iterator_family (&nvts));
       nvti_set_cvss_base (nvti, nvt_iterator_cvss_base (&nvts));
-      nvti_set_risk_factor (nvti, nvt_iterator_risk_factor (&nvts));
       nvti_set_cve (nvti, nvt_iterator_cve (&nvts));
       nvti_set_bid (nvti, nvt_iterator_bid (&nvts));
       nvti_set_xref (nvti, nvt_iterator_xref (&nvts));
@@ -31501,9 +31500,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   quoted_cvss_base = sql_quote (nvti_cvss_base (nvti)
                                  ? nvti_cvss_base (nvti)
                                  : "");
-  quoted_risk_factor = sql_quote (nvti_risk_factor (nvti)
-                                   ? nvti_risk_factor (nvti)
-                                   : "");
+  quoted_risk_factor = sql_quote (nvti_risk_factor (nvti));
   quoted_sign_key_ids = sql_quote (nvti_sign_key_ids (nvti)
                                    ? nvti_sign_key_ids (nvti)
                                    : "");
