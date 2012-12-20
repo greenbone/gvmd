@@ -42064,12 +42064,13 @@ delete_port_range (const char *port_range_id)
  * @brief Filter columns for Port List iterator.
  */
 #define PORT_LIST_ITERATOR_FILTER_COLUMNS                                     \
- { GET_ITERATOR_FILTER_COLUMNS,  NULL }
+ { GET_ITERATOR_FILTER_COLUMNS,  "count_all", "count_tcp", "count_udp", NULL }
 
 /**
  * @brief Port List iterator columns.
  */
 #define PORT_LIST_ITERATOR_COLUMNS GET_ITERATOR_COLUMNS                         \
+    /* COUNT ALL ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
   "         WHEN end IS NULL THEN start ELSE end"                               \
@@ -42078,6 +42079,7 @@ delete_port_range (const char *port_range_id)
   "        + 1)"                                                                \
   "   FROM port_ranges WHERE port_list = port_lists.ROWID)"                     \
   "  AS count_all"                                                              \
+    /* COUNT TCP ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
   "         WHEN end IS NULL THEN start ELSE end"                               \
@@ -42087,6 +42089,7 @@ delete_port_range (const char *port_range_id)
   "   FROM port_ranges WHERE port_list = port_lists.ROWID"                      \
   "                    AND   type = 0 )"                                        \
   "  AS count_tcp"                                                              \
+    /* COUNT UDP ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
   "         WHEN end IS NULL THEN start ELSE end"                               \
@@ -42095,12 +42098,41 @@ delete_port_range (const char *port_range_id)
   "        + 1)"                                                                \
   "   FROM port_ranges WHERE port_list = port_lists.ROWID"                      \
   "                    AND   type = 1)"                                         \
-  "  AS count_udp"                                                              \
+  "  AS count_udp"
 
 /**
  * @brief Port List iterator columns for trash case.
  */
-#define PORT_LIST_ITERATOR_TRASH_COLUMNS GET_ITERATOR_COLUMNS
+#define PORT_LIST_ITERATOR_TRASH_COLUMNS GET_ITERATOR_COLUMNS                   \
+    /* COUNT ALL ports */                                                       \
+  ", (SELECT"                                                                   \
+  "   sum ((CASE"                                                               \
+  "         WHEN end IS NULL THEN start ELSE end"                               \
+  "         END)"                                                               \
+  "        - start"                                                             \
+  "        + 1)"                                                                \
+  "   FROM port_ranges WHERE port_list = port_lists_trash.ROWID)"               \
+  "  AS count_all"                                                              \
+    /* COUNT TCP ports */                                                       \
+  ", (SELECT"                                                                   \
+  "   sum ((CASE"                                                               \
+  "         WHEN end IS NULL THEN start ELSE end"                               \
+  "         END)"                                                               \
+  "        - start"                                                             \
+  "        + 1)"                                                                \
+  "   FROM port_ranges WHERE port_list = port_lists_trash.ROWID"                \
+  "                    AND   type = 0 )"                                        \
+  "  AS count_tcp"                                                              \
+    /* COUNT UDP ports */                                                       \
+  ", (SELECT"                                                                   \
+  "   sum ((CASE"                                                               \
+  "         WHEN end IS NULL THEN start ELSE end"                               \
+  "         END)"                                                               \
+  "        - start"                                                             \
+  "        + 1)"                                                                \
+  "   FROM port_ranges WHERE port_list = port_lists_trash.ROWID"                \
+  "                    AND   type = 1)"                                         \
+  "  AS count_udp"
 
 /**
  * @brief Count the number of Port Lists.
