@@ -9976,7 +9976,7 @@ init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
     init_iterator (iterator,
                    "SELECT alerts.ROWID, alerts.uuid, alerts.name"
                    " FROM alerts, task_alerts"
-                   " WHERE task_alerts.task = %llu AND event = %llu"
+                   " WHERE task_alerts.task = %llu AND event = %i"
                    " AND task_alerts.alert = alerts.ROWID"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",

@@ -14743,6 +14743,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           slave_t slave = 0;
           char *tsk_uuid, *name, *description;
           guint index;
+          int fail;
 
           /* @todo Buffer the entire task creation and pass everything to a
            *       libmanage function, so that libmanage can do the locking
@@ -14871,6 +14872,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (create_task_data->alerts);
           index = create_task_data->alerts->len;
+          fail = 0;
           while (index--)
             {
               alert_t alert;
@@ -14886,6 +14888,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   create_task_data_reset (create_task_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  fail = 1;
                   break;
                 }
               if (alert == 0)
@@ -14898,10 +14901,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "CREATE_TASK alert must exist"));
                   create_task_data_reset (create_task_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  fail = 1;
                   break;
                 }
               add_task_alert (create_task_data->task, alert);
             }
+          if (fail)
+            break;
 
           /* Set any schedule. */
 
