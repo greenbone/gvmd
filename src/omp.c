@@ -2012,7 +2012,7 @@ get_dependencies_data_reset (get_dependencies_data_t *data)
  */
 typedef struct
 {
-  get_data_t get;    ///< Get args.
+  get_data_t get;   ///< Get args.
   int tasks;        ///< Boolean.  Whether to include tasks that use alert.
 } get_alerts_data_t;
 
@@ -2203,7 +2203,7 @@ get_nvt_feed_checksum_data_reset (get_nvt_feed_checksum_data_t *data)
  */
 typedef struct
 {
-  get_data_t get;        ///< Get args.
+  get_data_t get;      ///< Get args.
   char *override_id;   ///< ID of override to get.
   char *nvt_oid;       ///< OID of NVT to which to limit listing.
   char *task_id;       ///< ID of task to which to limit listing.
@@ -17233,7 +17233,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               /* Filter. */
 
-              if((filter = alert_iterator_filter (&alerts)))
+              if ((filter = alert_iterator_filter (&alerts)))
                 SENDF_TO_CLIENT_OR_FAIL ("<filter id=\"%s\">"
                                          "<name>%s</name>"
                                          "</filter>",
@@ -17448,14 +17448,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           int (*info_count) (const get_data_t *get);
 
           if (manage_scap_loaded () == 0)
-          {
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_info",
-                                "GET_INFO requires the SCAP database."));
-            get_info_data_reset (get_info_data);
-            set_client_state (CLIENT_AUTHENTIC);
-            break;
-          }
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("get_info",
+                                  "GET_INFO requires the SCAP database."));
+              get_info_data_reset (get_info_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
 
           if (get_info_data->name && get_info_data->get.id)
             {
