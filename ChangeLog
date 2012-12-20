@@ -1,3 +1,12 @@
+2012-12-20  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (get_lsc_credentials_data_t): Add targets boolean.
+	(omp_xml_handle_start_element): Check targets attribute value.
+	(omp_xml_handle_end_element): Refactor sending of login and type
+	elements and repeated lsc_credential_iterator_public_key function call.
+	Check targets boolean as a condition to send targets using the LSC
+	Credential.
+
 2012-12-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_lsc_credential_iterator): Change interface to
