@@ -4590,14 +4590,15 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
  *
  * @param[in]  type                  Type.
  * @param[in]  get                   GET data.
- * @param[in]  count                 Count.
+ * @param[in]  count                 Page count.
  * @param[in]  filtered              Filtered count.
+ * @param[in]  full                  Full count.
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
  */
 int
 send_get_end (const char *type, get_data_t *get, int count, int filtered,
-              int (*write_to_client) (const char *, void*),
+              int full, int (*write_to_client) (const char *, void*),
               void* write_to_client_data)
 {
   gchar *msg, *sort_field, *filter;
@@ -4629,6 +4630,7 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
                                  "</sort>"
                                  "<%s start=\"%i\" max=\"%i\"/>"
                                  "<%s_count>"
+                                 "%i"
                                  "<filtered>%i</filtered>"
                                  "<page>%i</page>"
                                  "</%s_count>"
@@ -4645,6 +4647,7 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
                                  first,
                                  max,
                                  type,
+                                 full,
                                  filtered,
                                  count,
                                  type,
@@ -4721,7 +4724,9 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
 #define SEND_GET_END(type, get, count, filtered)                             \
   do                                                                         \
     {                                                                        \
-      if (send_get_end (type, get, count, filtered, write_to_client,         \
+      if (send_get_end (type, get, count, filtered,                          \
+                        resource_count (type, get),                          \
+                        write_to_client,                                     \
                         write_to_client_data))                               \
         {                                                                    \
           error_send_to_client (error);                                      \
@@ -18414,25 +18419,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           // FIX what about filt_id?
           manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
           SEND_GET_START ("task", &get_tasks_data->get);
-
-#if 0
-          // FIX add to SEND_GET_END (full task count for owner)
-          response = g_strdup_printf ("<task_count>%u</task_count>",
-                                      get_tasks_data->get.id
-                                       ? 1
-                                       : (get_tasks_data->get.trash
-                                           ? trash_task_count ()
-                                           : task_count ()));
-          if (send_to_client (response,
-                              write_to_client,
-                              write_to_client_data))
-            {
-              g_free (response);
-              error_send_to_client (error);
-              return;
-            }
-          g_free (response);
-#endif
 
           overrides = filter_term_value (clean_filter, "apply_overrides");
           g_free (clean_filter);

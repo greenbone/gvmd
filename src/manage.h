@@ -242,6 +242,12 @@ const char*
 get_iterator_modification_time (iterator_t*);
 
 
+/* Resources. */
+
+int
+resource_count (const char *, const get_data_t *);
+
+
 /* Events and Alerts. */
 
 /**

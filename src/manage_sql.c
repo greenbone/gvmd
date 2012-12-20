@@ -1156,6 +1156,8 @@ compare_strings (gconstpointer arg_one, gconstpointer arg_two)
 static const gchar*
 vector_find_string (const gchar **vector, const gchar *string)
 {
+  if (vector == NULL)
+    return NULL;
   while (*vector)
     if (strcmp (*vector, string) == 0)
       return *vector;
@@ -14395,6 +14397,39 @@ authenticate (credentials_t* credentials)
       return fail;
     }
   return 1;
+}
+
+/**
+ * @brief Return number of resources of a certain type for current user.
+ *
+ * @param[in]  type  Type.
+ * @param[in]  get   GET params.
+ *
+ * @return The number of resources associated with the current user.
+ */
+int
+resource_count (const char *type, const get_data_t *get)
+{
+  get_data_t count_get;
+
+  memset (&count_get, '\0', sizeof (count_get));
+  count_get.trash = get->trash;
+  count_get.filter = "rows=-1 first=1";
+  count_get.actions = "g";
+
+  return count (type, &count_get,
+                "1",
+                NULL, 0, NULL,
+                strcmp (type, "task")
+                 ? NULL
+                 : (get->id
+                    && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
+                        == 0))
+                    ? " AND hidden = 1"
+                    : (get->trash
+                        ? " AND hidden = 2"
+                        : " AND hidden = 0"),
+                TRUE);
 }
 
 /**

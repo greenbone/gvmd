@@ -1,3 +1,18 @@
+2012-12-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add back the full count in GET_TASKS, adding to all other new-style GET
+	ops at the same time.
+
+	* src/manage_sql.c (vector_find_string): Add vector NULL check.
+	(resource_count): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (send_get_end): Add full count arg.
+	(SEND_GET_END): Pass full count to send_get_end.
+	(omp_xml_handle_end_element): Remove old code that added full count in
+	GET_TASKS.
+
 2012-12-20  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (get_lsc_credentials_data_t): Add targets boolean.
