@@ -2302,7 +2302,7 @@ const char*
 port_list_iterator_comment (iterator_t*);
 
 int
-port_list_iterator_count (iterator_t*);
+port_list_iterator_count_all (iterator_t*);
 
 int
 port_list_iterator_count_tcp (iterator_t*);

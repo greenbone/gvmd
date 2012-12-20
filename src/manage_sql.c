@@ -42069,7 +42069,33 @@ delete_port_range (const char *port_range_id)
 /**
  * @brief Port List iterator columns.
  */
-#define PORT_LIST_ITERATOR_COLUMNS GET_ITERATOR_COLUMNS
+#define PORT_LIST_ITERATOR_COLUMNS GET_ITERATOR_COLUMNS                         \
+  ", (SELECT"                                                                   \
+  "   sum ((CASE"                                                               \
+  "         WHEN end IS NULL THEN start ELSE end"                               \
+  "         END)"                                                               \
+  "        - start"                                                             \
+  "        + 1)"                                                                \
+  "   FROM port_ranges WHERE port_list = port_lists.ROWID)"                     \
+  "  AS count_all"                                                              \
+  ", (SELECT"                                                                   \
+  "   sum ((CASE"                                                               \
+  "         WHEN end IS NULL THEN start ELSE end"                               \
+  "         END)"                                                               \
+  "        - start"                                                             \
+  "        + 1)"                                                                \
+  "   FROM port_ranges WHERE port_list = port_lists.ROWID"                      \
+  "                    AND   type = 0 )"                                        \
+  "  AS count_tcp"                                                              \
+  ", (SELECT"                                                                   \
+  "   sum ((CASE"                                                               \
+  "         WHEN end IS NULL THEN start ELSE end"                               \
+  "         END)"                                                               \
+  "        - start"                                                             \
+  "        + 1)"                                                                \
+  "   FROM port_ranges WHERE port_list = port_lists.ROWID"                      \
+  "                    AND   type = 1)"                                         \
+  "  AS count_udp"                                                              \
 
 /**
  * @brief Port List iterator columns for trash case.
@@ -42176,19 +42202,11 @@ port_list_iterator_comment (iterator_t* iterator)
  * @return Port count.
  */
 int
-port_list_iterator_count (iterator_t* iterator)
+port_list_iterator_count_all (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return sql_int (0, 0,
-                  "SELECT"
-                  " sum ((CASE"
-                  "       WHEN end IS NULL THEN start ELSE end"
-                  "       END)"
-                  "      - start"
-                  "      + 1)"
-                  " FROM port_ranges"
-                  " WHERE port_list = %llu;",
-                  sqlite3_column_int64 (iterator->stmt, 0));
+  return sqlite3_column_int (iterator->stmt,
+                             GET_ITERATOR_COLUMN_COUNT);
 }
 
 /**
@@ -42202,18 +42220,8 @@ int
 port_list_iterator_count_tcp (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return sql_int (0, 0,
-                  "SELECT"
-                  " sum ((CASE"
-                  "       WHEN end IS NULL THEN start ELSE end"
-                  "       END)"
-                  "      - start"
-                  "      + 1)"
-                  " FROM port_ranges"
-                  " WHERE port_list = %llu"
-                  " AND type = %i;",
-                  sqlite3_column_int64 (iterator->stmt, 0),
-                  PORT_PROTOCOL_TCP);
+  return sqlite3_column_int (iterator->stmt,
+                             GET_ITERATOR_COLUMN_COUNT + 1);
 }
 
 /**
@@ -42227,18 +42235,8 @@ int
 port_list_iterator_count_udp (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return sql_int (0, 0,
-                  "SELECT"
-                  " sum ((CASE"
-                  "       WHEN end IS NULL THEN start ELSE end"
-                  "       END)"
-                  "      - start"
-                  "      + 1)"
-                  " FROM port_ranges"
-                  " WHERE port_list = %llu"
-                  " AND type = %i;",
-                  sqlite3_column_int64 (iterator->stmt, 0),
-                  PORT_PROTOCOL_UDP);
+  return sqlite3_column_int (iterator->stmt,
+                             GET_ITERATOR_COLUMN_COUNT + 2);
 }
 
 /**

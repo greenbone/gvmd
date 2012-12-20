@@ -15,6 +15,21 @@
 
 2012-12-20  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (port_list_iterator_count): Rename function to
+	port_list_iterator_count_all.
+	(PORT_LIST_ITERATOR_COLUMNS): Add SQL statements to count all ports, tcp
+	ports and udp ports of the port_list.
+	(port_list_iterator_count_all, port_list_iterator_count_tcp)
+	(port_list_iterator_count_udp): Use sqlite3_column_int and
+	GET_ITERATOR_COLUMN_COUNT.
+
+	* src/manage.h: Rename port_list_iterator_count header.
+
+	* src/omp.c (omp_xml_handle_end_element): Call
+	port_list_iterator_count_all in CLIENT_GET_PORT_LSITS case.
+
+2012-12-20  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (get_lsc_credentials_data_t): Add targets boolean.
 	(omp_xml_handle_start_element): Check targets attribute value.
 	(omp_xml_handle_end_element): Refactor sending of login and type

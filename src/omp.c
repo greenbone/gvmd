@@ -9332,7 +9332,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        "<tcp>%i</tcp>"
                                        "<udp>%i</udp>"
                                        "</port_count>",
-                                       port_list_iterator_count (&port_lists),
+                                       port_list_iterator_count_all
+                                        (&port_lists),
                                        port_list_iterator_count_tcp
                                         (&port_lists),
                                        port_list_iterator_count_udp
