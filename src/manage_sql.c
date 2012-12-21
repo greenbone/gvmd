@@ -38655,8 +38655,9 @@ create_report_format (const char *uuid, const char *name,
 {
   gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
   gchar *quoted_content_type, *quoted_signature, *file_name, *dir;
+  gchar *candidate_name;
   report_format_t report_format_rowid;
-  int index;
+  int index, num;
   gchar *format_signature = NULL;
   gsize format_signature_size;
   int format_trust = TRUST_UNKNOWN;
@@ -38773,20 +38774,27 @@ create_report_format (const char *uuid, const char *name,
       return 1;
     }
 
-  quoted_name = sql_quote (name);
+  candidate_name = g_strdup (name);
+  quoted_name = sql_quote (candidate_name);
 
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM report_formats"
-               " WHERE name = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               current_credentials.uuid))
+  num = 1;
+  while (1)
     {
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM report_formats WHERE name = '%s'"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users"
+                   "  WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   current_credentials.uuid)
+          == 0)
+        break;
+      g_free (candidate_name);
       g_free (quoted_name);
-      sql ("ROLLBACK;");
-      return 1;
+      candidate_name = g_strdup_printf ("%s %u", name, ++num);
+      quoted_name = sql_quote (candidate_name);
     }
+  g_free (candidate_name);
 
   /* Write files to disk. */
 
