@@ -3249,7 +3249,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
     {
       if (resource || (current_credentials.uuid == NULL))
         owned_and_used_by_clause
-         = g_strdup_printf (" (%s)",
+         = g_strdup_printf (" (1%s)",
                             used_by_clause ? used_by_clause : "1");
       else if (get->trash)
         owned_and_used_by_clause = g_strdup_printf (" ((owner IS NULL) OR (owner ="
