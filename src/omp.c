@@ -18851,7 +18851,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            task_run_status_name (index),
                            progress_xml,
                            description64,
-                           /* FIX these must come from iterator now */
+                           /* TODO These can come from iterator now. */
                            task_report_count (index),
                            task_finished_report_count (index),
                            task_trend_counts
