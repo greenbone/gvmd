@@ -1233,6 +1233,9 @@ int
 trash_config_in_use (config_t);
 
 int
+trash_config_writable (config_t);
+
+int
 config_families_growing (config_t);
 
 int

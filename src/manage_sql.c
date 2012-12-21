@@ -30591,21 +30591,7 @@ config_in_use (config_t config)
 int
 config_writable (config_t config)
 {
-  if (config == CONFIG_ID_FULL_AND_FAST
-      || config == CONFIG_ID_FULL_AND_FAST_ULTIMATE
-      || config == CONFIG_ID_FULL_AND_VERY_DEEP
-      || config == CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE
-      || config == sql_int (0, 0,
-                            "SELECT ROWID FROM configs WHERE name = 'empty';"))
-    return 0;
-
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks"
-                  " WHERE config = %llu"
-                  " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
-                  " AND (hidden = 0 OR hidden = 1);",
-                  config)
-         == 0;
+  return !config_in_use (config);
 }
 
 /**
@@ -30623,6 +30609,19 @@ trash_config_in_use (config_t config)
                   " WHERE config = %llu"
                   " AND config_location = " G_STRINGIFY (LOCATION_TRASH),
                   config);
+}
+
+/**
+ * @brief Return whether a trashcan config is writable.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+trash_config_writable (config_t config)
+{
+  return !trash_config_in_use (config);
 }
 
 /**
