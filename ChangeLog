@@ -1,5 +1,10 @@
 2012-12-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_port_list_lock): Always give the port ranges
+	new UUIDs.
+
+2012-12-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Read over bogus elements when importing.
 
 	* src/omp.c (omp_parser_t): Add importing and parent_state.

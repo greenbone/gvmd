@@ -41419,32 +41419,15 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
   array_terminate (ranges);
   index = 0;
   while ((range = (range_t*) g_ptr_array_index (ranges, index++)))
-    if (range->id)
-      {
-        gchar *quoted_range_id;
-        quoted_range_id = sql_quote (range->id);
-        sql ("INSERT INTO port_ranges"
-             " (uuid, port_list, type, start, end, comment, exclude)"
-             " VALUES"
-             " ('%s', %llu, %i, %i, %i, '', %i);",
-             quoted_range_id,
-             *port_list,
-             range->type,
-             range->start,
-             range->end,
-             range->exclude);
-        g_free (quoted_range_id);
-      }
-    else
-      sql ("INSERT INTO port_ranges"
-           " (uuid, port_list, type, start, end, comment, exclude)"
-           " VALUES"
-           " (make_uuid (), %llu, %i, %i, %i, '', %i);",
-           *port_list,
-           range->type,
-           range->start,
-           range->end,
-           range->exclude);
+    sql ("INSERT INTO port_ranges"
+         " (uuid, port_list, type, start, end, comment, exclude)"
+         " VALUES"
+         " (make_uuid (), %llu, %i, %i, %i, '', %i);",
+         *port_list,
+         range->type,
+         range->start,
+         range->end,
+         range->exclude);
   return 0;
 }
 
