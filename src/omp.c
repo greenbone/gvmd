@@ -6372,6 +6372,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             /* Reset here in case there was a previous config element. */
             create_config_data_reset (create_config_data);
+            import_config_data->import = 1;
             set_client_state (CLIENT_C_C_GCR_CONFIG);
           }
         ELSE_ERROR ("create_config");
