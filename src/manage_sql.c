@@ -39288,7 +39288,7 @@ delete_report_format (const char *report_format_id, int ultimate)
       sql ("INSERT INTO report_formats_trash"
            " (uuid, owner, name, extension, content_type, summary,"
            "  description, signature, trust, trust_time, flags, original_uuid,"
-           "  creation_date, modification_time)"
+           "  creation_time, modification_time)"
            " SELECT"
            "  make_uuid (), owner, name, extension, content_type, summary,"
            "  description, signature, trust, trust_time, flags, uuid,"

@@ -15,6 +15,10 @@
 
 2012-12-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (delete_report_format): Fix column name.
+
+2012-12-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (trash_config_writable): New function.
 	(config_writable): Base results on config_in_use.
 	* src/manage.h: Add header accordingly.
