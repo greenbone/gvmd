@@ -30443,7 +30443,7 @@ init_config_iterator (iterator_t* iterator, config_t config, int trash,
                            "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
                            "  OR"
                            "  (SELECT tasks.ROWID FROM tasks"
-                           "   WHERE config = config.ROWID)"
+                           "   WHERE config = configs.ROWID)"
                            "  IN"
                            "  (SELECT task FROM task_users WHERE user ="
                            "   (SELECT ROWID FROM users"
