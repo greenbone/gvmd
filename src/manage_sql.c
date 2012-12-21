@@ -42056,7 +42056,7 @@ delete_port_range (const char *port_range_id)
  * @brief Filter columns for Port List iterator.
  */
 #define PORT_LIST_ITERATOR_FILTER_COLUMNS                                     \
- { GET_ITERATOR_FILTER_COLUMNS,  "count_all", "count_tcp", "count_udp", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS,  "total", "tcp", "udp", NULL }
 
 /**
  * @brief Port List iterator columns.
@@ -42070,7 +42070,7 @@ delete_port_range (const char *port_range_id)
   "        - start"                                                             \
   "        + 1)"                                                                \
   "   FROM port_ranges WHERE port_list = port_lists.ROWID)"                     \
-  "  AS count_all"                                                              \
+  "  AS total"                                                                  \
     /* COUNT TCP ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
@@ -42080,7 +42080,7 @@ delete_port_range (const char *port_range_id)
   "        + 1)"                                                                \
   "   FROM port_ranges WHERE port_list = port_lists.ROWID"                      \
   "                    AND   type = 0 )"                                        \
-  "  AS count_tcp"                                                              \
+  "  AS tcp"                                                                    \
     /* COUNT UDP ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
@@ -42090,7 +42090,7 @@ delete_port_range (const char *port_range_id)
   "        + 1)"                                                                \
   "   FROM port_ranges WHERE port_list = port_lists.ROWID"                      \
   "                    AND   type = 1)"                                         \
-  "  AS count_udp"
+  "  AS udp"
 
 /**
  * @brief Port List iterator columns for trash case.
@@ -42104,7 +42104,7 @@ delete_port_range (const char *port_range_id)
   "        - start"                                                             \
   "        + 1)"                                                                \
   "   FROM port_ranges WHERE port_list = port_lists_trash.ROWID)"               \
-  "  AS count_all"                                                              \
+  "  AS total"                                                                  \
     /* COUNT TCP ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
@@ -42114,7 +42114,7 @@ delete_port_range (const char *port_range_id)
   "        + 1)"                                                                \
   "   FROM port_ranges WHERE port_list = port_lists_trash.ROWID"                \
   "                    AND   type = 0 )"                                        \
-  "  AS count_tcp"                                                              \
+  "  AS tcp"                                                                    \
     /* COUNT UDP ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
@@ -42124,7 +42124,7 @@ delete_port_range (const char *port_range_id)
   "        + 1)"                                                                \
   "   FROM port_ranges WHERE port_list = port_lists_trash.ROWID"                \
   "                    AND   type = 1)"                                         \
-  "  AS count_udp"
+  "  AS udp"
 
 /**
  * @brief Count the number of Port Lists.

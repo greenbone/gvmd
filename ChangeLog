@@ -1,3 +1,9 @@
+2012-12-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (GET_ITERATOR_FILTER_COLUMNS)
+	(PORT_LIST_ITERATOR_COLUMNS,PORT_LIST_ITERATOR_TRASH_COLUMNS): Use
+	total, tcp and udp as names for count columns.
+
 2012-12-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_port_list_lock): Always give the port ranges
