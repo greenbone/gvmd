@@ -692,7 +692,9 @@ typedef struct
 {
   int (*client_writer) (const char*, void*);  ///< Writes to the client.
   void* client_writer_data;       ///< Argument to client_writer.
+  int importing;                  ///< Whether the current op is importing.
   int read_over;                  ///< Read over any child elements.
+  int parent_state;               ///< Parent state when reading over.
   gchar **disabled_commands;      ///< Disabled commands.
 } omp_parser_t;
 
@@ -4790,6 +4792,14 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
  * @param[in]  op  Operation.
  */
 #define ELSE_ERROR(op)                                          \
+  else if (omp_parser->importing)                               \
+    {                                                           \
+      if (omp_parser->read_over == 0)                           \
+        {                                                       \
+          omp_parser->read_over = 1;                            \
+          omp_parser->parent_state = client_state;              \
+        }                                                       \
+    }                                                           \
   else                                                          \
     {                                                           \
       if ((strcmp (op, "create_task") == 0)                     \
@@ -6346,7 +6356,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("COPY", element_name) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_COPY);
         else if (strcasecmp ("GET_CONFIGS_RESPONSE", element_name) == 0)
-          set_client_state (CLIENT_C_C_GCR);
+          {
+            omp_parser->importing = 1;
+            import_config_data->import = 1;
+            set_client_state (CLIENT_C_C_GCR);
+          }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_NAME);
         else if (strcasecmp ("RCFILE", element_name) == 0)
@@ -6588,6 +6602,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_PORT_LIST_COMMENT);
         else if (strcasecmp ("GET_PORT_LISTS_RESPONSE", element_name) == 0)
           {
+            omp_parser->importing = 1;
             create_port_list_data->import = 1;
             set_client_state (CLIENT_CPL_GPLR);
           }
@@ -6926,6 +6941,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_REPORT_FORMAT:
         if (strcasecmp ("GET_REPORT_FORMATS_RESPONSE", element_name) == 0)
           {
+            omp_parser->importing = 1;
             create_report_format_data->import = 1;
             set_client_state (CLIENT_CRF_GRFR);
           }
@@ -8537,7 +8553,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
   tracef ("   XML    end: %s\n", element_name);
 
   if (omp_parser->read_over > 1)
-    omp_parser->read_over--;
+    {
+      omp_parser->read_over--;
+    }
+  else if ((omp_parser->read_over == 1) && omp_parser->parent_state)
+    {
+      client_state = omp_parser->parent_state;
+      omp_parser->parent_state = 0;
+      omp_parser->read_over = 0;
+    }
   else switch (client_state)
     {
       case CLIENT_TOP:
@@ -12564,7 +12588,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_C_C_GCR:
         assert (strcasecmp ("GET_CONFIGS_RESPONSE", element_name) == 0);
-        import_config_data->import = 1;
         set_client_state (CLIENT_CREATE_CONFIG);
         break;
       CLOSE (CLIENT_C_C_GCR, CONFIG);

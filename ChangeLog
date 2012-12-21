@@ -1,3 +1,16 @@
+2012-12-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Read over bogus elements when importing.
+
+	* src/omp.c (omp_parser_t): Add importing and parent_state.
+	(ELSE_ERROR): When importing go into "read-over mode".
+	(omp_xml_handle_start_element): Set importing flag on omp_parser for
+	import commands.
+	(omp_xml_handle_end_element): In read-over mode when the parent_state is
+	set then switch to that state instead of leaving it to a specific case.
+	Move setting the import_config_data import flag to
+	omp_xml_handle_start_element to match other commands.
+
 2012-12-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_config_iterator): Correct configs table name.
