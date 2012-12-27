@@ -207,15 +207,21 @@ migrate_4 ()
   sqlite3 $SCAP_DB "update meta set value ='4' where name = 'database_version';"
 }
 
-migrate_5 () {
-  log_write " Database Version updated. Migrating to Version 5."
+migrate_6from4 () {
+  log_write " Database Version updated. Migrating to Version 6."
   log_write " Adding Tables.."
-  sqlite3 $SCAP_DB "CREATE TABLE oval_def (id INTEGER PRIMARY KEY AUTOINCREMENT, oval_id TEXT UNIQUE, version INTEGER, oval_timestamp DATE, deprecated BOOLEAN, def_class TEXT, title TEXT, description TEXT); CREATE UNIQUE INDEX oval_def_idx ON oval_def (oval_id);"
+  $SQLITE $SCAP_DB "CREATE TABLE ovaldefs (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid UNIQUE, name UNIQUE, comment, creation_time DATE, modification_time DATE, version INTEGER, deprecated BOOLEAN, def_class TEXT, title TEXT, description TEXT); CREATE UNIQUE INDEX ovaldefs_idx ON ovaldefs (name);"
   
-  sqlite3 $SCAP_DB "update meta set value ='5' where name = 'database_version';"
+  sqlite3 $SCAP_DB "update meta set value ='6' where name = 'database_version';"
   
   log_write " Migration done."
+}
 
+migrate_6from5 () {
+  log_write " Database Version updated. Migrating to Version 6."
+  log_write " Running version 5 to 6 migration script..."
+  sqlite3 $SCAP_DB < $SCAP_RES_DIR/migrate_db5to6.sql
+  log_write " Migration done."
 }
 
 reinit () {
@@ -233,8 +239,9 @@ check_db_version () {
        migrate_4
        migrate_5;;
     3) migrate_4
-       migrate_5;;
-    4) migrate_5;;
+       migrate_6from4;;
+    4) migrate_6from4;;
+    5) migrate_6from5;;
   esac
 }
 
@@ -248,7 +255,7 @@ update_scap_db() {
   else
     check_db_version
     CVE_REFDATE=`sqlite3 $SCAP_DB "select max(modification_time) from cves;" | sed -e 's/T.*//' | tr -d "-"`
-    OVAL_REFDATE=`sqlite3 $SCAP_DB "SELECT max(oval_timestamp) FROM oval_def;"`
+    OVAL_REFDATE=`sqlite3 $SCAP_DB "SELECT max(modification_time) FROM ovaldefs;"`
   fi
 
   DB_LASTUPDATE=`sqlite3 $SCAP_DB "select value from meta where name = 'last_update';"`

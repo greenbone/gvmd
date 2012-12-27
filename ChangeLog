@@ -1,3 +1,32 @@
+2012-12-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* CMakeLists.txt: Add SCAP.db migration script migrate_db5to6.sql
+	
+	* src/manage.h: Add iterator function declarations for OVAL 
+	definition data	(ovaldef): init_ovaldef_info_iterator,
+	ovaldef_info_count, ovaldef_info_iterator_version,
+	ovaldef_info_iterator_deprecated, ovaldef_info_iterator_def_class,
+	ovaldef_info_iterator_title, ovaldef_info_iterator_description.
+	
+	* src/manage_sql.c: Add implementations of new iterator functions 
+	declared in src/manage.h
+	
+	* src/omp.c (case CLIENT_GET_INFO): Add XML output of basic ovaldef
+	data.
+	
+	* tools/db_init.sql: Change database columns to include attributes
+	uuid, name, comment, creation_time, modification_time. Change DB 
+	version to 6.
+	
+	* tools/greenbone-scapdata-sync: Add migration to new database format.
+	
+	* migrate_db5to6.sql: Add new SQL file to migrate data from SCAP DB
+	version 5 to 6.
+	
+	* tools/openvas-scapdata-sync.in: Add migration to new database format
+	
+	* tools/oval_update.xsl: Change SQL queries to match new database format
+
 2012-12-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Upgrade FIX to TODO.
@@ -13,6 +42,7 @@
 	* src/manage_sql.c (omp_xml_handle_start_element): In CLIENT_C_C_GCR set
 	the import flag again, because the reset clears it.
 
+>>>>>>> .r14956
 2012-12-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (delete_report_format): Fix column name.

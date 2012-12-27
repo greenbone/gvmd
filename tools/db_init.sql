@@ -85,15 +85,18 @@ CREATE INDEX afp_idx ON affected_products (cve,cpe);
 
 CREATE TABLE oval_def (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  oval_id TEXT UNIQUE,
+  uuid UNIQUE,
+  name UNIQUE, /* OVAL identifier */
+  comment,
+  creation_time DATE,
+  modification_time DATE,
   version INTEGER,
-  oval_timestamp DATE,
   deprecated BOOLEAN,
   def_class TEXT, /* enum */ 
   title TEXT,
   description TEXT
 );
-CREATE UNIQUE INDEX oval_def_idx ON oval_def (oval_id);
+CREATE UNIQUE INDEX oval_def_idx ON oval_def (name);
 
 
 /* deletion triggers */

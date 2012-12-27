@@ -4,9 +4,10 @@
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Timo Pollmeier <timo.pollmeier@greenbone.net> 
  *
  * Copyright:
- * Copyright (C) 2009 Greenbone Networks GmbH
+ * Copyright (C) 2009 - 2012 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -17557,6 +17558,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
+          else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
+            {
+              init_info_iterator = init_ovaldef_info_iterator;
+              info_count = ovaldef_info_count;
+              get_info_data->get.subtype = g_strdup ("ovaldef");
+            }
           else
             {
               if (send_find_error_to_client ("get_info",
@@ -17710,6 +17717,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             nvt_iterator_name (&nvts));
                        g_string_append (result, "</nvts>");
                        cleanup_iterator (&nvts);
+                     }
+                }
+              else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
+                {
+                   g_string_append_printf (result,
+                                           "<version>%s</version>"
+                                           "<deprecated>%s</deprecated>"
+                                           "<def_class>%s</def_class>"
+                                           "<title>%s</title>",
+                                           ovaldef_info_iterator_version (&info),
+                                           ovaldef_info_iterator_deprecated (&info),
+                                           ovaldef_info_iterator_def_class (&info),
+                                           ovaldef_info_iterator_title (&info));
+                   if (get_info_data->details == 1)
+                     {
+                        g_string_append_printf (result,
+                                           "<description>%s</description>",
+                                           ovaldef_info_iterator_description (&info)
+                                           );
                      }
                 }
               else if (g_strcmp0 ("nvt", get_info_data->type) == 0)

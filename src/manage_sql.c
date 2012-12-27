@@ -4,9 +4,10 @@
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Timo Pollmeier <timo.pollmeier@greenbone.net> 
  *
  * Copyright:
- * Copyright (C) 2009,2010 Greenbone Networks GmbH
+ * Copyright (C) 2009-2012 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -44775,6 +44776,21 @@ manage_set_setting (const gchar *uuid, const gchar *name,
   "max_cvss, cve_refs AS cves"
 
 /**
+ * @brief Filter columns for OVALDEF iterator.
+ */
+#define OVALDEF_INFO_ITERATOR_FILTER_COLUMNS                \
+ { GET_ITERATOR_FILTER_COLUMNS, "version", "deprecated",    \
+   "def_class", "title", "description",  NULL }
+
+/**
+ * @brief OVALDEF iterator columns.
+ */
+#define OVALDEF_INFO_ITERATOR_COLUMNS                       \
+  GET_ITERATOR_COLUMNS ", version, deprecated, def_class,"   \
+  "title, description"
+
+
+/**
  * @brief Check whether SCAP is available.
  *
  * @return 1 if SCAP database is loaded, else 0.
@@ -45110,5 +45126,121 @@ DEF_ACCESS (cve_info_iterator_cvss, GET_ITERATOR_COLUMN_COUNT + 7);
  *         complete. Freed by cleanup_iterator.
  */
 DEF_ACCESS (cve_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 8);
+
+/* OVAL data */
+/**
+ * @brief Initialise an OVAL definition (ovaldef) info iterator.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ * @param[in]  name            Name of the info
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_ovaldef_info_iterator (iterator_t* iterator, const get_data_t *get, const char *name)
+{
+  static const char *filter_columns[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
+  gchar *clause = NULL;
+  int ret;
+
+  if (get->id)
+    {
+      gchar *quoted = sql_quote (get->id);
+      clause = g_strdup_printf (" AND uuid = '%s'", quoted);
+      g_free (quoted);
+    }
+  else if (name)
+    {
+      gchar *quoted = sql_quote (name);
+      clause = g_strdup_printf (" AND name = '%s'", quoted);
+      g_free (quoted);
+    }
+  ret = init_get_iterator (iterator,
+                           "ovaldef",
+                           get,
+                           /* Columns. */
+                           OVALDEF_INFO_ITERATOR_COLUMNS,
+                           NULL,
+                           filter_columns,
+                           NULL,
+                           0,
+                           NULL,
+                           clause,
+                           FALSE);
+  g_free (clause);
+  return ret;
+}
+
+/**
+ * @brief Count number of ovaldef.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of OVAL definitions in filtered set.
+ */
+int
+ovaldef_info_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
+  return count ("ovaldef", get, OVALDEF_INFO_ITERATOR_COLUMNS, extra_columns, 
+                0, 0, 0, FALSE);
+}
+
+/**
+ * @brief Get the version number from an OVALDEF iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The version number of the OVAL definition,
+ *         or NULL if iteration is complete.  
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (ovaldef_info_iterator_version, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the deprectation status from an OVALDEF iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return True if the OVAL definition is deprecated, false if not,
+ *         or NULL if iteration is complete.  
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (ovaldef_info_iterator_deprecated, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the definition class from an OVALDEF iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The definition class (e.g. 'patch' or 'vulnerability') of the OVAL 
+ *         definition, or NULL if iteration is complete.  
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (ovaldef_info_iterator_def_class, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the title from an OVALDEF iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The title / short description of the OVAL definition,
+ *         or NULL if iteration is complete.  
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (ovaldef_info_iterator_title, GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get the description from an OVALDEF iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The long description of the OVAL definition,
+ *         or NULL if iteration is complete.  
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (ovaldef_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 4);
 
 #undef DEF_ACCESS

@@ -46,18 +46,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     select="oval_definitions:oval_definitions/oval_definitions:generator/oval:timestamp"/>
   
   <xsl:template match="oval_definitions:definition">
-    INSERT OR REPLACE INTO oval_def (
-      oval_id,
+    INSERT OR REPLACE INTO ovaldefs (
+      uuid,
+      name,
+      comment,
+      creation_time,
+      modification_time,
       version,
-      oval_timestamp, 
       deprecated,
       def_class,
       title,
       description
     ) VALUES (
       "<xsl:value-of select="@id"/>",
-      <xsl:value-of select="@version"/>,
+      "<xsl:value-of select="@id"/>",
+      "",
       strftime('%s', '<xsl:copy-of select="$timestamp"/>'),
+      strftime('%s', '<xsl:copy-of select="$timestamp"/>'),
+      <xsl:value-of select="@version"/>,
       <xsl:call-template name="boolean_def_false">
         <xsl:with-param name="value" select="@deprecated"/>
       </xsl:call-template>,
