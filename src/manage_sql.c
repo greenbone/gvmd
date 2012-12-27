@@ -30385,22 +30385,24 @@ delete_config (const char *config_id, int ultimate)
  * @brief Filter columns for scan configs iterator.
  */
 #define CONFIG_ITERATOR_FILTER_COLUMNS                                        \
- { GET_ITERATOR_FILTER_COLUMNS, "nvt_selector", "family_count", "nvt_count",  \
-   "families_growing", "nvts_growing", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "nvt_selector", "families_total",             \
+   "nvts_total", "families_trend", "nvts_trend", NULL }
 
 /**
  * @brief Scan config iterator columns.
  */
 #define CONFIG_ITERATOR_COLUMNS                                               \
-  GET_ITERATOR_COLUMNS ", nvt_selector, family_count, nvt_count,"             \
-  " families_growing, nvts_growing"
+  GET_ITERATOR_COLUMNS ", nvt_selector, family_count AS families_total,"      \
+  " nvt_count AS nvts_total, families_growing AS families_trend,"             \
+  " nvts_growing AS nvts_trend"
 
 /**
  * @brief Scan config iterator columns for trash case.
  */
 #define CONFIG_ITERATOR_TRASH_COLUMNS                                         \
-  GET_ITERATOR_COLUMNS ", nvt_selector, family_count, nvt_count,"             \
-  " families_growing, nvts_growing"
+  GET_ITERATOR_COLUMNS ", nvt_selector, family_count AS families_total,"      \
+  " nvt_count AS nvts_total, families_growing AS families_trend,"             \
+  " nvts_growing AS nvts_trend"
 
 /**
  * @brief Count the number of scan configs.

@@ -1,5 +1,12 @@
 2012-12-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (CONFIG_ITERATOR_FILTER_COLUMNS)
+	(CONFIG_ITERATOR_COLUMNS, CONFIG_ITERATOR_TRASH_COLUMNS): Rename
+	family_count, nvt_count, families_growing and nvts_growing columns to
+	families_total, nvts_total, families_trend and nvts_trend.
+
+2012-12-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (init_user_config_iterator)
 	(update_all_configs_caches, manage_complete_nvts_cache_update): Use
 	CONFIG_ITERATOR_COLUMNS instead of CONFIG_ITERATOR_FIELDS.
