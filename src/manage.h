@@ -1231,6 +1231,9 @@ int
 config_writable (config_t);
 
 int
+config_count (const get_data_t *);
+
+int
 trash_config_in_use (config_t);
 
 int

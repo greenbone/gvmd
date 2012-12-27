@@ -30327,9 +30327,45 @@ delete_config (const char *config_id, int ultimate)
 }
 
 /**
+ * @brief Filter columns for scan configs iterator.
+ */
+#define CONFIG_ITERATOR_FILTER_COLUMNS                                        \
+ { GET_ITERATOR_FILTER_COLUMNS, "nvt_selector", "family_count", "nvt_count",  \
+   "families_growing", "nvts_growing", NULL }
+
+/**
+ * @brief Scan config iterator columns.
+ */
+#define CONFIG_ITERATOR_COLUMNS                                               \
+  GET_ITERATOR_COLUMNS ", nvt_selector, family_count, nvt_count,"             \
+  " families_growing, nvts_growing"
+
+/**
+ * @brief Scan config iterator columns for trash case.
+ */
+#define CONFIG_ITERATOR_TRASH_COLUMNS                                         \
+  GET_ITERATOR_COLUMNS ", nvt_selector, family_count, nvt_count,"             \
+  " families_growing, nvts_growing"
+
+/**
  * @brief Database fields used in config iterators.
  */
 #define CONFIG_ITERATOR_FIELDS "ROWID, uuid, name, nvt_selector, comment, families_growing, nvts_growing"
+
+/**
+ * @brief Count the number of scan configs.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of scan configs filtered set.
+ */
+int
+config_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = CONFIG_ITERATOR_FILTER_COLUMNS;
+  return count ("config", get, CONFIG_ITERATOR_COLUMNS, extra_columns, 0, 0,
+                0, TRUE);
+}
 
 /**
  * @brief Initialise a config iterator, limited to user's configs.
