@@ -45242,7 +45242,7 @@ DEF_ACCESS (cve_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 8);
 int
 init_ovaldef_info_iterator (iterator_t* iterator, const get_data_t *get, const char *name)
 {
-  static const char *filter_columns[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
+  static const char *filter_columns[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
   gchar *clause = NULL;
   int ret;
 
