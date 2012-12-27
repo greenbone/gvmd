@@ -3482,8 +3482,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS agents_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, installer_trust_time, howto_install TEXT, howto_use TEXT, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences_trash (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS configs_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS configs_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS alert_condition_data (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS alert_condition_data_trash (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS alert_event_data (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
@@ -8730,6 +8730,47 @@ migrate_71_to_72 ()
 }
 
 /**
+ * @brief Migrate the database from version 72 to version 73.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_72_to_73 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 72. */
+
+  if (manage_db_version () != 72)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Add creation and modification times to Scan Configs. */
+
+  sql ("ALTER TABLE configs ADD COLUMN creation_time;");
+  sql ("ALTER TABLE configs ADD COLUMN modification_time;");
+  sql ("UPDATE configs SET creation_time = 0, modification_time = 0;");
+
+  sql ("ALTER TABLE configs_trash ADD COLUMN creation_time;");
+  sql ("ALTER TABLE configs_trash ADD COLUMN modification_time;");
+  sql ("UPDATE configs_trash SET creation_time = 0, modification_time = 0;");
+
+  /* Set the database version to 73. */
+
+  set_db_version (73);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8806,6 +8847,7 @@ static migrator_t database_migrators[]
     {70, migrate_69_to_70},
     {71, migrate_70_to_71},
     {72, migrate_71_to_72},
+    {73, migrate_72_to_73},
     /* End marker. */
     {-1, NULL}};
 
@@ -13746,12 +13788,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       config_t config;
 
       sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
-           " family_count, nvt_count, nvts_growing, families_growing)"
+           " family_count, nvt_count, nvts_growing, families_growing,"
+           " creation_time, modification_time)"
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ","
            " '" CONFIG_UUID_FULL_AND_FAST "', NULL, 'Full and fast',"
            " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'Most NVT''s; optimized by using previously collected information.',"
-           " %i, %i, 1, 1);",
+           " %i, %i, 1, 1, now (), now ());",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
 
@@ -13768,13 +13811,14 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       config_t config;
 
       sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
-           " family_count, nvt_count, nvts_growing, families_growing)"
+           " family_count, nvt_count, nvts_growing, families_growing,"
+           " creation_time, modification_time)"
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ","
            " '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "', NULL,"
            " 'Full and fast ultimate', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'Most NVT''s including those that can stop services/hosts;"
            " optimized by using previously collected information.',"
-           " %i, %i, 1, 1);",
+           " %i, %i, 1, 1, now (), now ());",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
 
@@ -13791,12 +13835,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       config_t config;
 
       sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
-           " family_count, nvt_count, nvts_growing, families_growing)"
+           " family_count, nvt_count, nvts_growing, families_growing,"
+           " creation_time, modification_time)"
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ","
            " '" CONFIG_UUID_FULL_AND_VERY_DEEP "', NULL,"
            " 'Full and very deep', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'Most NVT''s; don''t trust previously collected information; slow.',"
-           " %i, %i, 1, 1);",
+           " %i, %i, 1, 1, now (), now ());",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
 
@@ -13813,14 +13858,15 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       config_t config;
 
       sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
-           " family_count, nvt_count, nvts_growing, families_growing)"
+           " family_count, nvt_count, nvts_growing, families_growing,"
+           " creation_time, modification_time)"
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE) ","
            " '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "',"
            " NULL, 'Full and very deep ultimate',"
            " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'Most NVT''s including those that can stop services/hosts;"
            " don''t trust previously collected information; slow.',"
-           " %i, %i, 1, 1);",
+           " %i, %i, 1, 1, now (), now ());",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
 
@@ -13837,10 +13883,11 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       config_t config;
 
       sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
-           " family_count, nvt_count, nvts_growing, families_growing)"
+           " family_count, nvt_count, nvts_growing, families_growing,"
+           " creation_time, modification_time)"
            " VALUES ('" CONFIG_UUID_EMPTY "', 'empty', NULL, 'empty',"
            " 'Empty and static configuration template.',"
-           " 0, 0, 0, 0);");
+           " 0, 0, 0, 0, now (), now ());");
 
       /* Setup preferences for the config. */
       config = sqlite3_last_insert_rowid (task_db);
@@ -29468,10 +29515,11 @@ create_config (const char* proposed_name, const char* comment,
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment)"
+      sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
+           " creation_time, modification_time)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s');",
+           " '%s', '%s', now (), now ());",
            quoted_candidate_name,
            current_credentials.uuid,
            selector_uuid,
@@ -29479,10 +29527,11 @@ create_config (const char* proposed_name, const char* comment,
       g_free (quoted_comment);
     }
   else
-    sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment)"
+    sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
+         " creation_time, modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '');",
+         " '%s', '', now (), now ());",
          quoted_candidate_name,
          current_credentials.uuid,
          selector_uuid);
@@ -29937,7 +29986,8 @@ insert_rc_into_config (config_t config, const char *config_name,
 
         sql ("UPDATE configs"
              " SET families_growing = 1, nvts_growing = 1,"
-             " family_count = %i, nvt_count = %i"
+             " family_count = %i, nvt_count = %i,"
+             " modification_time = now ()"
              " WHERE name = '%s';",
              nvt_selector_family_count (nvt_selector_name, 1),
              nvt_selector_nvt_count (nvt_selector_name, NULL, 1),
@@ -29956,7 +30006,8 @@ insert_rc_into_config (config_t config, const char *config_name,
 
         sql ("UPDATE configs SET"
              " family_count = %i,"
-             " nvt_count = %i, families_growing = 0, nvts_growing = 0"
+             " nvt_count = %i, families_growing = 0, nvts_growing = 0,"
+             " modification_time = now ()"
              " WHERE name = '%s';",
              g_hash_table_size (families),
              yes_size,
@@ -30027,10 +30078,11 @@ create_config_rc (const char* name, const char* comment, char* rc,
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment)"
+      sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
+           " creation_time, modification_time)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s');",
+           " '%s', '%s', now (), now ());",
            quoted_name,
            current_credentials.uuid,
            selector_uuid,
@@ -30038,10 +30090,11 @@ create_config_rc (const char* name, const char* comment, char* rc,
       g_free (quoted_comment);
     }
   else
-    sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment)"
+    sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
+         " creation_time, modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '');",
+         " '%s', '', now (), now ());",
          quoted_name, current_credentials.uuid, selector_uuid);
 
   /* Insert the RC into the config_preferences table. */
@@ -30154,11 +30207,12 @@ copy_config (const char* name, const char* comment, config_t config,
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs"
            " (uuid, name, owner, nvt_selector, comment, family_count,"
-           "  nvt_count, families_growing, nvts_growing)"
+           "  nvt_count, families_growing, nvts_growing,"
+           "  creation_time, modification_time)"
            " SELECT make_uuid (), '%s',"
            " (SELECT ROWID FROM users where users.uuid = '%s'),"
            " '%s', '%s', family_count, nvt_count,"
-           " families_growing, nvts_growing"
+           " families_growing, nvts_growing, now (), now ()"
            " FROM configs WHERE ROWID = %llu;",
            quoted_name,
            current_credentials.uuid,
@@ -30170,11 +30224,11 @@ copy_config (const char* name, const char* comment, config_t config,
   else
     sql ("INSERT INTO configs"
          " (uuid, name, owner, nvt_selector, comment, family_count, nvt_count,"
-         "  families_growing, nvts_growing)"
+         "  families_growing, nvts_growing, creation_time, modification_time)"
          " SELECT make_uuid (), '%s',"
          " (SELECT ROWID FROM users where users.uuid = '%s'),"
          " '%s', '', family_count, nvt_count,"
-         " families_growing, nvts_growing"
+         " families_growing, nvts_growing, now (), now ()"
          " FROM configs WHERE ROWID = %llu",
          quoted_name,
          current_credentials.uuid,
@@ -30294,9 +30348,10 @@ delete_config (const char *config_id, int ultimate)
 
       sql ("INSERT INTO configs_trash"
            " (uuid, owner, name, nvt_selector, comment, family_count, nvt_count,"
-           "  families_growing, nvts_growing)"
+           "  families_growing, nvts_growing, creation_time, modification_time)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
-           "        nvt_count, families_growing, nvts_growing"
+           "        nvt_count, families_growing, nvts_growing,"
+           "        creation_time, modification_time"
            " FROM configs WHERE ROWID = %llu;",
            config);
 
@@ -30988,7 +31043,8 @@ manage_set_config_comment (config_t config, const char* comment)
 {
   gchar *quoted_comment;
   quoted_comment = sql_quote (comment);
-  sql ("UPDATE configs SET comment = '%s' WHERE ROWID = %llu;",
+  sql ("UPDATE configs SET comment = '%s', modification_time = now ()"
+       " WHERE ROWID = %llu;",
        quoted_comment, config);
   g_free (quoted_comment);
   return 0;
@@ -31021,7 +31077,8 @@ manage_set_config_name (config_t config, const char* name)
       sql ("ROLLBACK;");
       return 1;
     }
-  sql ("UPDATE configs SET name = '%s' WHERE ROWID = %llu;",
+  sql ("UPDATE configs SET name = '%s', modification_time = now ()"
+       " WHERE ROWID = %llu;",
        quoted_name, config);
   g_free (quoted_name);
   sql ("COMMIT;");
@@ -31058,7 +31115,9 @@ manage_set_config_name_comment (config_t config, const char* name,
       sql ("ROLLBACK;");
       return 1;
     }
-  sql ("UPDATE configs SET name = '%s', comment = '%s' WHERE ROWID = %llu;",
+  sql ("UPDATE configs SET name = '%s', comment = '%s',"
+       " modification_time = now ()"
+       " WHERE ROWID = %llu;",
        quoted_name, quoted_comment, config);
   g_free (quoted_name);
   g_free (quoted_comment);
@@ -31198,7 +31257,8 @@ manage_set_config_nvts (config_t config, const char* family,
   /* Update the cached config info. */
 
   sql ("UPDATE configs SET family_count = family_count + %i,"
-       " nvt_count = nvt_count - %i + %i"
+       " nvt_count = nvt_count - %i + %i,"
+       " modification_time = now ()"
        " WHERE ROWID = %llu;",
        old_nvt_count == 0
         ? (new_nvt_count == 0 ? 0 : 1)
@@ -33117,7 +33177,8 @@ manage_set_config_families (config_t config,
               /* Update the cached config info. */
 
               sql ("UPDATE configs SET nvt_count = nvt_count - %i + %i,"
-                   " nvts_growing = %i, family_count = family_count + %i"
+                   " nvts_growing = %i, family_count = family_count + %i,"
+                   " modification_time = now ()"
                    " WHERE ROWID = %llu;",
                    old_nvt_count,
                    new_nvt_count,
@@ -33167,7 +33228,7 @@ manage_set_config_families (config_t config,
                       /* Update the cached config info. */
 
                       sql ("UPDATE configs SET nvt_count = nvt_count - %i,"
-                           " nvts_growing = 1"
+                           " nvts_growing = 1, modification_time = now ()"
                            " WHERE ROWID = %llu;",
                            old_nvt_count,
                            config);
@@ -33205,7 +33266,8 @@ manage_set_config_families (config_t config,
 
                       /* Update the cached config info. */
 
-                      sql ("UPDATE configs SET nvts_growing = 1"
+                      sql ("UPDATE configs SET nvts_growing = 1,"
+                           " modification_time = now ()"
                            " WHERE ROWID = %llu;",
                            config);
                     }
@@ -33234,7 +33296,8 @@ manage_set_config_families (config_t config,
 
                       sql ("UPDATE configs SET nvts_growing = %i,"
                            " nvt_count = nvt_count - %i,"
-                           " family_count = family_count - 1"
+                           " family_count = family_count - 1,"
+                           " modification_time = now ()"
                            " WHERE ROWID = %llu;",
                            /* Recalculate the NVT growing state. */
                            nvt_selector_nvts_growing_2 (quoted_selector,
@@ -33279,7 +33342,8 @@ manage_set_config_families (config_t config,
 
                       /* Update the cached config info. */
 
-                      sql ("UPDATE configs SET nvts_growing = %i"
+                      sql ("UPDATE configs SET nvts_growing = %i,"
+                           " modification_time = now ()"
                            " WHERE ROWID = %llu;",
                            /* Recalculate the NVT growing state. */
                            nvt_selector_nvts_growing_2 (quoted_selector,
@@ -43633,9 +43697,10 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO configs"
            " (uuid, owner, name, nvt_selector, comment, family_count, nvt_count,"
-           "  families_growing, nvts_growing)"
+           "  families_growing, nvts_growing, creation_time, modification_time)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
-           "        nvt_count, families_growing, nvts_growing"
+           "        nvt_count, families_growing, nvts_growing,"
+           "        creation_time, modification_time"
            " FROM configs_trash WHERE ROWID = %llu;",
            resource);
 

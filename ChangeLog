@@ -1,3 +1,24 @@
+2012-12-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Migrate database to version 73, add creation and modification times
+	to scan configs.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Set to 73.
+
+	* src/manage_sql.c (create_tables): Add creation_time and
+	modification_time columns to configs and configs_trash tables.
+	(migrate_72_to_73): New function.
+	(database_migrators): Add migrate_72_to_73.
+	(init_manage, create_config, create_config_rc, delete_config)
+	(manage_restore): Insert into creation_time and modification_time
+	columns current time value.
+	(insert_rc_into_config, manage_set_config_comment)
+	(manage_set_config_name, manage_set_config_name_comment)
+	(manage_set_config_nvts, manage_set_config_families): Update
+	modification_time column to current time value.
+
+	* doc/db.png: Update to version 73.
+
 2012-12-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (config_count): New function.
