@@ -30403,11 +30403,6 @@ delete_config (const char *config_id, int ultimate)
   " families_growing, nvts_growing"
 
 /**
- * @brief Database fields used in config iterators.
- */
-#define CONFIG_ITERATOR_FIELDS "ROWID, uuid, name, nvt_selector, comment, families_growing, nvts_growing"
-
-/**
  * @brief Count the number of scan configs.
  *
  * @param[in]  get  GET params.
@@ -30440,7 +30435,7 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
   assert (current_credentials.uuid);
 
   if (config)
-    sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_FIELDS
+    sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_COLUMNS
                            " FROM configs%s"
                            " WHERE ROWID = %llu"
                            " AND ((owner IS NULL) OR (owner ="
@@ -30453,7 +30448,7 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
                            sort_field ? sort_field : "ROWID",
                            ascending ? "ASC" : "DESC");
   else
-    sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_FIELDS
+    sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_COLUMNS
                            " FROM configs%s"
                            " WHERE ((owner IS NULL) OR (owner ="
                            " (SELECT ROWID FROM users"
@@ -31985,7 +31980,7 @@ update_all_config_caches ()
 {
   iterator_t configs;
 
-  init_iterator (&configs, "SELECT " CONFIG_ITERATOR_FIELDS " FROM configs;");
+  init_iterator (&configs, "SELECT " CONFIG_ITERATOR_COLUMNS " FROM configs;");
   while (next (&configs))
     update_config_cache (&configs);
   cleanup_iterator (&configs);
@@ -32003,7 +31998,7 @@ manage_complete_nvt_cache_update (int mode)
 
   /* Remove preferences from configs where the preference has vanished from
    * the associated NVT. */
-  init_iterator (&configs, "SELECT " CONFIG_ITERATOR_FIELDS " FROM configs;");
+  init_iterator (&configs, "SELECT " CONFIG_ITERATOR_COLUMNS " FROM configs;");
   while (next (&configs))
     sql ("DELETE FROM config_preferences"
          " WHERE config = %llu"
