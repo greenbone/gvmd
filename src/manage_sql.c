@@ -30468,89 +30468,32 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
 }
 
 /**
- * @brief Initialise a config iterator.
+ * @brief Initialise a scan config iterator.
  *
- * @param[in]  iterator    Iterator.
- * @param[in]  config      Config.  0 for all.
- * @param[in]  trash       Whether to iterate over trashcan configs.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
- * @param[in]  actions_string  Actions.
+ * @param[in]  iterator  Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find scan config, failed to find filter,
+ *         -1 error.
  */
-void
-init_config_iterator (iterator_t* iterator, config_t config, int trash,
-                      int ascending, const char* sort_field,
-                      const char *actions_string)
+int
+init_config_iterator (iterator_t* iterator, const get_data_t *get)
 {
-  gchar *sql;
-  int actions;
+  static const char *filter_columns[] = CONFIG_ITERATOR_FILTER_COLUMNS;
 
-  assert (current_credentials.uuid);
-
-  if (actions_string == NULL || strlen (actions_string) == 0)
-    {
-      init_user_config_iterator (iterator, config, trash, ascending,
-                                 sort_field);
-      return;
-    }
-
-  actions = parse_actions (actions_string);
-
-  if (actions == 0)
-    {
-      init_user_config_iterator (iterator, config, trash, ascending,
-                                 sort_field);
-      return;
-    }
-
-  if (config)
-    sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_FIELDS
-                           " FROM configs%s"
-                           " WHERE ROWID = %llu"
-                           " AND"
-                           " ((owner IS NULL) OR (owner ="
-                           "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
-                           "  OR"
-                           "  (SELECT tasks.ROWID FROM tasks"
-                           "   WHERE config = configs.ROWID)"
-                           "  IN"
-                           "  (SELECT task FROM task_users WHERE user ="
-                           "   (SELECT ROWID FROM users"
-                           "    WHERE users.uuid = '%s')"
-                           "   AND actions & %u = %u))"
-                           " ORDER BY %s %s;",
-                           trash ? "_trash" : "",
-                           config,
-                           current_credentials.uuid,
-                           current_credentials.uuid,
-                           actions,
-                           actions,
-                           sort_field ? sort_field : "ROWID",
-                           ascending ? "ASC" : "DESC");
-  else
-    sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_FIELDS
-                           " FROM configs%s"
-                           " WHERE"
-                           " ((owner IS NULL) OR (owner ="
-                           "  (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
-                           "  OR"
-                           "  (SELECT tasks.ROWID FROM tasks"
-                           "   WHERE config = configs.ROWID)"
-                           "  IN"
-                           "  (SELECT task FROM task_users WHERE user ="
-                           "   (SELECT ROWID FROM users"
-                           "    WHERE users.uuid = '%s')"
-                           "   AND actions & %u = %u))"
-                           " ORDER BY %s %s;",
-                           trash ? "_trash" : "",
-                           current_credentials.uuid,
-                           current_credentials.uuid,
-                           actions,
-                           actions,
-                           sort_field ? sort_field : "ROWID",
-                           ascending ? "ASC" : "DESC");
-  init_iterator (iterator, sql);
-  g_free (sql);
+  return init_get_iterator (iterator,
+                            "config",
+                            get,
+                            /* Columns. */
+                            CONFIG_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            CONFIG_ITERATOR_TRASH_COLUMNS,
+                            filter_columns,
+                            NULL,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
 }
 
 /**
@@ -30588,6 +30531,16 @@ DEF_ACCESS (config_iterator_uuid, 1);
 DEF_ACCESS (config_iterator_name, 2);
 
 /**
+ * @brief Get the comment from a scan config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Comment, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (config_iterator_comment, 3);
+
+/**
  * @brief Get the nvt_selector from a config iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -30595,22 +30548,40 @@ DEF_ACCESS (config_iterator_name, 2);
  * @return The nvt_selector of the config, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (config_iterator_nvt_selector, 3);
+DEF_ACCESS (config_iterator_nvt_selector, GET_ITERATOR_COLUMN_COUNT);
 
 /**
- * @brief Get the comment from a config iterator.
+ * @brief Get the family count from a config iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Comment.
+ * @return Family count if known, -1 else.
  */
-const char*
-config_iterator_comment (iterator_t* iterator)
+int
+config_iterator_family_count (iterator_t* iterator)
 {
-  const char *ret;
-  if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 4);
-  return ret ? ret : "";
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT + 1);
+  return ret;
+}
+
+/**
+ * @brief Get the nvt count from a config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Nvt count if known, -1 else.
+ */
+int
+config_iterator_nvt_count (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT + 2);
+  return ret;
 }
 
 /**
@@ -30625,7 +30596,8 @@ config_iterator_families_growing (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 5);
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT +3);
   return ret;
 }
 
@@ -30641,7 +30613,8 @@ config_iterator_nvts_growing (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 6);
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT + 4);
   return ret;
 }
 

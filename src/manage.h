@@ -1196,9 +1196,8 @@ config_nvt_timeout (config_t, const char *);
 void
 init_user_config_iterator (iterator_t*, config_t, int, int, const char*);
 
-void
-init_config_iterator (iterator_t*, config_t, int, int, const char*,
-                      const char*);
+int
+init_config_iterator (iterator_t*, const get_data_t*);
 
 config_t
 config_iterator_config (iterator_t*);
@@ -1214,6 +1213,12 @@ config_iterator_nvt_selector (iterator_t*);
 
 const char*
 config_iterator_comment (iterator_t*);
+
+int
+config_iterator_nvt_count (iterator_t*);
+
+int
+config_iterator_family_count (iterator_t*);
 
 int
 config_iterator_nvts_growing (iterator_t*);

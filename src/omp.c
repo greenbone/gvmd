@@ -1968,14 +1968,10 @@ get_agents_data_reset (get_agents_data_t *data)
  */
 typedef struct
 {
-  char *actions;         ///< Actions.
-  int export;            ///< Boolean.  Whether to format for create_config.
   int families;          ///< Boolean.  Whether to include config families.
-  char *config_id;       ///< ID of single config to iterate over.
   int preferences;       ///< Boolean.  Whether to include config preferences.
-  char *sort_field;      ///< Field to sort results on.
-  int sort_order;        ///< Result sort order: 0 descending, else ascending.
-  int trash;             ///< Boolean.  Whether to return configs from trashcan.
+  get_data_t get;        ///< Get args.
+  int tasks;             ///< Boolean.  Whether to include tasks that use scan config.
 } get_configs_data_t;
 
 /**
@@ -1986,10 +1982,7 @@ typedef struct
 static void
 get_configs_data_reset (get_configs_data_t *data)
 {
-  free (data->actions);
-  free (data->config_id);
-  free (data->sort_field);
-
+  get_data_reset (&data->get);
   memset (data, 0, sizeof (get_configs_data_t));
 }
 
@@ -5187,37 +5180,30 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
             const gchar* attribute;
-            append_attribute (attribute_names, attribute_values, "config_id",
-                              &get_configs_data->config_id);
-            append_attribute (attribute_names, attribute_values, "actions",
-                              &get_configs_data->actions);
+
+            get_data_parse_attributes (&get_configs_data->get,
+                                       "config",
+                                       attribute_names,
+                                       attribute_values);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "tasks", &attribute))
+              get_configs_data->tasks = strcmp (attribute, "0");
+            else
+              get_configs_data->tasks = 0;
+
             if (find_attribute (attribute_names, attribute_values,
                                 "families", &attribute))
-              get_configs_data->families = atoi (attribute);
+              get_configs_data->families = strcmp (attribute, "0");
             else
               get_configs_data->families = 0;
-            if (find_attribute (attribute_names, attribute_values,
-                                "trash", &attribute))
-              get_configs_data->trash = strcmp (attribute, "0");
-            else
-              get_configs_data->trash = 0;
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_configs_data->sort_field);
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_configs_data->sort_order = strcmp (attribute, "descending");
-            else
-              get_configs_data->sort_order = 1;
+
             if (find_attribute (attribute_names, attribute_values,
                                 "preferences", &attribute))
-              get_configs_data->preferences = atoi (attribute);
+              get_configs_data->preferences = strcmp (attribute, "0");
             else
               get_configs_data->preferences = 0;
-            if (find_attribute (attribute_names, attribute_values,
-                                "export", &attribute))
-              get_configs_data->export = atoi (attribute);
-            else
-              get_configs_data->export = 0;
+
             set_client_state (CLIENT_GET_CONFIGS);
           }
         else if (strcasecmp ("GET_DEPENDENCIES", element_name) == 0)
@@ -16946,254 +16932,248 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_CONFIGS:
         {
-          config_t request_config = 0;
           iterator_t configs;
+          int ret, filtered, first, count;
+          get_data_t *get;
 
           assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
 
-          if (get_configs_data->config_id
-              && find_config_for_actions (get_configs_data->config_id,
-                                          &request_config,
-                                          get_configs_data->actions))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_configs"));
-          else if (get_configs_data->config_id && (request_config == 0))
+          get = &get_configs_data->get;
+          ret = init_config_iterator (&configs, get);
+          if (ret)
             {
-              if (send_find_error_to_client ("get_configs",
-                                             "config",
-                                             get_configs_data->config_id,
-                                             write_to_client,
-                                             write_to_client_data))
+              switch (ret)
                 {
-                  error_send_to_client (error);
+                  case 1:
+                    if (send_find_error_to_client ("get_configs",
+                                                   "config",
+                                                   get_configs_data->get.id,
+                                                   write_to_client,
+                                                   write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case 2:
+                    if (send_find_error_to_client
+                         ("get_configs",
+                          "config",
+                          get_configs_data->get.filt_id,
+                          write_to_client,
+                          write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("get_configs"));
+                    break;
+                }
+              get_configs_data_reset (get_configs_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          count = 0;
+          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+          SEND_GET_START ("config", &get_configs_data->get);
+          while (1)
+            {
+              int config_nvts_growing, config_families_growing;
+              const char *selector;
+              config_t config;
+
+              ret = get_next (&configs, &get_configs_data->get, &first,
+                              &count, init_config_iterator);
+              if (ret == 1)
+                break;
+              if (ret == -1)
+                {
+                  internal_error_send_to_client (error);
                   return;
                 }
-            }
-          else if ((get_configs_data->export
-                    || get_configs_data->families
-                    || get_configs_data->preferences)
-                   && get_configs_data->trash)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_configs",
-                                "GET_CONFIGS trash given with export, families"
-                                " or preferences"));
-          else
-            {
-              SEND_TO_CLIENT_OR_FAIL ("<get_configs_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              init_config_iterator (&configs,
-                                    request_config,
-                                    get_configs_data->trash,
-                                    get_configs_data->sort_order,
-                                    get_configs_data->sort_field,
-                                    get_configs_data->actions);
-              while (next (&configs))
+              SEND_GET_COMMON (config, &get_configs_data->get,
+                               &configs);
+
+              /** @todo This should really be an nvt_selector_t. */
+              selector = config_iterator_nvt_selector (&configs);
+              config = config_iterator_config (&configs);
+              config_nvts_growing = config_iterator_nvts_growing (&configs);
+              config_families_growing = config_iterator_families_growing
+                                         (&configs);
+
+              SENDF_TO_CLIENT_OR_FAIL ("<family_count>"
+                                       "%i<growing>%i</growing>"
+                                       "</family_count>"
+                                       /* The number of NVT's selected
+                                        * by the selector. */
+                                       "<nvt_count>"
+                                       "%i<growing>%i</growing>"
+                                       "</nvt_count>",
+                                       config_iterator_family_count (&configs),
+                                       config_families_growing,
+                                       config_iterator_nvt_count (&configs),
+                                       config_nvts_growing);
+
+              if (get_configs_data->families)
                 {
-                  int config_nvts_growing, config_families_growing;
-                  const char *selector;
-                  config_t config;
+                  iterator_t families;
+                  int max_nvt_count = 0, known_nvt_count = 0;
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<families>");
+                  init_family_iterator (&families,
+                                        config_families_growing,
+                                        selector,
+                                        0);
+                  while (next (&families))
+                    {
+                      int family_growing, family_max;
+                      int family_selected_count;
+                      const char *family;
+
+                      family = family_iterator_name (&families);
+                      if (family)
+                        {
+                          family_growing = nvt_selector_family_growing
+                                            (selector,
+                                             family,
+                                             config_families_growing);
+                          family_max = family_nvt_count (family);
+                          family_selected_count
+                            = nvt_selector_nvt_count (selector,
+                                                      family,
+                                                      family_growing);
+                          known_nvt_count += family_selected_count;
+                        }
+                      else
+                        {
+                          /* The family can be NULL if an RC adds an
+                           * NVT to a config and the NVT is missing
+                           * from the NVT cache. */
+                          family_growing = 0;
+                          family_max = -1;
+                          family_selected_count = nvt_selector_nvt_count
+                                                   (selector, NULL, 0);
+                        }
+
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<family>"
+                        "<name>%s</name>"
+                        /* The number of selected NVT's. */
+                        "<nvt_count>%i</nvt_count>"
+                        /* The total number of NVT's in the family. */
+                        "<max_nvt_count>%i</max_nvt_count>"
+                        "<growing>%i</growing>"
+                        "</family>",
+                        family ? family : "",
+                        family_selected_count,
+                        family_max,
+                        family_growing);
+                      if (family_max > 0)
+                        max_nvt_count += family_max;
+                    }
+                  cleanup_iterator (&families);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("</families>"
+                    /* The total number of NVT's in all the
+                     * families for selector selects at least one
+                     * NVT. */
+                    "<max_nvt_count>%i</max_nvt_count>"
+                    /* Total number of selected known NVT's. */
+                    "<known_nvt_count>"
+                    "%i"
+                    "</known_nvt_count>",
+                    max_nvt_count,
+                    known_nvt_count);
+                }
+
+              if (get_configs_data->preferences
+                  || get_configs_data->get.details)
+                {
+                  iterator_t prefs;
+                  config_t config = config_iterator_config (&configs);
+
+                  assert (config);
+
+                  SEND_TO_CLIENT_OR_FAIL ("<preferences>");
+
+                  init_nvt_preference_iterator (&prefs, NULL);
+                  while (next (&prefs))
+                    {
+                      GString *buffer = g_string_new ("");
+                      buffer_config_preference_xml (buffer, &prefs, config);
+                      SEND_TO_CLIENT_OR_FAIL (buffer->str);
+                      g_string_free (buffer, TRUE);
+                    }
+                  cleanup_iterator (&prefs);
+
+                  SEND_TO_CLIENT_OR_FAIL ("</preferences>");
+                }
+
+              if (get_configs_data->get.details)
+                {
+                  iterator_t selectors;
+
+                  SEND_TO_CLIENT_OR_FAIL ("<nvt_selectors>");
+
+                  init_nvt_selector_iterator (&selectors,
+                                              NULL,
+                                              config,
+                                              NVT_SELECTOR_TYPE_ANY);
+                  while (next (&selectors))
+                    {
+                      int type = nvt_selector_iterator_type (&selectors);
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<nvt_selector>"
+                        "<name>%s</name>"
+                        "<include>%i</include>"
+                        "<type>%i</type>"
+                        "<family_or_nvt>%s</family_or_nvt>"
+                        "</nvt_selector>",
+                        nvt_selector_iterator_name (&selectors),
+                        nvt_selector_iterator_include (&selectors),
+                        type,
+                        (type == NVT_SELECTOR_TYPE_ALL
+                          ? ""
+                          : nvt_selector_iterator_nvt (&selectors)));
+                    }
+                  cleanup_iterator (&selectors);
+
+                  SEND_TO_CLIENT_OR_FAIL ("</nvt_selectors>");
+                }
+
+              if (get_configs_data->tasks)
+                {
                   iterator_t tasks;
 
-                  /** @todo This should really be an nvt_selector_t. */
-                  selector = config_iterator_nvt_selector (&configs);
-                  config = config_iterator_config (&configs);
-                  config_nvts_growing = config_iterator_nvts_growing (&configs);
-                  config_families_growing
-                    = config_iterator_families_growing (&configs);
-
-                  if (get_configs_data->export)
-                    SENDF_TO_CLIENT_OR_FAIL ("<config id=\"%s\">"
-                                             "<name>%s</name>"
-                                             "<comment>%s</comment>",
-                                             config_iterator_uuid (&configs),
-                                             config_iterator_name (&configs),
-                                             config_iterator_comment
-                                              (&configs));
-                  else
-                    {
-                      SENDF_TO_CLIENT_OR_FAIL ("<config id=\"%s\">"
-                                               "<name>%s</name>"
-                                               "<comment>%s</comment>"
-                                               "<family_count>"
-                                               "%i<growing>%i</growing>"
-                                               "</family_count>"
-                                               /* The number of NVT's selected
-                                                * by the selector. */
-                                               "<nvt_count>"
-                                               "%i<growing>%i</growing>"
-                                               "</nvt_count>"
-                                               "<in_use>%i</in_use>"
-                                               "<writable>%i</writable>",
-                                               config_iterator_uuid (&configs),
-                                               config_iterator_name (&configs),
-                                               config_iterator_comment
-                                                (&configs),
-                                               get_configs_data->trash
-                                                ? trash_config_family_count
-                                                   (config)
-                                                : config_family_count (config),
-                                               config_families_growing,
-                                               get_configs_data->trash
-                                                ? trash_config_nvt_count
-                                                   (config)
-                                                : config_nvt_count (config),
-                                               config_nvts_growing,
-                                               get_configs_data->trash
-                                                ? trash_config_in_use (config)
-                                                : config_in_use (config),
-                                               get_configs_data->trash
-                                                || config_writable (config));
-
-                      if (get_configs_data->trash == 0)
-                        {
-                          SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-                          init_config_task_iterator
-                           (&tasks,
-                            config,
-                            get_configs_data->sort_order);
-                          while (next (&tasks))
-                            SENDF_TO_CLIENT_OR_FAIL
-                             ("<task id=\"%s\">"
-                              "<name>%s</name>"
-                              "</task>",
-                              config_task_iterator_uuid (&tasks),
-                              config_task_iterator_name (&tasks));
-                          cleanup_iterator (&tasks);
-                          SEND_TO_CLIENT_OR_FAIL ("</tasks>");
-                        }
-
-                      if (get_configs_data->families)
-                        {
-                          iterator_t families;
-                          int max_nvt_count = 0, known_nvt_count = 0;
-
-                          SENDF_TO_CLIENT_OR_FAIL ("<families>");
-                          init_family_iterator (&families,
-                                                config_families_growing,
-                                                selector,
-                                                get_configs_data->sort_order);
-                          while (next (&families))
-                            {
-                              int family_growing, family_max;
-                              int family_selected_count;
-                              const char *family;
-
-                              family = family_iterator_name (&families);
-                              if (family)
-                                {
-                                  family_growing = nvt_selector_family_growing
-                                                    (selector,
-                                                     family,
-                                                     config_families_growing);
-                                  family_max = family_nvt_count (family);
-                                  family_selected_count
-                                    = nvt_selector_nvt_count (selector,
-                                                              family,
-                                                              family_growing);
-                                  known_nvt_count += family_selected_count;
-                                }
-                              else
-                                {
-                                  /* The family can be NULL if an RC adds an
-                                   * NVT to a config and the NVT is missing
-                                   * from the NVT cache. */
-                                  family_growing = 0;
-                                  family_max = -1;
-                                  family_selected_count = nvt_selector_nvt_count
-                                                           (selector, NULL, 0);
-                                }
-
-                              SENDF_TO_CLIENT_OR_FAIL
-                               ("<family>"
-                                "<name>%s</name>"
-                                /* The number of selected NVT's. */
-                                "<nvt_count>%i</nvt_count>"
-                                /* The total number of NVT's in the family. */
-                                "<max_nvt_count>%i</max_nvt_count>"
-                                "<growing>%i</growing>"
-                                "</family>",
-                                family ? family : "",
-                                family_selected_count,
-                                family_max,
-                                family_growing);
-                              if (family_max > 0)
-                                max_nvt_count += family_max;
-                            }
-                          cleanup_iterator (&families);
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("</families>"
-                            /* The total number of NVT's in all the
-                             * families for selector selects at least one
-                             * NVT. */
-                            "<max_nvt_count>%i</max_nvt_count>"
-                            /* Total number of selected known NVT's. */
-                            "<known_nvt_count>"
-                            "%i"
-                            "</known_nvt_count>",
-                            max_nvt_count,
-                            known_nvt_count);
-                        }
-                    }
-
-                  if (get_configs_data->preferences || get_configs_data->export)
-                    {
-                      iterator_t prefs;
-                      config_t config = config_iterator_config (&configs);
-
-                      assert (config);
-
-                      SEND_TO_CLIENT_OR_FAIL ("<preferences>");
-
-                      init_nvt_preference_iterator (&prefs, NULL);
-                      while (next (&prefs))
-                        {
-                          GString *buffer = g_string_new ("");
-                          buffer_config_preference_xml (buffer, &prefs, config);
-                          SEND_TO_CLIENT_OR_FAIL (buffer->str);
-                          g_string_free (buffer, TRUE);
-                        }
-                      cleanup_iterator (&prefs);
-
-                      SEND_TO_CLIENT_OR_FAIL ("</preferences>");
-                    }
-
-                  if (get_configs_data->export)
-                    {
-                      iterator_t selectors;
-
-                      SEND_TO_CLIENT_OR_FAIL ("<nvt_selectors>");
-
-                      init_nvt_selector_iterator (&selectors,
-                                                  NULL,
-                                                  config,
-                                                  NVT_SELECTOR_TYPE_ANY);
-                      while (next (&selectors))
-                        {
-                          int type = nvt_selector_iterator_type (&selectors);
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("<nvt_selector>"
-                            "<name>%s</name>"
-                            "<include>%i</include>"
-                            "<type>%i</type>"
-                            "<family_or_nvt>%s</family_or_nvt>"
-                            "</nvt_selector>",
-                            nvt_selector_iterator_name (&selectors),
-                            nvt_selector_iterator_include (&selectors),
-                            type,
-                            (type == NVT_SELECTOR_TYPE_ALL
-                              ? ""
-                              : nvt_selector_iterator_nvt (&selectors)));
-                        }
-                      cleanup_iterator (&selectors);
-
-                      SEND_TO_CLIENT_OR_FAIL ("</nvt_selectors>");
-                    }
-
-                  SENDF_TO_CLIENT_OR_FAIL ("</config>");
+                  SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+                  init_config_task_iterator
+                   (&tasks,
+                    config_iterator_config (&configs),
+                    0);
+                  while (next (&tasks))
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<task id=\"%s\">"
+                      "<name>%s</name>"
+                      "</task>",
+                      config_task_iterator_uuid (&tasks),
+                      config_task_iterator_name (&tasks));
+                  cleanup_iterator (&tasks);
+                  SEND_TO_CLIENT_OR_FAIL ("</tasks>");
                 }
-              cleanup_iterator (&configs);
-              SEND_TO_CLIENT_OR_FAIL ("</get_configs_response>");
+
+              SEND_TO_CLIENT_OR_FAIL ("</config>");
+              count++;
             }
+          cleanup_iterator (&configs);
+          filtered = get_configs_data->get.id
+                      ? 1
+                      : config_count (&get_configs_data->get);
+          SEND_GET_END ("config", &get_configs_data->get, count, filtered);
+
           get_configs_data_reset (get_configs_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;

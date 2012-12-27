@@ -1,8 +1,30 @@
+2012-12-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (init_config_iterator): Change interface. Take two
+	parameters: iterator_t and get_data_t.
+	(config_iterator_comment): Define with DEF_ACCESS.
+	(config_iterator_nvt_selector, config_iterator_families_growing)
+	(config_iterator_nvts_growing): Adjust column number.
+	(config_iterator_family_count, config_iterator_nvt_count): New
+	functions.
+
+	* src/manage.h: Add config_iterator_nvt_count and
+	config_iterator_family_count headers. Modify init_config_iterator
+	header.
+
+	* src/omp.c (get_configs_data_t): Change data strucutre to contain four
+	elements: families, prefernces, get and tasks.
+	(get_configs_data_reset): Use get_data_reset.
+	(omp_xml_handle_start_element): Use get_data_parse_attributes in
+	GET_CONFIGS case. Check tasks attribute.
+	(omp_xml_handle_end_element): Adapt to new init_configs_iterator
+	interface. Use SEND_GET_START, SEND_GET_COMMON and SEND_GET_END macros.
+	Check details and tasks attributes.
+
 2012-12-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_ovaldef_info_iterator): Fix use of wrong filter
 	columns for OVAL definitions.
-
 
 2012-12-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
