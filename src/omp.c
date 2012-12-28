@@ -823,6 +823,7 @@ nvt_selector_new (char *name, char *type, int include, char *family_or_nvt)
 typedef struct
 {
   char *comment;                  ///< Comment.
+  char *copy;                    ///< UUID of resource to copy.
   char *howto_install;            ///< Install HOWTO.
   char *howto_use;                ///< Usage HOWTO.
   char *installer;                ///< Installer content.
@@ -3864,6 +3865,7 @@ typedef enum
   CLIENT_CREATE_AGENT,
   CLIENT_CREATE_AGENT_NAME,
   CLIENT_CREATE_AGENT_COMMENT,
+  CLIENT_CREATE_AGENT_COPY,
   CLIENT_CREATE_AGENT_INSTALLER,
   CLIENT_CREATE_AGENT_INSTALLER_FILENAME,
   CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE,
@@ -6318,6 +6320,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_AGENT:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_AGENT_COMMENT);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_AGENT_COPY);
         else if (strcasecmp ("HOWTO_INSTALL", element_name) == 0)
           set_client_state (CLIENT_CREATE_AGENT_HOWTO_INSTALL);
         else if (strcasecmp ("HOWTO_USE", element_name) == 0)
@@ -12295,6 +12299,50 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("create_agent",
                                   "CREATE is forbidden for observer users"));
             }
+          else if (create_agent_data->copy)
+            switch (copy_agent (create_agent_data->name,
+                                create_agent_data->comment,
+                                create_agent_data->copy,
+                                &agent))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = agent_uuid (agent);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_agent"),
+                                             uuid);
+                    g_log ("event agent", G_LOG_LEVEL_MESSAGE,
+                           "Agent %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_agent",
+                                      "Agent exists already"));
+                  g_log ("event agent", G_LOG_LEVEL_MESSAGE,
+                         "Agent could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_agent",
+                                                 "agent",
+                                                 create_agent_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_log ("event agent", G_LOG_LEVEL_MESSAGE,
+                         "Agent could not be created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_agent"));
+                  g_log ("event agent", G_LOG_LEVEL_MESSAGE,
+                         "Agent could not be created");
+                  break;
+              }
           else if (create_agent_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_agent",
@@ -12324,10 +12372,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               case 0:
                 {
-                  gchar *uuid;
-                  agent_uuid (agent, &uuid);
+                  char *uuid;
+                  uuid = agent_uuid (agent);
                   SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_agent"),
                                            uuid);
+                  g_log ("event agent", G_LOG_LEVEL_MESSAGE,
+                         "Agent %s has been created", uuid);
                   g_free (uuid);
                   break;
                 }
@@ -12354,6 +12404,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_AGENT, COMMENT);
+      CLOSE (CLIENT_CREATE_AGENT, COPY);
       CLOSE (CLIENT_CREATE_AGENT, HOWTO_INSTALL);
       CLOSE (CLIENT_CREATE_AGENT, HOWTO_USE);
       CLOSE (CLIENT_CREATE_AGENT, INSTALLER);
@@ -19215,6 +19266,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_AGENT_COMMENT,
               &create_agent_data->comment);
+
+      APPEND (CLIENT_CREATE_AGENT_COPY,
+              &create_agent_data->copy);
 
       APPEND (CLIENT_CREATE_AGENT_HOWTO_INSTALL,
               &create_agent_data->howto_install);

@@ -35339,6 +35339,28 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 }
 
 /**
+ * @brief Create an agent from an existing agent.
+ *
+ * @param[in]  name          Name of new agent. NULL to copy from existing.
+ * @param[in]  comment       Comment on new agent. NULL to copy from existing.
+ * @param[in]  agent_id      UUID of existing schedule.
+ * @param[out] new_agent     New agent.
+ *
+ * @return 0 success, 1 agent exists already, 2 failed to find existing
+ *         agent, -1 error.
+ */
+int
+copy_agent (const char* name, const char* comment, const char *agent_id,
+            agent_t* new_agent)
+{
+  return copy_resource ("agent", name, comment, agent_id,
+                        "installer, installer_64, installer_filename,"
+                        " installer_signature_64, installer_trust,"
+                        " installer_trust_time, howto_install, howto_use",
+                        new_agent);
+}
+
+/**
  * @brief Delete an agent.
  *
  * @param[in]  agent_id   UUID of agent.
@@ -35571,20 +35593,18 @@ verify_agent (agent_t agent)
 }
 
 /**
- * @brief Return the UUID of a agent.
+ * @brief Return the UUID of an agent.
  *
  * @param[in]   agent  Agent.
- * @param[out]  id     Pointer to a newly allocated string.
  *
- * @return 0.
+ * @return UUID of Agent.
  */
-int
-agent_uuid (agent_t agent, char ** id)
+char *
+agent_uuid (agent_t agent)
 {
-  *id = sql_string (0, 0,
-                    "SELECT uuid FROM agents WHERE ROWID = %llu;",
-                    agent);
-  return 0;
+  return sql_string (0, 0,
+                     "SELECT uuid FROM agents WHERE ROWID = %llu;",
+                     agent);
 }
 
 /**

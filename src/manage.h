@@ -1583,6 +1583,9 @@ create_agent (const char*, const char*, const char*, const char*, const char*,
               const char*, const char*, agent_t*);
 
 int
+copy_agent (const char*, const char*, const char *, agent_t *);
+
+int
 delete_agent (const char *, int);
 
 int
@@ -1600,8 +1603,8 @@ agent_writable (agent_t);
 int
 verify_agent (agent_t);
 
-int
-agent_uuid (agent_t, char **);
+char *
+agent_uuid (agent_t);
 
 int
 agent_count (const get_data_t *);

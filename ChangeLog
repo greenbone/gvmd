@@ -1,5 +1,22 @@
 2012-12-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (copy_agent): New function
+	(agent_uuid): Change interface to take one agent_t as a parameter and
+	match other resources copy functions style.
+
+	* src/manage.h: Change agent_uuid and add copy_agent header.
+
+	* src/omp.c (create_agent_data_t): Add copy char pointer.
+	(client_state_t): Add CLIENT_CREATE_AGENT_COPY.
+	(omp_xml_handle_start_element): Add agent copy state check.
+	(omp_xml_handle_end_element): Handle agent copy for CLIENT_CREATE_AGENT
+	case. Adapt agent_uuid call to interface change. Add log entry for Agent
+	creation.
+	(omp_xml_handle_text): Add content of copy tag to create_agent_data copy
+	element.
+
+2012-12-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (update_all_config_caches, update_config_cache):
 	Initialize iterator with needed columns only instead of using
 	CONFIG_ITERATOR_COLUMNS.
