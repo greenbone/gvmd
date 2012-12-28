@@ -31982,7 +31982,9 @@ update_all_config_caches ()
 {
   iterator_t configs;
 
-  init_iterator (&configs, "SELECT " CONFIG_ITERATOR_COLUMNS " FROM configs;");
+  init_iterator (&configs, "SELECT ROWID, uuid, name, comment, '', '', '',"
+                           " '', nvt_selector"
+                           " FROM configs;");
   while (next (&configs))
     update_config_cache (&configs);
   cleanup_iterator (&configs);
@@ -32000,7 +32002,7 @@ manage_complete_nvt_cache_update (int mode)
 
   /* Remove preferences from configs where the preference has vanished from
    * the associated NVT. */
-  init_iterator (&configs, "SELECT " CONFIG_ITERATOR_COLUMNS " FROM configs;");
+  init_iterator (&configs, "SELECT ROWID FROM configs;");
   while (next (&configs))
     sql ("DELETE FROM config_preferences"
          " WHERE config = %llu"
