@@ -34166,6 +34166,30 @@ create_lsc_credential (const char* name, const char* comment,
 }
 
 /**
+ * @brief Create an LSC Credential from an existing one.
+ *
+ * @param[in]  name                 Name of new LSC Credential. NULL to copy
+ *                                  from existing.
+ * @param[in]  comment              Comment on new LSC Credential. NULL to copy
+ *                                  from existing.
+ * @param[in]  lsc_credential_id    UUID of existing LSC Credential.
+ * @param[out] new_lsc_credential   New LSC Credential.
+ *
+ * @return 0 success, 1 LSC Credential exists already, 2 failed to find
+ *         existing LSC Credential, -1 error.
+ */
+int
+copy_lsc_credential (const char* name, const char* comment,
+                     const char *lsc_credential_id,
+                     lsc_credential_t* new_lsc_credential)
+{
+  return copy_resource ("lsc_credential", name, comment, lsc_credential_id,
+                        "login, password, public_key, private_key, rpm,"
+                        " deb, exe",
+                        new_lsc_credential);
+}
+
+/**
  * @brief Delete an LSC credential.
  *
  * @param[in]  lsc_credential_id  UUID of LSC credential.

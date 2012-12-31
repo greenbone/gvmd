@@ -1,5 +1,22 @@
 2012-12-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/omp.c (client_state_t): Add CLIENT_CREATE_LSC_CREDENTIAL_COPY.
+	(create_lsc_credential_data_t): Add copy element.
+	(omp_xml_handle_text): Add uuid from copy tag to
+	create_lsc_credential_data copy element.
+	(omp_xml_handle_end_element): Handle LSC Credential copy case.
+	(omp_xml_handle_start_element): Add LSC Credential copy client state.
+	(create_agent_data_reset, create_lsc_credential_data_reset)
+	(create_schedule_data_reset, create_slave_data_reset)
+	(create_target_data_reset): Free copy element.
+
+	* src/manage_sql.c (copy_lsc_credential): New function
+	match other resources copy functions style.
+
+	* src/manage.h: Add copy_lsc_credential header.
+
+2012-12-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (copy_agent): New function
 	(agent_uuid): Change interface to take one agent_t as a parameter and
 	match other resources copy functions style.

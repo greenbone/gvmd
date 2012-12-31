@@ -1480,6 +1480,9 @@ find_lsc_credential_for_actions (const char*, lsc_credential_t*, const char *);
 int
 create_lsc_credential (const char*, const char*, const char*, const char*,
                        const char*, const char*, lsc_credential_t*);
+int
+copy_lsc_credential (const char*, const char*, const char*,
+                     lsc_credential_t*);
 
 int
 delete_lsc_credential (const char *, int);

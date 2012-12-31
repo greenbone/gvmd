@@ -839,6 +839,7 @@ static void
 create_agent_data_reset (create_agent_data_t *data)
 {
   free (data->comment);
+  free (data->copy);
   free (data->howto_install);
   free (data->howto_use);
   free (data->installer);
@@ -1014,6 +1015,7 @@ create_filter_data_reset (create_filter_data_t *data)
 typedef struct
 {
   char *comment;           ///< Comment.
+  char *copy;              ///< UUID of resource to copy.
   int key;                 ///< Whether the command included a key element.
   char *key_phrase;        ///< Passphrase for key.
   char *key_private;       ///< Private key from key.
@@ -1032,6 +1034,7 @@ static void
 create_lsc_credential_data_reset (create_lsc_credential_data_t *data)
 {
   free (data->comment);
+  free (data->copy);
   free (data->key_phrase);
   free (data->key_private);
   free (data->key_public);
@@ -1407,6 +1410,7 @@ static void
 create_schedule_data_reset (create_schedule_data_t *data)
 {
   free (data->name);
+  free (data->copy);
   free (data->comment);
   free (data->first_time_day_of_month);
   free (data->first_time_hour);
@@ -1444,6 +1448,7 @@ static void
 create_slave_data_reset (create_slave_data_t *data)
 {
   free (data->comment);
+  free (data->copy);
   free (data->host);
   free (data->login);
   free (data->name);
@@ -1482,6 +1487,7 @@ static void
 create_target_data_reset (create_target_data_t *data)
 {
   free (data->comment);
+  free (data->copy);
   free (data->hosts);
   free (data->port_list_id);
   free (data->port_range);
@@ -3917,6 +3923,7 @@ typedef enum
   CLIENT_CREATE_FILTER_TERM,
   CLIENT_CREATE_FILTER_TYPE,
   CLIENT_CREATE_LSC_CREDENTIAL,
+  CLIENT_CREATE_LSC_CREDENTIAL_COPY,
   CLIENT_CREATE_LSC_CREDENTIAL_COMMENT,
   CLIENT_CREATE_LSC_CREDENTIAL_NAME,
   CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD,
@@ -6523,6 +6530,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("LOGIN", element_name) == 0)
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_LOGIN);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_COPY);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_NAME);
         else if (strcasecmp ("PASSWORD", element_name) == 0)
@@ -13041,6 +13050,50 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("create_lsc_credential",
                                   "CREATE is forbidden for observer users"));
             }
+          else if (create_lsc_credential_data->copy)
+            switch (copy_lsc_credential (create_lsc_credential_data->name,
+                                         create_lsc_credential_data->comment,
+                                         create_lsc_credential_data->copy,
+                                         &new_lsc_credential))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = lsc_credential_uuid (new_lsc_credential);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_lsc_credential"),
+                                             uuid);
+                    g_log ("event lsc_credential", G_LOG_LEVEL_MESSAGE,
+                           "LSC Credential %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_lsc_credential",
+                                      "Credential exists already"));
+                  g_log ("event lsc_credential", G_LOG_LEVEL_MESSAGE,
+                         "LSC Credential could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_lsc_credential",
+                                                 "lsc_credential",
+                                                 create_lsc_credential_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_log ("event lsc_credential", G_LOG_LEVEL_MESSAGE,
+                         "LSC Credential could not be created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_lsc_credential"));
+                  g_log ("event lsc_credential", G_LOG_LEVEL_MESSAGE,
+                         "LSC Credential could not be created");
+                  break;
+              }
           else if (strlen (create_lsc_credential_data->name) == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
@@ -13107,6 +13160,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, COMMENT);
+      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, COPY);
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, KEY);
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL_KEY, PRIVATE);
@@ -19337,6 +19391,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_LSC_CREDENTIAL_COMMENT,
               &create_lsc_credential_data->comment);
+
+      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_COPY,
+              &create_lsc_credential_data->copy);
 
       APPEND (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PHRASE,
               &create_lsc_credential_data->key_phrase);
