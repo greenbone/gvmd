@@ -153,7 +153,6 @@
 	* src/manage_sql.c (omp_xml_handle_start_element): In CLIENT_C_C_GCR set
 	the import flag again, because the reset clears it.
 
->>>>>>> .r14956
 2012-12-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (delete_report_format): Fix column name.
