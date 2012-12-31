@@ -34493,21 +34493,12 @@ init_user_lsc_credential_iterator (iterator_t* iterator,
 
   if (lsc_credential)
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, login, password, comment,"
-                   " public_key, private_key, rpm, deb, exe,"
-                   " (SELECT count(*) > 0 FROM targets%s"
-                   "  WHERE lsc_credential = lsc_credentials%s.ROWID)"
-                   " + (SELECT count(*) > 0 FROM targets%s"
-                   "    WHERE smb_lsc_credential = lsc_credentials%s.ROWID)"
+                   "SELECT " LSC_CREDENTIAL_ITERATOR_COLUMNS
                    " FROM lsc_credentials%s"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
                    trash ? "_trash" : "",
                    lsc_credential,
                    current_credentials.uuid,
@@ -34515,20 +34506,11 @@ init_user_lsc_credential_iterator (iterator_t* iterator,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, login, password, comment,"
-                   " public_key, private_key, rpm, deb, exe,"
-                   " (SELECT count(*) > 0 FROM targets%s"
-                   "  WHERE lsc_credential = lsc_credentials%s.ROWID)"
-                   " + (SELECT count(*) > 0 FROM targets%s"
-                   "    WHERE smb_lsc_credential = lsc_credentials%s.ROWID)"
+                   "SELECT " LSC_CREDENTIAL_ITERATOR_COLUMNS
                    " FROM lsc_credentials%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
-                   trash ? "_trash" : "",
                    trash ? "_trash" : "",
                    current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
