@@ -12509,15 +12509,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
             }
-          else if (strlen (create_config_data->name) == 0)
+          else if (strlen (create_config_data->name) == 0
+                   && strlen (create_config_data->copy) == 0)
             {
               g_log ("event config", G_LOG_LEVEL_MESSAGE,
                      "Scan config could not be created");
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_config",
-                                  /** @todo Legitimate to pass empty rcfile? */
-                                  "CREATE_CONFIG name and rcfile must be at"
-                                  " least one character long"));
+                                  "CREATE_CONFIG name and base config to copy"
+                                  " must be at least one character long"));
             }
           else if ((create_config_data->rcfile
                     && create_config_data->copy)

@@ -30149,19 +30149,24 @@ copy_config (const char* name, const char* comment, config_t config,
 
   sql ("BEGIN IMMEDIATE;");
 
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM configs WHERE name = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               current_credentials.uuid))
+  if (quoted_name && strlen (quoted_name))
     {
-      tracef ("   config \"%s\" already exists\n", name);
-      sql ("ROLLBACK;");
-      g_free (quoted_name);
-      g_free (quoted_config_selector);
-      return 1;
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM configs WHERE name = '%s'"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   current_credentials.uuid))
+        {
+          tracef ("   config \"%s\" already exists\n", name);
+          sql ("ROLLBACK;");
+          g_free (quoted_name);
+          g_free (quoted_config_selector);
+          return 1;
+        }
     }
+  else
+    quoted_name = NULL;
 
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM configs"
@@ -30202,7 +30207,7 @@ copy_config (const char* name, const char* comment, config_t config,
 
   /* Copy the existing config. */
 
-  if (comment)
+  if (comment && strlen (comment) > 0)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs"
@@ -30225,14 +30230,19 @@ copy_config (const char* name, const char* comment, config_t config,
     sql ("INSERT INTO configs"
          " (uuid, name, owner, nvt_selector, comment, family_count, nvt_count,"
          "  families_growing, nvts_growing, creation_time, modification_time)"
-         " SELECT make_uuid (), '%s',"
+         " SELECT make_uuid (), %s%s%s,"
          " (SELECT ROWID FROM users where users.uuid = '%s'),"
-         " '%s', '', family_count, nvt_count,"
+         " '%s', %s, family_count, nvt_count,"
          " families_growing, nvts_growing, now (), now ()"
          " FROM configs WHERE ROWID = %llu",
-         quoted_name,
+         quoted_name ? "'" : "",
+         quoted_name
+          ? quoted_name
+          : "uniquify ('config', name, owner, ' Clone')",
+         quoted_name ? "'" : "",
          current_credentials.uuid,
          uuid,
+         quoted_name ? "''" : "comment",
          config);
 
   id = sqlite3_last_insert_rowid (task_db);
