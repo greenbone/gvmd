@@ -2948,6 +2948,7 @@ copy_resource (const char *type, const char *name, const char *comment,
     {
       sql ("ROLLBACK;");
       g_free (quoted_name);
+      g_free (quoted_uuid);
       return 2;
     }
 
@@ -37566,7 +37567,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
  */
 int
 copy_schedule (const char* name, const char* comment, const char *schedule_id,
-             schedule_t* new_schedule)
+               schedule_t* new_schedule)
 {
   return copy_resource ("schedule", name, comment, schedule_id,
                         "first_time, period, period_months, duration,"
