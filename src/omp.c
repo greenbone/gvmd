@@ -943,6 +943,7 @@ create_config_data_reset (create_config_data_t *data)
 typedef struct
 {
   char *comment;             ///< Comment.
+  char *copy;                ///< UUID of alert to copy.
   char *condition;           ///< Condition for alert, e.g. "Always".
   array_t *condition_data;   ///< Array of pointers.  Extra data for condition.
   char *event;               ///< Event that will cause alert.
@@ -964,6 +965,7 @@ static void
 create_alert_data_reset (create_alert_data_t *data)
 {
   free (data->comment);
+  free (data->copy);
   free (data->condition);
   array_free (data->condition_data);
   free (data->event);
@@ -3904,6 +3906,7 @@ typedef enum
   CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE,
   CLIENT_CREATE_ALERT,
   CLIENT_CREATE_ALERT_COMMENT,
+  CLIENT_CREATE_ALERT_COPY,
   CLIENT_CREATE_ALERT_CONDITION,
   CLIENT_CREATE_ALERT_CONDITION_DATA,
   CLIENT_CREATE_ALERT_CONDITION_DATA_NAME,
@@ -6453,6 +6456,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_ALERT:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_COMMENT);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_ALERT_COPY);
         else if (strcasecmp ("CONDITION", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_CONDITION);
         else if (strcasecmp ("EVENT", element_name) == 0)
@@ -12729,6 +12734,50 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("create_alert",
                                   "CREATE is forbidden for observer users"));
             }
+          else if (create_alert_data->copy)
+            switch (copy_alert (create_alert_data->name,
+                                create_alert_data->comment,
+                                create_alert_data->copy,
+                                &new_alert))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = alert_uuid (new_alert);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_alert"),
+                                             uuid);
+                    g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                           "Alert %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_alert",
+                                      "Alert exists already"));
+                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                         "Alert could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_alert",
+                                                 "alert",
+                                                 create_alert_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                         "Alert could not be created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_alert"));
+                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                         "Alert could not be created");
+                  break;
+              }
           else if (strlen (create_alert_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_alert",
@@ -12832,6 +12881,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_ALERT, COMMENT);
+      CLOSE (CLIENT_CREATE_ALERT, COPY);
       CLOSE (CLIENT_CREATE_ALERT, CONDITION);
       CLOSE (CLIENT_CREATE_ALERT, EVENT);
       CLOSE (CLIENT_CREATE_ALERT, FILTER);
@@ -19416,6 +19466,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_ALERT_COMMENT,
               &create_alert_data->comment);
+
+      APPEND (CLIENT_CREATE_ALERT_COPY,
+              &create_alert_data->copy);
 
       APPEND (CLIENT_CREATE_ALERT_CONDITION,
               &create_alert_data->condition);

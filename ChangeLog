@@ -1,5 +1,20 @@
 2013-01-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (copy_alert): New function to clone an alert.
+
+	* src/manage.h: Add copy_alert header.
+
+	* src/omp.c (create_alert_data_t): Add copy element.
+	(create_alert_data_reset): Free copy element.
+	(client_state_t): Add CLIENT_CREATE_ALERT_COPY.
+	(omp_xml_handle_start_element): Handle alert copying case.
+	(omp_xml_handle_end_element): Handle case when create_alert_data copy
+	element is set. Close copy tag.
+	(omp_xml_handle_text_element): Append content of copy tag to
+	create_alert_data copy element.
+
+2013-01-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (copy_resource): Free quoted_uuid before returning.
 	(copy_schedule): Style fix.
 

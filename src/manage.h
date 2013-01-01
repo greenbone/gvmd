@@ -292,6 +292,9 @@ create_alert (const char*, const char*, const char*, event_t, GPtrArray*,
               alert_t*);
 
 int
+copy_alert (const char*, const char*, const char*, alert_t*);
+
+int
 delete_alert (const char *, int);
 
 char *

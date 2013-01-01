@@ -9493,6 +9493,124 @@ create_alert (const char* name, const char* comment, const char* filter_id,
 }
 
 /**
+ * @brief Create an alert from an existing alert.
+ *
+ * @param[in]  name          Name of new alert. NULL to copy from existing.
+ * @param[in]  comment       Comment on new alert. NULL to copy from
+ *                           existing.
+ * @param[in]  alert_id      UUID of existing alert.
+ * @param[out] new_alert     New alert.
+ *
+ * @return 0 success, 1 alert exists already, 2 failed to find existing
+ *         alert, -1 error.
+ */
+int
+copy_alert (const char* name, const char* comment, const char* alert_id,
+            alert_t* new_alert)
+{
+  alert_t new_id, alert;
+  gchar *quoted_name, *quoted_comment, *quoted_uuid;
+
+  assert (current_credentials.uuid);
+
+  if (alert_id == NULL)
+    return -1;
+
+  quoted_name = sql_quote (name);
+  sql ("BEGIN IMMEDIATE");
+
+  /* Check for existing name. */
+  if (quoted_name && strlen (quoted_name))
+    {
+      if (sql_int (0, 0,
+                   "SELECT COUNT (*) FROM alerts WHERE name = '%s'"
+                   " AND ((owner IS NULL) OR (owner = "
+                   " (SELECT users.ROWID FROM users WHERE useres.uuid = '%s')));",
+                   quoted_name,
+                   current_credentials.uuid))
+        {
+          tracef ("   alert \"%s\" exists already\n", name);
+          sql ("ROLLBACK");
+          g_free (quoted_name);
+          return 1;
+        }
+    }
+  else
+    quoted_name = NULL;
+
+  quoted_uuid = sql_quote (alert_id);
+  /* Check that alert to copy exists. */
+  alert = sql_int (0, 0,
+                   "SELECT ROWID FROM alerts"
+                   " WHERE uuid = '%s'"
+                   " AND ((owner IS NULL) OR (owner = "
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_uuid,
+                   current_credentials.uuid);
+  if (alert == 0)
+    {
+      sql ("ROLLBACK");
+      g_free (quoted_name);
+      g_free (quoted_uuid);
+      return 1;
+    }
+
+  /* Copy the alert. */
+  if (comment && strlen (comment) > 0)
+    quoted_comment = sql_nquote (comment, strlen (comment));
+  else
+    quoted_comment = NULL;
+
+  sql ("INSERT INTO alerts"
+       " (uuid, name, owner, comment, event, condition, method, filter,"
+       "  creation_time, modification_time)"
+       " SELECT make_uuid (), %s%s%s,"
+       "  (SELECT users.ROWID from users where users.uuid = '%s'),"
+       "  %s%s%s, event, condition, method, filter, now (), now ()"
+       " FROM alerts WHERE uuid = '%s';",
+       quoted_name ? "'" : "",
+       quoted_name
+        ? quoted_name
+        : "uniquify ('alert', name, owner, ' Clone')",
+       quoted_name ? "'" : "",
+       current_credentials.uuid,
+       quoted_comment ? "'" : "",
+       quoted_comment ? quoted_comment : "comment",
+       quoted_comment ? "'" : "",
+       quoted_uuid);
+
+  new_id = sqlite3_last_insert_rowid (task_db);
+
+  /* Copy the alert condition data */
+  sql ("INSERT INTO alert_condition_data (alert, name, data)"
+       " SELECT %llu, name, data FROM alert_condition_data"
+       "  WHERE alert = %llu;",
+       new_id,
+       alert);
+
+  /* Copy the alert event data */
+  sql ("INSERT INTO alert_event_data (alert, name, data)"
+       " SELECT %llu, name, data FROM alert_event_data"
+       "  WHERE alert = %llu;",
+       new_id,
+       alert);
+
+  /* Copy the alert method data */
+  sql ("INSERT INTO alert_method_data (alert, name, data)"
+       " SELECT %llu, name, data FROM alert_method_data"
+       "  WHERE alert = %llu;",
+       new_id,
+       alert);
+
+  g_free (quoted_name);
+  g_free (quoted_comment);
+  g_free (quoted_uuid);
+  sql ("COMMIT;");
+  if (new_alert) *new_alert = new_id;
+  return 0;
+}
+
+/**
  * @brief Delete an alert.
  *
  * @param[in]  alert_id  UUID of alert.
