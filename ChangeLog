@@ -1,5 +1,21 @@
 2013-01-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Add clone ability to Port Lists.
+
+	* src/manage_sql.c (copy_port_list): New function for Port List cloning.
+
+	* src/manage.h: Add copy_port_list header.
+
+	* src/omp.c (create_port_list_data_t): Add copy element.
+	(create_port_list_data_reset): Free copy element.
+	(client_state_t): Add CLIENT_CREATE_PORT_LIST_COPY.
+	(omp_xml_handle_end_element): Handle LSC Credential copy case.
+	(omp_xml_handle_start_element): Add Port List copy client state.
+	(omp_xml_handle_text): Append port list id from copy tag into
+	create_lsc_credential_data copy element.
+
+2013-01-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (copy_alert): Return 2 when alert to copy is not
 	found. Use sql_string to check for alert. Fix SQL query style.
 

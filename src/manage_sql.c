@@ -42001,6 +42001,115 @@ create_port_list (const char* id, const char* name, const char* comment,
 }
 
 /**
+ * @brief Create Port List from an existing Port List.
+ *
+ * @param[in]  name             Name of new Port List. NULL to copy from
+ *                              existing.
+ * @param[in]  comment          Comment on new Port List. NULL to copy from
+ *                              existing.
+ * @param[in]  port_list_id     UUID of existing Port List.
+ * @param[out] new_port_list    New Port List.
+ *
+ * @return 0 success, 1 Port List exists already, 2 failed to find existing
+ *         Port List, -1 error.
+ */
+int
+copy_port_list (const char* name, const char* comment,
+                const char* port_list_id, port_list_t* port_list)
+{
+  port_list_t new_port_list;
+  gchar *quoted_name, *quoted_comment, *quoted_uuid;
+
+  assert (current_credentials.uuid);
+
+  if (port_list_id == NULL)
+    return -1;
+
+  sql ("BEGIN IMMEDIATE");
+
+  /* Check that name doesn't exist already */
+  if (name && strlen (name))
+    {
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT (*) from port_lists WHERE name = '%s'"
+                   " AND ((owner IS NULL) OR (owner = "
+                   "  (SELECT users.ROWID from users"
+                   "    WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   current_credentials.uuid))
+        {
+          tracef ("  Port List \"%s\" exists already\n", name);
+          sql ("ROLLBACK");
+          g_free (quoted_name);
+          return 1;
+        }
+    }
+  else
+    quoted_name = NULL;
+
+  /* Check that Port List to copy exists */
+  quoted_uuid = sql_quote (port_list_id);
+  if (sql_int (0, 0,
+               "SELECT COUNT (*) from port_lists WHERE uuid = '%s'"
+               " AND ((owner IS NULL) OR (owner = "
+               "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+               quoted_uuid,
+               current_credentials.uuid)
+      == 0)
+    {
+      sql ("ROLLBACK");
+      g_free (quoted_name);
+      g_free (quoted_uuid);
+      return 2;
+    }
+
+  /* Copy Port List */
+
+  if (comment && strlen (comment) > 0)
+    quoted_comment = sql_nquote (comment, strlen (comment));
+  else
+    quoted_comment = NULL;
+
+  sql ("INSERT INTO port_lists (uuid, owner, name, comment,"
+       " creation_time, modification_time) "
+       " SELECT make_uuid (),"
+       "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s'),"
+       "  %s%s%s, %s%s%s, now (), now ()"
+       "  FROM port_lists WHERE uuid = '%s';",
+       current_credentials.uuid,
+       quoted_name ? "'" : "",
+       quoted_name
+        ? quoted_name
+        : "uniquify ('port_list', name, owner, ' Clone')",
+       quoted_name ? "'" : "",
+       quoted_comment ? "'" : "",
+       quoted_comment ? quoted_comment : "comment",
+       quoted_comment ? "'" : "",
+       quoted_uuid);
+
+  new_port_list = sqlite3_last_insert_rowid (task_db);
+
+  /* Copy Port Ranges */
+
+  sql ("INSERT INTO port_ranges "
+       " (uuid, port_list, type, start, end, comment, exclude)"
+       " SELECT make_uuid(), %llu, type, start, end, comment, exclude"
+       "  FROM port_ranges WHERE port_list = "
+       "   (SELECT port_lists.ROWID FROM port_lists"
+       "    WHERE port_lists.uuid = '%s');",
+       new_port_list,
+       port_list_id);
+
+  g_free (quoted_name);
+  g_free (quoted_comment);
+  g_free (quoted_uuid);
+  sql ("COMMIT");
+  if (port_list) *port_list = new_port_list;
+  return 0;
+}
+
+/**
  * @brief Create a port range in a port list.
  *
  * @param[in]   port_list_id      Port list UUID.

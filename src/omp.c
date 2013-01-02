@@ -1147,6 +1147,7 @@ typedef struct
 {
   char *comment;                 ///< Comment.
   char *id;                      ///< UUID.
+  char *copy;                    ///< UUID of Port List to copy.
   int import;                    ///< Import flag.
   char *name;                    ///< Name of new port list.
   char *port_range;              ///< Port range for new port list.
@@ -1163,6 +1164,7 @@ static void
 create_port_list_data_reset (create_port_list_data_t *data)
 {
   free (data->comment);
+  free (data->copy);
   free (data->name);
   free (data->port_range);
 
@@ -3958,6 +3960,7 @@ typedef enum
   CLIENT_CREATE_OVERRIDE_THREAT,
   CLIENT_CREATE_PORT_LIST,
   CLIENT_CREATE_PORT_LIST_COMMENT,
+  CLIENT_CREATE_PORT_LIST_COPY,
   CLIENT_CREATE_PORT_LIST_NAME,
   CLIENT_CREATE_PORT_LIST_PORT_RANGE,
   /* get_port_lists (GPL) is used for port lists export.  CLIENT_CPL is
@@ -6606,6 +6609,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_PORT_LIST:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_PORT_LIST_COMMENT);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PORT_LIST_COPY);
         else if (strcasecmp ("GET_PORT_LISTS_RESPONSE", element_name) == 0)
           {
             omp_parser->importing = 1;
@@ -13643,6 +13648,51 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               /* Range fields are freed by the reset function below. */
               array_free (manage_ranges);
             }
+          else if (create_port_list_data->copy)
+            switch (copy_port_list (create_port_list_data->name,
+                                    create_port_list_data->comment,
+                                    create_port_list_data->copy,
+                                    &new_port_list))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = port_list_uuid (new_port_list);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID
+                                             ("create_port_list"),
+                                             uuid);
+                    g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                           "Port List %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_port_list",
+                                      "Port List exists already"));
+                  g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                         "Port List could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_port_list",
+                                                 "port_list",
+                                                 create_port_list_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                         "Port List could not be created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_port_list"));
+                  g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                         "Port List could not be created");
+                  break;
+              }
           else if (create_port_list_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_port_list",
@@ -13697,6 +13747,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_PORT_LIST, COMMENT);
+      CLOSE (CLIENT_CREATE_PORT_LIST, COPY);
       case CLIENT_CPL_GPLR:
         assert (strcasecmp ("GET_PORT_LISTS_RESPONSE", element_name) == 0);
         set_client_state (CLIENT_CREATE_PORT_LIST);
@@ -19565,6 +19616,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_PORT_LIST_COMMENT,
               &create_port_list_data->comment);
+
+      APPEND (CLIENT_CREATE_PORT_LIST_COPY,
+              &create_port_list_data->copy);
 
       APPEND (CLIENT_CREATE_PORT_LIST_NAME,
               &create_port_list_data->name);
