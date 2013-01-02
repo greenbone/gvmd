@@ -9510,6 +9510,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
 {
   alert_t new_id, alert;
   gchar *quoted_name, *quoted_comment, *quoted_uuid;
+  char *alertchr;
 
   assert (current_credentials.uuid);
 
@@ -9540,20 +9541,23 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
 
   quoted_uuid = sql_quote (alert_id);
   /* Check that alert to copy exists. */
-  alert = sql_int (0, 0,
-                   "SELECT ROWID FROM alerts"
-                   " WHERE uuid = '%s'"
-                   " AND ((owner IS NULL) OR (owner = "
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   quoted_uuid,
-                   current_credentials.uuid);
-  if (alert == 0)
+  alertchr = sql_string (0, 0,
+                         "SELECT ROWID FROM alerts"
+                         " WHERE uuid = '%s'"
+                         " AND ((owner IS NULL) OR (owner = "
+                         " (SELECT users.ROWID FROM users"
+                         "  WHERE users.uuid = '%s')));",
+                         quoted_uuid,
+                         current_credentials.uuid);
+  if (alertchr == NULL)
     {
       sql ("ROLLBACK");
       g_free (quoted_name);
       g_free (quoted_uuid);
-      return 1;
+      return 2;
     }
+  alert = atoi (alertchr);
+  free (alertchr);
 
   /* Copy the alert. */
   if (comment && strlen (comment) > 0)
@@ -9565,7 +9569,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
        " (uuid, name, owner, comment, event, condition, method, filter,"
        "  creation_time, modification_time)"
        " SELECT make_uuid (), %s%s%s,"
-       "  (SELECT users.ROWID from users where users.uuid = '%s'),"
+       "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s'),"
        "  %s%s%s, event, condition, method, filter, now (), now ()"
        " FROM alerts WHERE uuid = '%s';",
        quoted_name ? "'" : "",
