@@ -110,4 +110,7 @@ int manage_report_host_detail (report_t, const char *, const char *);
 const char*
 run_status_name_internal (task_status_t);
 
+gchar* 
+get_ovaldef_short_filename(char* oval_id); 
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

@@ -2592,6 +2592,9 @@ ovaldef_info_iterator_title (iterator_t*);
 const char*
 ovaldef_info_iterator_description (iterator_t*);
 
+const char*
+ovaldef_info_iterator_xml_file (iterator_t*);
+
 
 /* Settings. */
 

@@ -17919,8 +17919,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    if (get_info_data->details == 1)
                      {
                         g_string_append_printf (result,
-                                           "<description>%s</description>",
-                                           ovaldef_info_iterator_description (&info)
+                                           "<description>%s</description>"
+                                           "<xml_file>%s</xml_file>",
+                                           ovaldef_info_iterator_description (&info),
+                                           ovaldef_info_iterator_xml_file (&info)
                                            );
                      }
                 }

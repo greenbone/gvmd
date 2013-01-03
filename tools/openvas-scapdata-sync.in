@@ -275,20 +275,15 @@ migrate_4 ()
 }
 
 
-migrate_6from4 () {
-  echo "[i] Database Version updated. Migrating to Version 6."
+migrate_7 () {
+  echo "[i] Database Version updated. Migrating to Version 7."
   echo "[i] Adding Tables.."
-  $SQLITE $SEC_DB "CREATE TABLE ovaldefs (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid UNIQUE, name UNIQUE, comment, creation_time DATE, modification_time DATE, version INTEGER, deprecated BOOLEAN, def_class TEXT, title TEXT, description TEXT); CREATE UNIQUE INDEX ovaldefs_idx ON ovaldefs (name);"
-  
-  $SQLITE $SEC_DB "update meta set value ='6' where name = 'database_version';"
-  
-  echo "[i] Migration done."
-}
 
-migrate_6from5 () {
-  echo "[i] Database Version updated. Migrating to Version 6."
-  echo "[i] Running version 5 to 6 migration script..."
-  $SQLITE $SEC_DB < $SCAP_RES_DIR/migrate_db5to6.sql
+  $SQLITE $SEC_DB "DROP TABLE IF EXISTS ovaldefs; CREATE TABLE ovaldefs (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid UNIQUE, name UNIQUE, comment, creation_time DATE, modification_time DATE, version INTEGER, deprecated BOOLEAN, def_class TEXT, title TEXT, description TEXT, xml_file TEXT); CREATE UNIQUE INDEX ovaldefs_idx ON ovaldefs (name);"
+  
+  $SQLITE $SEC_DB "update meta set value ='0' where name = 'last_update';"
+  $SQLITE $SEC_DB "update meta set value ='7' where name = 'database_version';"
+  
   echo "[i] Migration done."
 }
 
@@ -299,11 +294,12 @@ check_db_version () {
     1) reinit;;
     2) migrate_3
        migrate_4
-       migrate_5;;
+       migrate_7;;
     3) migrate_4
-       migrate_6from4;;
-    4) migrate_6from4;;
-    5) migrate_6from5;;
+       migrate_7;;
+    4) migrate_7;;
+    5) migrate_7;;
+    6) migrate_7;;
   esac
 }
 
@@ -395,7 +391,7 @@ update_sec_db () {
         if [ $oval_timestamp -ge $OVAL_REFDATE ]
         then
           echo "[i] Updating $ovalfile"
-          xsltproc $SCAP_RES_DIR/oval_update.xsl $ovalfile | \
+          xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" $SCAP_RES_DIR/oval_update.xsl $ovalfile | \
           $SQLITE $SEC_DB
         else
           echo "[i] Skipping $ovalfile, file has older timestamp than latest OVAL definition in database."

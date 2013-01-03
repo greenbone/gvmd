@@ -86,6 +86,11 @@
 #define CVE_GETBYNAME_XSL SCAP_RES_DIR "/cve_getbyname.xsl"
 
 /**
+ * @brief OVALDEF selection stylesheet location.
+ */
+#define OVALDEF_GETBYNAME_XSL SCAP_RES_DIR "/ovaldef_getbyname.xsl"
+
+/**
  * @brief CPE dictionary location.
  */
 #define CPE_DICT_FILENAME SCAP_DATA_DIR "/official-cpe-dictionary_v2.2.xml"
@@ -4165,6 +4170,29 @@ get_cve_filename (char *item_id)
 }
 
 /**
+ * @brief Get the filename where a given OVAL definitions can be found.
+ *
+ * @param[in] oval_id   Full OVAL identifier.
+ *
+ * @return A dynamically allocated string (to be g_free'd) containing the
+ *         path to the desired file or NULL on error.
+ */
+static char *
+get_ovaldef_filename (char *oval_id)
+{
+  char *result = NULL;
+  
+  char *short_filename = get_ovaldef_short_filename(oval_id); 
+  if (*short_filename) {
+    result = g_strdup_printf ("%s/%s", SCAP_DATA_DIR, short_filename);
+  }
+  free (short_filename);
+  
+  return result;
+}
+
+
+/**
  * @brief Run xsltproc in an external process.
  *
  * @param[in] stylesheet    XSL stylesheet to use.
@@ -4486,6 +4514,18 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
             *result = get_nvti_xml (&nvts, 1, 0, NULL, 1);
 
           cleanup_iterator (&nvts);
+        }
+    }
+  else if (g_ascii_strcasecmp ("OVALDEF", type) == 0)
+    {
+      fname = get_ovaldef_filename (name);
+      if (fname)
+        {
+          gchar *ovaldef;
+          ovaldef = xsl_transform (OVALDEF_GETBYNAME_XSL, fname, pnames, pvalues);
+          g_free (fname);
+          if (ovaldef)
+            *result = ovaldef;
         }
     }
 

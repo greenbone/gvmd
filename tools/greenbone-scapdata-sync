@@ -207,20 +207,15 @@ migrate_4 ()
   sqlite3 $SCAP_DB "update meta set value ='4' where name = 'database_version';"
 }
 
-migrate_6from4 () {
-  log_write " Database Version updated. Migrating to Version 6."
+migrate_7 () {
+  log_write " Database Version updated. Migrating to Version 7."
   log_write " Adding Tables.."
-  $SQLITE $SCAP_DB "CREATE TABLE ovaldefs (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid UNIQUE, name UNIQUE, comment, creation_time DATE, modification_time DATE, version INTEGER, deprecated BOOLEAN, def_class TEXT, title TEXT, description TEXT); CREATE UNIQUE INDEX ovaldefs_idx ON ovaldefs (name);"
-  
-  sqlite3 $SCAP_DB "update meta set value ='6' where name = 'database_version';"
-  
-  log_write " Migration done."
-}
 
-migrate_6from5 () {
-  log_write " Database Version updated. Migrating to Version 6."
-  log_write " Running version 5 to 6 migration script..."
-  sqlite3 $SCAP_DB < $SCAP_RES_DIR/migrate_db5to6.sql
+  sqlite3 $SCAP_DB "DROP TABLE IF EXISTS ovaldefs; CREATE TABLE ovaldefs (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid UNIQUE, name UNIQUE, comment, creation_time DATE, modification_time DATE, version INTEGER, deprecated BOOLEAN, def_class TEXT, title TEXT, description TEXT, xml_file TEXT); CREATE UNIQUE INDEX ovaldefs_idx ON ovaldefs (name);"
+  
+  sqlite3 $SCAP_DB "update meta set value ='0' where name = 'last_update';"
+  sqlite3 $SCAP_DB "update meta set value ='7' where name = 'database_version';"
+  
   log_write " Migration done."
 }
 
@@ -237,11 +232,12 @@ check_db_version () {
     1) reinit;;
     2) migrate_3
        migrate_4
-       migrate_5;;
+       migrate_7;;
     3) migrate_4
-       migrate_6from4;;
-    4) migrate_6from4;;
-    5) migrate_6from5;;
+       migrate_7;;
+    4) migrate_7;;
+    5) migrate_7;;
+    6) migrate_7;;
   esac
 }
 
@@ -330,7 +326,8 @@ update_scap_db() {
         if [ $oval_timestamp -ge $OVAL_REFDATE ]
         then
           log_write " Updating $ovalfile"
-          xsltproc $SCAP_RES_DIR/oval_update.xsl $ovalfile | \
+          
+          xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" $SCAP_RES_DIR/oval_update.xsl $ovalfile | \
           sqlite3 $SCAP_DB
         else
           log_write " Skipping $ovalfile, file has older timestamp than latest OVAL definition in database (this is not an error)."

@@ -94,7 +94,8 @@ CREATE TABLE oval_def (
   deprecated BOOLEAN,
   def_class TEXT, /* enum */ 
   title TEXT,
-  description TEXT
+  description TEXT,
+  xml_file TEXT
 );
 CREATE UNIQUE INDEX oval_def_idx ON oval_def (name);
 

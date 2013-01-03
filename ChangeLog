@@ -1,3 +1,51 @@
+2013-01-02  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	Add output of raw data for OVAL definitions.
+	Change SCAP database format to include source file of OVAL definitions.
+	Change namespaces and schemas in OVAL XSL files to use OVAL ones
+	instead of ones left from CPE/CVE. 
+	
+	* CMakeLists.txt: Add ovaldef_getbyname.xsl
+	
+	* src/manage.c: Add raw data extraction for OVALDEF.
+	(): Add constant for OVAL selection stylesheet.
+	(get_ovaldef_filename): Add function to get full source filename.
+	(manage_read_info): Add else if branch for OVALDEF.
+	
+	* src/manage.h: Add declaration of ovaldef_info_iterator_xml_file
+	
+	* src/manage_sql.c (get_ovaldef_short_filename): Add new function
+	to get short xml filenames (as stored in SCAP database) of OVALDEFs.
+	Change OVALDEF_INFO_ITERATOR_FILTER_COLUMNS and
+	OVALDEF_INFO_ITERATOR_COLUMNS to include "xml_file"
+	(ovaldef_info_iterator_xml_file): Add function to read xml_file of
+	OVALDEFs.
+	
+	* src/manage_sql.h: Add declaration of get_ovaldef_short_filename.
+	
+	* src/omp.c (case CLIENT_GET_INFO): Add output of "xml_file" to OVALDEF.
+	
+	* tools/db_init.sql: Add column "xml_file" to table "ovaldefs"
+	
+	* tools/greenbone-scapdata-sync: Add migration to database version 7,
+	Remove obsolete migration scripts.
+	Update xsltproc call to pass xml file name as parameter.
+	
+	* tools/migrate_db5to6: Remove file as OVAL data has to be re-imported
+	for new database version.
+	
+	* tools/openvas-scapdata-sync.in: Analogous to greenbone-scapdata-sync.
+	
+	* tools/ovaldef_getbyname.xsl: New stylesheet to select an OVAL 
+	definition with a given identifier.
+	
+	* tools/oval_timestamp: Remove unused namespaces, 
+	Update schemaLocation to OVAL schemas.
+	
+	* tools/oval_update.xsl: Remove unused namespaces, 
+	Update schemaLocation to OVAL schemas. 
+	Add xml_file to SQL query.
+
 2013-01-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Add clone ability to Port Lists.

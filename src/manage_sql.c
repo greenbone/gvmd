@@ -45121,14 +45121,14 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  */
 #define OVALDEF_INFO_ITERATOR_FILTER_COLUMNS                \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "deprecated",    \
-   "def_class", "title", "description",  NULL }
+   "def_class", "title", "description", "xml_file",  NULL }
 
 /**
  * @brief OVALDEF iterator columns.
  */
 #define OVALDEF_INFO_ITERATOR_COLUMNS                       \
   GET_ITERATOR_COLUMNS ", version, deprecated, def_class,"   \
-  "title, description"
+  "title, description, xml_file"
 
 
 /**
@@ -45584,4 +45584,31 @@ DEF_ACCESS (ovaldef_info_iterator_title, GET_ITERATOR_COLUMN_COUNT + 3);
  */
 DEF_ACCESS (ovaldef_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 4);
 
+/**
+ * @brief Get the source xml file from an OVALDEF iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The short xml source file name of the OVAL definition,
+ *         or NULL if iteration is complete.  
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (ovaldef_info_iterator_xml_file, GET_ITERATOR_COLUMN_COUNT + 5);
+
 #undef DEF_ACCESS
+
+/**
+ * @brief Get the short file name for an OVALDEF.
+ *
+ * @param[in]  name  Full OVAL identifier.
+ *
+ * @return The long description of the OVAL definition,
+ *         or NULL if iteration is complete.  
+ *         Freed by cleanup_iterator.
+ */
+gchar*
+get_ovaldef_short_filename(char* oval_id) {
+  return sql_string (0, 0,
+                     "SELECT xml_file FROM ovaldefs WHERE name = '%s';",
+                     oval_id);
+}

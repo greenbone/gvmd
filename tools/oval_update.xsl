@@ -28,16 +28,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 <xsl:stylesheet version="1.0" 
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-  xmlns:scap-core="http://scap.nist.gov/schema/scap-core/0.3"
-  xmlns:meta="http://scap.nist.gov/schema/cpe-dictionary-metadata/0.2"
   xmlns:ns6="http://scap.nist.gov/schema/scap-core/0.1"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns:config="http://scap.nist.gov/schema/configuration/0.1"
-  xmlns:cpe="http://cpe.mitre.org/dictionary/2.0"
   xmlns:str="http://exslt.org/strings"
   xmlns:oval="http://oval.mitre.org/XMLSchema/oval-common-5"
   xmlns:oval_definitions="http://oval.mitre.org/XMLSchema/oval-definitions-5"
-  xsi:schemaLocation="http://scap.nist.gov/schema/configuration/0.1 http://nvd.nist.gov/schema/configuration_0.1.xsd http://scap.nist.gov/schema/scap-core/0.3 http://nvd.nist.gov/schema/scap-core_0.3.xsd http://cpe.mitre.org/dictionary/2.0 http://cpe.mitre.org/files/cpe-dictionary_2.2.xsd http://scap.nist.gov/schema/scap-core/0.1 http://nvd.nist.gov/schema/scap-core_0.1.xsd http://scap.nist.gov/schema/cpe-dictionary-metadata/0.2 http://nvd.nist.gov/schema/cpe-dictionary-metadata_0.2.xsd"
+  xsi:schemaLocation="http://oval.mitre.org/language/version5.10.1/ovaldefinition/complete/oval-common-schema.xsd http://oval.mitre.org/language/version5.10.1/ovaldefinition/complete/oval-definitions-schema.xsd"
   extension-element-prefixes="str"
   >
   <xsl:output method="text"/>
@@ -56,7 +52,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       deprecated,
       def_class,
       title,
-      description
+      description,
+      xml_file
     ) VALUES (
       "<xsl:value-of select="@id"/>",
       "<xsl:value-of select="@id"/>",
@@ -69,7 +66,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:call-template>,
       "<xsl:value-of select="@class"/>",
       "<xsl:value-of select="translate(oval_definitions:metadata/oval_definitions:title,'&quot;','&amp;apos;')"/>",
-      "<xsl:value-of select="translate(oval_definitions:metadata/oval_definitions:description,'&quot;','&amp;apos;')"/>"
+      "<xsl:value-of select="translate(oval_definitions:metadata/oval_definitions:description,'&quot;','&amp;apos;')"/>",
+      "<xsl:copy-of select="$filename"/>"
     );
   </xsl:template>
 
