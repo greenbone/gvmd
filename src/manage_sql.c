@@ -39473,7 +39473,6 @@ copy_report_format (const char* name, const char* source_uuid,
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
     {
-      sql ("ROLLBACK;");
       return -1;
     }
 

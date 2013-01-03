@@ -1,5 +1,9 @@
 2013-01-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (copy_report_format): Remove extra sql rollback.
+
+2013-01-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Add clone ability to Report Formats.
 
 	* src/manage_sql.c (copy_report_format): New function to copy a Report
