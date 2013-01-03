@@ -212,10 +212,10 @@ migrate_7 () {
   log_write " Adding Tables.."
 
   sqlite3 $SCAP_DB "DROP TABLE IF EXISTS ovaldefs; CREATE TABLE ovaldefs (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid UNIQUE, name UNIQUE, comment, creation_time DATE, modification_time DATE, version INTEGER, deprecated BOOLEAN, def_class TEXT, title TEXT, description TEXT, xml_file TEXT); CREATE UNIQUE INDEX ovaldefs_idx ON ovaldefs (name);"
-  
+
   sqlite3 $SCAP_DB "update meta set value ='0' where name = 'last_update';"
   sqlite3 $SCAP_DB "update meta set value ='7' where name = 'database_version';"
-  
+
   log_write " Migration done."
 }
 
@@ -260,7 +260,7 @@ update_scap_db() {
   then
     CVE_REFDATE=0
   fi
-  
+
   if [ -z "$OVAL_REFDATE" ]
   then
     OVAL_REFDATE=0
@@ -311,7 +311,7 @@ update_scap_db() {
   else
     log_write " Warning: No CVEs found in $SCAP_DIR."
   fi
-  
+
   log_write " Updating OVAL data"
   xmlcount=$(ls $SCAP_DIR/oval/*.xml 2> /dev/null | wc -l)
   if [ $xmlcount -ne 0 ]
@@ -322,11 +322,11 @@ update_scap_db() {
       then
         sqlquery=`xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile`
         oval_timestamp=`sqlite3 $SCAP_DB "$sqlquery"`
-      
+
         if [ $oval_timestamp -ge $OVAL_REFDATE ]
         then
           log_write " Updating $ovalfile"
-          
+
           xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" $SCAP_RES_DIR/oval_update.xsl $ovalfile | \
           sqlite3 $SCAP_DB
         else

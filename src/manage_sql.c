@@ -45850,7 +45850,8 @@ DEF_ACCESS (cve_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 8);
  *         -1 error.
  */
 int
-init_ovaldef_info_iterator (iterator_t* iterator, const get_data_t *get, const char *name)
+init_ovaldef_info_iterator (iterator_t* iterator, const get_data_t *get,
+                            const char *name)
 {
   static const char *filter_columns[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
   gchar *clause = NULL;
@@ -45895,7 +45896,7 @@ int
 ovaldef_info_count (const get_data_t *get)
 {
   static const char *extra_columns[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
-  return count ("ovaldef", get, OVALDEF_INFO_ITERATOR_COLUMNS, extra_columns, 
+  return count ("ovaldef", get, OVALDEF_INFO_ITERATOR_COLUMNS, extra_columns,
                 0, 0, 0, FALSE);
 }
 
@@ -45905,7 +45906,7 @@ ovaldef_info_count (const get_data_t *get)
  * @param[in]  iterator  Iterator.
  *
  * @return The version number of the OVAL definition,
- *         or NULL if iteration is complete.  
+ *         or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (ovaldef_info_iterator_version, GET_ITERATOR_COLUMN_COUNT);
@@ -45916,7 +45917,7 @@ DEF_ACCESS (ovaldef_info_iterator_version, GET_ITERATOR_COLUMN_COUNT);
  * @param[in]  iterator  Iterator.
  *
  * @return True if the OVAL definition is deprecated, false if not,
- *         or NULL if iteration is complete.  
+ *         or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (ovaldef_info_iterator_deprecated, GET_ITERATOR_COLUMN_COUNT + 1);
@@ -45926,8 +45927,8 @@ DEF_ACCESS (ovaldef_info_iterator_deprecated, GET_ITERATOR_COLUMN_COUNT + 1);
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The definition class (e.g. 'patch' or 'vulnerability') of the OVAL 
- *         definition, or NULL if iteration is complete.  
+ * @return The definition class (e.g. 'patch' or 'vulnerability') of the OVAL
+ *         definition, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (ovaldef_info_iterator_def_class, GET_ITERATOR_COLUMN_COUNT + 2);
@@ -45938,7 +45939,7 @@ DEF_ACCESS (ovaldef_info_iterator_def_class, GET_ITERATOR_COLUMN_COUNT + 2);
  * @param[in]  iterator  Iterator.
  *
  * @return The title / short description of the OVAL definition,
- *         or NULL if iteration is complete.  
+ *         or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (ovaldef_info_iterator_title, GET_ITERATOR_COLUMN_COUNT + 3);
@@ -45949,7 +45950,7 @@ DEF_ACCESS (ovaldef_info_iterator_title, GET_ITERATOR_COLUMN_COUNT + 3);
  * @param[in]  iterator  Iterator.
  *
  * @return The long description of the OVAL definition,
- *         or NULL if iteration is complete.  
+ *         or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (ovaldef_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 4);
@@ -45960,7 +45961,7 @@ DEF_ACCESS (ovaldef_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 4);
  * @param[in]  iterator  Iterator.
  *
  * @return The short xml source file name of the OVAL definition,
- *         or NULL if iteration is complete.  
+ *         or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (ovaldef_info_iterator_xml_file, GET_ITERATOR_COLUMN_COUNT + 5);
@@ -45973,7 +45974,7 @@ DEF_ACCESS (ovaldef_info_iterator_xml_file, GET_ITERATOR_COLUMN_COUNT + 5);
  * @param[in]  name  Full OVAL identifier.
  *
  * @return The long description of the OVAL definition,
- *         or NULL if iteration is complete.  
+ *         or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 gchar*

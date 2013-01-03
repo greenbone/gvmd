@@ -323,7 +323,7 @@ update_sec_db () {
   then
     CVE_REFDATE=0
   fi
-  
+
   if [ -z "$OVAL_REFDATE" ]
   then
     OVAL_REFDATE=0
@@ -387,7 +387,7 @@ update_sec_db () {
       then
         sqlquery=`xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile`
         oval_timestamp=`$SQLITE $SEC_DB "$sqlquery"`
-      
+
         if [ $oval_timestamp -ge $OVAL_REFDATE ]
         then
           echo "[i] Updating $ovalfile"
@@ -403,7 +403,7 @@ update_sec_db () {
   else
     echo "[w] No XML files found in $SCAP_DIR/oval/."
   fi
-  
+
   $SQLITE $SEC_DB "update meta set value ='`date +%s`' where name = 'last_update';"
 }
 

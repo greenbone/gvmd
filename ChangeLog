@@ -1,3 +1,22 @@
+2013-01-03  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	Cleaned up some trailing whitespaces and lines longer than 80
+	characters in OVAL sections.
+
+	* ChangeLog: Remove trailing whitespaces.
+
+	* src/manage.c: Remove trailing whitespaces.
+
+	* src/manage.h: Remove trailing whitespaces, insert line breaks.
+
+	* src/manage-sql.c: Remove trailing whitespaces, insert line breaks.
+
+	* src/manage-sql.h: Remove trailing whitespaces.
+
+	* tools/greenbone-scapdata-sync: Remove trailing whitespaces.
+
+	* tools/openvas-scapdata-sync.in: Remove trailing whitespaces.
+
 2013-01-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Fix non-unique names when cloning global resources. Remove some extra
@@ -37,47 +56,47 @@
 	Add output of raw data for OVAL definitions.
 	Change SCAP database format to include source file of OVAL definitions.
 	Change namespaces and schemas in OVAL XSL files to use OVAL ones
-	instead of ones left from CPE/CVE. 
-	
+	instead of ones left from CPE/CVE.
+
 	* CMakeLists.txt: Add ovaldef_getbyname.xsl
-	
+
 	* src/manage.c: Add raw data extraction for OVALDEF.
 	(): Add constant for OVAL selection stylesheet.
 	(get_ovaldef_filename): Add function to get full source filename.
 	(manage_read_info): Add else if branch for OVALDEF.
-	
+
 	* src/manage.h: Add declaration of ovaldef_info_iterator_xml_file
-	
+
 	* src/manage_sql.c (get_ovaldef_short_filename): Add new function
 	to get short xml filenames (as stored in SCAP database) of OVALDEFs.
 	Change OVALDEF_INFO_ITERATOR_FILTER_COLUMNS and
 	OVALDEF_INFO_ITERATOR_COLUMNS to include "xml_file"
 	(ovaldef_info_iterator_xml_file): Add function to read xml_file of
 	OVALDEFs.
-	
+
 	* src/manage_sql.h: Add declaration of get_ovaldef_short_filename.
-	
+
 	* src/omp.c (case CLIENT_GET_INFO): Add output of "xml_file" to OVALDEF.
-	
+
 	* tools/db_init.sql: Add column "xml_file" to table "ovaldefs"
-	
+
 	* tools/greenbone-scapdata-sync: Add migration to database version 7,
 	Remove obsolete migration scripts.
 	Update xsltproc call to pass xml file name as parameter.
-	
+
 	* tools/migrate_db5to6: Remove file as OVAL data has to be re-imported
 	for new database version.
-	
+
 	* tools/openvas-scapdata-sync.in: Analogous to greenbone-scapdata-sync.
-	
-	* tools/ovaldef_getbyname.xsl: New stylesheet to select an OVAL 
+
+	* tools/ovaldef_getbyname.xsl: New stylesheet to select an OVAL
 	definition with a given identifier.
-	
-	* tools/oval_timestamp: Remove unused namespaces, 
+
+	* tools/oval_timestamp: Remove unused namespaces,
 	Update schemaLocation to OVAL schemas.
-	
-	* tools/oval_update.xsl: Remove unused namespaces, 
-	Update schemaLocation to OVAL schemas. 
+
+	* tools/oval_update.xsl: Remove unused namespaces,
+	Update schemaLocation to OVAL schemas.
 	Add xml_file to SQL query.
 
 2013-01-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
@@ -251,30 +270,30 @@
 2012-12-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* CMakeLists.txt: Add SCAP.db migration script migrate_db5to6.sql
-	
+
 	* src/manage.h: Add iterator function declarations for OVAL 
 	definition data	(ovaldef): init_ovaldef_info_iterator,
 	ovaldef_info_count, ovaldef_info_iterator_version,
 	ovaldef_info_iterator_deprecated, ovaldef_info_iterator_def_class,
 	ovaldef_info_iterator_title, ovaldef_info_iterator_description.
-	
+
 	* src/manage_sql.c: Add implementations of new iterator functions 
 	declared in src/manage.h
-	
+
 	* src/omp.c (case CLIENT_GET_INFO): Add XML output of basic ovaldef
 	data.
-	
+
 	* tools/db_init.sql: Change database columns to include attributes
 	uuid, name, comment, creation_time, modification_time. Change DB 
 	version to 6.
-	
+
 	* tools/greenbone-scapdata-sync: Add migration to new database format.
-	
+
 	* migrate_db5to6.sql: Add new SQL file to migrate data from SCAP DB
 	version 5 to 6.
-	
+
 	* tools/openvas-scapdata-sync.in: Add migration to new database format
-	
+
 	* tools/oval_update.xsl: Change SQL queries to match new database format
 
 2012-12-21  Matthew Mundell <matthew.mundell@greenbone.net>
