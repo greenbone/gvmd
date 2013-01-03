@@ -1167,6 +1167,75 @@ vector_find_string (const gchar **vector, const gchar *string)
   return NULL;
 }
 
+/** @todo Duplicated from lsc_user.c. */
+/**
+ * @brief Reads contents from a source file into a destination file.
+ *
+ * The source file is read into memory, so it is inefficient and likely to fail
+ * for really big files.
+ *
+ * If the destination file does exist already, it will be overwritten.
+ *
+ * @param[in]  source_file  Source file name.
+ * @param[in]  dest_file    Destination file name.
+ *
+ * @return TRUE if successful, FALSE otherwise.
+ */
+static gboolean
+file_utils_copy_file (const gchar *source_file, const gchar *dest_file)
+{
+  gchar *src_file_content = NULL;
+  gsize src_file_size = 0;
+  size_t bytes_written = 0;
+  FILE *fd = NULL;
+  GError *error;
+
+  /* Read file content into memory. */
+
+  error = NULL;
+  if (g_file_get_contents (source_file,
+                           &src_file_content,
+                           &src_file_size,
+                           &error)
+      == FALSE)
+    {
+      if (error)
+        {
+          g_debug ("%s: failed to read %s: %s",
+                   __FUNCTION__, source_file, error->message);
+          g_error_free (error);
+        }
+      return FALSE;
+    }
+
+  /* Open destination file. */
+
+  fd = fopen (dest_file, "wb");
+  if (fd == NULL)
+    {
+      g_debug ("%s: failed to open %s", __FUNCTION__, dest_file);
+      g_free (src_file_content);
+      return FALSE;
+    }
+
+  /* Write content of src to dst and close it. */
+
+  bytes_written = fwrite (src_file_content, 1, (size_t) src_file_size, fd);
+  fclose (fd);
+
+  if (bytes_written != (size_t) src_file_size)
+    {
+      g_debug ("%s: failed to write to %s"
+               " (%zu/%" G_GSIZE_FORMAT ")",
+               __FUNCTION__, dest_file, bytes_written, src_file_size);
+      g_free (src_file_content);
+      return FALSE;
+    }
+  g_free (src_file_content);
+
+  return TRUE;
+}
+
 
 /* Filter utilities. */
 
@@ -39371,6 +39440,285 @@ create_report_format (const char *uuid, const char *name,
 
   sql ("COMMIT;");
 
+  return 0;
+}
+
+/**
+ * @brief Create Report Format from an existing Report Format.
+ *
+ * @param[in]  name                 Name of new Report Format. NULL to copy
+ *                                  from existing.
+ * @param[in]  source_uuid          UUID of existing Report Format.
+ * @param[out] new_report_format    New Report Format.
+ *
+ * @return 0 success, 1 Report Format exists already, 2 failed to find existing
+ *         Report Format, -1 error.
+ */
+int
+copy_report_format (const char* name, const char* source_uuid,
+                    report_format_t* new_report_format)
+{
+  report_format_t copy_report_format, source_report_format;
+  gchar *quoted_name, *quoted_uuid, *copy_uuid, *source_dir, *copy_dir;
+  gchar *tmp_dir;
+  int global;
+  user_t owner;
+  gchar *uniquify;
+
+  assert (current_credentials.uuid);
+
+  if (source_uuid == NULL)
+    return -1;
+
+  if (find_user (current_credentials.username, &owner)
+      || owner == 0)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  copy_uuid = openvas_uuid_make ();
+  if (copy_uuid == NULL)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  sql ("BEGIN IMMEDIATE");
+
+  /* Check that provided name doesn't exist already */
+  if (name && strlen (name))
+    {
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT (*) from report_formats WHERE name = '%s'"
+                   " AND ((owner IS NULL) OR (owner = "
+                   "  (SELECT users.ROWID from users"
+                   "    WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   current_credentials.uuid))
+        {
+          sql ("ROLLBACK");
+          g_free (quoted_name);
+          g_free (copy_uuid);
+          return 1;
+        }
+    }
+  else
+    quoted_name = NULL;
+
+  /* Check that Report Format to copy exists */
+  quoted_uuid = sql_quote (source_uuid);
+  if (sql_int (0, 0,
+               "SELECT COUNT (*) from report_formats WHERE uuid = '%s'"
+               " AND ((owner IS NULL) OR (owner = %llu));",
+               quoted_uuid,
+               owner)
+      == 0)
+    {
+      sql ("ROLLBACK");
+      g_free (quoted_name);
+      g_free (quoted_uuid);
+      g_free (copy_uuid);
+      return 2;
+    }
+
+  uniquify = g_strdup_printf("uniquify ('report_format', name,"
+                             "%llu, ' Clone')",
+                             owner);
+
+  /* Copy Report Format in DB */
+  sql ("INSERT INTO report_formats (uuid, owner, name, extension,"
+       " content_type, summary, description, signature, trust, trust_time,"
+       " flags, creation_time, modification_time)"
+       " SELECT '%s', %llu, %s%s%s, extension, content_type, summary,"
+       "  description, signature, trust, trust_time, flags, now (), now ()"
+       "  FROM report_formats WHERE uuid = '%s';",
+       copy_uuid,
+       owner,
+       quoted_name ? "'" : "",
+       quoted_name
+        ? quoted_name
+        : uniquify,
+       quoted_name ? "'" : "",
+       quoted_uuid);
+
+  g_free (uniquify);
+  copy_report_format = sqlite3_last_insert_rowid (task_db);
+
+  /* Copy Report Format Parameters */
+  sql ("INSERT INTO report_format_params "
+       " (report_format, name, type, value, type_min, type_max,"
+       "  type_regex, fallback)"
+       " SELECT %llu, name, type, value, type_min, type_max,"
+       "  type_regex, fallback"
+       "  FROM report_format_params WHERE report_format = "
+       "   (SELECT report_formats.ROWID FROM report_formats"
+       "    WHERE report_formats.uuid = '%s');",
+       copy_report_format,
+       quoted_uuid);
+  find_report_format (quoted_uuid, &source_report_format);
+
+  g_free (quoted_name);
+  g_free (quoted_uuid);
+
+  /* Copy files on disk */
+  global = report_format_global (source_report_format);
+  if (global)
+    source_dir = g_build_filename (OPENVAS_DATA_DIR,
+                                   "openvasmd",
+                                   "global_report_formats",
+                                   source_uuid,
+                                   NULL);
+  else
+    {
+      assert (current_credentials.uuid);
+      source_dir = g_build_filename (OPENVAS_STATE_DIR,
+                                     "openvasmd",
+                                     "report_formats",
+                                     current_credentials.uuid,
+                                     source_uuid,
+                                     NULL);
+    }
+
+  /* Check that the directory exists. */
+  if (!g_file_test (source_dir, G_FILE_TEST_EXISTS))
+    {
+      g_warning ("%s: report format directory %s not found",
+                 __FUNCTION__, source_dir);
+      g_free (source_dir);
+      g_free (copy_uuid);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Directory to copy into */
+  copy_dir = g_build_filename (OPENVAS_STATE_DIR,
+                               "openvasmd",
+                               "report_formats",
+                               current_credentials.uuid,
+                               copy_uuid,
+                               NULL);
+
+  if (g_file_test (copy_dir, G_FILE_TEST_EXISTS)
+      && file_utils_rmdir_rf (copy_dir))
+    {
+      g_warning ("%s: failed to remove dir %s", __FUNCTION__, copy_dir);
+      g_free (source_dir);
+      g_free (copy_dir);
+      g_free (copy_uuid);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (g_mkdir_with_parents (copy_dir, 0755 /* "rwxr-xr-x" */))
+    {
+      g_warning ("%s: failed to create dir %s", __FUNCTION__, copy_dir);
+      g_free (source_dir);
+      g_free (copy_dir);
+      g_free (copy_uuid);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Correct permissions as glib doesn't seem to do so. */
+  tmp_dir = g_build_filename (OPENVAS_STATE_DIR,
+                              "openvasmd",
+                              "report_formats",
+                              current_credentials.uuid,
+                              NULL);
+
+  if (chmod (tmp_dir, 0755 /* rwxr-xr-x */))
+    {
+      g_warning ("%s: chmod %s failed: %s\n",
+                 __FUNCTION__,
+                 tmp_dir,
+                 strerror (errno));
+      g_free (source_dir);
+      g_free (copy_dir);
+      g_free (copy_uuid);
+      g_free (tmp_dir);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  g_free (tmp_dir);
+
+  tmp_dir = g_build_filename (OPENVAS_STATE_DIR,
+                              "openvasmd",
+                              "report_formats",
+                              current_credentials.uuid,
+                              copy_uuid,
+                              NULL);
+
+  if (chmod (tmp_dir, 0755 /* rwxr-xr-x */))
+    {
+      g_warning ("%s: chmod %s failed: %s\n",
+                 __FUNCTION__,
+                 tmp_dir,
+                 strerror (errno));
+      g_free (source_dir);
+      g_free (copy_dir);
+      g_free (copy_uuid);
+      g_free (tmp_dir);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  g_free (tmp_dir);
+  g_free (copy_uuid);
+
+  /* Copy files in directory */
+  {
+    GDir *directory;
+    GError *error;
+
+    error = NULL;
+    directory = g_dir_open (source_dir, 0, &error);
+    if (directory == NULL)
+      {
+        if (error)
+          {
+            g_warning ("g_dir_open(%s) failed - %s\n",
+                       source_dir, error->message);
+            g_error_free (error);
+          }
+        g_free (source_dir);
+        g_free (copy_dir);
+        sql ("ROLLBACK;");
+        return -1;
+      }
+    else
+      {
+        gchar *source_file, *copy_file;
+        const gchar *filename;
+
+        filename = g_dir_read_name (directory);
+        while (filename)
+          {
+            source_file = g_build_filename (source_dir, filename, NULL);
+            copy_file = g_build_filename (copy_dir, filename, NULL);
+
+            if (file_utils_copy_file (source_file, copy_file) == FALSE)
+            {
+              g_warning ("%s: copy of %s to %s failed.\n",
+                         "copy_report_format", source_file, copy_file);
+              g_free (source_file);
+              g_free (copy_file);
+              g_free (source_dir);
+              g_free (copy_dir);
+              sql ("ROLLBACK");
+              return -1;
+            }
+            g_free (source_file);
+            g_free (copy_file);
+            filename = g_dir_read_name (directory);
+          }
+      }
+  }
+
+  g_free (source_dir);
+  g_free (copy_dir);
+  sql ("COMMIT");
+  if (new_report_format) *new_report_format = copy_report_format;
   return 0;
 }
 

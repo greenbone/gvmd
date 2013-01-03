@@ -1341,6 +1341,7 @@ typedef struct
   array_t *params;        ///< All params.
   char *signature;        ///< Signature.
   char *summary;          ///< Summary.
+  char *copy;             ///< UUID of Report Format to copy.
 } create_report_format_data_t;
 
 /**
@@ -1360,6 +1361,7 @@ create_report_format_data_reset (create_report_format_data_t *data)
   free (data->global);
   free (data->id);
   free (data->name);
+  free (data->copy);
   free (data->param_default);
   free (data->param_name);
 
@@ -4039,6 +4041,7 @@ typedef enum
   CLIENT_CREATE_REPORT_TASK_COMMENT,
   /* CREATE_REPORT_FORMAT. */
   CLIENT_CREATE_REPORT_FORMAT,
+  CLIENT_CREATE_REPORT_FORMAT_COPY,
   /* get_report_formats (GRF) is used for report format export.  CLIENT_CRF is
    * for CLIENT_CREATE_REPORT_FORMAT. */
   CLIENT_CRF_GRFR,
@@ -6956,6 +6959,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             create_report_format_data->import = 1;
             set_client_state (CLIENT_CRF_GRFR);
           }
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_FORMAT_COPY);
         ELSE_ERROR ("create_report_format");
 
       case CLIENT_CRF_GRFR:
@@ -14169,6 +14174,52 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("create_report_format",
                                   "CREATE is forbidden for observer users"));
             }
+          else if (create_report_format_data->copy)
+            {
+              switch (copy_report_format (create_report_format_data->name,
+                                          create_report_format_data->copy,
+                                          &new_report_format))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = report_format_uuid (new_report_format);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID
+                                             ("create_report_format"),
+                                             uuid);
+                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                           "Report Format %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_report_format",
+                                      "Report Format exists already"));
+                  g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                         "Report Format could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_report_format",
+                                                 "report_format",
+                                                 create_report_format_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                         "Report Format could not be created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_report_format"));
+                  g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                         "Report Format could not be created");
+                  break;
+              }
+            }
           else if (create_report_format_data->import)
             {
               array_terminate (create_report_format_data->files);
@@ -14317,6 +14368,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_CREATE_REPORT_FORMAT, COPY);
       case CLIENT_CRF_GRFR:
         assert (strcasecmp ("GET_REPORT_FORMATS_RESPONSE", element_name) == 0);
         set_client_state (CLIENT_CREATE_REPORT_FORMAT);
@@ -19728,6 +19780,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_DESCRIPTION,
               &create_report_format_data->description);
+
+      APPEND (CLIENT_CREATE_REPORT_FORMAT_COPY,
+              &create_report_format_data->copy);
 
       APPEND (CLIENT_CRF_GRFR_REPORT_FORMAT_EXTENSION,
               &create_report_format_data->extension);

@@ -1988,6 +1988,9 @@ create_report_format (const char *, const char *, const char *, const char *,
                       array_t *, const char *, report_format_t *);
 
 int
+copy_report_format (const char *, const char *, report_format_t*);
+
+int
 delete_report_format (const char *, int);
 
 int
