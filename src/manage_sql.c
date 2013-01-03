@@ -329,6 +329,9 @@ user_owns_result (const char *);
 int
 valid_type (const char*);
 
+static gboolean
+find_user (const char *, user_t *user);
+
 
 /* Variables. */
 
@@ -2973,13 +2976,20 @@ copy_resource (const char *type, const char *name, const char *comment,
                const char *resource_id, const char *columns,
                resource_t* new_resource)
 {
-  gchar *quoted_name, *quoted_uuid;
+  gchar *quoted_name, *quoted_uuid, *uniquify;
   int named;
+  user_t owner;
 
   assert (current_credentials.uuid);
 
   if (resource_id == NULL)
     return -1;
+
+  if (find_user (current_credentials.username, &owner)
+      || owner == 0)
+    {
+      return -1;
+    }
 
   named = type_named (type);
 
@@ -3008,11 +3018,10 @@ copy_resource (const char *type, const char *name, const char *comment,
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM %ss"
                " WHERE uuid = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+               " AND ((owner IS NULL) OR (owner = %llu))",
                type,
                quoted_uuid,
-               current_credentials.uuid)
+               owner)
       == 0)
     {
       sql ("ROLLBACK;");
@@ -3023,6 +3032,8 @@ copy_resource (const char *type, const char *name, const char *comment,
 
   /* Copy the existing resource. */
 
+  uniquify = g_strdup_printf ("uniquify ('%s', name, %llu, ' Clone')",
+                              type, owner);
   if (named && comment && strlen (comment))
     {
       gchar *quoted_comment;
@@ -3037,9 +3048,9 @@ copy_resource (const char *type, const char *name, const char *comment,
            columns ? ", " : "",
            columns ? columns : "",
            current_credentials.uuid,
-           quoted_name ? "'" : "uniquify ('",
-           quoted_name ? quoted_name : type,
-           quoted_name ? "'" : "', name, owner, ' Clone')",
+           quoted_name ? "'" : "",
+           quoted_name ? quoted_name : uniquify,
+           quoted_name ? "'" : "",
            quoted_comment,
            columns ? ", " : "",
            columns ? columns : "",
@@ -3050,17 +3061,15 @@ copy_resource (const char *type, const char *name, const char *comment,
   else if (named)
     sql ("INSERT INTO %ss"
          " (uuid, owner, name, comment, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (),"
-         " (SELECT ROWID FROM users where users.uuid = '%s'),"
-         " %s%s%s, comment, now (), now ()%s%s"
+         " SELECT make_uuid (), %llu, %s%s%s, comment, now (), now ()%s%s"
          " FROM %ss WHERE uuid = '%s';",
          type,
          columns ? ", " : "",
          columns ? columns : "",
-         current_credentials.uuid,
-         quoted_name ? "'" : "uniquify ('",
-         quoted_name ? quoted_name : type,
-         quoted_name ? "'" : "', name, owner, ' Clone')",
+         owner,
+         quoted_name ? "'" : "",
+         quoted_name ? quoted_name : uniquify,
+         quoted_name ? "'" : "",
          columns ? ", " : "",
          columns ? columns : "",
          type,
@@ -3068,14 +3077,12 @@ copy_resource (const char *type, const char *name, const char *comment,
   else
     sql ("INSERT INTO %ss"
          " (uuid, owner, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (),"
-         " (SELECT ROWID FROM users where users.uuid = '%s'),"
-         " now (), now ()%s%s"
+         " SELECT make_uuid (), %llu, now (), now ()%s%s"
          " FROM %ss WHERE uuid = '%s';",
          type,
          columns ? ", " : "",
          columns ? columns : "",
-         current_credentials.uuid,
+         owner,
          columns ? ", " : "",
          columns ? columns : "",
          type,
@@ -3088,6 +3095,7 @@ copy_resource (const char *type, const char *name, const char *comment,
   sql ("COMMIT;");
   g_free (quoted_uuid);
   g_free (quoted_name);
+  g_free (uniquify);
   return 0;
 }
 
@@ -9578,13 +9586,20 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
             alert_t* new_alert)
 {
   alert_t new_id, alert;
-  gchar *quoted_name, *quoted_comment, *quoted_uuid;
+  gchar *quoted_name, *quoted_comment, *quoted_uuid, *uniquify;
   char *alertchr;
+  user_t owner;
 
   assert (current_credentials.uuid);
 
   if (alert_id == NULL)
     return -1;
+
+  if (find_user (current_credentials.username, &owner)
+      || owner == 0)
+    {
+      return -1;
+    }
 
   quoted_name = sql_quote (name);
   sql ("BEGIN IMMEDIATE");
@@ -9613,11 +9628,9 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
   alertchr = sql_string (0, 0,
                          "SELECT ROWID FROM alerts"
                          " WHERE uuid = '%s'"
-                         " AND ((owner IS NULL) OR (owner = "
-                         " (SELECT users.ROWID FROM users"
-                         "  WHERE users.uuid = '%s')));",
+                         " AND ((owner IS NULL) OR (owner = %llu));",
                          quoted_uuid,
-                         current_credentials.uuid);
+                         owner);
   if (alertchr == NULL)
     {
       sql ("ROLLBACK");
@@ -9634,19 +9647,18 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
   else
     quoted_comment = NULL;
 
+  uniquify = g_strdup_printf ("uniquify ('alert', name, %llu, ' Clone')",
+                              owner);
   sql ("INSERT INTO alerts"
        " (uuid, name, owner, comment, event, condition, method, filter,"
        "  creation_time, modification_time)"
-       " SELECT make_uuid (), %s%s%s,"
-       "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s'),"
-       "  %s%s%s, event, condition, method, filter, now (), now ()"
+       " SELECT make_uuid (), %s%s%s, %llu, %s%s%s, event, condition, method,"
+       "  filter, now (), now ()"
        " FROM alerts WHERE uuid = '%s';",
        quoted_name ? "'" : "",
-       quoted_name
-        ? quoted_name
-        : "uniquify ('alert', name, owner, ' Clone')",
+       quoted_name ? quoted_name : uniquify,
        quoted_name ? "'" : "",
-       current_credentials.uuid,
+       owner,
        quoted_comment ? "'" : "",
        quoted_comment ? quoted_comment : "comment",
        quoted_comment ? "'" : "",
@@ -9675,10 +9687,11 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
        new_id,
        alert);
 
+  sql ("COMMIT;");
   g_free (quoted_name);
   g_free (quoted_comment);
   g_free (quoted_uuid);
-  sql ("COMMIT;");
+  g_free (uniquify);
   if (new_alert) *new_alert = new_id;
   return 0;
 }
@@ -26499,12 +26512,19 @@ copy_task (const char* name, const char* comment, const char *task_id,
            task_t* new_task)
 {
   task_t task;
-  gchar *quoted_name, *quoted_uuid;
+  gchar *quoted_name, *quoted_uuid, *uniquify;
+  user_t owner;
 
   assert (current_credentials.uuid);
 
   if (task_id == NULL)
     return -1;
+
+  if (find_user (current_credentials.username, &owner)
+      || owner == 0)
+    {
+      return -1;
+    }
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -26517,10 +26537,9 @@ copy_task (const char* name, const char* comment, const char *task_id,
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM tasks"
                " WHERE uuid = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+               " AND ((owner IS NULL) OR (owner = %llu))",
                quoted_uuid,
-               current_credentials.uuid)
+               owner)
       == 0)
     {
       sql ("ROLLBACK;");
@@ -26530,6 +26549,8 @@ copy_task (const char* name, const char* comment, const char *task_id,
 
   /* Copy the existing task. */
 
+  uniquify = g_strdup_printf ("uniquify ('task', name, %llu, ' Clone')",
+                              owner);
   if (comment && strlen (comment))
     {
       gchar *quoted_comment;
@@ -26539,18 +26560,14 @@ copy_task (const char* name, const char* comment, const char *task_id,
            "  schedule, schedule_next_time, slave, config_location,"
            "  target_location, schedule_location, slave_location,"
            "  creation_time, modification_time)"
-           " SELECT make_uuid (),"
-           " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " %s%s%s, 0, time, '%s', config, target,"
+           " SELECT make_uuid (), %llu, %s%s%s, 0, time, '%s', config, target,"
            " schedule, schedule_next_time, slave, config_location,"
            " target_location, schedule_location, slave_location,"
            " now (), now ()"
            " FROM tasks WHERE uuid = '%s';",
-           current_credentials.uuid,
+           owner,
            quoted_name ? "'" : "",
-           quoted_name
-            ? quoted_name
-            : "uniquify ('task', name, owner, ' Clone')",
+           quoted_name ? quoted_name : uniquify,
            quoted_name ? "'" : "",
            quoted_comment ? quoted_comment : "",
            quoted_uuid);
@@ -26562,14 +26579,12 @@ copy_task (const char* name, const char* comment, const char *task_id,
          "  schedule, schedule_next_time, slave, config_location,"
          "  target_location, schedule_location, slave_location,"
          "  creation_time, modification_time)"
-         " SELECT make_uuid (),"
-         " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " %s%s%s, 0, time, comment, config, target,"
-         " schedule, schedule_next_time, slave, config_location,"
+         " SELECT make_uuid (), %llu, %s%s%s, 0, time, comment, config,"
+         " target, schedule, schedule_next_time, slave, config_location,"
          " target_location, schedule_location, slave_location,"
          " now (), now ()"
          " FROM tasks WHERE uuid = '%s';",
-         current_credentials.uuid,
+         owner,
          quoted_name ? "'" : "",
          quoted_name
           ? quoted_name
@@ -26590,6 +26605,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
   sql ("COMMIT;");
   g_free (quoted_uuid);
   g_free (quoted_name);
+  g_free (uniquify);
   return 0;
 }
 
@@ -28377,12 +28393,19 @@ int
 copy_target (const char* name, const char* comment, const char *target_id,
              target_t* new_target)
 {
-  gchar *quoted_name, *quoted_uuid;
+  gchar *quoted_name, *quoted_uuid, *uniquify;
+  user_t owner;
 
   assert (current_credentials.uuid);
 
   if (target_id == NULL)
     return -1;
+
+  if (find_user (current_credentials.username, &owner)
+      || owner == 0)
+    {
+      return -1;
+    }
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -28391,10 +28414,9 @@ copy_target (const char* name, const char* comment, const char *target_id,
       quoted_name = sql_quote (name);
       if (sql_int (0, 0,
                    "SELECT COUNT(*) FROM targets WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   " AND ((owner IS NULL) OR (owner = %llu));",
                    quoted_name,
-                   current_credentials.uuid))
+                   owner))
         {
           sql ("ROLLBACK;");
           g_free (quoted_name);
@@ -28408,10 +28430,9 @@ copy_target (const char* name, const char* comment, const char *target_id,
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM targets"
                " WHERE uuid = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+               " AND ((owner IS NULL) OR (owner = %llu))",
                quoted_uuid,
-               current_credentials.uuid)
+               owner)
       == 0)
     {
       sql ("ROLLBACK;");
@@ -28421,6 +28442,8 @@ copy_target (const char* name, const char* comment, const char *target_id,
 
   /* Copy the existing target. */
 
+  uniquify = g_strdup_printf ("uniquify ('target', name, %llu, ' Clone')",
+                              owner);
   if (comment && strlen (comment))
     {
       gchar *quoted_comment;
@@ -28429,12 +28452,10 @@ copy_target (const char* name, const char* comment, const char *target_id,
            " (uuid, owner, name, comment, hosts, lsc_credential, ssh_port,"
            "  smb_lsc_credential, port_range, creation_time,"
            "  modification_time)"
-           " SELECT make_uuid (),"
-           " (SELECT ROWID FROM users where users.uuid = '%s'),"
-           " %s%s%s, '%s', hosts, lsc_credential, ssh_port,"
-           " smb_lsc_credential, port_range, now (), now ()"
+           " SELECT make_uuid (), %llu, %s%s%s, '%s', hosts, lsc_credential,"
+           " ssh_port, smb_lsc_credential, port_range, now (), now ()"
            " FROM targets WHERE uuid = '%s';",
-           current_credentials.uuid,
+           owner,
            quoted_name ? "'" : "",
            quoted_name
             ? quoted_name
@@ -28449,16 +28470,12 @@ copy_target (const char* name, const char* comment, const char *target_id,
          " (uuid, owner, name, comment, hosts, lsc_credential, ssh_port,"
          "  smb_lsc_credential, port_range, creation_time,"
          "  modification_time)"
-         " SELECT make_uuid (),"
-         " (SELECT ROWID FROM users where users.uuid = '%s'),"
-         " %s%s%s, comment, hosts, lsc_credential, ssh_port,"
-         " smb_lsc_credential, port_range, now (), now ()"
+         " SELECT make_uuid (), %llu, %s%s%s, comment, hosts, lsc_credential,"
+         " ssh_port, smb_lsc_credential, port_range, now (), now ()"
          " FROM targets WHERE uuid = '%s';",
-         current_credentials.uuid,
+         owner,
          quoted_name ? "'" : "",
-         quoted_name
-          ? quoted_name
-          : "uniquify ('target', name, owner, ' Clone')",
+         quoted_name ? quoted_name : uniquify,
          quoted_name ? "'" : "",
          quoted_uuid);
 
@@ -28468,6 +28485,7 @@ copy_target (const char* name, const char* comment, const char *target_id,
   sql ("COMMIT;");
   g_free (quoted_uuid);
   g_free (quoted_name);
+  g_free (uniquify);
   return 0;
 }
 
@@ -30327,6 +30345,8 @@ copy_config (const char* name, const char* comment, config_t config,
   config_t id;
   gchar *quoted_name = sql_quote (name);
   gchar *quoted_comment, *quoted_config_selector;
+  gchar *uniquify;
+  user_t owner;
 
   assert (current_credentials.uuid);
 
@@ -30339,16 +30359,21 @@ copy_config (const char* name, const char* comment, config_t config,
   quoted_config_selector = sql_quote (config_selector);
   free (config_selector);
 
+  if (find_user (current_credentials.username, &owner)
+      || owner == 0)
+    {
+      return -1;
+    }
+
   sql ("BEGIN IMMEDIATE;");
 
   if (quoted_name && strlen (quoted_name))
     {
       if (sql_int (0, 0,
                    "SELECT COUNT(*) FROM configs WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   " AND ((owner IS NULL) OR (owner = %llu));",
                    quoted_name,
-                   current_credentials.uuid))
+                   owner))
         {
           tracef ("   config \"%s\" already exists\n", name);
           sql ("ROLLBACK;");
@@ -30363,10 +30388,9 @@ copy_config (const char* name, const char* comment, config_t config,
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM configs"
                " WHERE ROWID = %llu"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+               " AND ((owner IS NULL) OR (owner = %llu))",
                config,
-               current_credentials.uuid)
+               owner)
       == 0)
     {
       sql ("ROLLBACK;");
@@ -30399,6 +30423,8 @@ copy_config (const char* name, const char* comment, config_t config,
 
   /* Copy the existing config. */
 
+  uniquify = g_strdup_printf ("uniquify ('config', name, %llu, ' Clone')",
+                              owner);
   if (comment && strlen (comment) > 0)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
@@ -30406,13 +30432,11 @@ copy_config (const char* name, const char* comment, config_t config,
            " (uuid, name, owner, nvt_selector, comment, family_count,"
            "  nvt_count, families_growing, nvts_growing,"
            "  creation_time, modification_time)"
-           " SELECT make_uuid (), '%s',"
-           " (SELECT ROWID FROM users where users.uuid = '%s'),"
-           " '%s', '%s', family_count, nvt_count,"
-           " families_growing, nvts_growing, now (), now ()"
+           " SELECT make_uuid (), '%s', %llu, '%s', '%s', family_count,"
+           " nvt_count, families_growing, nvts_growing, now (), now ()"
            " FROM configs WHERE ROWID = %llu;",
            quoted_name,
-           current_credentials.uuid,
+           owner,
            uuid,
            quoted_comment,
            config);
@@ -30422,17 +30446,13 @@ copy_config (const char* name, const char* comment, config_t config,
     sql ("INSERT INTO configs"
          " (uuid, name, owner, nvt_selector, comment, family_count, nvt_count,"
          "  families_growing, nvts_growing, creation_time, modification_time)"
-         " SELECT make_uuid (), %s%s%s,"
-         " (SELECT ROWID FROM users where users.uuid = '%s'),"
-         " '%s', %s, family_count, nvt_count,"
-         " families_growing, nvts_growing, now (), now ()"
+         " SELECT make_uuid (), %s%s%s, %llu, '%s', %s, family_count,"
+         " nvt_count, families_growing, nvts_growing, now (), now ()"
          " FROM configs WHERE ROWID = %llu",
          quoted_name ? "'" : "",
-         quoted_name
-          ? quoted_name
-          : "uniquify ('config', name, owner, ' Clone')",
+         quoted_name ? quoted_name : uniquify,
          quoted_name ? "'" : "",
-         current_credentials.uuid,
+         owner,
          uuid,
          quoted_name ? "''" : "comment",
          config);
@@ -30455,6 +30475,7 @@ copy_config (const char* name, const char* comment, config_t config,
   free (uuid);
   g_free (quoted_name);
   g_free (quoted_config_selector);
+  g_free (uniquify);
   if (new_config) *new_config = id;
   return 0;
 }
@@ -39491,11 +39512,9 @@ copy_report_format (const char* name, const char* source_uuid,
       quoted_name = sql_quote (name);
       if (sql_int (0, 0,
                    "SELECT COUNT (*) from report_formats WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner = "
-                   "  (SELECT users.ROWID from users"
-                   "    WHERE users.uuid = '%s')));",
+                   " AND ((owner IS NULL) OR (owner = %llu));",
                    quoted_name,
-                   current_credentials.uuid))
+                   owner))
         {
           sql ("ROLLBACK");
           g_free (quoted_name);
@@ -39714,9 +39733,9 @@ copy_report_format (const char* name, const char* source_uuid,
       }
   }
 
+  sql ("COMMIT");
   g_free (source_dir);
   g_free (copy_dir);
-  sql ("COMMIT");
   if (new_report_format) *new_report_format = copy_report_format;
   return 0;
 }
@@ -42365,12 +42384,19 @@ copy_port_list (const char* name, const char* comment,
                 const char* port_list_id, port_list_t* port_list)
 {
   port_list_t new_port_list;
-  gchar *quoted_name, *quoted_comment, *quoted_uuid;
+  gchar *quoted_name, *quoted_comment, *quoted_uuid, *uniquify;
+  user_t owner;
 
   assert (current_credentials.uuid);
 
   if (port_list_id == NULL)
     return -1;
+
+  if (find_user (current_credentials.username, &owner)
+      || owner == 0)
+    {
+      return -1;
+    }
 
   sql ("BEGIN IMMEDIATE");
 
@@ -42380,11 +42406,9 @@ copy_port_list (const char* name, const char* comment,
       quoted_name = sql_quote (name);
       if (sql_int (0, 0,
                    "SELECT COUNT (*) from port_lists WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner = "
-                   "  (SELECT users.ROWID from users"
-                   "    WHERE users.uuid = '%s')));",
+                   " AND ((owner IS NULL) OR (owner = %llu));",
                    quoted_name,
-                   current_credentials.uuid))
+                   owner))
         {
           tracef ("  Port List \"%s\" exists already\n", name);
           sql ("ROLLBACK");
@@ -42399,10 +42423,9 @@ copy_port_list (const char* name, const char* comment,
   quoted_uuid = sql_quote (port_list_id);
   if (sql_int (0, 0,
                "SELECT COUNT (*) from port_lists WHERE uuid = '%s'"
-               " AND ((owner IS NULL) OR (owner = "
-               "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+               " AND ((owner IS NULL) OR (owner = %llu));",
                quoted_uuid,
-               current_credentials.uuid)
+               owner)
       == 0)
     {
       sql ("ROLLBACK");
@@ -42418,17 +42441,16 @@ copy_port_list (const char* name, const char* comment,
   else
     quoted_comment = NULL;
 
+  uniquify = g_strdup_printf ("uniquify ('port_list', name, %llu, ' Clone')",
+                              owner);
   sql ("INSERT INTO port_lists (uuid, owner, name, comment,"
        " creation_time, modification_time) "
-       " SELECT make_uuid (),"
-       "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s'),"
+       " SELECT make_uuid (),%llu,"
        "  %s%s%s, %s%s%s, now (), now ()"
        "  FROM port_lists WHERE uuid = '%s';",
-       current_credentials.uuid,
+       owner,
        quoted_name ? "'" : "",
-       quoted_name
-        ? quoted_name
-        : "uniquify ('port_list', name, owner, ' Clone')",
+       quoted_name ? quoted_name : uniquify,
        quoted_name ? "'" : "",
        quoted_comment ? "'" : "",
        quoted_comment ? quoted_comment : "comment",
@@ -42448,10 +42470,11 @@ copy_port_list (const char* name, const char* comment,
        new_port_list,
        port_list_id);
 
+  sql ("COMMIT");
   g_free (quoted_name);
   g_free (quoted_comment);
   g_free (quoted_uuid);
-  sql ("COMMIT");
+  g_free (uniquify);
   if (port_list) *port_list = new_port_list;
   return 0;
 }

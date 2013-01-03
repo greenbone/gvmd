@@ -1,5 +1,17 @@
 2013-01-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Fix non-unique names when cloning global resources. Remove some extra
+	sql.
+
+	* src/manage_sql.c: Add find_user static header.
+	(copy_resource, copy_task, copy_target, copy_config, copy_alert)
+	(copy_report_format, copy_port_list): uniquify based on user cloning the
+	object rather than the object's owner.
+	(copy_alert, copy_report_format, copy_port_list): Style update.
+	(copy_report_format): Use owner value instead of subquery for user id.
+
+2013-01-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (copy_report_format): Remove extra sql rollback.
 
 2013-01-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
