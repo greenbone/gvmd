@@ -530,6 +530,7 @@ static command_t omp_commands[]
     {"GET_VERSION", "Get the OpenVAS Manager Protocol version."},
     {"GET_INFO", "Get raw information for a given item."},
     {"HELP", "Get this help text."},
+    {"MODIFY_AGENT", "Modify an existing agent."},
     {"MODIFY_CONFIG", "Update an existing config."},
     {"MODIFY_LSC_CREDENTIAL", "Modify an existing LSC credential."},
     {"MODIFY_FILTER", "Modify an existing filter."},
@@ -2587,6 +2588,31 @@ help_data_reset (help_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_agent command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *name;                    ///< Name of agent.
+  char *agent_id;                ///< agent UUID.
+} modify_agent_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_agent_data_reset (modify_agent_data_t *data)
+{
+  free (data->comment);
+  free (data->name);
+  free (data->agent_id);
+
+  memset (data, 0, sizeof (modify_agent_data_t));
+}
+
+/**
  * @brief Reset command data.
  *
  * @param[in]  data  Command data.
@@ -3314,6 +3340,7 @@ typedef union
   get_targets_data_t get_targets;                     ///< get_targets
   get_tasks_data_t get_tasks;                         ///< get_tasks
   help_data_t help;                                   ///< help
+  modify_agent_data_t modify_agent;                   ///< modify_agent
   modify_config_data_t modify_config;                 ///< modify_config
   modify_filter_data_t modify_filter;                 ///< modify_filter
   modify_lsc_credential_data_t modify_lsc_credential; ///< modify_lsc_credential
@@ -3689,6 +3716,12 @@ import_config_data_t *import_config_data
  */
 modify_config_data_t *modify_config_data
  = &(command_data.modify_config);
+
+/**
+ * @brief Parser callback data for MODIFY_AGENT.
+ */
+modify_agent_data_t *modify_agent_data
+ = &(command_data.modify_agent);
 
 /**
  * @brief Parser callback data for MODIFY_FILTER.
@@ -4159,6 +4192,9 @@ typedef enum
   CLIENT_GET_VERSION_AUTHENTIC,
   CLIENT_GET_INFO,
   CLIENT_HELP,
+  CLIENT_MODIFY_AGENT,
+  CLIENT_MODIFY_AGENT_COMMENT,
+  CLIENT_MODIFY_AGENT_NAME,
   CLIENT_MODIFY_LSC_CREDENTIAL,
   CLIENT_MODIFY_LSC_CREDENTIAL_NAME,
   CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT,
@@ -5773,6 +5809,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &help_data->type);
             set_client_state (CLIENT_HELP);
           }
+        else if (strcasecmp ("MODIFY_AGENT", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "agent_id",
+                              &modify_agent_data->agent_id);
+            set_client_state (CLIENT_MODIFY_AGENT);
+          }
         else if (strcasecmp ("MODIFY_CONFIG", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "config_id",
@@ -5985,6 +6027,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         if (strcasecmp ("UNIT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD_UNIT);
         ELSE_ERROR ("create_schedule");
+
+      case CLIENT_MODIFY_AGENT:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_append_string (&modify_agent_data->comment, "");
+            set_client_state (CLIENT_MODIFY_AGENT_COMMENT);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&modify_agent_data->name, "");
+            set_client_state (CLIENT_MODIFY_AGENT_NAME);
+          }
+        ELSE_ERROR ("create_agent");
 
       case CLIENT_MODIFY_CONFIG:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -15523,6 +15578,69 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_MODIFY_AGENT:
+        {
+          assert (strcasecmp ("MODIFY_AGENT", element_name) == 0);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_agent",
+                                  "MODIFY is forbidden for observer users"));
+            }
+          else switch (modify_agent
+                        (modify_agent_data->agent_id,
+                         modify_agent_data->name,
+                         modify_agent_data->comment))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_agent"));
+                g_log ("event agent", G_LOG_LEVEL_MESSAGE,
+                       "Agent %s has been modified",
+                       modify_agent_data->agent_id);
+                break;
+              case 1:
+                if (send_find_error_to_client ("modify_agent",
+                                               "agent",
+                                               modify_agent_data->agent_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event agent", G_LOG_LEVEL_MESSAGE,
+                       "Agent could not be modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_agent",
+                                    "agent with new name exists already"));
+                g_log ("event agent", G_LOG_LEVEL_MESSAGE,
+                       "agent could not be modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_agent",
+                                    "MODIFY_agent requires a agent_id"));
+                g_log ("event agent", G_LOG_LEVEL_MESSAGE,
+                       "agent could not be modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agent"));
+                g_log ("event agent", G_LOG_LEVEL_MESSAGE,
+                       "agent could not be modified");
+                break;
+            }
+
+          modify_agent_data_reset (modify_agent_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_AGENT, COMMENT);
+      CLOSE (CLIENT_MODIFY_AGENT, NAME);
+
       case CLIENT_MODIFY_FILTER:
         {
           assert (strcasecmp ("MODIFY_FILTER", element_name) == 0);
@@ -19944,6 +20062,12 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE,
               &create_task_data->preference->value);
 
+
+      APPEND (CLIENT_MODIFY_AGENT_COMMENT,
+              &modify_agent_data->comment);
+
+      APPEND (CLIENT_MODIFY_AGENT_NAME,
+              &modify_agent_data->name);
 
       APPEND (CLIENT_MODIFY_FILTER_COMMENT,
               &modify_filter_data->comment);

@@ -1,3 +1,21 @@
+2013-01-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add modify agent feature.
+
+	* src/omp.c (modify_agent_data_t): New structure.
+	(omp_commands): Add modify_agent omp command.
+	(modify_agent_data_reset): New function.
+	(command_data_t): Add modify_agent element.
+	(modify_agent_data): Add parser callback for modify_agent command.
+	(client_state_t): Add CLIENT_MODIFY_AGENT, CLIENT_MODIFY_AGENT_NAME and
+	CLIENT_MODIFY_AGENT_COMMENT states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text_element): Handle modify_agent case.
+
+	* src/manage_sql.c (modify_agent): New function.
+
+	* src/manage.h: add modify_agent header.
+
 2013-01-03  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	Cleaned up some trailing whitespaces and lines longer than 80

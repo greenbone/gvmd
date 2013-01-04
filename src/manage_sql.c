@@ -35590,6 +35590,87 @@ copy_agent (const char* name, const char* comment, const char *agent_id,
 }
 
 /**
+ * @brief Modify an agent.
+ *
+ * @param[in]   agent_id        UUID of agent.
+ * @param[in]   name            Name of agent.
+ * @param[in]   comment         Comment on agent.
+ * @param[in]   host            Host of agent.
+ * @param[in]   port            Port on host.
+ * @param[in]   login           Host login name.
+ * @param[in]   password        Password for \p login.
+ *
+ * @return 0 success, 1 failed to find agent, 2 agent with new name exists,
+ *         3 agent_id required, -1 internal error.
+ */
+int
+modify_agent (const char *agent_id, const char *name, const char *comment)
+{
+  gchar *quoted_name, *quoted_comment;
+  agent_t agent;
+
+  if (agent_id == NULL)
+    return 3;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+
+  agent = 0;
+  if (find_agent (agent_id, &agent))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (agent == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  /* Check whether a agent with the same name exists already. */
+  if (name)
+    {
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM agents"
+                   " WHERE name = '%s'"
+                   " AND ROWID != %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   agent,
+                   current_credentials.uuid))
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+    }
+  else
+    quoted_name = sql_quote("");
+
+  quoted_comment = sql_quote (comment ? comment : "");
+
+  sql ("UPDATE agents SET"
+       " name = '%s',"
+       " comment = '%s',"
+       " modification_time = now ()"
+       " WHERE ROWID = %llu;",
+       quoted_name,
+       quoted_comment,
+       agent);
+
+  g_free (quoted_comment);
+  g_free (quoted_name);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Delete an agent.
  *
  * @param[in]  agent_id   UUID of agent.

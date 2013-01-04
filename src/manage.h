@@ -1592,6 +1592,9 @@ int
 copy_agent (const char*, const char*, const char *, agent_t *);
 
 int
+modify_agent (const char*, const char*, const char*);
+
+int
 delete_agent (const char *, int);
 
 int
