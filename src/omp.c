@@ -18077,24 +18077,29 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
                 {
-                   g_string_append_printf (result,
-                                           "<version>%s</version>"
-                                           "<deprecated>%s</deprecated>"
-                                           "<def_class>%s</def_class>"
-                                           "<title>%s</title>",
-                                           ovaldef_info_iterator_version (&info),
-                                           ovaldef_info_iterator_deprecated (&info),
-                                           ovaldef_info_iterator_def_class (&info),
-                                           ovaldef_info_iterator_title (&info));
-                   if (get_info_data->details == 1)
-                     {
-                        g_string_append_printf (result,
-                                           "<description>%s</description>"
-                                           "<xml_file>%s</xml_file>",
-                                           ovaldef_info_iterator_description (&info),
-                                           ovaldef_info_iterator_xml_file (&info)
-                                           );
-                     }
+                  gchar* title_escaped = g_markup_escape_text(
+                                ovaldef_info_iterator_title (&info), -1);
+                  gchar* description_escaped = g_markup_escape_text(
+                                ovaldef_info_iterator_description (&info), -1);
+                  g_string_append_printf (result,
+                                          "<version>%s</version>"
+                                          "<deprecated>%s</deprecated>"
+                                          "<def_class>%s</def_class>"
+                                          "<title>%s</title>",
+                                          ovaldef_info_iterator_version (&info),
+                                          ovaldef_info_iterator_deprecated (&info),
+                                          ovaldef_info_iterator_def_class (&info),
+                                          title_escaped);
+                  if (get_info_data->details == 1)
+                    {
+                      g_string_append_printf (result,
+                                          "<description>%s</description>"
+                                          "<xml_file>%s</xml_file>",
+                                          description_escaped,
+                                          ovaldef_info_iterator_xml_file (&info));
+                  }
+                  g_free (title_escaped);
+                  g_free (description_escaped);
                 }
               else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
                 {

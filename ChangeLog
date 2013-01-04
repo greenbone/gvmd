@@ -1,3 +1,18 @@
+2013-01-04  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	Timestamps from tag oval_repository are now used for timestamps
+	of OVAL definitions.
+	Improved escaping of characters in OVAL defintions to avoid XML errors
+	caused by unescaped ampersands (&) in titles and descriptions.
+
+	* src/omp.c (case CLIENT_GET_INFO): Add escaping of ampersands.
+	Reworked indentation of OVAL code in this section.
+
+	* tools/oval_update.xsl: Add template to get creation_date and
+	modification_date from tag oval_repository if it exists.
+	Change handling of quotes to replace them with double quotes in
+	generated SQL queries.
+
 2013-01-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Add modify agent feature.

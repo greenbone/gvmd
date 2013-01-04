@@ -37,10 +37,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   extension-element-prefixes="str"
   >
   <xsl:output method="text"/>
-  
+
   <xsl:variable name="timestamp" 
     select="oval_definitions:oval_definitions/oval_definitions:generator/oval:timestamp"/>
-  
+
   <xsl:template match="oval_definitions:definition">
     INSERT OR REPLACE INTO ovaldefs (
       uuid,
@@ -58,17 +58,32 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       "<xsl:value-of select="@id"/>",
       "<xsl:value-of select="@id"/>",
       "",
+      <xsl:choose>
+      <xsl:when test="oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates != ''"><xsl:apply-templates select="oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates"/>
+      </xsl:when>
+      <xsl:otherwise>strftime('%s', '<xsl:copy-of select="$timestamp"/>'),
       strftime('%s', '<xsl:copy-of select="$timestamp"/>'),
-      strftime('%s', '<xsl:copy-of select="$timestamp"/>'),
+      </xsl:otherwise>
+      </xsl:choose>
       <xsl:value-of select="@version"/>,
       <xsl:call-template name="boolean_def_false">
         <xsl:with-param name="value" select="@deprecated"/>
       </xsl:call-template>,
       "<xsl:value-of select="@class"/>",
-      "<xsl:value-of select="translate(oval_definitions:metadata/oval_definitions:title,'&quot;','&amp;apos;')"/>",
-      "<xsl:value-of select="translate(oval_definitions:metadata/oval_definitions:description,'&quot;','&amp;apos;')"/>",
+      "<xsl:value-of select="str:replace(oval_definitions:metadata/oval_definitions:title/text(), '&quot;', '&quot;&quot;')"/>",
+      "<xsl:value-of select="str:replace(oval_definitions:metadata/oval_definitions:description/text(), '&quot;', '&quot;&quot;')"/>",
       "<xsl:copy-of select="$filename"/>"
     );
+  </xsl:template>
+
+  <xsl:template match="oval_definitions:dates"><xsl:choose>
+      <xsl:when test="oval_definitions:submitted/@date | oval_definitions:status_change/@date | oval_definitions:modified/@date != ''">strftime('%s', '<xsl:value-of select="(oval_definitions:submitted/@date | oval_definitions:status_change/@date | oval_definitions:modified/@date) [1]"/>'),
+      strftime('%s', '<xsl:value-of select="(oval_definitions:submitted/@date | oval_definitions:status_change/@date | oval_definitions:modified/@date) [last()]"/>'),
+      </xsl:when>
+      <xsl:otherwise>strftime('%s', '<xsl:copy-of select="$timestamp"/>'),
+      strftime('%s', '<xsl:copy-of select="$timestamp"/>'),
+      </xsl:otherwise>
+  </xsl:choose>
   </xsl:template>
 
   <xsl:template match="oval_definitions:generator" />
@@ -76,16 +91,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template match="oval_definitions:objects" />
   <xsl:template match="oval_definitions:states" />
   <xsl:template match="oval_definitions:variables" />
-  
+
   <xsl:template match="/">
     BEGIN TRANSACTION;
     <xsl:apply-templates />
     COMMIT;
   </xsl:template>
-  
+
   <xsl:variable name="smallcase" select="'abcdefghijklmnopqrstuvwxyz'" />
   <xsl:variable name="uppercase" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'" />
-  
+
   <xsl:template name="boolean_def_false">
     <xsl:param name="value"/>
     <xsl:choose>
