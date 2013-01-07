@@ -9918,13 +9918,14 @@ alert_method (alert_t alert)
  * @brief Alert iterator columns.
  */
 #define ALERT_ITERATOR_COLUMNS                                                \
-  GET_ITERATOR_COLUMNS ", event, condition, method, filter"
+  GET_ITERATOR_COLUMNS ", event, condition, method, filter, "                 \
+  G_STRINGIFY (LOCATION_TABLE)
 
 /**
  * @brief Alert iterator columns for trash case.
  */
 #define ALERT_ITERATOR_TRASH_COLUMNS                                          \
-  GET_ITERATOR_COLUMNS ", event, condition, method, filter"
+  GET_ITERATOR_COLUMNS ", event, condition, method, filter, filter_location"
 
 /**
  * @brief Count the number of alerts.
@@ -10129,14 +10130,64 @@ alert_iterator_method (iterator_t* iterator)
  *
  * @return Filter of the alert or NULL if iteration is complete.
  */
-int
+filter_t
 alert_iterator_filter (iterator_t* iterator)
 {
-  int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt,
-                                  GET_ITERATOR_COLUMN_COUNT + 3);
-  return ret;
+  return (filter_t) sqlite3_column_int64 (iterator->stmt,
+                                          GET_ITERATOR_COLUMN_COUNT + 3);
+}
+
+/**
+ * @brief Return the filter UUID from an alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID of filter of the alert or NULL if iteration is complete.
+ */
+char *
+alert_iterator_filter_uuid (iterator_t* iterator)
+{
+  filter_t filter;
+
+  if (iterator->done) return NULL;
+
+  filter = alert_iterator_filter (iterator);
+  if (filter)
+    {
+      if (sqlite3_column_int (iterator->stmt,
+                              GET_ITERATOR_COLUMN_COUNT + 4)
+          == LOCATION_TABLE)
+        return filter_uuid (filter);
+      return trash_filter_uuid (filter);
+    }
+  return NULL;
+}
+
+/**
+ * @brief Return the filter name from an alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name of filter of the alert or NULL if iteration is complete.
+ */
+char *
+alert_iterator_filter_name (iterator_t* iterator)
+{
+  filter_t filter;
+
+  if (iterator->done) return NULL;
+
+  filter = alert_iterator_filter (iterator);
+  if (filter)
+    {
+      if (sqlite3_column_int (iterator->stmt,
+                              GET_ITERATOR_COLUMN_COUNT + 4)
+          == LOCATION_TABLE)
+        return filter_name (filter);
+      return trash_filter_name (filter);
+    }
+  return NULL;
 }
 
 /**
@@ -43602,6 +43653,21 @@ filter_uuid (filter_t filter)
 }
 
 /**
+ * @brief Return the UUID of a trashcan filter.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+trash_filter_uuid (filter_t filter)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM filters_trash WHERE ROWID = %llu;",
+                     filter);
+}
+
+/**
  * @brief Return the name of a filter.
  *
  * @param[in]  filter  Filter.
@@ -43613,6 +43679,21 @@ filter_name (filter_t filter)
 {
   return sql_string (0, 0,
                      "SELECT name FROM filters WHERE ROWID = %llu;",
+                     filter);
+}
+
+/**
+ * @brief Return the name of a trashcan filter.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return name of filter.
+ */
+char*
+trash_filter_name (filter_t filter)
+{
+  return sql_string (0, 0,
+                     "SELECT name FROM filters_trash WHERE ROWID = %llu;",
                      filter);
 }
 

@@ -4,7 +4,7 @@
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
- * Timo Pollmeier <timo.pollmeier@greenbone.net> 
+ * Timo Pollmeier <timo.pollmeier@greenbone.net>
  *
  * Copyright:
  * Copyright (C) 2009 - 2012 Greenbone Networks GmbH
@@ -345,8 +345,11 @@ alert_iterator_condition (iterator_t*);
 int
 alert_iterator_method (iterator_t*);
 
-int
-alert_iterator_filter (iterator_t*);
+char *
+alert_iterator_filter_uuid (iterator_t*);
+
+char *
+alert_iterator_filter_name (iterator_t*);
 
 const char*
 alert_condition_name (alert_condition_t);
@@ -2425,7 +2428,13 @@ char*
 filter_uuid (filter_t);
 
 char*
+trash_filter_uuid (filter_t);
+
+char*
 filter_name (filter_t);
+
+char*
+trash_filter_name (filter_t);
 
 gchar*
 filter_term (const char *);

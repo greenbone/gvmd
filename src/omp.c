@@ -17734,7 +17734,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           while (1)
             {
               iterator_t data;
-              filter_t filter;
+              char *filter_uuid;
 
               ret = get_next (&alerts, &get_alerts_data->get, &first,
                               &count, init_alert_iterator);
@@ -17750,12 +17750,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               /* Filter. */
 
-              if ((filter = alert_iterator_filter (&alerts)))
+              filter_uuid = alert_iterator_filter_uuid (&alerts);
+              if (filter_uuid)
                 SENDF_TO_CLIENT_OR_FAIL ("<filter id=\"%s\">"
                                          "<name>%s</name>"
                                          "</filter>",
-                                         filter_uuid (filter),
-                                         filter_name (filter));
+                                         filter_uuid,
+                                         alert_iterator_filter_name (&alerts));
 
               /* Condition. */
 

@@ -1,5 +1,21 @@
 2013-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	In GET_ALERTS return the details of the right filter when the filter
+	is in the trashcan.
+
+	* src/manage_sql.c (ALERT_ITERATOR_COLUMNS)
+	(ALERT_ITERATOR_TRASH_COLUMNS): Add filter location column.
+	(alert_iterator_filter): Return filter_t instead of int.
+	(alert_iterator_filter_uuid, alert_iterator_filter_name)
+	(trash_filter_uuid, trash_filter_name): New functions.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_ALERTS get filter UUID
+	and name directly from iterator.
+
+2013-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_filter): Use strcasecmp for type check so
 	client can use any case.
 
