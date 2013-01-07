@@ -1,5 +1,14 @@
 2013-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (slave_writable, trash_slave_writable): Always return
+	1.  Changing the slave should have little effect on the comparability of
+	reports.
+	(slave_in_use): Only consider slave in use if a regular task is using
+	the slave.  This allows the user to put the slave in the trashcan when a
+	trashcan task is using the slave.
+
+2013-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (alert_iterator_filter_trash): New function.
 
 	* src/manage.h: Update header accordingly.

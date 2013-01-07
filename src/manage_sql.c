@@ -41581,7 +41581,7 @@ delete_slave (const char *slave_id, int ultimate)
 int
 slave_writable (slave_t slave)
 {
-  return (slave_in_use (slave) == 0);
+  return 1;
 }
 
 /**
@@ -41594,7 +41594,7 @@ slave_writable (slave_t slave)
 int
 trash_slave_writable (slave_t slave)
 {
-  return (trash_slave_in_use (slave) == 0);
+  return 1;
 }
 
 /**
@@ -41899,7 +41899,8 @@ int
 slave_in_use (slave_t slave)
 {
   return !!sql_int (0, 0,
-                    "SELECT count(*) FROM tasks WHERE slave = %llu;",
+                    "SELECT count(*) FROM tasks"
+                    " WHERE slave = %llu AND hidden = 0;",
                     slave);
 }
 
