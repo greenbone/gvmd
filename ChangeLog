@@ -1,3 +1,24 @@
+2013-01-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add modify port list functionality.
+
+	* src/omp.c (modify_port_list_data_t): New structure.
+	(modify_port_list_data_reset): New function.
+	(command_data_t): Add modify_port_list element.
+	(omp_commands): Add modify_port_list omp command.
+	(modify_port_list_data): Add parser callback for modify_port_list
+	command.
+	(client_state_t): Add CLIENT_MODIFY_PORT_LIST,
+	CLIENT_MODIFY_PORT_LIST_NAME and CLIENT_MODIFY_PORT_LIST_COMMENT states.
+
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text_element): Handle modify_port_list case.
+
+	* src/manage_sql.c (modify_port_list): New function.
+	(modify_agent): Fix documentation.
+
+	* src/manage.h: Add modify_port_list header.
+
 2013-01-07  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	Individual OVAL definitions are now filtered out when older than the
@@ -26,8 +47,6 @@
 	modification_date from tag oval_repository if it exists.
 	Change handling of quotes to replace them with double quotes in
 	generated SQL queries.
-
-2013-01-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 2013-01-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 

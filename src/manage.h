@@ -2306,6 +2306,9 @@ int
 copy_port_list (const char*, const char*, const char*, port_list_t*);
 
 int
+modify_port_list (const char*, const char*, const char*);
+
+int
 create_port_range (const char *, const char *, const char *, const char *,
                    const char *, port_range_t *);
 

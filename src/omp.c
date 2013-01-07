@@ -536,6 +536,7 @@ static command_t omp_commands[]
     {"MODIFY_FILTER", "Modify an existing filter."},
     {"MODIFY_NOTE", "Modify an existing note."},
     {"MODIFY_OVERRIDE", "Modify an existing override."},
+    {"MODIFY_PORT_LIST", "Modify an existing port list."},
     {"MODIFY_REPORT", "Modify an existing report."},
     {"MODIFY_REPORT_FORMAT", "Modify an existing report format."},
     {"MODIFY_SCHEDULE", "Modify an existing schedule."},
@@ -2698,6 +2699,31 @@ modify_lsc_credential_data_reset (modify_lsc_credential_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_port_list command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *name;                    ///< Name of Port List.
+  char *port_list_id;            ///< UUID of Port List.
+} modify_port_list_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_port_list_data_reset (modify_port_list_data_t *data)
+{
+  free (data->comment);
+  free (data->name);
+  free (data->port_list_id);
+
+  memset (data, 0, sizeof (modify_port_list_data_t));
+}
+
+/**
  * @brief Command data for the modify_report command.
  */
 typedef struct
@@ -3343,6 +3369,7 @@ typedef union
   modify_config_data_t modify_config;                 ///< modify_config
   modify_filter_data_t modify_filter;                 ///< modify_filter
   modify_lsc_credential_data_t modify_lsc_credential; ///< modify_lsc_credential
+  modify_port_list_data_t modify_port_list;           ///< modify_port_list
   modify_report_data_t modify_report;                 ///< modify_report
   modify_report_format_data_t modify_report_format;   ///< modify_report_format
   modify_schedule_data_t modify_schedule;             ///< modify_schedule
@@ -3745,6 +3772,12 @@ modify_note_data_t *modify_note_data
  */
 modify_override_data_t *modify_override_data
  = (modify_override_data_t*) &(command_data.create_override);
+
+/**
+ * @brief Parser callback data for MODIFY_PORT_LIST.
+ */
+modify_port_list_data_t *modify_port_list_data
+ = &(command_data.modify_port_list);
 
 /**
  * @brief Parser callback data for MODIFY_REPORT.
@@ -4246,6 +4279,9 @@ typedef enum
   CLIENT_MODIFY_OVERRIDE_TASK,
   CLIENT_MODIFY_OVERRIDE_TEXT,
   CLIENT_MODIFY_OVERRIDE_THREAT,
+  CLIENT_MODIFY_PORT_LIST,
+  CLIENT_MODIFY_PORT_LIST_COMMENT,
+  CLIENT_MODIFY_PORT_LIST_NAME,
   CLIENT_MODIFY_SCHEDULE,
   CLIENT_MODIFY_SCHEDULE_COMMENT,
   CLIENT_MODIFY_SCHEDULE_NAME,
@@ -5821,6 +5857,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_filter_data->filter_id);
             set_client_state (CLIENT_MODIFY_FILTER);
           }
+        else if (strcasecmp ("MODIFY_PORT_LIST", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values,
+                              "port_list_id",
+                              &modify_port_list_data->port_list_id);
+            set_client_state (CLIENT_MODIFY_PORT_LIST);
+          }
         else if (strcasecmp ("MODIFY_LSC_CREDENTIAL", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values,
@@ -6137,6 +6180,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_FILTER_TYPE);
           }
         ELSE_ERROR ("modify_filter");
+
+      case CLIENT_MODIFY_PORT_LIST:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_PORT_LIST_NAME);
+        else if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_free_string_var (&modify_port_list_data->comment);
+            openvas_append_string (&modify_port_list_data->comment, "");
+            set_client_state (CLIENT_MODIFY_PORT_LIST_COMMENT);
+          }
+        ELSE_ERROR ("modify_port_list");
 
       case CLIENT_MODIFY_LSC_CREDENTIAL:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -15708,6 +15762,69 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_FILTER, TYPE);
       CLOSE (CLIENT_MODIFY_FILTER, TERM);
 
+      case CLIENT_MODIFY_PORT_LIST:
+        {
+          assert (strcasecmp ("MODIFY_PORT_LIST", element_name) == 0);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_port_list",
+                                  "MODIFY is forbidden for observer users"));
+            }
+          else switch (modify_port_list
+                        (modify_port_list_data->port_list_id,
+                         modify_port_list_data->name,
+                         modify_port_list_data->comment))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_port_list"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port List %s has been modified",
+                       modify_port_list_data->port_list_id);
+                break;
+              case 1:
+                if (send_find_error_to_client ("modify_port_list",
+                                               "port_list",
+                                               modify_port_list_data->port_list_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port List could not be modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_port_list",
+                                    "Port List with new name exists already"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port List could not be modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_port_list",
+                                    "modify_port_list requires a port_list_id"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port List could not be modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_port_list"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port List could not be modified");
+                break;
+            }
+
+          modify_port_list_data_reset (modify_port_list_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_PORT_LIST, COMMENT);
+      CLOSE (CLIENT_MODIFY_PORT_LIST, NAME);
+
       case CLIENT_MODIFY_NOTE:
         {
           task_t task = 0;
@@ -20113,6 +20230,13 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_OVERRIDE_THREAT,
               &modify_override_data->threat);
+
+
+      APPEND (CLIENT_MODIFY_PORT_LIST_COMMENT,
+              &modify_port_list_data->comment);
+
+      APPEND (CLIENT_MODIFY_PORT_LIST_NAME,
+              &modify_port_list_data->name);
 
 
       APPEND (CLIENT_MODIFY_SCHEDULE_COMMENT,
