@@ -26,7 +26,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20121104
+VERSION=20130107
 RESTRICTED=1
 
 # SETTINGS
@@ -384,8 +384,11 @@ sync_scapdata(){
       then
         rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
       else
-        rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -o \"ProxyCommand corkscrew $gsmproxy %h %p\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
-      fi
+        if [ -r /admin/proxyauth -a `stat -c %s /admin/proxyauth` != 0 ]; then
+          rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -o \"ProxyCommand corkscrew $gsmproxy %h %p /admin/proxyauth\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
+        else
+          rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -o \"ProxyCommand corkscrew $gsmproxy %h %p\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
+        fi
       if (( $? )) ; then
         echo
         echo "== greenbone-scapdata-sync $VERSION ================================================"

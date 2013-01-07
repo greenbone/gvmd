@@ -1,3 +1,8 @@
+2013-01-07  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/greenbone-scapdata-sync: Add support for proxy authentication.
+	Based on patch submitted by Christian Schmidt.
+
 2013-01-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Add modify port list functionality.
