@@ -327,7 +327,7 @@ update_scap_db() {
         then
           log_write " Updating $ovalfile"
 
-          xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" $SCAP_RES_DIR/oval_update.xsl $ovalfile | \
+          xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" $SCAP_RES_DIR/oval_update.xsl $ovalfile | \
           sqlite3 $SCAP_DB
         else
           log_write " Skipping $ovalfile, file has older timestamp than latest OVAL definition in database (this is not an error)."

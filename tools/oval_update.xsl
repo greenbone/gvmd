@@ -36,12 +36,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   xsi:schemaLocation="http://oval.mitre.org/language/version5.10.1/ovaldefinition/complete/oval-common-schema.xsd http://oval.mitre.org/language/version5.10.1/ovaldefinition/complete/oval-definitions-schema.xsd"
   extension-element-prefixes="str"
   >
+  <xsl:param name="refdate" select="0" />
+
   <xsl:output method="text"/>
 
-  <xsl:variable name="timestamp" 
+  <xsl:variable name="filetimestamp"
     select="oval_definitions:oval_definitions/oval_definitions:generator/oval:timestamp"/>
 
   <xsl:template match="oval_definitions:definition">
+    <xsl:variable name="definitiondate" select="(oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates/oval_definitions:submitted/@date | oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates/oval_definitions:status_change/@date | oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates/oval_definitions:modified/@date)[last()]" />
+
+    <xsl:choose>
+    <xsl:when test="$definitiondate='' or number(translate(substring($definitiondate,1,10),'-','')) &gt; number($refdate)">
     INSERT OR REPLACE INTO ovaldefs (
       uuid,
       name,
@@ -59,10 +65,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       "<xsl:value-of select="@id"/>",
       "",
       <xsl:choose>
-      <xsl:when test="oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates != ''"><xsl:apply-templates select="oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates"/>
+      <xsl:when test="defintiondate != ''"><xsl:apply-templates select="oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates"/>
       </xsl:when>
-      <xsl:otherwise>strftime('%s', '<xsl:copy-of select="$timestamp"/>'),
-      strftime('%s', '<xsl:copy-of select="$timestamp"/>'),
+      <xsl:otherwise>strftime('%s', '<xsl:copy-of select="$filetimestamp"/>'),
+      strftime('%s', '<xsl:copy-of select="$filetimestamp"/>'),
       </xsl:otherwise>
       </xsl:choose>
       <xsl:value-of select="@version"/>,
@@ -74,6 +80,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       "<xsl:value-of select="str:replace(oval_definitions:metadata/oval_definitions:description/text(), '&quot;', '&quot;&quot;')"/>",
       "<xsl:copy-of select="$filename"/>"
     );
+    </xsl:when>
+    <xsl:otherwise>
+    /* Filtered <xsl:value-of select="@id"/> (<xsl:value-of select="$definitiondate"/>) */
+    </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <xsl:template match="oval_definitions:dates"><xsl:choose>

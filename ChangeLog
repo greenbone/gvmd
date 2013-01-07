@@ -1,3 +1,17 @@
+2013-01-07  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	Individual OVAL definitions are now filtered out when older than the
+	latest in the SCAP database.
+
+	* tools/oval_update.xsl: Add parameter refdate and check of dates in
+	<oval_repository> tag to filter out older definitions.
+
+	* tools/greenbone-scapdata-sync: Add passing of parameter OVAL_REFDATE
+	to xsltproc for oval_update.xsl.
+
+	* tools/openvas-scapdata-sync.in: Add passing of parameter OVAL_REFDATE
+	to xsltproc for oval_update.xsl.
+
 2013-01-04  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	Timestamps from tag oval_repository are now used for timestamps
