@@ -36371,7 +36371,9 @@ create_note (const char* active, const char* nvt, const char* text,
     return -1;
 
   quoted_nvt = sql_quote (nvt);
-  if (sql_int (0, 0, "SELECT count (*) FROM nvts WHERE oid = '%s'", nvt) == 0)
+  if (strcmp (nvt, "0")
+      && (sql_int (0, 0, "SELECT count (*) FROM nvts WHERE oid = '%s'", quoted_nvt)
+          == 0))
     {
       g_free (quoted_nvt);
       return 1;
