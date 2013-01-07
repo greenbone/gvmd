@@ -1,5 +1,10 @@
 2013-01-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/omp.c (lsc_credential_writabe, trash_lsc_credential_writable):
+	Make credentials always writable, even when in use by a target.
+
+2013-01-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_element): Send nvt families when details
 	attribute is set.
 

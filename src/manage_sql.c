@@ -34682,7 +34682,7 @@ trash_lsc_credential_in_use (lsc_credential_t lsc_credential)
 int
 lsc_credential_writable (lsc_credential_t lsc_credential)
 {
-  return (lsc_credential_in_use (lsc_credential) == 0);
+  return 1;
 }
 
 /**
@@ -34695,7 +34695,7 @@ lsc_credential_writable (lsc_credential_t lsc_credential)
 int
 trash_lsc_credential_writable (lsc_credential_t lsc_credential)
 {
-  return (trash_lsc_credential_in_use (lsc_credential) == 0);
+  return 1;
 }
 
 /**
