@@ -2244,7 +2244,6 @@ get_overrides_data_reset (get_overrides_data_t *data)
  */
 typedef struct
 {
-  int ranges;          ///< Boolean. Include port ranges of Port List or not.
   int targets;         ///< Boolean. Include targets that use Port List or not.
   get_data_t get;      ///< Get args.
 } get_port_lists_data_t;
@@ -5428,11 +5427,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                        "port_list",
                                        attribute_names,
                                        attribute_values);
-            if (find_attribute (attribute_names, attribute_values,
-                                "ranges", &attribute))
-              get_port_lists_data->ranges = strcmp (attribute, "0");
-            else
-              get_port_lists_data->ranges = 0;
             if (find_attribute (attribute_names, attribute_values,
                                 "targets", &attribute))
               get_port_lists_data->targets = strcmp (attribute, "0");
@@ -9438,8 +9432,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        port_list_iterator_count_udp
                                         (&port_lists));
 
-              if (get_port_lists_data->ranges
-                  || get_port_lists_data->get.details)
+              if (get_port_lists_data->get.details)
                 {
                   iterator_t ranges;
 

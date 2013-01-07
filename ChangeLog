@@ -29,6 +29,15 @@
 
 2013-01-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+2013-01-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (get_port_lists_data_t): Remove ranges element.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Don't use
+	ranges element of get_port_lists_data as it duplicates functionality of
+	details get attribute.
+
+2013-01-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Add modify agent feature.
 
 	* src/omp.c (modify_agent_data_t): New structure.
