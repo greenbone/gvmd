@@ -1,5 +1,14 @@
 2013-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (alert_iterator_filter_trash): New function.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_ALERTS add missing
+	FILTER/TRASH.
+
+2013-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	In GET_ALERTS return the details of the right filter when the filter
 	is in the trashcan.
 

@@ -351,6 +351,9 @@ alert_iterator_filter_uuid (iterator_t*);
 char *
 alert_iterator_filter_name (iterator_t*);
 
+int
+alert_iterator_filter_trash (iterator_t*);
+
 const char*
 alert_condition_name (alert_condition_t);
 

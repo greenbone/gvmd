@@ -10191,6 +10191,25 @@ alert_iterator_filter_name (iterator_t* iterator)
 }
 
 /**
+ * @brief Return the location of an alert iterator filter.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 0 in table, 1 in trash.
+ */
+int
+alert_iterator_filter_trash (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  if (alert_iterator_filter (iterator)
+      && (sqlite3_column_int (iterator->stmt,
+                              GET_ITERATOR_COLUMN_COUNT + 4)
+          == LOCATION_TRASH))
+    return 1;
+  return 0;
+}
+
+/**
  * @brief Initialise an alert data iterator.
  *
  * @param[in]  iterator   Iterator.

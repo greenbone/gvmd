@@ -17754,9 +17754,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (filter_uuid)
                 SENDF_TO_CLIENT_OR_FAIL ("<filter id=\"%s\">"
                                          "<name>%s</name>"
+                                         "<trash>%i</trash>"
                                          "</filter>",
                                          filter_uuid,
-                                         alert_iterator_filter_name (&alerts));
+                                         alert_iterator_filter_name (&alerts),
+                                         alert_iterator_filter_trash (&alerts));
 
               /* Condition. */
 
