@@ -44130,7 +44130,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   /* If the filter is linked to an alert, check that the type is valid. */
   if (filter_in_use (filter)
       && type
-      && strcmp (type, "report"))
+      && strcasecmp (type, "report"))
     {
       sql ("ROLLBACK;");
       return 5;

@@ -1,5 +1,10 @@
 2013-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_filter): Use strcasecmp for type check so
+	client can use any case.
+
+2013-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_filter): Check that type is valid if filter
 	is in use.
 
