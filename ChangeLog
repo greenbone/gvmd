@@ -1,3 +1,11 @@
+2013-01-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* tools/db_init.sql: Fix OVAL definition table name mistakenly reverted
+	to old name oval_def instead of correct ovaldefs.
+
+	* tools/oval_update: Fix misspelled test causing dates of individual
+	definitions not to be recognized.
+
 2013-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (slave_writable, trash_slave_writable): Always return

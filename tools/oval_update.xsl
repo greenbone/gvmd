@@ -65,7 +65,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       "<xsl:value-of select="@id"/>",
       "",
       <xsl:choose>
-      <xsl:when test="defintiondate != ''"><xsl:apply-templates select="oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates"/>
+      <xsl:when test="$definitiondate != ''"><xsl:apply-templates select="oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates"/>
       </xsl:when>
       <xsl:otherwise>strftime('%s', '<xsl:copy-of select="$filetimestamp"/>'),
       strftime('%s', '<xsl:copy-of select="$filetimestamp"/>'),
