@@ -17520,7 +17520,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        config_iterator_nvt_count (&configs),
                                        config_nvts_growing);
 
-              if (get_configs_data->families)
+              if (get_configs_data->families
+                  || get_configs_data->get.details)
                 {
                   iterator_t families;
                   int max_nvt_count = 0, known_nvt_count = 0;
