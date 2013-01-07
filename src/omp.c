@@ -12978,6 +12978,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_log ("event alert", G_LOG_LEVEL_MESSAGE,
                            "Alert could not be created");
                     break;
+                  case 4:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Filter type must be report if"
+                                        " specified"));
+                    g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                           "Alert could not be created");
+                    break;
                   default:
                     assert (0);
                   case -1:

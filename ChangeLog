@@ -1,3 +1,10 @@
+2013-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_alert): Check filter type.
+
+	* src/omp.c (omp_xml_handle_end_element): In CREATE_ALERT check for
+	filter type error.
+
 2013-01-07  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Add support for proxy authentication.
@@ -351,20 +358,20 @@
 
 	* CMakeLists.txt: Add SCAP.db migration script migrate_db5to6.sql
 
-	* src/manage.h: Add iterator function declarations for OVAL 
+	* src/manage.h: Add iterator function declarations for OVAL
 	definition data	(ovaldef): init_ovaldef_info_iterator,
 	ovaldef_info_count, ovaldef_info_iterator_version,
 	ovaldef_info_iterator_deprecated, ovaldef_info_iterator_def_class,
 	ovaldef_info_iterator_title, ovaldef_info_iterator_description.
 
-	* src/manage_sql.c: Add implementations of new iterator functions 
+	* src/manage_sql.c: Add implementations of new iterator functions
 	declared in src/manage.h
 
 	* src/omp.c (case CLIENT_GET_INFO): Add XML output of basic ovaldef
 	data.
 
 	* tools/db_init.sql: Change database columns to include attributes
-	uuid, name, comment, creation_time, modification_time. Change DB 
+	uuid, name, comment, creation_time, modification_time. Change DB
 	version to 6.
 
 	* tools/greenbone-scapdata-sync: Add migration to new database format.

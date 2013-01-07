@@ -9443,7 +9443,8 @@ validate_email (const char* address)
  * @param[out] alert       Created alert on success.
  *
  * @return 0 success, 1 escalation exists already, 2 validation of email failed,
- *         3 failed to find filter, -1 error.
+ *         3 failed to find filter, 4 type must be "report" if specified,
+ *         -1 error.
  */
 int
 create_alert (const char* name, const char* comment, const char* filter_id,
@@ -9464,6 +9465,8 @@ create_alert (const char* name, const char* comment, const char* filter_id,
   filter = 0;
   if (filter_id && strcmp (filter_id, "0"))
     {
+      char *type;
+
       if (find_filter (filter_id, &filter))
         {
           sql ("ROLLBACK;");
@@ -9475,6 +9478,19 @@ create_alert (const char* name, const char* comment, const char* filter_id,
           sql ("ROLLBACK;");
           return 3;
         }
+
+      /* Filter type must be report if specified. */
+
+      type = sql_string (0, 0,
+                         "SELECT type FROM filters WHERE ROWID = %llu;",
+                         filter);
+      if (type && strcasecmp (type, "report"))
+        {
+          free (type);
+          sql ("ROLLBACK;");
+          return 4;
+        }
+      free (type);
     }
 
   quoted_name = sql_quote (name);
