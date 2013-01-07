@@ -4,7 +4,7 @@
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
- * Timo Pollmeier <timo.pollmeier@greenbone.net> 
+ * Timo Pollmeier <timo.pollmeier@greenbone.net>
  *
  * Copyright:
  * Copyright (C) 2009-2012 Greenbone Networks GmbH
@@ -44093,7 +44093,8 @@ DEF_ACCESS (filter_alert_iterator_uuid, 1);
  * @param[in]   type            Type of filter.
  *
  * @return 0 success, 1 failed to find filter, 2 filter with new name exists,
- *         3 error in type name, 4 filter_id required, -1 internal error.
+ *         3 error in type name, 4 filter_id required, 5 filter is in use so
+ *         type must be "report" if specified, -1 internal error.
  */
 int
 modify_filter (const char *filter_id, const char *name, const char *comment,
@@ -44124,6 +44125,15 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
     {
       sql ("ROLLBACK;");
       return 1;
+    }
+
+  /* If the filter is linked to an alert, check that the type is valid. */
+  if (filter_in_use (filter)
+      && type
+      && strcmp (type, "report"))
+    {
+      sql ("ROLLBACK;");
+      return 5;
     }
 
   /* Check whether a filter with the same name exists already. */

@@ -4,7 +4,7 @@
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
- * Timo Pollmeier <timo.pollmeier@greenbone.net> 
+ * Timo Pollmeier <timo.pollmeier@greenbone.net>
  *
  * Copyright:
  * Copyright (C) 2009 - 2012 Greenbone Networks GmbH
@@ -15750,6 +15750,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_filter",
                                     "MODIFY_FILTER requires a filter_id"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter could not be modified");
+                break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_filter",
+                                    "Filter is used by an alert so type must be"
+                                    " 'report' if specified"));
                 g_log ("event filter", G_LOG_LEVEL_MESSAGE,
                        "Filter could not be modified");
                 break;

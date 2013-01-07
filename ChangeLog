@@ -1,5 +1,13 @@
 2013-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_filter): Check that type is valid if filter
+	is in use.
+
+	* src/omp.c (omp_xml_handle_end_element): In MODIFY_FILTER check for
+	filter type error.
+
+2013-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_alert): Check filter type.
 
 	* src/omp.c (omp_xml_handle_end_element): In CREATE_ALERT check for
