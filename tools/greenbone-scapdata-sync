@@ -389,6 +389,7 @@ sync_scapdata(){
         else
           rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -o \"ProxyCommand corkscrew $gsmproxy %h %p\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
         fi
+      fi
       if (( $? )) ; then
         echo
         echo "== greenbone-scapdata-sync $VERSION ================================================"
