@@ -3221,7 +3221,7 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
                    " FROM %ss%s"
                    " WHERE ((%ss.owner IS NULL) OR (%ss.owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s%s%s%s"
+                   "%s%s%s%s%s"
                    " LIMIT %i OFFSET %i;",
                    distinct ? " DISTINCT" : "",
                    columns,
@@ -3230,8 +3230,9 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
                    type,
                    type,
                    current_credentials.uuid,
-                   clause ? " AND " : "",
+                   clause ? " AND (" : "",
                    clause ? clause : "",
+                   clause ? ")" : "",
                    extra_where ? extra_where : "",
                    order,
                    max,
@@ -3450,15 +3451,16 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    " FROM %ss%s"
                    " WHERE"
                    " %s"
-                   "%s%s%s%s"
+                   "%s%s%s%s%s"
                    " LIMIT %i OFFSET %i;",
                    distinct ? " DISTINCT" : "",
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
                    owned_and_used_by_clause,
-                   clause ? " AND " : "",
+                   clause ? " AND (" : "",
                    clause ? clause : "",
+                   clause ? ")" : "",
                    extra_where ? extra_where : "",
                    order,
                    max,

@@ -1,5 +1,10 @@
 2013-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_user_get_iterator, init_get_iterator): Wrap the
+	filter clause in parentheses because it may have multiple subclauses.
+
+2013-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (keyword_applies): Revert from skipping any duplicate
 	column keywords, introduced in r14801, to skipping the special keywords
 	on a special case basis.  This is necessary because it is valid to have
