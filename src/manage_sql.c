@@ -2323,12 +2323,12 @@ filter_clause (const char* type, const char* filter, const char **columns,
                    && strcmp (type, "override"))
                   || (strcmp (keyword->string, "nvt")
                       && strcmp (keyword->string, "name")))
-                g_string_append_printf (order, " ORDER BY %s ASC",
+                g_string_append_printf (order, " ORDER BY %s COLLATE NOCASE ASC",
                                         keyword->string);
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
-                                        " ORDER BY nvt ASC, %ss%s.text ASC",
+                                        " ORDER BY nvt ASC, %ss%s.text COLLATE NOCASE ASC",
                                         type,
                                         trash ? "_trash" : "");
               first_order = 0;
@@ -2357,12 +2357,12 @@ filter_clause (const char* type, const char* filter, const char **columns,
                    && strcmp (type, "override"))
                   || (strcmp (keyword->string, "nvt")
                       && strcmp (keyword->string, "name")))
-                g_string_append_printf (order, " ORDER BY %s DESC",
+                g_string_append_printf (order, " ORDER BY %s COLLATE NOCASE DESC",
                                         keyword->string);
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
-                                        " ORDER BY nvt ASC, %ss%s.text ASC",
+                                        " ORDER BY nvt ASC, %ss%s.text COLLATE NOCASE ASC",
                                         type,
                                         trash ? "_trash" : "");
               first_order = 0;
