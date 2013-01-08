@@ -9713,6 +9713,83 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
 }
 
 /**
+ * @brief Modify an alert.
+ *
+ * @param[in]   alert_id        UUID of alert.
+ * @param[in]   name            Name of alert.
+ * @param[in]   comment         Comment on alert.
+ *
+ * @return 0 success, 1 failed to find alert, 2 alert with new name exists,
+ *         3 alert_id required, -1 internal error.
+ */
+int
+modify_alert (const char *alert_id, const char *name, const char *comment)
+{
+  gchar *quoted_name, *quoted_comment;
+  alert_t alert;
+
+  if (alert_id == NULL)
+    return 3;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+
+  alert = 0;
+  if (find_alert (alert_id, &alert))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (alert == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  /* Check whether a alert with the same name exists already. */
+  if (name)
+    {
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM alerts"
+                   " WHERE name = '%s'"
+                   " AND ROWID != %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   alert,
+                   current_credentials.uuid))
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+    }
+  else
+    quoted_name = sql_quote("");
+
+  quoted_comment = sql_quote (comment ? comment : "");
+
+  sql ("UPDATE alerts SET"
+       " name = '%s',"
+       " comment = '%s',"
+       " modification_time = now ()"
+       " WHERE ROWID = %llu;",
+       quoted_name,
+       quoted_comment,
+       alert);
+
+  g_free (quoted_comment);
+  g_free (quoted_name);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Delete an alert.
  *
  * @param[in]  alert_id  UUID of alert.

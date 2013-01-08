@@ -1,5 +1,22 @@
 2013-01-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (modify_alert): New function.
+
+	* src/manage.h: add modify_alert header.
+
+	* src/omp.c (omp_commands): Add modify_alert omp command.
+	(modify_alert_data_t): New data structure.
+	(modify_alert_data_reset): New function to free modify_alert_data_t's
+	data.
+	(command_data_t): Add modify_alert command.
+	(modify_alert_data): Add parser callback for modify_alert command.
+	(client_state_t): Add CLIENT_MODIFY_ALERT, CLIENT_MODIFY_ALERT_NAME and
+	CLIENT_MODIFY_ALERT_COMMENT states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text_element): Handle modify_alert case.
+
+2013-01-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): Make sorting by column case
 	insensitive.
 

@@ -531,6 +531,7 @@ static command_t omp_commands[]
     {"GET_INFO", "Get raw information for a given item."},
     {"HELP", "Get this help text."},
     {"MODIFY_AGENT", "Modify an existing agent."},
+    {"MODIFY_ALERT", "Modify an existing alert."},
     {"MODIFY_CONFIG", "Update an existing config."},
     {"MODIFY_LSC_CREDENTIAL", "Modify an existing LSC credential."},
     {"MODIFY_FILTER", "Modify an existing filter."},
@@ -2613,6 +2614,31 @@ modify_agent_data_reset (modify_agent_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_alert command.
+ */
+typedef struct
+{
+  char *alert_id;                ///< alert UUID.
+  char *name;                    ///< Name of alert.
+  char *comment;                 ///< Comment.
+} modify_alert_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_alert_data_reset (modify_alert_data_t *data)
+{
+  free (data->alert_id);
+  free (data->name);
+  free (data->comment);
+
+  memset (data, 0, sizeof (modify_alert_data_t));
+}
+
+/**
  * @brief Reset command data.
  *
  * @param[in]  data  Command data.
@@ -3366,6 +3392,7 @@ typedef union
   get_tasks_data_t get_tasks;                         ///< get_tasks
   help_data_t help;                                   ///< help
   modify_agent_data_t modify_agent;                   ///< modify_agent
+  modify_alert_data_t modify_alert;                   ///< modify_alert
   modify_config_data_t modify_config;                 ///< modify_config
   modify_filter_data_t modify_filter;                 ///< modify_filter
   modify_lsc_credential_data_t modify_lsc_credential; ///< modify_lsc_credential
@@ -3748,6 +3775,12 @@ modify_config_data_t *modify_config_data
  */
 modify_agent_data_t *modify_agent_data
  = &(command_data.modify_agent);
+
+/**
+ * @brief Parser callback data for MODIFY_ALERT.
+ */
+modify_alert_data_t *modify_alert_data
+ = &(command_data.modify_alert);
 
 /**
  * @brief Parser callback data for MODIFY_FILTER.
@@ -4227,6 +4260,9 @@ typedef enum
   CLIENT_MODIFY_AGENT,
   CLIENT_MODIFY_AGENT_COMMENT,
   CLIENT_MODIFY_AGENT_NAME,
+  CLIENT_MODIFY_ALERT,
+  CLIENT_MODIFY_ALERT_NAME,
+  CLIENT_MODIFY_ALERT_COMMENT,
   CLIENT_MODIFY_LSC_CREDENTIAL,
   CLIENT_MODIFY_LSC_CREDENTIAL_NAME,
   CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT,
@@ -5845,6 +5881,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_agent_data->agent_id);
             set_client_state (CLIENT_MODIFY_AGENT);
           }
+        else if (strcasecmp ("MODIFY_ALERT", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "alert_id",
+                              &modify_alert_data->alert_id);
+            set_client_state (CLIENT_MODIFY_ALERT);
+          }
         else if (strcasecmp ("MODIFY_CONFIG", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "config_id",
@@ -6077,6 +6119,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_AGENT_NAME);
           }
         ELSE_ERROR ("create_agent");
+
+      case CLIENT_MODIFY_ALERT:
+        if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&modify_alert_data->name, "");
+            set_client_state (CLIENT_MODIFY_ALERT_NAME);
+          }
+        else if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_append_string (&modify_alert_data->comment, "");
+            set_client_state (CLIENT_MODIFY_ALERT_COMMENT);
+          }
+        ELSE_ERROR ("create_alert");
 
       case CLIENT_MODIFY_CONFIG:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -15696,6 +15751,69 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_AGENT, COMMENT);
       CLOSE (CLIENT_MODIFY_AGENT, NAME);
 
+      case CLIENT_MODIFY_ALERT:
+        {
+          assert (strcasecmp ("MODIFY_ALERT", element_name) == 0);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_alert",
+                                  "MODIFY is forbidden for observer users"));
+            }
+          else switch (modify_alert
+                        (modify_alert_data->alert_id,
+                         modify_alert_data->name,
+                         modify_alert_data->comment))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_alert"));
+                g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                       "Alert %s has been modified",
+                       modify_alert_data->alert_id);
+                break;
+              case 1:
+                if (send_find_error_to_client ("modify_alert",
+                                               "alert",
+                                               modify_alert_data->alert_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                       "Alert could not be modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "alert with new name exists already"));
+                g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                       "Alert could not be modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "MODIFY_alert requires an alert_id"));
+                g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                       "Alert could not be modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_alert"));
+                g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                       "Alert could not be modified");
+                break;
+            }
+
+          modify_alert_data_reset (modify_alert_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_ALERT, COMMENT);
+      CLOSE (CLIENT_MODIFY_ALERT, NAME);
+
       case CLIENT_MODIFY_FILTER:
         {
           assert (strcasecmp ("MODIFY_FILTER", element_name) == 0);
@@ -20203,6 +20321,14 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_AGENT_NAME,
               &modify_agent_data->name);
+
+
+      APPEND (CLIENT_MODIFY_ALERT_NAME,
+              &modify_alert_data->name);
+
+      APPEND (CLIENT_MODIFY_ALERT_COMMENT,
+              &modify_alert_data->comment);
+
 
       APPEND (CLIENT_MODIFY_FILTER_COMMENT,
               &modify_filter_data->comment);

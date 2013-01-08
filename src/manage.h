@@ -295,6 +295,9 @@ int
 copy_alert (const char*, const char*, const char*, alert_t*);
 
 int
+modify_alert (const char*, const char*, const char*);
+
+int
 delete_alert (const char *, int);
 
 char *
