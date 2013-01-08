@@ -1424,18 +1424,47 @@ keyword_applies (array_t *array, const keyword_t *keyword)
       return 1;
     }
 
-  if (keyword->column)
+  if (keyword->column
+      && (strcmp (keyword->column, "first") == 0))
     {
       int index;
-
-      /* Skip duplicate column keywords. */
 
       index = array->len;
       while (index--)
         {
           keyword_t *item;
           item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, keyword->column) == 0))
+          if (item->column && (strcmp (item->column, "first") == 0))
+            return 0;
+        }
+    }
+
+  if (keyword->column
+      && (strcmp (keyword->column, "rows") == 0))
+    {
+      int index;
+
+      index = array->len;
+      while (index--)
+        {
+          keyword_t *item;
+          item = (keyword_t*) g_ptr_array_index (array, index);
+          if (item->column && (strcmp (item->column, "rows") == 0))
+            return 0;
+        }
+    }
+
+  if (keyword->column
+      && (strcmp (keyword->column, "apply_overrides") == 0))
+    {
+      int index;
+
+      index = array->len;
+      while (index--)
+        {
+          keyword_t *item;
+          item = (keyword_t*) g_ptr_array_index (array, index);
+          if (item->column && (strcmp (item->column, "apply_overrides") == 0))
             return 0;
         }
     }

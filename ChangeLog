@@ -1,5 +1,12 @@
 2013-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (keyword_applies): Revert from skipping any duplicate
+	column keywords, introduced in r14801, to skipping the special keywords
+	on a special case basis.  This is necessary because it is valid to have
+	multiple normal column keywords, for example "name=a or name=b".
+
+2013-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* ChangeLog: Cleanup two entries.
 
 2013-01-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
