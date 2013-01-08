@@ -1,3 +1,7 @@
+2013-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* ChangeLog: Cleanup two entries.
+
 2013-01-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (modify_alert): New function.
@@ -244,7 +248,7 @@
 	* CMakeLists.txt: Add ovaldef_getbyname.xsl
 
 	* src/manage.c: Add raw data extraction for OVALDEF.
-	(): Add constant for OVAL selection stylesheet.
+	(OVALDEF_GETBYNAME_XSL): Add constant for OVAL selection stylesheet.
 	(get_ovaldef_filename): Add function to get full source filename.
 	(manage_read_info): Add else if branch for OVALDEF.
 
@@ -259,7 +263,8 @@
 
 	* src/manage_sql.h: Add declaration of get_ovaldef_short_filename.
 
-	* src/omp.c (case CLIENT_GET_INFO): Add output of "xml_file" to OVALDEF.
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_INFO add
+	output of "xml_file" to OVALDEF.
 
 	* tools/db_init.sql: Add column "xml_file" to table "ovaldefs"
 
