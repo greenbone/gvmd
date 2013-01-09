@@ -2360,17 +2360,6 @@ port_list_uuid (port_list_t);
 char*
 port_range_uuid (port_range_t);
 
-#if 0
-char*
-trash_port_list_uuid (port_list_t);
-
-char*
-port_list_name (port_list_t);
-
-char*
-trash_port_list_name (port_list_t);
-#endif
-
 int
 port_list_in_use (port_list_t);
 

@@ -1,3 +1,11 @@
+2013-01-09  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (port_list_name, trash_port_list_name,
+	trash_port_list_uuid, port_list_ssh_lsc_credential): Remove unused
+	functions.
+
+	* src/manage.h: Remove headers accordingly.
+
 2013-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_user_get_iterator, init_get_iterator): Wrap the
