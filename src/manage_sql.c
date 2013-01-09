@@ -42962,27 +42962,7 @@ delete_port_list (const char *port_list_id, int ultimate)
     }
 
   if (port_list
-      && sql_int
-          (0, 0,
-           "SELECT count (*) FROM port_lists"
-           " WHERE ROWID = %llu AND"
-           " (uuid == " G_STRINGIFY (PORT_LIST_UUID_DEFAULT)
-           "  OR uuid"
-           "     == " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100)
-           "  OR uuid "
-           "     == " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000)
-           "  OR uuid "
-           "     == " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP)
-           "  OR uuid "
-           "     == " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP_UDP)
-           "  OR uuid "
-           "     == " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_2012)
-           "  OR uuid"
-           "     == " G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100)
-           "  OR uuid "
-           "     == " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012) ");",
-           port_list)
-         > 0)
+      && port_list_is_predefined (port_list))
     {
       sql ("ROLLBACK;");
       return 3;
@@ -43363,6 +43343,29 @@ port_range_uuid (port_range_t port_range)
                      port_range);
 }
 
+int
+port_list_is_predefined (port_list_t port_list)
+{
+  return !!sql_int
+            (0, 0,
+             "SELECT COUNT (*) FROM port_lists"
+             " WHERE ROWID = %llu AND"
+             " (uuid = " G_STRINGIFY (PORT_LIST_UUID_DEFAULT)
+             "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP)
+             "  OR uuid = "
+             G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100)
+             "  OR uuid = "
+             G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000)
+             "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP)
+             "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP_UDP)
+             "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_2012)
+             "  OR uuid = "
+             G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100)
+             "  OR uuid = "
+             G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012) ");",
+             port_list);
+}
+
 /**
  * @brief Return whether a port_list is in use by a task.
  *
@@ -43373,21 +43376,7 @@ port_range_uuid (port_range_t port_range)
 int
 port_list_in_use (port_list_t port_list)
 {
-  if (sql_int
-       (0, 0,
-        "SELECT count (*) FROM port_lists"
-        " WHERE ROWID = %llu AND"
-        " (uuid = " G_STRINGIFY (PORT_LIST_UUID_DEFAULT)
-        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP)
-        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100)
-        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000)
-        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP)
-        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP_UDP)
-        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_2012)
-        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100)
-        "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012) ");",
-        port_list)
-      > 0)
+  if (port_list_is_predefined (port_list))
     return 1;
 
   return sql_int (0, 0,
@@ -43424,19 +43413,8 @@ trash_port_list_in_use (port_list_t port_list)
 int
 port_list_writable (port_list_t port_list)
 {
-  const char *uuid;
-
-  uuid = port_list_uuid (port_list);
-  if (strcmp (uuid, PORT_LIST_UUID_DEFAULT) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_TCP) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_PRIV_TCP) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_PRIV_TCP_UDP) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_IANA_TCP_2012) == 0
-      || strcmp (uuid, PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012) == 0
-      || strcmp (uuid, PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100) == 0)
-    return 1;
+  if (port_list_is_predefined (port_list))
+    return 0;
   return (port_list_in_use (port_list) == 0);
 }
 

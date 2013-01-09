@@ -1,5 +1,13 @@
 2013-01-09  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (port_list_is_predefined): New function.
+	(delete_port_list, port_list_in_use, port_list_writable): Use
+	port_list_is_predefined adequately.
+
+	* src/manage.h: Add port_list_is_predefined header accordingly.
+
+2013-01-09  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (port_list_name, trash_port_list_name,
 	trash_port_list_uuid, port_list_ssh_lsc_credential): Remove unused
 	functions.

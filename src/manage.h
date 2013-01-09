@@ -2361,6 +2361,9 @@ char*
 port_range_uuid (port_range_t);
 
 int
+port_list_is_predefined (port_list_t);
+
+int
 port_list_in_use (port_list_t);
 
 int
