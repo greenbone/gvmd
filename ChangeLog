@@ -1,3 +1,8 @@
+2013-01-09  Andre Heinecke  <andre.heinecke@greenbone.net>
+
+	* src/manage_sql.c (send_to_verinice): Do not log the password in debug
+	output.
+
 2013-01-09  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (port_list_is_predefined): New function.

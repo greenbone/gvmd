@@ -11134,6 +11134,9 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
   if (!g_file_test (script, G_FILE_TEST_EXISTS))
     {
+      g_warning ("%s: Failed to find alert script: %s\n",
+           __FUNCTION__,
+           script);
       g_free (archive_file);
       g_free (script);
       g_free (script_dir);
@@ -11142,6 +11145,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
   {
     gchar *command;
+    gchar *log_command; /* Command with password removed */
     char *previous_dir;
     int ret;
 
@@ -11187,12 +11191,18 @@ send_to_verinice (const char *url, const char *username, const char *password,
                                clean_username,
                                clean_password,
                                archive_file);
+    log_command = g_strdup_printf ("/bin/sh %s %s %s ****** %s > /dev/null"
+                               " 2> /dev/null",
+                               script,
+                               clean_url,
+                               clean_username,
+                               archive_file);
     g_free (script);
     g_free (clean_url);
     g_free (clean_username);
     g_free (clean_password);
 
-    g_debug ("   command: %s\n", command);
+    g_debug ("   command: %s\n", log_command);
 
     if (getuid () == 0)
       {
@@ -11211,6 +11221,8 @@ send_to_verinice (const char *url, const char *username, const char *password,
                        strerror (errno));
             g_free (previous_dir);
             g_free (archive_file);
+            g_free (command);
+            g_free (log_command);
             return -1;
           }
         g_free (archive_file);
@@ -11253,7 +11265,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
                                __FUNCTION__,
                                ret,
                                WEXITSTATUS (ret),
-                               command);
+                               log_command);
                     exit (EXIT_FAILURE);
                   }
 
@@ -11272,6 +11284,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
                          __FUNCTION__);
             g_free (previous_dir);
             g_free (command);
+            g_free (log_command);
             return -1;
             break;
 
@@ -11280,8 +11293,6 @@ send_to_verinice (const char *url, const char *username, const char *password,
                 int status;
 
                 /* Parent on success.  Wait for child, and check result. */
-
-                g_free (command);
 
                 while (waitpid (pid, &status, 0) < 0)
                   {
@@ -11315,7 +11326,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
                     default:
                       g_warning ("%s: child failed, %s\n",
                                  __FUNCTION__,
-                                 command);
+                                 log_command);
                       if (chdir (previous_dir))
                         g_warning ("%s: and chdir failed\n",
                                    __FUNCTION__);
@@ -11326,7 +11337,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
                   {
                     g_warning ("%s: child failed, %s\n",
                                __FUNCTION__,
-                               command);
+                               log_command);
                     if (chdir (previous_dir))
                       g_warning ("%s: and chdir failed\n",
                                  __FUNCTION__);
@@ -11355,7 +11366,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
                        __FUNCTION__,
                        ret,
                        WEXITSTATUS (ret),
-                       command);
+                       log_command);
             if (chdir (previous_dir))
               g_warning ("%s: and chdir failed\n",
                          __FUNCTION__);
@@ -11364,8 +11375,10 @@ send_to_verinice (const char *url, const char *username, const char *password,
             return -1;
           }
 
-        g_free (command);
       }
+
+    g_free (command);
+    g_free (log_command);
 
     /* Change back to the previous directory. */
 
