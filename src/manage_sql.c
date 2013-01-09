@@ -9883,21 +9883,21 @@ delete_alert (const char *alert_id, int ultimate)
       return 0;
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM task_alerts"
-               " WHERE alert = %llu"
-               " AND alert_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-               " AND (SELECT hidden < 2 FROM tasks"
-               "      WHERE ROWID = task_alerts.task);",
-               alert))
-    {
-      sql ("ROLLBACK;");
-      return 1;
-    }
-
   if (ultimate == 0)
     {
       alert_t trash_alert;
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM task_alerts"
+                   " WHERE alert = %llu"
+                   " AND alert_location = " G_STRINGIFY (LOCATION_TABLE)
+                   " AND (SELECT hidden < 2 FROM tasks"
+                   "      WHERE ROWID = task_alerts.task);",
+                   alert))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
 
       sql ("INSERT INTO alerts_trash"
            " (uuid, owner, name, comment, event, condition, method, filter,"
@@ -9936,7 +9936,16 @@ delete_alert (const char *alert_id, int ultimate)
            " AND alert_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            trash_alert,
            alert);
-   }
+    }
+  else if (sql_int (0, 0,
+           "SELECT count(*) FROM task_alerts"
+           " WHERE alert = %llu"
+           " AND alert_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           alert))
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
 
   sql ("DELETE FROM alert_condition_data WHERE alert = %llu;",
        alert);
@@ -28756,19 +28765,19 @@ delete_target (const char *target_id, int ultimate)
       return 0;
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks"
-               " WHERE target = %llu"
-               " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-               " AND (hidden = 0 OR hidden = 1);",
-               target))
-    {
-      sql ("ROLLBACK;");
-      return 1;
-    }
-
   if (ultimate == 0)
     {
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE target = %llu"
+                   " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
+                   " AND (hidden = 0 OR hidden = 1);",
+                   target))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
       sql ("INSERT INTO targets_trash"
            " (uuid, owner, name, hosts, comment, lsc_credential, ssh_port,"
            "  smb_lsc_credential, port_range, ssh_location, smb_location,"
@@ -28790,6 +28799,15 @@ delete_target (const char *target_id, int ultimate)
            " AND target_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            sqlite3_last_insert_rowid (task_db),
            target);
+    }
+  else if (sql_int (0, 0,
+           "SELECT count(*) FROM tasks"
+           " WHERE target = %llu"
+           " AND target_location = " G_STRINGIFY (LOCATION_TABLE),
+           target))
+    {
+      sql ("ROLLBACK;");
+      return 1;
     }
 
   sql ("DELETE FROM targets WHERE ROWID = %llu;", target);
@@ -30757,24 +30775,36 @@ delete_config (const char *config_id, int ultimate)
       return 0;
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks"
-               " WHERE config = %llu"
-               " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
-               " AND (hidden = 0 OR hidden = 1);",
-               config))
-    {
-      sql ("ROLLBACK;");
-      return 1;
-    }
-
   if (ultimate)
-    sql ("DELETE FROM nvt_selectors WHERE name ="
-         " (SELECT nvt_selector FROM configs_trash WHERE ROWID = %llu);",
-         config);
+    {
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE config = %llu"
+                   " AND config_location = " G_STRINGIFY (LOCATION_TABLE),
+                   config))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      sql ("DELETE FROM nvt_selectors WHERE name ="
+           " (SELECT nvt_selector FROM configs_trash WHERE ROWID = %llu);",
+           config);
+    }
   else
     {
       config_t trash_config;
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE config = %llu"
+                   " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
+                   " AND (hidden = 0 OR hidden = 1);",
+                   config))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
 
       sql ("INSERT INTO configs_trash"
            " (uuid, owner, name, nvt_selector, comment, family_count, nvt_count,"
@@ -38129,19 +38159,19 @@ delete_schedule (const char *schedule_id, int ultimate)
       return 0;
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks"
-               " WHERE schedule = %llu"
-               " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE)
-               " AND (hidden = 0 OR hidden = 1);",
-               schedule))
-    {
-      sql ("ROLLBACK;");
-      return 1;
-    }
-
   if (ultimate == 0)
     {
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE schedule = %llu"
+                   " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE)
+                   " AND (hidden = 0 OR hidden = 1);",
+                   schedule))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
       sql ("INSERT INTO schedules_trash"
            " (uuid, owner, name, comment, first_time, period, period_months,"
            "  duration, timezone, initial_offset, creation_time,"
@@ -38160,6 +38190,15 @@ delete_schedule (const char *schedule_id, int ultimate)
            " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            sqlite3_last_insert_rowid (task_db),
            schedule);
+    }
+  else if (sql_int (0, 0,
+           "SELECT count(*) FROM tasks"
+           " WHERE schedule = %llu"
+           " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE),
+           schedule))
+    {
+      sql ("ROLLBACK;");
+      return 1;
     }
 
   sql ("DELETE FROM schedules WHERE ROWID = %llu;", schedule);
@@ -41657,19 +41696,19 @@ delete_slave (const char *slave_id, int ultimate)
       return 0;
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks"
-               " WHERE slave = %llu"
-               " AND slave_location = " G_STRINGIFY (LOCATION_TABLE)
-               " AND (hidden = 0 OR hidden = 1);",
-               slave))
-    {
-      sql ("ROLLBACK;");
-      return 1;
-    }
-
   if (ultimate == 0)
     {
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks"
+                   " WHERE slave = %llu"
+                   " AND slave_location = " G_STRINGIFY (LOCATION_TABLE)
+                   " AND (hidden = 0 OR hidden = 1);",
+                   slave))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
       sql ("INSERT INTO slaves_trash"
            "  (uuid, owner, name, comment, host, port, login, password,"
            "   creation_time, modification_time)"
@@ -41687,6 +41726,15 @@ delete_slave (const char *slave_id, int ultimate)
            " AND slave_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            sqlite3_last_insert_rowid (task_db),
            slave);
+    }
+  else if (sql_int (0, 0,
+           "SELECT count(*) FROM tasks"
+           " WHERE slave = %llu"
+           " AND slave_location = " G_STRINGIFY (LOCATION_TABLE),
+           slave))
+    {
+      sql ("ROLLBACK;");
+      return 1;
     }
 
   sql ("DELETE FROM slaves WHERE ROWID = %llu;", slave);

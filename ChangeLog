@@ -1,3 +1,10 @@
+2013-01-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (delete_alert, delete_target, delete_config)
+	(delete_schedule, delete_slave): Check if any task is using the resource
+	in the "ultimate" case, to catch the case where the resource is in the
+	table and the task is in the trash.
+
 2013-01-09  Andre Heinecke  <andre.heinecke@greenbone.net>
 
 	* src/manage_sql.c (send_to_verinice): Do not log the password in debug
