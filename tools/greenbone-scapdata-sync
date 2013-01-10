@@ -206,6 +206,19 @@ for ovalfile in `find $SCAP_DIR/oval/ -name *.xml -type f`
   done
 }
 
+do_help () {
+  echo "$0: Sync SCAP data"
+  echo " --describe	display current feed info"
+  echo " --feedversion	display version of this feed"
+  echo " --help		display this help"
+  echo " --identify	display information"
+  echo " --refresh	update database without downloading new state"
+  echo " --selftest	perform self-test"
+  echo " --version	display version"
+  echo ""
+  exit 0
+}
+
 update_scap_db() {
   if [ ! -f $SCAP_DB ]
   then
@@ -423,6 +436,10 @@ while test $# -gt 0; do
           ;;
         --feedversion)
           do_feedversion
+          exit 0
+          ;;
+        --help)
+          do_help
           exit 0
           ;;
         --refresh)
