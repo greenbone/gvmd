@@ -3014,15 +3014,16 @@ copy_resource (const char *type, const char *name, const char *comment,
   if (resource_id == NULL)
     return -1;
 
+  sql ("BEGIN IMMEDIATE;");
+
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
     {
+      sql ("ROLLBACK;");
       return -1;
     }
 
   named = type_named (type);
-
-  sql ("BEGIN IMMEDIATE;");
 
   if (named && name && strlen (name))
     {
@@ -9642,14 +9643,16 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
   if (alert_id == NULL)
     return -1;
 
+  sql ("BEGIN IMMEDIATE");
+
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
     {
+      sql ("ROLLBACK;");
       return -1;
     }
 
   quoted_name = sql_quote (name);
-  sql ("BEGIN IMMEDIATE");
 
   /* Check for existing name. */
   if (quoted_name && strlen (quoted_name))
@@ -26852,13 +26855,14 @@ copy_task (const char* name, const char* comment, const char *task_id,
   if (task_id == NULL)
     return -1;
 
+  sql ("BEGIN IMMEDIATE;");
+
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
     {
+      sql ("ROLLBACK;");
       return -1;
     }
-
-  sql ("BEGIN IMMEDIATE;");
 
   if (name && strlen (name))
     quoted_name = sql_quote (name);
@@ -28733,13 +28737,14 @@ copy_target (const char* name, const char* comment, const char *target_id,
   if (target_id == NULL)
     return -1;
 
+  sql ("BEGIN IMMEDIATE;");
+
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
     {
+      sql ("ROLLBACK;");
       return -1;
     }
-
-  sql ("BEGIN IMMEDIATE;");
 
   if (name && strlen (name))
     {
@@ -30700,13 +30705,14 @@ copy_config (const char* name, const char* comment, config_t config,
   quoted_config_selector = sql_quote (config_selector);
   free (config_selector);
 
+  sql ("BEGIN IMMEDIATE;");
+
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
     {
+      sql ("ROLLBACK;");
       return -1;
     }
-
-  sql ("BEGIN IMMEDIATE;");
 
   if (quoted_name && strlen (quoted_name))
     {
@@ -39932,9 +39938,12 @@ copy_report_format (const char* name, const char* source_uuid,
   if (source_uuid == NULL)
     return -1;
 
+  sql ("BEGIN IMMEDIATE");
+
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
     {
+      sql ("ROLLBACK;");
       return -1;
     }
 
@@ -39944,8 +39953,6 @@ copy_report_format (const char* name, const char* source_uuid,
       sql ("ROLLBACK;");
       return -1;
     }
-
-  sql ("BEGIN IMMEDIATE");
 
   /* Check that provided name doesn't exist already */
   if (name && strlen (name))
@@ -42843,13 +42850,14 @@ copy_port_list (const char* name, const char* comment,
   if (port_list_id == NULL)
     return -1;
 
+  sql ("BEGIN IMMEDIATE");
+
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
     {
+      sql ("ROLLBACK;");
       return -1;
     }
-
-  sql ("BEGIN IMMEDIATE");
 
   /* Check that name doesn't exist already */
   if (name && strlen (name))

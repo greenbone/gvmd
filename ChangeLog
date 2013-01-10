@@ -1,5 +1,11 @@
 2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_resource, copy_alert, copy_task, copy_target)
+	(copy_config, copy_report_format, copy_port_list): Find the user inside
+	the transaction, just to be safe.
+
+2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/LaTeX/latex.xsl (notes, overrides): Format dates
 	nicely.
 
