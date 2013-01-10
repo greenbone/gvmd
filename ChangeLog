@@ -1,5 +1,11 @@
 2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In GET_INFO use
+	xml_string_append in more places, because the info can contain special
+	characters.
+
+2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (OVALDEF_INFO_ITERATOR_COLUMNS): Align separator.
 	(get_ovaldef_short_filename): Add space.
 

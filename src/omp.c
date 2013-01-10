@@ -18241,17 +18241,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   const char * title = cpe_info_iterator_title (&info);
                   if (title)
-                    g_string_append_printf (result,
-                                            "<title>%s</title>",
-                                            cpe_info_iterator_title (&info));
-                  g_string_append_printf (result,
-                                          "<max_cvss>%s</max_cvss>"
-                                          "<cve_refs>%s</cve_refs>"
-                                          "<status>%s</status>",
-                                          cpe_info_iterator_max_cvss (&info),
-                                          cpe_info_iterator_cve_refs (&info),
-                                          cpe_info_iterator_status (&info) ?
-                                          cpe_info_iterator_status (&info) : "");
+                    xml_string_append (result,
+                                       "<title>%s</title>",
+                                       cpe_info_iterator_title (&info));
+                  xml_string_append (result,
+                                     "<max_cvss>%s</max_cvss>"
+                                     "<cve_refs>%s</cve_refs>"
+                                     "<status>%s</status>",
+                                     cpe_info_iterator_max_cvss (&info),
+                                     cpe_info_iterator_cve_refs (&info),
+                                     cpe_info_iterator_status (&info) ?
+                                     cpe_info_iterator_status (&info) : "");
 
                   if (get_info_data->details == 1)
                     {
@@ -18259,54 +18259,51 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       g_string_append (result, "<cves>");
                       init_cpe_cve_iterator (&cves, get_iterator_name (&info), 0, NULL);
                       while (next (&cves))
-                        {
-                          g_string_append_printf (result,
-                                                  "<cve>"
-                                                  "<entry"
-                                                  " xmlns:cpe-lang=\"http://cpe.mitre.org/language/2.0\""
-                                                  " xmlns:vuln=\"http://scap.nist.gov/schema/vulnerability/0.4\""
-                                                  " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
-                                                  " xmlns:patch=\"http://scap.nist.gov/schema/patch/0.1\""
-                                                  " xmlns:scap-core=\"http://scap.nist.gov/schema/scap-core/0.1\""
-                                                  " xmlns:cvss=\"http://scap.nist.gov/schema/cvss-v2/0.2\""
-                                                  " xmlns=\"http://scap.nist.gov/schema/feed/vulnerability/2.0\""
-                                                  " id=\"%s\">"
-                                                  "<vuln:cvss>"
-                                                  "<cvss:base_metrics>"
-                                                  "<cvss:score>%s</cvss:score>"
-                                                  "</cvss:base_metrics>"
-                                                  "</vuln:cvss>"
-                                                  "</entry>"
-                                                  "</cve>",
-                                                  cve_iterator_name (&cves),
-                                                  cve_iterator_cvss (&cves));
-
-                        }
+                        xml_string_append (result,
+                                           "<cve>"
+                                           "<entry"
+                                           " xmlns:cpe-lang=\"http://cpe.mitre.org/language/2.0\""
+                                           " xmlns:vuln=\"http://scap.nist.gov/schema/vulnerability/0.4\""
+                                           " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
+                                           " xmlns:patch=\"http://scap.nist.gov/schema/patch/0.1\""
+                                           " xmlns:scap-core=\"http://scap.nist.gov/schema/scap-core/0.1\""
+                                           " xmlns:cvss=\"http://scap.nist.gov/schema/cvss-v2/0.2\""
+                                           " xmlns=\"http://scap.nist.gov/schema/feed/vulnerability/2.0\""
+                                           " id=\"%s\">"
+                                           "<vuln:cvss>"
+                                           "<cvss:base_metrics>"
+                                           "<cvss:score>%s</cvss:score>"
+                                           "</cvss:base_metrics>"
+                                           "</vuln:cvss>"
+                                           "</entry>"
+                                           "</cve>",
+                                           cve_iterator_name (&cves),
+                                           cve_iterator_cvss (&cves));
                       cleanup_iterator (&cves);
                       g_string_append (result, "</cves>");
                     }
                 }
               else if (g_strcmp0 ("cve", get_info_data->type) == 0)
                 {
-                   g_string_append_printf (result,
-                                           "<cvss>%s</cvss>"
-                                           "<vector>%s</vector>"
-                                           "<complexity>%s</complexity>"
-                                           "<authentication>%s</authentication>"
-                                           "<confidentiality_impact>%s</confidentiality_impact>"
-                                           "<integrity_impact>%s</integrity_impact>"
-                                           "<availability_impact>%s</availability_impact>"
-                                           "<description>%s</description>"
-                                           "<products>%s</products>",
-                                           cve_info_iterator_cvss (&info),
-                                           cve_info_iterator_vector (&info),
-                                           cve_info_iterator_complexity (&info),
-                                           cve_info_iterator_authentication (&info),
-                                           cve_info_iterator_confidentiality_impact (&info),
-                                           cve_info_iterator_integrity_impact (&info),
-                                           cve_info_iterator_availability_impact (&info),
-                                           cve_info_iterator_description (&info),
-                                           cve_info_iterator_products (&info));
+                   xml_string_append (result,
+                                      "<cvss>%s</cvss>"
+                                      "<vector>%s</vector>"
+                                      "<complexity>%s</complexity>"
+                                      "<authentication>%s</authentication>"
+                                      "<confidentiality_impact>%s</confidentiality_impact>"
+                                      "<integrity_impact>%s</integrity_impact>"
+                                      "<availability_impact>%s</availability_impact>"
+                                      "<description>%s</description>"
+                                      "<products>%s</products>",
+                                      cve_info_iterator_cvss (&info),
+                                      cve_info_iterator_vector (&info),
+                                      cve_info_iterator_complexity (&info),
+                                      cve_info_iterator_authentication (&info),
+                                      cve_info_iterator_confidentiality_impact (&info),
+                                      cve_info_iterator_integrity_impact (&info),
+                                      cve_info_iterator_availability_impact (&info),
+                                      cve_info_iterator_description (&info),
+                                      cve_info_iterator_products (&info));
                    if (get_info_data->details == 1)
                      {
                        iterator_t nvts;
@@ -18329,23 +18326,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 ovaldef_info_iterator_title (&info), -1);
                   gchar* description_escaped = g_markup_escape_text(
                                 ovaldef_info_iterator_description (&info), -1);
-                  g_string_append_printf (result,
-                                          "<version>%s</version>"
-                                          "<deprecated>%s</deprecated>"
-                                          "<def_class>%s</def_class>"
-                                          "<title>%s</title>",
-                                          ovaldef_info_iterator_version (&info),
-                                          ovaldef_info_iterator_deprecated (&info),
-                                          ovaldef_info_iterator_def_class (&info),
-                                          title_escaped);
+                  xml_string_append (result,
+                                     "<version>%s</version>"
+                                     "<deprecated>%s</deprecated>"
+                                     "<def_class>%s</def_class>"
+                                     "<title>%s</title>",
+                                     ovaldef_info_iterator_version (&info),
+                                     ovaldef_info_iterator_deprecated (&info),
+                                     ovaldef_info_iterator_def_class (&info),
+                                     title_escaped);
                   if (get_info_data->details == 1)
                     {
-                      g_string_append_printf (result,
-                                          "<description>%s</description>"
-                                          "<xml_file>%s</xml_file>",
-                                          description_escaped,
-                                          ovaldef_info_iterator_xml_file (&info));
-                  }
+                      xml_string_append (result,
+                                         "<description>%s</description>"
+                                         "<xml_file>%s</xml_file>",
+                                         description_escaped,
+                                         ovaldef_info_iterator_xml_file (&info));
+                    }
                   g_free (title_escaped);
                   g_free (description_escaped);
                 }
@@ -18361,7 +18358,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   gchar *raw_data = NULL;
                   gchar *nonconst_name = g_strdup(get_iterator_name (&info));
                   manage_read_info (get_info_data->type, nonconst_name, &raw_data);
-                  g_string_append_printf (result, "<raw_data>%s</raw_data>", raw_data);
+                  xml_string_append (result, "<raw_data>%s</raw_data>", raw_data);
                   g_free(nonconst_name);
                   g_free(raw_data);
                 }
