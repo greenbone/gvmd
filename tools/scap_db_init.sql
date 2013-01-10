@@ -32,11 +32,12 @@ DROP TABLE IF EXISTS cpes;
 DROP TABLE IF EXISTS affected_products;
 DROP TABLE IF EXISTS meta;
 DROP TABLE IF EXISTS oval_def;
+DROP TABLE IF EXISTS ovaldefs;
 
 
 /* create new tables and indices */
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "7");
+INSERT INTO meta (name, value) VALUES ("database_version", "8");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
 CREATE TABLE cves (

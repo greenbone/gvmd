@@ -1,5 +1,26 @@
 2013-01-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+Renamed db_init.sql to scap_db_init.sql to avoid confusion with future Cert
+database.
+Changed SCAP database version and removed old migration scripts as re-creation
+of database is recommended to ensure consistency.
+
+	* CMakeLists.txt: Changed db_init.sql to scap_db_init.sql.
+	Removed migrate_db4.xsl.
+
+	* tools/db_init.sql: Removed. Renamed to scap_db_init.sql.
+
+	* tools/greenbone-scapdata-sync, tools/openvas-scapdata-sync.in, :
+	Changed db_init.sql to scap_db_init.sql. Changed database version to 8.
+	Removed old migration scripts.
+
+	* tools/scap_db_init.sql: Added. Renamed from db_init.sql.
+	Change version to 8 and updated DROP TABLE ... queries.
+
+	* tools/migrate_db4.xsl: Removed.
+
+2013-01-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* tools/db-init.sql: Change version number to 7.
 
 	* tools/openvas-scapdata-sync.in (update_sec_db): Fix queries for

@@ -172,57 +172,10 @@ then
   exit 1
 fi
 
-migrate_3 ()
-{
-  log_write " Database Version updated. Migrating to Version 3."
-  log_write " Updating CPEs.."
-  sqlite3 $SCAP_DB "update cpes set modification_time = strftime('%s', modification_time), \
-                                   creation_time = strftime('%s', creation_time);"
-  log_write " Updating CVEs.."
-  sqlite3 $SCAP_DB "update cves set modification_time = strftime('%s', modification_time), \
-                                   creation_time = strftime('%s', creation_time);"
-  log_write " Migration done."
-  sqlite3 $SCAP_DB "update meta set value ='3' where name = 'database_version';"
-}
-
-migrate_4 ()
-{
-  log_write " Database Version updated. Migrating to Version 4."
-  log_write " Updating Tables.."
-  sqlite3 $SCAP_DB "alter table cves add column vector;"
-  sqlite3 $SCAP_DB "alter table cves add column complexity;"
-  sqlite3 $SCAP_DB "alter table cves add column authentication;"
-  sqlite3 $SCAP_DB "alter table cves add column confidentiality_impact;"
-  sqlite3 $SCAP_DB "alter table cves add column integrity_impact;"
-  sqlite3 $SCAP_DB "alter table cves add column availability_impact;"
-  sqlite3 $SCAP_DB "alter table cves add column products;"
-
-  for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
-  do
-      log_write " Adding CVSS information of $cvefile to SCAP DB.."
-      xsltproc $SCAP_RES_DIR/migrate_db4.xsl $cvefile | sqlite3 $SCAP_DB
-  done
-
-  log_write " Migration done."
-  sqlite3 $SCAP_DB "update meta set value ='4' where name = 'database_version';"
-}
-
-migrate_7 () {
-  log_write " Database Version updated. Migrating to Version 7."
-  log_write " Adding Tables.."
-
-  sqlite3 $SCAP_DB "DROP TABLE IF EXISTS ovaldefs; CREATE TABLE ovaldefs (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid UNIQUE, name UNIQUE, comment, creation_time DATE, modification_time DATE, version INTEGER, deprecated BOOLEAN, def_class TEXT, title TEXT, description TEXT, xml_file TEXT); CREATE UNIQUE INDEX ovaldefs_idx ON ovaldefs (name);"
-
-  sqlite3 $SCAP_DB "update meta set value ='0' where name = 'last_update';"
-  sqlite3 $SCAP_DB "update meta set value ='7' where name = 'database_version';"
-
-  log_write " Migration done."
-}
-
 reinit () {
   log_write " Reinitialization of the database necessary."
   rm -f $SCAP_DB
-  sqlite3 $SCAP_DB < $SCAP_RES_DIR/db_init.sql
+  sqlite3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
 }
 
 check_db_version () {
@@ -230,14 +183,12 @@ check_db_version () {
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
-    2) migrate_3
-       migrate_4
-       migrate_7;;
-    3) migrate_4
-       migrate_7;;
-    4) migrate_7;;
-    5) migrate_7;;
-    6) migrate_7;;
+    2) reinit;;
+    3) reinit;;
+    4) reinit;;
+    5) reinit;;
+    6) reinit;;
+    7) reinit;;
   esac
 }
 
@@ -259,7 +210,7 @@ update_scap_db() {
   if [ ! -f $SCAP_DB ]
   then
     log_write "Initializing SCAP database."
-    sqlite3 $SCAP_DB < $SCAP_RES_DIR/db_init.sql
+    sqlite3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
     CVE_REFDATE=0
   else
     check_db_version
@@ -278,7 +229,7 @@ update_scap_db() {
     # Happens when initial sync was aborted
     log_write "Error: Inconsistent data. Resetting SCAP database."
     rm -f $SCAP_DB
-    sqlite3 $SCAP_DB < $SCAP_RES_DIR/db_init.sql
+    sqlite3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
     CVE_REFDATE=0
     DB_LASTUPDATE=0
   fi

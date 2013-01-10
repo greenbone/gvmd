@@ -236,55 +236,7 @@ reinit () {
   echo "[i] Major change in internal SCAP data structures."
   echo "[i] Reinitialization of database necessary."
   echo "[i] This update might take a while.."
-  $SQLITE $SEC_DB < $SCAP_RES_DIR/db_init.sql
-}
-
-migrate_3 ()
-{
-  echo "[i] Database Version updated. Migrating to Version 3."
-  echo "[i] Updating CPEs.."
-  $SQLITE $SEC_DB "update cpes set modification_time = strftime('%s', modification_time), \
-                                   creation_time = strftime('%s', creation_time);"
-  echo "[i] Updating CVEs.."
-  $SQLITE $SEC_DB "update cves set modification_time = strftime('%s', modification_time), \
-                                   creation_time = strftime('%s', creation_time);"
-  echo "[i] Migration done."
-  $SQLITE $SEC_DB "update meta set value ='3' where name = 'database_version';"
-}
-
-migrate_4 ()
-{
-  echo "[i] Database Version updated. Migrating to Version 4."
-  echo "[i] Updating Tables.."
-  $SQLITE $SEC_DB "alter table cves add column vector;"
-  $SQLITE $SEC_DB "alter table cves add column complexity;"
-  $SQLITE $SEC_DB "alter table cves add column authentication;"
-  $SQLITE $SEC_DB "alter table cves add column confidentiality_impact;"
-  $SQLITE $SEC_DB "alter table cves add column integrity_impact;"
-  $SQLITE $SEC_DB "alter table cves add column availability_impact;"
-  $SQLITE $SEC_DB "alter table cves add column products;"
-
-  for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
-  do
-      echo "[i] Adding CVSS information of $cvefile to SCAP DB.."
-      xsltproc $SCAP_RES_DIR/migrate_db4.xsl $cvefile | $SQLITE $SEC_DB
-  done
-
-  echo "[i] Migration done."
-  $SQLITE $SEC_DB "update meta set value ='4' where name = 'database_version';"
-}
-
-
-migrate_7 () {
-  echo "[i] Database Version updated. Migrating to Version 7."
-  echo "[i] Adding Tables.."
-
-  $SQLITE $SEC_DB "DROP TABLE IF EXISTS ovaldefs; CREATE TABLE ovaldefs (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid UNIQUE, name UNIQUE, comment, creation_time DATE, modification_time DATE, version INTEGER, deprecated BOOLEAN, def_class TEXT, title TEXT, description TEXT, xml_file TEXT); CREATE UNIQUE INDEX ovaldefs_idx ON ovaldefs (name);"
-  
-  $SQLITE $SEC_DB "update meta set value ='0' where name = 'last_update';"
-  $SQLITE $SEC_DB "update meta set value ='7' where name = 'database_version';"
-  
-  echo "[i] Migration done."
+  $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
 }
 
 check_db_version () {
@@ -292,14 +244,12 @@ check_db_version () {
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
-    2) migrate_3
-       migrate_4
-       migrate_7;;
-    3) migrate_4
-       migrate_7;;
-    4) migrate_7;;
-    5) migrate_7;;
-    6) migrate_7;;
+    2) reinit;;
+    3) reinit;;
+    4) reinit;;
+    5) reinit;;
+    6) reinit;;
+    7) reinit;;
   esac
 }
 
@@ -321,7 +271,7 @@ update_sec_db () {
   if [ ! -f $SEC_DB ]
   then
     echo "[i] Initializing scap database"
-    $SQLITE $SEC_DB < $SCAP_RES_DIR/db_init.sql
+    $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
     DB_LASTUPDATE=0
     CVE_REFDATE=0
     OVAL_REFDATE=0
@@ -342,7 +292,7 @@ update_sec_db () {
     # Happens when initial sync was aborted
     echo "Error: Inconsistent data. Resetting SCAP database."
     rm -f $SEC_DB
-    $SQLITE $SEC_DB < $SCAP_RES_DIR/db_init.sql
+    $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
     CVE_REFDATE=0
     OVAL_REFDATE=0
     DB_LASTUPDATE=0
