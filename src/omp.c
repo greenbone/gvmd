@@ -18083,7 +18083,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           iterator_t info;
           int count, first, filtered, ret;
-          int (*init_info_iterator) (iterator_t*, const get_data_t *, const char *);
+          int (*init_info_iterator) (iterator_t*, get_data_t *, const char *);
           int (*info_count) (const get_data_t *get);
 
           if (manage_scap_loaded () == 0)

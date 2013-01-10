@@ -2525,7 +2525,7 @@ void
 init_cpe_cve_iterator (iterator_t *, const char *, int, const char *);
 
 int
-init_cpe_info_iterator (iterator_t* iterator, const get_data_t *get,
+init_cpe_info_iterator (iterator_t* iterator, get_data_t *get,
                         const char *name);
 
 int
@@ -2582,7 +2582,7 @@ const char*
 cve_info_iterator_products (iterator_t*);
 
 int
-init_cve_info_iterator (iterator_t* iterator, const get_data_t *get,
+init_cve_info_iterator (iterator_t* iterator, get_data_t *get,
                         const char *name);
 
 int
@@ -2590,7 +2590,7 @@ cve_info_count (const get_data_t *get);
 
 /* OVAL defintions */
 int
-init_ovaldef_info_iterator (iterator_t* iterator, const get_data_t *get,
+init_ovaldef_info_iterator (iterator_t* iterator, get_data_t *get,
                             const char *name);
 
 int

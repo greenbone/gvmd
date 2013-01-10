@@ -45957,7 +45957,7 @@ cpe_info_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_cpe_info_iterator (iterator_t* iterator, const get_data_t *get, const char *name)
+init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 {
   static const char *filter_columns[] = CPE_INFO_ITERATOR_FILTER_COLUMNS;
   gchar *clause = NULL;
@@ -45974,6 +45974,9 @@ init_cpe_info_iterator (iterator_t* iterator, const get_data_t *get, const char 
       gchar *quoted = sql_quote (name);
       clause = g_strdup_printf (" AND name = '%s'", quoted);
       g_free (quoted);
+      /* The entry is specified by name, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
     }
   ret = init_get_iterator (iterator,
                            "cpe",
@@ -46017,7 +46020,7 @@ cve_info_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_cve_info_iterator (iterator_t* iterator, const get_data_t *get, const char *name)
+init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 {
   static const char *filter_columns[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
   gchar *clause = NULL;
@@ -46034,6 +46037,9 @@ init_cve_info_iterator (iterator_t* iterator, const get_data_t *get, const char 
       gchar *quoted = sql_quote (name);
       clause = g_strdup_printf (" AND name = '%s'", quoted);
       g_free (quoted);
+      /* The entry is specified by name, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
     }
   ret = init_get_iterator (iterator,
                            "cve",
@@ -46202,7 +46208,7 @@ DEF_ACCESS (cve_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 8);
  *         -1 error.
  */
 int
-init_ovaldef_info_iterator (iterator_t* iterator, const get_data_t *get,
+init_ovaldef_info_iterator (iterator_t* iterator, get_data_t *get,
                             const char *name)
 {
   static const char *filter_columns[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
@@ -46220,6 +46226,9 @@ init_ovaldef_info_iterator (iterator_t* iterator, const get_data_t *get,
       gchar *quoted = sql_quote (name);
       clause = g_strdup_printf (" AND name = '%s'", quoted);
       g_free (quoted);
+      /* The entry is specified by name, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
     }
   ret = init_get_iterator (iterator,
                            "ovaldef",

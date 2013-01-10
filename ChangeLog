@@ -1,3 +1,15 @@
+2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_cpe_info_iterator, init_cve_info_iterator)
+	(init_ovaldef_info_iterator): Remove the filter GET arg when a name is
+	given, because the exact entry is required and the filtering gets in the
+	way.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_INFO update declaration
+	accordingly.
+
 2013-01-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 Renamed db_init.sql to scap_db_init.sql to avoid confusion with future Cert
