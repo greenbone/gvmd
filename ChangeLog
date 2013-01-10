@@ -1,3 +1,10 @@
+2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/TXT/TXT.xsl (scan_start): New template.  Formats
+	date nicely.
+	(scan_end): Format date nicely.
+	(real-report): Call date templates for start and end dates.
+
 2013-01-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Added --help.

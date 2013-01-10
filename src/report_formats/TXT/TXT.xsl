@@ -3,7 +3,8 @@
     version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:str="http://exslt.org/strings"
-    extension-element-prefixes="str">
+    xmlns:date="http://exslt.org/dates-and-times"
+    extension-element-prefixes="str date">
   <xsl:output method="text" encoding="string" indent="no"/>
 
 <!--
@@ -239,8 +240,32 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 </xsl:template>
 
-  <xsl:template match="scan_end">
-    <tr><td>Scan ended:</td><td><xsl:apply-templates /></td></tr>
+  <xsl:template name="scan_start">
+    <xsl:param name="date" select="scan_start"/>
+    <xsl:if test="string-length ($date)">
+      <xsl:choose>
+        <xsl:when test="contains($date, '+')">
+          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', substring-after ($date, '+'))"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' UTC')"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:if>
+  </xsl:template>
+
+  <xsl:template name="scan_end">
+    <xsl:param name="date" select="scan_end"/>
+    <xsl:if test="string-length ($date)">
+      <xsl:choose>
+        <xsl:when test="contains($date, '+')">
+          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', substring-after ($date, '+'))"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' UTC')"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:if>
   </xsl:template>
 
   <xsl:template match="note">
@@ -633,9 +658,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:when test="@type = 'prognostic'">
       </xsl:when>
       <xsl:otherwise>
-        <xsl:text>Scan started: </xsl:text><xsl:value-of select="scan_start"/><xsl:call-template name="newline"/>
+        <xsl:text>Scan started: </xsl:text><xsl:call-template name="scan_start"/><xsl:call-template name="newline"/>
         <xsl:text>Scan ended:   </xsl:text>
-        <xsl:value-of select="scan_end"/><xsl:call-template name="newline"/>
+        <xsl:call-template name="scan_end"/><xsl:call-template name="newline"/>
         <xsl:call-template name="newline"/>
       </xsl:otherwise>
     </xsl:choose>
