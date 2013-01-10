@@ -1,3 +1,26 @@
+2013-01-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add support to modify Alerts data and filters.
+
+	* src/manage_sql.c (modify_alert): Modify alert's event, condition,
+	method and filter. Change interface and documentation accordingly.
+
+	* src/manage.h: Change modify_alert accordingly.
+
+	* src/omp.c (modify_alert_t): Add event, event_data, filter_id,
+	condition, condition_data, method, method_data, part_data and part_name
+	elements.
+	(modify_alert_data_reset): Free filter_id, event, event_data,
+	condition, condition_data, method and method_data.
+	(client_state_t): Add client states for alert filter, event, condition
+	and method elements.
+	(omp_xml_handle_start_element): Handle alert event, condition and method
+	data. Fix ELSE_ERROR typos.
+	(omp_xml_handle_end_element): Adapt to modify_alert interface changes.
+	Handle event, condition and method data.
+	(omp_xml_handle_text_element): Append data in alert event, condition and
+	method tags to appropriate elements.
+
 2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/TXT/TXT.xsl (scan_start): New template.  Formats

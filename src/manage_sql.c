@@ -9749,15 +9749,29 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  * @param[in]   alert_id        UUID of alert.
  * @param[in]   name            Name of alert.
  * @param[in]   comment         Comment on alert.
+ * @param[in]   filter_id       Filter.
+ * @param[in]   event           Type of event.
+ * @param[in]   event_data      Type-specific event data.
+ * @param[in]   condition       Event condition.
+ * @param[in]   condition_data  Condition-specific data.
+ * @param[in]   method          Escalation method.
+ * @param[in]   method_data     Data for escalation method.
  *
  * @return 0 success, 1 failed to find alert, 2 alert with new name exists,
- *         3 alert_id required, -1 internal error.
+ *         3 alert_id required, 4 failed to find filter, 5 filter type must be
+ *         report if specified, 6 Provided email address not valid,
+ *         -1 internal error.
  */
 int
-modify_alert (const char *alert_id, const char *name, const char *comment)
+modify_alert (const char *alert_id, const char *name, const char *comment,
+              const char *filter_id, event_t event, GPtrArray *event_data,
+              alert_condition_t condition, GPtrArray *condition_data,
+              alert_method_t method, GPtrArray *method_data)
 {
-  gchar *quoted_name, *quoted_comment;
+  int index;
+  gchar *quoted_name, *quoted_comment, *item;
   alert_t alert;
+  filter_t filter;
 
   if (alert_id == NULL)
     return 3;
@@ -9779,7 +9793,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment)
       return 1;
     }
 
-  /* Check whether a alert with the same name exists already. */
+  /* Check whether an alert with the same name exists already. */
   if (name)
     {
       quoted_name = sql_quote (name);
@@ -9801,19 +9815,121 @@ modify_alert (const char *alert_id, const char *name, const char *comment)
   else
     quoted_name = sql_quote("");
 
+  /* Check filter. */
+  filter = 0;
+  if (filter_id && strcmp (filter_id, "0"))
+    {
+      char *type;
+
+      if (find_filter (filter_id, &filter))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (filter == 0)
+        {
+          sql ("ROLLBACK;");
+          return 4;
+        }
+
+      /* Filter type must be report if specified. */
+
+      type = sql_string (0, 0,
+                         "SELECT type FROM filters WHERE ROWID = %llu;",
+                         filter);
+      if (type && strcasecmp (type, "report"))
+        {
+          free (type);
+          sql ("ROLLBACK;");
+          return 5;
+        }
+      free (type);
+    }
+
   quoted_comment = sql_quote (comment ? comment : "");
 
   sql ("UPDATE alerts SET"
        " name = '%s',"
        " comment = '%s',"
+       " filter = %llu,"
+       " event = %i,"
+       " condition = %i,"
+       " method = %i,"
        " modification_time = now ()"
        " WHERE ROWID = %llu;",
        quoted_name,
        quoted_comment,
+       filter,
+       event,
+       condition,
+       method,
        alert);
 
   g_free (quoted_comment);
   g_free (quoted_name);
+
+  /* Modify alert event data */
+
+  sql ("DELETE FROM alert_event_data WHERE alert = %llu", alert);
+  index = 0;
+  while ((item = (gchar*) g_ptr_array_index (event_data, index++)))
+    {
+      gchar *name = sql_quote (item);
+      gchar *data = sql_quote (item + strlen (item) + 1);
+      sql ("INSERT INTO alert_event_data (alert, name, data)"
+           " VALUES (%llu, '%s', '%s');",
+           alert,
+           name,
+           data);
+      g_free (name);
+      g_free (data);
+    }
+
+  /* Modify alert condition data */
+
+  sql ("DELETE FROM alert_condition_data WHERE alert = %llu", alert);
+  index = 0;
+  while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
+    {
+      gchar *name = sql_quote (item);
+      gchar *data = sql_quote (item + strlen (item) + 1);
+      sql ("INSERT INTO alert_condition_data (alert, name, data)"
+           " VALUES (%llu, '%s', '%s');",
+           alert,
+           name,
+           data);
+      g_free (name);
+      g_free (data);
+    }
+
+  /* Modify alert method data */
+
+  sql ("DELETE FROM alert_method_data WHERE alert = %llu", alert);
+  index = 0;
+  while ((item = (gchar*) g_ptr_array_index (method_data, index++)))
+    {
+      gchar *name = sql_quote (item);
+      gchar *data = sql_quote (item + strlen (item) + 1);
+      if (method == ALERT_METHOD_EMAIL
+          && (strcmp (name, "to_address") == 0
+              || strcmp (name, "from_address") == 0)
+          && validate_email (data))
+        {
+          g_free (name);
+          g_free (data);
+          sql ("ROLLBACK;");
+          return 6;
+        }
+
+      sql ("INSERT INTO alert_method_data (alert, name, data)"
+           " VALUES (%llu, '%s', '%s');",
+           alert,
+           name,
+           data);
+      g_free (name);
+      g_free (data);
+    }
 
   sql ("COMMIT;");
 

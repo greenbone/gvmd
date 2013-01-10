@@ -2621,6 +2621,15 @@ typedef struct
   char *alert_id;                ///< alert UUID.
   char *name;                    ///< Name of alert.
   char *comment;                 ///< Comment.
+  char *event;                   ///< Event that will cause alert.
+  array_t *event_data;           ///< Array of pointers. Extra data for event.
+  char *filter_id;               ///< UUID of filter.
+  char *condition;               ///< Condition for alert, e.g. "Always".
+  array_t *condition_data;       ///< Array of pointers.  Extra data for condition.
+  char *method;                  ///< Method of alert, e.g. "Email".
+  array_t *method_data;          ///< Array of pointer.  Extra data for method.
+  char *part_data;               ///< Second part of data during *_data: value.
+  char *part_name;               ///< First part of data during *_data: name.
 } modify_alert_data_t;
 
 /**
@@ -2634,6 +2643,13 @@ modify_alert_data_reset (modify_alert_data_t *data)
   free (data->alert_id);
   free (data->name);
   free (data->comment);
+  free (data->filter_id);
+  free (data->event);
+  array_free (data->event_data);
+  free (data->condition);
+  array_free (data->condition_data);
+  free (data->method);
+  array_free (data->method_data);
 
   memset (data, 0, sizeof (modify_alert_data_t));
 }
@@ -4263,6 +4279,16 @@ typedef enum
   CLIENT_MODIFY_ALERT,
   CLIENT_MODIFY_ALERT_NAME,
   CLIENT_MODIFY_ALERT_COMMENT,
+  CLIENT_MODIFY_ALERT_FILTER,
+  CLIENT_MODIFY_ALERT_EVENT,
+  CLIENT_MODIFY_ALERT_EVENT_DATA,
+  CLIENT_MODIFY_ALERT_EVENT_DATA_NAME,
+  CLIENT_MODIFY_ALERT_CONDITION,
+  CLIENT_MODIFY_ALERT_CONDITION_DATA,
+  CLIENT_MODIFY_ALERT_CONDITION_DATA_NAME,
+  CLIENT_MODIFY_ALERT_METHOD,
+  CLIENT_MODIFY_ALERT_METHOD_DATA,
+  CLIENT_MODIFY_ALERT_METHOD_DATA_NAME,
   CLIENT_MODIFY_LSC_CREDENTIAL,
   CLIENT_MODIFY_LSC_CREDENTIAL_NAME,
   CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT,
@@ -5883,6 +5909,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("MODIFY_ALERT", element_name) == 0)
           {
+            modify_alert_data->event_data = make_array ();
+            openvas_append_string (&modify_alert_data->event, "");
+            modify_alert_data->condition_data = make_array ();
+            openvas_append_string (&modify_alert_data->condition, "");
+            modify_alert_data->method_data = make_array ();
+            openvas_append_string (&modify_alert_data->method, "");
+
             append_attribute (attribute_names, attribute_values, "alert_id",
                               &modify_alert_data->alert_id);
             set_client_state (CLIENT_MODIFY_ALERT);
@@ -6118,7 +6151,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_agent_data->name, "");
             set_client_state (CLIENT_MODIFY_AGENT_NAME);
           }
-        ELSE_ERROR ("create_agent");
+        ELSE_ERROR ("modify_agent");
 
       case CLIENT_MODIFY_ALERT:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -6131,7 +6164,49 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_alert_data->comment, "");
             set_client_state (CLIENT_MODIFY_ALERT_COMMENT);
           }
-        ELSE_ERROR ("create_alert");
+        else if (strcasecmp ("EVENT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_ALERT_EVENT);
+        else if (strcasecmp ("FILTER", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_alert_data->filter_id);
+            set_client_state (CLIENT_MODIFY_ALERT_FILTER);
+          }
+        else if (strcasecmp ("CONDITION", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_ALERT_CONDITION);
+        else if (strcasecmp ("METHOD", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_ALERT_METHOD);
+        ELSE_ERROR ("modify_alert");
+
+      case CLIENT_MODIFY_ALERT_EVENT:
+        if (strcasecmp ("DATA", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_ALERT_EVENT_DATA);
+        ELSE_ERROR ("modify_alert");
+
+      case CLIENT_MODIFY_ALERT_EVENT_DATA:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_ALERT_EVENT_DATA_NAME);
+        ELSE_ERROR ("modify_alert");
+
+      case CLIENT_MODIFY_ALERT_CONDITION:
+        if (strcasecmp ("DATA", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_ALERT_CONDITION_DATA);
+        ELSE_ERROR ("modify_alert");
+
+      case CLIENT_MODIFY_ALERT_CONDITION_DATA:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_ALERT_CONDITION_DATA_NAME);
+        ELSE_ERROR ("modify_alert");
+
+      case CLIENT_MODIFY_ALERT_METHOD:
+        if (strcasecmp ("DATA", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_ALERT_METHOD_DATA);
+        ELSE_ERROR ("modify_alert");
+
+      case CLIENT_MODIFY_ALERT_METHOD_DATA:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_ALERT_METHOD_DATA_NAME);
+        ELSE_ERROR ("modify_alert");
 
       case CLIENT_MODIFY_CONFIG:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -15753,7 +15828,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_ALERT:
         {
+          event_t event;
+          alert_condition_t condition;
+          alert_method_t method;
+
           assert (strcasecmp ("MODIFY_ALERT", element_name) == 0);
+          assert (modify_alert_data->name != NULL);
+          assert (modify_alert_data->event != NULL);
+          assert (modify_alert_data->condition != NULL);
+          assert (modify_alert_data->method != NULL);
+
+          array_terminate (modify_alert_data->event_data);
+          array_terminate (modify_alert_data->condition_data);
+          array_terminate (modify_alert_data->method_data);
 
           if (openvas_is_user_observer (current_credentials.username))
             {
@@ -15761,10 +15848,49 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("modify_alert",
                                   "MODIFY is forbidden for observer users"));
             }
+          else if (strlen (modify_alert_data->event) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_alert",
+                                "MODIFY_ALERT requires a value in an"
+                                " EVENT element"));
+          else if ((event = event_from_name (modify_alert_data->event))
+                   == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_alert",
+                                "Failed to recognise event name"));
+          else if (strlen (modify_alert_data->condition) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_alert",
+                                "MODIFY_ALERT requires a value in a"
+                                " CONDITION element"));
+          else if ((condition = alert_condition_from_name
+                                 (modify_alert_data->condition))
+                   == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_alert",
+                                "Failed to recognise condition name"));
+          else if (strlen (modify_alert_data->method) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_alert",
+                                "MODIFY_ALERT requires a value in a"
+                                " METHOD element"));
+          else if ((method = alert_method_from_name
+                                 (modify_alert_data->method))
+                   == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_alert",
+                                "Failed to recognise method name"));
           else switch (modify_alert
                         (modify_alert_data->alert_id,
                          modify_alert_data->name,
-                         modify_alert_data->comment))
+                         modify_alert_data->comment,
+                         modify_alert_data->filter_id,
+                         event,
+                         modify_alert_data->event_data,
+                         condition,
+                         modify_alert_data->condition_data,
+                         method,
+                         modify_alert_data->method_data))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_alert"));
@@ -15799,6 +15925,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_log ("event alert", G_LOG_LEVEL_MESSAGE,
                        "Alert could not be modified");
                 break;
+              case 4:
+                if (send_find_error_to_client ("modify_alert",
+                                               "filter",
+                                               modify_alert_data->filter_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                       "Alert could not be created");
+                break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "Filter type must be report if"
+                                    " specified"));
+                g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                       "Alert could not be created");
+                break;
+              case 6:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "Validation of email address failed"));
+                g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                       "Alert could not be created");
+                break;
               default:
               case -1:
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_alert"));
@@ -15813,6 +15967,85 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_MODIFY_ALERT, COMMENT);
       CLOSE (CLIENT_MODIFY_ALERT, NAME);
+      CLOSE (CLIENT_MODIFY_ALERT, FILTER);
+      CLOSE (CLIENT_MODIFY_ALERT, EVENT);
+      CLOSE (CLIENT_MODIFY_ALERT, CONDITION);
+      CLOSE (CLIENT_MODIFY_ALERT, METHOD);
+
+      case CLIENT_MODIFY_ALERT_EVENT_DATA:
+        {
+          gchar *string;
+
+          assert (strcasecmp ("DATA", element_name) == 0);
+          assert (modify_alert_data->event_data);
+          assert (modify_alert_data->part_data);
+          assert (modify_alert_data->part_name);
+
+          string = g_strconcat (modify_alert_data->part_name,
+                                "0",
+                                modify_alert_data->part_data,
+                                NULL);
+          string[strlen (modify_alert_data->part_name)] = '\0';
+          array_add (modify_alert_data->event_data, string);
+
+          openvas_free_string_var (&modify_alert_data->part_data);
+          openvas_free_string_var (&modify_alert_data->part_name);
+          openvas_append_string (&modify_alert_data->part_data, "");
+          openvas_append_string (&modify_alert_data->part_name, "");
+          set_client_state (CLIENT_MODIFY_ALERT_EVENT);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_ALERT_EVENT_DATA, NAME);
+
+      case CLIENT_MODIFY_ALERT_CONDITION_DATA:
+        {
+          gchar *string;
+
+          assert (strcasecmp ("DATA", element_name) == 0);
+          assert (modify_alert_data->condition_data);
+          assert (modify_alert_data->part_data);
+          assert (modify_alert_data->part_name);
+
+          string = g_strconcat (modify_alert_data->part_name,
+                                "0",
+                                modify_alert_data->part_data,
+                                NULL);
+          string[strlen (modify_alert_data->part_name)] = '\0';
+          array_add (modify_alert_data->condition_data, string);
+
+          openvas_free_string_var (&modify_alert_data->part_data);
+          openvas_free_string_var (&modify_alert_data->part_name);
+          openvas_append_string (&modify_alert_data->part_data, "");
+          openvas_append_string (&modify_alert_data->part_name, "");
+          set_client_state (CLIENT_MODIFY_ALERT_CONDITION);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_ALERT_CONDITION_DATA, NAME);
+
+      case CLIENT_MODIFY_ALERT_METHOD_DATA:
+        {
+          gchar *string;
+
+          assert (strcasecmp ("DATA", element_name) == 0);
+          assert (modify_alert_data->method_data);
+          assert (modify_alert_data->part_data);
+          assert (modify_alert_data->part_name);
+
+          string = g_strconcat (modify_alert_data->part_name,
+                                "0",
+                                modify_alert_data->part_data,
+                                NULL);
+          string[strlen (modify_alert_data->part_name)] = '\0';
+          array_add (modify_alert_data->method_data, string);
+
+          openvas_free_string_var (&modify_alert_data->part_data);
+          openvas_free_string_var (&modify_alert_data->part_name);
+          openvas_append_string (&modify_alert_data->part_data, "");
+          openvas_append_string (&modify_alert_data->part_name, "");
+          set_client_state (CLIENT_MODIFY_ALERT_METHOD);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_ALERT_METHOD_DATA, NAME);
 
       case CLIENT_MODIFY_FILTER:
         {
@@ -20325,6 +20558,35 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_ALERT_COMMENT,
               &modify_alert_data->comment);
+
+      APPEND (CLIENT_MODIFY_ALERT_EVENT,
+              &modify_alert_data->event);
+
+      APPEND (CLIENT_MODIFY_ALERT_CONDITION,
+              &modify_alert_data->condition);
+
+      APPEND (CLIENT_MODIFY_ALERT_METHOD,
+              &modify_alert_data->method);
+
+
+      APPEND (CLIENT_MODIFY_ALERT_EVENT_DATA,
+              &modify_alert_data->part_data);
+
+      APPEND (CLIENT_MODIFY_ALERT_CONDITION_DATA,
+              &modify_alert_data->part_data);
+
+      APPEND (CLIENT_MODIFY_ALERT_METHOD_DATA,
+              &modify_alert_data->part_data);
+
+
+      APPEND (CLIENT_MODIFY_ALERT_EVENT_DATA_NAME,
+              &modify_alert_data->part_name);
+
+      APPEND (CLIENT_MODIFY_ALERT_CONDITION_DATA_NAME,
+              &modify_alert_data->part_name);
+
+      APPEND (CLIENT_MODIFY_ALERT_METHOD_DATA_NAME,
+              &modify_alert_data->part_name);
 
 
       APPEND (CLIENT_MODIFY_FILTER_COMMENT,
