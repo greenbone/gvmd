@@ -1,5 +1,9 @@
 2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* ChangeLog: Cleanup entry.
+
+2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_cpe_info_iterator, init_cve_info_iterator)
 	(init_ovaldef_info_iterator): Remove the filter GET arg when a name is
 	given, because the exact entry is required and the filtering gets in the
@@ -12,10 +16,10 @@
 
 2013-01-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
-Renamed db_init.sql to scap_db_init.sql to avoid confusion with future Cert
-database.
-Changed SCAP database version and removed old migration scripts as re-creation
-of database is recommended to ensure consistency.
+	Renamed db_init.sql to scap_db_init.sql to avoid confusion with future
+	Cert database.  Changed SCAP database version and removed old migration
+	scripts as re-creation of database is recommended to ensure
+	consistency.
 
 	* CMakeLists.txt: Changed db_init.sql to scap_db_init.sql.
 	Removed migrate_db4.xsl.
