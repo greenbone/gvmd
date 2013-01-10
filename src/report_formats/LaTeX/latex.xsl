@@ -945,12 +945,20 @@ advice given in each description, in order to rectify the issue.
         <xsl:when test="active='0'">
         </xsl:when>
         <xsl:when test="active='1' and string-length (end_time) &gt; 0">
-          <xsl:text>\rowcolor{openvas_user_note}{Active until: </xsl:text><xsl:value-of select="end_time"/><xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
+          <xsl:text>\rowcolor{openvas_user_note}{Active until: </xsl:text>
+          <xsl:call-template name="format-date">
+            <xsl:with-param name="date" select="end_time"/>
+          </xsl:call-template>
+          <xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
         </xsl:when>
         <xsl:otherwise>
         </xsl:otherwise>
       </xsl:choose>
-      <xsl:text>\rowcolor{openvas_user_note}{Last modified: </xsl:text><xsl:value-of select="modification_time"/><xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
+      <xsl:text>\rowcolor{openvas_user_note}{Last modified: </xsl:text>
+      <xsl:call-template name="format-date">
+        <xsl:with-param name="date" select="modification_time"/>
+      </xsl:call-template>
+      <xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
     </xsl:for-each>
   </xsl:template>
 
@@ -986,12 +994,20 @@ advice given in each description, in order to rectify the issue.
           <xsl:when test="active='0'">
           </xsl:when>
           <xsl:when test="active='1' and string-length (end_time) &gt; 0">
-            <xsl:text>\rowcolor{openvas_user_override}{Active until: </xsl:text><xsl:value-of select="end_time"/><xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
+            <xsl:text>\rowcolor{openvas_user_override}{Active until: </xsl:text>
+            <xsl:call-template name="format-date">
+              <xsl:with-param name="date" select="end_time"/>
+            </xsl:call-template>
+            <xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
           </xsl:when>
           <xsl:otherwise>
           </xsl:otherwise>
         </xsl:choose>
-        <xsl:text>\rowcolor{openvas_user_override}{Last modified: </xsl:text><xsl:value-of select="modification_time"/><xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
+        <xsl:text>\rowcolor{openvas_user_override}{Last modified: </xsl:text>
+        <xsl:call-template name="format-date">
+          <xsl:with-param name="date" select="modification_time"/>
+        </xsl:call-template>
+        <xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
       </xsl:for-each>
     </xsl:if>
   </xsl:template>
