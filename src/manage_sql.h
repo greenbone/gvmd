@@ -111,6 +111,6 @@ const char*
 run_status_name_internal (task_status_t);
 
 gchar*
-get_ovaldef_short_filename(char* oval_id);
+get_ovaldef_short_filename (char*);
 
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

@@ -45849,7 +45849,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  * @brief OVALDEF iterator columns.
  */
 #define OVALDEF_INFO_ITERATOR_COLUMNS                       \
-  GET_ITERATOR_COLUMNS ", version, deprecated, def_class,"   \
+  GET_ITERATOR_COLUMNS ", version, deprecated, def_class,"  \
   "title, description, xml_file"
 
 
@@ -46339,7 +46339,8 @@ DEF_ACCESS (ovaldef_info_iterator_xml_file, GET_ITERATOR_COLUMN_COUNT + 5);
  *         Freed by cleanup_iterator.
  */
 gchar*
-get_ovaldef_short_filename(char* oval_id) {
+get_ovaldef_short_filename (char* oval_id)
+{
   return sql_string (0, 0,
                      "SELECT xml_file FROM ovaldefs WHERE name = '%s';",
                      oval_id);
