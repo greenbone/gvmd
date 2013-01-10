@@ -11273,7 +11273,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
   {
     gchar *command;
-    gchar *log_command; /* Command with password removed */
+    gchar *log_command; /* Command with password removed. */
     char *previous_dir;
     int ret;
 
@@ -11320,11 +11320,11 @@ send_to_verinice (const char *url, const char *username, const char *password,
                                clean_password,
                                archive_file);
     log_command = g_strdup_printf ("/bin/sh %s %s %s ****** %s > /dev/null"
-                               " 2> /dev/null",
-                               script,
-                               clean_url,
-                               clean_username,
-                               archive_file);
+                                   " 2> /dev/null",
+                                   script,
+                                   clean_url,
+                                   clean_username,
+                                   archive_file);
     g_free (script);
     g_free (clean_url);
     g_free (clean_username);
