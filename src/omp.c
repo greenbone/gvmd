@@ -826,7 +826,7 @@ nvt_selector_new (char *name, char *type, int include, char *family_or_nvt)
 typedef struct
 {
   char *comment;                  ///< Comment.
-  char *copy;                    ///< UUID of resource to copy.
+  char *copy;                     ///< UUID of resource to copy.
   char *howto_install;            ///< Install HOWTO.
   char *howto_use;                ///< Usage HOWTO.
   char *installer;                ///< Installer content.

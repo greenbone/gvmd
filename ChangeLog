@@ -1,5 +1,9 @@
 2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (create_agent_data_t): Align comment.
+
+2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In GET_INFO use
 	xml_string_append in more places, because the info can contain special
 	characters.
