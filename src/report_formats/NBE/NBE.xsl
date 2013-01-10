@@ -3,7 +3,9 @@
     version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:str="http://exslt.org/strings"
-    exclude-result-prefixes="str">
+    xmlns:date="http://exslt.org/dates-and-times"
+    xmlns:openvas="http://openvas.org"
+    exclude-result-prefixes="str date">
   <xsl:output method="text" encoding="string" indent="no"/>
   <xsl:strip-space elements="*"/>
 
@@ -38,9 +40,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 </xsl:text>
   </xsl:template>
 
-<xsl:template match="scan_start">timestamps|||scan_start|<xsl:value-of select="text()"/>|</xsl:template>
+  <xsl:template name="ctime">
+    <xsl:param name="date" select="text()"/>
+    <xsl:choose>
+      <xsl:when test="string-length ($date) &gt; 0">
+        <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date))"/>
+      </xsl:when>
+    </xsl:choose>
+  </xsl:template>
 
-<xsl:template match="scan_end">timestamps|||scan_end|<xsl:value-of select="text()"/>|</xsl:template>
+<xsl:template match="scan_start">timestamps|||scan_start|<xsl:call-template name="ctime"/>|</xsl:template>
+
+<xsl:template match="scan_end">timestamps|||scan_end|<xsl:call-template name="ctime"/>|</xsl:template>
 
 <xsl:template match="threat">
   <xsl:choose>
@@ -59,10 +70,10 @@ results|<xsl:value-of select="subnet"/>|<xsl:value-of select="host"/>|<xsl:value
 <xsl:apply-templates select="scan_start"/>
 <xsl:apply-templates select="results/result"/>
 <xsl:for-each select="host_start" >
-timestamps||<xsl:value-of select="host/text()"/>|host_start|<xsl:value-of select="text()"/>|
+timestamps||<xsl:value-of select="host/text()"/>|host_start|<xsl:call-template name="ctime"/>|
 </xsl:for-each>
 <!-- TODO Was start, end, start, end... in 1.0. -->
-<xsl:for-each select="host_end" >timestamps||<xsl:value-of select="host/text()"/>|host_end|<xsl:value-of select="text()"/>|
+<xsl:for-each select="host_end" >timestamps||<xsl:value-of select="host/text()"/>|host_end|<xsl:call-template name="ctime"/>|
 </xsl:for-each>
 <xsl:apply-templates select="scan_end"/>
 <xsl:call-template name="newline"/>

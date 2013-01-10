@@ -1,3 +1,9 @@
+2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/NBE/NBE.xsl (ctime): New template.
+	(scan_start, scan_end, report): Generate times with ctime because that
+	is the date format that the original NBE file format used.
+
 2013-01-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Fixed two bugs so that
