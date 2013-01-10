@@ -1,5 +1,12 @@
 2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (get_ovaldef_filename): Cleanup formatting.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_INFO indent if
+	block by 2 instead of 3.
+
+2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_resource, copy_alert, copy_task, copy_target)
 	(copy_config, copy_report_format, copy_port_list): Find the user inside
 	the transaction, just to be safe.

@@ -4180,12 +4180,15 @@ get_cve_filename (char *item_id)
 static char *
 get_ovaldef_filename (char *oval_id)
 {
-  char *result = NULL;
+  char *result, *short_filename;
 
-  char *short_filename = get_ovaldef_short_filename(oval_id); 
-  if (*short_filename) {
-    result = g_strdup_printf ("%s/%s", SCAP_DATA_DIR, short_filename);
-  }
+  result = NULL;
+  short_filename = get_ovaldef_short_filename (oval_id);
+
+  if (*short_filename)
+    {
+      result = g_strdup_printf ("%s/%s", SCAP_DATA_DIR, short_filename);
+    }
   free (short_filename);
 
   return result;

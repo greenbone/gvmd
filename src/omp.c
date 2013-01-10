@@ -18518,40 +18518,40 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else if (g_strcmp0 ("cve", get_info_data->type) == 0)
                 {
-                   xml_string_append (result,
-                                      "<cvss>%s</cvss>"
-                                      "<vector>%s</vector>"
-                                      "<complexity>%s</complexity>"
-                                      "<authentication>%s</authentication>"
-                                      "<confidentiality_impact>%s</confidentiality_impact>"
-                                      "<integrity_impact>%s</integrity_impact>"
-                                      "<availability_impact>%s</availability_impact>"
-                                      "<description>%s</description>"
-                                      "<products>%s</products>",
-                                      cve_info_iterator_cvss (&info),
-                                      cve_info_iterator_vector (&info),
-                                      cve_info_iterator_complexity (&info),
-                                      cve_info_iterator_authentication (&info),
-                                      cve_info_iterator_confidentiality_impact (&info),
-                                      cve_info_iterator_integrity_impact (&info),
-                                      cve_info_iterator_availability_impact (&info),
-                                      cve_info_iterator_description (&info),
-                                      cve_info_iterator_products (&info));
-                   if (get_info_data->details == 1)
-                     {
-                       iterator_t nvts;
-                       init_cve_nvt_iterator (&nvts,  get_iterator_name (&info), 1, NULL);
-                       g_string_append (result, "<nvts>");
-                       while (next (&nvts))
-                         xml_string_append (result,
-                                            "<nvt oid=\"%s\">"
-                                            "<name>%s</name>"
-                                            "</nvt>",
-                                            nvt_iterator_oid (&nvts),
-                                            nvt_iterator_name (&nvts));
-                       g_string_append (result, "</nvts>");
-                       cleanup_iterator (&nvts);
-                     }
+                  xml_string_append (result,
+                                     "<cvss>%s</cvss>"
+                                     "<vector>%s</vector>"
+                                     "<complexity>%s</complexity>"
+                                     "<authentication>%s</authentication>"
+                                     "<confidentiality_impact>%s</confidentiality_impact>"
+                                     "<integrity_impact>%s</integrity_impact>"
+                                     "<availability_impact>%s</availability_impact>"
+                                     "<description>%s</description>"
+                                     "<products>%s</products>",
+                                     cve_info_iterator_cvss (&info),
+                                     cve_info_iterator_vector (&info),
+                                     cve_info_iterator_complexity (&info),
+                                     cve_info_iterator_authentication (&info),
+                                     cve_info_iterator_confidentiality_impact (&info),
+                                     cve_info_iterator_integrity_impact (&info),
+                                     cve_info_iterator_availability_impact (&info),
+                                     cve_info_iterator_description (&info),
+                                     cve_info_iterator_products (&info));
+                  if (get_info_data->details == 1)
+                    {
+                      iterator_t nvts;
+                      init_cve_nvt_iterator (&nvts,  get_iterator_name (&info), 1, NULL);
+                      g_string_append (result, "<nvts>");
+                      while (next (&nvts))
+                        xml_string_append (result,
+                                           "<nvt oid=\"%s\">"
+                                           "<name>%s</name>"
+                                           "</nvt>",
+                                           nvt_iterator_oid (&nvts),
+                                           nvt_iterator_name (&nvts));
+                      g_string_append (result, "</nvts>");
+                      cleanup_iterator (&nvts);
+                    }
                 }
               else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
                 {
