@@ -18555,10 +18555,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
                 {
-                  gchar* title_escaped = g_markup_escape_text(
-                                ovaldef_info_iterator_title (&info), -1);
-                  gchar* description_escaped = g_markup_escape_text(
-                                ovaldef_info_iterator_description (&info), -1);
+                  const char *description;
                   xml_string_append (result,
                                      "<version>%s</version>"
                                      "<deprecated>%s</deprecated>"
@@ -18567,17 +18564,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      ovaldef_info_iterator_version (&info),
                                      ovaldef_info_iterator_deprecated (&info),
                                      ovaldef_info_iterator_def_class (&info),
-                                     title_escaped);
+                                     ovaldef_info_iterator_title (&info));
+                  description = ovaldef_info_iterator_description (&info);
                   if (get_info_data->details == 1)
-                    {
-                      xml_string_append (result,
-                                         "<description>%s</description>"
-                                         "<xml_file>%s</xml_file>",
-                                         description_escaped,
-                                         ovaldef_info_iterator_xml_file (&info));
-                    }
-                  g_free (title_escaped);
-                  g_free (description_escaped);
+                    xml_string_append (result,
+                                       "<description>%s</description>"
+                                       "<xml_file>%s</xml_file>",
+                                       description,
+                                       ovaldef_info_iterator_xml_file (&info));
                 }
               else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
                 {

@@ -1,5 +1,10 @@
 2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Remove escaping now handled by
+	xml_string_append.
+
+2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (get_ovaldef_filename): Cleanup formatting.
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_INFO indent if
