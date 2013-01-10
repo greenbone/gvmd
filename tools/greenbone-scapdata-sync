@@ -200,7 +200,7 @@ for line in `list_oval_files_sortable | sort`
 }
 
 list_oval_files_sortable () {
-for ovalfile in `find $SCAP_DIR/oval/ -name *.xml -type f`
+for ovalfile in `find $SCAP_DIR/oval/ -name "*.xml" -type f`
   do
     echo `xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile | sed -e 's/T.*//' | tr -d "-"`$ovalfile
   done
@@ -284,7 +284,7 @@ update_scap_db() {
   fi
 
   log_write " Updating OVAL data"
-  xmlcount=$(ls $SCAP_DIR/oval/*.xml 2> /dev/null | wc -l)
+  xmlcount=$(find $SCAP_DIR/oval/ -name "*.xml" -type f 2> /dev/null | wc -l)
   if [ $xmlcount -ne 0 ]
   then
     for ovalfile in `list_oval_files_sorted`
