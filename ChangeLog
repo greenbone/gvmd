@@ -1,3 +1,24 @@
+2013-01-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* tools/db-init.sql: Change version number to 7.
+
+	* tools/openvas-scapdata-sync.in (update_sec_db): Fix queries for
+	latest CVEs and OVAL-defs still expecting timestamps stored as strings.
+	Change timestamp-based filtering of OVAL definitions to use new
+	oval_timestamp.xsl and evaluate xml-file specific timestamps to a
+	ccomodate possible added repositories with older timestamps.
+	Sort OVAL files by timestamp date before updating so latest definitions
+	are stored in database in case of duplicates.
+	(list_oval_files_sorted, list_oval_files_sortable): New helper functions
+	for sorting OVAL files.
+
+	* tools/greenbone-scapdata-sync: Updated timestamp filtering.
+	For details see: tools/openvas-scapdata-sync.in (update_sec_db,
+	list_oval_files_sorted, list_oval_files_sortable).
+
+	* tools/oval_timestamp.xsl: Remove surrounding SQL query to make more
+	reusable.
+
 2013-01-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_alert, delete_target, delete_config)

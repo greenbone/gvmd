@@ -37,6 +37,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   >
   <xsl:output method="text"/>
   
-  <xsl:template match="/">SELECT strftime('%s','<xsl:copy-of select="oval_definitions:oval_definitions/oval_definitions:generator/oval:timestamp"/>');</xsl:template>
+  <xsl:template match="/"><xsl:copy-of select="oval_definitions:oval_definitions/oval_definitions:generator/oval:timestamp"/></xsl:template>
 
 </xsl:stylesheet>

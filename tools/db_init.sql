@@ -36,7 +36,7 @@ DROP TABLE IF EXISTS oval_def;
 
 /* create new tables and indices */
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "5");
+INSERT INTO meta (name, value) VALUES ("database_version", "7");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
 CREATE TABLE cves (

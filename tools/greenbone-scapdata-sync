@@ -241,17 +241,29 @@ check_db_version () {
   esac
 }
 
+list_oval_files_sorted () {
+for line in `list_oval_files_sortable | sort`
+  do
+    echo ${line#????????}
+  done
+}
+
+list_oval_files_sortable () {
+for ovalfile in `ls $SCAP_DIR/oval/*.xml`
+  do
+    echo `xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile | sed -e 's/T.*//' | tr -d "-"`$ovalfile
+  done
+}
+
 update_scap_db() {
   if [ ! -f $SCAP_DB ]
   then
     log_write "Initializing SCAP database."
     sqlite3 $SCAP_DB < $SCAP_RES_DIR/db_init.sql
     CVE_REFDATE=0
-    OVAL_REFDATE=0
   else
     check_db_version
-    CVE_REFDATE=`sqlite3 $SCAP_DB "select max(modification_time) from cves;" | sed -e 's/T.*//' | tr -d "-"`
-    OVAL_REFDATE=`sqlite3 $SCAP_DB "SELECT max(modification_time) FROM ovaldefs;"`
+    CVE_REFDATE=`sqlite3 $SCAP_DB "select date(max(modification_time),'unixepoch') from cves;" | sed -e 's/T.*//' | tr -d "-"`
   fi
 
   DB_LASTUPDATE=`sqlite3 $SCAP_DB "select value from meta where name = 'last_update';"`
@@ -259,11 +271,6 @@ update_scap_db() {
   if [ -z "$CVE_REFDATE" ]
   then
     CVE_REFDATE=0
-  fi
-
-  if [ -z "$OVAL_REFDATE" ]
-  then
-    OVAL_REFDATE=0
   fi
 
   if [ -z "$DB_LASTUPDATE" ];
@@ -316,12 +323,17 @@ update_scap_db() {
   xmlcount=$(ls $SCAP_DIR/oval/*.xml 2> /dev/null | wc -l)
   if [ $xmlcount -ne 0 ]
   then
-    for ovalfile in `ls $SCAP_DIR/oval/*.xml`
+    for ovalfile in `list_oval_files_sorted`
     do
       if [ `stat -c "%Y" $ovalfile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
       then
-        sqlquery=`xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile`
-        oval_timestamp=`sqlite3 $SCAP_DB "$sqlquery"`
+        oval_timestamp=`xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile | sed -e 's/T.*//' | tr -d "-"`
+
+        OVAL_REFDATE=`sqlite3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+        if [ -z "$OVAL_REFDATE" ]
+        then
+          OVAL_REFDATE=0
+        fi
 
         if [ $oval_timestamp -ge $OVAL_REFDATE ]
         then
