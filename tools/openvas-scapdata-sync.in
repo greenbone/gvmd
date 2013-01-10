@@ -261,7 +261,7 @@ for line in `list_oval_files_sortable | sort`
 }
 
 list_oval_files_sortable () {
-for ovalfile in `ls $SCAP_DIR/oval/*.xml`
+for ovalfile in `find $SCAP_DIR/oval/ -name *.xml -type f`
   do
     echo `xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile | sed -e 's/T.*//' | tr -d "-"`$ovalfile
   done

@@ -1,3 +1,8 @@
+2013-01-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* tools/greenbone-scapdata-sync, tools/openvas-scapdata-sync.in:
+	Change OVAL file listing to include subdirectories of oval directory.
+
 2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* ChangeLog: Cleanup entry.
@@ -26,7 +31,7 @@
 
 	* tools/db_init.sql: Removed. Renamed to scap_db_init.sql.
 
-	* tools/greenbone-scapdata-sync, tools/openvas-scapdata-sync.in, :
+	* tools/greenbone-scapdata-sync, tools/openvas-scapdata-sync.in:
 	Changed db_init.sql to scap_db_init.sql. Changed database version to 8.
 	Removed old migration scripts.
 
