@@ -18585,7 +18585,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   gchar *raw_data = NULL;
                   gchar *nonconst_name = g_strdup(get_iterator_name (&info));
                   manage_read_info (get_info_data->type, nonconst_name, &raw_data);
-                  xml_string_append (result, "<raw_data>%s</raw_data>", raw_data);
+                  g_string_append_printf (result, "<raw_data>%s</raw_data>",
+                                          raw_data);
                   g_free(nonconst_name);
                   g_free(raw_data);
                 }

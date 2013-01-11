@@ -1,3 +1,9 @@
+2013-01-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_INFO append the raw
+	data with g_string_append_printf instead of xml_string_append because
+	the markup in the raw data is required.
+
 2013-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* ChangeLog: Add parentheses.
