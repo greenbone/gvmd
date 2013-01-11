@@ -18432,9 +18432,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 case 2:
                   if (send_find_error_to_client
-                      ("get_filters",
+                      ("get_info",
                        "filter",
-                       get_filters_data->get.filt_id,
+                       get_info_data->get.filt_id,
                        write_to_client,
                        write_to_client_data))
                     {
