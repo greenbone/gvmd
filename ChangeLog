@@ -1,3 +1,8 @@
+2013-01-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (alert_writable, trash_alert_writable): Make alerts
+	always editable.
+
 2013-01-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_INFO correct the type

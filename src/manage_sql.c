@@ -10220,7 +10220,7 @@ trash_alert_in_use (alert_t alert)
 int
 alert_writable (alert_t alert)
 {
-    return (alert_in_use (alert) == 0);
+    return 1;
 }
 
 /**
@@ -10233,7 +10233,7 @@ alert_writable (alert_t alert)
 int
 trash_alert_writable (alert_t alert)
 {
-    return (trash_alert_in_use (alert) == 0);
+    return 1;
 }
 
 /**
