@@ -16044,7 +16044,7 @@ task_threat_level (task_t task, int overrides)
   if (current_credentials.uuid == NULL)
     return NULL;
 
-  if (sql_int (0, 0, "SELECT target FROM tasks WHERE ROWID = %llu;", task) == 0)
+  if (task_target (task) == 0)
     /* Container task. */
     return NULL;
 
@@ -26541,10 +26541,13 @@ task_trend (task_t task, int override)
   if (task_finished_report_count (task) <= 1)
     return "";
 
-  /* Skip running tasks. */
+  /* Skip running and container tasks. */
 
   if (task_run_status (task) == TASK_STATUS_RUNNING)
     return "";
+
+  if (task_target (task) == 0)
+    return NULL;
 
   /* Get details of last report. */
 
