@@ -4525,7 +4525,8 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
       if (fname)
         {
           gchar *ovaldef;
-          ovaldef = xsl_transform (OVALDEF_GETBYNAME_XSL, fname, pnames, pvalues);
+          ovaldef = xsl_transform (OVALDEF_GETBYNAME_XSL, fname,
+                                   pnames, pvalues);
           g_free (fname);
           if (ovaldef)
             *result = ovaldef;

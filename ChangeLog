@@ -1,3 +1,16 @@
+2013-01-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+Add CERT advisory database and sync with a local DFN-CERT feed data.
+
+	* CMakeLists.txt: Add CERT paths and files (see added files here).
+
+	* tools/cert_db_init.sql: New SQL script to create new CERT database.
+
+	* tools/dfn_cert_update.xsl: New XSLT Stylesheet to import DFN-CERT
+	advisories into database.
+
+	* tools/openvas-certdata-sync: New CERT synchronization script.
+	Creates and updates CERT database using local XML files.
+
 2013-01-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (alert_writable, trash_alert_writable): Make alerts
