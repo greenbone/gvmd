@@ -103,6 +103,7 @@ set (CPACK_SOURCE_IGNORE_FILES
 "Doxyfile_full$"
 "VERSION$"
 "tools/openvas-scapdata-sync$"
+"tools/openvas-certdata-sync$"
 )
 
 include (CPack)
@@ -158,6 +159,8 @@ set (OPENVAS_PID_DIR      "${LOCALSTATEDIR}/run")
 set (OPENVAS_SYSCONF_DIR  "${SYSCONFDIR}/openvas")
 set (OPENVAS_SCAP_RES_DIR "${OPENVAS_DATA_DIR}/scap")
 set (OPENVAS_SCAP_DATA_DIR "${OPENVAS_STATE_DIR}/scap-data")
+set (OPENVAS_CERT_RES_DIR "${OPENVAS_DATA_DIR}/cert")
+set (OPENVAS_CERT_DATA_DIR "${OPENVAS_STATE_DIR}/cert-data")
 
 set (OPENVAS_SCANNER_CERTIFICATE "${OPENVAS_STATE_DIR}/CA/servercert.pem")
 set (OPENVAS_SCANNER_KEY         "${OPENVAS_STATE_DIR}/private/CA/serverkey.pem")
@@ -243,6 +246,7 @@ configure_file (doc/Doxyfile_full.in doc/Doxyfile_full)
 configure_file (VERSION.in VERSION)
 configure_file (src/openvasmd_log_conf.cmake_in src/openvasmd_log.conf)
 configure_file (tools/openvas-scapdata-sync.in tools/openvas-scapdata-sync @ONLY)
+configure_file (tools/openvas-certdata-sync.in tools/openvas-certdata-sync @ONLY)
 
 ## Program
 
@@ -355,7 +359,16 @@ install (FILES tools/scap_db_init.sql tools/cpe_update.xsl
          DESTINATION ${OPENVAS_SCAP_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
+install (FILES tools/cert_db_init.sql tools/dfn_cert_update.xsl
+         DESTINATION ${OPENVAS_CERT_RES_DIR}
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
 install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-scapdata-sync
+         DESTINATION ${SBINDIR}
+         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-certdata-sync
          DESTINATION ${SBINDIR}
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
