@@ -1,5 +1,10 @@
 2013-01-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS remove old
+	variable.
+
+2013-01-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_threat_level): Use task_target instead of SQL.
 	(task_trend): Return NULL for container tasks.
 

@@ -19245,7 +19245,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_TASKS:
         {
-//          gchar* response;
           iterator_t tasks;
           int count, filtered, ret, first, apply_overrides;
           get_data_t * get;
