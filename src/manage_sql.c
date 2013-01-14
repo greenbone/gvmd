@@ -2348,7 +2348,14 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
           if (first_order)
             {
-              if ((strcmp (type, "note")
+              if ((strcmp (type, "task") == 0)
+                  && (strcmp (keyword->string, "threat") == 0))
+                g_string_append_printf (order,
+                                        " ORDER BY %s"
+                                        " COLLATE collate_threat"
+                                        " ASC",
+                                        keyword->string);
+              else if ((strcmp (type, "note")
                    && strcmp (type, "override"))
                   || (strcmp (keyword->string, "nvt")
                       && strcmp (keyword->string, "name")))
@@ -2382,7 +2389,14 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
           if (first_order)
             {
-              if ((strcmp (type, "note")
+              if ((strcmp (type, "task") == 0)
+                  && (strcmp (keyword->string, "threat") == 0))
+                g_string_append_printf (order,
+                                        " ORDER BY %s"
+                                        " COLLATE collate_threat"
+                                        " DESC",
+                                        keyword->string);
+              else if ((strcmp (type, "note")
                    && strcmp (type, "override"))
                   || (strcmp (keyword->string, "nvt")
                       && strcmp (keyword->string, "name")))
@@ -9153,6 +9167,15 @@ collate_threat (void* data,
   const char* one = (const char*) arg_one;
   const char* two = (const char*) arg_two;
 
+  if (one_len == 0)
+    {
+      if (two_len == 0)
+        return 0;
+      return -1;
+    }
+  if (two_len == 0)
+    return 1;
+
   if (strncmp (one, "High", one_len) == 0)
     {
       if (strncmp (two, "High", two_len) == 0)
@@ -9200,6 +9223,14 @@ collate_threat (void* data,
       return 1;
     }
   if (strncmp (two, "False Positive", two_len) == 0) return -1;
+
+  if (strncmp (one, "None", one_len) == 0)
+    {
+      if (strncmp (two, "None", two_len) == 0)
+        return 0;
+      return 1;
+    }
+  if (strncmp (two, "None", two_len) == 0) return -1;
 
   return strncmp (one, two, MIN (one_len, two_len));
 }
@@ -12887,6 +12918,17 @@ init_manage_process (int update_nvt_cache, const gchar *database)
         }
 
       if (sqlite3_create_collation (task_db,
+                                    "collate_threat",
+                                    SQLITE_UTF8,
+                                    NULL,
+                                    collate_threat)
+          != SQLITE_OK)
+        {
+          g_warning ("%s: failed to create collate_threat", __FUNCTION__);
+          abort ();
+        }
+
+      if (sqlite3_create_collation (task_db,
                                     "collate_ip",
                                     SQLITE_UTF8,
                                     NULL,
@@ -16000,6 +16042,10 @@ task_threat_level (task_t task, int overrides)
   gchar *ov, *new_type_sql;
 
   if (current_credentials.uuid == NULL)
+    return NULL;
+
+  if (sql_int (0, 0, "SELECT target FROM tasks WHERE ROWID = %llu;", task) == 0)
+    /* Container task. */
     return NULL;
 
   if (overrides)

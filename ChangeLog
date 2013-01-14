@@ -1,3 +1,12 @@
+2013-01-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): For tasks, when the sort column is
+	threat then collate with collate_threat.
+	(collate_threat): Check for the empty string first, because in some
+	SQL contexts the threat can be NULL, like for container tasks.
+	(init_manage_process): Add collate_threat SQL collator.
+	(task_threat_level): Return NULL for container tasks.
+
 2013-01-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 	Add CERT advisory database and sync with a local DFN-CERT feed data.
 
