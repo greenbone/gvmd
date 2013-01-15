@@ -82,7 +82,9 @@ CREATE TABLE alerts (
 	event integer,
 	condition integer,
 	method integer,
-	filter integer);
+	filter integer,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE alerts_trash (
 	id integer PRIMARY KEY,
@@ -94,7 +96,9 @@ CREATE TABLE alerts_trash (
 	condition integer,
 	method integer,
 	filter integer,
-	filter_location integer);
+	filter_location integer,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE filters (
 	id integer PRIMARY KEY,
@@ -138,14 +142,18 @@ CREATE TABLE port_lists (
     uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text NOT NULL,
-	comment text);
+	comment text,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE port_lists_trash (
 	id integer PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text NOT NULL,
-	comment text);
+	comment text,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE port_ranges (
 	id integer PRIMARY KEY,
@@ -207,7 +215,9 @@ CREATE TABLE configs (
 	family_count integer,
 	nvt_count integer,
 	families_growing integer,
-	nvts_growing integer);
+	nvts_growing integer,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE configs_trash (
 	id integer PRIMARY KEY,
@@ -219,7 +229,9 @@ CREATE TABLE configs_trash (
 	family_count integer,
 	nvt_count integer,
 	families_growing integer,
-	nvts_growing integer);
+	nvts_growing integer,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE config_preferences (
 	config integer PRIMARY KEY REFERENCES configs (id) ON DELETE RESTRICT,
@@ -253,7 +265,9 @@ CREATE TABLE tasks (
 	target_location integer,
 	schedule_location integer,
 	slave_location integer,
-	upload_result_count integer);
+	upload_result_count integer,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE task_files (
 	id integer PRIMARY KEY,
@@ -359,7 +373,9 @@ CREATE TABLE report_formats (
 	signature text,
 	trust integer,
 	trust_time date,
-	flags integer);
+	flags integer,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE report_formats_trash (
 	id integer PRIMARY KEY,
@@ -373,7 +389,9 @@ CREATE TABLE report_formats_trash (
 	signature text,
 	trust integer,
 	trust_time date,
-	flags integer);
+	flags integer,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE report_hosts (
 	id integer PRIMARY KEY,
@@ -433,7 +451,9 @@ CREATE TABLE lsc_credentials (
 	private_key text,
 	rpm bytea,
 	deb bytea,
-	exe bytea);
+	exe bytea,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE lsc_credentials_trash (
 	id integer PRIMARY KEY,
@@ -447,7 +467,9 @@ CREATE TABLE lsc_credentials_trash (
 	private_key text,
 	rpm bytea,
 	deb bytea,
-	exe bytea);
+	exe bytea,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE notes (
 	id integer PRIMARY KEY,
@@ -521,7 +543,9 @@ CREATE TABLE schedules (
 	period integer,
 	period_months integer,
 	timezone text,
-	initial_offset integer);
+	initial_offset integer,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE schedules_trash (
 	id integer PRIMARY KEY,
@@ -532,7 +556,9 @@ CREATE TABLE schedules_trash (
 	first_time date,
 	period integer,
 	period_months integer,
-	duration integer);
+	duration integer,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE settings (
 	id integer PRIMARY KEY,
@@ -551,7 +577,9 @@ CREATE TABLE slaves (
 	host text,
 	port text,
 	login text,
-	password text);
+	password text,
+	creation_time date,
+	modification_time date);
 
 CREATE TABLE slaves_trash (
 	id integer PRIMARY KEY,
@@ -562,4 +590,6 @@ CREATE TABLE slaves_trash (
 	host text,
 	port text,
 	login text,
-	password text);
+	password text,
+	creation_time date,
+	modification_time date);

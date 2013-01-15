@@ -1,5 +1,12 @@
 2013-01-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/db_postgres.sql: Update to reflect added creation and modification
+	times in various resource types in DB.
+
+	* src/db.png: Update to match latest version.
+
+2013-01-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (manage_set_setting): Fix comment typo. Add
 	lsc_credentials and slaves filters. Remove reports filter.
 
