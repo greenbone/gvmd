@@ -2619,6 +2619,9 @@ ovaldef_info_iterator_xml_file (iterator_t*);
 int
 setting_count (const char *);
 
+char *
+setting_filter (const char *);
+
 void
 init_setting_iterator (iterator_t *, const char *, const char *, int, int, int,
                        const char *);

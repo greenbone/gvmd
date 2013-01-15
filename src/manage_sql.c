@@ -45681,6 +45681,22 @@ setting_count (const char *filter)
 }
 
 /**
+ * @brief Return the filter of a resource from settings.
+ *
+ * @param[in]  resource  Resource.
+ *
+ * @return resource filter in settings if it exists, NULL otherwise.
+ */
+char *
+setting_filter (const char *resource)
+{
+  return sql_string (0, 0,
+                     "SELECT term FROM filters WHERE uuid = "
+                     " (SELECT value FROM settings WHERE name = '%s_filter')",
+                     resource);
+}
+
+/**
  * @brief Initialise a setting iterator, including observed settings.
  *
  * @param[in]  iterator    Iterator.
@@ -45970,6 +45986,62 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 
       return 0;
     }
+
+  /* Resources filters. */
+  if (name && (strcmp (name, "agents_filter") == 0
+               || strcmp (name, "alerts_filter") == 0
+               || strcmp (name, "configs_filter") == 0
+               || strcmp (name, "filters_filter") == 0
+               || strcmp (name, "notes_filter") == 0
+               || strcmp (name, "overrides_filter") == 0
+               || strcmp (name, "port_lists_filter") == 0
+               || strcmp (name, "reports_filter") == 0
+               || strcmp (name, "report_formats_filter") == 0
+               || strcmp (name, "schedules_filter") == 0
+               || strcmp (name, "targets_filter") == 0
+               || strcmp (name, "tasks_filter") == 0))
+    {
+      gchar *quoted_name, *quoted_value;
+
+      assert (current_credentials.username);
+
+      quoted_name = sql_quote (name);
+
+      /* Use value directly as it is not base64 encoded. */
+      quoted_value = sql_quote (value_64);
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM settings"
+                   " WHERE name = '%s'"
+                   " AND owner = (SELECT ROWID FROM users WHERE uuid = '%s');",
+                   quoted_name,
+                   current_credentials.uuid))
+        sql ("UPDATE settings SET value = '%s'"
+             " WHERE name = '%s'"
+             " AND owner = (SELECT ROWID FROM users WHERE uuid = '%s');",
+             quoted_value,
+             quoted_name,
+             current_credentials.uuid);
+      else
+        sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
+             " VALUES"
+             " (make_uuid (),"
+             "  (SELECT ROWID FROM users WHERE uuid = '%s'),"
+             "  '%s',"
+             "  (SELECT comment FROM settings"
+             "   WHERE name = '%s' AND owner IS NULL),"
+             "  '%s');",
+             current_credentials.uuid,
+             quoted_name,
+             quoted_name,
+             quoted_value);
+
+      g_free (quoted_name);
+      g_free (quoted_value);
+
+      return 0;
+    }
+
   return 1;
 }
 
