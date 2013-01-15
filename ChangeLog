@@ -1,5 +1,15 @@
 2013-01-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (manage_set_setting): Fix comment typo. Add
+	lsc_credentials and slaves filters. Remove reports filter.
+
+	* src/omp.c (omp_xml_handle_end_element): Use resource filter from
+	settings in case of default or empty filter when getting notes,
+	overrides, port lists, report formats, schedules, agents, configs,
+	alerts, filters, credentials, slaves, targets and tasks.
+
+2013-01-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (setting_filter): New function to get a resource
 	settings filter.
 	(manage_set_setting): Handle per-resource filters settings.

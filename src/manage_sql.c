@@ -45941,7 +45941,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
       if (strcmp (uuid, "5f5a8712-8017-11e1-8556-406186ea4fc5") == 0)
         {
           const gchar *val;
-          /* Rows Per Default. */
+          /* Rows Per Page. */
           val = value;
           while (*val && isdigit (*val)) val++;
           if (*val && strcmp (value, "-1"))
@@ -45991,13 +45991,14 @@ manage_set_setting (const gchar *uuid, const gchar *name,
   if (name && (strcmp (name, "agents_filter") == 0
                || strcmp (name, "alerts_filter") == 0
                || strcmp (name, "configs_filter") == 0
+               || strcmp (name, "lsc_credentials_filter") == 0
                || strcmp (name, "filters_filter") == 0
                || strcmp (name, "notes_filter") == 0
                || strcmp (name, "overrides_filter") == 0
                || strcmp (name, "port_lists_filter") == 0
-               || strcmp (name, "reports_filter") == 0
                || strcmp (name, "report_formats_filter") == 0
                || strcmp (name, "schedules_filter") == 0
+               || strcmp (name, "slaves_filter") == 0
                || strcmp (name, "targets_filter") == 0
                || strcmp (name, "tasks_filter") == 0))
     {
