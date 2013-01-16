@@ -1,3 +1,15 @@
+2013-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* ChangeLog: Put last entry in order.
+
+2013-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (RUN_SLAVE_TASK_SLEEP_SECONDS): New define.
+	(slave_connect): New function.
+	(run_slave_task): Connect to slave with slave_connect.  If the
+	connection fails, keep trying.  If there's an error getting the slave
+	task or report, keep trying.
+
 2013-01-16  Werner Koch  <wk@gnupg.org>
 
 	* src/manage_sql.c (DEF_ACCESS): Remove multiple identical
@@ -9,14 +21,6 @@
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_INFO fix misspelled
 	opening tag to dfn_cert_adv.
-
-2013-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
-
-	* src/manage.c (RUN_SLAVE_TASK_SLEEP_SECONDS): New define.
-	(slave_connect): New function.
-	(run_slave_task): Connect to slave with slave_connect.  If the
-	connection fails, keep trying.  If there's an error getting the slave
-	task or report, keep trying.
 
 2013-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
