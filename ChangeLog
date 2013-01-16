@@ -1,3 +1,10 @@
+2013-01-16  Werner Koch  <wk@gnupg.org>
+
+	* src/manage_sql.c (DEF_ACCESS): Remove multiple identical
+	definitions of this macro and the corresponding undefs.  Prefix
+	one set of macro uses with "result_iterator_" to accommodate for
+	one slightly different version of that macro.
+
 2013-01-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_INFO fix misspelled

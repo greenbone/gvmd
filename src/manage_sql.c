@@ -9356,11 +9356,15 @@ collate_ip (void* data,
 
 /* Access control. */
 
-/** @brief Define an iterator row accessor function.
+/**
+ * @brief Generate accessor for an SQL iterator.
  *
- * @param[in]  name  Name of function.
+ * This convenience macro is used to generate an accessor returning a
+ * const string pointer.
+ *
+ * @param[in]  name  Name of accessor.
  * @param[in]  col   Column number to access.
-  */
+ */
 #define DEF_ACCESS(name, col) \
 const char* \
 name (iterator_t* iterator) \
@@ -17809,23 +17813,6 @@ init_report_iterator (iterator_t* iterator, task_t task, report_t report)
  */
 #endif
 
-#undef DEF_ACCESS
-
-/**
- * @brief Generate accessor for an SQL iterator.
- *
- * @param[in]  name  Name of accessor.
- * @param[in]  col   Column number to access.
- */
-#define DEF_ACCESS(name, col) \
-const char* \
-name (iterator_t* iterator) \
-{ \
-  const char *ret; \
-  if (iterator->done) return NULL; \
-  ret = (const char*) sqlite3_column_text (iterator->stmt, col); \
-  return ret; \
-}
 
 /**
  * @brief Get the UUID from a report iterator.
@@ -17836,8 +17823,6 @@ name (iterator_t* iterator) \
  *         cleanup_iterator.
  */
 DEF_ACCESS (report_iterator_uuid, 1);
-
-#undef DEF_ACCESS
 
 /**
  * @brief Read the next report from an iterator.
@@ -18747,16 +18732,6 @@ result_iterator_subnet (iterator_t* iterator)
 }
 #endif
 
-#define DEF_ACCESS(name, col) \
-const char* \
-result_iterator_ ## name (iterator_t* iterator) \
-{ \
-  const char *ret; \
-  if (iterator->done) return NULL; \
-  ret = (const char*) sqlite3_column_text (iterator->stmt, col); \
-  return ret; \
-}
-
 /**
  * @brief Get the subnet from a result iterator.
  *
@@ -18765,7 +18740,7 @@ result_iterator_ ## name (iterator_t* iterator) \
  * @return The subnet of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (subnet, 1);
+DEF_ACCESS (result_iterator_subnet, 1);
 
 /**
  * @brief Get the host from a result iterator.
@@ -18775,7 +18750,7 @@ DEF_ACCESS (subnet, 1);
  * @return The host of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (host, 2);
+DEF_ACCESS (result_iterator_host, 2);
 
 /**
  * @brief Get the port from a result iterator.
@@ -18785,7 +18760,7 @@ DEF_ACCESS (host, 2);
  * @return The port of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (port, 3);
+DEF_ACCESS (result_iterator_port, 3);
 
 /**
  * @brief Get the NVT OID from a result iterator.
@@ -18795,7 +18770,7 @@ DEF_ACCESS (port, 3);
  * @return The NVT OID of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_oid, 4);
+DEF_ACCESS (result_iterator_nvt_oid, 4);
 
 /**
  * @brief Get the NVT name from a result iterator.
@@ -18933,7 +18908,7 @@ result_iterator_nvt_xref (iterator_t *iterator)
  * @return The original type of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (original_type, 5);
+DEF_ACCESS (result_iterator_original_type, 5);
 
 /**
  * @brief Get the original type from a result iterator.
@@ -18964,7 +18939,7 @@ result_iterator_type (iterator_t *iterator)
  * @return The descr of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (descr, 8);
+DEF_ACCESS (result_iterator_descr, 8);
 
 /**
  * @brief Get the CVSS base from a result iterator.
@@ -18979,8 +18954,6 @@ result_iterator_nvt_cvss_base_double (iterator_t* iterator)
   if (iterator->done) return -1;
   return sqlite3_column_double (iterator->stmt, 9);
 }
-
-#undef DEF_ACCESS
 
 /**
  * @brief Initialise a host iterator.
@@ -19055,15 +19028,6 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
     }
 }
 
-#define DEF_ACCESS(name, col) \
-const char* \
-name (iterator_t* iterator) \
-{ \
-  const char *ret; \
-  if (iterator->done) return NULL; \
-  ret = (const char*) sqlite3_column_text (iterator->stmt, col); \
-  return ret; \
-}
 
 /**
  * @brief Get the report host from a host iterator.
@@ -46891,8 +46855,6 @@ DEF_ACCESS (dfn_cert_adv_info_iterator_summary, GET_ITERATOR_COLUMN_COUNT + 1);
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (dfn_cert_adv_info_iterator_num_cves, GET_ITERATOR_COLUMN_COUNT + 2);
-
-#undef DEF_ACCESS
 
 /**
  * @brief Get the short file name for an OVALDEF.
