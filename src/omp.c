@@ -18727,7 +18727,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
                 {
                   xml_string_append (result,
-                                     "<dfn_cer_adv>"
+                                     "<dfn_cert_adv>"
                                      "<title>%s</title>"
                                      "<summary>%s</summary>"
                                      "<num_cves>%s</num_cves>",

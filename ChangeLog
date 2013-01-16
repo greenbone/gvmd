@@ -1,3 +1,8 @@
+2013-01-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_INFO fix misspelled
+	opening tag to dfn_cert_adv.
+
 2013-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_INFO add missing
