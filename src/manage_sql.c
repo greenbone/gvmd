@@ -45702,18 +45702,17 @@ setting_count (const char *filter)
 }
 
 /**
- * @brief Return the filter of a resource from settings.
+ * @brief Return the uuid of a resource filter from settings.
  *
  * @param[in]  resource  Resource.
  *
- * @return resource filter in settings if it exists, NULL otherwise.
+ * @return resource filter uuid in settings if it exists, NULL otherwise.
  */
 char *
 setting_filter (const char *resource)
 {
   return sql_string (0, 0,
-                     "SELECT term FROM filters WHERE uuid = "
-                     " (SELECT value FROM settings WHERE name = '%s_filter')",
+                     " SELECT value FROM settings WHERE name = '%s_filter'",
                      resource);
 }
 
@@ -46021,7 +46020,8 @@ manage_set_setting (const gchar *uuid, const gchar *name,
                || strcmp (name, "schedules_filter") == 0
                || strcmp (name, "slaves_filter") == 0
                || strcmp (name, "targets_filter") == 0
-               || strcmp (name, "tasks_filter") == 0))
+               || strcmp (name, "tasks_filter") == 0
+               || strcmp (name, "info_filter") == 0))
     {
       gchar *quoted_name, *quoted_value;
 
