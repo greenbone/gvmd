@@ -1380,6 +1380,60 @@ slave_authenticate (gnutls_session_t *session, slave_t slave)
 /* Defined in omp.c. */
 void buffer_config_preference_xml (GString *, iterator_t *, config_t);
 
+
+/**
+ * @brief Number of seconds to sleep between polls to slave.
+ */
+#define RUN_SLAVE_TASK_SLEEP_SECONDS 25
+
+/**
+ * @brief Connect to a slave.
+ *
+ * @param[in]   slave    Slave.
+ * @param[in]   host     Host.
+ * @param[out]  socket   Socket.
+ * @param[out]  session  Session.
+ *
+ * @return 0 success, -1 error, 1 auth failure.
+ */
+static int
+slave_connect (slave_t slave, const char *host, int port, int *socket,
+               gnutls_session_t *session)
+{
+  *socket = openvas_server_open (session, host, port);
+  if (*socket == -1)
+    return -1;
+
+  {
+    int optval;
+    optval = 1;
+    if (setsockopt (*socket,
+                    SOL_SOCKET, SO_KEEPALIVE,
+                    &optval, sizeof (int)))
+      {
+        g_warning ("%s: failed to set SO_KEEPALIVE on slave socket: %s\n",
+                   __FUNCTION__,
+                   strerror (errno));
+        openvas_server_close (*socket, *session);
+        return -1;
+      }
+  }
+
+  tracef ("   %s: connected\n", __FUNCTION__);
+
+  /* Authenticate using the slave login. */
+
+  if (slave_authenticate (session, slave))
+    {
+      openvas_server_close (*socket, *session);
+      return 1;
+    }
+
+  tracef ("   %s: authenticated\n", __FUNCTION__);
+
+  return 0;
+}
+
 /**
  * @brief Start a task on a slave.
  *
@@ -1434,40 +1488,18 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
       return -1;
     }
 
-  socket = openvas_server_open (&session, host, port);
-  free (host);
-  if (socket == -1) return -1;
-
-  {
-    int optval;
-    optval = 1;
-    if (setsockopt (socket,
-                    SOL_SOCKET, SO_KEEPALIVE,
-                    &optval, sizeof (int)))
-      {
-        g_warning ("%s: failed to set SO_KEEPALIVE on slave socket: %s\n",
-                   __FUNCTION__,
-                   strerror (errno));
-        openvas_server_close (socket, session);
-        return -1;
-      }
-  }
-
-  tracef ("   %s: connected\n", __FUNCTION__);
-
   name = openvas_uuid_make ();
   if (name == NULL)
     {
       openvas_server_close (socket, session);
+      free (host);
       return -1;
     }
 
-  /* Authenticate using the slave login. */
+  while (slave_connect (slave, host, port, &socket, &session))
+    sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
 
-  if (slave_authenticate (&session, slave))
-    goto fail;
-
-  tracef ("   %s: authenticated\n", __FUNCTION__);
+  // TODO Handle every case to poll loop.
 
   if (last_stopped_report)
     {
@@ -1816,7 +1848,13 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
         }
 
       if (omp_get_tasks (&session, slave_task_uuid, 0, 0, &get_tasks))
-        goto fail_task;
+        {
+          openvas_server_close (socket, session);
+          sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+          while (slave_connect (slave, host, port, &socket, &session))
+            sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+          continue;
+        }
 
       status = omp_task_status (get_tasks);
       if ((strcmp (status, "Running") == 0)
@@ -1844,7 +1882,11 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
                                  &get_report))
             {
               free_entity (get_tasks);
-              goto fail_stop_task;
+              openvas_server_close (socket, session);
+              sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+              while (slave_connect (slave, host, port, &socket, &session))
+                sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+              continue;
             }
 
           if (update_from_slave (task, get_report, &report, &next_result))
@@ -1928,7 +1970,7 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
 
       free_entity (get_tasks);
 
-      sleep (25);
+      sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
     }
 
   /* Cleanup. */
@@ -1948,6 +1990,7 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
   free (slave_target_uuid);
   free (slave_smb_credential_uuid);
   free (slave_ssh_credential_uuid);
+  free (host);
   free (name);
   openvas_server_close (socket, session);
   return 0;
@@ -1973,6 +2016,7 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
   free (slave_ssh_credential_uuid);
  fail:
   current_scanner_task = (task_t) 0;
+  free (host);
   free (name);
   openvas_server_close (socket, session);
   return -1;
