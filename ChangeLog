@@ -1,3 +1,36 @@
+2013-01-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add basic DFN-CERT advisory support to OMP.
+
+	* CMakeLists.txt: Add tools/dfn_cert_getbyname.xsl
+
+	* src/CMakeLists.txt: Add "add_definitions" for CERT directories.
+
+	* src/manage.c (): Add #defines used by get_dfn_cert_adv_filename.
+	(get_dfn_cert_adv_filename): Add function to find file name of a
+	DFN-CERT advisory.
+	(manage_cert_update_time): Add function.
+	(manage_read_info): Add else if for dfn_cert_adv.
+
+	* src/manage.h: Move manage_read_info to top of SecInfo functions.
+	Add manage_cert_loaded, manage_cert_update_time and DFN-CERT
+	iterator functions.
+
+	* src/manage_sql.c (init_manage_process): Add attachment of CERT
+	database.
+	(): Add #defines for DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS and
+	DFN_CERT_ADV_INFO_ITERATOR_COLUMNS.
+	(manage_cert_loaded, init_dfn_cert_adv_info_iterator,
+	dfn_cert_adv_info_count, dfn_cert_adv_info_title,
+	dfn_cert_adv_info_summary, dfn_cert_adv_info_num_cves): Add function
+	to check if CERT database is loaded and DFN-CERT iterator functions.
+
+	* src/omp.c (case CLIENT_GET_INFO): Add else if branches for
+	dfn_cert_adv.
+
+	* tools/dfn_cert_getbyname.xsl: Add new stylesheet to select DFN-CERT
+	advisories by their ID.
+
 2013-01-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/db_postgres.sql: Update to reflect added creation and modification

@@ -91,6 +91,11 @@
 #define OVALDEF_GETBYNAME_XSL SCAP_RES_DIR "/ovaldef_getbyname.xsl"
 
 /**
+ * @brief DFN_CERT_ADV selection stylesheet location.
+ */
+#define DFN_CERT_ADV_GETBYNAME_XSL CERT_RES_DIR "/dfn_cert_getbyname.xsl"
+
+/**
  * @brief CPE dictionary location.
  */
 #define CPE_DICT_FILENAME SCAP_DATA_DIR "/official-cpe-dictionary_v2.2.xml"
@@ -103,9 +108,21 @@
 #define CVE_FILENAME_FMT SCAP_DATA_DIR "/nvdcve-2.0-%d.xml"
 
 /**
+ * @brief DFN-CERT data files location format string.
+ *
+ * %d should be the year expressed as YYYY.
+ */
+#define DFN_CERT_ADV_FILENAME_FMT CERT_DATA_DIR "/dfn-cert-%d.xml"
+
+/**
  * @brief SCAP timestamp location.
  */
 #define SCAP_TIMESTAMP_FILENAME SCAP_DATA_DIR "/timestamp"
+
+/**
+ * @brief CERT timestamp location.
+ */
+#define CERT_TIMESTAMP_FILENAME CERT_DATA_DIR "/timestamp"
 
 /**
  * @brief Default for Scanner max_checks preference.
@@ -4194,6 +4211,28 @@ get_ovaldef_filename (char *oval_id)
   return result;
 }
 
+/**
+ * @brief Compute the filename where a given DFN-CERT Advisory can be found.
+ *
+ * @param[in] item_id   Full DFN-CERT identifier ("DFN-CERT-YYYY-ZZZZ").
+ *
+ * @return A dynamically allocated string (to be g_free'd) containing the
+ *         path to the desired file or NULL on error.
+ */
+static char *
+get_dfn_cert_adv_filename (char *item_id)
+{
+  int year;
+
+  if (sscanf (item_id, "%*3s-%*4s-%d-%*d", &year) == 1)
+    {
+      /* Advisories before 2009 are stored in the 2009 file. */
+      if (year <= 2009)
+        year = 2009;
+      return g_strdup_printf (DFN_CERT_ADV_FILENAME_FMT, year);
+    }
+  return NULL;
+}
 
 /**
  * @brief Run xsltproc in an external process.
@@ -4461,6 +4500,47 @@ manage_scap_update_time ()
 }
 
 /**
+ * @brief GET CERT update time, as a string.
+ *
+ * @return Last update time as a static string, or "" on error.
+ */
+char *
+manage_cert_update_time ()
+{
+  gchar *content;
+  GError *error;
+  gsize content_size;
+  struct tm update_time;
+
+  /* Read in the contents. */
+
+  error = NULL;
+  if (g_file_get_contents (CERT_TIMESTAMP_FILENAME,
+                           &content,
+                           &content_size,
+                           &error)
+      == FALSE)
+    {
+      if (error)
+        {
+          g_debug ("%s: failed to read %s: %s",
+                   __FUNCTION__, CERT_TIMESTAMP_FILENAME, error->message);
+          g_error_free (error);
+        }
+      return "";
+    }
+
+  memset (&update_time, 0, sizeof (struct tm));
+  if (strptime (content, "%Y%m%d%H%M", &update_time))
+    {
+      static char time_string[100];
+      strftime (time_string, 99, "%FT%T.000%z", &update_time);
+      return time_string;
+    }
+  return "";
+}
+
+/**
  * @brief Read raw information.
  *
  * @param[in]   type    Type of the requested information.
@@ -4530,6 +4610,19 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
           g_free (fname);
           if (ovaldef)
             *result = ovaldef;
+        }
+    }
+  else if (g_ascii_strcasecmp ("DFN_CERT_ADV", type) == 0)
+    {
+      fname = get_dfn_cert_adv_filename (name);
+      if (fname)
+        {
+          gchar *adv;
+          adv = xsl_transform (DFN_CERT_ADV_GETBYNAME_XSL, fname,
+                               pnames, pvalues);
+          g_free (fname);
+          if (adv)
+            *result = adv;
         }
     }
 

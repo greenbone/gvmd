@@ -61,6 +61,9 @@ add_definitions (-DPREFIX=\\\"${CMAKE_INSTALL_PREFIX}\\\")
 add_definitions (-DSCAP_RES_DIR=\\\"${OPENVAS_SCAP_RES_DIR}\\\")
 add_definitions (-DSCAP_DATA_DIR=\\\"${OPENVAS_SCAP_DATA_DIR}\\\")
 
+add_definitions (-DCERT_RES_DIR=\\\"${OPENVAS_CERT_RES_DIR}\\\")
+add_definitions (-DCERT_DATA_DIR=\\\"${OPENVAS_CERT_DATA_DIR}\\\")
+
 if (OPENVAS_USERS_DIR)
   add_definitions (-DOPENVAS_USERS_DIR=\\\"${OPENVAS_USERS_DIR}\\\")
 endif (OPENVAS_USERS_DIR)

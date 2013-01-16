@@ -2510,13 +2510,15 @@ void
 parse_tags (const char *, gchar **, gchar **, gchar **);
 
 
+/* SecInfo */
+
+int
+manage_read_info (gchar *, gchar *, gchar **);
+
 /* SCAP. */
 
 int
 manage_scap_loaded ();
-
-int
-manage_read_info (gchar *, gchar *, gchar **);
 
 char *
 manage_scap_update_time ();
@@ -2612,6 +2614,30 @@ ovaldef_info_iterator_description (iterator_t*);
 
 const char*
 ovaldef_info_iterator_xml_file (iterator_t*);
+
+/* CERT data */
+int
+manage_cert_loaded ();
+
+char *
+manage_cert_update_time ();
+
+/* DFN-CERT */
+
+int
+init_dfn_cert_adv_info_iterator (iterator_t*, get_data_t*, const char*);
+
+int
+dfn_cert_adv_info_count (const get_data_t *get);
+
+const char*
+dfn_cert_adv_info_iterator_title (iterator_t*);
+
+const char*
+dfn_cert_adv_info_iterator_summary (iterator_t*);
+
+const char*
+dfn_cert_adv_info_iterator_num_cves (iterator_t*);
 
 
 /* Settings. */

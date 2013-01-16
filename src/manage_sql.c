@@ -12904,6 +12904,27 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           manage_scap_loaded ();
         }
 
+      /* Attach the CERT database. */
+
+      err = stat (OPENVAS_STATE_DIR "/cert-data/cert.db", &state);
+      if (err)
+        switch (errno)
+          {
+            case ENOENT:
+              break;
+            default:
+              g_warning ("%s: failed to stat CERT database: %s\n",
+                         __FUNCTION__,
+                         strerror (errno));
+              abort ();
+          }
+      else
+        {
+          sql ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/cert-data/cert.db'"
+               " AS cert;");
+          manage_cert_loaded ();
+        }
+
       /* Define functions for SQL. */
 
       if (sqlite3_create_collation (task_db,
@@ -46098,6 +46119,19 @@ manage_set_setting (const gchar *uuid, const gchar *name,
   GET_ITERATOR_COLUMNS ", version, deprecated, def_class,"  \
   "title, description, xml_file"
 
+/**
+ * @brief Filter columns for DFN_CERT_ADV iterator.
+ */
+#define DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS           \
+ { GET_ITERATOR_FILTER_COLUMNS, "title", "summary",         \
+   "num_cves",  NULL }
+
+/**
+ * @brief DFN_CERT_ADV iterator columns.
+ */
+#define DFN_CERT_ADV_INFO_ITERATOR_COLUMNS                       \
+  GET_ITERATOR_COLUMNS ", title, summary, num_cves"
+
 
 /**
  * @brief Check whether SCAP is available.
@@ -46128,6 +46162,37 @@ manage_scap_loaded ()
   return !!sql_int (0, 0,
                     "SELECT count(*) FROM scap.sqlite_master"
                     " WHERE type = 'table' AND name = 'cves';");
+}
+
+/**
+ * @brief Check whether CERT is available.
+ *
+ * @return 1 if SCAP database is loaded, else 0.
+ */
+int
+manage_cert_loaded ()
+{
+  struct stat state;
+  int err;
+
+  err = stat (OPENVAS_STATE_DIR "/cert-data/cert.db", &state);
+  if (err)
+    switch (errno)
+      {
+        case ENOENT:
+          return 0;
+          break;
+        default:
+          g_warning ("%s: failed to stat CERT database: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          abort ();
+          return 0;
+      }
+
+  return !!sql_int (0, 0,
+                    "SELECT count(*) FROM cert.sqlite_master"
+                    " WHERE type = 'table' AND name = 'dfn_cert_advs';");
 }
 
 /**
@@ -46572,6 +46637,108 @@ DEF_ACCESS (ovaldef_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 4);
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (ovaldef_info_iterator_xml_file, GET_ITERATOR_COLUMN_COUNT + 5);
+
+/* CERT data */
+
+/* DFN-CERT data */
+/**
+ * @brief Initialise an DFN-CERT advisory (dfn_cert_adv) info iterator.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ * @param[in]  name            Name of the info
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_dfn_cert_adv_info_iterator (iterator_t* iterator, get_data_t *get,
+                            const char *name)
+{
+  static const char *filter_columns[] =
+      DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS;
+  gchar *clause = NULL;
+  int ret;
+
+  if (get->id)
+    {
+      gchar *quoted = sql_quote (get->id);
+      clause = g_strdup_printf (" AND uuid = '%s'", quoted);
+      g_free (quoted);
+    }
+  else if (name)
+    {
+      gchar *quoted = sql_quote (name);
+      clause = g_strdup_printf (" AND name = '%s'", quoted);
+      g_free (quoted);
+      /* The entry is specified by name, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
+    }
+  ret = init_get_iterator (iterator,
+                           "dfn_cert_adv",
+                           get,
+                           /* Columns. */
+                           DFN_CERT_ADV_INFO_ITERATOR_COLUMNS,
+                           NULL,
+                           filter_columns,
+                           NULL,
+                           0,
+                           NULL,
+                           clause,
+                           FALSE);
+  g_free (clause);
+  return ret;
+}
+
+/**
+ * @brief Count number of dfn_cert_adv.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of DFN-CERT advisories in filtered set.
+ */
+int
+dfn_cert_adv_info_count (const get_data_t *get)
+{
+  static const char *extra_columns[] =
+                      DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS;
+  return count ("dfn_cert_adv", get, DFN_CERT_ADV_INFO_ITERATOR_COLUMNS,
+                extra_columns, 0, 0, 0, FALSE);
+}
+
+/**
+ * @brief Get the title from an DFN_CERT_ADV iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The title of the DFN-CERT advisory,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (dfn_cert_adv_info_iterator_title, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the summary from an DFN_CERT_ADV iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The summary of the DFN-CERT advisory,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (dfn_cert_adv_info_iterator_summary, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the number of cves from an DFN_CERT_ADV iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The number of CVEs referenced in the DFN-CERT advisory,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (dfn_cert_adv_info_iterator_num_cves, GET_ITERATOR_COLUMN_COUNT + 2);
 
 #undef DEF_ACCESS
 

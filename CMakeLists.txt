@@ -360,6 +360,7 @@ install (FILES tools/scap_db_init.sql tools/cpe_update.xsl
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES tools/cert_db_init.sql tools/dfn_cert_update.xsl
+         tools/dfn_cert_getbyname.xsl
          DESTINATION ${OPENVAS_CERT_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 

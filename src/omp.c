@@ -18492,6 +18492,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               info_count = ovaldef_info_count;
               get_info_data->get.subtype = g_strdup ("ovaldef");
             }
+          else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
+            {
+              init_info_iterator = init_dfn_cert_adv_info_iterator;
+              info_count = dfn_cert_adv_info_count;
+              get_info_data->get.subtype = g_strdup ("dfn_cert_adv");
+            }
           else
             {
               if (send_find_error_to_client ("get_info",
@@ -18663,6 +18669,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        "<xml_file>%s</xml_file>",
                                        description,
                                        ovaldef_info_iterator_xml_file (&info));
+                }
+              else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
+                {
+                  xml_string_append (result,
+                                     "<title>%s</title>"
+                                     "<summary>%s</summary>"
+                                     "<num_cves>%s</num_cves>",
+                                     dfn_cert_adv_info_iterator_title (&info),
+                                     dfn_cert_adv_info_iterator_summary (&info),
+                                     dfn_cert_adv_info_iterator_num_cves (&info)
+                                    );
                 }
               else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
                 {
