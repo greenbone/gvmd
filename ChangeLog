@@ -11,7 +11,7 @@
 
 	Update copyright dates and authors in heading comments of various files.
 
-	* tools/dfn_cert_getbyname.xsl: Update heading comment. 
+	* tools/dfn_cert_getbyname.xsl: Update heading comment.
 	Fix description there.
 
 	* tools/dfn_cert_update.xsl: Update heading comment.
