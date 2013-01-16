@@ -3,7 +3,7 @@
 OpenVAS
 $Id$
 Description: Generate SQL (SQLite compatible) queries to update
-the OVAL database.
+the DFN-CERT tables of the CERT database.
 
 Authors:
 Timo Pollmeier <timo.pollmeier@greenbone.net>

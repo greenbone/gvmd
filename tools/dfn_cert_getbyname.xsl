@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 OpenVAS
-$Id: cve_getbyname.xsl 11660 2011-09-22 14:22:40Z hdoreau $
-Description: Select a CVE item by name.
+$Id$
+Description: Select a DFN-CERT item by name.
 
 Authors:
-Henri Doreau <henri.doreau@greenbone.net>
+Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 Copyright:
-Copyright (C) 2011 Greenbone Networks GmbH
+Copyright (C) 2013 Greenbone Networks GmbH
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 2,

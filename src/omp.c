@@ -7,7 +7,7 @@
  * Timo Pollmeier <timo.pollmeier@greenbone.net>
  *
  * Copyright:
- * Copyright (C) 2009 - 2012 Greenbone Networks GmbH
+ * Copyright (C) 2009-2013 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,

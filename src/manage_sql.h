@@ -4,9 +4,10 @@
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Timo Pollmeier <timo.pollmeier@greenbone.net>
  *
  * Copyright:
- * Copyright (C) 2010 Greenbone Networks GmbH
+ * Copyright (C) 2010-2013 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,

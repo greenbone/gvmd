@@ -1,5 +1,29 @@
 2013-01-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Update copyright dates and authors in heading comments of various files.
+
+	* tools/dfn_cert_getbyname.xsl: Update heading comment. 
+	Fix description there.
+
+	* tools/dfn_cert_update.xsl: Update heading comment.
+	Fix description there.
+
+	* src/CMakeLists.txt: Update heading comment.
+
+	* src/manage_sql.c: Update heading comment.
+
+	* src/manage_sql.h: Update heading comment.
+
+	* src/manage.c: Update heading comment.
+
+	* src/omp.c: Update heading comment.
+
+	* src/manage.h: Update heading comment.
+
+	* CMakeLists.txt: Update heading comment.
+
+2013-01-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add basic DFN-CERT advisory support to OMP.
 
 	* CMakeLists.txt: Add tools/dfn_cert_getbyname.xsl
