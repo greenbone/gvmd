@@ -1320,6 +1320,12 @@ make_nvt_from_nvti (const nvti_t*, int);
 gboolean
 find_nvt (const char*, nvt_t*);
 
+int
+init_nvt_info_iterator (iterator_t*, get_data_t*, const char*);
+
+int
+nvt_info_count (const get_data_t *);
+
 void
 init_nvt_iterator (iterator_t*, nvt_t, config_t, const char*, const char*, int,
                    const char*);

@@ -18481,10 +18481,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               info_count = cve_info_count;
               get_info_data->get.subtype = g_strdup ("cve");
             }
+          else if ((g_strcmp0 ("nvt", get_info_data->type) == 0)
+                   && (get_info_data->name == NULL))
+            {
+              init_info_iterator = init_nvt_info_iterator;
+              info_count = nvt_info_count;
+              get_info_data->get.subtype = g_strdup ("nvt");
+            }
           else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
             {
-              /* TODO: add proper iterator support for cpe / NVT */
-              gchar *result = NULL;
+              gchar *result;
 
               get_info_data->get.subtype = g_strdup ("nvt");
 
@@ -18599,19 +18605,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               GString *result;
 
               /* Info's are currently always read only */
+              // TODO Check return like SEND_GET_COMMON does.
               send_get_common ("info", &get_info_data->get, &info,
                                write_to_client, write_to_client_data, 0, 0);
 
+              SENDF_TO_CLIENT_OR_FAIL ("<update_time>%s</update_time>",
+                                       manage_scap_update_time ());
+
               result = g_string_new ("");
-              g_string_append_printf (result, "<update_time>%s</update_time>"
-                                              "<%s>",
-                                              manage_scap_update_time (),
-                                              get_info_data->type);
+
               /* Information depending on type */
 
               if (g_strcmp0 ("cpe", get_info_data->type) == 0)
                 {
-                  const char * title = cpe_info_iterator_title (&info);
+                  const char *title;
+
+                  xml_string_append (result, "<cpe>");
+                  title = cpe_info_iterator_title (&info);
                   if (title)
                     xml_string_append (result,
                                        "<title>%s</title>",
@@ -18658,6 +18668,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else if (g_strcmp0 ("cve", get_info_data->type) == 0)
                 {
                   xml_string_append (result,
+                                     "<cve>"
                                      "<cvss>%s</cvss>"
                                      "<vector>%s</vector>"
                                      "<complexity>%s</complexity>"
@@ -18696,6 +18707,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   const char *description;
                   xml_string_append (result,
+                                     "<ovaldef>"
                                      "<version>%s</version>"
                                      "<deprecated>%s</deprecated>"
                                      "<def_class>%s</def_class>"
@@ -18725,7 +18737,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
                 {
-                  /* TODO */
+                  if (send_nvt (&info, 1, -1, NULL, write_to_client,
+                                write_to_client_data))
+                    {
+                      cleanup_iterator (&info);
+                      error_send_to_client (error);
+                      return;
+                    }
                 }
 
               /* Append raw data if full details are requested */

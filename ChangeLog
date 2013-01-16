@@ -1,3 +1,31 @@
+2013-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add multiple NVT support to GET_INFO.  Hence increase database
+	version to 74.  Add database migration from version 73 to 74.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 74.
+
+	* src/manage_sql.c (create_tables): Add standard GET columns to nvts.
+	(migrate_73_to_74): New function.  Adds GET columns, including
+	extracting creation and modification times from tags.
+	(database_migrators): Add migrate_73_to_74.
+	(init_manage_process): Create parse_time and tag SQL functions.
+	(NVT_ITERATOR_COLUMNS): Add standard GET columns.
+	(NVT_INFO_ITERATOR_FILTER_COLUMNS): New define.  Adjust accessor
+	positions accordingly.
+	(init_nvt_info_iterator, nvt_info_count): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_INFO add iterator
+	support for NVTs.
+
+	* src/sql.c (sql_parse_time, sql_tag): New functions.
+
+	* doc/db_postgres.sql (nvts): Add GET columns.
+
+	* doc/db.png: Update from source.
+
 2013-01-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (setting_filter): Return filter uuid directly instead

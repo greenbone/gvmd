@@ -83,7 +83,13 @@ void
 sql_iso_time (sqlite3_context *, int argc, sqlite3_value **);
 
 void
+sql_parse_time (sqlite3_context *, int argc, sqlite3_value **);
+
+void
 sql_now (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_tag (sqlite3_context *, int, sqlite3_value**);
 
 void
 sql_max_hosts (sqlite3_context *, int, sqlite3_value **);

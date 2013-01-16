@@ -423,9 +423,11 @@ CREATE TABLE nvt_preferences (
 
 CREATE TABLE nvts (
     id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
 	oid text UNIQUE NOT NULL,
 	version text,
     name text,
+    comment text,
     summary text,
     description text,
     copyright text,
@@ -437,7 +439,9 @@ CREATE TABLE nvts (
     category text,
     family text,
     cvss_base text,
-    risk_factor text);
+    risk_factor text,
+    creation_time date,
+    modification_time date);
 
 CREATE TABLE lsc_credentials (
 	id integer PRIMARY KEY,

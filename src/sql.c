@@ -23,11 +23,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#define _XOPEN_SOURCE /* Glibc2 needs this for strptime. */
+
 #include "sql.h"
 #include "tracef.h"
 
 #include <assert.h>
 #include <string.h>
+#include <time.h>
 
 #include <openvas/misc/openvas_uuid.h>
 
@@ -761,6 +764,59 @@ sql_iso_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Try convert an OTP NVT tag time string into epoch time.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_parse_time (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  const unsigned char *string;
+  int epoch_time;
+  struct tm tm;
+
+  assert (argc == 1);
+
+  string = sqlite3_value_text (argv[0]);
+
+  if ((strcmp ((char*) string, "") == 0)
+      || (strcmp ((char*) string, "$Date: $") == 0)
+      || (strcmp ((char*) string, "$Date$") == 0))
+    {
+      sqlite3_result_int (context, 0);
+      return;
+    }
+
+  /* 2011-08-09 08:20:34 +0200 (Tue, 09 Aug 2011) */
+  /* $Date: 2012-02-17 16:05:26 +0100 (Fr, 17. Feb 2012) $ */
+  /* $Date: Fri, 11 Nov 2011 14:42:28 +0100 $ */
+  if ((strptime ((char*) string, "%F %T %z", &tm) == NULL)
+      && (strptime ((char*) string, "$Date: %F %T %z", &tm) == NULL)
+      && (strptime ((char*) string, "%a %b %d %T %Y %z", &tm) == NULL)
+      && (strptime ((char*) string, "$Date: %a, %d %b %Y %T %z", &tm) == NULL)
+      && (strptime ((char*) string, "$Date: %a %b %d %T %Y %z", &tm) == NULL))
+    {
+      g_warning ("%s: Failed to parse time: %s", __FUNCTION__, string);
+      sqlite3_result_int (context, 0);
+      return;
+    }
+  epoch_time = mktime (&tm);
+  if (epoch_time == -1)
+    {
+      g_warning ("%s: Failed to make time: %s", __FUNCTION__, string);
+      sqlite3_result_int (context, 0);
+      return;
+    }
+
+  sqlite3_result_int (context, epoch_time);
+  return;
+}
+
+/**
  * @brief Get the current time as an epoch integer.
  *
  * This is a callback for a scalar SQL function of zero arguments.
@@ -774,6 +830,61 @@ sql_now (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   assert (argc == 0);
   sqlite3_result_int (context, time (NULL));
+}
+
+/**
+ * @brief Extract a tag from an OTP tag list.
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_tag (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  const char *tags, *tag;
+  gchar **split, **point;
+
+  assert (argc == 2);
+
+  tags = (char*) sqlite3_value_text (argv[0]);
+  if (tags == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get tags argument", -1);
+      return;
+    }
+
+  tag = (char*) sqlite3_value_text (argv[1]);
+  if (tag == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get tag argument", -1);
+      return;
+    }
+
+  /* creation_date=2009-04-09 14:18:58 +0200 (Thu, 09 Apr 2009)|... */
+
+  split = g_strsplit (tags, "|", 0);
+  point = split;
+
+  while (*point)
+    {
+      if ((strlen (*point) > strlen (tag))
+          && (strncmp (*point, tag, strlen (tag)) == 0)
+          && ((*point)[strlen (tag)] == '='))
+        {
+          sqlite3_result_text (context, *point + strlen (tag) + 1, -1,
+                               SQLITE_TRANSIENT);
+          g_strfreev (split);
+          return;
+        }
+      point++;
+    }
+  g_strfreev (split);
+
+  sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
+  return;
 }
 
 /**
