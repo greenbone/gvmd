@@ -45858,7 +45858,7 @@ setting_count (const char *filter)
  *
  * @param[in]  resource  Resource.
  *
- * @return resource filter uuid in settings if it exists, NULL otherwise.
+ * @return resource filter uuid in settings if it exists, "" otherwise.
  */
 char *
 setting_filter (const char *resource)

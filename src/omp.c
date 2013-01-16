@@ -9119,7 +9119,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   char *user_filter = setting_filter ("notes");
 
-                  if (user_filter)
+                  if (user_filter && strlen (user_filter))
                     {
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
@@ -9489,7 +9489,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   char *user_filter = setting_filter ("overrides");
 
-                  if (user_filter)
+                  if (user_filter && strlen (user_filter))
                     {
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
@@ -9578,7 +9578,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               char *user_filter = setting_filter ("port_lists");
 
-              if (user_filter)
+              if (user_filter && strlen (user_filter))
                 {
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);
@@ -10509,7 +10509,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   char *user_filter = setting_filter ("report_formats");
 
-                  if (user_filter)
+                  if (user_filter && strlen (user_filter))
                     {
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
@@ -10883,7 +10883,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   char *user_filter = setting_filter ("schedules");
 
-                  if (user_filter)
+                  if (user_filter && strlen (user_filter))
                     {
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
@@ -17733,7 +17733,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   char *user_filter = setting_filter ("agents");
 
-                  if (user_filter)
+                  if (user_filter && strlen (user_filter))
                     {
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
@@ -17877,7 +17877,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               char *user_filter = setting_filter ("configs");
 
-              if (user_filter)
+              if (user_filter && strlen (user_filter))
                 {
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);
@@ -18140,7 +18140,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               char *user_filter = setting_filter ("alerts");
 
-              if (user_filter)
+              if (user_filter && strlen (user_filter))
                 {
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);
@@ -18329,7 +18329,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               char *user_filter = setting_filter ("filters");
 
-              if (user_filter)
+              if (user_filter && strlen (user_filter))
                 {
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);
@@ -18552,7 +18552,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               char *user_filter = setting_filter ("info");
 
-              if (user_filter)
+              if (user_filter && strlen (user_filter))
                 {
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);
@@ -18824,7 +18824,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               char *user_filter = setting_filter ("lsc_credentials");
 
-              if (user_filter)
+              if (user_filter && strlen (user_filter))
                 {
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);
@@ -19053,7 +19053,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   char *user_filter = setting_filter ("slaves");
 
-                  if (user_filter)
+                  if (user_filter && strlen (user_filter))
                     {
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
@@ -19282,7 +19282,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   char *user_filter = setting_filter ("targets");
 
-                  if (user_filter)
+                  if (user_filter && strlen (user_filter))
                     {
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
@@ -19479,7 +19479,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               char *user_filter = setting_filter ("tasks");
 
-              if (user_filter)
+              if (user_filter && strlen (user_filter))
                 {
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);

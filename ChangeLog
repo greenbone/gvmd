@@ -28,12 +28,20 @@
 
 2013-01-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Enforce check of
+	user_filter size in get default filter from settings cases.
+
+	* src/manage_sql.c (setting_filter): Update documentation.
+
+2013-01-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (setting_filter): Return filter uuid directly instead
 	of term. Update documentation.
 	(manage_set_setting): Add SecInfo filter checking.
-	(omp_xml_handle_end_element): Add settings default filter support in GET
-	INFO case. Update GET cases to also set the filt_id when setting the
-	filter from settings filters.
+
+	* src/omp.c (omp_xml_handle_end_element): Add settings default filter
+	support in GET INFO case. Update GET cases to also set the filt_id when
+	setting the filter from settings filters.
 
 2013-01-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
