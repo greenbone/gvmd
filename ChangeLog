@@ -1,5 +1,10 @@
 2013-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In GET_INFO add missing
+	opening tag to dfn_cert_adv case.
+
+2013-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add multiple NVT support to GET_INFO.  Hence increase database
 	version to 74.  Add database migration from version 73 to 74.
 
