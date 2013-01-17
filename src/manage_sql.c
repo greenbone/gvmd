@@ -2660,13 +2660,20 @@ filter_clause (const char* type, const char* filter, const char **columns,
 /**
  * @brief Columns for GET iterator.
  */
-#define GET_ITERATOR_COLUMNS                                 \
-  "ROWID, uuid, name, comment, iso_time (creation_time),"    \
-  " iso_time (modification_time), creation_time AS created," \
-  " modification_time AS modified"
+#define GET_ITERATOR_COLUMNS_PREFIX(prefix)                           \
+  prefix "ROWID, " prefix "uuid, " prefix "name, " prefix "comment,"  \
+  " iso_time (" prefix "creation_time),"                              \
+  " iso_time (" prefix "modification_time),"                          \
+  " " prefix "creation_time AS created,"                              \
+  " " prefix "modification_time AS modified"
 
 /**
  * @brief Columns for GET iterator.
+ */
+#define GET_ITERATOR_COLUMNS GET_ITERATOR_COLUMNS_PREFIX("")
+
+/**
+ * @brief Number of columns for GET iterator.
  */
 #define GET_ITERATOR_COLUMN_COUNT 8
 
@@ -32248,6 +32255,14 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   " cvss_base, risk_factor"
 
 /**
+ * @brief NVT iterator columns.
+ */
+#define NVT_ITERATOR_COLUMNS_NVTS                                              \
+  GET_ITERATOR_COLUMNS_PREFIX("nvts.") ", oid, version, nvts.name, summary,"   \
+  " description, copyright, cve, bid, xref, tag, sign_key_ids, category,"      \
+  " nvts.family, cvss_base, risk_factor"
+
+/**
  * @brief Initialise an NVT iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -33353,9 +33368,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
               == 1)
             /* There is one selector, it should be the all selector. */
             return g_strdup_printf
-                    ("SELECT oid, version, name, summary, description,"
-                     " copyright, cve, bid, xref, tag, sign_key_ids,"
-                     " category, family, cvss_base, risk_factor"
+                    ("SELECT " NVT_ITERATOR_COLUMNS
                      " FROM nvts WHERE family = '%s'"
                      " ORDER BY %s %s;",
                      family,
@@ -33375,9 +33388,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                        family))
             /* The family is excluded, just iterate the NVT includes. */
             return g_strdup_printf
-                    ("SELECT oid, version, nvts.name, summary, description,"
-                     " copyright, cve, bid, xref, tag, sign_key_ids,"
-                     " category, nvts.family, cvss_base, risk_factor"
+                    ("SELECT " NVT_ITERATOR_COLUMNS_NVTS
                      " FROM nvts, nvt_selectors"
                      " WHERE"
                      " nvts.family = '%s'"
@@ -33396,15 +33407,11 @@ select_config_nvts (const config_t config, const char* family, int ascending,
 
           /* The family is included.  Iterate all NVT's minus excluded NVT's. */
           return g_strdup_printf
-                  ("SELECT oid, version, name, summary, description,"
-                   " copyright, cve, bid, xref, tag, sign_key_ids,"
-                   " category, family, cvss_base, risk_factor"
+                  ("SELECT " NVT_ITERATOR_COLUMNS
                    " FROM nvts"
                    " WHERE family = '%s'"
                    " EXCEPT"
-                   " SELECT oid, version, nvts.name, summary, description,"
-                   " copyright, cve, bid, xref, tag, sign_key_ids,"
-                   " category, nvts.family, cvss_base, risk_factor"
+                   " SELECT " NVT_ITERATOR_COLUMNS_NVTS
                    " FROM nvt_selectors, nvts"
                    " WHERE"
                    " nvts.family = '%s'"
@@ -33440,15 +33447,11 @@ select_config_nvts (const config_t config, const char* family, int ascending,
           if (all)
             /* There is a family include for this family. */
             return g_strdup_printf
-                    ("SELECT oid, version, name, summary, description,"
-                     " copyright, cve, bid, xref, tag, sign_key_ids,"
-                     " category, family, cvss_base, risk_factor"
+                    ("SELECT " NVT_ITERATOR_COLUMNS
                      " FROM nvts"
                      " WHERE family = '%s'"
                      " EXCEPT"
-                     " SELECT oid, version, nvts.name, summary, description,"
-                     " copyright, cve, bid, xref, tag, sign_key_ids,"
-                     " category, nvts.family, cvss_base, risk_factor"
+                     " SELECT " NVT_ITERATOR_COLUMNS_NVTS
                      " FROM nvt_selectors, nvts"
                      " WHERE"
                      " nvts.family = '%s'"
@@ -33467,9 +33470,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                      ascending ? "ASC" : "DESC");
 
           return g_strdup_printf
-                  (" SELECT oid, version, nvts.name, summary, description,"
-                   " copyright, cve, bid, xref, tag, sign_key_ids,"
-                   " category, nvts.family, cvss_base, risk_factor"
+                  (" SELECT " NVT_ITERATOR_COLUMNS_NVTS
                    " FROM nvt_selectors, nvts"
                    " WHERE"
                    " nvts.family = '%s'"
@@ -33496,9 +33497,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
 
       quoted_family = sql_quote (family);
       sql = g_strdup_printf
-             ("SELECT oid, version, nvts.name, summary, description,"
-              " copyright, cve, bid, xref, tag, sign_key_ids,"
-              " category, nvts.family, cvss_base, risk_factor"
+             ("SELECT " NVT_ITERATOR_COLUMNS_NVTS
               " FROM nvt_selectors, nvts"
               " WHERE nvts.family = '%s'"
               " AND nvt_selectors.exclude = 0"

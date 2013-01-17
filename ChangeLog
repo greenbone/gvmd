@@ -1,3 +1,13 @@
+2013-01-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (GET_ITERATOR_COLUMNS_PREFIX): New define.
+	(GET_ITERATOR_COLUMNS): Call GET_ITERATOR_COLUMNS_PREFIX.
+	(NVT_ITERATOR_COLUMNS_NVTS): New define.  NVT_ITERATOR_COLUMNS with
+	"nvts." prefix.
+	(select_config_nvts): Use NVT_ITERATOR_COLUMNS macros instead of naming
+	the columns explicitly.  This makes the SQL compatible with the
+	init_nvt_iterator accessors.
+
 2013-01-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* ChangeLog: Fix date of last entry.
