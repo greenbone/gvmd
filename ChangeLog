@@ -1,3 +1,7 @@
+2013-01-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* ChangeLog: Clean up previous own entries for style consistency.
+
 2013-01-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Get specific settings filter
@@ -84,25 +88,12 @@
 
 	Update copyright dates and authors in heading comments of various files.
 
-	* tools/dfn_cert_getbyname.xsl: Update heading comment.
-	Fix description there.
+	* tools/dfn_cert_getbyname.xsl, tools/dfn_cert_update.xsl:
+	Update heading comment dates, authors and fix description.
 
-	* tools/dfn_cert_update.xsl: Update heading comment.
-	Fix description there.
-
-	* src/CMakeLists.txt: Update heading comment.
-
-	* src/manage_sql.c: Update heading comment.
-
-	* src/manage_sql.h: Update heading comment.
-
-	* src/manage.c: Update heading comment.
-
-	* src/omp.c: Update heading comment.
-
-	* src/manage.h: Update heading comment.
-
-	* CMakeLists.txt: Update heading comment.
+	* src/CMakeLists.txt, src/manage_sql.c, src/manage_sql.h, src/manage.c,
+	src/omp.c, src/manage.h, CMakeLists.txt:
+	Update heading comment dates and authors.
 
 2013-01-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
@@ -112,27 +103,30 @@
 
 	* src/CMakeLists.txt: Add "add_definitions" for CERT directories.
 
-	* src/manage.c (): Add #defines used by get_dfn_cert_adv_filename.
+	* src/manage.c (DFN_CERT_ADV_FILENAME_FMT, DFN_CERT_ADV_GETBYNAME_XSL):
+	Add #defines used by get_dfn_cert_adv_filename and manage_read_info.
 	(get_dfn_cert_adv_filename): Add function to find file name of a
 	DFN-CERT advisory.
 	(manage_cert_update_time): Add function.
 	(manage_read_info): Add else if for dfn_cert_adv.
 
-	* src/manage.h: Move manage_read_info to top of SecInfo functions.
-	Add manage_cert_loaded, manage_cert_update_time and DFN-CERT
-	iterator functions.
+	* src/manage.h (manage_read_info): Move to top of SecInfo functions.
+	(manage_cert_loaded, manage_cert_update_time)
+	(init_dfn_cert_adv_info_iterator, dfn_cert_adv_info_count)
+	(dfn_cert_adv_info_title, dfn_cert_adv_info_summary)
+	(dfn_cert_adv_info_num_cves): Add.
 
 	* src/manage_sql.c (init_manage_process): Add attachment of CERT
 	database.
-	(): Add #defines for DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS and
-	DFN_CERT_ADV_INFO_ITERATOR_COLUMNS.
-	(manage_cert_loaded, init_dfn_cert_adv_info_iterator,
-	dfn_cert_adv_info_count, dfn_cert_adv_info_title,
-	dfn_cert_adv_info_summary, dfn_cert_adv_info_num_cves): Add function
+	(DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS)
+	(DFN_CERT_ADV_INFO_ITERATOR_COLUMNS): Add #defines.
+	(manage_cert_loaded, init_dfn_cert_adv_info_iterator)
+	(dfn_cert_adv_info_count, dfn_cert_adv_info_title)
+	(dfn_cert_adv_info_summary, dfn_cert_adv_info_num_cves): Add function
 	to check if CERT database is loaded and DFN-CERT iterator functions.
 
-	* src/omp.c (case CLIENT_GET_INFO): Add else if branches for
-	dfn_cert_adv.
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_INFO add
+	else if branches for dfn_cert_adv.
 
 	* tools/dfn_cert_getbyname.xsl: Add new stylesheet to select DFN-CERT
 	advisories by their ID.
@@ -182,6 +176,7 @@
 	(task_threat_level): Return NULL for container tasks.
 
 2013-01-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add CERT advisory database and sync with a local DFN-CERT feed data.
 
 	* CMakeLists.txt: Add CERT paths and files (see added files here).
@@ -570,7 +565,8 @@
 	Improved escaping of characters in OVAL defintions to avoid XML errors
 	caused by unescaped ampersands (&) in titles and descriptions.
 
-	* src/omp.c (case CLIENT_GET_INFO): Add escaping of ampersands.
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_INFO add
+	escaping of ampersands.
 	Reworked indentation of OVAL code in this section.
 
 	* tools/oval_update.xsl: Add template to get creation_date and
@@ -877,17 +873,17 @@
 
 	* CMakeLists.txt: Add SCAP.db migration script migrate_db5to6.sql
 
-	* src/manage.h: Add iterator function declarations for OVAL
-	definition data	(ovaldef): init_ovaldef_info_iterator,
-	ovaldef_info_count, ovaldef_info_iterator_version,
-	ovaldef_info_iterator_deprecated, ovaldef_info_iterator_def_class,
-	ovaldef_info_iterator_title, ovaldef_info_iterator_description.
+	* src/manage.h (init_ovaldef_info_iterator)
+	(ovaldef_info_count, ovaldef_info_iterator_version)
+	(ovaldef_info_iterator_deprecated, ovaldef_info_iterator_def_class)
+	(ovaldef_info_iterator_title, ovaldef_info_iterator_description):
+	Add iterator function declarations for OVAL definition data (ovaldef).
 
 	* src/manage_sql.c: Add implementations of new iterator functions
 	declared in src/manage.h
 
-	* src/omp.c (case CLIENT_GET_INFO): Add XML output of basic ovaldef
-	data.
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_INFO
+	Add XML output of basic ovaldef data.
 
 	* tools/db_init.sql: Change database columns to include attributes
 	uuid, name, comment, creation_time, modification_time. Change DB
