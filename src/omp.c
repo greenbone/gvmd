@@ -18550,7 +18550,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               || strlen (get->filter) == 0
               || strcmp (get->filter, "rows=-2") == 0)
             {
-              char *user_filter = setting_filter ("info");
+              char *user_filter;
+              gchar *name;
+              name = g_strdup_printf ("info_%s", get_info_data->type);
+              user_filter = setting_filter (name);
+              g_free (name);
 
               if (user_filter && strlen (user_filter))
                 {

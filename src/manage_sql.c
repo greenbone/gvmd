@@ -46137,7 +46137,11 @@ manage_set_setting (const gchar *uuid, const gchar *name,
                || strcmp (name, "slaves_filter") == 0
                || strcmp (name, "targets_filter") == 0
                || strcmp (name, "tasks_filter") == 0
-               || strcmp (name, "info_filter") == 0))
+               || strcmp (name, "info_cpe_filter") == 0
+               || strcmp (name, "info_cve_filter") == 0
+               || strcmp (name, "info_nvt_filter") == 0
+               || strcmp (name, "info_ovaldef_filter") == 0
+               || strcmp (name, "info_dfn_cert_adv_filter") == 0))
     {
       gchar *quoted_name, *quoted_value;
 
