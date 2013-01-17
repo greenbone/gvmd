@@ -114,6 +114,7 @@
 #include <openvas/base/certificate.h>
 #include <openvas/base/nvti.h>
 #include <openvas/base/openvas_string.h>
+#include <openvas/base/openvas_file.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/resource_request.h>
@@ -152,91 +153,6 @@ is_uuid (const char *uuid)
 {
   while (*uuid) if (isxdigit (*uuid) || (*uuid == '-')) uuid++; else return 0;
   return 1;
-}
-
-/** @todo Duplicated from lsc_user.c. */
-/**
- * @brief Checks whether a file is a directory or not.
- *
- * This is a replacement for the g_file_test functionality which is reported
- * to be unreliable under certain circumstances, for example if this
- * application and glib are compiled with a different libc.
- *
- * @todo Handle symbolic links.
- * @todo Move to libs?
- *
- * @param[in]  name  File name.
- *
- * @return 1 if parameter is directory, 0 if it is not, -1 if it does not
- *         exist or could not be accessed.
- */
-static int
-check_is_dir (const char *name)
-{
-  struct stat sb;
-
-  if (stat (name, &sb))
-    {
-      return -1;
-    }
-  else
-    {
-      return (S_ISDIR (sb.st_mode));
-    }
-}
-
-/** @todo Duplicated from lsc_user.c. */
-/**
- * @brief Recursively removes files and directories.
- *
- * This function will recursively call itself to delete a path and any
- * contents of this path.
- *
- * @todo Exported for manage_sql.c.
- *
- * @param[in]  pathname  Name of file to be deleted from filesystem.
- *
- * @return 0 if the name was successfully deleted, -1 if an error occurred.
- */
-int
-file_utils_rmdir_rf (const gchar * pathname)
-{
-  if (check_is_dir (pathname) == 1)
-    {
-      GError *error = NULL;
-      GDir *directory = g_dir_open (pathname, 0, &error);
-
-      if (directory == NULL)
-        {
-          if (error)
-            {
-              g_warning ("g_dir_open(%s) failed - %s\n", pathname, error->message);
-              g_error_free (error);
-            }
-          return -1;
-        }
-      else
-        {
-          int ret = 0;
-          const gchar *entry = NULL;
-
-          while ((entry = g_dir_read_name (directory)) != NULL && (ret == 0))
-            {
-              gchar *entry_path = g_build_filename (pathname, entry, NULL);
-              ret = file_utils_rmdir_rf (entry_path);
-              g_free (entry_path);
-              if (ret != 0)
-                {
-                  g_warning ("Failed to remove %s from %s!", entry, pathname);
-                  g_dir_close (directory);
-                  return ret;
-                }
-            }
-          g_dir_close (directory);
-        }
-    }
-
-  return g_remove (pathname);
 }
 
 /**
@@ -8297,7 +8213,7 @@ strdiff (const gchar *one, const gchar *two)
     {
       g_warning ("%s", error->message);
       g_error_free (error);
-      file_utils_rmdir_rf (dir);
+      openvas_file_rmdir_rf (dir);
       g_free (one_file);
       return NULL;
     }
@@ -8309,7 +8225,7 @@ strdiff (const gchar *one, const gchar *two)
     {
       g_warning ("%s", error->message);
       g_error_free (error);
-      file_utils_rmdir_rf (dir);
+      openvas_file_rmdir_rf (dir);
       g_free (one_file);
       g_free (two_file);
       return NULL;
@@ -8391,7 +8307,7 @@ strdiff (const gchar *one, const gchar *two)
   g_free (standard_err);
   g_free (one_file);
   g_free (two_file);
-  file_utils_rmdir_rf (dir);
+  openvas_file_rmdir_rf (dir);
 
   return ret;
 }

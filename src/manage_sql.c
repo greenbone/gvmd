@@ -56,6 +56,7 @@
 #include <sys/time.h>
 
 #include <openvas/base/openvas_string.h>
+#include <openvas/base/openvas_file.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_uuid.h>
@@ -1168,75 +1169,6 @@ vector_find_string (const gchar **vector, const gchar *string)
     else
       vector++;
   return NULL;
-}
-
-/** @todo Duplicated from lsc_user.c. */
-/**
- * @brief Reads contents from a source file into a destination file.
- *
- * The source file is read into memory, so it is inefficient and likely to fail
- * for really big files.
- *
- * If the destination file does exist already, it will be overwritten.
- *
- * @param[in]  source_file  Source file name.
- * @param[in]  dest_file    Destination file name.
- *
- * @return TRUE if successful, FALSE otherwise.
- */
-static gboolean
-file_utils_copy_file (const gchar *source_file, const gchar *dest_file)
-{
-  gchar *src_file_content = NULL;
-  gsize src_file_size = 0;
-  size_t bytes_written = 0;
-  FILE *fd = NULL;
-  GError *error;
-
-  /* Read file content into memory. */
-
-  error = NULL;
-  if (g_file_get_contents (source_file,
-                           &src_file_content,
-                           &src_file_size,
-                           &error)
-      == FALSE)
-    {
-      if (error)
-        {
-          g_debug ("%s: failed to read %s: %s",
-                   __FUNCTION__, source_file, error->message);
-          g_error_free (error);
-        }
-      return FALSE;
-    }
-
-  /* Open destination file. */
-
-  fd = fopen (dest_file, "wb");
-  if (fd == NULL)
-    {
-      g_debug ("%s: failed to open %s", __FUNCTION__, dest_file);
-      g_free (src_file_content);
-      return FALSE;
-    }
-
-  /* Write content of src to dst and close it. */
-
-  bytes_written = fwrite (src_file_content, 1, (size_t) src_file_size, fd);
-  fclose (fd);
-
-  if (bytes_written != (size_t) src_file_size)
-    {
-      g_debug ("%s: failed to write to %s"
-               " (%zu/%" G_GSIZE_FORMAT ")",
-               __FUNCTION__, dest_file, bytes_written, src_file_size);
-      g_free (src_file_content);
-      return FALSE;
-    }
-  g_free (src_file_content);
-
-  return TRUE;
 }
 
 
@@ -5775,9 +5707,6 @@ migrate_20_to_21 ()
   return 0;
 }
 
-/** @todo Defined in omp.c! */
-int file_utils_rmdir_rf (const gchar *);
-
 /**
  * @brief Migrate the report formats from version 21 to version 22.
  *
@@ -5980,7 +5909,7 @@ migrate_21_to_22 ()
       if (g_file_test (new_dir, G_FILE_TEST_EXISTS))
         {
           if (g_file_test (old_dir, G_FILE_TEST_EXISTS)
-              && file_utils_rmdir_rf (old_dir))
+              && openvas_file_rmdir_rf (old_dir))
             g_warning ("%s: failed to remove %s\n",
                        __FUNCTION__,
                        old_dir);
@@ -6821,7 +6750,7 @@ migrate_37_to_38 ()
                               "global_report_formats",
                               NULL);
 
-  file_utils_rmdir_rf (old_dir);
+  openvas_file_rmdir_rf (old_dir);
   g_free (old_dir);
 
   /* Move user uploaded report formats. */
@@ -7714,7 +7643,7 @@ migrate_54_to_55_format (const char *old_uuid, const char *new_uuid)
                           old_uuid,
                           NULL);
 
-  if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
+  if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_rmdir_rf (dir))
     {
       g_warning ("%s: failed to remove dir %s", __FUNCTION__, dir);
       g_free (dir);
@@ -11279,7 +11208,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
     /* Remove the directory. */
 
-    file_utils_rmdir_rf (report_dir);
+    openvas_file_rmdir_rf (report_dir);
 
     return 0;
   }
@@ -11603,7 +11532,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
     /* Remove the directory. */
 
-    file_utils_rmdir_rf (archive_dir);
+    openvas_file_rmdir_rf (archive_dir);
 
     return 0;
   }
@@ -14201,7 +14130,7 @@ update_report_format_uuid (const char *old, const char *new)
                           NULL);
 
   if (g_file_test (dir, G_FILE_TEST_EXISTS))
-    file_utils_rmdir_rf (dir);
+    openvas_file_rmdir_rf (dir);
   g_free (dir);
 
   sql ("UPDATE report_formats"
@@ -14903,7 +14832,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
                 /* Remove the directory. */
 
                 entry_path = g_build_filename (dir, entry, NULL);
-                ret = file_utils_rmdir_rf (entry_path);
+                ret = openvas_file_rmdir_rf (entry_path);
                 g_free (entry_path);
                 if (ret)
                   {
@@ -25872,7 +25801,7 @@ manage_report (report_t report, report_format_t report_format,
 
         /* Remove the directory. */
 
-        file_utils_rmdir_rf (xml_dir);
+        openvas_file_rmdir_rf (xml_dir);
 
         /* Return the output. */
 
@@ -26424,7 +26353,7 @@ manage_send_report (report_t report, report_t delta_report,
 
         /* Remove the directory. */
 
-        file_utils_rmdir_rf (xml_dir);
+        openvas_file_rmdir_rf (xml_dir);
 
         /* Return the output. */
 
@@ -39770,7 +39699,7 @@ create_report_format (const char *uuid, const char *name,
                               NULL);
     }
 
-  if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
+  if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_rmdir_rf (dir))
     {
       g_warning ("%s: failed to remove dir %s", __FUNCTION__, dir);
       g_free (dir);
@@ -39836,7 +39765,7 @@ create_report_format (const char *uuid, const char *name,
 
       if (strlen (file_name) == 0)
         {
-          file_utils_rmdir_rf (dir);
+          openvas_file_rmdir_rf (dir);
           g_free (dir);
           g_free (quoted_name);
           sql ("ROLLBACK;");
@@ -39861,7 +39790,7 @@ create_report_format (const char *uuid, const char *name,
         {
           g_warning ("%s: %s", __FUNCTION__, error->message);
           g_error_free (error);
-          file_utils_rmdir_rf (dir);
+          openvas_file_rmdir_rf (dir);
           g_free (full_file_name);
           g_free (dir);
           g_free (quoted_name);
@@ -39874,7 +39803,7 @@ create_report_format (const char *uuid, const char *name,
           g_warning ("%s: chmod failed: %s\n",
                      __FUNCTION__,
                      strerror (errno));
-          file_utils_rmdir_rf (dir);
+          openvas_file_rmdir_rf (dir);
           g_free (full_file_name);
           g_free (dir);
           g_free (quoted_name);
@@ -39949,7 +39878,7 @@ create_report_format (const char *uuid, const char *name,
 
       if (param->type == NULL)
         {
-          file_utils_rmdir_rf (dir);
+          openvas_file_rmdir_rf (dir);
           g_free (dir);
           sql ("ROLLBACK;");
           return 7;
@@ -39958,7 +39887,7 @@ create_report_format (const char *uuid, const char *name,
       if (report_format_param_type_from_name (param->type)
           == REPORT_FORMAT_PARAM_TYPE_ERROR)
         {
-          file_utils_rmdir_rf (dir);
+          openvas_file_rmdir_rf (dir);
           g_free (dir);
           sql ("ROLLBACK;");
           return 9;
@@ -39974,7 +39903,7 @@ create_report_format (const char *uuid, const char *name,
           min = strtoll (param->type_min, NULL, 0);
           if (min == LLONG_MIN)
             {
-              file_utils_rmdir_rf (dir);
+              openvas_file_rmdir_rf (dir);
               g_free (dir);
               sql ("ROLLBACK;");
               return 6;
@@ -39988,7 +39917,7 @@ create_report_format (const char *uuid, const char *name,
           max = strtoll (param->type_max, NULL, 0);
           if (max == LLONG_MAX)
             {
-              file_utils_rmdir_rf (dir);
+              openvas_file_rmdir_rf (dir);
               g_free (dir);
               sql ("ROLLBACK;");
               return 6;
@@ -39999,7 +39928,7 @@ create_report_format (const char *uuid, const char *name,
 
       if (param->fallback == NULL)
         {
-          file_utils_rmdir_rf (dir);
+          openvas_file_rmdir_rf (dir);
           g_free (dir);
           sql ("ROLLBACK;");
           return 5;
@@ -40014,7 +39943,7 @@ create_report_format (const char *uuid, const char *name,
                    report_format_rowid))
         {
           g_free (quoted_param_name);
-          file_utils_rmdir_rf (dir);
+          openvas_file_rmdir_rf (dir);
           g_free (dir);
           sql ("ROLLBACK;");
           return 8;
@@ -40049,7 +39978,7 @@ create_report_format (const char *uuid, const char *name,
         options = (array_t*) g_ptr_array_index (params_options, index - 1);
         if (options == NULL)
           {
-            file_utils_rmdir_rf (dir);
+            openvas_file_rmdir_rf (dir);
             g_free (dir);
             sql ("ROLLBACK;");
             return -1;
@@ -40071,7 +40000,7 @@ create_report_format (const char *uuid, const char *name,
       if (validate_param_value (report_format_rowid, param_rowid, param->name,
                                 param->value))
         {
-          file_utils_rmdir_rf (dir);
+          openvas_file_rmdir_rf (dir);
           g_free (dir);
           sql ("ROLLBACK;");
           return 3;
@@ -40080,7 +40009,7 @@ create_report_format (const char *uuid, const char *name,
       if (validate_param_value (report_format_rowid, param_rowid, param->name,
                                 param->fallback))
         {
-          file_utils_rmdir_rf (dir);
+          openvas_file_rmdir_rf (dir);
           g_free (dir);
           sql ("ROLLBACK;");
           return 4;
@@ -40253,7 +40182,7 @@ copy_report_format (const char* name, const char* source_uuid,
                                NULL);
 
   if (g_file_test (copy_dir, G_FILE_TEST_EXISTS)
-      && file_utils_rmdir_rf (copy_dir))
+      && openvas_file_rmdir_rf (copy_dir))
     {
       g_warning ("%s: failed to remove dir %s", __FUNCTION__, copy_dir);
       g_free (source_dir);
@@ -40349,7 +40278,7 @@ copy_report_format (const char* name, const char* source_uuid,
             source_file = g_build_filename (source_dir, filename, NULL);
             copy_file = g_build_filename (copy_dir, filename, NULL);
 
-            if (file_utils_copy_file (source_file, copy_file) == FALSE)
+            if (openvas_file_copy (source_file, copy_file) == FALSE)
             {
               g_warning ("%s: copy of %s to %s failed.\n",
                          "copy_report_format", source_file, copy_file);
@@ -40453,7 +40382,7 @@ delete_report_format (const char *report_format_id, int ultimate)
                               report_format_string,
                               NULL);
       g_free (report_format_string);
-      if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
+      if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_rmdir_rf (dir))
         {
           g_free (dir);
           sql ("ROLLBACK;");
@@ -40490,7 +40419,7 @@ delete_report_format (const char *report_format_id, int ultimate)
     {
       /* Remove directory. */
 
-      if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
+      if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_rmdir_rf (dir))
         {
           g_free (dir);
           sql ("ROLLBACK;");
@@ -44867,7 +44796,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
 
         /* Remove the output directory. */
 
-        file_utils_rmdir_rf (output_dir);
+        openvas_file_rmdir_rf (output_dir);
 
         /* Return the output. */
 
@@ -45663,7 +45592,7 @@ manage_empty_trashcan ()
                           "report_formats_trash",
                           NULL);
 
-  if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
+  if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_rmdir_rf (dir))
     {
       g_warning ("%s: failed to remove trash dir %s", __FUNCTION__, dir);
       g_free (dir);
