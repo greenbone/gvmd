@@ -1857,10 +1857,11 @@ slave_setup (slave_t slave, gnutls_session_t *session, int socket,
                                 "a994b278-1f62-11e1-96ac-406186ea4fc5",
                                 next_result,
                                 &get_report);
-          ret2 = omp_get_report (session, slave_report_uuid,
-                                 "d5da9f67-8551-4e51-807b-b6a873d70e34",
-                                 next_result,
-                                 &get_report);
+          if (ret)
+            ret2 = omp_get_report (session, slave_report_uuid,
+                                   "d5da9f67-8551-4e51-807b-b6a873d70e34",
+                                   next_result,
+                                   &get_report);
           if ((ret == 404) && (ret2 == 404))
             {
               /* Resource Missing. */

@@ -1,5 +1,10 @@
 2013-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (slave_setup): Check if the first GET_REPORT failed
+	before trying the second.
+
+2013-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (slave_setup): Remove trace sleep.  If the slave task or
 	report is missing, or if the status is missing from the GET_TASKS
 	response, then stop trying to contact the slave and put the task into
