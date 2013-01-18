@@ -1452,7 +1452,7 @@ slave_connect (slave_t slave, const char *host, int port, int *socket,
  * @param[out]  target_smb_credential    Target SMB credential.
  * @param[out]  last_stopped_report  Last stopped report if any, else 0.
  *
- * @return 0 success, 1 retry.
+ * @return 0 success, 1 retry, 3 giveup.
  */
 static int
 slave_setup (slave_t slave, gnutls_session_t *session, int socket,
@@ -1596,8 +1596,6 @@ slave_setup (slave_t slave, gnutls_session_t *session, int socket,
               slave_smb_credential_uuid);
 
       /* Create the target on the slave. */
-
-      sleep (100);
 
       init_user_target_iterator (&targets, target, 0, NULL, 0, -1);
       if (next (&targets))
@@ -1789,6 +1787,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int socket,
                                  TASK_STATUS_RESUME_WAITING);
             break;
           case TASK_STATUS_STOP_REQUESTED:
+            // TODO fails due to: resource missing, slave error, slave down
             if (omp_stop_task (session, slave_task_uuid))
               goto fail_stop_task;
             set_task_run_status (current_scanner_task,
@@ -1815,7 +1814,14 @@ slave_setup (slave_t slave, gnutls_session_t *session, int socket,
             break;
         }
 
-      if (omp_get_tasks (session, slave_task_uuid, 0, 0, &get_tasks))
+      ret = omp_get_tasks (session, slave_task_uuid, 0, 0, &get_tasks);
+      if (ret == 404)
+        {
+          /* Resource Missing. */
+          set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+          goto giveup;
+        }
+      else if (ret)
         {
           openvas_server_close (socket, *session);
           sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
@@ -1825,9 +1831,16 @@ slave_setup (slave_t slave, gnutls_session_t *session, int socket,
         }
 
       status = omp_task_status (get_tasks);
+      if (status == NULL)
+        {
+          set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+          goto giveup;
+        }
       if ((strcmp (status, "Running") == 0)
           || (strcmp (status, "Done") == 0))
         {
+          int ret2;
+
           if ((run_status == TASK_STATUS_REQUESTED)
               || (run_status == TASK_STATUS_RESUME_WAITING)
               /* In case someone resumes the task on the slave. */
@@ -1840,14 +1853,21 @@ slave_setup (slave_t slave, gnutls_session_t *session, int socket,
               goto fail_stop_task;
             }
 
-          if (omp_get_report (session, slave_report_uuid,
-                              "a994b278-1f62-11e1-96ac-406186ea4fc5",
-                              next_result,
-                              &get_report)
-              && omp_get_report (session, slave_report_uuid,
+          ret = omp_get_report (session, slave_report_uuid,
+                                "a994b278-1f62-11e1-96ac-406186ea4fc5",
+                                next_result,
+                                &get_report);
+          ret2 = omp_get_report (session, slave_report_uuid,
                                  "d5da9f67-8551-4e51-807b-b6a873d70e34",
                                  next_result,
-                                 &get_report))
+                                 &get_report);
+          if ((ret == 404) && (ret2 == 404))
+            {
+              /* Resource Missing. */
+              set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+              goto giveup;
+            }
+          if (ret && ret2)
             {
               free_entity (get_tasks);
               openvas_server_close (socket, *session);
@@ -1983,6 +2003,10 @@ slave_setup (slave_t slave, gnutls_session_t *session, int socket,
  fail:
   openvas_server_close (socket, *session);
   return 1;
+
+ giveup:
+  openvas_server_close (socket, *session);
+  return 3;
 }
 
 /**

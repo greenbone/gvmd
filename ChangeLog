@@ -1,3 +1,10 @@
+2013-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (slave_setup): Remove trace sleep.  If the slave task or
+	report is missing, or if the status is missing from the GET_TASKS
+	response, then stop trying to contact the slave and put the task into
+	Internal Error.
+
 2013-01-18  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	Rename CERT-DB column num_cves to cve_refs for consistency with CPEs.
