@@ -18363,6 +18363,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
+          if (manage_cert_loaded () == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("get_info",
+                                  "GET_INFO requires the CERT database."));
+              get_info_data_reset (get_info_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
 
           if (get_info_data->name && get_info_data->get.id)
             {
@@ -18650,10 +18659,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      "<dfn_cert_adv>"
                                      "<title>%s</title>"
                                      "<summary>%s</summary>"
-                                     "<num_cves>%s</num_cves>",
+                                     "<cve_refs>%s</cve_refs>",
                                      dfn_cert_adv_info_iterator_title (&info),
                                      dfn_cert_adv_info_iterator_summary (&info),
-                                     dfn_cert_adv_info_iterator_num_cves (&info)
+                                     dfn_cert_adv_info_iterator_cve_refs (&info)
                                     );
                 }
               else if (g_strcmp0 ("nvt", get_info_data->type) == 0)

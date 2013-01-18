@@ -46172,13 +46172,13 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  */
 #define DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS           \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "summary",         \
-   "num_cves",  NULL }
+   "cve_refs",  NULL }
 
 /**
  * @brief DFN_CERT_ADV iterator columns.
  */
 #define DFN_CERT_ADV_INFO_ITERATOR_COLUMNS                       \
-  GET_ITERATOR_COLUMNS ", title, summary, num_cves"
+  GET_ITERATOR_COLUMNS ", title, summary, cve_refs"
 
 
 /**
@@ -46786,7 +46786,7 @@ DEF_ACCESS (dfn_cert_adv_info_iterator_summary, GET_ITERATOR_COLUMN_COUNT + 1);
  *         or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (dfn_cert_adv_info_iterator_num_cves, GET_ITERATOR_COLUMN_COUNT + 2);
+DEF_ACCESS (dfn_cert_adv_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the short file name for an OVALDEF.

@@ -1,3 +1,31 @@
+2013-01-18  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	Rename CERT-DB column num_cves to cve_refs for consistency with CPEs.
+	Check CERT database availability for get_info
+
+	* src/manage.h (dfn_cert_adv_info_iterator_num_cves): Remove, renamed to
+	dfn_cert_adv_info_iterator_cve_refs.
+	(dfn_cert_adv_info_iterator_cve_refs): Add, renamed from
+	dfn_cert_adv_info_iterator_num_cves.
+
+	* src/manage_sql.c (DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS)
+	(DFN_CERT_ADV_INFO_ITERATOR_COLUMNS): Rename num_cves to cve_refs.
+	(dfn_cert_adv_info_iterator_num_cves): Remove, renamed as in manage.h.
+	(dfn_cert_adv_info_iterator_cve_refs): New, renamed as in manage.h.
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_INFO
+	add test if CERT database is loaded.
+	In "dfn_cert_adv" info type branch change <num_cves> to <cve_refs>.
+
+	* tools/cert_db_init.sql: Change version number to 2.
+	(dfn_cert_advs) Change num_cves to cve_refs.
+
+	* tools/dfn_cert_update: Change INSERT to INSERT OR REPLACE.
+	Change num_cves to cve_refs.
+
+	* tools/openvas-cert-sync.in (check_db_version): Add reinit on
+	version 1.
+
 2013-01-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src.omp.c (buffer_notes_xml, buffer_overrides_xml): Increase length

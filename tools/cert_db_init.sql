@@ -32,7 +32,7 @@ DROP TABLE IF EXISTS cert_bund_advs;
 
 /* create new tables and indices */
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "1");
+INSERT INTO meta (name, value) VALUES ("database_version", "2");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
 CREATE TABLE dfn_cert_advs (
@@ -44,6 +44,6 @@ CREATE TABLE dfn_cert_advs (
   modification_time DATE,
   title TEXT,
   summary TEXT,
-  num_cves INTEGER
+  cve_refs INTEGER
 );
 CREATE UNIQUE INDEX dfn_cert_advs_idx ON dfn_cert_advs (name);

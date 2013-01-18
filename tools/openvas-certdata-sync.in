@@ -180,6 +180,7 @@ check_db_version () {
   DB_VERSION=`$SQLITE $CERT_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
     0) reinit;;
+    1) reinit;;
   esac
 }
 

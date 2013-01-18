@@ -45,7 +45,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template match="atom:entry">
   <xsl:choose>
   <xsl:when test="number(translate(substring(atom:updated,1,10),'-','')) &gt; number($refdate)">
-  INSERT INTO dfn_cert_advs (
+  INSERT OR REPLACE INTO dfn_cert_advs (
     uuid,
     name,
     comment,
@@ -53,7 +53,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     modification_time,
     title,
     summary,
-    num_cves
+    cve_refs
   ) VALUES ( 
     "<xsl:value-of select="substring-before(substring-after(atom:id/text(),'https://portal.cert.dfn.de/adv/'),'/')"/>",
     "<xsl:value-of select="substring-before(substring-after(atom:id/text(),'https://portal.cert.dfn.de/adv/'),'/')"/>",
