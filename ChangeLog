@@ -1,3 +1,19 @@
+2013-01-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/lsc_user.c (lsc_user_keys_create, lsc_user_rpm_create)
+	(lsc_user_deb_recreate, lsc_user_exe_recreate, lsc_user_all_create):
+	Call openvas_file_remove_recruse instead of openvas_file_rmdir_rf.
+
+	* src/manage_sql.c (migrate_21_to_22, migrate_37_to_38)
+	(migrate_54_to_55_format, send_to_sourcefire, send_to_verinice)
+	(update_report_format_uuid, init_manage, manage_report)
+	(manage_send_report, create_report_format, copy_report_format)
+	(delete_report_format, manage_schema, manage_empty_trashcan): Call
+	openvas_file_remove_recurse instead of openvas_file_rmdir_rf.
+
+	* src/omp.c (strdiff): Call openvas_file_remove_recurse instead of
+	openvas_file_rmdir_rf.
+
 2013-01-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_setup): New function.  Body is the setup part of

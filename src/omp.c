@@ -8213,7 +8213,7 @@ strdiff (const gchar *one, const gchar *two)
     {
       g_warning ("%s", error->message);
       g_error_free (error);
-      openvas_file_rmdir_rf (dir);
+      openvas_file_remove_recurse (dir);
       g_free (one_file);
       return NULL;
     }
@@ -8225,7 +8225,7 @@ strdiff (const gchar *one, const gchar *two)
     {
       g_warning ("%s", error->message);
       g_error_free (error);
-      openvas_file_rmdir_rf (dir);
+      openvas_file_remove_recurse (dir);
       g_free (one_file);
       g_free (two_file);
       return NULL;
@@ -8307,7 +8307,7 @@ strdiff (const gchar *one, const gchar *two)
   g_free (standard_err);
   g_free (one_file);
   g_free (two_file);
-  openvas_file_rmdir_rf (dir);
+  openvas_file_remove_recurse (dir);
 
   return ret;
 }

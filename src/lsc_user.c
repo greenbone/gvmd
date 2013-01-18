@@ -371,7 +371,7 @@ lsc_user_keys_create (const gchar *name,
 
  rm_key_exit:
 
-  openvas_file_rmdir_rf (key_dir);
+  openvas_file_remove_recurse (key_dir);
 
   return ret;
 }
@@ -529,7 +529,7 @@ lsc_user_rpm_create (const gchar *username,
 
   /* Remove the copy of the public key and the temporary directory. */
 
-  if (openvas_file_rmdir_rf (tmpdir) != 0 && success == TRUE)
+  if (openvas_file_remove_recurse (tmpdir) != 0 && success == TRUE)
     {
       g_debug ("%s: failed to remove temporary directory %s",
                __FUNCTION__, tmpdir);
@@ -636,13 +636,13 @@ lsc_user_rpm_recreate (const gchar *name, const char *public_key,
 
  rm_exit:
 
-  openvas_file_rmdir_rf (rpm_dir);
+  openvas_file_remove_recurse (rpm_dir);
 
  free_exit:
 
   g_free (public_key_path);
 
-  openvas_file_rmdir_rf (key_dir);
+  openvas_file_remove_recurse (key_dir);
 
   return ret;
 }
@@ -814,13 +814,13 @@ lsc_user_deb_recreate (const gchar *name, const char *rpm, gsize rpm_size,
 
  rm_exit:
 
-  openvas_file_rmdir_rf (deb_dir);
+  openvas_file_remove_recurse (deb_dir);
 
  free_exit:
 
   g_free (rpm_path);
 
-  openvas_file_rmdir_rf (rpm_dir);
+  openvas_file_remove_recurse (rpm_dir);
 
   return ret;
 }
@@ -1075,7 +1075,7 @@ lsc_user_exe_recreate (const gchar *name, const gchar *password,
 
  rm_exit:
 
-  openvas_file_rmdir_rf (exe_dir);
+  openvas_file_remove_recurse (exe_dir);
 
   g_free (exe_path);
 
@@ -1249,11 +1249,11 @@ lsc_user_all_create (const gchar *name,
 
  rm_exit:
 
-  openvas_file_rmdir_rf (exe_dir);
+  openvas_file_remove_recurse (exe_dir);
 
  rm_rpm_exit:
 
-  openvas_file_rmdir_rf (rpm_dir);
+  openvas_file_remove_recurse (rpm_dir);
 
  free_exit:
 
@@ -1262,7 +1262,7 @@ lsc_user_all_create (const gchar *name,
 
  rm_key_exit:
 
-  openvas_file_rmdir_rf (key_dir);
+  openvas_file_remove_recurse (key_dir);
 
   return ret;
 }
