@@ -7840,7 +7840,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
       if (include_notes_details == 0)
         {
           const char *text = note_iterator_text (notes);
-          gchar *excerpt = g_strndup (text, 40);
+          gchar *excerpt = g_strndup (text, 60);
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
                                     "<note id=\"%s\">"
@@ -7997,7 +7997,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
       if (include_overrides_details == 0)
         {
           const char *text = override_iterator_text (overrides);
-          gchar *excerpt = g_strndup (text, 40);
+          gchar *excerpt = g_strndup (text, 60);
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
                                     "<override id=\"%s\">"

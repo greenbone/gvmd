@@ -1,3 +1,9 @@
+2013-01-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src.omp.c (buffer_notes_xml, buffer_overrides_xml): Increase length
+	of excerpt from 40 to 60 characters. Even overlong words will not
+	harm the GUI considerably at the new size.
+
 2013-01-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/lsc_user.c (lsc_user_keys_create, lsc_user_rpm_create)
