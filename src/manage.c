@@ -1807,21 +1807,54 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
       switch (run_status)
         {
           case TASK_STATUS_PAUSE_REQUESTED:
-            if (omp_pause_task (session, slave_task_uuid))
-              goto fail_stop_task;
+            switch (omp_pause_task (session, slave_task_uuid))
+              {
+                case 0:
+                  break;
+                case 404:
+                  /* Resource Missing. */
+                  tracef ("   %s: task missing on slave\n", __FUNCTION__);
+                  set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+                  goto giveup;
+                default:
+                  goto fail_stop_task;
+              }
             set_task_run_status (current_scanner_task,
                                  TASK_STATUS_PAUSE_WAITING);
             break;
           case TASK_STATUS_RESUME_REQUESTED:
-            if (omp_resume_paused_task (session, slave_task_uuid))
-              goto fail_stop_task;
+            switch (omp_resume_paused_task (session, slave_task_uuid))
+              {
+                case 0:
+                  break;
+                case 404:
+                  /* Resource Missing. */
+                  tracef ("   %s: task missing on slave\n", __FUNCTION__);
+                  set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+                  goto giveup;
+                default:
+                  goto fail_stop_task;
+              }
             set_task_run_status (current_scanner_task,
                                  TASK_STATUS_RESUME_WAITING);
             break;
           case TASK_STATUS_STOP_REQUESTED:
-            // TODO fails due to: resource missing, slave error, slave down
-            if (omp_stop_task (session, slave_task_uuid))
-              goto fail_stop_task;
+            switch (omp_stop_task (session, slave_task_uuid))
+              {
+                case 0:
+                  break;
+                case 404:
+                  if (ret == 404)
+                    {
+                      /* Resource Missing. */
+                      tracef ("   %s: task missing on slave\n", __FUNCTION__);
+                      set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+                      goto giveup;
+                    }
+                  break;
+                default:
+                  goto fail_stop_task;
+              }
             set_task_run_status (current_scanner_task,
                                  TASK_STATUS_STOP_WAITING);
             break;

@@ -1,5 +1,10 @@
 2013-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (slave_setup): Add 404 check for remaining OMP calls in
+	poll loop.
+
+2013-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add a "stop giveup" task state, that allow the user to set slave tasks
 	to "stopped" when they have been isolated in one of the request states
 	due loss of contact with the slave.
