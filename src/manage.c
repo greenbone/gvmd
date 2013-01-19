@@ -502,6 +502,7 @@ run_status_name (task_status_t status)
 
       case TASK_STATUS_RUNNING:          return "Running";
 
+      case TASK_STATUS_STOP_REQUESTED_GIVEUP:
       case TASK_STATUS_STOP_REQUESTED:
       case TASK_STATUS_STOP_WAITING:
         return "Stop Requested";
@@ -546,6 +547,7 @@ run_status_name_internal (task_status_t status)
 
       case TASK_STATUS_RUNNING:          return "Running";
 
+      case TASK_STATUS_STOP_REQUESTED_GIVEUP:
       case TASK_STATUS_STOP_REQUESTED:
         return "Stop Requested";
 
@@ -1435,6 +1437,36 @@ slave_connect (slave_t slave, const char *host, int port, int *socket,
 }
 
 /**
+ * @brief Sleep then connect to slave.  Retry until success or giveup requested.
+ *
+ * @param[in]   slave    Slave.
+ * @param[in]   host     Host.
+ * @param[in]   port     Port.
+ * @param[in]   task     Local task.
+ * @param[out]  socket   Socket.
+ * @param[out]  session  Session.
+ *
+ * @return 0 success, 3 giveup.
+ */
+static int
+slave_sleep_connect (slave_t slave, const char *host, int port, task_t task,
+                     int *socket, gnutls_session_t *session)
+{
+  do
+    {
+      if (task_run_status (task) == TASK_STATUS_STOP_REQUESTED_GIVEUP)
+        {
+          tracef ("   %s: task stopped for giveup\n", __FUNCTION__);
+          set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
+          return 3;
+        }
+      sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+    }
+  while (slave_connect (slave, host, port, socket, session));
+  return 0;
+}
+
+/**
  * @brief Setup a task on a slave.
  *
  * @param[in]   slave       Slave.
@@ -1455,7 +1487,7 @@ slave_connect (slave_t slave, const char *host, int port, int *socket,
  * @return 0 success, 1 retry, 3 giveup.
  */
 static int
-slave_setup (slave_t slave, gnutls_session_t *session, int socket,
+slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
              const char *name, const char *host, int port, task_t task,
              target_t target, lsc_credential_t target_ssh_credential,
              lsc_credential_t target_smb_credential,
@@ -1793,6 +1825,11 @@ slave_setup (slave_t slave, gnutls_session_t *session, int socket,
             set_task_run_status (current_scanner_task,
                                  TASK_STATUS_STOP_WAITING);
             break;
+          case TASK_STATUS_STOP_REQUESTED_GIVEUP:
+            tracef ("   %s: task stopped for giveup\n", __FUNCTION__);
+            set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
+            goto giveup;
+            break;
           case TASK_STATUS_PAUSED:
             /* Keep doing the status checks even though the task is paused, in
              * case someone resumes the task on the slave. */
@@ -1818,21 +1855,23 @@ slave_setup (slave_t slave, gnutls_session_t *session, int socket,
       if (ret == 404)
         {
           /* Resource Missing. */
+          tracef ("   %s: task missing on slave\n", __FUNCTION__);
           set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
           goto giveup;
         }
       else if (ret)
         {
-          openvas_server_close (socket, *session);
-          sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
-          while (slave_connect (slave, host, port, &socket, session))
-            sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+          openvas_server_close (*socket, *session);
+          ret = slave_sleep_connect (slave, host, port, task, socket, session);
+          if (ret == 3)
+            goto giveup;
           continue;
         }
 
       status = omp_task_status (get_tasks);
       if (status == NULL)
         {
+          tracef ("   %s: status was NULL\n", __FUNCTION__);
           set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
           goto giveup;
         }
@@ -1865,16 +1904,18 @@ slave_setup (slave_t slave, gnutls_session_t *session, int socket,
           if ((ret == 404) && (ret2 == 404))
             {
               /* Resource Missing. */
+              tracef ("   %s: report missing on slave\n", __FUNCTION__);
               set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
               goto giveup;
             }
           if (ret && ret2)
             {
               free_entity (get_tasks);
-              openvas_server_close (socket, *session);
-              sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
-              while (slave_connect (slave, host, port, &socket, session))
-                sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+              openvas_server_close (*socket, *session);
+              ret = slave_sleep_connect (slave, host, port, task, socket,
+                                         session);
+              if (ret == 3)
+                goto giveup;
               continue;
             }
 
@@ -1979,7 +2020,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int socket,
   free (slave_target_uuid);
   free (slave_smb_credential_uuid);
   free (slave_ssh_credential_uuid);
-  openvas_server_close (socket, *session);
+  openvas_server_close (*socket, *session);
   return 0;
 
  fail_stop_task:
@@ -2002,11 +2043,11 @@ slave_setup (slave_t slave, gnutls_session_t *session, int socket,
   omp_delete_lsc_credential (session, slave_ssh_credential_uuid);
   free (slave_ssh_credential_uuid);
  fail:
-  openvas_server_close (socket, *session);
+  openvas_server_close (*socket, *session);
   return 1;
 
  giveup:
-  openvas_server_close (socket, *session);
+  openvas_server_close (*socket, *session);
   return 3;
 }
 
@@ -2072,17 +2113,16 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
 
   while (1)
     {
-      ret = slave_setup (slave, &session, socket, name, host, port, task,
+      ret = slave_setup (slave, &session, &socket, name, host, port, task,
                          target, target_ssh_credential, target_smb_credential,
                          last_stopped_report);
       if (ret == 1)
         {
-          sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
-          while (slave_connect (slave, host, port, &socket, &session))
-            sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+          ret = slave_sleep_connect (slave, host, port, task, &socket, &session);
+          if (ret == 3)
+            /* User requested "giveup". */
+            break;
         }
-      else if (ret == 2)
-        sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
       else
         break;
     }
@@ -2746,6 +2786,18 @@ stop_task (task_t task)
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
       return 1;
     }
+  else if ((run_status == TASK_STATUS_DELETE_REQUESTED
+            || run_status == TASK_STATUS_STOP_REQUESTED
+            || run_status == TASK_STATUS_STOP_WAITING
+            || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED)
+           && task_slave (task))
+    {
+      /* A special request from the user to get the task out of a requested
+       * state when contact with the slave is lost. */
+      set_task_run_status (task, TASK_STATUS_STOP_REQUESTED_GIVEUP);
+      return 1;
+    }
+
   return 0;
 }
 
@@ -2950,6 +3002,9 @@ manage_check_current_task ()
                                  TASK_STATUS_RESUME_WAITING);
             return 1;
             break;
+          case TASK_STATUS_STOP_REQUESTED_GIVEUP:
+            /* This should only happen for slave tasks. */
+            assert (0);
           case TASK_STATUS_STOP_REQUESTED:
             if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
               return -1;

@@ -1,3 +1,27 @@
+2013-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add a "stop giveup" task state, that allow the user to set slave tasks
+	to "stopped" when they have been isolated in one of the request states
+	due loss of contact with the slave.
+
+	* src/manage.c (run_status_name, run_status_name_internal): Handle "stop
+	giveup" like "stop requested".
+	(slave_sleep_connect): New function.  Loops trying to connect to slave,
+	as before, but also checks for "stop giveup".
+	(slave_setup): Check for "stop giveup" in the poll loop.  Call
+	slave_sleep_connect to do the connecting.
+	(run_slave_task): Call slave_sleep_connect to do the connecting.
+	(stop_task): For slave tasks that are in the states that can orphan the
+	task from the user, put the task in the new "stop giveup" state to tell
+	the run_slave_task process.  The run_slave_task process will giveup on
+	the slave and set the task to "stopped".
+	(manage_check_current_task): Handle "stop giveup" like "stop requested".
+
+	* src/manage.h (task_status_t): Add TASK_STATUS_STOP_REQUESTED_GIVEUP.
+
+	* src/manage_sql.c (task_in_use, init_manage, set_task_requested)
+	(task_current_report, delete_report): Handle "stop giveup" state.
+
 2013-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_setup): Check if the first GET_REPORT failed

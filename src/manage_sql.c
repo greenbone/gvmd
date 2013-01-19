@@ -12701,6 +12701,7 @@ task_in_use (task_t task)
          || status == TASK_STATUS_RESUME_REQUESTED
          || status == TASK_STATUS_RESUME_WAITING
          || status == TASK_STATUS_RUNNING
+         || status == TASK_STATUS_STOP_REQUESTED_GIVEUP
          || status == TASK_STATUS_STOP_REQUESTED
          || status == TASK_STATUS_STOP_WAITING;
 }
@@ -14904,6 +14905,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
               case TASK_STATUS_RESUME_REQUESTED:
               case TASK_STATUS_RESUME_WAITING:
               case TASK_STATUS_RUNNING:
+              case TASK_STATUS_STOP_REQUESTED_GIVEUP:
               case TASK_STATUS_STOP_REQUESTED:
               case TASK_STATUS_STOP_WAITING:
                 {
@@ -14934,6 +14936,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " OR scan_run_status = %u"
            " OR scan_run_status = %u"
            " OR scan_run_status = %u"
+           " OR scan_run_status = %u"
            " OR scan_run_status = %u;",
            TASK_STATUS_STOPPED,
            TASK_STATUS_DELETE_REQUESTED,
@@ -14946,6 +14949,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TASK_STATUS_RESUME_WAITING,
            TASK_STATUS_RUNNING,
            TASK_STATUS_STOP_REQUESTED,
+           TASK_STATUS_STOP_REQUESTED_GIVEUP,
            TASK_STATUS_STOP_WAITING);
     }
 
@@ -15626,6 +15630,7 @@ set_task_requested (task_t task, task_status_t *status)
       || run_status == TASK_STATUS_RESUME_REQUESTED
       || run_status == TASK_STATUS_RESUME_WAITING
       || run_status == TASK_STATUS_STOP_REQUESTED
+      || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
       || run_status == TASK_STATUS_STOP_WAITING
       || run_status == TASK_STATUS_DELETE_REQUESTED
       || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED)
@@ -15681,6 +15686,7 @@ task_current_report (task_t task)
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
       || run_status == TASK_STATUS_STOP_REQUESTED
+      || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
       || run_status == TASK_STATUS_STOPPED
       || run_status == TASK_STATUS_PAUSE_REQUESTED
       || run_status == TASK_STATUS_PAUSED
@@ -15695,11 +15701,13 @@ task_current_report (task_t task)
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
+                                     " OR scan_run_status = %u"
                                      " OR scan_run_status = %u);",
                                      task,
                                      TASK_STATUS_REQUESTED,
                                      TASK_STATUS_RUNNING,
                                      TASK_STATUS_STOP_REQUESTED,
+                                     TASK_STATUS_STOP_REQUESTED_GIVEUP,
                                      TASK_STATUS_STOPPED,
                                      TASK_STATUS_PAUSE_REQUESTED,
                                      TASK_STATUS_PAUSED,
@@ -21536,8 +21544,7 @@ delete_report (report_t report)
                " OR scan_run_status = %u OR scan_run_status = %u"
                " OR scan_run_status = %u OR scan_run_status = %u"
                " OR scan_run_status = %u OR scan_run_status = %u"
-               " OR scan_run_status = %u OR scan_run_status = %u"
-               " OR scan_run_status = %u);",
+               " OR scan_run_status = %u OR scan_run_status = %u);",
                report,
                TASK_STATUS_RUNNING,
                TASK_STATUS_PAUSE_REQUESTED,
@@ -21549,6 +21556,7 @@ delete_report (report_t report)
                TASK_STATUS_DELETE_REQUESTED,
                TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
                TASK_STATUS_STOP_REQUESTED,
+               TASK_STATUS_STOP_REQUESTED_GIVEUP,
                TASK_STATUS_STOP_WAITING))
     return 2;
 
