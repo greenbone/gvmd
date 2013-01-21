@@ -64,6 +64,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     "<xsl:value-of select="str:replace(atom:summary/text(), '&quot;', '&quot;&quot;')"/>",
     <xsl:value-of select="count(dfncert:cve)"/>
   );
+  <xsl:for-each select="dfncert:cve">
+  INSERT OR REPLACE INTO dfn_cert_cves (
+    adv_id,
+    cve_name
+  ) VALUES (
+    (SELECT id FROM dfn_cert_advs WHERE name = "<xsl:value-of select="substring-before(substring-after(../atom:id/text(),'https://portal.cert.dfn.de/adv/'),'/')"/>"),
+    "<xsl:value-of select="."/>"
+  );
+  </xsl:for-each>
   </xsl:when>
   <xsl:otherwise>
   /* filtered entry dated <xsl:value-of select="atom:updated/text()"/> */

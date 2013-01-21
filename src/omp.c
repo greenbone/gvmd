@@ -18619,6 +18619,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (get_info_data->details == 1)
                     {
                       iterator_t nvts;
+                      iterator_t cert_advs;
                       init_cve_nvt_iterator (&nvts,  get_iterator_name (&info), 1, NULL);
                       g_string_append (result, "<nvts>");
                       while (next (&nvts))
@@ -18630,6 +18631,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            nvt_iterator_name (&nvts));
                       g_string_append (result, "</nvts>");
                       cleanup_iterator (&nvts);
+
+                      g_string_append (result, "<cert>");
+                      init_cve_dfn_cert_adv_iterator (&cert_advs,
+                                                      get_iterator_name (&info),
+                                                      1, NULL);
+                      while (next (&cert_advs))
+                        {
+                          xml_string_append (result,
+                                             "<cert_ref type=\"DFN-CERT\">"
+                                             "<name>%s</name>"
+                                             "<title>%s</title>"
+                                             "</cert_ref>",
+                                             get_iterator_name (&cert_advs),
+                                             dfn_cert_adv_info_iterator_title
+                                               (&cert_advs));
+                        };
+                      cleanup_iterator (&cert_advs);
+                      g_string_append (result, "</cert>");
                     }
                 }
               else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)

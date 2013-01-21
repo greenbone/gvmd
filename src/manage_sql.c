@@ -46797,6 +46797,30 @@ DEF_ACCESS (dfn_cert_adv_info_iterator_summary, GET_ITERATOR_COLUMN_COUNT + 1);
 DEF_ACCESS (dfn_cert_adv_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
+ * @brief Initialise CVE iterator, for CVEs referenced by a DFN-CERT advisory.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  adv         Name of the DFN-CERT advisory.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ */
+void
+init_cve_dfn_cert_adv_iterator (iterator_t *iterator, const char *cve,
+                                int ascending, const char *sort_field)
+{
+  assert (cve);
+  init_iterator (iterator,
+                 "SELECT " DFN_CERT_ADV_INFO_ITERATOR_COLUMNS
+                 " FROM dfn_cert_advs WHERE id IN"
+                 "   (SELECT adv_id FROM dfn_cert_cves"
+                 "    WHERE cve_name = '%s')"
+                 " ORDER BY %s %s;",
+                 cve,
+                 sort_field ? sort_field : "name",
+                 ascending ? "ASC" : "DESC");
+}
+
+/**
  * @brief Get the short file name for an OVALDEF.
  *
  * @param[in]  name  Full OVAL identifier.

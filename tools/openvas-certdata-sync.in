@@ -181,6 +181,7 @@ check_db_version () {
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
+    2) reinit;;
   esac
 }
 

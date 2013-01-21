@@ -1,3 +1,27 @@
+2013-01-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add DFN-CERT advisories referencing CVEs to CVE get_info details.
+
+	* src/manage.h (init_cve_dfn_cert_adv_iterator): Add new iterator for
+	DFN-CERT advisories referencing CVEs.
+
+	* src/manage_sql.c (init_cve_dfn_cert_adv_iterator): Add new iterator
+	for DFN-CERT advisories referencing CVEs.
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_INFO,
+	"cve" info type branch add output of referencing CERT advisories.
+
+	* tools/cert_db_init.sql: Change version number to 3.
+	(dfn_cert_cves, dfn_cert_cves_adv_idx, dfn_cert_cves_cve_idx): Add table
+	drops and definition as well as indices.
+	(dfn_cert_cert_adv_delete): Add deletion trigger on dfn_cert_adv.
+
+	* tools/dfn_cert_update: Add INSERT OR REPLACEs of CVEs into
+	dfn_cert_cves.
+
+	* tools/openvas-cert-sync.in (check_db_version): Add reinit on
+	version 2.
+
 2013-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_setup): Add 404 check for remaining OMP calls in
