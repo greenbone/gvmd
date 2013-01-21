@@ -1,5 +1,10 @@
 2013-01-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS)
+	(DFN_CERT_ADV_INFO_ITERATOR_COLUMNS): Change cve_refs to use alias cves.
+
+2013-01-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add DFN-CERT advisories referencing CVEs to CVE get_info details.
 
 	* src/manage.h (init_cve_dfn_cert_adv_iterator): Add new iterator for

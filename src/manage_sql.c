@@ -46180,13 +46180,13 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  */
 #define DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS           \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "summary",         \
-   "cve_refs",  NULL }
+   "cves",  NULL }
 
 /**
  * @brief DFN_CERT_ADV iterator columns.
  */
 #define DFN_CERT_ADV_INFO_ITERATOR_COLUMNS                       \
-  GET_ITERATOR_COLUMNS ", title, summary, cve_refs"
+  GET_ITERATOR_COLUMNS ", title, summary, cve_refs AS cves"
 
 
 /**
