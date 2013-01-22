@@ -45782,7 +45782,7 @@ char *
 setting_filter (const char *resource)
 {
   return sql_string (0, 0,
-                     " SELECT value FROM settings WHERE name = '%s_filter'",
+                     " SELECT value FROM settings WHERE name = '%s Filter'",
                      resource);
 }
 
@@ -46078,24 +46078,24 @@ manage_set_setting (const gchar *uuid, const gchar *name,
     }
 
   /* Resources filters. */
-  if (name && (strcmp (name, "agents_filter") == 0
-               || strcmp (name, "alerts_filter") == 0
-               || strcmp (name, "configs_filter") == 0
-               || strcmp (name, "lsc_credentials_filter") == 0
-               || strcmp (name, "filters_filter") == 0
-               || strcmp (name, "notes_filter") == 0
-               || strcmp (name, "overrides_filter") == 0
-               || strcmp (name, "port_lists_filter") == 0
-               || strcmp (name, "report_formats_filter") == 0
-               || strcmp (name, "schedules_filter") == 0
-               || strcmp (name, "slaves_filter") == 0
-               || strcmp (name, "targets_filter") == 0
-               || strcmp (name, "tasks_filter") == 0
-               || strcmp (name, "info_cpe_filter") == 0
-               || strcmp (name, "info_cve_filter") == 0
-               || strcmp (name, "info_nvt_filter") == 0
-               || strcmp (name, "info_ovaldef_filter") == 0
-               || strcmp (name, "info_dfn_cert_adv_filter") == 0))
+  if (name && (strcmp (name, "Agents Filter") == 0
+               || strcmp (name, "Alerts Filter") == 0
+               || strcmp (name, "Configs Filter") == 0
+               || strcmp (name, "Credentials Filter") == 0
+               || strcmp (name, "Filters Filter") == 0
+               || strcmp (name, "Notes Filter") == 0
+               || strcmp (name, "Overrides Filter") == 0
+               || strcmp (name, "Port Lists Filter") == 0
+               || strcmp (name, "Report Formats Filter") == 0
+               || strcmp (name, "Schedules Filter") == 0
+               || strcmp (name, "Slaves Filter") == 0
+               || strcmp (name, "Targets Filter") == 0
+               || strcmp (name, "Tasks Filter") == 0
+               || strcmp (name, "CPE Filter") == 0
+               || strcmp (name, "CVE Filter") == 0
+               || strcmp (name, "NVT Filter") == 0
+               || strcmp (name, "OVAL Filter") == 0
+               || strcmp (name, "DFN-CERT Filter") == 0))
     {
       gchar *quoted_name, *quoted_value;
 

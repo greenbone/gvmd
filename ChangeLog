@@ -1,3 +1,8 @@
+2013-01-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (manage_set_setting, setting_filter)
+	(omp_xml_handle_end_element): Adapt to settings filters name change
+
 2013-01-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	When delete of an active task is requested, ensure that the OTP stop
