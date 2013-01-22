@@ -483,8 +483,11 @@ run_status_name (task_status_t status)
 {
   switch (status)
     {
-      case TASK_STATUS_DELETE_REQUESTED: return "Delete Requested";
+      case TASK_STATUS_DELETE_REQUESTED:
+      case TASK_STATUS_DELETE_WAITING:
+        return "Delete Requested";
       case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
+      case TASK_STATUS_DELETE_ULTIMATE_WAITING:
         return "Ultimate Delete Requested";
       case TASK_STATUS_DONE:             return "Done";
       case TASK_STATUS_NEW:              return "New";
@@ -527,6 +530,9 @@ run_status_name_internal (task_status_t status)
       case TASK_STATUS_DELETE_REQUESTED: return "Delete Requested";
       case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
         return "Ultimate Delete Requested";
+      case TASK_STATUS_DELETE_ULTIMATE_WAITING:
+        return "Ultimate Delete Waiting";
+      case TASK_STATUS_DELETE_WAITING:   return "Delete Waiting";
       case TASK_STATUS_DONE:             return "Done";
       case TASK_STATUS_NEW:              return "New";
 
@@ -1838,6 +1844,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             set_task_run_status (current_scanner_task,
                                  TASK_STATUS_RESUME_WAITING);
             break;
+          case TASK_STATUS_DELETE_REQUESTED:
+          case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
           case TASK_STATUS_STOP_REQUESTED:
             switch (omp_stop_task (session, slave_task_uuid))
               {
@@ -1855,8 +1863,15 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                 default:
                   goto fail_stop_task;
               }
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_STOP_WAITING);
+            if (run_status == TASK_STATUS_DELETE_REQUESTED)
+              set_task_run_status (current_scanner_task,
+                                   TASK_STATUS_DELETE_WAITING);
+            else if (run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED)
+              set_task_run_status (current_scanner_task,
+                                   TASK_STATUS_DELETE_ULTIMATE_WAITING);
+            else
+              set_task_run_status (current_scanner_task,
+                                   TASK_STATUS_STOP_WAITING);
             break;
           case TASK_STATUS_STOP_REQUESTED_GIVEUP:
             tracef ("   %s: task stopped for giveup\n", __FUNCTION__);
@@ -1873,8 +1888,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             break;
           case TASK_STATUS_PAUSE_WAITING:
           case TASK_STATUS_RESUME_WAITING:
-          case TASK_STATUS_DELETE_REQUESTED:
-          case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
+          case TASK_STATUS_DELETE_WAITING:
+          case TASK_STATUS_DELETE_ULTIMATE_WAITING:
           case TASK_STATUS_DONE:
           case TASK_STATUS_NEW:
           case TASK_STATUS_REQUESTED:
@@ -2820,9 +2835,11 @@ stop_task (task_t task)
       return 1;
     }
   else if ((run_status == TASK_STATUS_DELETE_REQUESTED
+            || run_status == TASK_STATUS_DELETE_WAITING
+            || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
+            || run_status == TASK_STATUS_DELETE_ULTIMATE_WAITING
             || run_status == TASK_STATUS_STOP_REQUESTED
-            || run_status == TASK_STATUS_STOP_WAITING
-            || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED)
+            || run_status == TASK_STATUS_STOP_WAITING)
            && task_slave (task))
     {
       /* A special request from the user to get the task out of a requested
@@ -3046,7 +3063,21 @@ manage_check_current_task ()
             return 1;
             break;
           case TASK_STATUS_DELETE_REQUESTED:
+            if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
+              return -1;
+            set_task_run_status (current_scanner_task,
+                                 TASK_STATUS_DELETE_WAITING);
+            return 1;
+            break;
           case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
+            if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
+              return -1;
+            set_task_run_status (current_scanner_task,
+                                 TASK_STATUS_DELETE_ULTIMATE_WAITING);
+            return 1;
+            break;
+          case TASK_STATUS_DELETE_WAITING:
+          case TASK_STATUS_DELETE_ULTIMATE_WAITING:
           case TASK_STATUS_DONE:
           case TASK_STATUS_NEW:
           case TASK_STATUS_REQUESTED:

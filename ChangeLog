@@ -1,3 +1,27 @@
+2013-01-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	When delete of an active task is requested, ensure that the OTP stop
+	request will be sent, so that the task can end and be deleted.
+
+	* src/manage.h (TASK_STATUS_DELETE_WAITING)
+	(TASK_STATUS_DELETE_ULTIMATE_WAITING): New states.
+
+	* src/manage.c (run_status_name, run_status_name_internal, slave_setup)
+	(stop_task): Handle new states.
+	(manage_check_current_task): In the delete requested states, send
+	STOP_WHOLE_TEST to the scanner, and switch to the delete waiting states.
+
+	* src/manage_sql.c (task_in_use, init_manage, set_task_requested)
+	(task_current_report): Handle new states.
+	(request_delete_task): Request delete ultimate in the requested state,
+	to match other case.
+	(request_delete_task_uuid): Match delete states to ultimate flag
+	correctly.
+
+	* src/otp.c (process_otp_scanner_input): In SCANNER_TIME_SCAN_END handle
+	new delete states and marked the task stopped otherwise it has a delete
+	state in the trashcan.
+
 2013-01-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/db_postgres.sql: Replace tabs with spaces.

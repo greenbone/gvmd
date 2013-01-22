@@ -2564,10 +2564,14 @@ process_otp_scanner_input ()
                                                  TASK_STATUS_STOPPED);
                             break;
                           case TASK_STATUS_DELETE_REQUESTED:
+                          case TASK_STATUS_DELETE_WAITING:
                             delete_task_lock (current_scanner_task, 0);
+                            set_task_run_status (current_scanner_task,
+                                                 TASK_STATUS_STOPPED);
                             current_report = (report_t) 0;
                             break;
                           case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
+                          case TASK_STATUS_DELETE_ULTIMATE_WAITING:
                             delete_task_lock (current_scanner_task, 1);
                             current_report = (report_t) 0;
                             break;

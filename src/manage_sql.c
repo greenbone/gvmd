@@ -12693,7 +12693,9 @@ task_in_use (task_t task)
   task_status_t status;
   status = task_run_status (task);
   return status == TASK_STATUS_DELETE_REQUESTED
+         || status == TASK_STATUS_DELETE_WAITING
          || status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
+         || status == TASK_STATUS_DELETE_ULTIMATE_WAITING
          || status == TASK_STATUS_PAUSE_REQUESTED
          || status == TASK_STATUS_PAUSE_WAITING
          || status == TASK_STATUS_PAUSED
@@ -14898,6 +14900,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
             {
               case TASK_STATUS_DELETE_REQUESTED:
               case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
+              case TASK_STATUS_DELETE_ULTIMATE_WAITING:
+              case TASK_STATUS_DELETE_WAITING:
               case TASK_STATUS_PAUSE_REQUESTED:
               case TASK_STATUS_PAUSE_WAITING:
               case TASK_STATUS_PAUSED:
@@ -14937,10 +14941,14 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " OR scan_run_status = %u"
            " OR scan_run_status = %u"
            " OR scan_run_status = %u"
+           " OR scan_run_status = %u"
+           " OR scan_run_status = %u"
            " OR scan_run_status = %u;",
            TASK_STATUS_STOPPED,
            TASK_STATUS_DELETE_REQUESTED,
            TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
+           TASK_STATUS_DELETE_ULTIMATE_WAITING,
+           TASK_STATUS_DELETE_WAITING,
            TASK_STATUS_PAUSE_REQUESTED,
            TASK_STATUS_PAUSE_WAITING,
            TASK_STATUS_PAUSED,
@@ -15633,7 +15641,9 @@ set_task_requested (task_t task, task_status_t *status)
       || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
       || run_status == TASK_STATUS_STOP_WAITING
       || run_status == TASK_STATUS_DELETE_REQUESTED
-      || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED)
+      || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
+      || run_status == TASK_STATUS_DELETE_ULTIMATE_WAITING
+      || run_status == TASK_STATUS_DELETE_WAITING)
     {
       sql ("END;");
       *status = run_status;
@@ -15685,6 +15695,8 @@ task_current_report (task_t task)
   task_status_t run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
+      || run_status == TASK_STATUS_DELETE_REQUESTED
+      || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
       || run_status == TASK_STATUS_STOPPED
@@ -15702,10 +15714,14 @@ task_current_report (task_t task)
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
+                                     " OR scan_run_status = %u"
+                                     " OR scan_run_status = %u"
                                      " OR scan_run_status = %u);",
                                      task,
                                      TASK_STATUS_REQUESTED,
                                      TASK_STATUS_RUNNING,
+                                     TASK_STATUS_DELETE_REQUESTED,
+                                     TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
                                      TASK_STATUS_STOP_REQUESTED,
                                      TASK_STATUS_STOP_REQUESTED_GIVEUP,
                                      TASK_STATUS_STOPPED,
@@ -27037,7 +27053,7 @@ request_delete_task (task_t* task_pointer)
       case 0:    /* Stopped. */
         return delete_task_lock (task, 1);
       case 1:    /* Stop requested. */
-        set_task_run_status (task, TASK_STATUS_DELETE_REQUESTED);
+        set_task_run_status (task, TASK_STATUS_DELETE_ULTIMATE_REQUESTED);
         return 1;
       default:   /* Programming error. */
         assert (0);
@@ -27148,9 +27164,11 @@ request_delete_task_uuid (const char *task_id, int ultimate)
         }
       case 1:    /* Stop requested. */
         if (ultimate)
-          set_task_run_status (task, TASK_STATUS_DELETE_REQUESTED);
+          set_task_run_status (task,
+                               TASK_STATUS_DELETE_ULTIMATE_REQUESTED);
         else
-          set_task_run_status (task, TASK_STATUS_DELETE_ULTIMATE_REQUESTED);
+          set_task_run_status (task,
+                               TASK_STATUS_DELETE_REQUESTED);
         sql ("COMMIT;");
         return 1;
       default:   /* Programming error. */
