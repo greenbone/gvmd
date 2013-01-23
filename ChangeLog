@@ -1,3 +1,7 @@
+2013-01-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (setting_value_int): Indentation update.
+
 2013-01-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Improve IPv6 address validation.
