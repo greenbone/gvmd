@@ -315,6 +315,8 @@ update_scap_db() {
   else
     log_write " Warning: No XML files found in $SCAP_DIR/oval/."
   fi
+
+  sqlite3 $SCAP_DB "update meta set value ='`date +%s`' where name = 'last_update';"
 }
 
 sync_scapdata(){
