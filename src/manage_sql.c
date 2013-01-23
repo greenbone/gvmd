@@ -45960,6 +45960,8 @@ int
 manage_set_setting (const gchar *uuid, const gchar *name,
                     const gchar *value_64)
 {
+  char *filter_name;
+
   assert (current_credentials.uuid);
 
   if (name && (strcmp (name, "Timezone") == 0))
@@ -45999,7 +46001,8 @@ manage_set_setting (const gchar *uuid, const gchar *name,
                                   NULL, NULL, 0, OPENVAS_USERS_DIR, NULL);
     }
 
-  if (uuid)
+  if (uuid && (strcmp (uuid, "5f5a8712-8017-11e1-8556-406186ea4fc5") == 0
+               || strcmp (uuid, "20f3034c-e709-11e1-87e7-406186ea4fc5") == 0))
     {
       gsize value_size;
       gchar *value, *quoted_uuid, *quoted_value;
@@ -46078,61 +46081,102 @@ manage_set_setting (const gchar *uuid, const gchar *name,
     }
 
   /* Resources filters. */
-  if (name && (strcmp (name, "Agents Filter") == 0
-               || strcmp (name, "Alerts Filter") == 0
-               || strcmp (name, "Configs Filter") == 0
-               || strcmp (name, "Credentials Filter") == 0
-               || strcmp (name, "Filters Filter") == 0
-               || strcmp (name, "Notes Filter") == 0
-               || strcmp (name, "Overrides Filter") == 0
-               || strcmp (name, "Port Lists Filter") == 0
-               || strcmp (name, "Report Formats Filter") == 0
-               || strcmp (name, "Schedules Filter") == 0
-               || strcmp (name, "Slaves Filter") == 0
-               || strcmp (name, "Targets Filter") == 0
-               || strcmp (name, "Tasks Filter") == 0
-               || strcmp (name, "CPE Filter") == 0
-               || strcmp (name, "CVE Filter") == 0
-               || strcmp (name, "NVT Filter") == 0
-               || strcmp (name, "OVAL Filter") == 0
-               || strcmp (name, "DFN-CERT Filter") == 0))
+
+  if (uuid)
     {
-      gchar *quoted_name, *quoted_value;
+      if (strcmp (uuid, "4a1334c1-cb93-4a79-8634-103b0a50bdcd") == 0)
+        filter_name = g_strdup ("Agents Filter");
+      else if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
+        filter_name = g_strdup ("Alerts Filter");
+      else if (strcmp (uuid, "1a9fbd91-0182-44cd-bc88-a13a9b3b1bef") == 0)
+        filter_name = g_strdup ("Configs Filter");
+      else if (strcmp (uuid, "186a5ac8-fe5a-4fb1-aa22-44031fb339f3") == 0)
+        filter_name = g_strdup ("Credentials Filter");
+      else if (strcmp (uuid, "f9691163-976c-47e7-ad9a-38f2d5c81649") == 0)
+        filter_name = g_strdup ("Filters Filter");
+      else if (strcmp (uuid, "96abcd5a-9b6d-456c-80b8-c3221bfa499d") == 0)
+        filter_name = g_strdup ("Notes Filter");
+      else if (strcmp (uuid, "eaaaebf1-01ef-4c49-b7bb-955461c78e0a") == 0)
+        filter_name = g_strdup ("Overrides Filter");
+      else if (strcmp (uuid, "7d52d575-baeb-4d98-bb68-e1730dbc6236") == 0)
+        filter_name = g_strdup ("Port Lists Filter");
+      else if (strcmp (uuid, "249c7a55-065c-47fb-b453-78e11a665565") == 0)
+        filter_name = g_strdup ("Report Formats Filter");
+      else if (strcmp (uuid, "a83e321b-d994-4ae8-beec-bfb5fe3e7336") == 0)
+        filter_name = g_strdup ("Schedules Filter");
+      else if (strcmp (uuid, "2681c32a-8dfd-40c9-a9c6-8d4e2c7799eb") == 0)
+        filter_name = g_strdup ("Slaves Filter");
+      else if (strcmp (uuid, "236e2e41-9771-4e7a-8124-c432045985e0") == 0)
+        filter_name = g_strdup ("Targets Filter");
+      else if (strcmp (uuid, "1c981851-8244-466c-92c4-865ffe05e721") == 0)
+        filter_name = g_strdup ("Tasks Filter");
+      else if (strcmp (uuid, "3414a107-ae46-4dea-872d-5c4479a48e8f") == 0)
+        filter_name = g_strdup ("CPE Filter");
+      else if (strcmp (uuid, "def63b5a-41ef-43f4-b9ef-03ef1665db5d") == 0)
+        filter_name = g_strdup ("CVE Filter");
+      else if (strcmp (uuid, "bef08b33-075c-4f8c-84f5-51f6137e40a3") == 0)
+        filter_name = g_strdup ("NVT Filter");
+      else if (strcmp (uuid, "adb6ffc8-e50e-4aab-9c31-13c741eb8a16") == 0)
+        filter_name = g_strdup ("OVAL Filter");
+      else if (strcmp (uuid, "312350ed-bc06-44f3-8b3f-ab9eb828b80b") == 0)
+        filter_name = g_strdup ("DFN-CERT Filter");
+      else
+        filter_name = g_strdup ("");
+    }
+
+  if (uuid && (strcmp (filter_name, "Agents Filter") == 0
+               || strcmp (filter_name, "Alerts Filter") == 0
+               || strcmp (filter_name, "Configs Filter") == 0
+               || strcmp (filter_name, "Credentials Filter") == 0
+               || strcmp (filter_name, "Filters Filter") == 0
+               || strcmp (filter_name, "Notes Filter") == 0
+               || strcmp (filter_name, "Overrides Filter") == 0
+               || strcmp (filter_name, "Port Lists Filter") == 0
+               || strcmp (filter_name, "Report Formats Filter") == 0
+               || strcmp (filter_name, "Schedules Filter") == 0
+               || strcmp (filter_name, "Slaves Filter") == 0
+               || strcmp (filter_name, "Targets Filter") == 0
+               || strcmp (filter_name, "Tasks Filter") == 0
+               || strcmp (filter_name, "CPE Filter") == 0
+               || strcmp (filter_name, "CVE Filter") == 0
+               || strcmp (filter_name, "NVT Filter") == 0
+               || strcmp (filter_name, "OVAL Filter") == 0
+               || strcmp (filter_name, "DFN-CERT Filter") == 0))
+    {
+      gchar *quoted_value;
 
       assert (current_credentials.username);
-
-      quoted_name = sql_quote (name);
 
       /* Use value directly as it is not base64 encoded. */
       quoted_value = sql_quote (value_64);
 
       if (sql_int (0, 0,
                    "SELECT count(*) FROM settings"
-                   " WHERE name = '%s'"
+                   " WHERE uuid = '%s'"
                    " AND owner = (SELECT ROWID FROM users WHERE uuid = '%s');",
-                   quoted_name,
+                   uuid,
                    current_credentials.uuid))
         sql ("UPDATE settings SET value = '%s'"
-             " WHERE name = '%s'"
+             " WHERE uuid = '%s'"
              " AND owner = (SELECT ROWID FROM users WHERE uuid = '%s');",
              quoted_value,
-             quoted_name,
+             uuid,
              current_credentials.uuid);
       else
         sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
              " VALUES"
-             " (make_uuid (),"
+             " ('%s',"
              "  (SELECT ROWID FROM users WHERE uuid = '%s'),"
              "  '%s',"
              "  (SELECT comment FROM settings"
-             "   WHERE name = '%s' AND owner IS NULL),"
+             "   WHERE uuid = '%s' AND owner IS NULL),"
              "  '%s');",
+             uuid,
              current_credentials.uuid,
-             quoted_name,
-             quoted_name,
+             filter_name,
+             uuid,
              quoted_value);
 
-      g_free (quoted_name);
       g_free (quoted_value);
 
       return 0;
