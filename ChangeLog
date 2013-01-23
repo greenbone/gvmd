@@ -1,3 +1,8 @@
+2013-01-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* tools/openvas-scapdata-sync.in (update_sec_db): Change counting of
+	OVAL xml files to use find instead of ls.
+
 2013-01-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_set_setting): Adapt to use fixed uuid values
