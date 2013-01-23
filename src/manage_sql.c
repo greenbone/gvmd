@@ -27893,16 +27893,34 @@ validate_host (const char *string)
 
   if (strchr (string, ':'))
     {
+      int colons;
+      const char *truncate;
+
       host = string;
 
+      truncate = strstr (host, "::");
+      if (truncate && truncate[2] == ':')
+        /* :::. */
+        return 1;
+      if (truncate && strstr (truncate + 2 , "::"))
+        /* Multiple ::'s. */
+        return 1;
+
+      colons = 0;
       while (*host && (isxdigit (*host) || *host == ':'))
-        host++;
+        {
+          if (*host == ':')
+            colons++;
+          host++;
+        }
+      if (((truncate == NULL) && (colons != 7))
+          || (truncate && (colons > 7)))
+        /* Wrong number of groups. */
+        return 1;
       while (*host && isspace (*host))
         host++;
       if (*host)
         return 1;
-
-      /** @todo Count and check parts. */
     }
 
   return 0;
@@ -27965,7 +27983,7 @@ manage_max_hosts (const char *given_hosts)
 
               if (strchr (*point, ':'))
                 /* IPv6.  Scanner current only supports single addresses. */
-                count++;
+                return -1;
               else
                 {
                   gchar **host_split, **host_point;
@@ -28036,6 +28054,11 @@ manage_max_hosts (const char *given_hosts)
       else if (hyphen)
         {
           hyphen++;
+
+          if (strchr (*point, ':'))
+            /* IPv6.  Scanner current only supports single addresses. */
+            return -1;
+
           if (*hyphen && (contains_alpha (*point)))
             {
               /* A hostname. */

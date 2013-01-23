@@ -1,3 +1,10 @@
+2013-01-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Improve IPv6 address validation.
+
+	* src/manage_sql.c (validate_host): Check ::'s.  Check group count.
+	(manage_max_hosts): Fail if IPv6 contains a network address or a hyphen.
+
 2013-01-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/openvas-scapdata-sync.in (update_sec_db): Change counting of
