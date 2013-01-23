@@ -5,6 +5,11 @@
 
 2013-01-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (setting_value_int): Add missing parentheses in sql
+	query which led to erroneous values.
+
+2013-01-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (manage_set_setting): Adapt to use fixed uuid values
 	for settings filters instead of names.
 

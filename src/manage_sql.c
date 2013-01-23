@@ -45933,9 +45933,9 @@ setting_value_int (const char *uuid, int *value)
                     "SELECT value"
                     " FROM settings"
                     " WHERE uuid = '%s'"
-                    " AND (owner IS NULL)"
+                    " AND ((owner IS NULL)"
                     " OR (owner ="
-                    "     (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                    "     (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                     /* Force the user's setting to come before the default. */
                     " ORDER BY owner DESC;",
                     quoted_uuid,
