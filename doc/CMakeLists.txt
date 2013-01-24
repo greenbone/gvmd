@@ -165,7 +165,7 @@ install (DIRECTORY html/
          DESTINATION share/doc/openvas-manager/html/
          COMPONENT doc)
 
-install (FILES omp.html omp.rnc
+install (FILES omp.html
          DESTINATION share/doc/openvas-manager/html/
          COMPONENT doc)
 

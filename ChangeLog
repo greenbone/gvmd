@@ -1,5 +1,10 @@
 2013-01-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/CMakeLists.txt: Remove omp.rnc from HTML installs from last
+	commit.
+
+2013-01-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/CMakeLists.txt: Install OMP docs too.
 	(doc-omp): New target.
 
