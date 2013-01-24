@@ -9029,9 +9029,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get_data_t * get;
 
               get = &get_notes_data->get;
-              if (!get->filter
-                  || strlen (get->filter) == 0
-                  || strcmp (get->filter, "sort=nvt") == 0)
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Notes");
 
@@ -9040,6 +9038,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
                     }
+                  else
+                    get->filt_id = g_strdup("0");
                 }
 
 
@@ -9399,9 +9399,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get_data_t * get;
 
               get = &get_overrides_data->get;
-              if (!get->filter
-                  || strlen (get->filter) == 0
-                  || strcmp (get->filter, "rows=-2") == 0)
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Overrides");
 
@@ -9410,6 +9408,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
                     }
+                  else
+                    get->filt_id = g_strdup("0");
                 }
 
               ret = init_override_iterator (&overrides,
@@ -9488,9 +9488,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("GET_PORT_LISTS", element_name) == 0);
 
           get = &get_port_lists_data->get;
-          if (!get->filter
-              || strlen (get->filter) == 0
-              || strcmp (get->filter, "rows=-2") == 0)
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter = setting_filter ("Port Lists");
 
@@ -9499,6 +9497,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);
                 }
+              else
+                get->filt_id = g_strdup("0");
             }
 
           ret = init_port_list_iterator (&port_lists,
@@ -10419,9 +10419,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get_data_t * get;
 
               get = &get_report_formats_data->get;
-              if (!get->filter
-                  || strlen (get->filter) == 0
-                  || strcmp (get->filter, "rows=-2") == 0)
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Report Formats");
 
@@ -10430,6 +10428,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
                     }
+                  else
+                    get->filt_id = g_strdup("0");
                 }
 
               ret = init_report_format_iterator (&report_formats,
@@ -10793,9 +10793,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get_data_t * get;
 
               get = &get_schedules_data->get;
-              if (!get->filter
-                  || strlen (get->filter) == 0
-                  || strcmp (get->filter, "rows=-2") == 0)
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Schedules");
 
@@ -10804,6 +10802,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
                     }
+                  else
+                    get->filt_id = g_strdup("0");
                 }
 
               ret = init_schedule_iterator (&schedules, &get_schedules_data->get);
@@ -17643,9 +17643,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get_data_t * get;
 
               get = &get_agents_data->get;
-              if (!get->filter
-                  || strlen (get->filter) == 0
-                  || strcmp (get->filter, "rows=-2") == 0)
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Agents");
 
@@ -17654,6 +17652,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
                     }
+                  else
+                    get->filt_id = g_strdup("0");
                 }
 
               ret = init_agent_iterator (&agents,
@@ -17787,9 +17787,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
 
           get = &get_configs_data->get;
-          if (!get->filter
-              || strlen (get->filter) == 0
-              || strcmp (get->filter, "rows=-2") == 0)
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter = setting_filter ("Configs");
 
@@ -17798,6 +17796,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);
                 }
+              else
+                get->filt_id = g_strdup("0");
             }
 
           ret = init_config_iterator (&configs, get);
@@ -18050,9 +18050,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("GET_ALERTS", element_name) == 0);
 
           get = &get_alerts_data->get;
-          if (!get->filter
-              || strlen (get->filter) == 0
-              || strcmp (get->filter, "rows=-2") == 0)
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter = setting_filter ("Alerts");
 
@@ -18061,6 +18059,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);
                 }
+              else
+                get->filt_id = g_strdup("0");
             }
 
           ret = init_alert_iterator (&alerts, &get_alerts_data->get);
@@ -18239,9 +18239,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("GET_FILTERS", element_name) == 0);
 
           get = &get_filters_data->get;
-          if (!get->filter
-              || strlen (get->filter) == 0
-              || strcmp (get->filter, "rows=-2") == 0)
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter = setting_filter ("Filters");
 
@@ -18250,6 +18248,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);
                 }
+              else
+                get->filt_id = g_strdup("0");
             }
 
           ret = init_filter_iterator (&filters, &get_filters_data->get);
@@ -18471,9 +18471,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
 
           get = &get_info_data->get;
-          if (!get->filter
-              || strlen (get->filter) == 0
-              || strcmp (get->filter, "rows=-2") == 0)
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter;
               gchar *name;
@@ -18509,6 +18507,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);
                 }
+              else
+                get->filt_id = g_strdup("0");
             }
 
           ret = init_info_iterator (&info, &get_info_data->get, get_info_data->name);
@@ -18790,9 +18790,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 " be 'key', 'rpm', 'deb' or 'exe'."));
 
           get = &get_lsc_credentials_data->get;
-          if (!get->filter
-              || strlen (get->filter) == 0
-              || strcmp (get->filter, "rows=-2") == 0)
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter = setting_filter ("Credentials");
 
@@ -18801,6 +18799,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);
                 }
+              else
+                get->filt_id = g_strdup("0");
             }
 
           ret = init_lsc_credential_iterator (&credentials, get);
@@ -19019,9 +19019,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get_data_t * get;
 
               get = &get_slaves_data->get;
-              if (!get->filter
-                  || strlen (get->filter) == 0
-                  || strcmp (get->filter, "rows=-2") == 0)
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Slaves");
 
@@ -19030,6 +19028,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
                     }
+                  else
+                    get->filt_id = g_strdup("0");
                 }
 
               ret = init_slave_iterator (&slaves, &get_slaves_data->get);
@@ -19248,9 +19248,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               /* If no filter applied by the user , set the default one from
                * settings. */
-              if (!get->filter
-                  || strlen (get->filter) == 0
-                  || strcmp (get->filter, "rows=-2") == 0)
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Targets");
 
@@ -19259,6 +19257,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       get->filt_id = user_filter;
                       get->filter = filter_term (user_filter);
                     }
+                  else
+                    get->filt_id = g_strdup("0");
                 }
 
               ret = init_target_iterator (&targets, &get_targets_data->get);
@@ -19444,10 +19444,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
           get = &get_tasks_data->get;
-          if (!get->filter
-              || strlen (get->filter) == 0
-              || strcmp (get->filter, "apply_overrides=0 and rows=-2") == 0
-              || strcmp (get->filter, "apply_overrides=1") == 0)
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter = setting_filter ("Tasks");
 
@@ -19456,6 +19453,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   get->filt_id = user_filter;
                   get->filter = filter_term (user_filter);
                 }
+              else
+                get->filt_id = g_strdup("0");
             }
 
           ret = init_task_iterator (&tasks, &get_tasks_data->get);

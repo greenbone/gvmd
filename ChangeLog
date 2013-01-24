@@ -1,3 +1,8 @@
+2013-01-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Check filt_id value is equal
+	to -2 before applying default filters in CLIENT_GET cases.
+
 2013-01-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/CMakeLists.txt: Remove omp.rnc from HTML installs from last
