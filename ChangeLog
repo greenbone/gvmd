@@ -1,5 +1,10 @@
 2013-01-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/CMakeLists.txt: Install OMP docs too.
+	(doc-omp): New target.
+
+2013-01-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_HELP add a NULL
 	guard for help_data->type.
 

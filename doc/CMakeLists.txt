@@ -82,6 +82,9 @@ else (NOT DOXYGEN_EXECUTABLE)
     COMMAND sh
     ARGS -c \"${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full && touch ${CMAKE_CURRENT_BINARY_DIR}/.built-html_full\;\"
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/openvasmd.html ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_full)
+
+  add_custom_target (doc-omp COMMENT "Building OMP documentation..."
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/omp.rnc ${CMAKE_CURRENT_BINARY_DIR}/omp.html)
 endif (NOT DOXYGEN_EXECUTABLE)
 
 if (XMLTOMAN_EXECUTABLE)
@@ -156,11 +159,15 @@ add_custom_command (OUTPUT omp.html
 
 ## Install
 
-# file (MAKE_DIRECTORY html/)
+file (MAKE_DIRECTORY html/)
 
-# install (DIRECTORY html/
-#         DESTINATION share/doc/openvas-manager/html/
-#         COMPONENT doc)
+install (DIRECTORY html/
+         DESTINATION share/doc/openvas-manager/html/
+         COMPONENT doc)
+
+install (FILES omp.html omp.rnc
+         DESTINATION share/doc/openvas-manager/html/
+         COMPONENT doc)
 
 install (FILES openvasmd.8
   DESTINATION share/man/man8/
