@@ -11529,7 +11529,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             SEND_TO_CLIENT_OR_FAIL ("</help_response>");
           }
-        else if (strcmp (help_data->type, "brief") == 0)
+        else if (help_data->type && (strcmp (help_data->type, "brief") == 0))
           {
             command_t *commands;
             SEND_TO_CLIENT_OR_FAIL ("<help_response"

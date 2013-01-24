@@ -1,3 +1,8 @@
+2013-01-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_HELP add a NULL
+	guard for help_data->type.
+
 2013-01-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (setting_value_int): Indentation update.
