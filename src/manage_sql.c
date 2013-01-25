@@ -12913,237 +12913,237 @@ init_manage_process (int update_nvt_cache, const gchar *database)
                " AS cert;");
           manage_cert_loaded ();
         }
+    }
 
-      /* Define functions for SQL. */
+  /* Define functions for SQL. */
 
-      if (sqlite3_create_collation (task_db,
-                                    "collate_message_type",
-                                    SQLITE_UTF8,
-                                    NULL,
-                                    collate_message_type)
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create collate_message_type", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_collation (task_db,
+                                "collate_message_type",
+                                SQLITE_UTF8,
+                                NULL,
+                                collate_message_type)
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create collate_message_type", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_collation (task_db,
-                                    "collate_threat",
-                                    SQLITE_UTF8,
-                                    NULL,
-                                    collate_threat)
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create collate_threat", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_collation (task_db,
+                                "collate_threat",
+                                SQLITE_UTF8,
+                                NULL,
+                                collate_threat)
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create collate_threat", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_collation (task_db,
-                                    "collate_ip",
-                                    SQLITE_UTF8,
-                                    NULL,
-                                    collate_ip)
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create collate_ip", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_collation (task_db,
+                                "collate_ip",
+                                SQLITE_UTF8,
+                                NULL,
+                                collate_ip)
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create collate_ip", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "make_uuid",
-                                   0,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_make_uuid,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create make_uuid", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "make_uuid",
+                               0,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_make_uuid,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create make_uuid", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "hosts_contains",
-                                   2,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_hosts_contains,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create host_contains", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "hosts_contains",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_hosts_contains,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create host_contains", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "clean_hosts",
-                                   1,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_clean_hosts,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create clean_hosts", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "clean_hosts",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_clean_hosts,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create clean_hosts", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "iso_time",
-                                   1,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_iso_time,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create iso_time", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "iso_time",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_iso_time,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create iso_time", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "parse_time",
-                                   1,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_parse_time,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create parse_time", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "parse_time",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_parse_time,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create parse_time", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "tag",
-                                   2,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_tag,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create tag", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "tag",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_tag,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create tag", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "uniquify",
-                                   4,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_uniquify,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create uniquify", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "uniquify",
+                               4,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_uniquify,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create uniquify", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "now",
-                                   0,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_now,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create now", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "now",
+                               0,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_now,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create now", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "max_hosts",
-                                   1,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_max_hosts,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create max_hosts", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "max_hosts",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_max_hosts,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create max_hosts", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "common_cve",
-                                   2,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_common_cve,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create common_cve", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "common_cve",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_common_cve,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create common_cve", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "current_offset",
-                                   1,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_current_offset,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create current_offset", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "current_offset",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_current_offset,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create current_offset", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "task_trend",
-                                   2,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_task_trend,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create task_trend", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "task_trend",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_task_trend,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create task_trend", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "task_threat_level",
-                                   2,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_threat_level,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create task_threat_level", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "task_threat_level",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_threat_level,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create task_threat_level", __FUNCTION__);
+      abort ();
+    }
 
-      if (sqlite3_create_function (task_db,
-                                   "run_status_name",
-                                   1,               /* Number of args. */
-                                   SQLITE_UTF8,
-                                   NULL,            /* Callback data. */
-                                   sql_run_status_name,
-                                   NULL,            /* xStep. */
-                                   NULL)            /* xFinal. */
-          != SQLITE_OK)
-        {
-          g_warning ("%s: failed to create run_status_name", __FUNCTION__);
-          abort ();
-        }
+  if (sqlite3_create_function (task_db,
+                               "run_status_name",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_run_status_name,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create run_status_name", __FUNCTION__);
+      abort ();
     }
 }
 
@@ -32249,9 +32249,10 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 
   sql ("INSERT into nvts (oid, version, name, summary, description, copyright,"
        " cve, bid, xref, tag, sign_key_ids, category, family, cvss_base,"
-       " risk_factor)"
+       " risk_factor, creation_time, modification_time)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-       " '%s', %i, '%s', '%s', '%s');",
+       " '%s', %i, '%s', '%s', '%s', parse_time (tag ('%s', 'creation_date')),"
+       " parse_time (tag ('%s', 'last_modification')));",
        nvti_oid (nvti),
        quoted_version,
        quoted_name,
@@ -32266,7 +32267,9 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
        nvti_category (nvti),
        quoted_family,
        quoted_cvss_base,
-       quoted_risk_factor);
+       quoted_risk_factor,
+       quoted_tag,
+       quoted_tag);
 
   if (remove)
     sql ("COMMIT;");

@@ -1,5 +1,14 @@
 2013-01-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Ensure that NVT times are set on --rebuild and --update.
+
+	* src/manage_sql.c (init_manage_process): Define the SQL functions when
+	updating the NVT cache too.
+	(make_nvt_from_nvti): Set the time columns from the times in the NVT
+	tags.
+
+2013-01-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (get_nvti_xml): Move declarations to start of block.  Add
 	spaces between function and args.  Flush trailing whitespace.
 
