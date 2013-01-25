@@ -32249,10 +32249,10 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 
   sql ("INSERT into nvts (oid, version, name, summary, description, copyright,"
        " cve, bid, xref, tag, sign_key_ids, category, family, cvss_base,"
-       " risk_factor, creation_time, modification_time)"
+       " risk_factor, creation_time, modification_time, uuid)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
        " '%s', %i, '%s', '%s', '%s', parse_time (tag ('%s', 'creation_date')),"
-       " parse_time (tag ('%s', 'last_modification')));",
+       " parse_time (tag ('%s', 'last_modification')), '%s');",
        nvti_oid (nvti),
        quoted_version,
        quoted_name,
@@ -32269,7 +32269,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
        quoted_cvss_base,
        quoted_risk_factor,
        quoted_tag,
-       quoted_tag);
+       quoted_tag,
+       nvti_oid (nvti));
 
   if (remove)
     sql ("COMMIT;");
