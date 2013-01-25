@@ -4642,6 +4642,8 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       msg = g_strdup_printf ("<nvt"
                              " oid=\"%s\">"
                              "<name>%s</name>"
+                             "<creation_time>%s</creation_time>"
+                             "<modification_time>%s</modification_time>"
                              "<category>%s</category>"
                              "<copyright>%s</copyright>"
                              "<description>%s</description>"
@@ -4665,6 +4667,12 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              "</checksum>%s",
                              oid,
                              name_text,
+                             get_iterator_creation_time (nvts)
+                              ? get_iterator_creation_time (nvts)
+                              : "",
+                             get_iterator_modification_time (nvts)
+                              ? get_iterator_modification_time (nvts)
+                              : "",
                              category_name (nvt_iterator_category (nvts)),
                              copyright_text,
                              description_text,
