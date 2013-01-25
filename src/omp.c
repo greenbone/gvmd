@@ -8499,7 +8499,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                               get_iterator_name(&cert_refs_iterator));
     }
   cleanup_iterator (&cert_refs_iterator);
-    
+
   buffer_xml_append_printf
    (buffer,
     "</cert>"

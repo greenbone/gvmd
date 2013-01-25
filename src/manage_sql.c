@@ -46896,9 +46896,9 @@ init_cve_dfn_cert_adv_iterator (iterator_t *iterator, const char *cve,
   assert (cve);
   init_iterator (iterator,
                  "SELECT " DFN_CERT_ADV_INFO_ITERATOR_COLUMNS
-                 " FROM dfn_cert_advs WHERE id IN"
-                 "   (SELECT adv_id FROM dfn_cert_cves"
-                 "    WHERE cve_name = '%s')"
+                 " FROM dfn_cert_advs"
+                 " WHERE id IN (SELECT adv_id FROM dfn_cert_cves"
+                 "              WHERE cve_name = '%s')"
                  " ORDER BY %s %s;",
                  cve,
                  sort_field ? sort_field : "name",
@@ -46920,10 +46920,10 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
   assert (oid);
   init_iterator (iterator,
                  "SELECT " DFN_CERT_ADV_INFO_ITERATOR_COLUMNS
-                 " FROM dfn_cert_advs WHERE id IN"
-                 "   (SELECT adv_id FROM dfn_cert_cves"
-                 " WHERE (SELECT cve FROM nvts WHERE oid='%s')"
-                 "   LIKE ('%%'||cve_name||'%%'))"
+                 " FROM dfn_cert_advs"
+                 " WHERE id IN (SELECT adv_id FROM dfn_cert_cves"
+                 "              WHERE (SELECT cve FROM nvts WHERE oid='%s')"
+                 "                    LIKE ('%%' || cve_name || '%%'))"
                  " ORDER BY %s %s;",
                  oid,
                  sort_field ? sort_field : "name",

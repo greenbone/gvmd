@@ -4615,6 +4615,8 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
   gchar* name_text = g_markup_escape_text (name, strlen (name));
   if (details)
     {
+      GString* cert_refs_str;
+      iterator_t cert_refs_iterator;
 
 #ifndef S_SPLINT_S
       DEF (copyright);
@@ -4627,17 +4629,16 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 
 #undef DEF
 
-      GString* cert_refs_str = g_string_new("");
-      iterator_t cert_refs_iterator;
+      cert_refs_str = g_string_new ("");
       init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
       while (next (&cert_refs_iterator))
         {
           g_string_append_printf (cert_refs_str,
                                   "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
-                                  get_iterator_name(&cert_refs_iterator));
+                                  get_iterator_name (&cert_refs_iterator));
         }
       cleanup_iterator (&cert_refs_iterator);
-      
+
       msg = g_strdup_printf ("<nvt"
                              " oid=\"%s\">"
                              "<name>%s</name>"

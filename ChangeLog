@@ -1,3 +1,15 @@
+2013-01-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (get_nvti_xml): Move declarations to start of block.  Add
+	spaces between function and args.  Flush trailing whitespace.
+
+	* src/manage_sql.c (init_cve_dfn_cert_adv_iterator)
+	(init_nvt_dfn_cert_adv_iterator): Indent the SQL so that the right hand
+	side of an operation is always to the right of the operator, even when
+	on the following line.
+
+	* src/omp.c (buffer_results_xml): Flush trailing whitespace.
+
 2013-01-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add references to CERT for NVTs in NVT details and results.
