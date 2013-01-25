@@ -776,7 +776,7 @@ void
 sql_parse_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   const unsigned char *string;
-  int epoch_time;
+  int epoch_time, offset;
   struct tm tm;
 
   assert (argc == 1);
@@ -785,11 +785,16 @@ sql_parse_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   if ((strcmp ((char*) string, "") == 0)
       || (strcmp ((char*) string, "$Date: $") == 0)
-      || (strcmp ((char*) string, "$Date$") == 0))
+      || (strcmp ((char*) string, "$Date$") == 0)
+      || (strcmp ((char*) string, "$Date:$") == 0)
+      || (strcmp ((char*) string, "$Date") == 0)
+      || (strcmp ((char*) string, "$$") == 0))
     {
       sqlite3_result_int (context, 0);
       return;
     }
+
+  /* Parse the time. */
 
   /* 2011-08-09 08:20:34 +0200 (Tue, 09 Aug 2011) */
   /* $Date: 2012-02-17 16:05:26 +0100 (Fr, 17. Feb 2012) $ */
@@ -810,6 +815,43 @@ sql_parse_time (sqlite3_context *context, int argc, sqlite3_value** argv)
       g_warning ("%s: Failed to make time: %s", __FUNCTION__, string);
       sqlite3_result_int (context, 0);
       return;
+    }
+
+  /* Get the timezone offset from the string. */
+
+  if ((sscanf ((char*) string, "%*u-%*u-%*u %*u:%*u:%*u %d%*[^]]", &offset)
+               != 1)
+      && (sscanf ((char*) string, "$Date: %*u-%*u-%*u %*u:%*u:%*u %d%*[^]]",
+                  &offset)
+          != 1)
+      && (sscanf ((char*) string, "%*s %*s %*s %*u:%*u:%*u %*u %d%*[^]]",
+                  &offset)
+          != 1)
+      && (sscanf ((char*) string,
+                  "$Date: %*s %*s %*s %*u %*u:%*u:%*u %d%*[^]]",
+                  &offset)
+          != 1)
+      && (sscanf ((char*) string, "$Date: %*s %*s %*s %*u:%*u:%*u %*u %d%*[^]]",
+                  &offset)
+          != 1))
+    {
+      g_warning ("%s: Failed to parse timezone offset: %s", __FUNCTION__,
+                 string);
+      sqlite3_result_int (context, 0);
+      return;
+    }
+
+  /* Use the offset to convert to UTC. */
+
+  if (offset < 0)
+    {
+      epoch_time += ((-offset) / 100) * 60 * 60;
+      epoch_time += ((-offset) % 100) * 60;
+    }
+  else if (offset > 0)
+    {
+      epoch_time -= (offset / 100) * 60 * 60;
+      epoch_time -= (offset % 100) * 60;
     }
 
   sqlite3_result_int (context, epoch_time);

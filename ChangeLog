@@ -1,5 +1,10 @@
 2013-01-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql.c (sql_parse_time): Use the timezone in the string to adjust
+	the time to UTC.
+
+2013-01-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (get_nvti_xml): Add creation and modification times.
 
 2013-01-25  Matthew Mundell <matthew.mundell@greenbone.net>
