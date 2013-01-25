@@ -1,3 +1,17 @@
+2013-01-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add references to CERT for NVTs in NVT details and results.
+
+	* src/manage.c (get_nvti_xml): Add output of CERT references.
+
+	* src/manage.h (init_nvt_dfn_cert_adv_iterator): Add new iterator for
+	DFN-CERT advisories indirectly referenced by an NVT via CVEs.
+
+	* src/manage_sql.c (init_nvt_dfn_cert_adv_iterator): Add new iterator
+	as for manage.h.
+
+	* src/omp.c (buffer_results_xml): Add output of CERT references.
+
 2013-01-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Check filt_id value is equal

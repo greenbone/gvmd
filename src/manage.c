@@ -4627,6 +4627,17 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 
 #undef DEF
 
+      GString* cert_refs_str = g_string_new("");
+      iterator_t cert_refs_iterator;
+      init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+      while (next (&cert_refs_iterator))
+        {
+          g_string_append_printf (cert_refs_str,
+                                  "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
+                                  get_iterator_name(&cert_refs_iterator));
+        }
+      cleanup_iterator (&cert_refs_iterator);
+      
       msg = g_strdup_printf ("<nvt"
                              " oid=\"%s\">"
                              "<name>%s</name>"
@@ -4640,6 +4651,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              "<risk_factor>%s</risk_factor>"
                              "<cve_id>%s</cve_id>"
                              "<bugtraq_id>%s</bugtraq_id>"
+                             "<cert_refs>%s</cert_refs>"
                              "<xrefs>%s</xrefs>"
                              "<fingerprints>%s</fingerprints>"
                              "<tags>%s</tags>"
@@ -4666,6 +4678,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                               : "",
                              nvt_iterator_cve (nvts),
                              nvt_iterator_bid (nvts),
+                             cert_refs_str->str,
                              nvt_iterator_xref (nvts),
                              nvt_iterator_sign_key_ids (nvts),
                              tag_text,
@@ -4678,6 +4691,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       g_free (family_text);
       g_free (version_text);
       g_free (tag_text);
+      g_string_free(cert_refs_str, 1);
     }
   else
     msg = g_strdup_printf ("<nvt"

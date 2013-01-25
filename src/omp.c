@@ -8425,11 +8425,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *descr = result_iterator_descr (results);
   gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
   const char *name = result_iterator_nvt_name (results);
+  const char *oid = result_iterator_nvt_oid (results);
   const char *family = result_iterator_nvt_family (results);
   const char *cvss_base = result_iterator_nvt_cvss_base (results);
   const char *risk_factor = result_iterator_nvt_risk_factor (results);
   const char *cve = result_iterator_nvt_cve (results);
   const char *bid = result_iterator_nvt_bid (results);
+  iterator_t cert_refs_iterator;
   const char *xref = result_iterator_nvt_xref (results);
   result_t result = result_iterator_result (results);
   char *uuid;
@@ -8438,7 +8440,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   result_uuid (result, &uuid);
 
   buffer_xml_append_printf (buffer, "<result id=\"%s\">", uuid);
-
 
   detect_ref = detect_cpe = detect_loc = detect_oid = detect_name = NULL;
   if (result_detection_reference (result, &detect_ref, &detect_cpe, &detect_loc,
@@ -8478,10 +8479,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     "<risk_factor>%s</risk_factor>"
     "<cve>%s</cve>"
     "<bid>%s</bid>"
-    "<xref>%s</xref>"
-    "</nvt>"
-    "<threat>%s</threat>"
-    "<description>%s</description>",
+    "<cert>",
     result_iterator_subnet (results),
     result_iterator_host (results),
     result_iterator_port (results),
@@ -8491,7 +8489,24 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     cvss_base ? cvss_base : "",
     risk_factor ? risk_factor : "",
     cve ? cve : "",
-    bid ? bid : "",
+    bid ? bid : "");
+
+  init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+  while (next (&cert_refs_iterator))
+    {
+      g_string_append_printf (buffer,
+                              "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
+                              get_iterator_name(&cert_refs_iterator));
+    }
+  cleanup_iterator (&cert_refs_iterator);
+    
+  buffer_xml_append_printf
+   (buffer,
+    "</cert>"
+    "<xref>%s</xref>"
+    "</nvt>"
+    "<threat>%s</threat>"
+    "<description>%s</description>",
     xref ? xref : "",
     manage_result_type_threat (result_iterator_type (results)),
     descr ? nl_descr : "");

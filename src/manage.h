@@ -2651,6 +2651,9 @@ dfn_cert_adv_info_iterator_cve_refs (iterator_t*);
 void
 init_cve_dfn_cert_adv_iterator (iterator_t*, const char*, int, const char*);
 
+void
+init_nvt_dfn_cert_adv_iterator (iterator_t*, const char*, int, const char*);
+
 
 /* Settings. */
 

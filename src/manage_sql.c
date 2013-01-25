@@ -46906,6 +46906,31 @@ init_cve_dfn_cert_adv_iterator (iterator_t *iterator, const char *cve,
 }
 
 /**
+ * @brief Initialise an DFN-CERT iterator, for advisories relevant to a NVT.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  oid         OID of the NVT.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ */
+void
+init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
+                                int ascending, const char *sort_field)
+{
+  assert (oid);
+  init_iterator (iterator,
+                 "SELECT " DFN_CERT_ADV_INFO_ITERATOR_COLUMNS
+                 " FROM dfn_cert_advs WHERE id IN"
+                 "   (SELECT adv_id FROM dfn_cert_cves"
+                 " WHERE (SELECT cve FROM nvts WHERE oid='%s')"
+                 "   LIKE ('%%'||cve_name||'%%'))"
+                 " ORDER BY %s %s;",
+                 oid,
+                 sort_field ? sort_field : "name",
+                 ascending ? "ASC" : "DESC");
+}
+
+/**
  * @brief Get the short file name for an OVALDEF.
  *
  * @param[in]  name  Full OVAL identifier.
