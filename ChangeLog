@@ -1,3 +1,8 @@
+2013-01-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Apply default filter when
+	filter and filt_id are both null in GET_CLIENT cases.
+
 2013-01-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (get_nvti_xml): Set uuid to oid.
