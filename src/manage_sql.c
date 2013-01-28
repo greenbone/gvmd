@@ -34774,11 +34774,11 @@ find_lsc_credential_for_actions (const char* uuid,
  *                             one character long.
  * @param[in]  given_password  Password for password-only credential, NULL to
  *                             generate credentials.
+ * @param[in]  key_private     Private key, or NULL.
+ * @param[in]  key_public      Public key, or NULL.  Requires key_private.
+ *                             Takes preference over password-only
+ *                             and generated credentials.
  * @param[out] lsc_credential  Created LSC credential.
- * @param[out] key_private     Private key, or NULL.
- * @param[out] key_public      Public key, or NULL.  Requires key_private.
- *                             Takes preference over password only and generated
- *                             credentials.
  *
  * @return 0 success, 1 LSC credential exists already, 2 name contains space,
  *         -1 error.
@@ -34819,19 +34819,52 @@ create_lsc_credential (const char* name, const char* comment,
 
   if (key_public)
     {
+      lsc_crypt_ctx_t crypt_ctx;
       gchar *quoted_login, *quoted_phrase, *quoted_comment;
       gchar *quoted_public, *quoted_private;
 
       /* Key pair credential. */
 
       if (key_private == NULL)
-        return -1;
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (!strcmp (key_private, ";;encrypted;;"))
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return -1;
+        }
 
+      /* Encrypt password and private key.  Note that we do not need
+         to call sql_quote because the result of the encryption is
+         base64 encoded and does not contain apostrophes.  */
+      if (!disable_encrypted_credentials)
+        {
+          crypt_ctx = lsc_crypt_new ();
+          quoted_phrase = lsc_crypt_encrypt (crypt_ctx,
+                                             "password", given_password,
+                                             "private_key", key_private, NULL);
+          if (!quoted_phrase)
+            {
+              g_free (quoted_name);
+              lsc_crypt_release (crypt_ctx);
+              sql ("ROLLBACK;");
+              return -1;
+            }
+          quoted_private = g_strdup (";;encrypted;;");
+        }
+      else
+        {
+          crypt_ctx = NULL;
+          quoted_phrase = given_password ? sql_quote (given_password)
+                                         : g_strdup ("");
+          quoted_private = sql_quote (key_private);
+        }
       quoted_login = sql_quote (login);
       quoted_comment = sql_quote (comment);
-      quoted_phrase = given_password ? sql_quote (given_password)
-                                     : g_strdup ("");
-      quoted_private = sql_quote (key_private);
       quoted_public = sql_quote (key_public);
 
       sql ("INSERT INTO lsc_credentials"
@@ -34856,6 +34889,7 @@ create_lsc_credential (const char* name, const char* comment,
       g_free (quoted_comment);
       g_free (quoted_private);
       g_free (quoted_public);
+      lsc_crypt_release (crypt_ctx);
 
       if (lsc_credential)
         *lsc_credential = sqlite3_last_insert_rowid (task_db);
@@ -34866,11 +34900,34 @@ create_lsc_credential (const char* name, const char* comment,
 
   if (given_password)
     {
-      gchar *quoted_login = sql_quote (login);
-      gchar *quoted_password = sql_quote (given_password);
-      gchar *quoted_comment = sql_quote (comment);
+      lsc_crypt_ctx_t crypt_ctx;
+      gchar *quoted_login, *quoted_password, *quoted_comment, *quoted_private;
 
       /* Password-only credential. */
+
+      if (!disable_encrypted_credentials)
+        {
+          crypt_ctx = lsc_crypt_new ();
+          quoted_password = lsc_crypt_encrypt (crypt_ctx,
+                                               "password", given_password,
+                                               NULL);
+          if (!quoted_password)
+            {
+              g_free (quoted_name);
+              lsc_crypt_release (crypt_ctx);
+              sql ("ROLLBACK;");
+              return -1;
+            }
+          quoted_private = g_strdup ("';;encrypted;;'");
+        }
+      else
+        {
+          crypt_ctx = NULL;
+          quoted_password = sql_quote (given_password);
+          quoted_private = g_strdup ("NULL");
+        }
+      quoted_login = sql_quote (login);
+      quoted_comment = sql_quote (comment);
 
       sql ("INSERT INTO lsc_credentials"
            " (uuid, name, owner, login, password, comment, public_key,"
@@ -34878,18 +34935,21 @@ create_lsc_credential (const char* name, const char* comment,
            " VALUES"
            " (make_uuid (), '%s',"
            "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           "  '%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL,"
+           "  '%s', '%s', '%s', NULL, %s, NULL, NULL, NULL,"
            "  now (), now ());",
            quoted_name,
            current_credentials.uuid,
            quoted_login,
            quoted_password,
-           quoted_comment);
+           quoted_comment,
+           quoted_private);
 
       g_free (quoted_name);
       g_free (quoted_login);
       g_free (quoted_password);
       g_free (quoted_comment);
+      g_free (quoted_private);
+      lsc_crypt_release (crypt_ctx);
 
       if (lsc_credential)
         *lsc_credential = sqlite3_last_insert_rowid (task_db);
@@ -34929,13 +34989,38 @@ create_lsc_credential (const char* name, const char* comment,
     }
 
   {
-    gchar *quoted_login = sql_quote (login);
-    gchar *quoted_password = sql_quote (password);
-    gchar *quoted_comment = sql_quote (comment);
-    gchar *quoted_public_key = sql_quote (public_key);
-    gchar *quoted_private_key = sql_quote (private_key);
+    lsc_crypt_ctx_t crypt_ctx;
+    gchar *quoted_login, *quoted_password, *quoted_comment;
+    gchar *quoted_public_key, *quoted_private_key;
 
     /* Generated key credential. */
+
+    if (!disable_encrypted_credentials)
+      {
+        crypt_ctx = lsc_crypt_new ();
+        quoted_password = lsc_crypt_encrypt (crypt_ctx,
+                                             "password", given_password,
+                                             "private_key", private_key, NULL);
+        if (!quoted_password)
+          {
+            lsc_crypt_release (crypt_ctx);
+            g_free (public_key);
+            g_free (private_key);
+            g_free (quoted_name);
+            sql ("ROLLBACK;");
+            return -1;
+          }
+        quoted_private_key = g_strdup (";;encrypted;;");
+      }
+    else
+      {
+        crypt_ctx = NULL;
+        quoted_password = sql_quote (password);
+        quoted_private_key = sql_quote (private_key);
+      }
+    quoted_login = sql_quote (login);
+    quoted_comment = sql_quote (comment);
+    quoted_public_key = sql_quote (public_key);
 
     sql_quiet ("INSERT INTO lsc_credentials"
                " (uuid, name, owner, login, password, comment, public_key,"
@@ -34960,7 +35045,11 @@ create_lsc_credential (const char* name, const char* comment,
     g_free (quoted_comment);
     g_free (quoted_public_key);
     g_free (quoted_private_key);
+    lsc_crypt_release (crypt_ctx);
   }
+
+  g_free (public_key);
+  g_free (private_key);
 
   if (lsc_credential)
     *lsc_credential = sqlite3_last_insert_rowid (task_db);
@@ -35256,12 +35345,37 @@ void
 set_lsc_credential_password (lsc_credential_t lsc_credential,
                              const char *password)
 {
-  gchar *quoted_password = sql_quote (password);
-  sql ("UPDATE lsc_credentials SET password = '%s', modification_time = now ()"
+  lsc_crypt_ctx_t crypt_ctx;
+  gchar *quoted_password, *quoted_private;
+
+  if (!disable_encrypted_credentials)
+    {
+      crypt_ctx = lsc_crypt_new ();
+      quoted_password = lsc_crypt_encrypt (crypt_ctx,
+                                           "password", password, NULL);
+      if (!quoted_password)
+        {
+          g_critical ("%s: encryption failed", G_STRFUNC);
+          lsc_crypt_release (crypt_ctx);
+          return;
+        }
+      quoted_private = g_strdup ("';;encrypted;;'");
+    }
+  else
+    {
+      crypt_ctx = NULL;
+      quoted_password = sql_quote (password);
+      quoted_private = g_strdup ("NULL");
+    }
+
+  sql ("UPDATE lsc_credentials SET password = '%s', private_key = %s,"
+       " modification_time = now ()"
        " WHERE ROWID = %llu;",
-       quoted_password,
+       quoted_password, quoted_private,
        lsc_credential);
   g_free (quoted_password);
+  g_free (quoted_private);
+  lsc_crypt_release (crypt_ctx);
 }
 
 /**
@@ -35351,6 +35465,40 @@ init_lsc_credential_iterator (iterator_t* iterator, const get_data_t *get)
                             TRUE);
 }
 
+/*
+ * Common code for lsc_credential_iterator_password and
+ * lsc_credential_iterator_private_key.
+ */
+static const char*
+lsc_credential_iterator_pass_or_priv (iterator_t* iterator, int want_privkey)
+{
+  const char *password, *privkey, *result;
+
+  if (iterator->done)
+    return NULL;
+  password = (const char*) sqlite3_column_text (iterator->stmt,
+                                                GET_ITERATOR_COLUMN_COUNT + 1);
+  privkey  = (const char*) sqlite3_column_text (iterator->stmt,
+                                                GET_ITERATOR_COLUMN_COUNT + 3);
+  /* If we do not have a private key, there is no encrypted data.
+     Return the password as is or NULL.  */
+  if (!privkey)
+    return want_privkey? NULL : password;
+  /* If we have a private key but it has not the flag value, we return
+     the password field or the private key.  */
+  if (strcmp (privkey, ";;encrypted;;"))
+    return want_privkey? privkey : password;
+  /* This is an encrypted credential.  */
+  if (!iterator->crypt_ctx)
+    iterator->crypt_ctx = lsc_crypt_new ();
+  if (want_privkey)
+    result = lsc_crypt_get_private_key (iterator->crypt_ctx, password);
+  else
+    result = lsc_crypt_get_password (iterator->crypt_ctx, password);
+
+  return result;
+}
+
 /**
  * @brief Get the LSC credential from an LSC credential iterator.
  *
@@ -35413,7 +35561,12 @@ DEF_ACCESS (lsc_credential_iterator_login, GET_ITERATOR_COLUMN_COUNT);
  * @return Password, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (lsc_credential_iterator_password, GET_ITERATOR_COLUMN_COUNT + 1);
+const char*
+lsc_credential_iterator_password (iterator_t* iterator)
+{
+  return lsc_credential_iterator_pass_or_priv (iterator, 0);
+}
+
 
 /**
  * @brief Get the public_key from an LSC credential iterator.
@@ -35433,8 +35586,11 @@ DEF_ACCESS (lsc_credential_iterator_public_key, GET_ITERATOR_COLUMN_COUNT + 2);
  * @return Private_key, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (lsc_credential_iterator_private_key,
-            GET_ITERATOR_COLUMN_COUNT + 3);
+const char*
+lsc_credential_iterator_private_key (iterator_t* iterator)
+{
+  return lsc_credential_iterator_pass_or_priv (iterator, 1);
+}
 
 /**
  * @brief Get the rpm from an LSC credential iterator.

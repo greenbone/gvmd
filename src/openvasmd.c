@@ -277,6 +277,16 @@ int sighup_update_nvt_cache = 0;
  */
 static gchar **disabled_commands = NULL;
 
+/**
+ * @brief Flag indicating that encrypted credentials are disabled.
+ *
+ * Setting this flag does not change any existing encrypted tuples but
+ * simply won't encrypt or decrypt anything.  The variable is
+ * controlled by the command line option --disable-encrypted-credentials.
+ */
+gboolean disable_encrypted_credentials;
+
+
 
 /* Forking, serving the client. */
 
@@ -1078,6 +1088,7 @@ main (int argc, char** argv)
 
   static gboolean backup_database = FALSE;
   static gboolean migrate_database = FALSE;
+  static gboolean create_cred_enc_key = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean rebuild_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
@@ -1096,10 +1107,15 @@ main (int argc, char** argv)
         { "backup", '\0', 0, G_OPTION_ARG_NONE, &backup_database, "Backup the database.", NULL },
         { "database", 'd', 0, G_OPTION_ARG_STRING, &database, "Use <file> as database.", "<file>" },
         { "disable-cmds", '\0', 0, G_OPTION_ARG_STRING, &disable, "Disable comma-separated <commands>.", "<commands>" },
+        { "disable-encrypted-credentials", '\0', 0, G_OPTION_ARG_NONE,
+          &disable_encrypted_credentials,
+          "Do not encrypt or decrypt credentials.", NULL },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
+        { "create-credentials-encryption-key", '\0', 0, G_OPTION_ARG_NONE,
+          &create_cred_enc_key, "Create a key to encrypt credentials.", NULL },
         { "otp", '\0', 0, G_OPTION_ARG_NONE, &otp, "Serve OTP too.", NULL },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
@@ -1225,6 +1241,28 @@ main (int argc, char** argv)
                         __FUNCTION__);
             return EXIT_FAILURE;
         }
+    }
+
+  /* Option to create an encryption key for credentials.  This is
+     optional because such a key will be created anyway if needed.  */
+  if (create_cred_enc_key)
+    {
+      infof ("   Creating credentials encryption key.\n");
+
+      switch (lsc_crypt_create_key ())
+        {
+        case 0:
+          fprintf (stderr, "Key creation succeeded.\n");
+          return EXIT_SUCCESS;
+        case 1:
+          fprintf (stderr, "Key already exists.\n");
+          return EXIT_SUCCESS;
+        default:
+          break;
+        }
+
+      fprintf (stderr, "Key creation failed\n");
+      return EXIT_FAILURE;
     }
 
   /* Complete option processing. */
@@ -1445,6 +1483,7 @@ main (int argc, char** argv)
       exit (EXIT_FAILURE);
     }
 
+
   /* Setup the scanner address. */
 
   scanner_address.sin_family = AF_INET;
@@ -1555,6 +1594,9 @@ main (int argc, char** argv)
   infof ("   Set to connect to address %s port %i\n",
          scanner_address_string,
          ntohs (scanner_address.sin_port));
+  if (disable_encrypted_credentials)
+    g_message ("Encryption of credentials has been disabled.");
+
 
   /* Bind the second manager socket to a port. */
 

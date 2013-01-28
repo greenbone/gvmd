@@ -199,6 +199,8 @@ typedef long long int setting_t;
 
 #include <sqlite3.h>
 
+#include "lsc_crypt.h"  /* (lsc_crypt_ctx_t) */
+
 /**
  * @brief A generic SQL iterator.
  */
@@ -207,6 +209,7 @@ typedef struct
   sqlite3_stmt* stmt;        ///< SQL statement.
   gboolean done;             ///< End flag.
   int prepared;              ///< Prepared flag.
+  lsc_crypt_ctx_t crypt_ctx; ///< Encryption context.
 } iterator_t;
 
 

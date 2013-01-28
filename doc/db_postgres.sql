@@ -443,22 +443,68 @@ CREATE TABLE nvts (
     creation_time date,
     modification_time date);
 
+
+--
+-- Local Security Check Credentials.
+--
+-- This table stores the credentials for LSCs.  In addition the names
+-- for packages or tools to be installed on the targets are stored.
+--
 CREATE TABLE lsc_credentials (
     id integer PRIMARY KEY,
-    uuid text UNIQUE NOT NULL,
-    owner integer REFERENCES users (id) ON DELETE RESTRICT,
-    name text NOT NULL,
-    login text,
-    password text,
-    comment text,
-    public_key text,
-    private_key text,
-    rpm bytea,
-    deb bytea,
-    exe bytea,
-    creation_time date,
-    modification_time date);
+        uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        -- The OpenVAS name for this credential.
+	name text NOT NULL,
+        -- The name of the account.
+	login text,
+        -- We have 3 uses for the password field:
+        -- 1. If private_key is NULL, this is a simple password.
+        -- 2. If private key is not NULL and its values is not ";;encrypted;;"
+        --    this is the passphrase to protect the private key.
+        -- 3. If private_key has the value ";;encrypted;;" this
+        --    is an encrypted container for a password or a private key.
+        --    The format of this container is a list of name-value pairs.
+        --    For example:
+        --     <len(8)> "password" <len> <value>
+        --     <len(10)> "private_key" <len> <value>
+        --    The len fields are encoded as 32 bit big endian unsigned
+        --    integer values.  A value of 0 for the value length is is
+        --    allowed and indicates and empty string.  A missing name
+        --    (e.g. "password", indicates a NULL value for that name.
+        --    This format closely resembles an unencrypted
+        --    lsc_credential.  However, recursive encryption is not
+        --    supported.  The container itself is OpenPGP encrypted
+        --    with the binary OpenPGP format wrapped into a standard
+        --    base64 encoding without linefeeds or checksums (i.e. it
+        --    is not the armor format).
+	password text,
+        -- A comment describing this credential.
+	comment text,
+        -- Public and private parts for public key encryption.
+        -- Commonly used with ssh.  The need for both fields is due to
+        -- an implementation peculiarity of old OpenVAS versions,
+        -- which were not able to extract the public part from the
+        -- private part.  We keep the "public_key" field to be
+        -- prepared for future authentication schemes.  A flag value
+        -- of ";;encrypted;;" in the private_key field is used to
+        -- indicate an encrypted credential.  Note: We can't use the
+        -- password field for the flag value because the password
+        -- field is allowed to contain arbitrary data; the private_key
+        -- field however is a structured value (for example PEM or
+        -- plain base64).
+	public_key text,
+	private_key text,
+        -- Fixme.  (Tools to be installed on the target)
+	rpm bytea,
+	deb bytea,
+	exe bytea,
+	creation_time date,
+	modification_time date);
 
+--
+-- Trashcan for lsc_credentials.
+--
 CREATE TABLE lsc_credentials_trash (
     id integer PRIMARY KEY,
     uuid text UNIQUE NOT NULL,

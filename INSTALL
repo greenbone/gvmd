@@ -149,6 +149,50 @@ to run the migration:
 $ openvasmd --migrate
 
 
+Encrypted Credentials
+---------------------
+
+By default the Manager stores private key and password parts of target
+credentials encrypted in the database.  This voids leaking such keys
+via backups.  To be able to do a proper restore of the data, it is
+important to also backup the encryption key.  The easiest way to do
+this is to create backup of the entire directory tree
+
+   <install-prefix>/etc/openvas/gnupg
+
+and store it at a safe place independent from the database backups.
+This needs to be done only once after the key has been created or
+changed.  The Manager creates the key on the fly if it does not
+exists.  If needed the key can also be created in advance using:
+
+$ openvasmd --create-credentials-encryption-key
+
+To check whether the key has been generated you may use the command
+
+$ gpg --homedir <install-prefix>/etc/openvas/gnupg --list-secret-keys
+
+An example output would be
+
+  sec   2048R/1B55390F 2013-01-18
+  uid                  OpenVAS Credential Encryption
+
+Your key will have the same user ID ("OpenVAS Credential Encryption")
+but another keyid (1B55390F) and another creation date (2013-01-18).
+
+Older versions of the Manager didn't used encrypted credentials.  Thus
+for old installations the database may hold a mix of cleartext and
+encrypted credentials.  Note, that after changing a cleartext
+credentials it will be saved encrypted.
+
+A command to migrate from the database from cleartext to encrypted
+credentials will be added in a later version.  This command will also
+allow to switch the entire database to a different key.
+
+If for backward compatibility reasons encrypted credentials are not
+desired, the manager must _always_ be started with the option
+--disable-encrypted-credentials.
+
+
 Prerequisites for Optional Features
 -----------------------------------
 

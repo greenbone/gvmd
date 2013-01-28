@@ -58,12 +58,20 @@ The program usage message follows.
       -?, --help                  Show help options
 
     Application Options:
+      --backup                    Backup the database.
       -d, --database=<file>       Use <file> as database.
+      --disable-cmds=<commands>   Disable comma-separated <commands>.
+      --disable-encrypted-credentials
+                                  Do not encrypt or decrypt credentials.
       -f, --foreground            Run in foreground.
       -a, --listen=<address>      Listen on <address>.
+      --listen2=<address>         Listen also on <address>.
       -m, --migrate               Migrate the database and exit.
+      --create-credentials-encryption-key
+                                  Create a key to encrypt credentials.
       --otp                       Serve OTP too.
       -p, --port=<number>         Use port number <number>.
+      --port2=<number>            Use port number <number> for address 2.
       --rebuild                   Rebuild the NVT cache and exit.
       -l, --slisten=<address>     Scanner (openvassd) address.
       -s, --sport=<number>        Scanner (openvassd) port number.

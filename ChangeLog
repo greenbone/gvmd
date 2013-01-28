@@ -1,3 +1,34 @@
+2013-01-28  Werner Koch  <wk@gnupg.org>
+
+	Support encrypted credentials.
+
+	* src/lsc_crypt.c, src/lsc_crypt.h: New.
+	* src/CMakeLists.txt: Add lsc_crypt.c to library manage.
+	* src/manage.h: Include "lsc_crypt.h".
+	* src/manage_sql.c (create_lsc_credential): Support encrypted
+	credentials.
+	(set_lsc_credential_password): Ditto.
+	(lsc_credential_iterator_pass_or_priv): New.
+	(lsc_credential_iterator_password): Re-implement using the new
+	function.
+	(lsc_credential_iterator_private_key): Ditto.
+	* src/sql.c (init_prepared_iterator): Clear that field.
+	(init_iterator): Ditto.
+	(cleanup_iterator): Release crypto context.
+	(next): Call lsc_crypt_flush.
+	* src/openvasmd.c (disable_encrypted_credentials): New global
+	variable.
+	(main): Add options --disable-encrypted-credentials and
+	--create-credentials-encryption-key.
+	* doc/db_postgres.sql (lsc_credentials): Add comments.
+	* INSTALL (Encrypted Credentials): New.
+	* README: Update list of command line options.
+
+2013-01-28  Werner Koch  <wk@gnupg.org>
+
+	* doc/CMakeLists.txt: Make db_postgres.sql related rules work with
+	VPATH builds.
+
 2013-01-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (make_nvt_from_nvti): Remove time tags from tags before

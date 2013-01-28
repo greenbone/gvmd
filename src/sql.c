@@ -1261,6 +1261,7 @@ init_prepared_iterator (iterator_t* iterator, sqlite3_stmt* stmt)
   iterator->done = FALSE;
   iterator->stmt = stmt;
   iterator->prepared = 1;
+  iterator->crypt_ctx = NULL;
   tracef ("   sql: init prepared %p\n", stmt);
 }
 
@@ -1287,6 +1288,7 @@ init_iterator (iterator_t* iterator, const char* sql, ...)
 
   iterator->done = FALSE;
   iterator->prepared = 0;
+  iterator->crypt_ctx = NULL;
   while (1)
     {
       ret = sqlite3_prepare (task_db, formatted, -1, &stmt, &tail);
@@ -1380,6 +1382,11 @@ cleanup_iterator (iterator_t* iterator)
 {
   if (iterator->prepared == 0)
     sqlite3_finalize (iterator->stmt);
+  if (iterator->crypt_ctx)
+    {
+      lsc_crypt_release (iterator->crypt_ctx);
+      iterator->crypt_ctx = NULL;
+    }
 }
 
 /**
@@ -1396,6 +1403,7 @@ next (iterator_t* iterator)
 
   if (iterator->done) return FALSE;
 
+  lsc_crypt_flush (iterator->crypt_ctx);
   while ((ret = sqlite3_step (iterator->stmt)) == SQLITE_BUSY);
   if (ret == SQLITE_DONE)
     {
