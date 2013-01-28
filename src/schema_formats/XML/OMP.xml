@@ -5589,7 +5589,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
             <ele>
               <name>cve</name>
-              <summary>CVE refering to this CPE</summary>
+              <summary>CVE referring to this CPE</summary>
               <pattern>
                 text
               </pattern>
@@ -5664,7 +5664,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
           <ele>
             <name>integrity_impact</name>
-            <summary>CVSS Integrety impact metric</summary>
+            <summary>CVSS Integrity impact metric</summary>
             <pattern>
               text
             </pattern>
@@ -5685,7 +5685,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
           <ele>
             <name>products</name>
-            <summary>Space seperated list of CPEs affected by this</summary>
+            <summary>Space separated list of CPEs affected by this</summary>
             <pattern>
               text
             </pattern>
@@ -5698,7 +5698,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
             <ele>
               <name>nvt</name>
-              <summary>NVT refering to this CPE</summary>
+              <summary>NVT referring to this CPE</summary>
               <pattern>
                 <attrib>
                   <name>oid</name>

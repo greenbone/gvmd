@@ -1,5 +1,9 @@
 2013-01-28  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Fix more typos.
+
+2013-01-28  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Fix typo.
 
 2013-01-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
