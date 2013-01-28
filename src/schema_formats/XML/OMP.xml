@@ -12384,7 +12384,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>params</name>
-      <summary>Paramaters for the wizard</summary>
+      <summary>Parameters for the wizard</summary>
       <pattern><any><e>param</e></any></pattern>
       <ele>
         <name>param</name>
