@@ -32217,7 +32217,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   gchar *quoted_version, *quoted_name, *quoted_summary, *quoted_description;
   gchar *quoted_copyright, *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_risk_factor, *quoted_sign_key_ids;
-  gchar *quoted_family;
+  gchar *quoted_family, *quoted_original_tag;
 
   if (remove)
     {
@@ -32237,7 +32237,62 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   quoted_cve = sql_quote (nvti_cve (nvti) ? nvti_cve (nvti) : "");
   quoted_bid = sql_quote (nvti_bid (nvti) ? nvti_bid (nvti) : "");
   quoted_xref = sql_quote (nvti_xref (nvti) ? nvti_xref (nvti) : "");
-  quoted_tag = sql_quote (nvti_tag (nvti) ? nvti_tag (nvti) : "");
+  if (nvti_tag (nvti))
+    {
+      const char *tags;
+      gchar **split, **point;
+      GString *tag;
+
+      tags = nvti_tag (nvti);
+
+      /* creation_date=2009-04-09 14:18:58 +0200 (Thu, 09 Apr 2009)|... */
+
+      split = g_strsplit (tags, "|", 0);
+      point = split;
+
+      while (*point)
+        {
+          if (((strlen (*point) > strlen ("creation_date"))
+               && (strncmp (*point, "creation_date", strlen ("creation_date"))
+                   == 0)
+               && ((*point)[strlen ("creation_date")] == '='))
+              || ((strlen (*point) > strlen ("last_modification"))
+                  && (strncmp (*point, "last_modification",
+                               strlen ("last_modification"))
+                      == 0)
+                  && ((*point)[strlen ("last_modification")] == '=')))
+            {
+              gchar **move;
+              move = point;
+              g_free (*point);
+              while (*move)
+                {
+                  move[0] = move[1];
+                  move++;
+                }
+            }
+          else
+            point++;
+        }
+
+      point = split;
+      tag = g_string_new ("");
+      while (*point)
+        {
+          if (point[1])
+            g_string_append_printf (tag, "%s|", *point);
+          else
+            g_string_append_printf (tag, "%s", *point);
+          point++;
+        }
+      g_strfreev (split);
+
+      quoted_tag = sql_quote (tag->str);
+      g_string_free (tag, TRUE);
+    }
+  else
+    quoted_tag = g_strdup ("");
+  quoted_original_tag = sql_quote (nvti_tag (nvti) ? nvti_tag (nvti) : "");
   quoted_cvss_base = sql_quote (nvti_cvss_base (nvti)
                                  ? nvti_cvss_base (nvti)
                                  : "");
@@ -32268,8 +32323,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
        quoted_family,
        quoted_cvss_base,
        quoted_risk_factor,
-       quoted_tag,
-       quoted_tag,
+       quoted_original_tag,
+       quoted_original_tag,
        nvti_oid (nvti));
 
   if (remove)
@@ -32283,6 +32338,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   g_free (quoted_cve);
   g_free (quoted_bid);
   g_free (quoted_xref);
+  g_free (quoted_original_tag);
   g_free (quoted_tag);
   g_free (quoted_cvss_base);
   g_free (quoted_risk_factor);
