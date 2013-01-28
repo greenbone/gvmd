@@ -28,13 +28,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:stylesheet version="1.0"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns:dfncert="https://www.dfn-cert.de/dfncert.dtd"
+  xmlns:dfncert="http://www.dfn-cert.de/dfncert.dtd"
   xmlns:atom="http://www.w3.org/2005/Atom"
   xmlns:str="http://exslt.org/strings"
   extension-element-prefixes="str"
   >
   <xsl:output method="text"/>
   <xsl:param name="refdate" select="'0'"/>
+  <xsl:variable name="feed_id" select="atom:feed/atom:id"/>
 
   <xsl:template match="/">
   BEGIN TRANSACTION;
@@ -55,8 +56,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     summary,
     cve_refs
   ) VALUES ( 
-    "<xsl:value-of select="substring-before(substring-after(atom:id/text(),'https://portal.cert.dfn.de/adv/'),'/')"/>",
-    "<xsl:value-of select="substring-before(substring-after(atom:id/text(),'https://portal.cert.dfn.de/adv/'),'/')"/>",
+    "<xsl:value-of select="substring-before(substring-after(atom:id/text(),$feed_id),'/')"/>",
+    "<xsl:value-of select="substring-before(substring-after(atom:id/text(),$feed_id),'/')"/>",
     "",
     strftime("%s","<xsl:value-of select="atom:published/text()"/>"),
     strftime("%s","<xsl:value-of select="atom:updated/text()"/>"),
@@ -69,7 +70,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     adv_id,
     cve_name
   ) VALUES (
-    (SELECT id FROM dfn_cert_advs WHERE name = "<xsl:value-of select="substring-before(substring-after(../atom:id/text(),'https://portal.cert.dfn.de/adv/'),'/')"/>"),
+    (SELECT id FROM dfn_cert_advs WHERE name = "<xsl:value-of select="substring-before(substring-after(../atom:id/text(),$feed_id),'/')"/>"),
     "<xsl:value-of select="."/>"
   );
   </xsl:for-each>

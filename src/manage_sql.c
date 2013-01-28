@@ -46950,3 +46950,20 @@ get_ovaldef_short_filename (char* oval_id)
                      "SELECT xml_file FROM ovaldefs WHERE name = '%s';",
                      oval_id);
 }
+
+/**
+ * @brief Get the creation date for an DFN-CERT advisory.
+ *
+ * @param[in]  name  DFN-CERT identifier.
+ *
+ * @return The creation date of the DFN-CERT advisory in ISO format,
+ *         Freed by g_free.
+ */
+gchar*
+get_dfn_cert_adv_date (char* adv_id)
+{
+  return sql_string (0, 0,
+                     "SELECT iso_time ( creation_time )"
+                     " FROM dfn_cert_advs WHERE name = '%s';",
+                     adv_id);
+}

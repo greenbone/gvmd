@@ -29,7 +29,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   xmlns:ns6="http://scap.nist.gov/schema/scap-core/0.1"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:str="http://exslt.org/strings"
-  xmlns:dfncert="https://www.dfn-cert.de/dfncert.dtd"
+  xmlns:dfncert="http://www.dfn-cert.de/dfncert.dtd"
   xmlns:atom="http://www.w3.org/2005/Atom"
   extension-element-prefixes="str"
   >
@@ -37,7 +37,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:output method="html"/>
 
 <xsl:template match="/">
-  <xsl:copy-of select="//atom:entry[substring-before(substring-after(atom:id/text(),'https://portal.cert.dfn.de/adv/'),'/') = $refname]"/>
+  <xsl:variable name="feed_id" select="atom:feed/atom:id"/>
+  <xsl:copy-of select="//atom:entry[substring-before(substring-after(atom:id/text(),$feed_id),'/') = $refname]"/>
 </xsl:template>
 
 </xsl:stylesheet>

@@ -1,3 +1,17 @@
+2013-01-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (DFN_CERT_ADV_FILENAME_FMT): Change to YYYY-MM format.
+	(get_dfn_cert_adv_filename): Change to get filename by advisory date.
+
+	* src/manage_sql.c (get_dfn_cert_adv_date): New function to get creation
+	date of a DFN-CERT advisory.
+
+	* src/manage_sql.h (get_dfn_cert_adv_date): New function.
+
+	* tools/dfn_cert_getbyname, dfn_cert_update: Change URL in xmlns:dfncert
+	from "https:" to "http:". Change clipping of entry IDs to use URL from
+	id of the feed instead of a fixed URL.
+
 2013-01-28  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml: Fix more typos.
