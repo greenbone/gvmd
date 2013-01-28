@@ -5496,7 +5496,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>id</name>
             <type>integer</type>
-            <summary>A unique number idenitfying this info, if available</summary>
+            <summary>A unique number identifying this info, if available</summary>
           </attrib>
           <e>name</e>
           <e>comment</e>
@@ -5601,125 +5601,125 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
           </ele>
         </ele>
-      <ele>
-        <name>nvt</name>
-        <pattern>
-          text
-        </pattern>
-        <summary>A NVT info element</summary>
-      </ele>
-      <ele>
-        <name>cve</name>
-        <pattern>
-          <o><e>cvss</e></o>
-          <o><e>vector</e></o>
-          <o><e>complexity</e></o>
-          <o><e>authentication</e></o>
-          <o><e>confidentiality_impact</e></o>
-          <o><e>integrity_impact</e></o>
-          <o><e>availability_impact</e></o>
-          <e>description</e>
-          <e>products</e>
-          <o><e>nvts</e></o>
-          <o><e>raw_data</e></o>
-        </pattern>
-        <summary>A CVE info element</summary>
         <ele>
-          <name>cvss</name>
-          <summary>CVSS Base Score</summary>
+          <name>nvt</name>
           <pattern>
             text
           </pattern>
+          <summary>A NVT info element</summary>
         </ele>
         <ele>
-          <name>vector</name>
-          <summary>CVSS Access Vector metric</summary>
+          <name>cve</name>
           <pattern>
-            text
+            <o><e>cvss</e></o>
+            <o><e>vector</e></o>
+            <o><e>complexity</e></o>
+            <o><e>authentication</e></o>
+            <o><e>confidentiality_impact</e></o>
+            <o><e>integrity_impact</e></o>
+            <o><e>availability_impact</e></o>
+            <e>description</e>
+            <e>products</e>
+            <o><e>nvts</e></o>
+            <o><e>raw_data</e></o>
           </pattern>
-        </ele>
-        <ele>
-          <name>complexity</name>
-          <summary>CVSS Attack Complexity metric</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>authentication</name>
-          <summary>CVSS Authentication metric</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>confidentiality_impact</name>
-          <summary>CVSS Confidentiality impact metric</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>integrity_impact</name>
-          <summary>CVSS Integrety impact metric</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>availability_impact</name>
-          <summary>CVSS Availability impact metric</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>description</name>
-          <summary>The CVE's description</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>products</name>
-          <summary>Space seperated list of CPEs affected by this</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>nvts</name>
-          <summary>NVTs addressing this CVE. Only when details were requested</summary>
-          <pattern>
-            <o><e>nvt</e></o>
-          </pattern>
+          <summary>A CVE info element</summary>
           <ele>
-            <name>nvt</name>
-            <summary>NVT refering to this CPE</summary>
+            <name>cvss</name>
+            <summary>CVSS Base Score</summary>
             <pattern>
-              <attrib>
-                <name>oid</name>
-                <type>oid</type>
-              </attrib>
-              <e>name</e>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>vector</name>
+            <summary>CVSS Access Vector metric</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>complexity</name>
+            <summary>CVSS Attack Complexity metric</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>authentication</name>
+            <summary>CVSS Authentication metric</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>confidentiality_impact</name>
+            <summary>CVSS Confidentiality impact metric</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>integrity_impact</name>
+            <summary>CVSS Integrety impact metric</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>availability_impact</name>
+            <summary>CVSS Availability impact metric</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>description</name>
+            <summary>The CVE's description</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>products</name>
+            <summary>Space seperated list of CPEs affected by this</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>nvts</name>
+            <summary>NVTs addressing this CVE. Only when details were requested</summary>
+            <pattern>
+              <o><e>nvt</e></o>
             </pattern>
             <ele>
-              <name>name</name>
-              <summary>Name of the NVT</summary>
+              <name>nvt</name>
+              <summary>NVT refering to this CPE</summary>
               <pattern>
-                text
+                <attrib>
+                  <name>oid</name>
+                  <type>oid</type>
+                </attrib>
+                <e>name</e>
               </pattern>
+              <ele>
+                <name>name</name>
+                <summary>Name of the NVT</summary>
+                <pattern>
+                  text
+                </pattern>
+              </ele>
             </ele>
           </ele>
+          <ele>
+            <name>raw_data</name>
+            <summary>Source representation of the information. Only when details were requested</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
         </ele>
-        <ele>
-          <name>raw_data</name>
-          <summary>Source representation of the information. Only when details were requested</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-      </ele>
       </ele>
       <ele>
         <name>filters</name>
