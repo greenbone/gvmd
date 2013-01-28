@@ -5442,7 +5442,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <attrib>
         <name>type</name>
-        <summary>Type must be either CPE, CVE or NVT</summary>
+        <summary>Type must be either CPE, CVE, DFN_CERT_ADV, OVALDEF or NVT</summary>
         <type>text</type>
         <required>1</required>
       </attrib>
@@ -5505,6 +5505,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>update_time</e>
           <o><e>cpe</e></o>
           <o><e>cve</e></o>
+          <o><e>dfn_cert_adv</e></o>
+          <o><e>ovaldef</e></o>
           <o><e>nvt</e></o>
         </pattern>
         <ele>
@@ -5621,6 +5623,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>description</e>
             <e>products</e>
             <o><e>nvts</e></o>
+            <o><e>cert</e></o>
             <o><e>raw_data</e></o>
           </pattern>
           <summary>A CVE info element</summary>
@@ -5711,6 +5714,145 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 </pattern>
               </ele>
             </ele>
+          </ele>
+          <ele>
+            <name>cert</name>
+            <summary>List of CERT advisories referencing this CVE</summary>
+            <pattern>
+              <any><e>cert_ref</e></any>
+            </pattern>
+            <ele>
+              <name>cert_ref</name>
+              <summary>A CERT advisory reference</summary>
+              <pattern>
+                <attrib>
+                  <name>type</name>
+                  <summary>Type of the advisory (e.g. "DFN-CERT", "CERT-BUND")</summary>
+                  <type>text</type>
+                </attrib>
+                <e>name</e>
+                <e>title</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>The name / ID of the advisory</summary>
+                <pattern>
+                  text
+                </pattern>
+              </ele>
+              <ele>
+                <name>title</name>
+                <summary>The title of the advisory</summary>
+                <pattern>
+                  text
+                </pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>raw_data</name>
+            <summary>Source representation of the information. Only when details were requested</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>dfn_cert_adv</name>
+          <pattern>
+            <e>title</e>
+            <e>summary</e>
+            <e>cve_refs</e>
+            <o><e>raw_data</e></o>
+          </pattern>
+          <summary>An DFN-CERT advisory info element</summary>
+          <ele>
+            <name>title</name>
+            <summary>Title of the advisory</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>summary</name>
+            <summary>Summary text of the advisory</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>cve_refs</name>
+            <summary>Number of CVEs referenced by this advisory</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>raw_data</name>
+            <summary>Source representation of the information. Only when details were requested</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>ovaldef</name>
+          <pattern>
+            <e>version</e>
+            <e>deprecated</e>
+            <e>def_class</e>
+            <e>title</e>
+            <o><e>description</e></o>
+            <o><e>xml_file</e></o>
+            <o><e>raw_data</e></o>
+          </pattern>
+          <summary>An OVAL definition info element</summary>
+          <ele>
+            <name>version</name>
+            <summary>Version number of the OVAL definition</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>deprecated</name>
+            <summary>Whether the definition is deprecated</summary>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>Yes</alt>
+                  <alt>No</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>def_class</name>
+            <summary>Definition class of the definition</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>title</name>
+            <summary>Title of the definition</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>description</name>
+            <summary>Longer description of the definition. Only when details were requested</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>xml_file</name>
+            <summary>Path to the source xml file, relative to the SCAP data directory. Only when details were requested</summary>
+            <pattern>
+              text
+            </pattern>
           </ele>
           <ele>
             <name>raw_data</name>
@@ -6719,6 +6861,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>cvss_base</e>
               <e>risk_factor</e>
               <e>cve_id</e>
+              <e>cert_refs</e>
               <e>bugtraq_id</e>
               <e>xrefs</e>
               <e>fingerprints</e>
@@ -6773,6 +6916,29 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>bugtraq_id</name>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>cert_refs</name>
+          <summary>List of CERT advisories referencing this NVT via CVEs</summary>
+          <pattern>
+            <any><e>cert_ref</e></any>
+          </pattern>
+          <ele>
+            <name>cert_ref</name>
+            <summary>A CERT advisory reference</summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <summary>ID of the advisory</summary>
+                <type>text</type>
+              </attrib>
+              <attrib>
+                <name>type</name>
+                <summary>Type of the advisory (e.g. "DFN-CERT", "CERT-BUND")</summary>
+                <type>text</type>
+              </attrib>
+            </pattern>
+          </ele>
         </ele>
         <ele>
           <name>xrefs</name>
@@ -8512,6 +8678,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>risk_factor</e>
               <e>cve</e>
               <e>bid</e>
+              <e>cert</e>
             </pattern>
             <ele>
               <name>name</name>
@@ -8537,6 +8704,29 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>bid</name>
               <summary>BID associated with the NVT</summary>
               <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>cert</name>
+              <summary>List of CERT advisories referencing this NVT via CVEs</summary>
+              <pattern>
+                <any><e>cert_ref</e></any>
+              </pattern>
+              <ele>
+                <name>cert_ref</name>
+                <summary>A CERT advisory reference</summary>
+                <pattern>
+                  <attrib>
+                    <name>id</name>
+                    <summary>ID of the advisory</summary>
+                    <type>text</type>
+                  </attrib>
+                  <attrib>
+                    <name>type</name>
+                    <summary>Type of the advisory (e.g. "DFN-CERT", "CERT-BUND")</summary>
+                    <type>text</type>
+                  </attrib>
+                </pattern>
+              </ele>
             </ele>
           </ele>
           <ele>

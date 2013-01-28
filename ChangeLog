@@ -1,5 +1,11 @@
 2013-01-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* doc/omp.rnc, doc/omp.html, src/schema_formats/XML/OMP.xml (get_info):
+	Add OVAL and DFN-CERT items to get_info type attribute and response,
+	including CERT references in CVEs and NVTs.
+
+2013-01-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (get_info): Fix spelling mistake in
 	summary for response element info and indentation for NVT and CVE.
 

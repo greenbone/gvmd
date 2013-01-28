@@ -9369,7 +9369,7 @@ get_filters_response_filter_count_page
 <li>
           @<b>type</b>
           (text)
-          Type must be either CPE, CVE or NVT.
+          Type must be either CPE, CVE, DFN_CERT_ADV, OVALDEF or NVT.
           </li>
 <li>
           @<b>name</b>
@@ -9414,7 +9414,7 @@ get_filters_response_filter_count_page
 <li>
           @<b>id</b>
           (<a href="#type_integer">integer</a>)
-          A unique number idenitfying this info, if available.
+          A unique number identifying this info, if available.
           </li>
 <li>
               &lt;<b>name</b>&gt;
@@ -9555,6 +9555,98 @@ get_filters_response_filter_count_page
 </li></ul>
 </li>
 <li>
+              &lt;<b>cert</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">List of CERT advisories referencing this CVE.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>cert_ref</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">A CERT advisory reference.</div>
+<ul style="list-style: none">
+<li>
+          @<b>type</b>
+          (text)
+          Type of the advisory (e.g. "DFN-CERT", "CERT-BUND").
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name / ID of the advisory.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>title</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The title of the advisory.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>raw_data</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Source representation of the information. Only when details were requested.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>dfn_cert_adv</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">An DFN-CERT advisory info element.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>title</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Title of the advisory.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>summary</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Summary text of the advisory.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>cve_refs</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of CVEs referenced by this advisory.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>raw_data</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Source representation of the information. Only when details were requested.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>ovaldef</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">An OVAL definition info element.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>version</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Version number of the OVAL definition.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>deprecated</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the definition is deprecated.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>def_class</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Definition class of the definition.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>title</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Title of the definition.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>description</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Longer description of the definition. Only when details were requested.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>xml_file</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Path to the source xml file, relative to the SCAP data directory. Only when details were requested.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>raw_data</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Source representation of the information. Only when details were requested.</div>
 <ul style="list-style: none"></ul>
@@ -9664,6 +9756,8 @@ get_info_response_info
        &amp; get_info_response_info_update_time
        &amp; get_info_response_info_cpe?
        &amp; get_info_response_info_cve?
+       &amp; get_info_response_info_dfn_cert_adv?
+       &amp; get_info_response_info_ovaldef?
        &amp; get_info_response_info_nvt?
      }
 
@@ -9776,6 +9870,7 @@ get_info_response_info_cve
        &amp; get_info_response_info_cve_description
        &amp; get_info_response_info_cve_products
        &amp; get_info_response_info_cve_nvts?
+       &amp; get_info_response_info_cve_cert?
        &amp; get_info_response_info_cve_raw_data?
      }
 
@@ -9852,7 +9947,120 @@ get_info_response_info_cve_nvts_nvt_name
        text
      }
 
+get_info_response_info_cve_cert
+ = element cert
+     {
+       get_info_response_info_cve_cert_cert_ref*
+     }
+
+get_info_response_info_cve_cert_cert_ref
+ = element cert_ref
+     {
+       attribute type { text }?
+       &amp; get_info_response_info_cve_cert_cert_ref_name
+       &amp; get_info_response_info_cve_cert_cert_ref_title
+     }
+
+get_info_response_info_cve_cert_cert_ref_name
+ = element name
+     {
+       text
+     }
+
+get_info_response_info_cve_cert_cert_ref_title
+ = element title
+     {
+       text
+     }
+
 get_info_response_info_cve_raw_data
+ = element raw_data
+     {
+       text
+     }
+
+get_info_response_info_dfn_cert_adv
+ = element dfn_cert_adv
+     {
+       get_info_response_info_dfn_cert_adv_title
+       &amp; get_info_response_info_dfn_cert_adv_summary
+       &amp; get_info_response_info_dfn_cert_adv_cve_refs
+       &amp; get_info_response_info_dfn_cert_adv_raw_data?
+     }
+
+get_info_response_info_dfn_cert_adv_title
+ = element title
+     {
+       text
+     }
+
+get_info_response_info_dfn_cert_adv_summary
+ = element summary
+     {
+       text
+     }
+
+get_info_response_info_dfn_cert_adv_cve_refs
+ = element cve_refs
+     {
+       integer
+     }
+
+get_info_response_info_dfn_cert_adv_raw_data
+ = element raw_data
+     {
+       text
+     }
+
+get_info_response_info_ovaldef
+ = element ovaldef
+     {
+       get_info_response_info_ovaldef_version
+       &amp; get_info_response_info_ovaldef_deprecated
+       &amp; get_info_response_info_ovaldef_def_class
+       &amp; get_info_response_info_ovaldef_title
+       &amp; get_info_response_info_ovaldef_description?
+       &amp; get_info_response_info_ovaldef_xml_file?
+       &amp; get_info_response_info_ovaldef_raw_data?
+     }
+
+get_info_response_info_ovaldef_version
+ = element version
+     {
+       integer
+     }
+
+get_info_response_info_ovaldef_deprecated
+ = element deprecated
+     {
+       xsd:token { pattern = "Yes|No" }
+     }
+
+get_info_response_info_ovaldef_def_class
+ = element def_class
+     {
+       text
+     }
+
+get_info_response_info_ovaldef_title
+ = element title
+     {
+       text
+     }
+
+get_info_response_info_ovaldef_description
+ = element description
+     {
+       text
+     }
+
+get_info_response_info_ovaldef_xml_file
+ = element xml_file
+     {
+       text
+     }
+
+get_info_response_info_ovaldef_raw_data
  = element raw_data
      {
        text
@@ -11101,6 +11309,26 @@ get_notes_response_note_result_description
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>cert_refs</b>&gt;
+              <div style="margin-left: 15px; display: inline;">List of CERT advisories referencing this NVT via CVEs.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>cert_ref</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">A CERT advisory reference.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (text)
+          ID of the advisory.
+          </li>
+<li>
+          @<b>type</b>
+          (text)
+          Type of the advisory (e.g. "DFN-CERT", "CERT-BUND").
+          </li>
+</ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>bugtraq_id</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -11201,6 +11429,7 @@ get_nvts_response_nvt
            &amp; get_nvts_response_nvt_cvss_base
            &amp; get_nvts_response_nvt_risk_factor
            &amp; get_nvts_response_nvt_cve_id
+           &amp; get_nvts_response_nvt_cert_refs
            &amp; get_nvts_response_nvt_bugtraq_id
            &amp; get_nvts_response_nvt_xrefs
            &amp; get_nvts_response_nvt_fingerprints
@@ -11274,6 +11503,19 @@ get_nvts_response_nvt_bugtraq_id
  = element bugtraq_id
      {
        text
+     }
+
+get_nvts_response_nvt_cert_refs
+ = element cert_refs
+     {
+       get_nvts_response_nvt_cert_refs_cert_ref*
+     }
+
+get_nvts_response_nvt_cert_refs_cert_ref
+ = element cert_ref
+     {
+       attribute id { text }?
+       &amp; attribute type { text }?
      }
 
 get_nvts_response_nvt_xrefs
@@ -13641,6 +13883,26 @@ get_report_formats_response_report_format_active
               <div style="margin-left: 15px; display: inline;">BID associated with the NVT.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>cert</b>&gt;
+              <div style="margin-left: 15px; display: inline;">List of CERT advisories referencing this NVT via CVEs.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>cert_ref</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">A CERT advisory reference.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (text)
+          ID of the advisory.
+          </li>
+<li>
+          @<b>type</b>
+          (text)
+          Type of the advisory (e.g. "DFN-CERT", "CERT-BUND").
+          </li>
+</ul>
+</li></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -13737,6 +13999,7 @@ get_results_response_results_result_nvt
        &amp; get_results_response_results_result_nvt_risk_factor
        &amp; get_results_response_results_result_nvt_cve
        &amp; get_results_response_results_result_nvt_bid
+       &amp; get_results_response_results_result_nvt_cert
      }
 
 get_results_response_results_result_nvt_name
@@ -13767,6 +14030,19 @@ get_results_response_results_result_nvt_bid
  = element bid
      {
        integer
+     }
+
+get_results_response_results_result_nvt_cert
+ = element cert
+     {
+       get_results_response_results_result_nvt_cert_cert_ref*
+     }
+
+get_results_response_results_result_nvt_cert_cert_ref
+ = element cert_ref
+     {
+       attribute id { text }?
+       &amp; attribute type { text }?
      }
 
 get_results_response_results_result_threat

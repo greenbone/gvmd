@@ -2905,7 +2905,7 @@ get_filters
 get_info
  = element get_info
      {
-       # Type must be either CPE, CVE or NVT.
+       # Type must be either CPE, CVE, DFN_CERT_ADV, OVALDEF or NVT.
        attribute type { text }
        & # Name or identifier of the requested information.
        attribute name { text }?
@@ -5341,7 +5341,7 @@ get_info_response
 get_info_response_info
  = element info
      {
-       # A unique number idenitfying this info, if available.
+       # A unique number identifying this info, if available.
        attribute id { integer }?
        & get_info_response_info_name
        & get_info_response_info_comment
@@ -5350,6 +5350,8 @@ get_info_response_info
        & get_info_response_info_update_time
        & get_info_response_info_cpe?
        & get_info_response_info_cve?
+       & get_info_response_info_dfn_cert_adv?
+       & get_info_response_info_ovaldef?
        & get_info_response_info_nvt?
      }
 
@@ -5478,6 +5480,7 @@ get_info_response_info_cve
        & get_info_response_info_cve_description
        & get_info_response_info_cve_products
        & get_info_response_info_cve_nvts?
+       & get_info_response_info_cve_cert?
        & get_info_response_info_cve_raw_data?
      }
 
@@ -5566,8 +5569,139 @@ get_info_response_info_cve_nvts_nvt_name
        text
      }
 
+# List of CERT advisories referencing this CVE.
+get_info_response_info_cve_cert
+ = element cert
+     {
+       get_info_response_info_cve_cert_cert_ref*
+     }
+
+# A CERT advisory reference.
+get_info_response_info_cve_cert_cert_ref
+ = element cert_ref
+     {
+       # Type of the advisory (e.g. "DFN-CERT", "CERT-BUND").
+       attribute type { text }?
+       & get_info_response_info_cve_cert_cert_ref_name
+       & get_info_response_info_cve_cert_cert_ref_title
+     }
+
+# The name / ID of the advisory.
+get_info_response_info_cve_cert_cert_ref_name
+ = element name
+     {
+       text
+     }
+
+# The title of the advisory.
+get_info_response_info_cve_cert_cert_ref_title
+ = element title
+     {
+       text
+     }
+
 # Source representation of the information. Only when details were requested.
 get_info_response_info_cve_raw_data
+ = element raw_data
+     {
+       text
+     }
+
+# An DFN-CERT advisory info element.
+get_info_response_info_dfn_cert_adv
+ = element dfn_cert_adv
+     {
+       get_info_response_info_dfn_cert_adv_title
+       & get_info_response_info_dfn_cert_adv_summary
+       & get_info_response_info_dfn_cert_adv_cve_refs
+       & get_info_response_info_dfn_cert_adv_raw_data?
+     }
+
+# Title of the advisory.
+get_info_response_info_dfn_cert_adv_title
+ = element title
+     {
+       text
+     }
+
+# Summary text of the advisory.
+get_info_response_info_dfn_cert_adv_summary
+ = element summary
+     {
+       text
+     }
+
+# Number of CVEs referenced by this advisory.
+get_info_response_info_dfn_cert_adv_cve_refs
+ = element cve_refs
+     {
+       integer
+     }
+
+# Source representation of the information. Only when details were requested.
+get_info_response_info_dfn_cert_adv_raw_data
+ = element raw_data
+     {
+       text
+     }
+
+# An OVAL definition info element.
+get_info_response_info_ovaldef
+ = element ovaldef
+     {
+       get_info_response_info_ovaldef_version
+       & get_info_response_info_ovaldef_deprecated
+       & get_info_response_info_ovaldef_def_class
+       & get_info_response_info_ovaldef_title
+       & get_info_response_info_ovaldef_description?
+       & get_info_response_info_ovaldef_xml_file?
+       & get_info_response_info_ovaldef_raw_data?
+     }
+
+# Version number of the OVAL definition.
+get_info_response_info_ovaldef_version
+ = element version
+     {
+       integer
+     }
+
+# Whether the definition is deprecated.
+get_info_response_info_ovaldef_deprecated
+ = element deprecated
+     {
+       xsd:token { pattern = "Yes|No" }
+     }
+
+# Definition class of the definition.
+get_info_response_info_ovaldef_def_class
+ = element def_class
+     {
+       text
+     }
+
+# Title of the definition.
+get_info_response_info_ovaldef_title
+ = element title
+     {
+       text
+     }
+
+# Longer description of the definition. Only when details were requested.
+get_info_response_info_ovaldef_description
+ = element description
+     {
+       text
+     }
+
+# Path to the source xml file, relative to the SCAP data directory. Only when details were requested.
+get_info_response_info_ovaldef_xml_file
+ = element xml_file
+     {
+       text
+     }
+
+# Source representation of the information. Only when details were requested.
+get_info_response_info_ovaldef_raw_data
  = element raw_data
      {
        text
@@ -6023,6 +6157,7 @@ get_nvts_response_nvt
            & get_nvts_response_nvt_cvss_base
            & get_nvts_response_nvt_risk_factor
            & get_nvts_response_nvt_cve_id
+           & get_nvts_response_nvt_cert_refs
            & get_nvts_response_nvt_bugtraq_id
            & get_nvts_response_nvt_xrefs
            & get_nvts_response_nvt_fingerprints
@@ -6097,6 +6232,23 @@ get_nvts_response_nvt_bugtraq_id
  = element bugtraq_id
      {
        text
+     }
+
+# List of CERT advisories referencing this NVT via CVEs.
+get_nvts_response_nvt_cert_refs
+ = element cert_refs
+     {
+       get_nvts_response_nvt_cert_refs_cert_ref*
+     }
+
+# A CERT advisory reference.
+get_nvts_response_nvt_cert_refs_cert_ref
+ = element cert_ref
+     {
+       # ID of the advisory.
+       attribute id { text }?
+       & # Type of the advisory (e.g. "DFN-CERT", "CERT-BUND").
+       attribute type { text }?
      }
 
 get_nvts_response_nvt_xrefs
@@ -6972,6 +7124,7 @@ get_results_response_results_result_nvt
        & get_results_response_results_result_nvt_risk_factor
        & get_results_response_results_result_nvt_cve
        & get_results_response_results_result_nvt_bid
+       & get_results_response_results_result_nvt_cert
      }
 
 # The name of the NVT.
@@ -7007,6 +7160,23 @@ get_results_response_results_result_nvt_bid
  = element bid
      {
        integer
+     }
+
+# List of CERT advisories referencing this NVT via CVEs.
+get_results_response_results_result_nvt_cert
+ = element cert
+     {
+       get_results_response_results_result_nvt_cert_cert_ref*
+     }
+
+# A CERT advisory reference.
+get_results_response_results_result_nvt_cert_cert_ref
+ = element cert_ref
+     {
+       # ID of the advisory.
+       attribute id { text }?
+       & # Type of the advisory (e.g. "DFN-CERT", "CERT-BUND").
+       attribute type { text }?
      }
 
 get_results_response_results_result_threat
