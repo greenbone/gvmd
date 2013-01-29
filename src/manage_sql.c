@@ -38046,7 +38046,8 @@ modify_override (override_t override, const char *active, const char* text,
  * @brief Filter columns for override iterator.
  */
 #define OVERRIDE_ITERATOR_FILTER_COLUMNS                                     \
- { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "nvt_id", NULL }
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "nvt_id",        \
+   "task_name", "hosts", "port", "threat", "new_threat", "result", NULL }
 
 /**
  * @brief Override iterator columns.
@@ -38064,7 +38065,8 @@ modify_override (override_t override, const char *active, const char* text,
   " overrides.hosts, overrides.port, overrides.threat, overrides.new_threat, overrides.task, overrides.result,"      \
   " overrides.end_time, (overrides.end_time = 0) OR (overrides.end_time >= now ()),"   \
   " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS nvt,"                 \
-  " overrides.nvt AS nvt_id, '' AS task_id"
+  " overrides.nvt AS nvt_id, '' AS task_id,"                                   \
+  " (SELECT name FROM tasks WHERE ROWID = overrides.task) AS task_name"
 
 /**
  * @brief Override iterator columns for trash case.
@@ -38083,7 +38085,8 @@ modify_override (override_t override, const char *active, const char* text,
   " overrides_trash.end_time,"                                                 \
   " (overrides_trash.end_time = 0) OR (overrides_trash.end_time >= now ()),"   \
   " (SELECT name FROM nvts WHERE oid = overrides_trash.nvt) AS nvt,"           \
-  " overrides_trash.nvt AS nvt_id, '' AS task_id"
+   " overrides_trash.nvt AS nvt_id, '' AS task_id,"                             \
+  " (SELECT name FROM tasks WHERE ROWID = overrides_trash.task) AS task_name"
 
 /**
  * @brief Count number of overrides.

@@ -1,5 +1,12 @@
 2013-01-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (OVERRIDE_ITERATOR_FILTER_COLUMNS): Add more filtering
+	fields.
+	(OVERRIDE_ITERATOR_COLUMNS, OVERRIDE_ITERATOR_TRASH_COLUMNS): Add
+	task_name, for filtering.
+
+2013-01-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_override, manage_restore): Clear report count
 	cache when deleting or restoring an override.
 
