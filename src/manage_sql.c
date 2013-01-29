@@ -37919,6 +37919,8 @@ delete_override (const char *override_id, int ultimate)
 
   sql ("DELETE FROM overrides WHERE ROWID = %llu;", override);
 
+  reports_clear_count_cache (1);
+
   sql ("COMMIT;");
   return 0;
 }
@@ -45421,6 +45423,7 @@ manage_restore (const char *id)
            " FROM overrides_trash WHERE ROWID = %llu;",
            resource);
       sql ("DELETE FROM overrides_trash WHERE ROWID = %llu;", resource);
+      reports_clear_count_cache (1);
       sql ("COMMIT;");
       return 0;
     }

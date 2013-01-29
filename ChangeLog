@@ -1,3 +1,8 @@
+2013-01-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (delete_override, manage_restore): Clear report count
+	cache when deleting or restoring an override.
+
 2013-01-28  Werner Koch  <wk@gnupg.org>
 
 	Support encrypted credentials.
