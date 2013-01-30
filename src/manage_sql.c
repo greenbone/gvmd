@@ -46027,8 +46027,13 @@ char *
 setting_filter (const char *resource)
 {
   return sql_string (0, 0,
-                     " SELECT value FROM settings WHERE name = '%s Filter'",
-                     resource);
+                     " SELECT value FROM settings WHERE name = '%s Filter'"
+                     "  AND ((owner IS NULL)"
+                     "  OR (owner ="
+                     "      (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                     " ORDER BY owner DESC;",
+                     resource,
+                     current_credentials.uuid);
 }
 
 /**

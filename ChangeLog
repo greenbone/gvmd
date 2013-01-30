@@ -1,3 +1,8 @@
+2013-01-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (setting_filter): Restrict to global filters or
+	current user's filters.
+
 2013-01-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (OVERRIDE_ITERATOR_FILTER_COLUMNS): Add more filtering
