@@ -2938,6 +2938,8 @@ get_lsc_credentials
        attribute actions { actions }?
        & # Whether to get the trashcan LSC credentials instead.
        attribute trash { boolean }?
+       & # Whether to include a list of targets using the credentials.
+       attribute targets { boolean }?
        & attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
@@ -5847,6 +5849,9 @@ get_lsc_credentials_response_lsc_credential
        & get_lsc_credentials_response_lsc_credential_name
        & get_lsc_credentials_response_lsc_credential_login
        & get_lsc_credentials_response_lsc_credential_comment
+       & get_lsc_credentials_response_lsc_credential_creation_time
+       & get_lsc_credentials_response_lsc_credential_modification_time
+       & get_lsc_credentials_response_lsc_credential_writable
        & get_lsc_credentials_response_lsc_credential_in_use
        & get_lsc_credentials_response_lsc_credential_type
        & get_lsc_credentials_response_lsc_credential_targets
@@ -5873,6 +5878,27 @@ get_lsc_credentials_response_lsc_credential_comment
  = element comment
      {
        text
+     }
+
+# Date and time the info was created.
+get_lsc_credentials_response_lsc_credential_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the info was last modified.
+get_lsc_credentials_response_lsc_credential_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# Whether this credential is writable.
+get_lsc_credentials_response_lsc_credential_writable
+ = element writable
+     {
+       boolean
      }
 
 # Whether any targets are using the LSC credential.
@@ -6202,6 +6228,8 @@ get_nvts_response_nvt
        attribute id { uuid }
        & get_nvts_response_nvt_name
        & get_nvts_response_nvt_checksum
+       & get_nvts_response_nvt_creation_time
+       & get_nvts_response_nvt_modification_time
        & ( get_nvts_response_nvt_category
            & get_nvts_response_nvt_copyright
            & get_nvts_response_nvt_description
@@ -6232,6 +6260,18 @@ get_nvts_response_nvt_category
  = element category
      {
        text
+     }
+
+get_nvts_response_nvt_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_nvts_response_nvt_modification_time
+ = element modification_time
+     {
+       iso_time
      }
 
 get_nvts_response_nvt_copyright
@@ -6531,13 +6571,15 @@ get_overrides_response_override
  = element override
      {
        get_overrides_response_override_nvt
+       & get_overrides_response_override_creation_time
+       & get_overrides_response_override_modification_time
+       & get_overrides_response_override_writable
+       & get_overrides_response_override_in_use
        & get_overrides_response_override_text
        & get_overrides_response_override_threat
        & get_overrides_response_override_new_threat
        & get_overrides_response_override_orphan
-       & ( get_overrides_response_override_creation_time
-           & get_overrides_response_override_modification_time
-           & get_overrides_response_override_hosts
+       & ( get_overrides_response_override_hosts
            & get_overrides_response_override_port
            & get_overrides_response_override_task
            & get_overrides_response_override_active
@@ -6564,6 +6606,30 @@ get_overrides_response_override_text
      {
        text
        & attribute excerpt { boolean }
+     }
+
+get_overrides_response_override_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_overrides_response_override_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+get_overrides_response_override_writable
+ = element writable
+     {
+       boolean
+     }
+
+get_overrides_response_override_in_use
+ = element in_use
+     {
+       boolean
      }
 
 # Threat level to which override applies.

@@ -1,5 +1,10 @@
 2013-01-31  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* doc/omp.html, doc/omp.rnc, src/schema_formats/XML/OMP.xml: Update
+	documentation for get_lsc_credentials, get_notes, get_overrides.
+
+2013-01-31  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Remove duplicate login and
 	pass tags when targets are requested in GET_LSC_CREDENTIALS case.
 

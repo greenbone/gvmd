@@ -6177,7 +6177,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <filtered>1</filtered>
             <page>1</page>
           </info_count>
-        </get_info_response> 
+        </get_info_response>
       </response>
     </example>
   </command>
@@ -6185,7 +6185,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <name>get_lsc_credentials</name>
     <summary>Get all LSC credentials</summary>
     <description>
-      The client uses the get_lsc_credentials command to get LSC credential information.
+      The client uses the get_lsc_credentials command to get LSC credentials information.
       If the command sent by the client was valid, the manager will
       reply with a list of LSC credentials to the client.
     </description>
@@ -6203,6 +6203,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan LSC credentials instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>targets</name>
+        <summary>Whether to include a list of targets using the credentials</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
@@ -6250,6 +6255,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>name</e>
           <e>login</e>
           <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
           <e>in_use</e>
           <e>type</e>
           <e>targets</e>
@@ -6270,6 +6278,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>comment</name>
           <summary>The comment on the LSC credential</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the info was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the info was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether this credential is writable</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>in_use</name>
@@ -6345,41 +6368,44 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>sally</name>
             <login>sally</login>
             <comment></comment>
+            <creation_time>2012-12-14T17:11:25+01:00</creation_time>
+            <modification_time>2012-05-28T11:19:20+01:00</modification_time>
+            <writable>1</writable>
             <in_use>0</in_use>
             <type>gen</type>
-            <targets></targets>
           </lsc_credential>
           <lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15">
             <name>bob</name>
-            <login>bob</login>
             <comment>Bob on the web server.</comment>
+            <creation_time>2013-01-03T15:49:35+01:00</creation_time>
+            <modification_time>2013-01-18T12:07:00+01:00</modification_time>
+            <writable>1</writable>
             <in_use>1</in_use>
+            <login>bob</login>
             <type>pass</type>
-            <targets>
-              <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
-                <name>Web server</name>
-              </target>
-            </targets>
           </lsc_credential>
           <truncated>...</truncated>
         </get_lsc_credentials_response>
       </response>
     </example>
     <example>
-      <summary>Get the public key of a single LSC credential</summary>
+      <summary>Get a single LSC credential, its public key and targets using it</summary>
       <request>
         <get_lsc_credentials
           lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
-          format="key">
+          format="key" targets="1">
         </get_lsc_credentials>
       </request>
       <response>
         <get_lsc_credentials_response status="200" status_text="OK">
           <lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15">
             <name>bob</name>
-            <login>bob</login>
             <comment>Bob on the web server.</comment>
+            <creation_time>2012-11-03T15:41:35+01:00</creation_time>
+            <modification_time>2012-11-18T13:17:00+01:00</modification_time>
+            <writable>1</writable>
             <in_use>1</in_use>
+            <login>bob</login>
             <type>pass</type>
             <targets>
               <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
@@ -6407,6 +6433,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>bob</name>
             <login>bob</login>
             <comment>Bob on the web server.</comment>
+            <creation_time>2012-11-03T15:41:35+01:00</creation_time>
+            <modification_time>2012-11-18T13:17:00+01:00</modification_time>
+            <writable>1</writable>
             <in_use>1</in_use>
             <type>pass</type>
             <targets>
@@ -6754,16 +6783,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <nvt oid="1.3.6.1.4.1.25623.1.0.75">
               <name>Test NVT: long lines</name>
             </nvt>
-            <text excerpt="0">This is the full text of the note.</text>
-            <orphan>1</orphan>
+            <creation_time>2013-01-09T09:47:41+01:00</creation_time>
+            <modification_time>2013-01-09T09:47:41+01:00</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
             <active>1</active>
+            <orphan>1</orphan>
+            <text excerpt="0">This is the full text of the note.</text>
           </note>
           <truncated>...</truncated>
         </get_notes_response>
       </response>
     </example>
     <example>
-      <summary>Get details of a single note</summary>
+      <summary>Get details of a single note and result to which it applies</summary>
       <request>
         <get_notes note_id="7f618bbb-4664-419e-9bbf-367d93954cb0" details="1" result="1">
         </get_notes>
@@ -6776,6 +6809,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </nvt>
             <creation_time>Sun Jun 27 08:49:46 2010</creation_time>
             <modification_time>Sun Jun 27 08:49:46 2010</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <active>1</active>
+            <end_time></end_time>
             <text>note fixed to result</text>
             <hosts>127.0.0.1</hosts>
             <port>general/tcp</port>
@@ -6798,8 +6835,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <threat>Medium</threat>
               <description>Warning with control char between fullstops: . .</description>
             </result>
-            <active>1</active>
-            <end_time></end_time>
           </note>
           <truncated>...</truncated>
         </get_notes_response>
@@ -6914,6 +6949,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </attrib>
           <e>name</e>
           <e>checksum</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
           <o>
             <g>
               <e>category</e>
@@ -6944,6 +6981,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>category</name>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>copyright</name>
@@ -7075,15 +7120,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get full NVT listing</summary>
+      <summary>Get full NVT listing with details</summary>
       <request>
-        <get_nvts details="1" timeout="1" preference_count="1" preferences="1">
+        <get_nvts details="1">
         </get_nvts>
       </request>
       <response>
         <get_nvts_response status="200" status_text="OK">
           <nvt oid="1.3.6.1.4.1.25623.1.7.13005">
             <name>Services</name>
+            <creation_time>2011-01-14T10:12:23+01:00</creation_time>
+            <modification_time>2012-09-19T20:56:15+02:00</modification_time>
             <category>Services</category>
             <copyright>GNU GPL v2</copyright>
             <description>This script attempts to detect which service is running on which port.</description>
@@ -7094,6 +7141,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <risk_factor>None</risk_factor>
             <cve_id>NOCVE</cve_id>
             <bugtraq_id>NOBID</bugtraq_id>
+            <cert_refs/>
             <xrefs>NOXREF</xrefs>
             <fingerprints>NOSIGNKEYS</fingerprints>
             <tags>NOTAG</tags>
@@ -7118,6 +7166,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </nvt>
           <nvt oid="1.3.6.1.4.1.25623.1.7.13006">
             <name>FooBar 21</name>
+            <creation_time>2011-01-14T10:12:23+01:00</creation_time>
+            <modification_time>2012-09-19T20:56:15+02:00</modification_time>
             <category>Services</category>
             <copyright>GNU GPL v2</copyright>
             <description>This script detects whether the FooBar 2.1 XSS vulnerability is present.</description>
@@ -7435,14 +7485,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>override</name>
         <pattern>
           <e>nvt</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
           <e>text</e>
           <e>threat</e>
           <e>new_threat</e>
           <e>orphan</e>
           <o>
             <g>
-              <e>creation_time</e>
-              <e>modification_time</e>
               <e>hosts</e>
               <e>port</e>
               <e>task</e>
@@ -7481,6 +7533,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
         </ele>
         <ele>
+          <name>creation_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
           <name>threat</name>
           <summary>Threat level to which override applies</summary>
           <pattern>
@@ -7498,14 +7566,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>orphan</name>
           <summary>Whether the override is an orphan</summary>
           <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>creation_time</name>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>modification_time</name>
-          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>hosts</name>
@@ -7631,11 +7691,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <nvt oid="1.3.6.1.4.1.25623.1.0.75">
               <name>Test NVT: long lines</name>
             </nvt>
+            <creation_time>2013-01-09T09:50:10+01:00</creation_time>
+            <modification_time>2013-01-09T09:50:10+01:00</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <active>1</active>
             <text excerpt="0">This is the full text of the override.</text>
-            <threat>High</threat>
             <new_threat>Log</new_threat>
             <orphan>1</orphan>
-            <active>1</active>
           </override>
           <truncated>...</truncated>
         </get_overrides_response>
@@ -7655,6 +7718,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </nvt>
             <creation_time>Sun Jun 27 08:49:46 2010</creation_time>
             <modification_time>Sun Jun 27 08:49:46 2010</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <active>1</active>
+            <end_time></end_time>
             <text>override fixed to result</text>
             <hosts>127.0.0.1</hosts>
             <port>general/tcp</port>
@@ -7665,8 +7732,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </task>
             <orphan>0</orphan>
             <result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de" />
-            <active>1</active>
-            <end_time></end_time>
           </override>
           <truncated>...</truncated>
         </get_overrides_response>
