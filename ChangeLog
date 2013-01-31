@@ -1,3 +1,7 @@
+2013-01-31  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (setting_filter): Style fix.
+
 2013-01-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_filter_term): Default levels to hmlgd to match
