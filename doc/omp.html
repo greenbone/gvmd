@@ -12505,18 +12505,6 @@ get_overrides_response_override_orphan
        boolean
      }
 
-get_overrides_response_override_creation_time
- = element creation_time
-     {
-       iso_time
-     }
-
-get_overrides_response_override_modification_time
- = element modification_time
-     {
-       iso_time
-     }
-
 get_overrides_response_override_hosts
  = element hosts
      {
@@ -12641,11 +12629,14 @@ get_overrides_response_override_result_description
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.75"&gt;
        &lt;name&gt;Test NVT: long lines&lt;/name&gt;
      &lt;/nvt&gt;
+     &lt;creation_time&gt;2013-01-09T09:50:10+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2013-01-09T09:50:10+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
+     &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;active&gt;1&lt;/active&gt;
      &lt;text excerpt="0"&gt;This is the full text of the override.&lt;/text&gt;
-     &lt;threat&gt;High&lt;/threat&gt;
      &lt;new_threat&gt;Log&lt;/new_threat&gt;
      &lt;orphan&gt;1&lt;/orphan&gt;
-     &lt;active&gt;1&lt;/active&gt;
    &lt;/override&gt;
    ...
  &lt;/get_overrides_response&gt;
@@ -12664,6 +12655,10 @@ get_overrides_response_override_result_description
      &lt;/nvt&gt;
      &lt;creation_time&gt;Sun Jun 27 08:49:46 2010&lt;/creation_time&gt;
      &lt;modification_time&gt;Sun Jun 27 08:49:46 2010&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
+     &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;active&gt;1&lt;/active&gt;
+     &lt;end_time/&gt;
      &lt;text&gt;override fixed to result&lt;/text&gt;
      &lt;hosts&gt;127.0.0.1&lt;/hosts&gt;
      &lt;port&gt;general/tcp&lt;/port&gt;
@@ -12674,8 +12669,6 @@ get_overrides_response_override_result_description
      &lt;/task&gt;
      &lt;orphan&gt;0&lt;/orphan&gt;
      &lt;result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de"/&gt;
-     &lt;active&gt;1&lt;/active&gt;
-     &lt;end_time/&gt;
    &lt;/override&gt;
    ...
  &lt;/get_overrides_response&gt;
@@ -12704,6 +12697,11 @@ get_overrides_response_override_result_description
           @<b>details</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to include full port list details.
+          </li>
+<li>
+          @<b>targets</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include targets using this port list.
           </li>
 <li>
           @<b>trash</b>
@@ -12748,13 +12746,21 @@ get_overrides_response_override_result_description
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>in_use</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether any targets are using the port list.</div>
-<ul style="list-style: none"></ul>
+              &lt;<b>creation_time</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>writable</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the port list is writable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>in_use</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether any targets are using the port list.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -12843,6 +12849,7 @@ get_overrides_response_override_result_description
      {
        attribute port_list_id { uuid }?
        &amp; attribute details { boolean }?
+       &amp; attribute targets { boolean }?
        &amp; attribute trash { boolean }?
        &amp; attribute sort_order { sort_order }?
        &amp; attribute sort_field { text }?
@@ -12862,8 +12869,10 @@ get_port_lists_response_port_list
        attribute id { uuid }
        &amp; get_port_lists_response_port_list_name
        &amp; get_port_lists_response_port_list_comment
-       &amp; get_port_lists_response_port_list_in_use
+       &amp; get_port_lists_response_port_list_creation_time
+       &amp; get_port_lists_response_port_list_modification_time
        &amp; get_port_lists_response_port_list_writable
+       &amp; get_port_lists_response_port_list_in_use
        &amp; get_port_lists_response_port_list_port_count
        &amp; ( get_port_lists_response_port_list_port_ranges
            &amp; get_port_lists_response_port_list_targets )?
@@ -12881,14 +12890,26 @@ get_port_lists_response_port_list_comment
        text
      }
 
-get_port_lists_response_port_list_in_use
- = element in_use
+get_port_lists_response_port_list_creation_time
+ = element creation_time
      {
-       boolean
+       iso_time
+     }
+
+get_port_lists_response_port_list_modification_time
+ = element modification_time
+     {
+       iso_time
      }
 
 get_port_lists_response_port_list_writable
  = element writable
+     {
+       boolean
+     }
+
+get_port_lists_response_port_list_in_use
+ = element in_use
      {
        boolean
      }
@@ -12982,13 +13003,17 @@ get_port_lists_response_port_list_targets_target_name
 <h4>7.46.3 Example: Export a port list</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_port_lists port_list_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"
-                 details="1"/&gt;
+                 details="1"
+                 targets="1"/&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_port_lists_response status="200"
                           status_text="OK"&gt;
    &lt;port_list id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"&gt;
      &lt;name&gt;All TCP&lt;/name&gt;
      &lt;comment&gt;Every single TCP port.&lt;/comment&gt;
+     &lt;creation_time&gt;2012-12-31T16:38:45+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2012-12-31T16:38:45+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;0&lt;/writable&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
      &lt;port_count&gt;
        &lt;all&gt;65535&lt;/all&gt;
@@ -13586,14 +13611,19 @@ get_reports_response_report
           Whether to get the trashcan report formats instead.
           </li>
 <li>
-          @<b>export</b>
+          @<b>alerts</b>
           (<a href="#type_boolean">boolean</a>)
-          Whether to get report format in importable form.
+          Whether to include alerts that use the report format.
           </li>
 <li>
           @<b>params</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to include report format parameters.
+          </li>
+<li>
+          @<b>details</b>
+          (<a href="#type_boolean">boolean</a>)
+          Include report format file, signature and parameters.
           </li>
 <li>
           @<b>sort_order</b>
@@ -13628,12 +13658,22 @@ get_reports_response_report
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>summary</b>&gt;
+              &lt;<b>creation_time</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>description</b>&gt;
+              &lt;<b>modification_time</b>&gt;
               <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the report format is global or in use.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>in_use</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether any alerts are using the report format.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>extension</b>&gt;
@@ -13644,57 +13684,20 @@ get_reports_response_report
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>summary</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>description</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>global</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>predefined</b>&gt;
               <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>param</b>&gt;
-              *<ul style="list-style: none">
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the param.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>type</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The type of the param.</div>
-<ul style="list-style: none">
-<li>
-              &lt;<b>min</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Minimum.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>max</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Maximum.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>options</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Selection options.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>option</b>&gt;
-              *<div style="margin-left: 15px; display: inline;">Option value.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>value</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The value of the param.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>default</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The fallback value of the param.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
 </li>
 <li>
 <i>One of</i><b></b><ul style="list-style: none">
@@ -13741,6 +13744,51 @@ get_reports_response_report
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>param</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the param.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The type of the param.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>min</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Minimum.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>max</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Maximum.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>options</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Selection options.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>option</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Option value.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The value of the param.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>default</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The fallback value of the param.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -13753,8 +13801,9 @@ get_reports_response_report
      {
        attribute report_format_id { uuid }?
        &amp; attribute trash { boolean }?
-       &amp; attribute export { boolean }?
+       &amp; attribute alerts { boolean }?
        &amp; attribute params { boolean }?
+       &amp; attribute details { boolean }?
        &amp; attribute sort_order { sort_order }?
        &amp; attribute sort_field { text }?
      }
@@ -13772,23 +13821,51 @@ get_report_formats_response_report_format
      {
        attribute id { uuid }
        &amp; get_report_formats_response_report_format_name
-       &amp; get_report_formats_response_report_format_summary
-       &amp; get_report_formats_response_report_format_description
+       &amp; get_report_formats_response_report_format_creation_time
+       &amp; get_report_formats_response_report_format_modification_time
+       &amp; get_report_formats_response_report_format_writable
+       &amp; get_report_formats_response_report_format_in_use
        &amp; get_report_formats_response_report_format_extension
        &amp; get_report_formats_response_report_format_content_type
+       &amp; get_report_formats_response_report_format_summary
+       &amp; get_report_formats_response_report_format_description
        &amp; get_report_formats_response_report_format_global
        &amp; get_report_formats_response_report_format_predefined
-       &amp; get_report_formats_response_report_format_param*
        &amp; ( ( get_report_formats_response_report_format_file*
            &amp; get_report_formats_response_report_format_signature )
            | ( get_report_formats_response_report_format_trust
            &amp; get_report_formats_response_report_format_active ) )
+       &amp; get_report_formats_response_report_format_param*
      }
 
 get_report_formats_response_report_format_name
  = element name
      {
        name
+     }
+
+get_report_formats_response_report_format_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_report_formats_response_report_format_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+get_report_formats_response_report_format_writable
+ = element writable
+     {
+       boolean
+     }
+
+get_report_formats_response_report_format_in_use
+ = element in_use
+     {
+       boolean
      }
 
 get_report_formats_response_report_format_summary
@@ -13929,6 +14006,10 @@ get_report_formats_response_report_format_active
                               status_text="OK"&gt;
    &lt;report_format id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"&gt;
      &lt;name&gt;HTML&lt;/name&gt;
+     &lt;creation_time&gt;2013-01-31T16:46:32+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2013-01-31T16:46:32+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
+     &lt;in_use&gt;0&lt;/in_use&gt;
      &lt;extension&gt;html&lt;/extension&gt;
      &lt;content_type&gt;text/html&lt;/content_type&gt;
      &lt;summary&gt;Single page HTML report.&lt;/summary&gt;
@@ -13944,18 +14025,24 @@ get_report_formats_response_report_format_active
      &lt;/trust&gt;
      &lt;active&gt;1&lt;/active&gt;
    &lt;/report_format&gt;
+   ...
  &lt;/get_report_formats_response&gt;
 </pre></div>
 </div>
 <h4>7.49.3 Example: Export a report format</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_report_formats report_format_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"
-                     export="1"/&gt;
+                     details="1"/&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_report_formats_response status="200"
                               status_text="OK"&gt;
    &lt;report_format id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"&gt;
      &lt;name&gt;HTML&lt;/name&gt;
+     &lt;comment/&gt;
+     &lt;creation_time&gt;2013-01-18T18:23:53+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2013-01-18T18:24:10+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
+     &lt;in_use&gt;0&lt;/in_use&gt;
      &lt;extension&gt;html&lt;/extension&gt;
      &lt;content_type&gt;text/html&lt;/content_type&gt;
      &lt;summary&gt;Single page HTML report.&lt;/summary&gt;
@@ -13975,6 +14062,7 @@ get_report_formats_response_report_format_active
      &lt;/file&gt;
      &lt;signature/&gt;
    &lt;/report_format&gt;
+   ...
  &lt;/get_report_formats_response&gt;
 </pre></div>
 </div>

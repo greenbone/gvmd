@@ -3045,6 +3045,8 @@ get_port_lists
        attribute port_list_id { uuid }?
        & # Whether to include full port list details.
        attribute details { boolean }?
+       & # Whether to include targets using this port list.
+       attribute targets { boolean }?
        & # Whether to get the trashcan port lists instead.
        attribute trash { boolean }?
        & attribute sort_order { sort_order }?
@@ -3137,10 +3139,12 @@ get_report_formats
        attribute report_format_id { uuid }?
        & # Whether to get the trashcan report formats instead.
        attribute trash { boolean }?
-       & # Whether to get report format in importable form.
-       attribute export { boolean }?
+       & # Whether to include alerts that use the report format.
+       attribute alerts { boolean }?
        & # Whether to include report format parameters.
        attribute params { boolean }?
+       & # Include report format file, signature and parameters.
+       attribute details { boolean }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
      }
@@ -6653,18 +6657,6 @@ get_overrides_response_override_orphan
        boolean
      }
 
-get_overrides_response_override_creation_time
- = element creation_time
-     {
-       iso_time
-     }
-
-get_overrides_response_override_modification_time
- = element modification_time
-     {
-       iso_time
-     }
-
 # A textual list of hosts.
 get_overrides_response_override_hosts
  = element hosts
@@ -6802,8 +6794,10 @@ get_port_lists_response_port_list
        attribute id { uuid }
        & get_port_lists_response_port_list_name
        & get_port_lists_response_port_list_comment
-       & get_port_lists_response_port_list_in_use
+       & get_port_lists_response_port_list_creation_time
+       & get_port_lists_response_port_list_modification_time
        & get_port_lists_response_port_list_writable
+       & get_port_lists_response_port_list_in_use
        & get_port_lists_response_port_list_port_count
        & ( get_port_lists_response_port_list_port_ranges
            & get_port_lists_response_port_list_targets )?
@@ -6823,16 +6817,28 @@ get_port_lists_response_port_list_comment
        text
      }
 
-# Whether any targets are using the port list.
-get_port_lists_response_port_list_in_use
- = element in_use
+get_port_lists_response_port_list_creation_time
+ = element creation_time
      {
-       boolean
+       iso_time
+     }
+
+get_port_lists_response_port_list_modification_time
+ = element modification_time
+     {
+       iso_time
      }
 
 # Whether the port list is writable.
 get_port_lists_response_port_list_writable
  = element writable
+     {
+       boolean
+     }
+
+# Whether any targets are using the port list.
+get_port_lists_response_port_list_in_use
+ = element in_use
      {
        boolean
      }
@@ -7024,17 +7030,21 @@ get_report_formats_response_report_format
      {
        attribute id { uuid }
        & get_report_formats_response_report_format_name
-       & get_report_formats_response_report_format_summary
-       & get_report_formats_response_report_format_description
+       & get_report_formats_response_report_format_creation_time
+       & get_report_formats_response_report_format_modification_time
+       & get_report_formats_response_report_format_writable
+       & get_report_formats_response_report_format_in_use
        & get_report_formats_response_report_format_extension
        & get_report_formats_response_report_format_content_type
+       & get_report_formats_response_report_format_summary
+       & get_report_formats_response_report_format_description
        & get_report_formats_response_report_format_global
        & get_report_formats_response_report_format_predefined
-       & get_report_formats_response_report_format_param*
        & ( ( get_report_formats_response_report_format_file*
            & get_report_formats_response_report_format_signature )
            | ( get_report_formats_response_report_format_trust
            & get_report_formats_response_report_format_active ) )
+       & get_report_formats_response_report_format_param*
      }
 
 # The name of the report format.
@@ -7042,6 +7052,32 @@ get_report_formats_response_report_format_name
  = element name
      {
        name
+     }
+
+get_report_formats_response_report_format_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_report_formats_response_report_format_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# Whether the report format is global or in use.
+get_report_formats_response_report_format_writable
+ = element writable
+     {
+       boolean
+     }
+
+# Whether any alerts are using the report format.
+get_report_formats_response_report_format_in_use
+ = element in_use
+     {
+       boolean
      }
 
 get_report_formats_response_report_format_summary

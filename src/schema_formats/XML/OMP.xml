@@ -7759,6 +7759,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>boolean</type>
       </attrib>
       <attrib>
+        <name>targets</name>
+        <summary>Whether to include targets using this port list</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan port lists instead</summary>
         <type>boolean</type>
@@ -7796,8 +7801,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </attrib>
           <e>name</e>
           <e>comment</e>
-          <e>in_use</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
           <e>writable</e>
+          <e>in_use</e>
           <e>port_count</e>
           <o>
             <g>
@@ -7817,13 +7824,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>text</pattern>
         </ele>
         <ele>
-          <name>in_use</name>
-          <summary>Whether any targets are using the port list</summary>
-          <pattern><t>boolean</t></pattern>
+          <name>creation_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>writable</name>
           <summary>Whether the port list is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any targets are using the port list</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
@@ -7918,7 +7933,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>Export a port list</summary>
       <request>
         <get_port_lists port_list_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"
-                        details="1">
+                        details="1" targets="1">
         </get_port_lists>
       </request>
       <response>
@@ -7926,6 +7941,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <port_list id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
             <name>All TCP</name>
             <comment>Every single TCP port.</comment>
+            <creation_time>2012-12-31T16:38:45+01:00</creation_time>
+            <modification_time>2012-12-31T16:38:45+01:00</modification_time>
+            <writable>0</writable>
             <in_use>1</in_use>
             <port_count>
               <all>65535</all>
@@ -8435,13 +8453,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>boolean</type>
       </attrib>
       <attrib>
-        <name>export</name>
-        <summary>Whether to get report format in importable form</summary>
+        <name>alerts</name>
+        <summary>Whether to include alerts that use the report format</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
         <name>params</name>
         <summary>Whether to include report format parameters</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Include report format file, signature and parameters</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
@@ -8476,13 +8499,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>name</e>
-          <e>summary</e>
-          <e>description</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
           <e>extension</e>
           <e>content_type</e>
+          <e>summary</e>
+          <e>description</e>
           <e>global</e>
           <e>predefined</e>
-          <any><e>param</e></any>
           <or>
             <g>
               <any><e>file</e></any>
@@ -8493,11 +8519,30 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>active</e>
             </g>
           </or>
+          <any><e>param</e></any>
         </pattern>
         <ele>
           <name>name</name>
           <summary>The name of the report format</summary>
           <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the report format is global or in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any alerts are using the report format</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>summary</name>
@@ -8643,6 +8688,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <get_report_formats_response status="200" status_text="OK">
           <report_format id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
             <name>HTML</name>
+            <creation_time>2013-01-31T16:46:32+01:00</creation_time>
+            <modification_time>2013-01-31T16:46:32+01:00</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
             <extension>html</extension>
             <content_type>text/html</content_type>
             <summary>Single page HTML report.</summary>
@@ -8658,6 +8707,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </trust>
             <active>1</active>
           </report_format>
+          <truncated> ... </truncated>
         </get_report_formats_response>
       </response>
     </example>
@@ -8665,13 +8715,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>Export a report format</summary>
       <request>
         <get_report_formats report_format_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"
-                            export="1">
+                            details="1">
         </get_report_formats>
       </request>
       <response>
         <get_report_formats_response status="200" status_text="OK">
           <report_format id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
             <name>HTML</name>
+            <comment></comment>
+            <creation_time>2013-01-18T18:23:53+01:00</creation_time>
+            <modification_time>2013-01-18T18:24:10+01:00</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
             <extension>html</extension>
             <content_type>text/html</content_type>
             <summary>Single page HTML report.</summary>
@@ -8691,6 +8746,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </file>
             <signature></signature>
           </report_format>
+          <truncated>...</truncated>
         </get_report_formats_response>
       </response>
     </example>
@@ -8968,8 +9024,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>boolean</type>
       </attrib>
       <attrib>
-        <name>details</name>
-        <summary>Whether to include full schedule details</summary>
+        <name>tasks</name>
+        <summary>Whether to include tasks using the schedules</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
@@ -9004,18 +9060,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>first_time</e>
+          <e>next_time</e>
+          <e>timezone</e>
+          <e>period</e>
+          <e>period_months</e>
+          <e>simple_period</e>
+          <e>duration</e>
+          <e>simple_duration</e>
           <o>
             <g>
-              <e>comment</e>
-              <e>first_time</e>
-              <e>next_time</e>
-              <e>timezone</e>
-              <e>period</e>
-              <e>period_months</e>
-              <e>simple_period</e>
-              <e>duration</e>
-              <e>simple_duration</e>
-              <e>in_use</e>
               <e>tasks</e>
             </g>
           </o>
@@ -9031,6 +9090,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             text
           </pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the schedule is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any tasks are using the schedule</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>first_time</name>
@@ -9087,11 +9164,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
         <ele>
-          <name>in_use</name>
-          <summary>Whether any tasks are using the schedule</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
           <name>tasks</name>
           <pattern>
             <any><e>task</e></any>
@@ -9116,24 +9188,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all schedules</summary>
-      <request>
-        <get_schedules></get_schedules>
-      </request>
-      <response>
-        <get_schedules_response status="200" status_text="OK">
-          <schedule id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
-            <name>Overnight</name>
-          </schedule>
-          <truncated>...</truncated>
-        </get_schedules_response>
-      </response>
-    </example>
-    <example>
       <summary>Get full details of a single schedule</summary>
       <request>
-        <get_schedules schedule_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"
-                       details="1">
+        <get_schedules schedule_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
         </get_schedules>
       </request>
       <response>
@@ -9141,21 +9198,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <schedule id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
             <name>Overnight</name>
             <comment>3 hours, starting at 12h00.</comment>
+            <creation_time>2013-01-01T13:57:25+01:00</creation_time>
+            <modification_time>2013-01-18T12:07:36+01:00</modification_time>
+            <writable>0</writable>
+            <in_use>1</in_use>
             <first_time>Tue Jun 29 00:00:00 2010</first_time>
             <next_time>Tue Jun 29 00:00:00 2010</next_time>
-            <timezone>Europe/Berlin</timezone>
             <period>86400</period>
             <period_months>0</period_months>
             <simple_period>1<unit>day</unit></simple_period>
             <duration>10800</duration>
             <simple_duration>3<unit>hour</unit></simple_duration>
-            <in_use>1</in_use>
+            <timezone>Europe/Berlin</timezone>
             <tasks>
               <task id="d4daf4c4-25c7-40ac-87d3-38e489f34330">
-                <name>kk</name>
+                <name>Task 1</name>
               </task>
             </tasks>
           </schedule>
+          <truncate>...</truncate>
         </get_schedules_response>
       </response>
     </example>
