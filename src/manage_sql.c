@@ -14985,11 +14985,14 @@ cleanup_manage_process (gboolean cleanup)
 {
   if (task_db)
     {
-      if (cleanup && current_scanner_task)
-        set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
-      if (sqlite3_close (task_db) == SQLITE_BUSY)
-        g_warning ("%s: attempt to close db with open statement(s)\n",
-                   __FUNCTION__);
+      if (cleanup)
+        {
+          if (current_scanner_task)
+            set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
+          if (sqlite3_close (task_db) == SQLITE_BUSY)
+            g_warning ("%s: attempt to close db with open statement(s)\n",
+                       __FUNCTION__);
+        }
       task_db = NULL;
     }
 }
@@ -25629,10 +25632,7 @@ manage_report (report_t report, report_format_t report_format,
                 {
                   /* Child.  Drop privileges, run command, exit. */
 
-                  /* Clear parent state, because these affect
-                   * cleanup_manage_process. */
-                  current_scanner_task = 0;
-                  current_report = 0;
+                  cleanup_manage_process (FALSE);
 
                   if (setgid (nobody->pw_gid))
                     {
@@ -26129,10 +26129,7 @@ manage_send_report (report_t report, report_t delta_report,
                 {
                   /* Child.  Drop privileges, run command, exit. */
 
-                  /* Clear parent state, because these affect
-                   * cleanup_manage_process. */
-                  current_scanner_task = 0;
-                  current_report = 0;
+                  cleanup_manage_process (FALSE);
 
                   if (setgid (nobody->pw_gid))
                     {
