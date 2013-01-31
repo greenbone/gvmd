@@ -2824,6 +2824,8 @@ get_agents
        attribute filt_id { uuid }?
        & # Whether to get the trashcan agents instead.
        attribute trash { boolean }?
+       & # Whether to include agents package information when no format was provided.
+       attribute details { boolean }?
        & attribute format { xsd:token { pattern = "installer|howto_install|howto_use" } }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
@@ -2842,11 +2844,15 @@ get_configs
        attribute actions { actions }?
        & # Whether to get the trashcan configs instead.
        attribute trash { boolean }?
+       & # Whether to get config families, preferences, nvt selectors and tasks.
+       attribute details { boolean }?
        & attribute export { boolean }?
        & attribute families { boolean }?
        & attribute preferences { boolean }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
+       & # Whether to get tasks using this config.
+       attribute tasks { boolean }?
      }
 
 ## Command get_dependencies
@@ -4116,7 +4122,7 @@ run_wizard_name
        name
      }
 
-# Paramaters for the wizard.
+# Parameters for the wizard.
 run_wizard_params
  = element params
      {
@@ -4622,6 +4628,7 @@ get_agents_response_agent
        & get_agents_response_agent_creation_time
        & get_agents_response_agent_modification_time
        & get_agents_response_agent_in_use
+       & get_agents_response_agent_writable
        & ( get_agents_response_agent_installer
            | get_agents_response_agent_package )
      }
@@ -4657,6 +4664,13 @@ get_agents_response_agent_modification_time
 # Whether the agent is in use.
 get_agents_response_agent_in_use
  = element in_use
+     {
+       boolean
+     }
+
+# Whether the agent is writable.
+get_agents_response_agent_writable
+ = element writable
      {
        boolean
      }
@@ -4776,6 +4790,8 @@ get_configs_response_config
      {
        get_configs_response_config_name
        & get_configs_response_config_comment
+       & get_configs_response_config_creation_time
+       & get_configs_response_config_modification_time
        & get_configs_response_config_family_count
        & get_configs_response_config_nvt_count
        & get_configs_response_config_max_nvt_count
@@ -4799,6 +4815,20 @@ get_configs_response_config_comment
  = element comment
      {
        text
+     }
+
+# Creation time of the config.
+get_configs_response_config_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Last time the config was modified.
+get_configs_response_config_modification_time
+ = element modification_time
+     {
+       iso_time
      }
 
 # The number of families selected by the config.
@@ -5036,7 +5066,10 @@ get_alerts_response_alert
      {
        get_alerts_response_alert_name
        & get_alerts_response_alert_comment
+       & get_alerts_response_alert_creation_time
+       & get_alerts_response_alert_modification_time
        & get_alerts_response_alert_in_use
+       & get_alerts_response_alert_writable
        & get_alerts_response_alert_condition
        & get_alerts_response_alert_event
        & get_alerts_response_alert_method
@@ -5062,6 +5095,27 @@ get_alerts_response_alert_in_use
  = element in_use
      {
        boolean
+     }
+
+# Whether the alert is writable or not.
+get_alerts_response_alert_writable
+ = element writable
+     {
+       boolean
+     }
+
+# Creation time of the alert.
+get_alerts_response_alert_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Last time the alert was modified.
+get_alerts_response_alert_modification_time
+ = element modification_time
+     {
+       iso_time
      }
 
 # The condition that must be satisfied for the alert to occur.
@@ -5445,7 +5499,7 @@ get_info_response_info_cpe_cves
        get_info_response_info_cpe_cves_cve?
      }
 
-# CVE refering to this CPE.
+# CVE referring to this CPE.
 get_info_response_info_cpe_cves_cve
  = element cve
      {
@@ -5519,7 +5573,7 @@ get_info_response_info_cve_confidentiality_impact
        text
      }
 
-# CVSS Integrety impact metric.
+# CVSS Integrity impact metric.
 get_info_response_info_cve_integrity_impact
  = element integrity_impact
      {
@@ -5540,7 +5594,7 @@ get_info_response_info_cve_description
        text
      }
 
-# Space seperated list of CPEs affected by this.
+# Space separated list of CPEs affected by this.
 get_info_response_info_cve_products
  = element products
      {
@@ -5554,7 +5608,7 @@ get_info_response_info_cve_nvts
        get_info_response_info_cve_nvts_nvt?
      }
 
-# NVT refering to this CPE.
+# NVT referring to this CPE.
 get_info_response_info_cve_nvts_nvt
  = element nvt
      {

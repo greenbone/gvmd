@@ -1,5 +1,10 @@
 2013-01-31  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* doc/omp.html, doc/omp.rnc, src/schema_formats/XML/OMP.xml: Update
+	documentation for get_agents, get_configs and get_alerts commands.
+
+2013-01-31  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (omp_xml_handle_end_element): Remove duplicate in_use
 	tag in GET_AGENTS.
 

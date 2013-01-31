@@ -7607,8 +7607,9 @@ create_task_rcfile
       </p>
 <p>
         If the request includes a format then the agents in the response
-        include installer elements, otherwise they include package
-        elements.
+        include installer elements, otherwise they include trust state and
+        time. If the details attribute is set, the response will include
+        the installer.
       </p>
 <h4>7.34.1 Structure</h4>
 <ul style="list-style: none">
@@ -7633,6 +7634,11 @@ create_task_rcfile
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan agents instead.
+          </li>
+<li>
+          @<b>details</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include agents package information when no format was provided.
           </li>
 <li>
           @<b>format</b>
@@ -7688,6 +7694,11 @@ create_task_rcfile
 <li>
               &lt;<b>in_use</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the agent is in use.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the agent is writable.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -7784,6 +7795,7 @@ create_task_rcfile
        &amp; attribute filter { uuid }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
+       &amp; attribute details { boolean }?
        &amp; attribute format { xsd:token { pattern = "installer|howto_install|howto_use" } }?
        &amp; attribute sort_order { sort_order }?
        &amp; attribute sort_field { text }?
@@ -7810,6 +7822,7 @@ get_agents_response_agent
        &amp; get_agents_response_agent_creation_time
        &amp; get_agents_response_agent_modification_time
        &amp; get_agents_response_agent_in_use
+       &amp; get_agents_response_agent_writable
        &amp; ( get_agents_response_agent_installer
            | get_agents_response_agent_package )
      }
@@ -7840,6 +7853,12 @@ get_agents_response_agent_modification_time
 
 get_agents_response_agent_in_use
  = element in_use
+     {
+       boolean
+     }
+
+get_agents_response_agent_writable
+ = element writable
      {
        boolean
      }
@@ -7944,11 +7963,14 @@ get_agents_response_agent_count_page
    &lt;agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
      &lt;name&gt;Custom Scan Agent&lt;/name&gt;
      &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
+     &lt;creation_time&gt;2012-01-23T10:44:00+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2013-01-23T10:44:00+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
      &lt;installer&gt;
        &lt;trust&gt;
          yes
-         &lt;time&gt;Wed Jun 30 21:49:08 1993&lt;/time&gt;
+         &lt;time&gt;Wed Jun 30 21:49:08 2012&lt;/time&gt;
        &lt;/trust&gt;
      &lt;/installer&gt;
    &lt;/agent&gt;
@@ -7965,11 +7987,14 @@ get_agents_response_agent_count_page
    &lt;agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
      &lt;name&gt;Custom Scan Agent&lt;/name&gt;
      &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
+     &lt;creation_time&gt;2012-01-23T10:44:00+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2013-01-23T10:44:00+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
      &lt;installer&gt;
        &lt;trust&gt;
          yes
-         &lt;time&gt;Wed Jun 30 21:49:08 1993&lt;/time&gt;
+         &lt;time&gt;Wed Jun 30 21:49:08 2012&lt;/time&gt;
        &lt;/trust&gt;
      &lt;/installer&gt;
    &lt;/agent&gt;
@@ -7986,6 +8011,9 @@ get_agents_response_agent_count_page
    &lt;agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
      &lt;name&gt;Custom Scan Agent&lt;/name&gt;
      &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
+     &lt;creation_time&gt;2012-01-23T10:44:00+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2013-01-23T10:44:00+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
      &lt;package format="installer"&gt;
        CgoKCgoKCgoKCgoKCSAgI...
@@ -8026,6 +8054,11 @@ get_agents_response_agent_count_page
           Whether to get the trashcan configs instead.
           </li>
 <li>
+          @<b>details</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to get config families, preferences, nvt selectors and tasks.
+          </li>
+<li>
           @<b>export</b>
           (<a href="#type_boolean">boolean</a>)
           </li>
@@ -8044,6 +8077,11 @@ get_agents_response_agent_count_page
 <li>
           @<b>sort_field</b>
           (text)
+          </li>
+<li>
+          @<b>tasks</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to get tasks using this config.
           </li>
 </ul>
 </li>
@@ -8068,6 +8106,16 @@ get_agents_response_agent_count_page
 <li>
               &lt;<b>comment</b>&gt;
               <div style="margin-left: 15px; display: inline;">The comment on the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Creation time of the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Last time the config was modified.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -8207,11 +8255,13 @@ get_agents_response_agent_count_page
        attribute config_id { uuid }?
        &amp; attribute actions { actions }?
        &amp; attribute trash { boolean }?
+       &amp; attribute details { boolean }?
        &amp; attribute export { boolean }?
        &amp; attribute families { boolean }?
        &amp; attribute preferences { boolean }?
        &amp; attribute sort_order { sort_order }?
        &amp; attribute sort_field { text }?
+       &amp; attribute tasks { boolean }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_configs_response
@@ -8227,6 +8277,8 @@ get_configs_response_config
      {
        get_configs_response_config_name
        &amp; get_configs_response_config_comment
+       &amp; get_configs_response_config_creation_time
+       &amp; get_configs_response_config_modification_time
        &amp; get_configs_response_config_family_count
        &amp; get_configs_response_config_nvt_count
        &amp; get_configs_response_config_max_nvt_count
@@ -8248,6 +8300,18 @@ get_configs_response_config_comment
  = element comment
      {
        text
+     }
+
+get_configs_response_config_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_configs_response_config_modification_time
+ = element modification_time
+     {
+       iso_time
      }
 
 get_configs_response_config_family_count
@@ -8416,6 +8480,8 @@ get_configs_response_config_preferences_preference_value
      &lt;comment&gt;
        All NVT's; optimized by using previously collected information.
      &lt;/comment&gt;
+     &lt;creation_time&gt;2012-11-23T10:44:00+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2013-01-23T10:44:00+01:00&lt;/modification_time&gt;
      &lt;family_count&gt;
        4
        &lt;growing&gt;1&lt;/growing&gt;
@@ -8425,22 +8491,18 @@ get_configs_response_config_preferences_preference_value
        &lt;growing&gt;1&lt;/growing&gt;
      &lt;/nvt_count&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
-     &lt;tasks&gt;
-       &lt;task id="13bb418a-4220-4575-b35b-ec398bff7417"&gt;
-         &lt;name&gt;Web Servers&lt;/name&gt;
-       &lt;/task&gt;
-       ...
-     &lt;/tasks&gt;
+     &lt;writable&gt;0&lt;/writable&gt;
    &lt;/config&gt;
    ...
  &lt;/get_configs_response&gt;
 </pre></div>
 </div>
-<h4>7.35.3 Example: Get a single config, including preference and family lists</h4>
+<h4>7.35.3 Example: Get a single config, including preference, family lists and tasks using this config</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_configs config_id="daba56c8-73ec-11df-a475-002264764cea"
               preferences="1"
-              families="1"/&gt;
+              families="1"
+              tasks="1"/&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_configs_response status="200"
                        status_text="OK"&gt;
@@ -8701,8 +8763,23 @@ get_dependencies_response_nvt_requires_nvt_name
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Creation time of the alert.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Last time the alert was modified.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>in_use</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether any tasks are using the alert.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the alert is writable or not.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -8793,7 +8870,10 @@ get_alerts_response_alert
      {
        get_alerts_response_alert_name
        &amp; get_alerts_response_alert_comment
+       &amp; get_alerts_response_alert_creation_time
+       &amp; get_alerts_response_alert_modification_time
        &amp; get_alerts_response_alert_in_use
+       &amp; get_alerts_response_alert_writable
        &amp; get_alerts_response_alert_condition
        &amp; get_alerts_response_alert_event
        &amp; get_alerts_response_alert_method
@@ -8816,6 +8896,24 @@ get_alerts_response_alert_in_use
  = element in_use
      {
        boolean
+     }
+
+get_alerts_response_alert_writable
+ = element writable
+     {
+       boolean
+     }
+
+get_alerts_response_alert_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_alerts_response_alert_modification_time
+ = element modification_time
+     {
+       iso_time
      }
 
 get_alerts_response_alert_condition
@@ -8908,6 +9006,9 @@ get_alerts_response_alert_filter_trash
    &lt;alert id="6181e65d-8ba0-4937-9c44-8f2b10b0def7"&gt;
      &lt;name&gt;Team alert&lt;/name&gt;
      &lt;comment/&gt;
+     &lt;creation_time&gt;2012-04-27T12:44:00+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2012-08-28T12:14:00+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
      &lt;condition&gt;
        Threat level at least
@@ -9475,7 +9576,7 @@ get_filters_response_filter_count_page
               ?<div style="margin-left: 15px; display: inline;">CVEs referring to this CPE. Only when details were requested.</div>
 <ul style="list-style: none"><li>
               &lt;<b>cve</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">CVE refering to this CPE.</div>
+              ?<div style="margin-left: 15px; display: inline;">CVE referring to this CPE.</div>
 <ul style="list-style: none"></ul>
 </li></ul>
 </li>
@@ -9517,7 +9618,7 @@ get_filters_response_filter_count_page
 </li>
 <li>
               &lt;<b>integrity_impact</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">CVSS Integrety impact metric.</div>
+              ?<div style="margin-left: 15px; display: inline;">CVSS Integrity impact metric.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -9532,7 +9633,7 @@ get_filters_response_filter_count_page
 </li>
 <li>
               &lt;<b>products</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Space seperated list of CPEs affected by this.</div>
+              <div style="margin-left: 15px; display: inline;">Space separated list of CPEs affected by this.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -9540,7 +9641,7 @@ get_filters_response_filter_count_page
               ?<div style="margin-left: 15px; display: inline;">NVTs addressing this CVE. Only when details were requested.</div>
 <ul style="list-style: none"><li>
               &lt;<b>nvt</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">NVT refering to this CPE.</div>
+              ?<div style="margin-left: 15px; display: inline;">NVT referring to this CPE.</div>
 <ul style="list-style: none">
 <li>
           @<b>oid</b>
@@ -19338,7 +19439,7 @@ modify_task_file
 </li>
 <li>
               &lt;<b>params</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Paramaters for the wizard.</div>
+              <div style="margin-left: 15px; display: inline;">Parameters for the wizard.</div>
 <ul style="list-style: none"><li>
               &lt;<b>param</b>&gt;
               *<ul style="list-style: none">
