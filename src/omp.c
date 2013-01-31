@@ -17746,7 +17746,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             "<filename>%s</filename>"
                             "%s"
                             "</package>"
-                            "<in_use>0</in_use>"
                             "<installer>"
                             "<trust>%s<time>%s</time></trust>"
                             "</installer>"
@@ -17776,8 +17775,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           trust_time = agent_iterator_trust_time (&agents);
 
                           SENDF_TO_CLIENT_OR_FAIL
-                           ("<in_use>0</in_use>"
-                            "<installer>"
+                           ("<installer>"
                             "<trust>%s<time>%s</time></trust>"
                             "</installer>"
                             "</agent>",

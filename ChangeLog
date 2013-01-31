@@ -1,5 +1,10 @@
 2013-01-31  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (omp_xml_handle_end_element): Remove duplicate in_use
+	tag in GET_AGENTS.
+
+2013-01-31  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (setting_filter): Style fix.
 
 2013-01-30  Matthew Mundell <matthew.mundell@greenbone.net>
