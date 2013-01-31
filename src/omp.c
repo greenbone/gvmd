@@ -18927,14 +18927,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   iterator_t targets;
 
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<login>%s</login>"
-                    "<type>%s</type>"
-                    "<targets>",
-                    lsc_credential_iterator_login (&credentials),
-                    lsc_credential_iterator_public_key (&credentials)
-                      ? "gen" : "pass");
-
+                  SENDF_TO_CLIENT_OR_FAIL ("<targets>");
                   init_lsc_credential_target_iterator
                    (&targets,
                     lsc_credential_iterator_lsc_credential
