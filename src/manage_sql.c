@@ -11054,11 +11054,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
           case 0:
               {
                 /* Child.  Drop privileges, run command, exit. */
-
-                /* Clear parent state, because these affect
-                 * cleanup_manage_process. */
-                current_scanner_task = 0;
-                current_report = 0;
+                cleanup_manage_process (FALSE);
 
                 if (setgid (nobody->pw_gid))
                   {
@@ -11379,10 +11375,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
               {
                 /* Child.  Drop privileges, run command, exit. */
 
-                /* Clear parent state, because these affect
-                 * cleanup_manage_process. */
-                current_scanner_task = 0;
-                current_report = 0;
+                cleanup_manage_process (FALSE);
 
                 if (setgid (nobody->pw_gid))
                   {
