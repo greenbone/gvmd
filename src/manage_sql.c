@@ -46532,7 +46532,7 @@ manage_scap_loaded ()
 /**
  * @brief Check whether CERT is available.
  *
- * @return 1 if SCAP database is loaded, else 0.
+ * @return 1 if CERT database is loaded, else 0.
  */
 int
 manage_cert_loaded ()
@@ -46949,7 +46949,7 @@ ovaldef_info_count (const get_data_t *get)
 DEF_ACCESS (ovaldef_info_iterator_version, GET_ITERATOR_COLUMN_COUNT);
 
 /**
- * @brief Get the deprectation status from an OVALDEF iterator.
+ * @brief Get the deprecation status from an OVALDEF iterator.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -47159,9 +47159,8 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
  *
  * @param[in]  name  Full OVAL identifier.
  *
- * @return The long description of the OVAL definition,
- *         or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
+ * @return The file name of the OVAL definition relative to the SCAP directory,
+ *         Freed by g_free.
  */
 gchar*
 get_ovaldef_short_filename (char* oval_id)

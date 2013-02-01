@@ -4424,7 +4424,7 @@ get_cve_filename (char *item_id)
 }
 
 /**
- * @brief Get the filename where a given OVAL definitions can be found.
+ * @brief Get the filename where a given OVAL definition can be found.
  *
  * @param[in] oval_id   Full OVAL identifier.
  *
