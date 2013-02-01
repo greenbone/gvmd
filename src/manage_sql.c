@@ -14983,6 +14983,13 @@ cleanup_manage_process (gboolean cleanup)
           if (current_scanner_task)
             set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
           if (sqlite3_close (task_db) == SQLITE_BUSY)
+            /* Richard Hipp on how to find the open statements:
+             *
+             * There is no published way to do this.  If you run in a debugger,
+             * you can look at the linked list of "struct Vdbe" objects that
+             * sqlite3.pVdbe points to.  This is the list of open statements
+             * in the current implementation (and subject to change without
+             * notice). */
             g_warning ("%s: attempt to close db with open statement(s)\n",
                        __FUNCTION__);
         }

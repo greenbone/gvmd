@@ -1,5 +1,10 @@
 2013-02-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (cleanup_manage_process): Add note on how to find
+	open statements.
+
+2013-02-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_count, report_count_filtered)
 	(report_counts_id_filt): Also finalize the full statement.
 
