@@ -9381,11 +9381,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </attrib>
           <e>name</e>
           <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
           <e>host</e>
           <e>port</e>
           <e>login</e>
-          <e>password</e>
-          <e>in_use</e>
           <o><e>tasks</e></o>
         </pattern>
         <ele>
@@ -9399,6 +9401,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             text
           </pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the slave is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any slaves are using the slave</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>host</name>
@@ -9420,18 +9440,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             text
           </pattern>
-        </ele>
-        <ele>
-          <name>password</name>
-          <summary>Password for login on the slave Manager</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>in_use</name>
-          <summary>Whether any tasks are using the slave</summary>
-          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>tasks</name>
@@ -9467,9 +9475,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <slave id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
             <name>Bangkok</name>
             <comment>Manager in Bangkok department.</comment>
+            <creation_time>2012-11-09T13:57:25+01:00</creation_time>
+            <modification_time>2012-12-28T12:07:36+01:00</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
             <host>192.0.32.10</host>
             <login>sally</login>
-            <password>secret</password>
             <tasks>
               <task id="c33864a9-d3fd-44b3-8717-972bfb01dfc0">
                 <name>Debian desktops</name>
@@ -9729,10 +9740,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>comment</e>
           <e>creation_time</e>
           <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
           <e>hosts</e>
           <e>max_hosts</e>
-          <e>in_use</e>
-          <e>writable</e>
           <e>ssh_lsc_credential</e>
           <e>smb_lsc_credential</e>
           <e>port_range</e>
@@ -9774,13 +9785,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
         </ele>
         <ele>
-          <name>in_use</name>
-          <summary>Whether any tasks are using the target</summary>
+          <name>writable</name>
+          <summary>Whether the target is writable</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
-          <name>writable</name>
-          <summary>Whether the target is writable</summary>
+          <name>in_use</name>
+          <summary>Whether any tasks are using the target</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
@@ -9975,13 +9986,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <get_targets_response status="200" status_text="OK">
           <target id="b493b7a8-7489-11df-a3ec-002264764cea">
             <name>Localhost</name>
-            <hosts>localhost</hosts>
-            <max_hosts>1</max_hosts>
             <comment></comment>
-            <in_use>7</in_use>
-            <writable>0</writable>
             <creation_time>Sun Jun 27 08:49:43 2010</creation_time>
             <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
+            <writable>0</writable>
+            <in_use>7</in_use>
+            <hosts>localhost</hosts>
+            <max_hosts>1</max_hosts>
             <ssh_lsc_credential id="">
               <name></name>
             </ssh_lsc_credential>
@@ -10003,13 +10014,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <get_targets_response status="200" status_text="OK">
           <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
             <name>dik</name>
-            <hosts>dik.example.org</hosts>
-            <max_hosts>1</max_hosts>
             <comment>dik mm</comment>
-            <in_use>4</in_use>
-            <writable>0</writable>
             <creation_time>Sun Jun 27 08:49:43 2010</creation_time>
             <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
+            <writable>0</writable>
+            <in_use>4</in_use>
+            <hosts>dik.example.org</hosts>
+            <max_hosts>1</max_hosts>
             <ssh_lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
               <name>mm</name>
             </ssh_lsc_credential>
@@ -10136,6 +10147,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <pattern>
           <e>name</e>
           <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>owner</e>
           <e>status</e>
           <e>progress</e>
           <e>config</e>
@@ -10164,6 +10180,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>text</pattern>
         </ele>
         <ele>
+          <name>creation_time</name>
+          <summary>Creation time of the task</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Last time the task was modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the task is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether this task is currently in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
           <name>status</name>
           <summary>The run status of the task</summary>
           <pattern><t>task_status</t></pattern>
@@ -10186,6 +10222,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>host</name>
               <pattern>text</pattern>
             </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the task</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
           </ele>
         </ele>
         <ele>
@@ -10584,40 +10632,35 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <get_tasks_response status="200" status_text="OK">
-          <task_count>2</task_count>
-          <sort>
-            <field>
-              ROWID
-              <order>ascending</order>
-            </field>
-          </sort>
           <apply_overrides>0</apply_overrides>
           <task id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
             <name>Scan Webserver</name>
             <comment>Scan of the web server.</comment>
-            <status>Done</status>
-            <progress>-1</progress>
+            <creation_time>2013-01-03T13:50:03+01:00</creation_time>
+            <modification_time>2013-01-11T16:03:24+01:00</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <owner>
+              <name>admin</name>
+            </owner>
+            <observers/>
             <config id="daba56c8-73ec-11df-a475-002264764cea">
               <name>Full and fast</name>
             </config>
-            <alert id="">
-              <name></name>
-            </alert>
             <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
               <name>dik</name>
             </target>
+            <slave id="">
+              <name></name>
+            </slave>
+            <status>Done</status>
+            <progress>-1</progress>
+            <report_count>2<finished>2</finished></report_count>
+            <trend></trend>
             <schedule id="">
               <name></name>
               <next_time>over</next_time>
             </schedule>
-            <slave id="">
-              <name></name>
-            </slave>
-            <report_count>
-              2
-              <finished>2</finished>
-            </report_count>
-            <trend></trend>
             <first_report>
               <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
@@ -10654,6 +10697,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 </result_count>
               </report>
             </second_last_report>
+            <alert id="">
+              <name></name>
+            </alert>
+            <preferences>
+              <preference>
+                <name>Maximum concurrently executed NVTs per host</name>
+                <scanner_name>max_checks</scanner_name>
+                <value>4</value>
+              </preference>
+              <preference>
+                <name>Maximum concurrently scanned hosts</name>
+                <scanner_name>max_hosts</scanner_name>
+                <value>20</value>
+              </preference>
+              <preference>
+                <name>Add results to Asset Management</name>
+                <scanner_name>in_assets</scanner_name>
+                <value>yes</value>
+              </preference>
+            </preferences>
           </task>
           <task id="f14747d3-a4d7-4e79-99bb-a0a1276cb78c">
             <name>Scan Mailserver</name>
@@ -10670,40 +10733,35 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <get_tasks_response status="200" status_text="OK">
-          <task_count>1</task_count>
-          <sort>
-            <field>
-              ROWID
-              <order>ascending</order>
-            </field>
-          </sort>
           <apply_overrides>0</apply_overrides>
           <task id="13bb418a-4220-4575-b35b-ec398bff7417">
             <name>Scan Mailserver</name>
             <comment>Scan of the web server.</comment>
-            <status>Done</status>
-            <progress>-1</progress>
+            <creation_time>2013-01-03T13:50:03+01:00</creation_time>
+            <modification_time>2013-01-11T16:03:24+01:00</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <owner>
+              <name>admin</name>
+            </owner>
+            <observers/>
             <config id="daba56c8-73ec-11df-a475-002264764cea">
               <name>Full and fast</name>
             </config>
-            <alert id="">
-              <name></name>
-            </alert>
             <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
               <name>dik</name>
             </target>
+            <slave id="">
+              <name></name>
+            </slave>
+            <status>Done</status>
+            <progress>-1</progress>
+            <report_count>2<finished>2</finished></report_count>
+            <trend></trend>
             <schedule id="">
               <name></name>
               <next_time>over</next_time>
             </schedule>
-            <slave id="">
-              <name></name>
-            </slave>
-            <report_count>
-              2
-              <finished>2</finished>
-            </report_count>
-            <trend></trend>
             <first_report>
               <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
@@ -10740,6 +10798,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 </result_count>
               </report>
             </second_last_report>
+            <alert id="">
+              <name></name>
+            </alert>
             <reports>
               <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
                 <timestamp>Mon Feb  1 18:51:38 2010</timestamp>
@@ -10763,8 +10824,33 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   <warning>3</warning>
                 </result_count>
               </report>
+              <preferences>
+                <preference>
+                  <name>Maximum concurrently executed NVTs per host</name>
+                  <scanner_name>max_checks</scanner_name>
+                  <value>4</value>
+                </preference>
+                <preference>
+                  <name>Maximum concurrently scanned hosts</name>
+                  <scanner_name>max_hosts</scanner_name>
+                  <value>20</value>
+                </preference>
+                <preference>
+                  <name>Add results to Asset Management</name>
+                  <scanner_name>in_assets</scanner_name>
+                  <value>yes</value>
+                </preference>
+              </preferences>
             </reports>
           </task>
+          <filters id="0">
+            <term/>
+          </filters>
+          <sort>
+            <field>name<order>ascending</order></field>
+          </sort>
+          <tasks max="-1" start="1"/>
+          <task_count>3<filtered>1</filtered><page>1</page></task_count>
         </get_tasks_response>
       </response>
     </example>

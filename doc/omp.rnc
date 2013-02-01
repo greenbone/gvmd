@@ -3183,8 +3183,8 @@ get_schedules
        attribute schedule_id { uuid }?
        & # Whether to get the trashcan schedules instead.
        attribute trash { boolean }?
-       & # Whether to include full schedule details.
-       attribute details { boolean }?
+       & # Whether to include tasks using the schedules.
+       attribute tasks { boolean }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
      }
@@ -7375,17 +7375,20 @@ get_schedules_response_schedule
      {
        attribute id { uuid }
        & get_schedules_response_schedule_name
-       & ( get_schedules_response_schedule_comment
-           & get_schedules_response_schedule_first_time
-           & get_schedules_response_schedule_next_time
-           & get_schedules_response_schedule_timezone
-           & get_schedules_response_schedule_period
-           & get_schedules_response_schedule_period_months
-           & get_schedules_response_schedule_simple_period
-           & get_schedules_response_schedule_duration
-           & get_schedules_response_schedule_simple_duration
-           & get_schedules_response_schedule_in_use
-           & get_schedules_response_schedule_tasks )?
+       & get_schedules_response_schedule_comment
+       & get_schedules_response_schedule_creation_time
+       & get_schedules_response_schedule_modification_time
+       & get_schedules_response_schedule_writable
+       & get_schedules_response_schedule_in_use
+       & get_schedules_response_schedule_first_time
+       & get_schedules_response_schedule_next_time
+       & get_schedules_response_schedule_timezone
+       & get_schedules_response_schedule_period
+       & get_schedules_response_schedule_period_months
+       & get_schedules_response_schedule_simple_period
+       & get_schedules_response_schedule_duration
+       & get_schedules_response_schedule_simple_duration
+       & ( get_schedules_response_schedule_tasks )?
      }
 
 # The name of the schedule.
@@ -7400,6 +7403,32 @@ get_schedules_response_schedule_comment
  = element comment
      {
        text
+     }
+
+get_schedules_response_schedule_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_schedules_response_schedule_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# Whether the schedule is writable.
+get_schedules_response_schedule_writable
+ = element writable
+     {
+       boolean
+     }
+
+# Whether any tasks are using the schedule.
+get_schedules_response_schedule_in_use
+ = element in_use
+     {
+       boolean
      }
 
 # First time the task ran or will run.
@@ -7470,13 +7499,6 @@ get_schedules_response_schedule_simple_duration_unit
  = element unit
      {
        time_unit
-     }
-
-# Whether any tasks are using the schedule.
-get_schedules_response_schedule_in_use
- = element in_use
-     {
-       boolean
      }
 
 get_schedules_response_schedule_tasks
@@ -7564,11 +7586,13 @@ get_slaves_response_slave
        attribute id { uuid }
        & get_slaves_response_slave_name
        & get_slaves_response_slave_comment
+       & get_slaves_response_slave_creation_time
+       & get_slaves_response_slave_modification_time
+       & get_slaves_response_slave_writable
+       & get_slaves_response_slave_in_use
        & get_slaves_response_slave_host
        & get_slaves_response_slave_port
        & get_slaves_response_slave_login
-       & get_slaves_response_slave_password
-       & get_slaves_response_slave_in_use
        & get_slaves_response_slave_tasks?
      }
 
@@ -7584,6 +7608,32 @@ get_slaves_response_slave_comment
  = element comment
      {
        text
+     }
+
+get_slaves_response_slave_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_slaves_response_slave_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# Whether the slave is writable.
+get_slaves_response_slave_writable
+ = element writable
+     {
+       boolean
+     }
+
+# Whether any slaves are using the slave.
+get_slaves_response_slave_in_use
+ = element in_use
+     {
+       boolean
      }
 
 # The host that the slave Manager is running on.
@@ -7605,20 +7655,6 @@ get_slaves_response_slave_login
  = element login
      {
        text
-     }
-
-# Password for login on the slave Manager.
-get_slaves_response_slave_password
- = element password
-     {
-       text
-     }
-
-# Whether any tasks are using the slave.
-get_slaves_response_slave_in_use
- = element in_use
-     {
-       boolean
      }
 
 get_slaves_response_slave_tasks
@@ -7725,10 +7761,10 @@ get_targets_response_target
        & get_targets_response_target_comment
        & get_targets_response_target_creation_time
        & get_targets_response_target_modification_time
+       & get_targets_response_target_writable
+       & get_targets_response_target_in_use
        & get_targets_response_target_hosts
        & get_targets_response_target_max_hosts
-       & get_targets_response_target_in_use
-       & get_targets_response_target_writable
        & get_targets_response_target_ssh_lsc_credential
        & get_targets_response_target_smb_lsc_credential
        & get_targets_response_target_port_range
@@ -7778,16 +7814,16 @@ get_targets_response_target_max_hosts
        integer
      }
 
-# Whether any tasks are using the target.
-get_targets_response_target_in_use
- = element in_use
+# Whether the target is writable.
+get_targets_response_target_writable
+ = element writable
      {
        boolean
      }
 
-# Whether the target is writable.
-get_targets_response_target_writable
- = element writable
+# Whether any tasks are using the target.
+get_targets_response_target_in_use
+ = element in_use
      {
        boolean
      }
@@ -8007,6 +8043,11 @@ get_tasks_response_task
      {
        get_tasks_response_task_name
        & get_tasks_response_task_comment
+       & get_tasks_response_task_creation_time
+       & get_tasks_response_task_modification_time
+       & get_tasks_response_task_writable
+       & get_tasks_response_task_in_use
+       & get_tasks_response_task_owner
        & get_tasks_response_task_status
        & get_tasks_response_task_progress
        & get_tasks_response_task_config
@@ -8039,6 +8080,34 @@ get_tasks_response_task_comment
        text
      }
 
+# Creation time of the task.
+get_tasks_response_task_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Last time the task was modified.
+get_tasks_response_task_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# Whether the task is writable.
+get_tasks_response_task_writable
+ = element writable
+     {
+       boolean
+     }
+
+# Whether this task is currently in use.
+get_tasks_response_task_in_use
+ = element in_use
+     {
+       boolean
+     }
+
 # The run status of the task.
 get_tasks_response_task_status
  = element status
@@ -8066,6 +8135,20 @@ get_tasks_response_task_progress_host_progress_host
  = element host
      {
        text
+     }
+
+# Owner of the task.
+get_tasks_response_task_owner
+ = element owner
+     {
+       get_tasks_response_task_owner_name
+     }
+
+# The name of the owner.
+get_tasks_response_task_owner_name
+ = element name
+     {
+       name
      }
 
 # The scan configuration used by the task.

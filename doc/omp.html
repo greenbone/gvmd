@@ -14462,9 +14462,9 @@ get_results_response_results_result_overrides
           Whether to get the trashcan schedules instead.
           </li>
 <li>
-          @<b>details</b>
+          @<b>tasks</b>
           (<a href="#type_boolean">boolean</a>)
-          Whether to include full schedule details.
+          Whether to include tasks using the schedules.
           </li>
 <li>
           @<b>sort_order</b>
@@ -14499,10 +14499,26 @@ get_results_response_results_result_overrides
 <ul style="list-style: none"></ul>
 </li>
 <li>
-<i>The group</i><b>?</b><ul style="list-style: none">
-<li>
               &lt;<b>comment</b>&gt;
               <div style="margin-left: 15px; display: inline;">The comment on the schedule.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>creation_time</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the schedule is writable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>in_use</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether any tasks are using the schedule.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -14552,11 +14568,7 @@ get_results_response_results_result_overrides
 </li></ul>
 </li>
 <li>
-              &lt;<b>in_use</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether any tasks are using the schedule.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
+<i>The group</i><b>?</b><ul style="list-style: none"><li>
               &lt;<b>tasks</b>&gt;
               <ul style="list-style: none"><li>
               &lt;<b>task</b>&gt;
@@ -14572,8 +14584,7 @@ get_results_response_results_result_overrides
 </li>
 </ul>
 </li></ul>
-</li>
-</ul>
+</li></ul>
 </li>
 </ul>
 </li>
@@ -14587,7 +14598,7 @@ get_results_response_results_result_overrides
      {
        attribute schedule_id { uuid }?
        &amp; attribute trash { boolean }?
-       &amp; attribute details { boolean }?
+       &amp; attribute tasks { boolean }?
        &amp; attribute sort_order { sort_order }?
        &amp; attribute sort_field { text }?
      }
@@ -14605,17 +14616,20 @@ get_schedules_response_schedule
      {
        attribute id { uuid }
        &amp; get_schedules_response_schedule_name
-       &amp; ( get_schedules_response_schedule_comment
-           &amp; get_schedules_response_schedule_first_time
-           &amp; get_schedules_response_schedule_next_time
-           &amp; get_schedules_response_schedule_timezone
-           &amp; get_schedules_response_schedule_period
-           &amp; get_schedules_response_schedule_period_months
-           &amp; get_schedules_response_schedule_simple_period
-           &amp; get_schedules_response_schedule_duration
-           &amp; get_schedules_response_schedule_simple_duration
-           &amp; get_schedules_response_schedule_in_use
-           &amp; get_schedules_response_schedule_tasks )?
+       &amp; get_schedules_response_schedule_comment
+       &amp; get_schedules_response_schedule_creation_time
+       &amp; get_schedules_response_schedule_modification_time
+       &amp; get_schedules_response_schedule_writable
+       &amp; get_schedules_response_schedule_in_use
+       &amp; get_schedules_response_schedule_first_time
+       &amp; get_schedules_response_schedule_next_time
+       &amp; get_schedules_response_schedule_timezone
+       &amp; get_schedules_response_schedule_period
+       &amp; get_schedules_response_schedule_period_months
+       &amp; get_schedules_response_schedule_simple_period
+       &amp; get_schedules_response_schedule_duration
+       &amp; get_schedules_response_schedule_simple_duration
+       &amp; ( get_schedules_response_schedule_tasks )?
      }
 
 get_schedules_response_schedule_name
@@ -14628,6 +14642,30 @@ get_schedules_response_schedule_comment
  = element comment
      {
        text
+     }
+
+get_schedules_response_schedule_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_schedules_response_schedule_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+get_schedules_response_schedule_writable
+ = element writable
+     {
+       boolean
+     }
+
+get_schedules_response_schedule_in_use
+ = element in_use
+     {
+       boolean
      }
 
 get_schedules_response_schedule_first_time
@@ -14692,12 +14730,6 @@ get_schedules_response_schedule_simple_duration_unit
        time_unit
      }
 
-get_schedules_response_schedule_in_use
- = element in_use
-     {
-       boolean
-     }
-
 get_schedules_response_schedule_tasks
  = element tasks
      {
@@ -14718,32 +14750,21 @@ get_schedules_response_schedule_tasks_task_name
      }
 </pre></div>
 </div>
-<h4>7.51.3 Example: Get all schedules</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_schedules/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_schedules_response status="200"
-                         status_text="OK"&gt;
-   &lt;schedule id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
-     &lt;name&gt;Overnight&lt;/name&gt;
-   &lt;/schedule&gt;
-   ...
- &lt;/get_schedules_response&gt;
-</pre></div>
-</div>
 <h4>7.51.3 Example: Get full details of a single schedule</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_schedules schedule_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"
-                details="1"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_schedules schedule_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"/&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_schedules_response status="200"
                          status_text="OK"&gt;
    &lt;schedule id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
      &lt;name&gt;Overnight&lt;/name&gt;
      &lt;comment&gt;3 hours, starting at 12h00.&lt;/comment&gt;
+     &lt;creation_time&gt;2013-01-01T13:57:25+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2013-01-18T12:07:36+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;0&lt;/writable&gt;
+     &lt;in_use&gt;1&lt;/in_use&gt;
      &lt;first_time&gt;Tue Jun 29 00:00:00 2010&lt;/first_time&gt;
      &lt;next_time&gt;Tue Jun 29 00:00:00 2010&lt;/next_time&gt;
-     &lt;timezone&gt;Europe/Berlin&lt;/timezone&gt;
      &lt;period&gt;86400&lt;/period&gt;
      &lt;period_months&gt;0&lt;/period_months&gt;
      &lt;simple_period&gt;
@@ -14755,13 +14776,14 @@ get_schedules_response_schedule_tasks_task_name
        3
        &lt;unit&gt;hour&lt;/unit&gt;
      &lt;/simple_duration&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;timezone&gt;Europe/Berlin&lt;/timezone&gt;
      &lt;tasks&gt;
        &lt;task id="d4daf4c4-25c7-40ac-87d3-38e489f34330"&gt;
-         &lt;name&gt;kk&lt;/name&gt;
+         &lt;name&gt;Task 1&lt;/name&gt;
        &lt;/task&gt;
      &lt;/tasks&gt;
    &lt;/schedule&gt;
+   &lt;truncate&gt;...&lt;/truncate&gt;
  &lt;/get_schedules_response&gt;
 </pre></div>
 </div>
@@ -14986,6 +15008,24 @@ get_settings_response_settings_setting_value
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>creation_time</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the slave is writable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>in_use</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether any slaves are using the slave.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>host</b>&gt;
               <div style="margin-left: 15px; display: inline;">The host that the slave Manager is running on.</div>
 <ul style="list-style: none"></ul>
@@ -14998,16 +15038,6 @@ get_settings_response_settings_setting_value
 <li>
               &lt;<b>login</b>&gt;
               <div style="margin-left: 15px; display: inline;">Login name on the slave Manager.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>password</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Password for login on the slave Manager.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>in_use</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether any tasks are using the slave.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -15058,11 +15088,13 @@ get_slaves_response_slave
        attribute id { uuid }
        &amp; get_slaves_response_slave_name
        &amp; get_slaves_response_slave_comment
+       &amp; get_slaves_response_slave_creation_time
+       &amp; get_slaves_response_slave_modification_time
+       &amp; get_slaves_response_slave_writable
+       &amp; get_slaves_response_slave_in_use
        &amp; get_slaves_response_slave_host
        &amp; get_slaves_response_slave_port
        &amp; get_slaves_response_slave_login
-       &amp; get_slaves_response_slave_password
-       &amp; get_slaves_response_slave_in_use
        &amp; get_slaves_response_slave_tasks?
      }
 
@@ -15076,6 +15108,30 @@ get_slaves_response_slave_comment
  = element comment
      {
        text
+     }
+
+get_slaves_response_slave_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_slaves_response_slave_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+get_slaves_response_slave_writable
+ = element writable
+     {
+       boolean
+     }
+
+get_slaves_response_slave_in_use
+ = element in_use
+     {
+       boolean
      }
 
 get_slaves_response_slave_host
@@ -15094,18 +15150,6 @@ get_slaves_response_slave_login
  = element login
      {
        text
-     }
-
-get_slaves_response_slave_password
- = element password
-     {
-       text
-     }
-
-get_slaves_response_slave_in_use
- = element in_use
-     {
-       boolean
      }
 
 get_slaves_response_slave_tasks
@@ -15137,9 +15181,12 @@ get_slaves_response_slave_tasks_task_name
    &lt;slave id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
      &lt;name&gt;Bangkok&lt;/name&gt;
      &lt;comment&gt;Manager in Bangkok department.&lt;/comment&gt;
+     &lt;creation_time&gt;2012-11-09T13:57:25+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2012-12-28T12:07:36+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
+     &lt;in_use&gt;0&lt;/in_use&gt;
      &lt;host&gt;192.0.32.10&lt;/host&gt;
      &lt;login&gt;sally&lt;/login&gt;
-     &lt;password&gt;secret&lt;/password&gt;
      &lt;tasks&gt;
        &lt;task id="c33864a9-d3fd-44b3-8717-972bfb01dfc0"&gt;
          &lt;name&gt;Debian desktops&lt;/name&gt;
@@ -15478,13 +15525,8 @@ get_target_locators_response_target_locator_name
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>hosts</b>&gt;
-              <div style="margin-left: 15px; display: inline;">A list of hosts.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>max_hosts</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The maximum number of hosts defined by the target.</div>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the target is writable.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -15493,8 +15535,13 @@ get_target_locators_response_target_locator_name
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>writable</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether the target is writable.</div>
+              &lt;<b>hosts</b>&gt;
+              <div style="margin-left: 15px; display: inline;">A list of hosts.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>max_hosts</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The maximum number of hosts defined by the target.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -15676,10 +15723,10 @@ get_targets_response_target
        &amp; get_targets_response_target_comment
        &amp; get_targets_response_target_creation_time
        &amp; get_targets_response_target_modification_time
+       &amp; get_targets_response_target_writable
+       &amp; get_targets_response_target_in_use
        &amp; get_targets_response_target_hosts
        &amp; get_targets_response_target_max_hosts
-       &amp; get_targets_response_target_in_use
-       &amp; get_targets_response_target_writable
        &amp; get_targets_response_target_ssh_lsc_credential
        &amp; get_targets_response_target_smb_lsc_credential
        &amp; get_targets_response_target_port_range
@@ -15723,14 +15770,14 @@ get_targets_response_target_max_hosts
        integer
      }
 
-get_targets_response_target_in_use
- = element in_use
+get_targets_response_target_writable
+ = element writable
      {
        boolean
      }
 
-get_targets_response_target_writable
- = element writable
+get_targets_response_target_in_use
+ = element in_use
      {
        boolean
      }
@@ -15894,13 +15941,13 @@ get_targets_response_target_count_page
                        status_text="OK"&gt;
    &lt;target id="b493b7a8-7489-11df-a3ec-002264764cea"&gt;
      &lt;name&gt;Localhost&lt;/name&gt;
-     &lt;hosts&gt;localhost&lt;/hosts&gt;
-     &lt;max_hosts&gt;1&lt;/max_hosts&gt;
      &lt;comment/&gt;
-     &lt;in_use&gt;7&lt;/in_use&gt;
-     &lt;writable&gt;0&lt;/writable&gt;
      &lt;creation_time&gt;Sun Jun 27 08:49:43 2010&lt;/creation_time&gt;
      &lt;modification_time&gt;Sun Jun 27 08:49:43 2010&lt;/modification_time&gt;
+     &lt;writable&gt;0&lt;/writable&gt;
+     &lt;in_use&gt;7&lt;/in_use&gt;
+     &lt;hosts&gt;localhost&lt;/hosts&gt;
+     &lt;max_hosts&gt;1&lt;/max_hosts&gt;
      &lt;ssh_lsc_credential id=""&gt;
        &lt;name/&gt;
      &lt;/ssh_lsc_credential&gt;
@@ -15921,13 +15968,13 @@ get_targets_response_target_count_page
                        status_text="OK"&gt;
    &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
      &lt;name&gt;dik&lt;/name&gt;
-     &lt;hosts&gt;dik.example.org&lt;/hosts&gt;
-     &lt;max_hosts&gt;1&lt;/max_hosts&gt;
      &lt;comment&gt;dik mm&lt;/comment&gt;
-     &lt;in_use&gt;4&lt;/in_use&gt;
-     &lt;writable&gt;0&lt;/writable&gt;
      &lt;creation_time&gt;Sun Jun 27 08:49:43 2010&lt;/creation_time&gt;
      &lt;modification_time&gt;Sun Jun 27 08:49:43 2010&lt;/modification_time&gt;
+     &lt;writable&gt;0&lt;/writable&gt;
+     &lt;in_use&gt;4&lt;/in_use&gt;
+     &lt;hosts&gt;dik.example.org&lt;/hosts&gt;
+     &lt;max_hosts&gt;1&lt;/max_hosts&gt;
      &lt;ssh_lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4"&gt;
        &lt;name&gt;mm&lt;/name&gt;
      &lt;/ssh_lsc_credential&gt;
@@ -16042,6 +16089,35 @@ get_targets_response_target_count_page
               &lt;<b>comment</b>&gt;
               <div style="margin-left: 15px; display: inline;">The comment on the task.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Creation time of the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Last time the task was modified.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the task is writable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>in_use</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether this task is currently in use.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the task.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>status</b>&gt;
@@ -16444,6 +16520,11 @@ get_tasks_response_task
      {
        get_tasks_response_task_name
        &amp; get_tasks_response_task_comment
+       &amp; get_tasks_response_task_creation_time
+       &amp; get_tasks_response_task_modification_time
+       &amp; get_tasks_response_task_writable
+       &amp; get_tasks_response_task_in_use
+       &amp; get_tasks_response_task_owner
        &amp; get_tasks_response_task_status
        &amp; get_tasks_response_task_progress
        &amp; get_tasks_response_task_config
@@ -16474,6 +16555,30 @@ get_tasks_response_task_comment
        text
      }
 
+get_tasks_response_task_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_tasks_response_task_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+get_tasks_response_task_writable
+ = element writable
+     {
+       boolean
+     }
+
+get_tasks_response_task_in_use
+ = element in_use
+     {
+       boolean
+     }
+
 get_tasks_response_task_status
  = element status
      {
@@ -16498,6 +16603,18 @@ get_tasks_response_task_progress_host_progress_host
  = element host
      {
        text
+     }
+
+get_tasks_response_task_owner
+ = element owner
+     {
+       get_tasks_response_task_owner_name
+     }
+
+get_tasks_response_task_owner_name
+ = element name
+     {
+       name
      }
 
 get_tasks_response_task_config
@@ -16917,40 +17034,38 @@ get_tasks_response_task_preferences_preference_value
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_tasks_response status="200"
                      status_text="OK"&gt;
-   &lt;task_count&gt;2&lt;/task_count&gt;
-   &lt;sort&gt;
-     &lt;field&gt;
-       ROWID
-       &lt;order&gt;ascending&lt;/order&gt;
-     &lt;/field&gt;
-   &lt;/sort&gt;
    &lt;apply_overrides&gt;0&lt;/apply_overrides&gt;
    &lt;task id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
      &lt;name&gt;Scan Webserver&lt;/name&gt;
      &lt;comment&gt;Scan of the web server.&lt;/comment&gt;
-     &lt;status&gt;Done&lt;/status&gt;
-     &lt;progress&gt;-1&lt;/progress&gt;
+     &lt;creation_time&gt;2013-01-03T13:50:03+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2013-01-11T16:03:24+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
+     &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;owner&gt;
+       &lt;name&gt;admin&lt;/name&gt;
+     &lt;/owner&gt;
+     &lt;observers/&gt;
      &lt;config id="daba56c8-73ec-11df-a475-002264764cea"&gt;
        &lt;name&gt;Full and fast&lt;/name&gt;
      &lt;/config&gt;
-     &lt;alert id=""&gt;
-       &lt;name/&gt;
-     &lt;/alert&gt;
      &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
        &lt;name&gt;dik&lt;/name&gt;
      &lt;/target&gt;
-     &lt;schedule id=""&gt;
-       &lt;name/&gt;
-       &lt;next_time&gt;over&lt;/next_time&gt;
-     &lt;/schedule&gt;
      &lt;slave id=""&gt;
        &lt;name/&gt;
      &lt;/slave&gt;
+     &lt;status&gt;Done&lt;/status&gt;
+     &lt;progress&gt;-1&lt;/progress&gt;
      &lt;report_count&gt;
        2
        &lt;finished&gt;2&lt;/finished&gt;
      &lt;/report_count&gt;
      &lt;trend/&gt;
+     &lt;schedule id=""&gt;
+       &lt;name/&gt;
+       &lt;next_time&gt;over&lt;/next_time&gt;
+     &lt;/schedule&gt;
      &lt;first_report&gt;
        &lt;report id="f0fdf522-276d-4893-9274-fb8699dc2270"&gt;
          &lt;timestamp&gt;Mon Feb 1 19:11:20 2010&lt;/timestamp&gt;
@@ -16987,6 +17102,26 @@ get_tasks_response_task_preferences_preference_value
          &lt;/result_count&gt;
        &lt;/report&gt;
      &lt;/second_last_report&gt;
+     &lt;alert id=""&gt;
+       &lt;name/&gt;
+     &lt;/alert&gt;
+     &lt;preferences&gt;
+       &lt;preference&gt;
+         &lt;name&gt;Maximum concurrently executed NVTs per host&lt;/name&gt;
+         &lt;scanner_name&gt;max_checks&lt;/scanner_name&gt;
+         &lt;value&gt;4&lt;/value&gt;
+       &lt;/preference&gt;
+       &lt;preference&gt;
+         &lt;name&gt;Maximum concurrently scanned hosts&lt;/name&gt;
+         &lt;scanner_name&gt;max_hosts&lt;/scanner_name&gt;
+         &lt;value&gt;20&lt;/value&gt;
+       &lt;/preference&gt;
+       &lt;preference&gt;
+         &lt;name&gt;Add results to Asset Management&lt;/name&gt;
+         &lt;scanner_name&gt;in_assets&lt;/scanner_name&gt;
+         &lt;value&gt;yes&lt;/value&gt;
+       &lt;/preference&gt;
+     &lt;/preferences&gt;
    &lt;/task&gt;
    &lt;task id="f14747d3-a4d7-4e79-99bb-a0a1276cb78c"&gt;
      &lt;name&gt;Scan Mailserver&lt;/name&gt;
@@ -17002,40 +17137,38 @@ get_tasks_response_task_preferences_preference_value
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_tasks_response status="200"
                      status_text="OK"&gt;
-   &lt;task_count&gt;1&lt;/task_count&gt;
-   &lt;sort&gt;
-     &lt;field&gt;
-       ROWID
-       &lt;order&gt;ascending&lt;/order&gt;
-     &lt;/field&gt;
-   &lt;/sort&gt;
    &lt;apply_overrides&gt;0&lt;/apply_overrides&gt;
    &lt;task id="13bb418a-4220-4575-b35b-ec398bff7417"&gt;
      &lt;name&gt;Scan Mailserver&lt;/name&gt;
      &lt;comment&gt;Scan of the web server.&lt;/comment&gt;
-     &lt;status&gt;Done&lt;/status&gt;
-     &lt;progress&gt;-1&lt;/progress&gt;
+     &lt;creation_time&gt;2013-01-03T13:50:03+01:00&lt;/creation_time&gt;
+     &lt;modification_time&gt;2013-01-11T16:03:24+01:00&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
+     &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;owner&gt;
+       &lt;name&gt;admin&lt;/name&gt;
+     &lt;/owner&gt;
+     &lt;observers/&gt;
      &lt;config id="daba56c8-73ec-11df-a475-002264764cea"&gt;
        &lt;name&gt;Full and fast&lt;/name&gt;
      &lt;/config&gt;
-     &lt;alert id=""&gt;
-       &lt;name/&gt;
-     &lt;/alert&gt;
      &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
        &lt;name&gt;dik&lt;/name&gt;
      &lt;/target&gt;
-     &lt;schedule id=""&gt;
-       &lt;name/&gt;
-       &lt;next_time&gt;over&lt;/next_time&gt;
-     &lt;/schedule&gt;
      &lt;slave id=""&gt;
        &lt;name/&gt;
      &lt;/slave&gt;
+     &lt;status&gt;Done&lt;/status&gt;
+     &lt;progress&gt;-1&lt;/progress&gt;
      &lt;report_count&gt;
        2
        &lt;finished&gt;2&lt;/finished&gt;
      &lt;/report_count&gt;
      &lt;trend/&gt;
+     &lt;schedule id=""&gt;
+       &lt;name/&gt;
+       &lt;next_time&gt;over&lt;/next_time&gt;
+     &lt;/schedule&gt;
      &lt;first_report&gt;
        &lt;report id="f0fdf522-276d-4893-9274-fb8699dc2270"&gt;
          &lt;timestamp&gt;Mon Feb 1 19:11:20 2010&lt;/timestamp&gt;
@@ -17072,6 +17205,9 @@ get_tasks_response_task_preferences_preference_value
          &lt;/result_count&gt;
        &lt;/report&gt;
      &lt;/second_last_report&gt;
+     &lt;alert id=""&gt;
+       &lt;name/&gt;
+     &lt;/alert&gt;
      &lt;reports&gt;
        &lt;report id="f0fdf522-276d-4893-9274-fb8699dc2270"&gt;
          &lt;timestamp&gt;Mon Feb 1 18:51:38 2010&lt;/timestamp&gt;
@@ -17095,8 +17231,41 @@ get_tasks_response_task_preferences_preference_value
            &lt;warning&gt;3&lt;/warning&gt;
          &lt;/result_count&gt;
        &lt;/report&gt;
+       &lt;preferences&gt;
+         &lt;preference&gt;
+           &lt;name&gt;Maximum concurrently executed NVTs per host&lt;/name&gt;
+           &lt;scanner_name&gt;max_checks&lt;/scanner_name&gt;
+           &lt;value&gt;4&lt;/value&gt;
+         &lt;/preference&gt;
+         &lt;preference&gt;
+           &lt;name&gt;Maximum concurrently scanned hosts&lt;/name&gt;
+           &lt;scanner_name&gt;max_hosts&lt;/scanner_name&gt;
+           &lt;value&gt;20&lt;/value&gt;
+         &lt;/preference&gt;
+         &lt;preference&gt;
+           &lt;name&gt;Add results to Asset Management&lt;/name&gt;
+           &lt;scanner_name&gt;in_assets&lt;/scanner_name&gt;
+           &lt;value&gt;yes&lt;/value&gt;
+         &lt;/preference&gt;
+       &lt;/preferences&gt;
      &lt;/reports&gt;
    &lt;/task&gt;
+   &lt;filters id="0"&gt;
+     &lt;term/&gt;
+   &lt;/filters&gt;
+   &lt;sort&gt;
+     &lt;field&gt;
+       name
+       &lt;order&gt;ascending&lt;/order&gt;
+     &lt;/field&gt;
+   &lt;/sort&gt;
+   &lt;tasks max="-1"
+          start="1"/&gt;
+   &lt;task_count&gt;
+     3
+     &lt;filtered&gt;1&lt;/filtered&gt;
+     &lt;page&gt;1&lt;/page&gt;
+   &lt;/task_count&gt;
  &lt;/get_tasks_response&gt;
 </pre></div>
 </div>

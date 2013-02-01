@@ -10,6 +10,11 @@
 
 2013-02-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* doc/omp.html, doc/omp.rnc, src/schema_formats/XML/OMP.xml: Update
+	documentation for get_slaves, get_targets and get_tasks.
+
+2013-02-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (send_to_sourcefire, send_to_verinice): Call
 	cleanup_manage_process after forking.
 
