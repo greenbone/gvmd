@@ -1,3 +1,8 @@
+2013-02-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_count, report_count_filtered)
+	(report_counts_id_filt): Also finalize the full statement.
+
 2013-02-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (send_to_sourcefire, send_to_verinice): Call
@@ -19,7 +24,8 @@
 	parent.
 	(manage_report, manage_send_report): Call cleanup_manage_process after
 	forking, and remove the "clearing the parent state" because the added
-	cleanup_manage_process will clear task_db.
+	cleanup_manage_process will clear task_db.  Thanks to Hani for
+	suggesting a change like this.
 
 2013-01-31  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 

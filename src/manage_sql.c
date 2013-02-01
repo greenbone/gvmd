@@ -20240,6 +20240,7 @@ report_count (report_t report, const char *type, int override, const char *host)
         }
       cleanup_iterator (&results);
       sqlite3_finalize (stmt);
+      sqlite3_finalize (full_stmt);
       return count;
     }
   else if (host)
@@ -20774,6 +20775,7 @@ report_count_filtered (report_t report, const char *type, int override,
         }
       cleanup_iterator (&results);
       sqlite3_finalize (stmt);
+      sqlite3_finalize (full_stmt);
       return count;
     }
   else if (strcmp (type, "False Positive") == 0)
@@ -21446,6 +21448,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
             }
           cleanup_iterator (&results);
           sqlite3_finalize (stmt);
+          sqlite3_finalize (full_stmt);
 
           report_scan_run_status (report, &status);
 
