@@ -1,5 +1,9 @@
 2013-02-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/lsc_crypt.c (get32): Shift the right direction.
+
+2013-02-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (cleanup_manage_process): Add note on how to find
 	open statements.
 

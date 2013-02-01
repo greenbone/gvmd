@@ -152,9 +152,9 @@ get32 (const void *buffer)
   const unsigned char *s = buffer;
   uint32_t value;
 
-  value  = s[0] >> 24;
-  value |= s[1] >> 16;
-  value |= s[2] >> 8;
+  value  = s[0] << 24;
+  value |= s[1] << 16;
+  value |= s[2] << 8;
   value |= s[3];
 
   return value;
