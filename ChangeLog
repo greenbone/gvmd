@@ -1,5 +1,11 @@
 2013-02-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* doc/omp.html, doc/omp.rnc, src/schema_formats/XML/OMP.xml: Add
+	documentation for modify_agent, modify_alert, modify_port_list and
+	modify_slave.
+
+2013-02-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (modify_alert): Update alert event, method and
 	condition and their data independently.
 

@@ -1531,14 +1531,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_tasks</c>
           <c>get_version</c>
           <c>help</c>
+          <c>modify_agent</c>
+          <c>modify_alert</c>
           <c>modify_config</c>
           <c>modify_filter</c>
           <c>modify_lsc_credential</c>
           <c>modify_note</c>
           <c>modify_override</c>
+          <c>modify_port_list</c>
           <c>modify_report</c>
           <c>modify_schedule</c>
           <c>modify_setting</c>
+          <c>modify_slave</c>
           <c>modify_target</c>
           <c>modify_task</c>
           <c>pause_task</c>
@@ -1624,14 +1628,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_tasks</r>
             <r>get_version</r>
             <r>help</r>
+            <r>modify_agent</r>
+            <r>modify_alert</r>
             <r>modify_config</r>
             <r>modify_filter</r>
             <r>modify_lsc_credential</r>
             <r>modify_note</r>
             <r>modify_override</r>
+            <r>modify_port_list</r>
             <r>modify_report</r>
             <r>modify_schedule</r>
             <r>modify_setting</r>
+            <r>modify_slave</r>
             <r>modify_target</r>
             <r>modify_task</r>
             <r>pause_task</r>
@@ -4298,7 +4306,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>agent_count</e>
       </pattern>
       <ele>
-        <name>agent</name>
+        <name>agent_id</name>
         <pattern>
           <attrib>
             <name>id</name>
@@ -11071,14 +11079,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_VERSION            Get the OpenVAS Manager Protocol version.
             GET_INFO               Get raw information for a given item.
             HELP                   Get this help text.
-            MODIFY_CONFIG          Update an existing config.
+            MODIFY_AGENT           modify an existing agent.
+            MODIFY_ALERT           modify an existing alert.
+            MODIFY_CONFIG          modify an existing config.
             MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.
             MODIFY_FILTER          Modify an existing filter.
             MODIFY_NOTE            Modify an existing note.
             MODIFY_OVERRIDE        Modify an existing override.
+            MODIFY_PORT_LIST       Modify an existing port list.
             MODIFY_REPORT          Modify an existing report.
             MODIFY_REPORT_FORMAT   Modify an existing report format.
             MODIFY_SCHEDULE        Modify an existing schedule.
+            MODIFY_SLAVE           Modify an existing slave.
             MODIFY_SETTING         Modify an existing setting.
             MODIFY_TARGET          Modify an existing target.
             MODIFY_TASK            Update an existing task.
@@ -11194,8 +11206,214 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>modify_agent</name>
+    <summary>Modify an existing agent</summary>
+    <description>
+      <p>
+        The client uses the modify_agent command to change an existing agent.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent</name>
+        <summary>ID of agent to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>name</e></o>
+      <o><e>comment</e></o>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on agent</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>name</name>
+      <summary>Name of agent</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the comment on an agent</summary>
+      <request>
+        <modify_agent agent_id="c737f787-9473-410d-8956-9d7b57bdd11f">
+          <comment>Old Agent 1</comment>
+        </modify_agent>
+      </request>
+      <response>
+        <modify_agent_response status="200" status_text="OK">
+        </modify_agent_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_alert</name>
+    <summary>Modify an existing alert</summary>
+    <description>
+      <p>
+        The client uses the modify_alert command to change an existing alert.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>alert_id</name>
+        <summary>ID of alert to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>name</e></o>
+      <o><e>comment</e></o>
+      <o><e>filter</e></o>
+      <o><e>event</e></o>
+      <o><e>condition</e></o>
+      <o><e>method</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>Name of alert</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on alert</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>condition</name>
+      <summary>
+        The condition that must be satisfied for the alert to occur
+      </summary>
+      <pattern>
+        text
+        <any><e>data</e></any>
+      </pattern>
+      <ele>
+        <name>data</name>
+        <summary>Some data that defines the condition</summary>
+        <pattern>
+          text
+          <e>name</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the condition data</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+      </ele>
+    </ele>
+    <ele>
+      <name>event</name>
+      <summary>
+        The event that must happen for the alert to occur
+      </summary>
+      <pattern>
+        text
+        <any><e>data</e></any>
+      </pattern>
+      <ele>
+        <name>data</name>
+        <summary>Some data that defines the event</summary>
+        <pattern>
+          text
+          <e>name</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the event data</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+      </ele>
+    </ele>
+    <ele>
+      <name>method</name>
+      <summary>The method by which the user is alerted</summary>
+      <pattern>
+        text
+        <any><e>data</e></any>
+      </pattern>
+      <ele>
+        <name>data</name>
+        <summary>Some data that defines the method</summary>
+        <pattern>
+          text
+          <e>name</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the method data</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+      </ele>
+    </ele>
+    <ele>
+      <name>filter</name>
+      <summary>Filter to apply when executing alert</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the name and report filter of an alert and the condition that triggers it</summary>
+      <request>
+        <modify_alert alert_id='914b59f8-25f5-4c8f-832c-2379cd625236'>
+            <name>Low Level Alert 2</name>
+            <condition>
+              Threat level at least
+              <data>
+                Low
+                <name>level</name>
+              </data>
+            </condition>
+            <filter id='7a06bd00-7e4a-4669-b7d7-8fe65ec64a41'/>
+        </modify_alert>
+      </request>
+      <response>
+        <modify_alert_response status="200" status_text="OK">
+        </modify_alert_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>modify_config</name>
-    <summary>Update an existing config</summary>
+    <summary>Modify an existing config</summary>
     <description>
       <p>
         This command can take five forms: with a preference, with a family
@@ -11835,6 +12053,62 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>modify_port_list</name>
+    <summary>Modify an existing port list</summary>
+    <description>
+      <p>
+        The client uses the modify_port_list command to change an existing port list.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>port_list_id</name>
+        <summary>ID of port list to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>name</e></o>
+      <o><e>comment</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>Name of port list</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on port list</summary>
+      <pattern>text</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the name of a port list</summary>
+      <request>
+        <modify_port_list port_list_id='27140836-05ae-4e8b-9abf-f725ddc2888f'>
+          <name>PL-WS1</name>
+          <comment>Port List for Web Server 1</comment>
+        </modify_port_list>
+      </request>
+      <response>
+        <modify_port_list_response status="200" status_text="OK">
+        </modify_port_list_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>modify_report</name>
     <summary>Modify an existing report</summary>
     <description>
@@ -12164,6 +12438,100 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_setting_response status="200" status_text="OK">
         </modify_setting_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_slave</name>
+    <summary>Modify an existing slave</summary>
+    <description>
+      <p>
+        The client uses the modify_slave command to change an existing slave.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>slave</name>
+        <summary>ID of slave to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <e>host</e>
+      <e>port</e>
+      <e>login</e>
+      <e>password</e>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the slave</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the slave</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>host</name>
+      <summary>The host that the slave Manager is running on</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>The port that the slave Manager is serving on the host</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>login</name>
+      <summary>Login name on the slave Manager</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>password</name>
+      <summary>Password for login on the slave Manager</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Update slave information</summary>
+      <request>
+        <modify_slave slave_id='f1e4dd0c-155c-4ac1-b43b-8d40a1b99dd0'>
+          <name>BK-1</name>
+          <comment>Bangkok Manager 1</comment>
+          <host>bk1.example.com</host>
+          <port>9390</port>
+          <login>user1</login>
+          <password>pass</password>
+        </modify_slave>
+      </request>
+      <response>
+        <modify_slave_response status="200" status_text="OK">
+        </modify_slave_response>
       </response>
     </example>
   </command>

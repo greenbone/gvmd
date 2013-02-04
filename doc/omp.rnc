@@ -68,15 +68,19 @@ command
     | get_tasks
     | get_version
     | help
+    | modify_agent
+    | modify_alert
     | modify_config
     | modify_filter
     | modify_lsc_credential
     | modify_note
     | modify_override
+    | modify_port_list
     | modify_report
     | modify_report_format
     | modify_schedule
     | modify_setting
+    | modify_slave
     | modify_target
     | modify_task
     | pause_task
@@ -151,15 +155,19 @@ response
     | get_tasks_response
     | get_version_response
     | help_response
+    | modify_agent_response
+    | modify_alert_response
     | modify_config_response
     | modify_filter_response
     | modify_lsc_credential_response
     | modify_note_response
     | modify_override_response
+    | modify_port_list_response
     | modify_report_response
     | modify_report_format_response
     | modify_schedule_response
     | modify_setting_response
+    | modify_slave_response
     | modify_target_response
     | modify_task_response
     | pause_task_response
@@ -1568,14 +1576,18 @@ commands
            | get_tasks
            | get_version
            | help
+           | modify_agent
+           | modify_alert
            | modify_config
            | modify_filter
            | modify_lsc_credential
            | modify_note
            | modify_override
+           | modify_port_list
            | modify_report
            | modify_schedule
            | modify_setting
+           | modify_slave
            | modify_target
            | modify_task
            | pause_task
@@ -3319,9 +3331,143 @@ help
        attribute format { xsd:token { pattern = "html|HTML|rnc|RNC|text|TEXT|xml|XML" } }?
      }
 
+## Command modify_agent
+##
+## Modify an existing agent.
+
+modify_agent
+ = element modify_agent
+     {
+       # ID of agent to modify.
+       attribute agent { uuid }
+       & modify_agent_name?
+       & modify_agent_comment?
+     }
+
+# Comment on agent.
+modify_agent_comment
+ = element comment
+     {
+       text
+     }
+
+# Name of agent.
+modify_agent_name
+ = element name
+     {
+       name
+     }
+
+## Command modify_alert
+##
+## Modify an existing alert.
+
+modify_alert
+ = element modify_alert
+     {
+       # ID of alert to modify.
+       attribute alert_id { uuid }
+       & modify_alert_name?
+       & modify_alert_comment?
+       & modify_alert_filter?
+       & modify_alert_event?
+       & modify_alert_condition?
+       & modify_alert_method?
+     }
+
+# Name of alert.
+modify_alert_name
+ = element name
+     {
+       name
+     }
+
+# Comment on alert.
+modify_alert_comment
+ = element comment
+     {
+       text
+     }
+
+# The condition that must be satisfied for the alert to occur.
+modify_alert_condition
+ = element condition
+     {
+       text
+       & modify_alert_condition_data*
+     }
+
+# Some data that defines the condition.
+modify_alert_condition_data
+ = element data
+     {
+       text
+       & modify_alert_condition_data_name
+     }
+
+# The name of the condition data.
+modify_alert_condition_data_name
+ = element name
+     {
+       text
+     }
+
+# The event that must happen for the alert to occur.
+modify_alert_event
+ = element event
+     {
+       text
+       & modify_alert_event_data*
+     }
+
+# Some data that defines the event.
+modify_alert_event_data
+ = element data
+     {
+       text
+       & modify_alert_event_data_name
+     }
+
+# The name of the event data.
+modify_alert_event_data_name
+ = element name
+     {
+       text
+     }
+
+# The method by which the user is alerted.
+modify_alert_method
+ = element method
+     {
+       text
+       & modify_alert_method_data*
+     }
+
+# Some data that defines the method.
+modify_alert_method_data
+ = element data
+     {
+       text
+       & modify_alert_method_data_name
+     }
+
+# The name of the method data.
+modify_alert_method_data_name
+ = element name
+     {
+       text
+     }
+
+# Filter to apply when executing alert.
+modify_alert_filter
+ = element filter
+     {
+       attribute id { uuid }
+     }
+
 ## Command modify_config
 ##
-## Update an existing config.
+## Modify an existing config.
 
 modify_config
  = element modify_config
@@ -3668,6 +3814,33 @@ modify_override_result
        attribute id { uuid }
      }
 
+## Command modify_port_list
+##
+## Modify an existing port list.
+
+modify_port_list
+ = element modify_port_list
+     {
+       # ID of port list to modify.
+       attribute port_list_id { uuid }
+       & modify_port_list_name?
+       & modify_port_list_comment?
+     }
+
+# Name of port list.
+modify_port_list_name
+ = element name
+     {
+       name
+     }
+
+# Comment on port list.
+modify_port_list_comment
+ = element comment
+     {
+       text
+     }
+
 ## Command modify_report
 ##
 ## Modify an existing report.
@@ -3873,6 +4046,65 @@ modify_setting_name
 # The value of the setting.
 modify_setting_value
  = element value
+     {
+       text
+     }
+
+## Command modify_slave
+##
+## Modify an existing slave.
+
+modify_slave
+ = element modify_slave
+     {
+       # ID of slave to modify.
+       attribute slave { uuid }
+       & modify_slave_name
+       & modify_slave_comment?
+       & modify_slave_host
+       & modify_slave_port
+       & modify_slave_login
+       & modify_slave_password
+     }
+
+# A name for the slave.
+modify_slave_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the slave.
+modify_slave_comment
+ = element comment
+     {
+       text
+     }
+
+# The host that the slave Manager is running on.
+modify_slave_host
+ = element host
+     {
+       text
+     }
+
+# The port that the slave Manager is serving on the host.
+modify_slave_port
+ = element port
+     {
+       text
+     }
+
+# Login name on the slave Manager.
+modify_slave_login
+ = element login
+     {
+       text
+     }
+
+# Password for login on the slave Manager.
+modify_slave_password
+ = element password
      {
        text
      }
@@ -4296,14 +4528,18 @@ commands_response
            | get_tasks_response
            | get_version_response
            | help_response
+           | modify_agent_response
+           | modify_alert_response
            | modify_config_response
            | modify_filter_response
            | modify_lsc_credential_response
            | modify_note_response
            | modify_override_response
+           | modify_port_list_response
            | modify_report_response
            | modify_schedule_response
            | modify_setting_response
+           | modify_slave_response
            | modify_target_response
            | modify_task_response
            | pause_task_response
@@ -4618,100 +4854,100 @@ get_agents_response
      {
        attribute status { status }
        & attribute status_text { text }
-       & get_agents_response_agent*
+       & agent*
        & get_agents_response_filters
        & get_agents_response_sort
        & get_agents_response_agents
        & get_agents_response_agent_count
      }
 
-get_agents_response_agent
- = element agent
+get_agents_response_agent_id
+ = element agent_id
      {
        attribute id { uuid }
-       & get_agents_response_agent_name
-       & get_agents_response_agent_comment
-       & get_agents_response_agent_creation_time
-       & get_agents_response_agent_modification_time
-       & get_agents_response_agent_in_use
-       & get_agents_response_agent_writable
-       & ( get_agents_response_agent_installer
-           | get_agents_response_agent_package )
+       & get_agents_response_agent_id_name
+       & get_agents_response_agent_id_comment
+       & get_agents_response_agent_id_creation_time
+       & get_agents_response_agent_id_modification_time
+       & get_agents_response_agent_id_in_use
+       & get_agents_response_agent_id_writable
+       & ( get_agents_response_agent_id_installer
+           | get_agents_response_agent_id_package )
      }
 
 # The name of the agent.
-get_agents_response_agent_name
+get_agents_response_agent_id_name
  = element name
      {
        name
      }
 
 # The comment on the agent.
-get_agents_response_agent_comment
+get_agents_response_agent_id_comment
  = element comment
      {
        text
      }
 
 # Date and time the agent was created.
-get_agents_response_agent_creation_time
+get_agents_response_agent_id_creation_time
  = element creation_time
      {
        iso_time
      }
 
 # Date and time the agent was last modified.
-get_agents_response_agent_modification_time
+get_agents_response_agent_id_modification_time
  = element modification_time
      {
        iso_time
      }
 
 # Whether the agent is in use.
-get_agents_response_agent_in_use
+get_agents_response_agent_id_in_use
  = element in_use
      {
        boolean
      }
 
 # Whether the agent is writable.
-get_agents_response_agent_writable
+get_agents_response_agent_id_writable
  = element writable
      {
        boolean
      }
 
-get_agents_response_agent_installer
+get_agents_response_agent_id_installer
  = element installer
      {
-       get_agents_response_agent_installer_trust
+       get_agents_response_agent_id_installer_trust
      }
 
 # Whether signature verification succeeded.
-get_agents_response_agent_installer_trust
+get_agents_response_agent_id_installer_trust
  = element trust
      {
        text # RNC limitation: xsd:token { pattern = "yes|no|unknown" }
-       & get_agents_response_agent_installer_trust_time
+       & get_agents_response_agent_id_installer_trust_time
      }
 
 # When the signature was verified.
-get_agents_response_agent_installer_trust_time
+get_agents_response_agent_id_installer_trust_time
  = element time
      {
        iso_time
      }
 
 # Either the installer or one of the HOWTOs.
-get_agents_response_agent_package
+get_agents_response_agent_id_package
  = element package
      {
        text # RNC limitation: base64
-       & get_agents_response_agent_package_filename
+       & get_agents_response_agent_id_package_filename
      }
 
 # The filename of the package.
-get_agents_response_agent_package_filename
+get_agents_response_agent_id_package_filename
  = element filename
      {
        text
@@ -8718,6 +8954,24 @@ help_response_schema_protocol_command
        & command_definition_example*
      }
 
+## Response to modify_agent
+
+modify_agent_response
+ = element modify_agent_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_alert
+
+modify_alert_response
+ = element modify_alert_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
 ## Response to modify_config
 
 modify_config_response
@@ -8763,6 +9017,15 @@ modify_override_response
        & attribute status_text { text }
      }
 
+## Response to modify_port_list
+
+modify_port_list_response
+ = element modify_port_list_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
 ## Response to modify_report
 
 modify_report_response
@@ -8794,6 +9057,15 @@ modify_schedule_response
 
 modify_setting_response
  = element modify_setting_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_slave
+
+modify_slave_response
+ = element modify_slave_response
      {
        attribute status { status }
        & attribute status_text { text }

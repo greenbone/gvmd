@@ -396,8 +396,16 @@
 <td id="index"><div style="margin-left: 15px;">Get the help text.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#command_modify_agent">modify_agent</a></td>
+<td id="index"><div style="margin-left: 15px;">Modify an existing agent.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#command_modify_alert">modify_alert</a></td>
+<td id="index"><div style="margin-left: 15px;">Modify an existing alert.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#command_modify_config">modify_config</a></td>
-<td id="index"><div style="margin-left: 15px;">Update an existing config.</div></td>
+<td id="index"><div style="margin-left: 15px;">Modify an existing config.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_modify_filter">modify_filter</a></td>
@@ -416,6 +424,10 @@
 <td id="index"><div style="margin-left: 15px;">Modify an existing override.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#command_modify_port_list">modify_port_list</a></td>
+<td id="index"><div style="margin-left: 15px;">Modify an existing port list.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#command_modify_report">modify_report</a></td>
 <td id="index"><div style="margin-left: 15px;">Modify an existing report.</div></td>
 </tr>
@@ -430,6 +442,10 @@
 <tr id="index">
 <td id="index"><a href="#command_modify_setting">modify_setting</a></td>
 <td id="index"><div style="margin-left: 15px;">Modify an existing setting.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#command_modify_slave">modify_slave</a></td>
+<td id="index"><div style="margin-left: 15px;">Modify an existing slave.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_modify_target">modify_target</a></td>
@@ -549,15 +565,19 @@ command
     | get_tasks
     | get_version
     | help
+    | modify_agent
+    | modify_alert
     | modify_config
     | modify_filter
     | modify_lsc_credential
     | modify_note
     | modify_override
+    | modify_port_list
     | modify_report
     | modify_report_format
     | modify_schedule
     | modify_setting
+    | modify_slave
     | modify_target
     | modify_task
     | pause_task
@@ -632,15 +652,19 @@ response
     | get_tasks_response
     | get_version_response
     | help_response
+    | modify_agent_response
+    | modify_alert_response
     | modify_config_response
     | modify_filter_response
     | modify_lsc_credential_response
     | modify_note_response
     | modify_override_response
+    | modify_port_list_response
     | modify_report_response
     | modify_report_format_response
     | modify_schedule_response
     | modify_setting_response
+    | modify_slave_response
     | modify_target_response
     | modify_task_response
     | pause_task_response
@@ -3400,6 +3424,16 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>modify_agent&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_modify_agent">modify_agent</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>modify_alert&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_modify_alert">modify_alert</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>modify_config&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_modify_config">modify_config</a> command.
           </div>
@@ -3425,6 +3459,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>modify_port_list&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_modify_port_list">modify_port_list</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>modify_report&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_modify_report">modify_report</a> command.
           </div>
@@ -3437,6 +3476,11 @@ authenticate_response_timezone
 <li>
           &lt;<b>modify_setting&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_modify_setting">modify_setting</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>modify_slave&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_modify_slave">modify_slave</a> command.
           </div>
 </li>
 <li>
@@ -3795,6 +3839,16 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>modify_agent_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_modify_agent">modify_agent</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>modify_alert_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_modify_alert">modify_alert</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>modify_config_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_modify_config">modify_config</a> command.
           </div>
@@ -3820,6 +3874,11 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
+          &lt;<b>modify_port_list_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_modify_port_list">modify_port_list</a> command.
+          </div>
+</li>
+<li>
           &lt;<b>modify_report_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_modify_report">modify_report</a> command.
           </div>
@@ -3832,6 +3891,11 @@ authenticate_response_timezone
 <li>
           &lt;<b>modify_setting_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_modify_setting">modify_setting</a> command.
+          </div>
+</li>
+<li>
+          &lt;<b>modify_slave_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_modify_slave">modify_slave</a> command.
           </div>
 </li>
 <li>
@@ -3957,14 +4021,18 @@ authenticate_response_timezone
            | get_tasks
            | get_version
            | help
+           | modify_agent
+           | modify_alert
            | modify_config
            | modify_filter
            | modify_lsc_credential
            | modify_note
            | modify_override
+           | modify_port_list
            | modify_report
            | modify_schedule
            | modify_setting
+           | modify_slave
            | modify_target
            | modify_task
            | pause_task
@@ -4040,14 +4108,18 @@ authenticate_response_timezone
            | get_tasks_response
            | get_version_response
            | help_response
+           | modify_agent_response
+           | modify_alert_response
            | modify_config_response
            | modify_filter_response
            | modify_lsc_credential_response
            | modify_note_response
            | modify_override_response
+           | modify_port_list_response
            | modify_report_response
            | modify_schedule_response
            | modify_setting_response
+           | modify_slave_response
            | modify_target_response
            | modify_task_response
            | pause_task_response
@@ -7665,68 +7737,8 @@ create_task_rcfile
           (text)
           </li>
 <li>
-              &lt;<b>agent</b>&gt;
-              *<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the agent.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>comment</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The comment on the agent.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>creation_time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Date and time the agent was created.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>modification_time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Date and time the agent was last modified.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>in_use</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether the agent is in use.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>writable</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether the agent is writable.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-<i>One of</i><b></b><ul style="list-style: none">
-<li>
-              &lt;<b>installer</b>&gt;
-              <ul style="list-style: none"><li>
-              &lt;<b>trust</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether signature verification succeeded.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">When the signature was verified.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
-</li></ul>
-</li>
-<li>
-              &lt;<b>package</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Either the installer or one of the HOWTOs.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>filename</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The filename of the package.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
-</li>
-</ul>
-</li>
-</ul>
+              &lt;<a href="#element_"><b>agent</b></a>&gt;
+              *<div style="margin-left: 15px; display: inline;">.</div>
 </li>
 <li>
               &lt;<b>filters</b>&gt;
@@ -7806,90 +7818,90 @@ create_task_rcfile
      {
        attribute status { status }
        &amp; attribute status_text { text }
-       &amp; get_agents_response_agent*
+       &amp; agent*
        &amp; get_agents_response_filters
        &amp; get_agents_response_sort
        &amp; get_agents_response_agents
        &amp; get_agents_response_agent_count
      }
 
-get_agents_response_agent
- = element agent
+get_agents_response_agent_id
+ = element agent_id
      {
        attribute id { uuid }
-       &amp; get_agents_response_agent_name
-       &amp; get_agents_response_agent_comment
-       &amp; get_agents_response_agent_creation_time
-       &amp; get_agents_response_agent_modification_time
-       &amp; get_agents_response_agent_in_use
-       &amp; get_agents_response_agent_writable
-       &amp; ( get_agents_response_agent_installer
-           | get_agents_response_agent_package )
+       &amp; get_agents_response_agent_id_name
+       &amp; get_agents_response_agent_id_comment
+       &amp; get_agents_response_agent_id_creation_time
+       &amp; get_agents_response_agent_id_modification_time
+       &amp; get_agents_response_agent_id_in_use
+       &amp; get_agents_response_agent_id_writable
+       &amp; ( get_agents_response_agent_id_installer
+           | get_agents_response_agent_id_package )
      }
 
-get_agents_response_agent_name
+get_agents_response_agent_id_name
  = element name
      {
        name
      }
 
-get_agents_response_agent_comment
+get_agents_response_agent_id_comment
  = element comment
      {
        text
      }
 
-get_agents_response_agent_creation_time
+get_agents_response_agent_id_creation_time
  = element creation_time
      {
        iso_time
      }
 
-get_agents_response_agent_modification_time
+get_agents_response_agent_id_modification_time
  = element modification_time
      {
        iso_time
      }
 
-get_agents_response_agent_in_use
+get_agents_response_agent_id_in_use
  = element in_use
      {
        boolean
      }
 
-get_agents_response_agent_writable
+get_agents_response_agent_id_writable
  = element writable
      {
        boolean
      }
 
-get_agents_response_agent_installer
+get_agents_response_agent_id_installer
  = element installer
      {
-       get_agents_response_agent_installer_trust
+       get_agents_response_agent_id_installer_trust
      }
 
-get_agents_response_agent_installer_trust
+get_agents_response_agent_id_installer_trust
  = element trust
      {
        text # RNC limitation: xsd:token { pattern = "yes|no|unknown" }
-       &amp; get_agents_response_agent_installer_trust_time
+       &amp; get_agents_response_agent_id_installer_trust_time
      }
 
-get_agents_response_agent_installer_trust_time
+get_agents_response_agent_id_installer_trust_time
  = element time
      {
        iso_time
      }
 
-get_agents_response_agent_package
+get_agents_response_agent_id_package
  = element package
      {
        text # RNC limitation: base64
-       &amp; get_agents_response_agent_package_filename
+       &amp; get_agents_response_agent_id_package_filename
      }
 
-get_agents_response_agent_package_filename
+get_agents_response_agent_id_package_filename
  = element filename
      {
        text
@@ -17599,14 +17611,18 @@ help_response_schema_protocol_command
             GET_VERSION            Get the OpenVAS Manager Protocol version.
             GET_INFO               Get raw information for a given item.
             HELP                   Get this help text.
-            MODIFY_CONFIG          Update an existing config.
+            MODIFY_AGENT           modify an existing agent.
+            MODIFY_ALERT           modify an existing alert.
+            MODIFY_CONFIG          modify an existing config.
             MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.
             MODIFY_FILTER          Modify an existing filter.
             MODIFY_NOTE            Modify an existing note.
             MODIFY_OVERRIDE        Modify an existing override.
+            MODIFY_PORT_LIST       Modify an existing port list.
             MODIFY_REPORT          Modify an existing report.
             MODIFY_REPORT_FORMAT   Modify an existing report format.
             MODIFY_SCHEDULE        Modify an existing schedule.
+            MODIFY_SLAVE           Modify an existing slave.
             MODIFY_SETTING         Modify an existing setting.
             MODIFY_TARGET          Modify an existing target.
             MODIFY_TASK            Update an existing task.
@@ -17722,10 +17738,301 @@ help_response_schema_protocol_command
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_config">7.60
+<div><h3 id="command_modify_agent">7.60
+        Command <tt>modify_agent</tt>
+</h3></div>
+<p>In short: Modify an existing agent.</p>
+<p>
+        The client uses the modify_agent command to change an existing agent.
+      </p>
+<h4>7.60.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none">
+<li>
+          @<b>agent</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of agent to modify.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Name of agent.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Comment on agent.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.60.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>modify_agent
+ = element modify_agent
+     {
+       attribute agent { uuid }
+       &amp; modify_agent_name?
+       &amp; modify_agent_comment?
+     }
+
+modify_agent_comment
+ = element comment
+     {
+       text
+     }
+
+modify_agent_name
+ = element name
+     {
+       name
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>modify_agent_response
+ = element modify_agent_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.60.3 Example: Modify the comment on an agent</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_agent agent_id="c737f787-9473-410d-8956-9d7b57bdd11f"&gt;
+   &lt;comment&gt;Old Agent 1&lt;/comment&gt;
+ &lt;/modify_agent&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_agent_response status="200"
+                        status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_modify_alert">7.61
+        Command <tt>modify_alert</tt>
+</h3></div>
+<p>In short: Modify an existing alert.</p>
+<p>
+        The client uses the modify_alert command to change an existing alert.
+      </p>
+<h4>7.61.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none">
+<li>
+          @<b>alert_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of alert to modify.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Name of alert.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Comment on alert.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>filter</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter to apply when executing alert.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
+              &lt;<b>event</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The event that must happen for the alert to occur.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>data</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Some data that defines the event.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the event data.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>condition</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The condition that must be satisfied for the alert to occur.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>data</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Some data that defines the condition.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the condition data.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>method</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The method by which the user is alerted.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>data</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Some data that defines the method.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the method data.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.61.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>modify_alert
+ = element modify_alert
+     {
+       attribute alert_id { uuid }
+       &amp; modify_alert_name?
+       &amp; modify_alert_comment?
+       &amp; modify_alert_filter?
+       &amp; modify_alert_event?
+       &amp; modify_alert_condition?
+       &amp; modify_alert_method?
+     }
+
+modify_alert_name
+ = element name
+     {
+       name
+     }
+
+modify_alert_comment
+ = element comment
+     {
+       text
+     }
+
+modify_alert_condition
+ = element condition
+     {
+       text
+       &amp; modify_alert_condition_data*
+     }
+
+modify_alert_condition_data
+ = element data
+     {
+       text
+       &amp; modify_alert_condition_data_name
+     }
+
+modify_alert_condition_data_name
+ = element name
+     {
+       text
+     }
+
+modify_alert_event
+ = element event
+     {
+       text
+       &amp; modify_alert_event_data*
+     }
+
+modify_alert_event_data
+ = element data
+     {
+       text
+       &amp; modify_alert_event_data_name
+     }
+
+modify_alert_event_data_name
+ = element name
+     {
+       text
+     }
+
+modify_alert_method
+ = element method
+     {
+       text
+       &amp; modify_alert_method_data*
+     }
+
+modify_alert_method_data
+ = element data
+     {
+       text
+       &amp; modify_alert_method_data_name
+     }
+
+modify_alert_method_data_name
+ = element name
+     {
+       text
+     }
+
+modify_alert_filter
+ = element filter
+     {
+       attribute id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>modify_alert_response
+ = element modify_alert_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.61.3 Example: Modify the name and report filter of an alert and the condition that triggers it</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_alert alert_id="914b59f8-25f5-4c8f-832c-2379cd625236"&gt;
+   &lt;name&gt;Low Level Alert 2&lt;/name&gt;
+   &lt;condition&gt;
+     Threat level at least
+     &lt;data&gt;
+       Low
+       &lt;name&gt;level&lt;/name&gt;
+     &lt;/data&gt;
+   &lt;/condition&gt;
+   &lt;filter id="7a06bd00-7e4a-4669-b7d7-8fe65ec64a41"/&gt;
+ &lt;/modify_alert&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_alert_response status="200"
+                        status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_modify_config">7.62
         Command <tt>modify_config</tt>
 </h3></div>
-<p>In short: Update an existing config.</p>
+<p>In short: Modify an existing config.</p>
 <p>
         This command can take five forms: with a preference, with a family
         selection, with an NVT selection, or with a name or comment.
@@ -17773,7 +18080,7 @@ help_response_schema_protocol_command
         apply the changes to the config and will reply with a response code indicating
         success.
       </p>
-<h4>7.60.1 Structure</h4>
+<h4>7.62.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -17880,7 +18187,7 @@ help_response_schema_protocol_command
 </ul>
 </li>
 </ul>
-<h4>7.60.2 RNC</h4>
+<h4>7.62.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_config
  = element modify_config
@@ -17997,7 +18304,7 @@ modify_config_nvt_selection_nvt
      }
 </pre></div>
 </div>
-<h4>7.60.3 Example: Modify a config NVT preference</h4>
+<h4>7.62.3 Example: Modify a config NVT preference</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;preference&gt;
@@ -18011,7 +18318,7 @@ modify_config_nvt_selection_nvt
                          status_text="OK"/&gt;
 </pre></div>
 </div>
-<h4>7.60.3 Example: Modify a config Scanner preference</h4>
+<h4>7.62.3 Example: Modify a config Scanner preference</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;preference&gt;
@@ -18024,7 +18331,7 @@ modify_config_nvt_selection_nvt
                          status_text="OK"/&gt;
 </pre></div>
 </div>
-<h4>7.60.3 Example: Modify the families that a config selects</h4>
+<h4>7.62.3 Example: Modify the families that a config selects</h4>
 <p>
           The outer "growing" element sets the config to add any new families
           that arrive.
@@ -18051,7 +18358,7 @@ modify_config_nvt_selection_nvt
                          status_text="OK"/&gt;
 </pre></div>
 </div>
-<h4>7.60.3 Example: Modify the NVTs that a config selects in a particular family</h4>
+<h4>7.62.3 Example: Modify the NVTs that a config selects in a particular family</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;nvt_selection&gt;
@@ -18069,14 +18376,14 @@ modify_config_nvt_selection_nvt
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_filter">7.61
+<div><h3 id="command_modify_filter">7.63
         Command <tt>modify_filter</tt>
 </h3></div>
 <p>In short: Modify an existing filter.</p>
 <p>
         The client uses the modify_filter command to change an existing filter.
       </p>
-<h4>7.61.1 Structure</h4>
+<h4>7.63.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -18120,7 +18427,7 @@ modify_config_nvt_selection_nvt
 </ul>
 </li>
 </ul>
-<h4>7.61.2 RNC</h4>
+<h4>7.63.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_filter
  = element modify_filter
@@ -18164,7 +18471,7 @@ modify_filter_type
      }
 </pre></div>
 </div>
-<h4>7.61.3 Example: Modify the term of a filter</h4>
+<h4>7.63.3 Example: Modify the term of a filter</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_filter filter_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;term&gt;name=local&lt;/term&gt;
@@ -18176,7 +18483,7 @@ modify_filter_type
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_lsc_credential">7.62
+<div><h3 id="command_modify_lsc_credential">7.64
         Command <tt>modify_lsc_credential</tt>
 </h3></div>
 <p>In short: Modify an existing LSC credential.</p>
@@ -18188,7 +18495,7 @@ modify_filter_type
         The login and password can only be changed for password LSC credentials.
         Modification of login or password on package credentials is forbidden.
       </p>
-<h4>7.62.1 Structure</h4>
+<h4>7.64.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -18232,7 +18539,7 @@ modify_filter_type
 </ul>
 </li>
 </ul>
-<h4>7.62.2 RNC</h4>
+<h4>7.64.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_lsc_credential
  = element modify_lsc_credential
@@ -18276,7 +18583,7 @@ modify_lsc_credential_password
      }
 </pre></div>
 </div>
-<h4>7.62.3 Example: Modify the comment of an LSC credential</h4>
+<h4>7.64.3 Example: Modify the comment of an LSC credential</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_lsc_credential lsc_credential_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;comment&gt;Credential for all machines in lab 4.&lt;/comment&gt;
@@ -18288,7 +18595,7 @@ modify_lsc_credential_password
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_note">7.63
+<div><h3 id="command_modify_note">7.65
         Command <tt>modify_note</tt>
 </h3></div>
 <p>In short: Modify an existing note.</p>
@@ -18299,7 +18606,7 @@ modify_lsc_credential_password
         If an optional element is left out, the existing value will be
         cleared, generalising that constraint.
       </p>
-<h4>7.63.1 Structure</h4>
+<h4>7.65.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -18364,7 +18671,7 @@ modify_lsc_credential_password
 </ul>
 </li>
 </ul>
-<h4>7.63.2 RNC</h4>
+<h4>7.65.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_note
  = element modify_note
@@ -18429,7 +18736,7 @@ modify_note_result
      }
 </pre></div>
 </div>
-<h4>7.63.3 Example: Modify the text and result of a note</h4>
+<h4>7.65.3 Example: Modify the text and result of a note</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_note note_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;text&gt;This issue should be resolved after the upgrade.&lt;/text&gt;
@@ -18442,7 +18749,7 @@ modify_note_result
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_override">7.64
+<div><h3 id="command_modify_override">7.66
         Command <tt>modify_override</tt>
 </h3></div>
 <p>In short: Modify an existing override.</p>
@@ -18454,7 +18761,7 @@ modify_note_result
         If an optional element is left out, the existing value will be
         cleared, generalising that constraint.
       </p>
-<h4>7.64.1 Structure</h4>
+<h4>7.66.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -18524,7 +18831,7 @@ modify_note_result
 </ul>
 </li>
 </ul>
-<h4>7.64.2 RNC</h4>
+<h4>7.66.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_override
  = element modify_override
@@ -18596,7 +18903,7 @@ modify_override_result
      }
 </pre></div>
 </div>
-<h4>7.64.3 Example: Set the override threat to Low</h4>
+<h4>7.66.3 Example: Set the override threat to Low</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_override override_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;text&gt;This issue is less important in our setup.&lt;/text&gt;
@@ -18609,7 +18916,91 @@ modify_override_result
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_report">7.65
+<div><h3 id="command_modify_port_list">7.67
+        Command <tt>modify_port_list</tt>
+</h3></div>
+<p>In short: Modify an existing port list.</p>
+<p>
+        The client uses the modify_port_list command to change an existing port list.
+      </p>
+<h4>7.67.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none">
+<li>
+          @<b>port_list_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of port list to modify.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Name of port list.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Comment on port list.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.67.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>modify_port_list
+ = element modify_port_list
+     {
+       attribute port_list_id { uuid }
+       &amp; modify_port_list_name?
+       &amp; modify_port_list_comment?
+     }
+
+modify_port_list_name
+ = element name
+     {
+       name
+     }
+
+modify_port_list_comment
+ = element comment
+     {
+       text
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>modify_port_list_response
+ = element modify_port_list_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.67.3 Example: Modify the name of a port list</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_port_list port_list_id="27140836-05ae-4e8b-9abf-f725ddc2888f"&gt;
+   &lt;name&gt;PL-WS1&lt;/name&gt;
+   &lt;comment&gt;Port List for Web Server 1&lt;/comment&gt;
+ &lt;/modify_port_list&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_port_list_response status="200"
+                            status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_modify_report">7.68
         Command <tt>modify_report</tt>
 </h3></div>
 <p>In short: Modify an existing report.</p>
@@ -18617,7 +19008,7 @@ modify_override_result
         The client uses the modify_report command to change an existing
         report.
       </p>
-<h4>7.65.1 Structure</h4>
+<h4>7.68.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -18646,7 +19037,7 @@ modify_override_result
 </ul>
 </li>
 </ul>
-<h4>7.65.2 RNC</h4>
+<h4>7.68.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_report
  = element modify_report
@@ -18669,7 +19060,7 @@ modify_report_comment
      }
 </pre></div>
 </div>
-<h4>7.65.3 Example: Modify a report comment</h4>
+<h4>7.68.3 Example: Modify a report comment</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_report report_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
@@ -18681,7 +19072,7 @@ modify_report_comment
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_report_format">7.66
+<div><h3 id="command_modify_report_format">7.69
         Command <tt>modify_report_format</tt>
 </h3></div>
 <p>In short: Update an existing report format.</p>
@@ -18689,7 +19080,7 @@ modify_report_comment
         The client uses the modify_report_format command to change an existing
         report format.
       </p>
-<h4>7.66.1 Structure</h4>
+<h4>7.69.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -18747,7 +19138,7 @@ modify_report_comment
 </ul>
 </li>
 </ul>
-<h4>7.66.2 RNC</h4>
+<h4>7.69.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_report_format
  = element modify_report_format
@@ -18804,7 +19195,7 @@ modify_report_format_param_value
      }
 </pre></div>
 </div>
-<h4>7.66.3 Example: Modify a report format param</h4>
+<h4>7.69.3 Example: Modify a report format param</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_report_format report_format_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;param&gt;
@@ -18817,7 +19208,7 @@ modify_report_format_param_value
                                 status_text="OK"/&gt;
 </pre></div>
 </div>
-<h4>7.66.3 Example: Modify the name of a report format</h4>
+<h4>7.69.3 Example: Modify the name of a report format</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_report_format report_format_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;name&gt;New name&lt;/name&gt;
@@ -18829,14 +19220,14 @@ modify_report_format_param_value
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_schedule">7.67
+<div><h3 id="command_modify_schedule">7.70
         Command <tt>modify_schedule</tt>
 </h3></div>
 <p>In short: Modify an existing schedule.</p>
 <p>
         The client uses the modify_schedule command to change an existing schedule.
       </p>
-<h4>7.67.1 Structure</h4>
+<h4>7.70.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -18917,7 +19308,7 @@ modify_report_format_param_value
 </ul>
 </li>
 </ul>
-<h4>7.67.2 RNC</h4>
+<h4>7.70.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_schedule
  = element modify_schedule
@@ -19023,7 +19414,7 @@ modify_schedule_period_unit
      }
 </pre></div>
 </div>
-<h4>7.67.3 Example: Modify the name of a schedule</h4>
+<h4>7.70.3 Example: Modify the name of a schedule</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_schedule schedule_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;name&gt;Weekly Scan&lt;/name&gt;
@@ -19035,7 +19426,7 @@ modify_schedule_period_unit
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_setting">7.68
+<div><h3 id="command_modify_setting">7.71
         Command <tt>modify_setting</tt>
 </h3></div>
 <p>In short: Modify an existing setting.</p>
@@ -19045,7 +19436,7 @@ modify_schedule_period_unit
         The settings "Password" and "Timezone" can be modified by name, the
         rest by UUID.
       </p>
-<h4>7.68.1 Structure</h4>
+<h4>7.71.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -19078,7 +19469,7 @@ modify_schedule_period_unit
 </ul>
 </li>
 </ul>
-<h4>7.68.2 RNC</h4>
+<h4>7.71.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_setting
  = element modify_setting
@@ -19108,7 +19499,7 @@ modify_setting_value
      }
 </pre></div>
 </div>
-<h4>7.68.3 Example: Modify the timezone</h4>
+<h4>7.71.3 Example: Modify the timezone</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_setting&gt;
    &lt;name&gt;Timezone&lt;/name&gt;
@@ -19121,14 +19512,150 @@ modify_setting_value
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_target">7.69
+<div><h3 id="command_modify_slave">7.72
+        Command <tt>modify_slave</tt>
+</h3></div>
+<p>In short: Modify an existing slave.</p>
+<p>
+        The client uses the modify_slave command to change an existing slave.
+      </p>
+<h4>7.72.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none">
+<li>
+          @<b>slave</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of slave to modify.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">A name for the slave.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">A comment on the slave.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>host</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The host that the slave Manager is running on.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>port</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The port that the slave Manager is serving on the host.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>login</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Login name on the slave Manager.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>password</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Password for login on the slave Manager.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.72.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>modify_slave
+ = element modify_slave
+     {
+       attribute slave { uuid }
+       &amp; modify_slave_name
+       &amp; modify_slave_comment?
+       &amp; modify_slave_host
+       &amp; modify_slave_port
+       &amp; modify_slave_login
+       &amp; modify_slave_password
+     }
+
+modify_slave_name
+ = element name
+     {
+       name
+     }
+
+modify_slave_comment
+ = element comment
+     {
+       text
+     }
+
+modify_slave_host
+ = element host
+     {
+       text
+     }
+
+modify_slave_port
+ = element port
+     {
+       text
+     }
+
+modify_slave_login
+ = element login
+     {
+       text
+     }
+
+modify_slave_password
+ = element password
+     {
+       text
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>modify_slave_response
+ = element modify_slave_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.72.3 Example: Update slave information</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_slave slave_id="f1e4dd0c-155c-4ac1-b43b-8d40a1b99dd0"&gt;
+   &lt;name&gt;BK-1&lt;/name&gt;
+   &lt;comment&gt;Bangkok Manager 1&lt;/comment&gt;
+   &lt;host&gt;bk1.example.com&lt;/host&gt;
+   &lt;port&gt;9390&lt;/port&gt;
+   &lt;login&gt;user1&lt;/login&gt;
+   &lt;password&gt;pass&lt;/password&gt;
+ &lt;/modify_slave&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_slave_response status="200"
+                        status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_modify_target">7.73
         Command <tt>modify_target</tt>
 </h3></div>
 <p>In short: Modify an existing target.</p>
 <p>
         The client uses the modify_target command to change an existing target.
       </p>
-<h4>7.69.1 Structure</h4>
+<h4>7.73.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -19204,7 +19731,7 @@ modify_setting_value
 </ul>
 </li>
 </ul>
-<h4>7.69.2 RNC</h4>
+<h4>7.73.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_target
  = element modify_target
@@ -19282,7 +19809,7 @@ modify_target_target_locator_password
      }
 </pre></div>
 </div>
-<h4>7.69.3 Example: Modify the name of a target</h4>
+<h4>7.73.3 Example: Modify the name of a target</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_target target_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;name&gt;Upstairs Lab&lt;/name&gt;
@@ -19294,7 +19821,7 @@ modify_target_target_locator_password
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_task">7.70
+<div><h3 id="command_modify_task">7.74
         Command <tt>modify_task</tt>
 </h3></div>
 <p>In short: Modify an existing task.</p>
@@ -19302,7 +19829,7 @@ modify_target_target_locator_password
         The client uses the modify_task command to change an existing
         task.
       </p>
-<h4>7.70.1 Structure</h4>
+<h4>7.74.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -19405,7 +19932,7 @@ modify_target_target_locator_password
 </ul>
 </li>
 </ul>
-<h4>7.70.2 RNC</h4>
+<h4>7.74.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_task
  = element modify_task
@@ -19505,7 +20032,7 @@ modify_task_file
      }
 </pre></div>
 </div>
-<h4>7.70.3 Example: Modify a task comment</h4>
+<h4>7.74.3 Example: Modify a task comment</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_task task_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
@@ -19517,232 +20044,12 @@ modify_task_file
 </div>
 </div>
 <div>
-<div><h3 id="command_pause_task">7.71
+<div><h3 id="command_pause_task">7.75
         Command <tt>pause_task</tt>
 </h3></div>
 <p>In short: Pause a running task.</p>
 <p>
         The client uses the pause_task command to manually pause a running task.
-      </p>
-<h4>7.71.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.71.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>pause_task
- = element pause_task
-     {
-       attribute task_id { uuid }
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>pause_task_response
- = element pause_task_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>7.71.3 Example: Pause a running task</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;pause_task_response status="200"
-                      status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_restore">7.72
-        Command <tt>restore</tt>
-</h3></div>
-<p>In short: Restore a resource.</p>
-<p>
-        The client uses the restore a resource from the trashcan.
-      </p>
-<h4>7.72.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.72.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>restore
- = element restore
-     {
-       attribute id { uuid }
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>restore_response
- = element restore_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>7.72.3 Example: Restore a target</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;restore id="97390ade-e075-11df-9973-002264764cea"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;restore_response status="200"
-                   status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_resume_or_start_task">7.73
-        Command <tt>resume_or_start_task</tt>
-</h3></div>
-<p>In short: Resume task if stopped, else start task.</p>
-<p>
-        The client uses the resume_or_start_task command to manually start
-        an existing task, ensuring that the task will resume from its
-        previous position if the task is in the Stopped state.
-      </p>
-<h4>7.73.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.73.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>resume_or_start_task
- = element resume_or_start_task
-     {
-       attribute task_id { uuid }
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>resume_or_start_task_response
- = element resume_or_start_task_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>7.73.3 Example: Resume a running task</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task_response status="200"
-                                status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_resume_paused_task">7.74
-        Command <tt>resume_paused_task</tt>
-</h3></div>
-<p>In short: Resume a paused task.</p>
-<p>
-        The client uses the resume_paused_task command to manually resume a
-        paused task.
-      </p>
-<h4>7.74.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.74.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>resume_paused_task
- = element resume_paused_task
-     {
-       attribute task_id { uuid }
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>resume_paused_task_response
- = element resume_paused_task_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>7.74.3 Example: Resume a paused task</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task_response status="200"
-                              status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_resume_stopped_task">7.75
-        Command <tt>resume_stopped_task</tt>
-</h3></div>
-<p>In short: Resume a stopped task.</p>
-<p>
-        The client uses the resume_stopped_task command to manually resume a
-        stopped task.
       </p>
 <h4>7.75.1 Structure</h4>
 <ul style="list-style: none">
@@ -19767,6 +20074,226 @@ modify_task_file
 </ul>
 <h4>7.75.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>pause_task
+ = element pause_task
+     {
+       attribute task_id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>pause_task_response
+ = element pause_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.75.3 Example: Pause a running task</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;pause_task_response status="200"
+                      status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_restore">7.76
+        Command <tt>restore</tt>
+</h3></div>
+<p>In short: Restore a resource.</p>
+<p>
+        The client uses the restore a resource from the trashcan.
+      </p>
+<h4>7.76.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.76.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>restore
+ = element restore
+     {
+       attribute id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>restore_response
+ = element restore_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.76.3 Example: Restore a target</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;restore id="97390ade-e075-11df-9973-002264764cea"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;restore_response status="200"
+                   status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_resume_or_start_task">7.77
+        Command <tt>resume_or_start_task</tt>
+</h3></div>
+<p>In short: Resume task if stopped, else start task.</p>
+<p>
+        The client uses the resume_or_start_task command to manually start
+        an existing task, ensuring that the task will resume from its
+        previous position if the task is in the Stopped state.
+      </p>
+<h4>7.77.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>task_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.77.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>resume_or_start_task
+ = element resume_or_start_task
+     {
+       attribute task_id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>resume_or_start_task_response
+ = element resume_or_start_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.77.3 Example: Resume a running task</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task_response status="200"
+                                status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_resume_paused_task">7.78
+        Command <tt>resume_paused_task</tt>
+</h3></div>
+<p>In short: Resume a paused task.</p>
+<p>
+        The client uses the resume_paused_task command to manually resume a
+        paused task.
+      </p>
+<h4>7.78.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>task_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.78.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>resume_paused_task
+ = element resume_paused_task
+     {
+       attribute task_id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>resume_paused_task_response
+ = element resume_paused_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.78.3 Example: Resume a paused task</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task_response status="200"
+                              status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_resume_stopped_task">7.79
+        Command <tt>resume_stopped_task</tt>
+</h3></div>
+<p>In short: Resume a stopped task.</p>
+<p>
+        The client uses the resume_stopped_task command to manually resume a
+        stopped task.
+      </p>
+<h4>7.79.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>task_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.79.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>resume_stopped_task
  = element resume_stopped_task
      {
@@ -19781,7 +20308,7 @@ modify_task_file
      }
 </pre></div>
 </div>
-<h4>7.75.3 Example: Resume a stopped task</h4>
+<h4>7.79.3 Example: Resume a stopped task</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -19791,14 +20318,14 @@ modify_task_file
 </div>
 </div>
 <div>
-<div><h3 id="command_run_wizard">7.76
+<div><h3 id="command_run_wizard">7.80
         Command <tt>run_wizard</tt>
 </h3></div>
 <p>In short: Run a wizard.</p>
 <p>
         The client uses the run_wizard command to run a wizard.
       </p>
-<h4>7.76.1 Structure</h4>
+<h4>7.80.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -19841,7 +20368,7 @@ modify_task_file
 </ul>
 </li>
 </ul>
-<h4>7.76.2 RNC</h4>
+<h4>7.80.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>run_wizard
  = element run_wizard
@@ -19889,7 +20416,7 @@ run_wizard_params_param_value
      }
 </pre></div>
 </div>
-<h4>7.76.3 Example: Run the Quick Start wizard to scan localhost</h4>
+<h4>7.80.3 Example: Run the Quick Start wizard to scan localhost</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;run_wizard&gt;
    &lt;name&gt;quick_first_scan&lt;/name&gt;
@@ -19907,7 +20434,7 @@ run_wizard_params_param_value
 </div>
 </div>
 <div>
-<div><h3 id="command_start_task">7.77
+<div><h3 id="command_start_task">7.81
         Command <tt>start_task</tt>
 </h3></div>
 <p>In short: Manually start an existing task.</p>
@@ -19915,7 +20442,7 @@ run_wizard_params_param_value
         The client uses the start_task command to manually start an
         existing task.
       </p>
-<h4>7.77.1 Structure</h4>
+<h4>7.81.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -19936,7 +20463,7 @@ run_wizard_params_param_value
 </ul>
 </li>
 </ul>
-<h4>7.77.2 RNC</h4>
+<h4>7.81.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>start_task
  = element start_task
@@ -19952,7 +20479,7 @@ run_wizard_params_param_value
      }
 </pre></div>
 </div>
-<h4>7.77.3 Example: Start a task</h4>
+<h4>7.81.3 Example: Start a task</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -19962,7 +20489,7 @@ run_wizard_params_param_value
 </div>
 </div>
 <div>
-<div><h3 id="command_stop_task">7.78
+<div><h3 id="command_stop_task">7.82
         Command <tt>stop_task</tt>
 </h3></div>
 <p>In short: Stop a running task.</p>
@@ -19970,7 +20497,7 @@ run_wizard_params_param_value
         The client uses the stop_task command to manually stop a
         running task.
       </p>
-<h4>7.78.1 Structure</h4>
+<h4>7.82.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -19991,7 +20518,7 @@ run_wizard_params_param_value
 </ul>
 </li>
 </ul>
-<h4>7.78.2 RNC</h4>
+<h4>7.82.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>stop_task
  = element stop_task
@@ -20007,7 +20534,7 @@ run_wizard_params_param_value
      }
 </pre></div>
 </div>
-<h4>7.78.3 Example: Stop a running task</h4>
+<h4>7.82.3 Example: Stop a running task</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -20017,7 +20544,7 @@ run_wizard_params_param_value
 </div>
 </div>
 <div>
-<div><h3 id="command_test_alert">7.79
+<div><h3 id="command_test_alert">7.83
         Command <tt>test_alert</tt>
 </h3></div>
 <p>In short: Run an alert.</p>
@@ -20025,7 +20552,7 @@ run_wizard_params_param_value
         The client uses the test_alert command to invoke a test run of
         an alert.
       </p>
-<h4>7.79.1 Structure</h4>
+<h4>7.83.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -20046,7 +20573,7 @@ run_wizard_params_param_value
 </ul>
 </li>
 </ul>
-<h4>7.79.2 RNC</h4>
+<h4>7.83.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>test_alert
  = element test_alert
@@ -20062,7 +20589,7 @@ run_wizard_params_param_value
      }
 </pre></div>
 </div>
-<h4>7.79.3 Example: Test an alert</h4>
+<h4>7.83.3 Example: Test an alert</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;test_alert alert_id="97390ade-e075-11df-9973-002264764cea"/&gt;
 </pre></div>
@@ -20072,7 +20599,7 @@ run_wizard_params_param_value
 </div>
 </div>
 <div>
-<div><h3 id="command_verify_agent">7.80
+<div><h3 id="command_verify_agent">7.84
         Command <tt>verify_agent</tt>
 </h3></div>
 <p>In short: Verify an agent.</p>
@@ -20086,7 +20613,7 @@ run_wizard_params_param_value
         The Manager searches for the signature first in the feed, then
         in the agent itself.
       </p>
-<h4>7.80.1 Structure</h4>
+<h4>7.84.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -20107,7 +20634,7 @@ run_wizard_params_param_value
 </ul>
 </li>
 </ul>
-<h4>7.80.2 RNC</h4>
+<h4>7.84.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>verify_agent
  = element verify_agent
@@ -20123,7 +20650,7 @@ run_wizard_params_param_value
      }
 </pre></div>
 </div>
-<h4>7.80.3 Example: Verify an agent</h4>
+<h4>7.84.3 Example: Verify an agent</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;verify_agent agent_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -20133,7 +20660,7 @@ run_wizard_params_param_value
 </div>
 </div>
 <div>
-<div><h3 id="command_verify_report_format">7.81
+<div><h3 id="command_verify_report_format">7.85
         Command <tt>verify_report_format</tt>
 </h3></div>
 <p>In short: Verify a report format.</p>
@@ -20147,7 +20674,7 @@ run_wizard_params_param_value
         to generate reports of this format.  The Manager searches for the
         signature first in the feed, then in the report format itself.
       </p>
-<h4>7.81.1 Structure</h4>
+<h4>7.85.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -20168,7 +20695,7 @@ run_wizard_params_param_value
 </ul>
 </li>
 </ul>
-<h4>7.81.2 RNC</h4>
+<h4>7.85.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>verify_report_format
  = element verify_report_format
@@ -20184,7 +20711,7 @@ run_wizard_params_param_value
      }
 </pre></div>
 </div>
-<h4>7.81.3 Example: Verify a report format</h4>
+<h4>7.85.3 Example: Verify a report format</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;verify_report_format report_format_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
