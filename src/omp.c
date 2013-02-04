@@ -15835,10 +15835,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           alert_method_t method;
 
           assert (strcasecmp ("MODIFY_ALERT", element_name) == 0);
-          assert (modify_alert_data->name != NULL);
-          assert (modify_alert_data->event != NULL);
-          assert (modify_alert_data->condition != NULL);
-          assert (modify_alert_data->method != NULL);
+
+          event = EVENT_ERROR;
+          condition = ALERT_CONDITION_ERROR;
+          method  = ALERT_METHOD_ERROR;
 
           array_terminate (modify_alert_data->event_data);
           array_terminate (modify_alert_data->condition_data);
@@ -15850,33 +15850,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("modify_alert",
                                   "MODIFY is forbidden for observer users"));
             }
-          else if (strlen (modify_alert_data->event) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_alert",
-                                "MODIFY_ALERT requires a value in an"
-                                " EVENT element"));
-          else if ((event = event_from_name (modify_alert_data->event))
+          else if (strlen (modify_alert_data->event) &&
+                   (event = event_from_name (modify_alert_data->event))
                    == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_alert",
                                 "Failed to recognise event name"));
-          else if (strlen (modify_alert_data->condition) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_alert",
-                                "MODIFY_ALERT requires a value in a"
-                                " CONDITION element"));
-          else if ((condition = alert_condition_from_name
+          else if (strlen (modify_alert_data->condition) &&
+                   (condition = alert_condition_from_name
                                  (modify_alert_data->condition))
                    == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_alert",
                                 "Failed to recognise condition name"));
-          else if (strlen (modify_alert_data->method) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_alert",
-                                "MODIFY_ALERT requires a value in a"
-                                " METHOD element"));
-          else if ((method = alert_method_from_name
+          else if (strlen (modify_alert_data->method) &&
+                   (method = alert_method_from_name
                                  (modify_alert_data->method))
                    == 0)
             SEND_TO_CLIENT_OR_FAIL

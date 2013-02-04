@@ -9873,82 +9873,87 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
        " name = '%s',"
        " comment = '%s',"
        " filter = %llu,"
-       " event = %i,"
-       " condition = %i,"
-       " method = %i,"
        " modification_time = now ()"
        " WHERE ROWID = %llu;",
        quoted_name,
        quoted_comment,
        filter,
-       event,
-       condition,
-       method,
        alert);
 
   g_free (quoted_comment);
   g_free (quoted_name);
 
-  /* Modify alert event data */
-
-  sql ("DELETE FROM alert_event_data WHERE alert = %llu", alert);
-  index = 0;
-  while ((item = (gchar*) g_ptr_array_index (event_data, index++)))
+  /* Modify alert event */
+  if (event != EVENT_ERROR)
     {
-      gchar *name = sql_quote (item);
-      gchar *data = sql_quote (item + strlen (item) + 1);
-      sql ("INSERT INTO alert_event_data (alert, name, data)"
-           " VALUES (%llu, '%s', '%s');",
-           alert,
-           name,
-           data);
-      g_free (name);
-      g_free (data);
-    }
-
-  /* Modify alert condition data */
-
-  sql ("DELETE FROM alert_condition_data WHERE alert = %llu", alert);
-  index = 0;
-  while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
-    {
-      gchar *name = sql_quote (item);
-      gchar *data = sql_quote (item + strlen (item) + 1);
-      sql ("INSERT INTO alert_condition_data (alert, name, data)"
-           " VALUES (%llu, '%s', '%s');",
-           alert,
-           name,
-           data);
-      g_free (name);
-      g_free (data);
-    }
-
-  /* Modify alert method data */
-
-  sql ("DELETE FROM alert_method_data WHERE alert = %llu", alert);
-  index = 0;
-  while ((item = (gchar*) g_ptr_array_index (method_data, index++)))
-    {
-      gchar *name = sql_quote (item);
-      gchar *data = sql_quote (item + strlen (item) + 1);
-      if (method == ALERT_METHOD_EMAIL
-          && (strcmp (name, "to_address") == 0
-              || strcmp (name, "from_address") == 0)
-          && validate_email (data))
+      sql ("UPDATE alerts set event = %i WHERE ROWID = %llu", event, alert);
+      sql ("DELETE FROM alert_event_data WHERE alert = %llu", alert);
+      index = 0;
+      while ((item = (gchar*) g_ptr_array_index (event_data, index++)))
         {
+          gchar *name = sql_quote (item);
+          gchar *data = sql_quote (item + strlen (item) + 1);
+          sql ("INSERT INTO alert_event_data (alert, name, data)"
+               " VALUES (%llu, '%s', '%s');",
+               alert,
+               name,
+               data);
           g_free (name);
           g_free (data);
-          sql ("ROLLBACK;");
-          return 6;
         }
+    }
 
-      sql ("INSERT INTO alert_method_data (alert, name, data)"
-           " VALUES (%llu, '%s', '%s');",
-           alert,
-           name,
-           data);
-      g_free (name);
-      g_free (data);
+  /* Modify alert condition */
+  if (condition != ALERT_CONDITION_ERROR)
+    {
+      sql ("UPDATE alerts set condition = %i WHERE ROWID = %llu",
+           condition,
+           alert);
+      sql ("DELETE FROM alert_condition_data WHERE alert = %llu", alert);
+      index = 0;
+      while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
+        {
+          gchar *name = sql_quote (item);
+          gchar *data = sql_quote (item + strlen (item) + 1);
+          sql ("INSERT INTO alert_condition_data (alert, name, data)"
+               " VALUES (%llu, '%s', '%s');",
+               alert,
+               name,
+               data);
+          g_free (name);
+          g_free (data);
+        }
+    }
+
+  /* Modify alert method */
+  if (method != ALERT_METHOD_ERROR)
+    {
+      sql ("UPDATE alerts set method = %i WHERE ROWID = %llu", method, alert);
+      sql ("DELETE FROM alert_method_data WHERE alert = %llu", alert);
+      index = 0;
+      while ((item = (gchar*) g_ptr_array_index (method_data, index++)))
+        {
+          gchar *name = sql_quote (item);
+          gchar *data = sql_quote (item + strlen (item) + 1);
+          if (method == ALERT_METHOD_EMAIL
+              && (strcmp (name, "to_address") == 0
+                  || strcmp (name, "from_address") == 0)
+              && validate_email (data))
+            {
+              g_free (name);
+              g_free (data);
+              sql ("ROLLBACK;");
+              return 6;
+            }
+
+          sql ("INSERT INTO alert_method_data (alert, name, data)"
+               " VALUES (%llu, '%s', '%s');",
+               alert,
+               name,
+               data);
+          g_free (name);
+          g_free (data);
+        }
     }
 
   sql ("COMMIT;");

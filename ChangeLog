@@ -1,3 +1,11 @@
+2013-02-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (modify_alert): Update alert event, method and
+	condition and their data independently.
+
+	* src/omp.c (omp_xml_handle_end_element): Allow non provided parameters
+	to permit modifying them separately.
+
 2013-02-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/lsc_crypt.c (get32): Shift the right direction.
