@@ -1928,6 +1928,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           || (strcmp (status, "Done") == 0))
         {
           int ret2;
+          entity_t end;
+          entities_t entities;
 
           if ((run_status == TASK_STATUS_REQUESTED)
               || (run_status == TASK_STATUS_RESUME_WAITING)
@@ -1975,6 +1977,30 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               goto fail_stop_task;
             }
 
+          /* Set the host end times. */
+
+          entities = report->entities;
+          while ((end = first_entity (entities)))
+            {
+              if (strcmp (entity_name (end), "host_end") == 0)
+                {
+                  entity_t host;
+
+                  host = entity_child (end, "host");
+                  if (host == NULL)
+                    {
+                      free_entity (get_tasks);
+                      free_entity (get_report);
+                      goto fail_stop_task;
+                    }
+
+                  set_scan_host_end_time (current_report,
+                                          entity_text (host),
+                                          entity_text (end));
+                }
+              entities = next_entities (entities);
+            }
+
           if (strcmp (status, "Running") == 0)
             free_entity (get_report);
         }
@@ -2002,30 +2028,6 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
         {
           entity_t end;
           entities_t entities;
-
-          /* Set the host end times. */
-
-          entities = report->entities;
-          while ((end = first_entity (entities)))
-            {
-              if (strcmp (entity_name (end), "host_end") == 0)
-                {
-                  entity_t host;
-
-                  host = entity_child (end, "host");
-                  if (host == NULL)
-                    {
-                      free_entity (get_tasks);
-                      free_entity (get_report);
-                      goto fail_stop_task;
-                    }
-
-                  set_scan_host_end_time (current_report,
-                                          entity_text (host),
-                                          entity_text (end));
-                }
-              entities = next_entities (entities);
-            }
 
           /* Set the scan end time. */
 

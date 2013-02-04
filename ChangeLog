@@ -1,3 +1,10 @@
+2013-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (slave_setup): Set the host end times after adding
+	results when Running and Done, instead of only when Done.  This is
+	required because the results for some hosts may only show up during the
+	Running stage, for example when scanning many hosts.
+
 2013-02-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* doc/omp.html, doc/omp.rnc, src/schema_formats/XML/OMP.xml: Add
