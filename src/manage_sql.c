@@ -37295,8 +37295,9 @@ modify_note (note_t note, const char *active, const char* text,
 /**
  * @brief Filter columns for note iterator.
  */
-#define NOTE_ITERATOR_FILTER_COLUMNS                                         \
- { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "nvt_id", NULL }
+#define NOTE_ITERATOR_FILTER_COLUMNS                                          \
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "nvt_id",         \
+   "task_name", "task_id", "hosts", "port", "result", NULL }
 
 /**
  * @brief Note iterator columns.
@@ -37313,7 +37314,9 @@ modify_note (note_t note, const char *active, const char* text,
   " notes.hosts, notes.port, notes.threat, notes.task, notes.result,"      \
   " notes.end_time, (notes.end_time = 0) OR (notes.end_time >= now ()),"   \
   " (SELECT name FROM nvts WHERE oid = notes.nvt) AS nvt,"                 \
-  " notes.nvt AS nvt_id, '' AS task_id"
+  " notes.nvt AS nvt_id,"                                                  \
+  " (SELECT uuid FROM tasks WHERE ROWID = notes.task) AS task_id,"         \
+  " (SELECT name FROM tasks WHERE ROWID = notes.task) AS task_name"
 
 /**
  * @brief Note iterator columns for trash case.
@@ -37332,7 +37335,9 @@ modify_note (note_t note, const char *active, const char* text,
   " notes_trash.end_time,"                                                 \
   " (notes_trash.end_time = 0) OR (notes_trash.end_time >= now ()),"       \
   " (SELECT name FROM nvts WHERE oid = notes_trash.nvt) AS nvt,"           \
-  " notes_trash.nvt AS nvt_id, '' AS task_id"
+  " notes_trash.nvt AS nvt_id,"                                            \
+  " (SELECT uuid FROM tasks WHERE ROWID = notes.task) AS task_id,"         \
+  " (SELECT name FROM tasks WHERE ROWID = notes.task) AS task_name"
 
 /**
  * @brief Count number of notes.

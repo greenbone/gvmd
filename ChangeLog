@@ -1,5 +1,12 @@
 2013-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (NOTE_ITERATOR_FILTER_COLUMNS): Add more filtering
+	fields.
+	(NOTE_ITERATOR_COLUMNS, NOTE_ITERATOR_TRASH_COLUMNS): Add task_name and
+	task_id, for filtering.
+
+2013-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (OVERRIDE_ITERATOR_FILTER_COLUMNS): Add task_id.
 	(OVERRIDE_ITERATOR_COLUMNS, OVERRIDE_ITERATOR_TRASH_COLUMNS): Select the
 	task ID.
