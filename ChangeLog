@@ -1,5 +1,14 @@
 2013-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (slave_setup): Get the report with omp_get_report_ext
+	in order to specify result_host_only.  Set result_host_only 0 in the
+	Done case so that all the hosts show up with their end times.  Move
+	setting the end times back to the Done case.  The problem with setting
+	the end times while the task is Running is that the GET_REPORT could
+	happen between the last result and the host end.
+
+2013-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (set_scan_host_end_time, set_scan_host_end_time_otp)
 	(set_scan_host_start_time, set_scan_host_start_time_otp): Quote host.
 

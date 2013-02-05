@@ -1928,8 +1928,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           || (strcmp (status, "Done") == 0))
         {
           int ret2;
-          entity_t end;
-          entities_t entities;
+          omp_get_report_opts_t opts;
 
           if ((run_status == TASK_STATUS_REQUESTED)
               || (run_status == TASK_STATUS_RESUME_WAITING)
@@ -1943,15 +1942,23 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               goto fail_stop_task;
             }
 
-          ret = omp_get_report (session, slave_report_uuid,
-                                "a994b278-1f62-11e1-96ac-406186ea4fc5",
-                                next_result,
-                                &get_report);
+          opts = omp_get_report_opts_defaults;
+          opts.report_id = slave_report_uuid;
+          opts.first_result = next_result;
+          opts.format_id = "a994b278-1f62-11e1-96ac-406186ea4fc5";
+
+          if (strcmp (status, "Done") == 0)
+            /* Request all the hosts to get their end times. */
+            opts.result_hosts_only = 0;
+          else
+            opts.result_hosts_only = 1;
+
+          ret = omp_get_report_ext (session, opts, &get_report);
           if (ret)
-            ret2 = omp_get_report (session, slave_report_uuid,
-                                   "d5da9f67-8551-4e51-807b-b6a873d70e34",
-                                   next_result,
-                                   &get_report);
+            {
+              opts.format_id = "d5da9f67-8551-4e51-807b-b6a873d70e34";
+              ret2 = omp_get_report_ext (session, opts, &get_report);
+            }
           if ((ret == 404) && (ret2 == 404))
             {
               /* Resource Missing. */
@@ -1975,30 +1982,6 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               free_entity (get_tasks);
               free_entity (get_report);
               goto fail_stop_task;
-            }
-
-          /* Set the host end times. */
-
-          entities = report->entities;
-          while ((end = first_entity (entities)))
-            {
-              if (strcmp (entity_name (end), "host_end") == 0)
-                {
-                  entity_t host;
-
-                  host = entity_child (end, "host");
-                  if (host == NULL)
-                    {
-                      free_entity (get_tasks);
-                      free_entity (get_report);
-                      goto fail_stop_task;
-                    }
-
-                  set_scan_host_end_time (current_report,
-                                          entity_text (host),
-                                          entity_text (end));
-                }
-              entities = next_entities (entities);
             }
 
           if (strcmp (status, "Running") == 0)
@@ -2040,6 +2023,30 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                                      g_strdup (entity_text (end)));
                   set_scan_end_time (current_report, entity_text (end));
                   break;
+                }
+              entities = next_entities (entities);
+            }
+
+          /* Set the host end times. */
+
+          entities = report->entities;
+          while ((end = first_entity (entities)))
+            {
+              if (strcmp (entity_name (end), "host_end") == 0)
+                {
+                  entity_t host;
+
+                  host = entity_child (end, "host");
+                  if (host == NULL)
+                    {
+                      free_entity (get_tasks);
+                      free_entity (get_report);
+                      goto fail_stop_task;
+                    }
+
+                  set_scan_host_end_time (current_report,
+                                          entity_text (host),
+                                          entity_text (end));
                 }
               entities = next_entities (entities);
             }
