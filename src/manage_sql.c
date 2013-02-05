@@ -45905,26 +45905,19 @@ manage_empty_trashcan ()
 /* Assets. */
 
 /**
- * @brief Add a host detail to a report host.
+ * @brief Add host details to a report host.
  *
  * @param[in]  report  UUID of resource.
  * @param[in]  host    Host.
- * @param[in]  xml     Report host detail XML.
+ * @param[in]  entity  XML entity containing details.
  *
- * @return 0 success, -1 failed to parse XML, -2 host was NULL.
+ * @return 0 success, -1 failed to parse XML.
  */
 int
-manage_report_host_detail (report_t report, const char *host, const char *xml)
+manage_report_host_details (report_t report, const char *host, entity_t entity)
 {
-  entity_t entity, detail;
   entities_t details;
-
-  if (host == NULL)
-    return -2;
-
-  entity = NULL;
-  if (parse_entity (xml, &entity))
-    return -1;
+  entity_t detail;
 
   details = entity->entities;
   while ((detail = first_entity (details)))
@@ -45979,9 +45972,34 @@ manage_report_host_detail (report_t report, const char *host, const char *xml)
       details = next_entities (details);
     }
 
-  free_entity (entity);
-
   return 0;
+}
+
+/**
+ * @brief Add a host detail to a report host.
+ *
+ * @param[in]  report  UUID of resource.
+ * @param[in]  host    Host.
+ * @param[in]  xml     Report host detail XML.
+ *
+ * @return 0 success, -1 failed to parse XML, -2 host was NULL.
+ */
+int
+manage_report_host_detail (report_t report, const char *host, const char *xml)
+{
+  int ret;
+  entity_t entity;
+
+  if (host == NULL)
+    return -2;
+
+  entity = NULL;
+  if (parse_entity (xml, &entity))
+    return -1;
+
+  ret = manage_report_host_details (report, host, entity);
+  free_entity (entity);
+  return ret;
 }
 
 

@@ -1,3 +1,18 @@
+2013-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Get host details with slave reports.  This makes OS detection work with
+	slave tasks.
+
+	* src/manage.c (slave_setup): Add host details when setting host end
+	times.
+
+	* src/manage_sql.c (manage_report_host_details): New function.  Body
+	from manage_report_host_detail.
+	(manage_report_host_detail): Call manage_report_host_details to add
+	details.
+
+	* src/manage_sql.h: Add header accordingly.
+
 2013-02-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/openvas-certdata-sync.in (do_sync): Fix warning message saying

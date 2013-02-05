@@ -2027,7 +2027,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               entities = next_entities (entities);
             }
 
-          /* Set the host end times. */
+          /* Add host details and set the host end times. */
 
           entities = report->entities;
           while ((end = first_entity (entities)))
@@ -2035,6 +2035,9 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               if (strcmp (entity_name (end), "host_end") == 0)
                 {
                   entity_t host;
+
+                  /* Set the end time this way first, in case the slave is
+                   * very old. */
 
                   host = entity_child (end, "host");
                   if (host == NULL)
@@ -2048,6 +2051,41 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                                           entity_text (host),
                                           entity_text (end));
                 }
+
+              if (strcmp (entity_name (end), "host") == 0)
+                {
+                  entity_t ip, time;
+
+                  ip = entity_child (end, "ip");
+                  if (ip == NULL)
+                    {
+                      free_entity (get_tasks);
+                      free_entity (get_report);
+                      goto fail_stop_task;
+                    }
+
+                  time = entity_child (end, "end");
+                  if (time == NULL)
+                    {
+                      free_entity (get_tasks);
+                      free_entity (get_report);
+                      goto fail_stop_task;
+                    }
+
+                  set_scan_host_end_time (current_report,
+                                          entity_text (ip),
+                                          entity_text (time));
+
+                  if (manage_report_host_details (current_report,
+                                                  entity_text (ip),
+                                                  end))
+                    {
+                      free_entity (get_tasks);
+                      free_entity (get_report);
+                      goto fail_stop_task;
+                    }
+                }
+
               entities = next_entities (entities);
             }
 
