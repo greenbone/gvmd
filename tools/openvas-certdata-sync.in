@@ -160,7 +160,7 @@ show_intro () {
 
 do_sync () {
   if [ -z "$CMD_RSYNC" ] ; then
-    echo "[w] curl not found!"
+    echo "[w] rsync not found!"
     echo -n "[e] no utility available in PATH environment variable to download CERT data"
     exit 1
   else
