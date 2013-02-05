@@ -19612,17 +19612,20 @@ void
 set_scan_host_end_time (report_t report, const char* host,
                         const char* timestamp)
 {
+  gchar *quoted_host;
+  quoted_host = sql_quote (host);
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM report_hosts"
                " WHERE report = %llu AND host = '%s';",
-               report, host))
+               report, quoted_host))
     sql ("UPDATE report_hosts SET end_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         parse_iso_time (timestamp), report, host);
+         parse_iso_time (timestamp), report, quoted_host);
   else
     sql ("INSERT into report_hosts (report, host, end_time)"
          " VALUES (%llu, '%s', %i);",
-         report, host, parse_iso_time (timestamp));
+         report, quoted_host, parse_iso_time (timestamp));
+  g_free (quoted_host);
 }
 
 /**
@@ -19636,17 +19639,20 @@ void
 set_scan_host_end_time_otp (report_t report, const char* host,
                             const char* timestamp)
 {
+  gchar *quoted_host;
+  quoted_host = sql_quote (host);
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM report_hosts"
                " WHERE report = %llu AND host = '%s';",
-               report, host))
+               report, quoted_host))
     sql ("UPDATE report_hosts SET end_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         parse_otp_time (timestamp), report, host);
+         parse_otp_time (timestamp), report, quoted_host);
   else
     sql ("INSERT into report_hosts (report, host, end_time)"
          " VALUES (%llu, '%s', %i);",
-         report, host, parse_otp_time (timestamp));
+         report, quoted_host, parse_otp_time (timestamp));
+  g_free (quoted_host);
 }
 
 /**
@@ -19660,17 +19666,20 @@ void
 set_scan_host_start_time (report_t report, const char* host,
                           const char* timestamp)
 {
+  gchar *quoted_host;
+  quoted_host = sql_quote (host);
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM report_hosts"
                " WHERE report = %llu AND host = '%s';",
-               report, host))
+               report, quoted_host))
     sql ("UPDATE report_hosts SET start_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         parse_iso_time (timestamp), report, host);
+         parse_iso_time (timestamp), report, quoted_host);
   else
     sql ("INSERT into report_hosts (report, host, start_time)"
          " VALUES (%llu, '%s', %i);",
-         report, host, parse_iso_time (timestamp));
+         report, quoted_host, parse_iso_time (timestamp));
+  g_free (quoted_host);
 }
 
 /**
@@ -19684,17 +19693,20 @@ void
 set_scan_host_start_time_otp (report_t report, const char* host,
                               const char* timestamp)
 {
+  gchar *quoted_host;
+  quoted_host = sql_quote (host);
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM report_hosts"
                " WHERE report = %llu AND host = '%s';",
-               report, host))
+               report, quoted_host))
     sql ("UPDATE report_hosts SET start_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         parse_otp_time (timestamp), report, host);
+         parse_otp_time (timestamp), report, quoted_host);
   else
     sql ("INSERT into report_hosts (report, host, start_time)"
          " VALUES (%llu, '%s', %i);",
-         report, host, parse_otp_time (timestamp));
+         report, quoted_host, parse_otp_time (timestamp));
+  g_free (quoted_host);
 }
 
 /**

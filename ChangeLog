@@ -1,3 +1,8 @@
+2013-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (set_scan_host_end_time, set_scan_host_end_time_otp)
+	(set_scan_host_start_time, set_scan_host_start_time_otp): Quote host.
+
 2013-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_setup): Set the host end times after adding
