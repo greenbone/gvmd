@@ -159,12 +159,6 @@ add_custom_command (OUTPUT omp.html
 
 ## Install
 
-file (MAKE_DIRECTORY html/)
-
-install (DIRECTORY html/
-         DESTINATION share/doc/openvas-manager/html/
-         COMPONENT doc)
-
 install (FILES omp.html
          DESTINATION share/doc/openvas-manager/html/
          COMPONENT doc)

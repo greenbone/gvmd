@@ -1,5 +1,10 @@
 2013-02-06  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* doc/CMakeLists.txt: Prevent superfluous creation of "doc/html/"
+	directory inside the source tree.
+
+2013-02-06  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* doc/footer.html: Removed obsolete file.
 
 2013-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
