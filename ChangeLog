@@ -1,3 +1,10 @@
+2013-02-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* tools/openvas-scapdata-sync.in (RSYNC_DELETE): New variable.
+	(do_rsync): Add RSYNC_DELETE to rsync call: Files are now deleted
+	locally when they are not part of the rsync feed, analogous to
+	greenbone-scapdata-sync.
+
 2013-02-06  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Activated RSYNC_DELETE with

@@ -40,6 +40,9 @@ if [ -z "$SCAP_DIR" ]; then
 fi
 SEC_DB="$SCAP_DIR/scap.db"
 
+# delete options for rsync
+RSYNC_DELETE="--delete --exclude \"/scap.db\""
+
 # Script and feed information which will be made available to user through
 # command line options and automated tools.
 SCRIPT_NAME="openvas-scapdata-sync"
@@ -148,7 +151,7 @@ do_rsync () {
     echo "[i] Using rsync: $CMD_RSYNC"
     echo "[i] Configured SCAP data rsync feed: $OV_RSYNC_FEED"
     mkdir -p "$SCAP_DIR"
-    eval "$CMD_RSYNC -ltvrP \"$OV_RSYNC_FEED\" \"$SCAP_DIR\""
+    eval "$CMD_RSYNC -ltvrP $RSYNC_DELETE \"$OV_RSYNC_FEED\" \"$SCAP_DIR\""
     if [ $? -ne 0 ] ; then
       echo "Error: rsync failed. Your SCAP data might be broken now."
       exit 1
