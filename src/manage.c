@@ -1946,6 +1946,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           opts.report_id = slave_report_uuid;
           opts.first_result = next_result;
           opts.format_id = "a994b278-1f62-11e1-96ac-406186ea4fc5";
+          opts.apply_overrides = 0;
+          opts.levels = "hmlgd";
 
           if (strcmp (status, "Done") == 0)
             /* Request all the hosts to get their end times. */
