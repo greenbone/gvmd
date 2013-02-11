@@ -1,3 +1,8 @@
+2013-02-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/otp.c (parse_scanner_plugin_list_tags): Replace ';' with '\n' in
+	tags.
+
 2013-02-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_setup): Specify levels and apply_overrides in

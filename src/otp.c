@@ -1082,6 +1082,16 @@ parse_scanner_plugin_list_tags (char** messages)
     {
       match[0] = '\0';
       value = g_strdup (*messages);
+      if (value != NULL)
+        {
+          char* pos = value;
+          while (*pos)
+            {
+              if (*pos == ';')
+                *pos = '\n';
+              pos++;
+            }
+        }
       if (current_plugin)
         {
           gchar *tags, *cvss_base, *risk_factor;
