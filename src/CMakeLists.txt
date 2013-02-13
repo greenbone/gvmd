@@ -162,7 +162,8 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_nmap_5_51_top_2000_top_100.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/ovas-mngr-comm.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c" "${CMAKE_CURRENT_SOURCE_DIR}/sql.c")
+  "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c" "${CMAKE_CURRENT_SOURCE_DIR}/sql.c")
 add_custom_target (etags COMMENT "Building TAGS..."
                    COMMAND etags ${C_FILES})
 add_custom_target (ctags COMMENT "Building tags..."
