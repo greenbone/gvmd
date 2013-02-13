@@ -103,6 +103,9 @@ manage_migrate_needs_timezone (GSList *, const gchar *);
 int
 manage_migrate (GSList*, const gchar*);
 
+int
+manage_encrypt_all_credentials (const gchar *database, gboolean decrypt_mode);
+
 
 /* Task structures. */
 

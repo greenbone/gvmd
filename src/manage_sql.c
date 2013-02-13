@@ -9057,6 +9057,160 @@ manage_migrate (GSList *log_config, const gchar *database)
   return 0;
 }
 
+
+
+/**
+ * @brief Encrypt, re-encrypt or decrypt all credentials
+ *
+ * All plaintext credentials in the lsc_credentials table are
+ * encrypted, all already encrypted credentials are encrypted again
+ * using the latest key.
+ *
+ * @param[in] decrypt_flag  If true decrypt all credentials.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+do_encrypt_all_credentials (gboolean decrypt_flag)
+{
+  iterator_t iterator;
+  unsigned long ntotal, nencrypted, nreencrypted, ndecrypted;
+
+  init_iterator (&iterator,
+                 "SELECT ROWID, password, private_key FROM lsc_credentials");
+  iterator.crypt_ctx = lsc_crypt_new ();
+
+  sql ("BEGIN IMMEDIATE;");
+
+  ntotal = nencrypted = nreencrypted = ndecrypted = 0;
+  while (next (&iterator))
+    {
+      long long int rowid;
+      const char *password, *privkey;
+
+      ntotal++;
+      if (!(ntotal % 10))
+        g_message ("  %lu credentials so far processed", ntotal);
+
+      rowid    = sqlite3_column_int64 (iterator.stmt, 0);
+      password = (const char*) sqlite3_column_text (iterator.stmt, 1);
+      privkey  = (const char*) sqlite3_column_text (iterator.stmt, 2);
+
+      /* If there is no password or private key, skip the row.  */
+      if (!password && !privkey)
+        continue;
+
+      /* If the row is alread encrypted, retrieve the plaintext values
+         first.  */
+      if (privkey && !strcmp (privkey, ";;encrypted;;"))
+        {
+          const char *tmp = password;
+
+          lsc_crypt_flush (iterator.crypt_ctx);
+          password = lsc_crypt_get_password (iterator.crypt_ctx, tmp);
+          privkey  = lsc_crypt_get_private_key (iterator.crypt_ctx, tmp);
+
+          /* If there is no password or private key, skip the row.  */
+          if (!password && !privkey)
+            continue;
+
+          nreencrypted++;
+        }
+      else
+        {
+          if (decrypt_flag)
+            continue; /* Skip non-encrypted rows.  */
+
+          nencrypted++;
+        }
+
+      if (decrypt_flag)
+        {
+          char *quoted_password, *quoted_privkey;
+
+          quoted_password = sql_insert (password);
+          quoted_privkey  = sql_insert (privkey);
+
+          sql ("UPDATE lsc_credentials SET password = %s,"
+               " private_key = %s,"
+               " modification_time = now ()"
+               " WHERE ROWID = %llu;", quoted_password, quoted_privkey, rowid);
+          g_free (quoted_password);
+          g_free (quoted_privkey);
+          ndecrypted++;
+        }
+      else
+        {
+          char *encblob;
+
+          if (password && privkey)
+            encblob = lsc_crypt_encrypt (iterator.crypt_ctx,
+                                         "password", password,
+                                         "private_key", privkey, NULL);
+          else if (password)
+            encblob = lsc_crypt_encrypt (iterator.crypt_ctx,
+                                         "password", password, NULL);
+          else
+            encblob = lsc_crypt_encrypt (iterator.crypt_ctx,
+                                         "private_key", privkey, NULL);
+
+          if (!encblob)
+            {
+              sql ("ROLLBACK;");
+              cleanup_iterator (&iterator);
+              return -1;
+            }
+          sql ("UPDATE lsc_credentials SET password = '%s',"
+               " private_key = ';;encrypted;;',"
+               " modification_time = now ()"
+               " WHERE ROWID = %llu;", encblob, rowid);
+          g_free (encblob);
+        }
+    }
+
+  sql ("COMMIT;");
+
+  if (decrypt_flag)
+    g_message ("%lu out of %lu credentials decrypted",
+               ndecrypted, ntotal);
+  else
+    g_message ("%lu out of %lu credentials encrypted and %lu re-encrypted",
+               nencrypted, ntotal, nreencrypted);
+  cleanup_iterator (&iterator);
+  return 0;
+}
+
+/**
+ * @brief Driver to encrypt or re-encrypt all credentials
+ *
+ * All plaintext credentials in the lsc_credentials table are
+ * encrypted, all already encrypted credentials are encrypted again
+ * using the latest key.
+ *
+ * This function shall be used only by a command line option because
+ * under SQLlite it locks the entire DB.
+ *
+ * @param[in] database      Location of manage database.
+ * @param[in] decrypt_flag  If true decrypt all credentials.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_encrypt_all_credentials (const gchar *database, gboolean decrypt_flag)
+{
+  int ret;
+  const gchar *db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  init_manage_process (0, db);
+
+  ret = do_encrypt_all_credentials (decrypt_flag);
+
+  cleanup_manage_process (TRUE);
+
+  return ret;
+}
+
+
 
 /* Collation. */
 

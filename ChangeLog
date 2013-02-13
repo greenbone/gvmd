@@ -1,3 +1,13 @@
+2013-02-13  Werner Koch  <wk@gnupg.org>
+
+	* src/openvasmd.c (main): Add options --encrypt-all-credentials
+	and --decrypt-all-credentials.
+	* src/manage_sql.c (do_encrypt_all_credentials)
+	(manage_encrypt_all_credentials): New.
+	* src/manage.h (manage_encrypt_all_credentials): New prototype.
+
+	* src/lsc_crypt.c: Remove all tracepoint debug output.
+
 2013-02-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* TODO: Remove completed and out of date items.
@@ -20,6 +30,7 @@
 
 	* doc/about-cert-feed.txt: New. Most text by Timo Pollmeier.
 
+>>>>>>> .r15418
 2013-02-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/otp.c (parse_scanner_plugin_list_tags): Replace ';' with '\n' in

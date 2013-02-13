@@ -1088,6 +1088,8 @@ main (int argc, char** argv)
 
   static gboolean backup_database = FALSE;
   static gboolean migrate_database = FALSE;
+  static gboolean encrypt_all_credentials = FALSE;
+  static gboolean decrypt_all_credentials = FALSE;
   static gboolean create_cred_enc_key = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean rebuild_nvt_cache = FALSE;
@@ -1116,6 +1118,11 @@ main (int argc, char** argv)
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
         { "create-credentials-encryption-key", '\0', 0, G_OPTION_ARG_NONE,
           &create_cred_enc_key, "Create a key to encrypt credentials.", NULL },
+        { "encrypt-all-credentials", '\0', 0, G_OPTION_ARG_NONE,
+          &encrypt_all_credentials, "(Re-)Encrypt all credentials.", NULL },
+        { "decrypt-all-credentials", '\0',
+          G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE,
+          &decrypt_all_credentials, NULL, NULL },
         { "otp", '\0', 0, G_OPTION_ARG_NONE, &otp, "Serve OTP too.", NULL },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
@@ -1261,7 +1268,32 @@ main (int argc, char** argv)
           break;
         }
 
-      fprintf (stderr, "Key creation failed\n");
+      fprintf (stderr, "Key creation failed.\n");
+      return EXIT_FAILURE;
+    }
+
+  if (encrypt_all_credentials)
+    {
+      infof ("   (Re-)encrypting all credentials.\n");
+      if (!manage_encrypt_all_credentials (database, FALSE))
+        {
+          fprintf (stderr, "Encryption succeeded.\n");
+          return EXIT_SUCCESS;
+        }
+
+      fprintf (stderr, "Encryption failed.\n");
+      return EXIT_FAILURE;
+    }
+  if (decrypt_all_credentials)
+    {
+      infof ("   Decrypting all credentials.\n");
+      if (!manage_encrypt_all_credentials (database, TRUE))
+        {
+          fprintf (stderr, "Decryption succeeded.\n");
+          return EXIT_SUCCESS;
+        }
+
+      fprintf (stderr, "Decryption failed.\n");
       return EXIT_FAILURE;
     }
 

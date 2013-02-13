@@ -184,9 +184,14 @@ for old installations the database may hold a mix of cleartext and
 encrypted credentials.  Note, that after changing a cleartext
 credentials it will be saved encrypted.
 
-A command to migrate from the database from cleartext to encrypted
-credentials will be added in a later version.  This command will also
-allow to switch the entire database to a different key.
+To encrypt all existing credentials you may use
+
+$ openvasmd --encrypt-all-credentials
+
+If you disable the current key (see the gpg manual) and create a new
+key, this command will decrypt using the old but disabled key and then
+re-encrypt using the new key.  The command --decrypt-all-credentials
+may be used to revert to plaintext credentials.
 
 If for backward compatibility reasons encrypted credentials are not
 desired, the manager must _always_ be started with the option
