@@ -1,3 +1,7 @@
+2013-02-13  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* doc/about-cert-feed.txt: New. Most text by Timo Pollmeier.
+
 2013-02-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/otp.c (parse_scanner_plugin_list_tags): Replace ';' with '\n' in
