@@ -438,14 +438,11 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
   size_t ciphertextlen;
   char *result;
 
-  g_message ("%s: tracepoint", G_STRLOC );
-
   /* Unfortunately GPGME does not yet support plain base64 encoding.  */
   ciphertext = (char *)g_base64_decode (cipherstring, &ciphertextlen);
   if (!ciphertext || !ciphertextlen)
     return NULL;  /* Empty or bad encoding.  */
 
-  g_message ("%s: tracepoint", G_STRLOC );
   err = gpgme_data_new_from_mem (&in, ciphertext, ciphertextlen, 0);
   if (err)
     {
@@ -496,8 +493,6 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
       g_critical ("%s: error snatching memory", G_STRFUNC);
       exit (EXIT_FAILURE);
     }
-
-  g_message ("%s: tracepoint (resultlen=%zu)", G_STRLOC, *r_plaintextlen);
 
   return result;
 }
@@ -635,7 +630,6 @@ lsc_crypt_encrypt (lsc_crypt_ctx_t ctx, const char *first_name, ...)
   if (!ctx || !first_name)
     return NULL;
 
-  g_message ("%s: tracepoint", G_STRLOC );
   /* Assuming a 2048 bit RSA ssh private key in PEM encoding, a buffer
      with an initial size of 2k should be large enough.  */
   stringbuf = g_string_sized_new (2048);
@@ -674,7 +668,6 @@ lsc_crypt_encrypt (lsc_crypt_ctx_t ctx, const char *first_name, ...)
 
   ciphertext = do_encrypt (ctx, plaintext, plaintextlen);
   g_free (plaintext);
-  g_message ("%s: tracepoint", G_STRLOC );
 
   return ciphertext;
 }
@@ -705,7 +698,6 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
       return NULL;
     }
 
-  g_message ("%s: tracepoint (name='%s')", G_STRLOC, name);
   if (!ctx->plaintext)
     {
       if (!ciphertext)
@@ -719,10 +711,6 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
   for (nl = ctx->namelist; nl; nl = nl->next)
     if (!strcmp (nl->name, name))
       {
-        g_message ("%s: tracepoint (cached='%s')", G_STRLOC,
-                   nl->value
-                   ? nl->value
-                   : (nl->valoff ? (ctx->plaintext + nl->valoff) : "[NULL]"));
         return (nl->value
                 ? nl->value
                 : (nl->valoff ? (ctx->plaintext + nl->valoff) : NULL));
@@ -779,8 +767,6 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
             }
           nl->next = ctx->namelist;
           ctx->namelist = nl;
-          g_message ("%s: tracepoint (found='%s')", G_STRLOC,
-                     nl->value? nl->value : (ctx->plaintext + nl->valoff));
           return nl->value? nl->value : (ctx->plaintext + nl->valoff);
         }
       p += n; len -= n;
@@ -793,7 +779,6 @@ lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
              " %zu bytes remaining at offset %zu",
              G_STRFUNC, len, (size_t)(p - ctx->plaintext));
  not_found:
-  g_message ("%s: tracepoint (not found or error)", G_STRLOC );
   /* Cache a NULL value.  */
   nl = g_malloc (sizeof *nl + namelen);
   strcpy (nl->name, name);
