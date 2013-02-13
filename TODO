@@ -18,13 +18,6 @@
 
 2009-06-12  Matthew Mundell <mmundell@greenbone.net>
 
-	Look into the memory fault that occurs when running openvasmd under
-	gdb.  The gdb process reports the fault and exits.  The openvasmd process
-	carries on running OK.  Sometimes running the tests under load hangs my
-	laptop, which is perhaps related.
-
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
-
 	Add function names to log and error messages.
 
 2009-06-12  Matthew Mundell <mmundell@greenbone.net>
@@ -59,16 +52,6 @@
 	Check the memory management.  A quick valgrind reported memory leaks.
 	There is initial work present for splint coverage which could be
 	completed.
-
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
-
-	Consider moving tests to openvas-manager/tests/, at least so that src/
-	compiles quicker.
-
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
-
-	Make the test style uniform, especially the exit style (some tests goto,
-	others duplicate code).
 
 2009-06-16  Matthew Mundell <mmundell@greenbone.net>
 

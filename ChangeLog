@@ -1,5 +1,9 @@
 2013-02-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* TODO: Remove completed and out of date items.
+
+2013-02-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove test framework.
 
 	* CMakeLists.txt: Remove testing.
