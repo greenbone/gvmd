@@ -1,5 +1,15 @@
 2013-02-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove test framework.
+
+	* CMakeLists.txt: Remove testing.
+
+	* src/CMakeLists.txt: Remove testing comments.
+
+	* src/tests/: Remove.
+
+2013-02-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/CMakeLists.txt (C_FILES): Add lsc_crypt.c.
 
 2013-02-13  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>

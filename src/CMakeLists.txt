@@ -127,15 +127,7 @@ install (TARGETS openvasmd
          LIBRARY DESTINATION ${LIBDIR}
          ARCHIVE DESTINATION ${LIBDIR}/static)
 
-## Tests
-
-# enable_testing ()
-
-# add_subdirectory (tests)
-
 ## Static analysis
-
-# FIX test coverage
 
 add_custom_target (splint COMMENT "Running splint..."
                    COMMAND sh -c \"splint -booltype gboolean -predboolint +unixlib +export-header `pkg-config --cflags glib-2.0` `pkg-config --cflags libopenvas` ${CMAKE_CURRENT_SOURCE_DIR}/*.c\")

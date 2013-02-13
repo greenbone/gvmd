@@ -262,10 +262,6 @@ add_subdirectory (src)
 
 add_subdirectory (doc)
 
-## Tests
-
-enable_testing ()
-
 ## Install
 
 install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${OPENVAS_STATE_DIR}/openvasmd/report_formats)")
