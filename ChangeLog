@@ -1,3 +1,9 @@
+2013-02-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (NOTE_ITERATOR_TRASH_COLUMNS)
+	(OVERRIDE_ITERATOR_TRASH_COLUMNS): Use trash table instead of real
+	table.
+
 2013-02-13  Werner Koch  <wk@gnupg.org>
 
 	* src/openvasmd.c (main): Add options --encrypt-all-credentials

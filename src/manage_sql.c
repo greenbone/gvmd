@@ -37490,8 +37490,8 @@ modify_note (note_t note, const char *active, const char* text,
   " (notes_trash.end_time = 0) OR (notes_trash.end_time >= now ()),"       \
   " (SELECT name FROM nvts WHERE oid = notes_trash.nvt) AS nvt,"           \
   " notes_trash.nvt AS nvt_id,"                                            \
-  " (SELECT uuid FROM tasks WHERE ROWID = notes.task) AS task_id,"         \
-  " (SELECT name FROM tasks WHERE ROWID = notes.task) AS task_name"
+  " (SELECT uuid FROM tasks WHERE ROWID = notes_trash.task) AS task_id,"   \
+  " (SELECT name FROM tasks WHERE ROWID = notes_trash.task) AS task_name"
 
 /**
  * @brief Count number of notes.
@@ -38264,7 +38264,7 @@ modify_override (override_t override, const char *active, const char* text,
   " (overrides_trash.end_time = 0) OR (overrides_trash.end_time >= now ()),"   \
   " (SELECT name FROM nvts WHERE oid = overrides_trash.nvt) AS nvt,"           \
   " overrides_trash.nvt AS nvt_id,"                                            \
-  " (SELECT uuid FROM tasks WHERE ROWID = overrides.task) AS task_id,"         \
+  " (SELECT uuid FROM tasks WHERE ROWID = overrides_trash.task) AS task_id,"   \
   " (SELECT name FROM tasks WHERE ROWID = overrides_trash.task) AS task_name"
 
 /**
