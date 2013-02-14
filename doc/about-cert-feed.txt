@@ -78,8 +78,11 @@ B) sorted so that the newer elements will overwrite the older ones when
 Contents of <entry> elements
 ----------------------------
 Each <entry> element must contain the following sub-elements:
-* <dfncert:dfn_id> which contains the short ID of the advisory.
-  until this is implemented by DFN-CERT, it can be generated with:
+* <dfncert:refnum> which contains the short ID of the advisory.
+  This is implemented by the current feed supplied by DFN-CERT,
+  but is missing in some older archive and test data.
+
+  It can be generated for these files with:
 
   <xsl:value-of
        select="substring-before(substring-after(atom:id/text(),$feed_id),'/')"/>
@@ -121,7 +124,7 @@ Example (file "dfn-cert-2010.xml"):
 <feed xmlns:dfncert="http://www.dfn-cert.de/dfncert.dtd"
       xmlns="http://www.w3.org/2005/Atom">
   <entry>
-    <dfncert:dfn_id>DFN-CERT-2010-9876</dfncert:dfn_id>
+    <dfncert:refnum>DFN-CERT-2010-9876</dfncert:refnum>
     <published>2010-12-28T09:39:59+01:00</published>
     <updated>2011-03-02T10:11:32+01:00</updated>
     <title>Test Advisory</title>

@@ -1,5 +1,10 @@
 2013-02-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* doc/about-cert-feed.txt: Change text for short ID elements to
+	consider new <dfncert:refnum> element.
+
+2013-02-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage.c (DFN_CERT_ADV_FILENAME_FMT, get_dfn_cert_adv_filename):
 	Change file name format back to DFN-CERT-YYYY-n.
 
