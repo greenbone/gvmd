@@ -35,7 +35,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   >
   <xsl:output method="text"/>
   <xsl:param name="refdate" select="'0'"/>
-  <xsl:variable name="feed_id" select="atom:feed/atom:id"/>
 
   <xsl:template match="/">
   BEGIN TRANSACTION;
@@ -55,9 +54,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     title,
     summary,
     cve_refs
-  ) VALUES ( 
-    "<xsl:value-of select="substring-before(substring-after(atom:id/text(),$feed_id),'/')"/>",
-    "<xsl:value-of select="substring-before(substring-after(atom:id/text(),$feed_id),'/')"/>",
+  ) VALUES (
+    "<xsl:value-of select="dfncert:refnum"/>",
+    "<xsl:value-of select="dfncert:refnum"/>",
     "",
     strftime("%s","<xsl:value-of select="atom:published/text()"/>"),
     strftime("%s","<xsl:value-of select="atom:updated/text()"/>"),
@@ -70,7 +69,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     adv_id,
     cve_name
   ) VALUES (
-    (SELECT id FROM dfn_cert_advs WHERE name = "<xsl:value-of select="substring-before(substring-after(../atom:id/text(),$feed_id),'/')"/>"),
+    (SELECT id FROM dfn_cert_advs WHERE name = "<xsl:value-of select="dfncert:refnum"/>"),
     "<xsl:value-of select="."/>"
   );
   </xsl:for-each>

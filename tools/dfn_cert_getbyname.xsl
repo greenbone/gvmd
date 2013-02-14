@@ -37,8 +37,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:output method="html"/>
 
 <xsl:template match="/">
-  <xsl:variable name="feed_id" select="atom:feed/atom:id"/>
-  <xsl:copy-of select="//atom:entry[substring-before(substring-after(atom:id/text(),$feed_id),'/') = $refname]"/>
+  <xsl:copy-of select="//atom:entry[dfncert:refnum = $refname]"/>
 </xsl:template>
 
 </xsl:stylesheet>

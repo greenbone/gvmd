@@ -1,5 +1,11 @@
 2013-02-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* tools/dfn_cert_getbyname.xsl, tools/dfn_cert_update.xsl: Change to
+	get ID from new <dfncert:refnum> element instead of extracting it from
+	<title>.
+
+2013-02-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* doc/about-cert-feed.txt: Change text for short ID elements to
 	consider new <dfncert:refnum> element.
 
