@@ -1,3 +1,7 @@
+2013-02-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* INSTALL: Added some more details on how to change the encryption key.
+
 2013-02-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/dfn_cert_getbyname.xsl, tools/dfn_cert_update.xsl: Change to
@@ -56,7 +60,6 @@
 
 	* doc/about-cert-feed.txt: New. Most text by Timo Pollmeier.
 
->>>>>>> .r15418
 2013-02-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/otp.c (parse_scanner_plugin_list_tags): Replace ';' with '\n' in

@@ -188,13 +188,25 @@ To encrypt all existing credentials you may use
 
 $ openvasmd --encrypt-all-credentials
 
-If you disable the current key (see the gpg manual) and create a new
-key, this command will decrypt using the old but disabled key and then
-re-encrypt using the new key.  The command --decrypt-all-credentials
-may be used to revert to plaintext credentials.
+Key change: If you disable the current key (see also the gpg manual) and
+create a new key, this command will decrypt using the old but disabled key
+and then re-encrypt using the new key.  The command --decrypt-all-credentials
+may be used to revert to plaintext credentials:
 
-If for backward compatibility reasons encrypted credentials are not
-desired, the manager must _always_ be started with the option
+$ gpg --homedir /etc/openvas/gnupg -K
+
+Look for the current key and remember its keyid. Then:
+
+$ gpg --homedir /etc/openvas/gnupg --edit-key KEYID
+
+At the prompt enter "disable" followed by "save" and "quit".
+Then create a new key and re-encrypt all passwords:
+
+$ openvasmd --create-credentials-encryption-key
+$ openvasmd --encrypt-all-credentials
+
+No encryption: If for backward compatibility reasons encrypted credentials
+are not desired, the manager must _always_ be started with the option
 --disable-encrypted-credentials.
 
 
