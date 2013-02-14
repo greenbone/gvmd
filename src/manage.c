@@ -114,7 +114,7 @@
  * First %d should be the year expressed as YYYY,
  * second %d should be should be Month expressed as MM.
  */
-#define DFN_CERT_ADV_FILENAME_FMT CERT_DATA_DIR "/dfn-cert-%04d-%02d.xml"
+#define DFN_CERT_ADV_FILENAME_FMT CERT_DATA_DIR "/dfn-cert-%04d.xml"
 
 /**
  * @brief SCAP timestamp location.
@@ -4508,29 +4508,13 @@ get_ovaldef_filename (char *oval_id)
 static char *
 get_dfn_cert_adv_filename (char *item_id)
 {
-  char *result = NULL;
-  char *date;
   int year;
-  int month;
 
-  date = get_dfn_cert_adv_date(item_id);
-  if (sscanf (date, "%04d-%02d%*s", &year, &month) == 2)
+  if (sscanf (item_id, "DFN-CERT-%d-%*s", &year) == 1)
     {
-      /* File names for advisories shifted by one month into the future. */
-      month++;
-      if (month > 12)
-        {
-          month = 1;
-          year++;
-        }
-      result = g_strdup_printf (DFN_CERT_ADV_FILENAME_FMT, year, month);
+      return g_strdup_printf (DFN_CERT_ADV_FILENAME_FMT, year);
     }
-  else
-    {
-      result = NULL;
-    }
-  g_free (date);
-  return result;
+  return NULL;
 }
 
 /**

@@ -1,3 +1,12 @@
+2013-02-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (DFN_CERT_ADV_FILENAME_FMT, get_dfn_cert_adv_filename):
+	Change file name format back to DFN-CERT-YYYY-n.
+
+	* src/manage_sql.c (get_dfn_cert_adv_date): Remove.
+
+	* src/manage_sql.h (get_dfn_cert_adv_date): Remove.
+
 2013-02-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (NOTE_ITERATOR_TRASH_COLUMNS)

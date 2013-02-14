@@ -117,7 +117,4 @@ run_status_name_internal (task_status_t);
 gchar*
 get_ovaldef_short_filename (char*);
 
-gchar*
-get_dfn_cert_adv_date (char*);
-
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */
