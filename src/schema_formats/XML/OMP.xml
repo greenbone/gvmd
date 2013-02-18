@@ -5792,6 +5792,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>List of CERT advisories referencing this CVE</summary>
             <pattern>
               <any><e>cert_ref</e></any>
+              <o><e>warning</e></o>
             </pattern>
             <ele>
               <name>cert_ref</name>
@@ -5819,6 +5820,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   text
                 </pattern>
               </ele>
+            </ele>
+            <ele>
+              <name>warning</name>
+              <summary>A warning message, e.g. when the database is not.</summary>
+              <pattern>
+                text
+              </pattern>
             </ele>
           </ele>
           <ele>
@@ -7039,6 +7047,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <summary>List of CERT advisories referencing this NVT via CVEs</summary>
           <pattern>
             <any><e>cert_ref</e></any>
+            <o><e>warning</e></o>
           </pattern>
           <ele>
             <name>cert_ref</name>
@@ -7054,6 +7063,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <summary>Type of the advisory (e.g. "DFN-CERT", "CERT-BUND")</summary>
                 <type>text</type>
               </attrib>
+            </pattern>
+          </ele>
+          <ele>
+            <name>warning</name>
+            <summary>A warning message, e.g. when the database is not.</summary>
+            <pattern>
+              text
             </pattern>
           </ele>
         </ele>

@@ -5870,6 +5870,7 @@ get_info_response_info_cve_cert
  = element cert
      {
        get_info_response_info_cve_cert_cert_ref*
+       & get_info_response_info_cve_cert_warning?
      }
 
 # A CERT advisory reference.
@@ -5892,6 +5893,13 @@ get_info_response_info_cve_cert_cert_ref_name
 # The title of the advisory.
 get_info_response_info_cve_cert_cert_ref_title
  = element title
+     {
+       text
+     }
+
+# A warning message, e.g. when the database is not..
+get_info_response_info_cve_cert_warning
+ = element warning
      {
        text
      }
@@ -6573,6 +6581,7 @@ get_nvts_response_nvt_cert_refs
  = element cert_refs
      {
        get_nvts_response_nvt_cert_refs_cert_ref*
+       & get_nvts_response_nvt_cert_refs_warning?
      }
 
 # A CERT advisory reference.
@@ -6583,6 +6592,13 @@ get_nvts_response_nvt_cert_refs_cert_ref
        attribute id { text }?
        & # Type of the advisory (e.g. "DFN-CERT", "CERT-BUND").
        attribute type { text }?
+     }
+
+# A warning message, e.g. when the database is not..
+get_nvts_response_nvt_cert_refs_warning
+ = element warning
+     {
+       text
      }
 
 get_nvts_response_nvt_xrefs

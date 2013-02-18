@@ -8491,14 +8491,23 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     cve ? cve : "",
     bid ? bid : "");
 
-  init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
-  while (next (&cert_refs_iterator))
+  if (manage_cert_loaded ())
     {
-      g_string_append_printf (buffer,
-                              "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
-                              get_iterator_name(&cert_refs_iterator));
+      init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+      while (next (&cert_refs_iterator))
+        {
+          g_string_append_printf (buffer,
+                                  "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
+                                  get_iterator_name(&cert_refs_iterator));
+        }
+      cleanup_iterator (&cert_refs_iterator);
     }
-  cleanup_iterator (&cert_refs_iterator);
+  else
+    {
+      g_string_append_printf (buffer, "<warning>"
+                                      "database not available"
+                                      "</warning>");
+    }
 
   buffer_xml_append_printf
    (buffer,
@@ -18667,21 +18676,31 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       cleanup_iterator (&nvts);
 
                       g_string_append (result, "<cert>");
-                      init_cve_dfn_cert_adv_iterator (&cert_advs,
-                                                      get_iterator_name (&info),
-                                                      1, NULL);
-                      while (next (&cert_advs))
+                      if (manage_cert_loaded())
                         {
-                          xml_string_append (result,
-                                             "<cert_ref type=\"DFN-CERT\">"
-                                             "<name>%s</name>"
-                                             "<title>%s</title>"
-                                             "</cert_ref>",
-                                             get_iterator_name (&cert_advs),
-                                             dfn_cert_adv_info_iterator_title
-                                               (&cert_advs));
-                        };
-                      cleanup_iterator (&cert_advs);
+                          init_cve_dfn_cert_adv_iterator (&cert_advs,
+                                                          get_iterator_name
+                                                            (&info),
+                                                          1, NULL);
+                          while (next (&cert_advs))
+                            {
+                              xml_string_append (result,
+                                                "<cert_ref type=\"DFN-CERT\">"
+                                                "<name>%s</name>"
+                                                "<title>%s</title>"
+                                                "</cert_ref>",
+                                                get_iterator_name (&cert_advs),
+                                                dfn_cert_adv_info_iterator_title
+                                                  (&cert_advs));
+                          };
+                          cleanup_iterator (&cert_advs);
+                        }
+                      else
+                        {
+                          g_string_append(result, "<warning>"
+                                                  "database not available"
+                                                  "</warning>");
+                        }
                       g_string_append (result, "</cert>");
                     }
                 }

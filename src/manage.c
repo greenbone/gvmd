@@ -4677,14 +4677,21 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 #undef DEF
 
       cert_refs_str = g_string_new ("");
-      init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
-      while (next (&cert_refs_iterator))
+      if (manage_cert_loaded())
         {
-          g_string_append_printf (cert_refs_str,
-                                  "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
-                                  get_iterator_name (&cert_refs_iterator));
+          init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+          while (next (&cert_refs_iterator))
+            {
+              g_string_append_printf (cert_refs_str,
+                                      "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
+                                      get_iterator_name (&cert_refs_iterator));
+          }
+          cleanup_iterator (&cert_refs_iterator);
         }
-      cleanup_iterator (&cert_refs_iterator);
+      else
+        {
+          g_string_append(cert_refs_str, "<warning>database not available</warning>");
+        }
 
       msg = g_strdup_printf ("<nvt"
                              " oid=\"%s\">"

@@ -9670,7 +9670,8 @@ get_filters_response_filter_count_page
 <li>
               &lt;<b>cert</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">List of CERT advisories referencing this CVE.</div>
-<ul style="list-style: none"><li>
+<ul style="list-style: none">
+<li>
               &lt;<b>cert_ref</b>&gt;
               *<div style="margin-left: 15px; display: inline;">A CERT advisory reference.</div>
 <ul style="list-style: none">
@@ -9690,7 +9691,13 @@ get_filters_response_filter_count_page
 <ul style="list-style: none"></ul>
 </li>
 </ul>
-</li></ul>
+</li>
+<li>
+              &lt;<b>warning</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">A warning message, e.g. when the database is not..</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>raw_data</b>&gt;
@@ -10064,6 +10071,7 @@ get_info_response_info_cve_cert
  = element cert
      {
        get_info_response_info_cve_cert_cert_ref*
+       &amp; get_info_response_info_cve_cert_warning?
      }
 
 get_info_response_info_cve_cert_cert_ref
@@ -10082,6 +10090,12 @@ get_info_response_info_cve_cert_cert_ref_name
 
 get_info_response_info_cve_cert_cert_ref_title
  = element title
+     {
+       text
+     }
+
+get_info_response_info_cve_cert_warning
+ = element warning
      {
        text
      }
@@ -11487,7 +11501,8 @@ get_notes_response_note_result_description
 <li>
               &lt;<b>cert_refs</b>&gt;
               <div style="margin-left: 15px; display: inline;">List of CERT advisories referencing this NVT via CVEs.</div>
-<ul style="list-style: none"><li>
+<ul style="list-style: none">
+<li>
               &lt;<b>cert_ref</b>&gt;
               *<div style="margin-left: 15px; display: inline;">A CERT advisory reference.</div>
 <ul style="list-style: none">
@@ -11502,7 +11517,13 @@ get_notes_response_note_result_description
           Type of the advisory (e.g. "DFN-CERT", "CERT-BUND").
           </li>
 </ul>
-</li></ul>
+</li>
+<li>
+              &lt;<b>warning</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">A warning message, e.g. when the database is not..</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>bugtraq_id</b>&gt;
@@ -11699,6 +11720,7 @@ get_nvts_response_nvt_cert_refs
  = element cert_refs
      {
        get_nvts_response_nvt_cert_refs_cert_ref*
+       &amp; get_nvts_response_nvt_cert_refs_warning?
      }
 
 get_nvts_response_nvt_cert_refs_cert_ref
@@ -11706,6 +11728,12 @@ get_nvts_response_nvt_cert_refs_cert_ref
      {
        attribute id { text }?
        &amp; attribute type { text }?
+     }
+
+get_nvts_response_nvt_cert_refs_warning
+ = element warning
+     {
+       text
      }
 
 get_nvts_response_nvt_xrefs
