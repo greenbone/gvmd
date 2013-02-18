@@ -69,7 +69,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     adv_id,
     cve_name
   ) VALUES (
-    (SELECT id FROM dfn_cert_advs WHERE name = "<xsl:value-of select="dfncert:refnum"/>"),
+    (SELECT id FROM dfn_cert_advs WHERE name = "<xsl:value-of select="../dfncert:refnum"/>"),
     "<xsl:value-of select="."/>"
   );
   </xsl:for-each>
