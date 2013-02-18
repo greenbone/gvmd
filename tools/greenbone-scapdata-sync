@@ -61,12 +61,18 @@ ENABLED=1
 # Manager database. This can be controlled via the --refresh parameter.
 REFRESH_ONLY=0
 
+SQLITE3="sqlite3 -noheader"
+
 [ -r $PREFIX/etc/openvas/greenbone-scapdata-sync.conf ] && . $PREFIX/etc/openvas/greenbone-scapdata-sync.conf
 
 BASE_SYNC_DIR="$PREFIX/var/lib/openvas"
 SCAP_DIR="$BASE_SYNC_DIR/scap-data"
 
-SCAP_RES_DIR="$PREFIX/usr/share/openvas/scap"
+if [ -z "$PREFIX" ] ; then
+  SCAP_RES_DIR="/usr/share/openvas/scap"
+else
+  SCAP_RES_DIR="$PREFIX/share/openvas/scap"
+fi
 
 SCAP_DB="$SCAP_DIR/scap.db"
 
@@ -178,11 +184,11 @@ fi
 reinit () {
   log_write " Reinitialization of the database necessary."
   rm -f $SCAP_DB
-  sqlite3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
+  $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
 }
 
 check_db_version () {
-  DB_VERSION=`sqlite3 $SCAP_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
+  DB_VERSION=`$SQLITE3 $SCAP_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
@@ -226,14 +232,14 @@ update_scap_db() {
   if [ ! -f $SCAP_DB ]
   then
     log_write "Initializing SCAP database."
-    sqlite3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
+    $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
     CVE_REFDATE=0
   else
     check_db_version
-    CVE_REFDATE=`sqlite3 $SCAP_DB "select date(max(modification_time),'unixepoch') from cves;" | sed -e 's/T.*//' | tr -d "-"`
+    CVE_REFDATE=`$SQLITE3 $SCAP_DB "select date(max(modification_time),'unixepoch') from cves;" | sed -e 's/T.*//' | tr -d "-"`
   fi
 
-  DB_LASTUPDATE=`sqlite3 $SCAP_DB "select value from meta where name = 'last_update';"`
+  DB_LASTUPDATE=`$SQLITE3 $SCAP_DB "select value from meta where name = 'last_update';"`
 
   if [ -z "$CVE_REFDATE" ]
   then
@@ -245,7 +251,7 @@ update_scap_db() {
     # Happens when initial sync was aborted
     log_write "Error: Inconsistent data. Resetting SCAP database."
     rm -f $SCAP_DB
-    sqlite3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
+    $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
     CVE_REFDATE=0
     DB_LASTUPDATE=0
   fi
@@ -259,7 +265,7 @@ update_scap_db() {
       sed 's/&/&amp;/g' $CPEBASE | \
         xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - | \
         xsltproc $SCAP_RES_DIR/cpe_update.xsl - | \
-        sqlite3 $SCAP_DB
+        $SQLITE3 $SCAP_DB
     else
       log_write " Skipping CPEs, file is older than last revision (this is not an error)."
     fi
@@ -277,7 +283,7 @@ update_scap_db() {
         log_write "Updating $cvefile"
         xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
           xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
-          sqlite3 $SCAP_DB
+          $SQLITE3 $SCAP_DB
       else
         log_write "Skipping $cvefile, file is older than last revision (this is not an error)."
       fi
@@ -296,7 +302,7 @@ update_scap_db() {
       then
         oval_timestamp=`xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile | sed -e 's/T.*//' | tr -d "-"`
 
-        OVAL_REFDATE=`sqlite3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+        OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
         if [ -z "$OVAL_REFDATE" ]
         then
           OVAL_REFDATE=0
@@ -307,7 +313,7 @@ update_scap_db() {
           log_write " Updating $ovalfile"
 
           xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" $SCAP_RES_DIR/oval_update.xsl $ovalfile | \
-          sqlite3 $SCAP_DB
+          $SQLITE3 $SCAP_DB
         else
           log_write " Skipping $ovalfile, file has older timestamp than latest OVAL definition in database (this is not an error)."
         fi

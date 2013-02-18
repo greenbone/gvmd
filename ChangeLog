@@ -1,3 +1,9 @@
+2013-02-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/greenbone-scapdata-sync: Run sqlite3 via SQLITE3 variable, to
+	specify -noheader, because the user may have .headers on in .sqliterc.
+	(SCAP_RES_DIR): Skip /usr/ when there's a PREFIX.
+
 2013-02-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (get_nvti_xml), src/omp.c (buffer_results_xml)
