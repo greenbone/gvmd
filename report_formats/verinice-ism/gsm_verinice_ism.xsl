@@ -314,6 +314,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <xsl:value-of select="text"/>
         </value>
       </syncAttribute>
+      <syncAttribute>
+        <name>gsm_ism_control_cpe</name>
+        <value>
+          <xsl:choose>
+            <xsl:when test="count(../../detection)">
+              <xsl:value-of select="../../detection/result/details/detail[name = 'product']/value/text()"/>
+            </xsl:when>
+            <xsl:otherwise>Unknown</xsl:otherwise>
+          </xsl:choose>
+          </value>
+      </syncAttribute>
       <extId><xsl:value-of select="$task_id"/>-<xsl:value-of select="@id"/>-control</extId>
       <extObjectType>gsm_ism_control</extObjectType>
     </children>
@@ -564,6 +575,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ns2:mapObjectType intId="control" extId="gsm_ism_control">
        <ns2:mapAttributeType intId="control_name" extId="gsm_ism_control_name"/>
        <ns2:mapAttributeType intId="gsm_ism_control_description" extId="gsm_ism_control_description"/>
+       <ns2:mapAttributeType intId="gsm_ism_control_cpe" extId="gsm_ism_control_cpe"/>
       </ns2:mapObjectType>
 
       <!-- Scenario / NVT -->
