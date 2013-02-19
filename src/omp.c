@@ -635,7 +635,7 @@ omp_parser_t *
 omp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_client_data,
                 gchar **disable)
 {
-  omp_parser_t *omp_parser = (omp_parser_t*) g_malloc (sizeof (omp_parser_t));
+  omp_parser_t *omp_parser = (omp_parser_t*) g_malloc0 (sizeof (omp_parser_t));
   omp_parser->client_writer = write_to_client;
   omp_parser->client_writer_data = write_to_client_data;
   omp_parser->read_over = 0;

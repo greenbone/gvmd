@@ -1,3 +1,10 @@
+2013-02-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_parser_new): Clear parser memory on allocation, so that
+	parent_state is 0 initially.  This prevents the end handler from setting
+	the client state to some arbitrary number after reading over an element,
+	for example when importing a report.
+
 2013-02-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_empty_trashcan): Empty notes and overrides
