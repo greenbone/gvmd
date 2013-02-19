@@ -1,3 +1,10 @@
+2013-02-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (manage_set_setting): Add Reports Filter setting.
+
+	* src/omp.c (omp_xml_handle_element): Check for settings default report
+	filter when no filter and filt_id are provided in GET_REPORTS case.
+
 2013-02-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_start_element)

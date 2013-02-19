@@ -9920,6 +9920,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         iterator_t results;
         float min_cvss_base;
         iterator_t reports;
+        get_data_t * get;
 
         /** @todo Some checks only required when type is "scan". */
 
@@ -10246,6 +10247,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
            ("<get_reports_response"
             " status=\"" STATUS_OK "\""
             " status_text=\"" STATUS_OK_TEXT "\">");
+
+        get = &get_reports_data->get;
+        if ((!get->filter && !get->filt_id)
+            || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+          {
+            char *user_filter = setting_filter ("Reports");
+
+            if (user_filter && strlen (user_filter))
+              {
+                get->filt_id = user_filter;
+                get->filter = filter_term (user_filter);
+              }
+            else
+              get->filt_id = g_strdup("0");
+          }
 
         init_report_iterator (&reports, 0, request_report);
         while (next_report (&reports, &report))
