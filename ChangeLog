@@ -1,5 +1,12 @@
 2013-02-19  Andre Heinecke <andre.heinecke@greenbone.net>
 
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl (control_details):
+	Add gsm_control_tag that is a comma seperated list of tags
+	based on the notes description. If a line in the description starts
+	with + it will be interpreted as a "Tag"
+
+2013-02-19  Andre Heinecke <andre.heinecke@greenbone.net>
+
 	* report_formats/verinice-ism/gsm_verinice_ism.xsl (scenario_details):
 	Add cvss and fix cve and threat values
 

@@ -301,6 +301,33 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template name="control_details">
     <xsl:param name="task_id"/>
+    <!-- Filter out lines starting with + and create a comma seperated list of them-->
+    <xsl:variable name="description">
+      <xsl:for-each select="str:split(text, '&#10;')">
+        <xsl:if test="substring(.,0,2) != '+'">
+          <xsl:value-of select="."/>
+          <xsl:text>&#10;</xsl:text>
+        </xsl:if>
+      </xsl:for-each>
+    </xsl:variable>
+    <xsl:variable name="tag_list">
+      <xsl:for-each select="str:split(text, '&#10;')">
+        <xsl:if test="substring(.,0,2) = '+'">
+          <xsl:value-of select="substring(.,2)"/>
+          <xsl:text>,</xsl:text>
+        </xsl:if>
+      </xsl:for-each>
+    </xsl:variable>
+    <!-- Join the filtered list to be nicely cvs formatted
+         we don't want poor verince to have to parse too much-->
+    <xsl:variable name="joined_list">
+      <xsl:for-each select="str:split($tag_list, ',')">
+        <xsl:value-of select="."/>
+        <xsl:if test="position() != last()">
+          <xsl:text>,</xsl:text>
+        </xsl:if>
+      </xsl:for-each>
+    </xsl:variable>
     <children>
       <syncAttribute>
         <name>gsm_ism_control_name</name>
@@ -311,7 +338,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <syncAttribute>
         <name>gsm_ism_control_description</name>
         <value>
-          <xsl:value-of select="text"/>
+          <xsl:value-of select="$description"/>
         </value>
       </syncAttribute>
       <syncAttribute>
@@ -324,7 +351,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <xsl:otherwise>Unknown</xsl:otherwise>
           </xsl:choose>
           </value>
-      </syncAttribute>
+        </syncAttribute>
+        <xsl:if test="string-length($joined_list)">
+          <syncAttribute>
+            <name>gsm_ism_control_tag</name>
+            <value><xsl:value-of select="$joined_list"/></value>
+          </syncAttribute>
+        </xsl:if>
       <extId><xsl:value-of select="$task_id"/>-<xsl:value-of select="@id"/>-control</extId>
       <extObjectType>gsm_ism_control</extObjectType>
     </children>
@@ -582,6 +615,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
        <ns2:mapAttributeType intId="control_name" extId="gsm_ism_control_name"/>
        <ns2:mapAttributeType intId="gsm_ism_control_description" extId="gsm_ism_control_description"/>
        <ns2:mapAttributeType intId="gsm_ism_control_cpe" extId="gsm_ism_control_cpe"/>
+       <ns2:mapAttributeType intId="gsm_ism_control_tag" extId="gsm_ism_control_tag"/>
       </ns2:mapObjectType>
 
       <!-- Scenario / NVT -->
@@ -590,6 +624,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ns2:mapAttributeType intId="gsm_ism_scenario_description" extId="gsm_ism_scenario_description"/>
         <ns2:mapAttributeType intId="gsm_ism_scenario_cve" extId="gsm_ism_scenario_cve"/>
         <ns2:mapAttributeType intId="gsm_ism_scenario_level" extId="gsm_ism_scenario_level"/>
+        <ns2:mapAttributeType intId="gsm_ism_scenario_cvss" extId="gsm_ism_scenario_cvss"/>
       </ns2:mapObjectType>
 
       <!-- The Rest -->
