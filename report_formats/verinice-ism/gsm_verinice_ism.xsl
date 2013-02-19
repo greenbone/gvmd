@@ -342,25 +342,31 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <syncAttribute>
         <name>gsm_ism_scenario_name</name>
         <value>
-          <xsl:value-of select="./name"/>
+          <xsl:value-of select="name"/>
         </value>
       </syncAttribute>
       <syncAttribute>
         <name>gsm_ism_scenario_cve</name>
         <value>
-          <xsl:value-of select="nvt/cve"/>
+          <xsl:value-of select="cve"/>
         </value>
       </syncAttribute>
       <syncAttribute>
         <name>gsm_ism_scenario_level</name>
         <value>
-          <xsl:value-of select="threat"/>
+          <xsl:value-of select="../threat"/>
         </value>
       </syncAttribute>
       <syncAttribute>
         <name>gsm_ism_scenario_description</name>
         <value>
           <xsl:value-of select="/report/results/result[nvt/@oid = $cur_oid]/description/text()"/>
+        </value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_ism_scenario_cvss</name>
+        <value>
+          <xsl:value-of select="cvss_base"/>
         </value>
       </syncAttribute>
       <extId><xsl:value-of select="$task_id"/>-<xsl:value-of select="$cur_oid"/>-scenario</extId>

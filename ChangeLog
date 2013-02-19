@@ -1,3 +1,8 @@
+2013-02-19  Andre Heinecke <andre.heinecke@greenbone.net>
+
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl (scenario_details):
+	Add cvss and fix cve and threat values
+
 2013-02-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Run sqlite3 via SQLITE3 variable, to
