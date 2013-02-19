@@ -46021,6 +46021,8 @@ manage_empty_trashcan ()
   sql ("DELETE FROM alerts_trash;");
   sql ("DELETE FROM filters_trash;");
   sql ("DELETE FROM lsc_credentials_trash;");
+  sql ("DELETE FROM notes_trash;");
+  sql ("DELETE FROM overrides_trash;");
   sql ("DELETE FROM port_ranges_trash;");
   sql ("DELETE FROM port_lists_trash;");
   sql ("DELETE FROM schedules_trash;");
