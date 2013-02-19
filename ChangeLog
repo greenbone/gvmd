@@ -1,3 +1,10 @@
+2013-02-19  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (client_state_t): Add client states for cert and cert_ref
+	elements in create_report.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add cert
+	and cert_ref elements in create_report.
+
 2013-02-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_set_setting): Add Reports Filter setting.
