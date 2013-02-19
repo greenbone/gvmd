@@ -1,3 +1,9 @@
+2013-02-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Set the importing flag around
+	CREATE_REPORT, to read-over new elements in reports.
+
 2013-02-19  Andre Heinecke <andre.heinecke@greenbone.net>
 
 	* report_formats/verinice-ism/gsm_verinice_ism.xsl (control_details):

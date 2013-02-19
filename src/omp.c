@@ -6865,6 +6865,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
 
+            omp_parser->importing = 1;
+
             append_attribute (attribute_names, attribute_values,
                               "type", &create_report_data->type);
 
@@ -14225,6 +14227,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
 
+          omp_parser->importing = 0;
           create_report_data_reset (create_report_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
