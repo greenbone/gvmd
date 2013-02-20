@@ -1,3 +1,18 @@
+2013-02-20  Werner Koch  <wk@gnupg.org>
+
+	Check password policy.
+
+	* src/openvasmd.c: Include openvas/base/pwpolicy.h.
+	(main): Add option --disable-password-policy.
+
+	* src/manage_sql.c: Include openvas/base/pwpolicy.h.
+	(manage_set_setting): Call openvas_validate_password and add new
+	arg R_ERRDESC.
+	* src/manage.h: Update prototype for this.
+	* src/omp.c (make_xml_error_syntax): New.
+	(omp_xml_handle_end_element) <CLIENT_MODIFY_SETTING>: Send back an
+	error string for an invalid password.
+
 2013-02-20  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	* tools/openvas-certdata-sync.in: Enable rsync and add --refresh option.

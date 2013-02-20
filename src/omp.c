@@ -4463,6 +4463,33 @@ internal_error_send_to_client (GError** error)
  " status_text=\"" text "\"/>"
 
 /**
+ * @brief Expand to XML for a STATUS_ERROR_SYNTAX response.
+ *
+ * This is a variant of the \ref XML_ERROR_SYNTAX macro to allow for a
+ * runtime defined syntax_text attribute value.
+ *
+ * @param  tag   Name of the command generating the response.
+ * @param text   Value for the status_text attribute of the response.
+ *               The function takes care of proper quoting.
+ *
+ * @return A malloced XML string.  The caller must use g_free to
+ *         release it.
+ */
+static char *
+make_xml_error_syntax (const char *tag, const char *text)
+{
+  char *textbuf;
+  char *ret;
+
+  textbuf = g_markup_escape_text (text, -1);
+  ret = g_strdup_printf ("<%s_response status=\"" STATUS_ERROR_SYNTAX "\""
+                         " status_text=\"%s\"/>", tag, textbuf);
+  g_free (textbuf);
+  return ret;
+}
+
+
+/**
  * @brief Expand to XML for a STATUS_ERROR_ACCESS response.
  *
  * @param  tag  Name of the command generating the response.
@@ -12231,6 +12258,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_SETTING:
         {
+          gchar *errdesc = NULL;
+
           if (((modify_setting_data->name == NULL)
                && (modify_setting_data->setting_id == NULL))
               || (modify_setting_data->value == NULL))
@@ -12240,7 +12269,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 " and a VALUE"));
           else switch (manage_set_setting (modify_setting_data->setting_id,
                                            modify_setting_data->name,
-                                           modify_setting_data->value))
+                                           modify_setting_data->value,
+                                           &errdesc))
             {
               case 0:
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_setting"));
@@ -12255,11 +12285,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("modify_setting",
                                     "Value validation failed"));
                 break;
+              case -1:
+                if (errdesc)
+                  {
+                    char *buf = make_xml_error_syntax ("modify_setting",
+                                                       errdesc);
+                    SEND_TO_CLIENT_OR_FAIL (buf);
+                    g_free (buf);
+                    break;
+                  }
+                /* Fall through.  */
               default:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("modify_setting"));
                 break;
             }
+          g_free (errdesc);
         }
         modify_setting_data_reset (modify_setting_data);
         set_client_state (CLIENT_AUTHENTIC);

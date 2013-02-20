@@ -107,6 +107,7 @@
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_server.h>
 #include <openvas/base/pidfile.h>
+#include <openvas/base/pwpolicy.h>
 
 #include "logf.h"
 #include "manage.h"
@@ -1091,6 +1092,7 @@ main (int argc, char** argv)
   static gboolean encrypt_all_credentials = FALSE;
   static gboolean decrypt_all_credentials = FALSE;
   static gboolean create_cred_enc_key = FALSE;
+  static gboolean disable_password_policy = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean rebuild_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
@@ -1112,6 +1114,9 @@ main (int argc, char** argv)
         { "disable-encrypted-credentials", '\0', 0, G_OPTION_ARG_NONE,
           &disable_encrypted_credentials,
           "Do not encrypt or decrypt credentials.", NULL },
+        {"disable-password-policy", '\0', 0, G_OPTION_ARG_NONE,
+         &disable_password_policy, "Do not restrict passwords to the policy.",
+         NULL},
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
@@ -1149,7 +1154,7 @@ main (int argc, char** argv)
     {
       printf ("OpenVAS Manager %s\n", OPENVASMD_VERSION);
       printf ("Manager DB revision %i\n", manage_db_supported_version ());
-      printf ("Copyright (C) 2010-2012 Greenbone Networks GmbH\n");
+      printf ("Copyright (C) 2010-2013 Greenbone Networks GmbH\n");
       printf ("License GPLv2+: GNU GPL version 2 or later\n");
       printf
         ("This is free software: you are free to change and redistribute it.\n"
@@ -1298,6 +1303,9 @@ main (int argc, char** argv)
     }
 
   /* Complete option processing. */
+
+  if (disable_password_policy)
+    openvas_disable_password_policy ();
 
   if (scanner_address_string == NULL)
     scanner_address_string = OPENVASSD_ADDRESS;

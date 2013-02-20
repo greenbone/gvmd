@@ -2689,7 +2689,7 @@ int
 setting_value_int (const char *, int *);
 
 int
-manage_set_setting (const gchar *, const gchar *, const gchar *);
+manage_set_setting (const gchar *, const gchar *, const gchar *, gchar **);
 
 
 /* Wizards. */

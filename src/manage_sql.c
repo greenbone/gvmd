@@ -61,6 +61,7 @@
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_uuid.h>
 #include <openvas/misc/resource_request.h>
+#include <openvas/base/pwpolicy.h>
 #include <openvas/omp/xml.h>
 
 #ifdef S_SPLINT_S
@@ -46401,15 +46402,21 @@ setting_value_int (const char *uuid, int *value)
  * @param[in]  uuid      UUID of setting.
  * @param[in]  name      Setting name.  For Timezone and Password.
  * @param[in]  value_64  New setting value, base64 encoded.
+ * @param[out] r_errdesc If not NULL the address of a variable to receive
+ *                       a malloced string with the error description.  Will
+ *                       always be set to NULL on success.
  *
  * @return 0 success, 1 failed to find setting, 2 syntax error in value, -1 on
  *         error.
  */
 int
 manage_set_setting (const gchar *uuid, const gchar *name,
-                    const gchar *value_64)
+                    const gchar *value_64, gchar **r_errdesc)
 {
   char *filter_name;
+
+  if (r_errdesc)
+    *r_errdesc = NULL;
 
   assert (current_credentials.uuid);
 
@@ -46436,6 +46443,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
     {
       gsize value_size;
       gchar *value;
+      gchar *errstr;
 
       assert (current_credentials.username);
 
@@ -46445,6 +46453,17 @@ manage_set_setting (const gchar *uuid, const gchar *name,
         {
           value = g_strdup ("");
           value_size = 0;
+        }
+
+      if ((errstr = openvas_validate_password (value,
+                                               current_credentials.username)))
+        {
+          g_warning ("Insufficent password: %s", errstr);
+          if (r_errdesc)
+            *r_errdesc = errstr;
+          else
+            g_free (errstr);
+          return -1;
         }
       return openvas_user_modify (current_credentials.username, value,
                                   NULL, NULL, 0, OPENVAS_USERS_DIR, NULL);
