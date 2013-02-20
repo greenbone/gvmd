@@ -1,5 +1,12 @@
 2013-02-20  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
+	* tools/openvas-scapdata-sync.in (): Add command line option --refresh
+	to update database without downloading feed data.
+	(do_help): Add text for new --refresh option.
+	(do_refresh): New function.
+
+2013-02-20  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
 	* tools/openvas-scapdata-sync.in: Remove / disable http feed download.
 	(do_help): Remove text for --wget and --curl.
 	(CMD_WGET, CMD_CURL): Remove

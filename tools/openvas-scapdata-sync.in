@@ -95,6 +95,7 @@ fi
 do_help () {
   echo "$0: Sync SCAP data using different protocols"
   echo " --rsync		sync with rsync (default)"
+  echo " --refresh		update database without downloading feed data"
   echo " --check		just checksum check"
   echo "OpenVAS administrator functions:"
   echo " --selftest	perform self-test"
@@ -195,6 +196,11 @@ do_sync () {
     echo "[i] Will use rsync"
     do_rsync
   fi
+}
+
+do_refresh () {
+  echo "[i] Refreshing database without feed sync."
+  update_sec_db
 }
 
 reinit () {
@@ -351,6 +357,10 @@ if [ -n "$1" ]; then
         ;;
       --curl)
         do_curl
+        exit 0
+        ;;
+      --refresh)
+        do_refresh
         exit 0
         ;;
       --check)
