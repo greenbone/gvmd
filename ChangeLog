@@ -1,5 +1,14 @@
 2013-02-20  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
+	* tools/openvas-certdata-sync.in: Enable rsync and add --refresh option.
+	(do_help): Add text for --refresh.
+	(do_rsync): Enable previously commented out rsync code, remove now
+	obsolete warning and add $RSYNC_DELETE.
+	(do_refresh): New function.
+	(): Add case for --refresh.
+
+2013-02-20  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
 	* tools/openvas-scapdata-sync.in (do_refresh): Move to prevent possible
 	problems with shells not finding update_sec_db.
 

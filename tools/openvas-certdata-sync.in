@@ -89,6 +89,7 @@ fi
 do_help () {
   echo "$0: Sync CERT advisory data"
   echo "OpenVAS administrator functions:"
+  echo " --refresh      refresh database without downloading feed data"
   echo " --selftest     perform self-test"
   echo " --identify     display information"
   echo " --version      display version"
@@ -131,20 +132,18 @@ chk_system_tools () {
 }
 
 do_rsync () {
-  echo "[w] CERT sync only works on local files in this version!"
-
-#  if [ -z "$CMD_RSYNC" ]; then
-#    echo "[w] rsync not found!"
-#  else
-#    echo "[i] Using rsync: $CMD_RSYNC"
-#    echo "[i] Configured CERT data rsync feed: $OV_CERT_RSYNC_FEED"
+  if [ -z "$CMD_RSYNC" ]; then
+    echo "[w] rsync not found!"
+  else
+    echo "[i] Using rsync: $CMD_RSYNC"
+    echo "[i] Configured CERT data rsync feed: $OV_CERT_RSYNC_FEED"
     mkdir -p "$CERT_DIR"
-#    eval "$CMD_RSYNC -ltvrP \"$OV_CERT_RSYNC_FEED\" \"$CERT_DIR\""
-#    if [ $? -ne 0 ] ; then
-#      echo "Error: rsync failed. Your CERT data might be broken now."
-#      exit 1
-#    fi
-#  fi
+    eval "$CMD_RSYNC -ltvrP $RSYNC_DELETE \"$OV_CERT_RSYNC_FEED\" \"$CERT_DIR\""
+    if [ $? -ne 0 ] ; then
+      echo "Error: rsync failed. Your CERT data might be broken now."
+      exit 1
+    fi
+  fi
 }
 
 do_self_test () {
@@ -244,11 +243,20 @@ update_sec_db () {
 
 }
 
+do_refresh () {
+  echo "[i] Refreshing database without feed sync."
+  update_sec_db
+}
+
 if [ -n "$1" ]; then
   while test $# -gt 0; do
     case "$1" in
       --help)
         do_help
+        exit 0
+        ;;
+      --refresh)
+        do_refresh
         exit 0
         ;;
       --check)
