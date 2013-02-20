@@ -1,3 +1,14 @@
+2013-02-20  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	Add private subdirectory functionality in OpenVAS sync scripts.
+
+	* tools/openvas-certdata-sync.in (PRIVATE_SUBDIR, RSYNC_DELETE): New.
+	(do_help): Add line for PRIVATE_SUBDIR as environment variable.
+
+	* tools/openvas-scapdata-sync.in (PRIVATE_SUBDIR): New.
+	(RSYNC_DELETE): Add --exclude for private subdirectory.
+	(do_help): Add line for PRIVATE_SUBDIR as environment variable.
+
 2013-02-20  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Move "-Werror" flag to the "Debug" build type.

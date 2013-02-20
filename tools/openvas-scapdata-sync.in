@@ -40,8 +40,14 @@ if [ -z "$SCAP_DIR" ]; then
 fi
 SEC_DB="$SCAP_DIR/scap.db"
 
+# private directory
+if [ -z "$PRIVATE_SUBDIR" ]
+then
+  PRIVATE_SUBDIR="private"
+fi
+
 # delete options for rsync
-RSYNC_DELETE="--delete --exclude \"/scap.db\""
+RSYNC_DELETE="--delete --exclude \"/scap.db\" --exclude \"$PRIVATE_SUBDIR/\""
 
 # Script and feed information which will be made available to user through
 # command line options and automated tools.
@@ -105,6 +111,7 @@ do_help () {
   echo "OV_RSYNC_FEED	URL of rsync feed"
   echo "OV_HTTP_FEED	URL of http feed"
   echo "TMPDIR		temporary directory used to download the files"
+  echo "PRIVATE_SUBDIR  subdirectory to exclude from deletion by rsync"
   echo "Note that you can use standard ones as well (e.g. http_proxy) for wget/curl"
   echo ""
   exit 0

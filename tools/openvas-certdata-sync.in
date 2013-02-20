@@ -39,6 +39,15 @@ if [ -z "$CERT_DIR" ]; then
 fi
 CERT_DB="$CERT_DIR/cert.db"
 
+# private directory
+if [ -z "$PRIVATE_SUBDIR" ]
+then
+  PRIVATE_SUBDIR="private"
+fi
+
+# delete options for rsync
+RSYNC_DELETE="--delete --exclude \"/cert.db\" --exclude \"$PRIVATE_SUBDIR/\""
+
 # Script and feed information which will be made available to user through
 # command line options and automated tools.
 SCRIPT_NAME="openvas-certdata-sync"
@@ -90,6 +99,7 @@ do_help () {
   echo "CERT_DIR             where to place CERT advisories"
   echo "OV_CERT_RSYNC_FEED   URL of rsync feed"
   echo "TMPDIR               temporary directory used to download the files"
+  echo "PRIVATE_SUBDIR       subdirectory to exclude from deletion by rsync"
   echo ""
   exit 0
 }
