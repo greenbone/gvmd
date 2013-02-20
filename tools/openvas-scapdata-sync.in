@@ -198,11 +198,6 @@ do_sync () {
   fi
 }
 
-do_refresh () {
-  echo "[i] Refreshing database without feed sync."
-  update_sec_db
-}
-
 reinit () {
   echo "[i] Major change in internal SCAP data structures."
   echo "[i] Reinitialization of database necessary."
@@ -338,6 +333,11 @@ update_sec_db () {
   fi
 
   $SQLITE $SEC_DB "update meta set value ='`date +%s`' where name = 'last_update';"
+}
+
+do_refresh () {
+  echo "[i] Refreshing database without feed sync."
+  update_sec_db
 }
 
 if [ -n "$1" ]; then

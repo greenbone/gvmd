@@ -1,5 +1,10 @@
 2013-02-20  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
+	* tools/openvas-scapdata-sync.in (do_refresh): Move to prevent possible
+	problems with shells not finding update_sec_db.
+
+2013-02-20  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
 	* tools/openvas-scapdata-sync.in (): Add command line option --refresh
 	to update database without downloading feed data.
 	(do_help): Add text for new --refresh option.
