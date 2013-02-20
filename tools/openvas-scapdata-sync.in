@@ -95,8 +95,6 @@ fi
 do_help () {
   echo "$0: Sync SCAP data using different protocols"
   echo " --rsync		sync with rsync (default)"
-  echo " --wget		sync with wget"
-  echo " --curl		sync with curl"
   echo " --check		just checksum check"
   echo "OpenVAS administrator functions:"
   echo " --selftest	perform self-test"
@@ -118,8 +116,6 @@ do_help () {
 }
 
 CMD_RSYNC=`which rsync`
-CMD_WGET=`which wget`
-CMD_CURL=`which curl`
 CMD_SQLITE=`which sqlite3`
 SQLITE="sqlite3 -noheader"
 TMP_SCAP="$SYNC_TMP_DIR/openvas-feed-`date +%F`-$$.tar.bz2"
@@ -131,20 +127,13 @@ chk_system_tools () {
     echo "[w] Warning: RSYNC not found";
   fi
 
-  if [ -z "$CMD_WGET" ]; then
-    echo "[w] Warning: wget not found";
-  fi
-
-  if [ -z "$CMD_CURL" ]; then
-    echo "[w] Warning: curl not found";
-  fi
-
   if [ -z "$CMD_SQLITE" ]; then
     echo "[e] Error: sqlite3 not found (required)";
     exit 1
   fi
 
-  if [ -z "$CMD_RSYNC" -a -z "$CMD_WGET" -a -z "$CMD_CURL" ]; then
+#  if [ -z "$CMD_RSYNC" -a -z "$CMD_WGET" -a -z "$CMD_CURL" ]; then
+  if [ -z "$CMD_RSYNC" ]; then
     SELFTEST_FAIL=1
   fi
 
@@ -167,35 +156,13 @@ do_rsync () {
 }
 
 do_wget () {
-  if [ -z "$CMD_WGET" ]; then
-    echo "[w] GNU wget not found!"
-  else
-    echo "[i] Using GNU wget: $CMD_WGET"
-    echo "[i] Configured SCAP http feed: $OV_HTTP_FEED"
-    echo "[i] Downloading to: $TMP_SCAP"
-    mkdir -p "$SCAP_DIR" \
-    && wget "$OV_HTTP_FEED" -O $TMP_SCAP \
-    && cd "$SCAP_DIR" \
-    && tar xvjf $TMP_SCAP \
-    && rm -f $TMP_SCAP \
-    && echo "[i] Download complete"
-  fi
+  echo "[w] Download of SCAP data via HTTP is currently not supported!"
+  exit 1
 }
 
 do_curl () {
-  if [ -z "$CMD_CURL" ]; then
-    echo "[w] curl not found!"
-  else
-    echo "[i] Using curl: $CMD_CURL"
-    echo "[i] Configured SCAP http feed: $OV_HTTP_FEED"
-    echo "[i] Downloading to: $TMP_SCAP"
-    mkdir -p "$SCAP_DIR" \
-    && curl "$OV_HTTP_FEED" -o $TMP_SCAP \
-    && cd "$SCAP_DIR" \
-    && tar xvjf $TMP_SCAP \
-    && rm -f $TMP_SCAP \
-    && echo "[i] Download complete"
-  fi
+  echo "[w] Download of SCAP data via HTTP is currently not supported!"
+  exit 1
 }
 
 do_self_test () {
@@ -222,20 +189,8 @@ show_intro () {
 
 do_sync () {
   if [ -z "$CMD_RSYNC" ] ; then
-    if [ -z "$CMD_WGET" ]; then
-      echo "[w] GNU wget not found!"
-      if [ -z "$CMD_CURL" ]; then
-        echo "[w] curl not found!"
-        echo -n "[e] no utility available in PATH environment variable to download plugins"
-        exit 1
-      else
-        echo "[i] Will use curl"
-        do_curl
-      fi
-    else
-      echo "[i] Will use wget"
-      do_wget
-    fi
+    echo -n "[e] no utility available in PATH environment variable to download plugins"
+    exit 1
   else
     echo "[i] Will use rsync"
     do_rsync

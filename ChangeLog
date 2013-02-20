@@ -1,5 +1,14 @@
 2013-02-20  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
+	* tools/openvas-scapdata-sync.in: Remove / disable http feed download.
+	(do_help): Remove text for --wget and --curl.
+	(CMD_WGET, CMD_CURL): Remove
+	(chk_system_tools): Remove wget and curl checks
+	(do_wget, do_curl): Change to exit with warning.
+	(do_sync): Change to only try rsync.
+
+2013-02-20  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
 	Add private subdirectory functionality in OpenVAS sync scripts.
 
 	* tools/openvas-certdata-sync.in (PRIVATE_SUBDIR, RSYNC_DELETE): New.
