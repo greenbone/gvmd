@@ -209,9 +209,9 @@ for line in `list_oval_files_sortable | sort`
 }
 
 list_oval_files_sortable () {
-for ovalfile in `find $SCAP_DIR/oval/ -name "*.xml" -type f`
+for ovalfile in `find "$SCAP_DIR/oval/" -name "*.xml" -type f`
   do
-    echo `xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile | sed -e 's/T.*//' | tr -d "-"`$ovalfile
+    echo `xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`"$ovalfile"
   done
 }
 
@@ -293,14 +293,14 @@ update_scap_db() {
   fi
 
   log_write " Updating OVAL data"
-  xmlcount=$(find $SCAP_DIR/oval/ -name "*.xml" -type f 2> /dev/null | wc -l)
+  xmlcount=$(find "$SCAP_DIR/oval/" -name "*.xml" -type f 2> /dev/null | wc -l)
   if [ $xmlcount -ne 0 ]
   then
     for ovalfile in `list_oval_files_sorted`
     do
-      if [ `stat -c "%Y" $ovalfile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+      if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
       then
-        oval_timestamp=`xsltproc $SCAP_RES_DIR/oval_timestamp.xsl $ovalfile | sed -e 's/T.*//' | tr -d "-"`
+        oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`
 
         OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
         if [ -z "$OVAL_REFDATE" ]
@@ -312,7 +312,7 @@ update_scap_db() {
         then
           log_write " Updating $ovalfile"
 
-          xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" $SCAP_RES_DIR/oval_update.xsl $ovalfile | \
+          xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
           $SQLITE3 $SCAP_DB
         else
           log_write " Skipping $ovalfile, file has older timestamp than latest OVAL definition in database (this is not an error)."
