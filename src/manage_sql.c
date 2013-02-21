@@ -46458,7 +46458,8 @@ manage_set_setting (const gchar *uuid, const gchar *name,
       if ((errstr = openvas_validate_password (value,
                                                current_credentials.username)))
         {
-          g_warning ("Insufficent password: %s", errstr);
+          g_warning ("new password for '%s' rejected: %s",
+                     current_credentials.username, errstr);
           if (r_errdesc)
             *r_errdesc = errstr;
           else
