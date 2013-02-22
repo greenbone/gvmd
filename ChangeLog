@@ -11,7 +11,7 @@
 	function.
 	(check_db_version): Migrate to version 9 from version 8.
 
-	* tools/scap_db_init (afp_idx): Remove. Replaced by afp_cve_idx and
+	* tools/scap_db_init.sql (afp_idx): Remove. Replaced by afp_cve_idx and
 	afp_cpe_idx.
 	(afp_cve_idx): New index on affected_products (cve).
 	(afp_cpe_idx): New index on affected_products (cpe).
