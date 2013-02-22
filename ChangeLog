@@ -1,3 +1,21 @@
+2013-02-22  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	Replace index on affected_products (cve, cpe) by two separate ones for
+	each column to speed up queries on that table slowing down updates.
+
+	* tools/greenbone-scapdata-sync (VERSION): Update.
+	(db_migrate_9): New database migration funcion.
+	(check_db_version): Migrate to version 9 from version 8.
+
+	* tools/openvas-scapdata-sync.in (db_migrate_9): New database migration
+	function.
+	(check_db_version): Migrate to version 9 from version 8.
+
+	* tools/scap_db_init (afp_idx): Remove. Replaced by afp_cve_idx and
+	afp_cpe_idx.
+	(afp_cve_idx): New index on affected_products (cve).
+	(afp_cpe_idx): New index on affected_products (cpe).
+
 2013-02-22  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Preparing the openvas-manager 4.0+beta5 release.

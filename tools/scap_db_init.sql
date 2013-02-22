@@ -37,7 +37,7 @@ DROP TABLE IF EXISTS ovaldefs;
 
 /* create new tables and indices */
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "8");
+INSERT INTO meta (name, value) VALUES ("database_version", "9");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
 CREATE TABLE cves (
@@ -82,7 +82,8 @@ CREATE TABLE affected_products (
   FOREIGN KEY(cve) REFERENCES cves(id),
   FOREIGN KEY(cpe) REFERENCES cpes(id)
 );
-CREATE INDEX afp_idx ON affected_products (cve,cpe);
+CREATE INDEX afp_cpe_idx ON affected_products (cpe);
+CREATE INDEX afp_cve_idx ON affected_products (cve);
 
 CREATE TABLE ovaldefs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

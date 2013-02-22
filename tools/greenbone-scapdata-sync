@@ -26,7 +26,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20130206
+VERSION=20130222
 RESTRICTED=1
 
 # SETTINGS
@@ -187,6 +187,15 @@ reinit () {
   $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
 }
 
+db_migrate_9 () {
+  log_write "Migrating database to version 9."
+  sqlite3 "$SCAP_DB" "DROP INDEX IF EXISTS afp_idx;
+                      CREATE INDEX afp_cpe_idx ON affected_products (cpe);
+                      CREATE INDEX afp_cve_idx ON affected_products (cve);
+                      UPDATE meta SET value = '9' WHERE name = 'database_version';"
+  log_write "Migration done."
+}
+
 check_db_version () {
   DB_VERSION=`$SQLITE3 $SCAP_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
@@ -198,6 +207,7 @@ check_db_version () {
     5) reinit;;
     6) reinit;;
     7) reinit;;
+    8) db_migrate_9;;
   esac
 }
 
