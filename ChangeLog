@@ -1,3 +1,11 @@
+2013-02-22  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 4.0+beta5 release.
+
+	* CHANGES: Updated.
+
+	* INSTALL: Updated openvas-libraries dependency.
+
 2013-02-21  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	* tools/greenbone-scapdata-sync, tools/openvas-scapdata-sync.in

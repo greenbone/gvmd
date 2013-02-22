@@ -14,7 +14,7 @@ Prerequisites:
 * glib-2.0 >= 2.16
 * gnutls >= 2.2
 * libuuid (from e2fsprogs)
-* openvas-libraries >= 6.0+beta2
+* openvas-libraries >= 6.0+beta5
 * sqlite3
 * pkg-config
 

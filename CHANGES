@@ -1,3 +1,41 @@
+openvas-manager 4.0+beta5 (2013-02-22)
+
+This is the fifth beta version of the upcoming 4.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release adds support for accessing OVAL and DFN-CERT SecInfo data,
+for encrypting credentials and for checking user passwords against a
+policy. It also features improvements to the report performance,
+Master-Slave communication and numerous smaller improvements.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Andre Heinecke, Werner Koch, Matthew Mundell, Timo
+Pollmeier, Jan-Oliver Wagner and Michael Wiegand.
+
+Main changes since 4.0+beta4:
+* New: Support for accessing OVAL SecInfo data.
+* New: Support for accessing DFN-CERT SecInfo data.
+* New: The risk factor of an NVT is now calculated from the CVSS score.
+* New: Support for encrypted credentials has been added.
+* New: Support for checking user passwords against a policy has been
+  added.
+* Extended: New object management now supports for schedules, tasks,
+* slaves, report formats, port lists and scan configs.
+* Improved: Override management now supports Powerfilter and Trashcan.
+* Improved: Additional parameters in SCAP synchronization script.
+* Improved: Handling of the SCAP database.
+* Improved: Classification in the report format plugin for ISMS tool "verinice".
+* Improved: Performance with large database.
+* Improved: Handling of client timeouts during very long operations.
+* Improved: Faster report format plugins LaTeX, TXT, HTML and PDF.
+* Improved: Master-Slave communication.
+* Improved: IPv6 address validation.
+* Some functionality has been moved to the openvas-libraries module.
+  This means that openvas-manager 4.0.+beta5 requires openvas-libraries
+  6.0+beta5 or newer to build.
+
+
 openvas-manager 4.0+beta4 (2012-11-05)
 
 This is the fourth beta version of the upcoming 4.0 release of the OpenVAS
