@@ -10122,6 +10122,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
             /* An asset report. */
 
+            get = &get_reports_data->get;
+            if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
+              {
+                g_free (get->filt_id);
+                get->filt_id = g_strdup("0");
+              }
+
             if (get_reports_data->alert_id == NULL)
               SEND_TO_CLIENT_OR_FAIL
                ("<get_reports_response"
@@ -10200,6 +10207,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             int ret, pos;
 
             /* A prognostic report. */
+
+            get = &get_reports_data->get;
+            if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
+              {
+                g_free (get->filt_id);
+                get->filt_id = g_strdup("0");
+              }
 
             if (get_reports_data->alert_id == NULL)
               SEND_TO_CLIENT_OR_FAIL
