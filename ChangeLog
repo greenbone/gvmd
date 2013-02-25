@@ -1,3 +1,8 @@
+2013-02-25  Andre Heinecke <aheinecke@intevation.de>
+
+	* report_formats/verinice-ism/create_report_import:
+	Update version number to 1.1.7
+
 2013-02-22  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
