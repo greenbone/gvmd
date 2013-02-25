@@ -39,6 +39,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <!-- <xsl:key name="host_results" match="*/result" use="host" /> -->
   <!-- <xsl:key name="host_ports" match="*/result[port]" use="../host" /> -->
 
+<xsl:template name="prognostic-description">
+  <xsl:param name="string"/>
+
+  <xsl:for-each select="str:split($string, '&#10;&#10;')">
+    <p>
+      <xsl:for-each select="str:split(., '&#10;')">
+        <xsl:value-of select="."/>
+        <br/>
+      </xsl:for-each>
+    </p>
+  </xsl:for-each>
+</xsl:template>
+
 <!-- This is called within a PRE. -->
 <xsl:template name="wrap">
   <xsl:param name="string"/>
@@ -358,11 +371,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <div><xsl:value-of select="cve/@id"/></div>
         </div>
         <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
-          <pre>
-            <xsl:call-template name="wrap">
-              <xsl:with-param name="string" select="description"/>
-            </xsl:call-template>
-          </pre>
+          <xsl:call-template name="prognostic-description">
+            <xsl:with-param name="string" select="description"/>
+          </xsl:call-template>
         </div>
       </xsl:when>
       <xsl:otherwise>

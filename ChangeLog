@@ -1,5 +1,12 @@
 2013-02-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/HTML/HTML.xsl (prognostic-description): New
+	template.
+	(result [issue]): For prognostic results, produce the description with
+	prognostic-description so that the browser does paragraph wrapping.
+
+2013-02-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In GET_REPORTS add checks
 	for -2 filt_id to the asset and prognostic cases.
 
