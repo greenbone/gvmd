@@ -1837,12 +1837,6 @@ int
 acknowledge_bye ();
 
 int
-acknowledge_md5sum ();
-
-int
-acknowledge_md5sum_sums ();
-
-int
 acknowledge_md5sum_info ();
 
 int

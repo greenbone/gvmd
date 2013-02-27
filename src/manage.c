@@ -3031,32 +3031,6 @@ acknowledge_bye ()
 }
 
 /**
- * @brief Acknowledge the scanner PLUGINS_MD5 message.
- *
- * @return 0 on success, -1 if out of space in scanner output buffer.
- */
-int
-acknowledge_md5sum ()
-{
-  if (send_to_server ("CLIENT <|> GO ON <|> CLIENT\n"))
-    return -1;
-  return 0;
-}
-
-/**
- * @brief Acknowledge scanner PLUGINS_MD5 message, requesting plugin md5sums.
- *
- * @return 0 on success, -1 if out of space in scanner output buffer.
- */
-int
-acknowledge_md5sum_sums ()
-{
-  if (send_to_server ("CLIENT <|> SEND_PLUGINS_MD5 <|> CLIENT\n"))
-    return -1;
-  return 0;
-}
-
-/**
  * @brief Acknowledge scanner PLUGINS_MD5 message, requesting all plugin info.
  *
  * @return 0 on success, -1 if out of space in scanner output buffer.

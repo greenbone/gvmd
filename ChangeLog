@@ -1,3 +1,11 @@
+2013-02-27  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Remove unused functions.
+
+	* src/manage.c (acknowledge_md5sum, acknowledge_md5sum_sums): Removed.
+
+	* src/manage.h: Removed proto accordingly.
+
 2013-02-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (slave_setup, delete_slave_task): Delete slave resources
