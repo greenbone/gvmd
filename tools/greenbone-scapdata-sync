@@ -198,10 +198,24 @@ reinit () {
 
 db_migrate_9 () {
   log_write "Migrating database to version 9."
-  sqlite3 "$SCAP_DB" "DROP INDEX IF EXISTS afp_idx;
-                      CREATE INDEX afp_cpe_idx ON affected_products (cpe);
-                      CREATE INDEX afp_cve_idx ON affected_products (cve);
-                      UPDATE meta SET value = '9' WHERE name = 'database_version';"
+  $SQLITE3 "$SCAP_DB" "DROP INDEX IF EXISTS afp_idx;
+                       CREATE INDEX afp_cpe_idx ON affected_products (cpe);
+                       CREATE INDEX afp_cve_idx ON affected_products (cve);
+                       UPDATE meta SET value = '9' WHERE name = 'database_version';"
+  log_write "Migration done."
+}
+
+db_migrate_10 () {
+  log_write "Migrating database to version 10."
+  $SQLITE3 "$SEC_DB"  "DROP TRIGGER affected_delete;
+                      CREATE TRIGGER affected_delete AFTER DELETE ON affected_products
+                      BEGIN
+                        UPDATE cpes set max_cvss = 0.0 WHERE id = old.cpe;
+                        UPDATE cpes set cve_refs = cve_refs -1 WHERE id = old.cpe;
+                      END;
+                      UPDATE meta
+                        SET value = '10'
+                        WHERE name = 'database_version';"
   log_write "Migration done."
 }
 
@@ -216,7 +230,9 @@ check_db_version () {
     5) reinit;;
     6) reinit;;
     7) reinit;;
-    8) db_migrate_9;;
+    8) db_migrate_9
+       db_migrate_10;;
+    9) db_migrate_10;;
   esac
 }
 
@@ -292,9 +308,11 @@ update_scap_db() {
     echo " Warning: No CPE dictionary found in $SCAP_DIR"
   fi
 
+  updated_cves=0
   xmlcount=$(ls $SCAP_DIR/nvdcve-2.0-*.xml 2> /dev/null | wc -l)
   if [ $xmlcount -ne 0 ]
   then
+    updated_cves=1
     for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
     do
       if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
@@ -309,6 +327,34 @@ update_scap_db() {
     done
   else
     log_write " Warning: No CVEs found in $SCAP_DIR."
+  fi
+
+  if [ 0 -ne $updated_cves ]
+  then
+    log_write "Updating CVSS scores and CVE counts"
+    $SQLITE3 "$SCAP_DB"  "
+    PRAGMA recursive_triggers = OFF;
+    UPDATE cpes
+      SET max_cvss =
+          (
+            SELECT coalesce(max(cvss), 0.0)
+            FROM cves
+            WHERE id IN
+              (
+                SELECT cve
+                FROM affected_products
+                WHERE cpe=cpes.id
+              )
+          ),
+        cve_refs =
+          (
+            SELECT count(cve)
+            FROM affected_products
+            WHERE cpe=cpes.id
+          );
+    "
+  else
+    log_write "No CVEs updated, skipping CVSS and CVE recount."
   fi
 
   log_write " Updating OVAL data"

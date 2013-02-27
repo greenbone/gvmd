@@ -7,9 +7,10 @@ database.
 
 Authors:
 Henri Doreau <henri.doreau@greenbone.net>
+Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 Copyright:
-Copyright (C) 2011 Greenbone Networks GmbH
+Copyright (C) 2011, 2013 Greenbone Networks GmbH
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 2,
@@ -83,13 +84,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   INSERT OR REPLACE INTO affected_products (cve,cpe) VALUES ((SELECT id FROM cves WHERE uuid='<xsl:value-of select="../../@id"/>'),
   (SELECT id FROM cpes WHERE name='<xsl:value-of select="$decoded_cpe"/>'));
-
-  UPDATE cpes SET cve_refs = cve_refs + 1 where name='<xsl:value-of select="$decoded_cpe"/>';
-  <xsl:if test="../../vuln:cvss/cvss:base_metrics/cvss:score/text()">
-    UPDATE cpes SET max_cvss = max(max_cvss,
-    <xsl:value-of select="number(../../vuln:cvss/cvss:base_metrics/cvss:score/text())"/>)
-    where name='<xsl:value-of select="$decoded_cpe"/>';
-  </xsl:if>
   </xsl:for-each>
 </xsl:template>
 

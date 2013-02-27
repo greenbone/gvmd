@@ -1,5 +1,28 @@
 2013-02-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	SCAP sync now updates max_cvss and most cve_refs of CPEs after updating
+	CVEs to reduce number of time consuming queries for updating max_cvss.
+
+	* tools/cve_update.xsl: Remove update of cve_refs and max_cvss.
+	Columns are now updated by recount in sync shell scripts.
+
+	* tools/greenbone-scapdata-sync (db_migrate_9): Change "sqlite3" to
+	"$SQLITE3".
+	(db_migrate_10, check_db_version): Add migration to version 10.
+	(update_scap_db): Add recalculation of max_cvss and cve_refs after CVEs
+	update.
+
+	* tools/openvas-scapdata-sync.in (db_migrate_10, check_db_version):
+	Add migration to version 10.
+	(update_scap_db): Add recalculation of max_cvss and cve_refs after CVEs
+	update.
+
+	* tools/scap_db_init.sql (meta): Change version to 10.
+	(affected_delete): Remove update of max_cvss. Replaced by recount in
+	sync scripts.
+
+2013-02-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* tools/greenbone-certdata-sync, tools/greenbone-scapdata-sync:
 	Update version number.
 

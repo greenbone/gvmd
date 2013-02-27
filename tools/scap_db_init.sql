@@ -37,7 +37,7 @@ DROP TABLE IF EXISTS ovaldefs;
 
 /* create new tables and indices */
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "9");
+INSERT INTO meta (name, value) VALUES ("database_version", "10");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
 CREATE TABLE cves (
@@ -110,9 +110,6 @@ END;
 
 CREATE TRIGGER affected_delete AFTER DELETE ON affected_products
 BEGIN
-  UPDATE cpes set max_cvss =
-  (SELECT max(cvss) FROM cves WHERE id in
-    (SELECT cve FROM affected_products WHERE cpe = old.cpe)
-  ) WHERE id = old.cpe;
+  UPDATE cpes set max_cvss = 0.0 WHERE id = old.cpe;
   UPDATE cpes set cve_refs = cve_refs -1 WHERE id = old.cpe;
 END;

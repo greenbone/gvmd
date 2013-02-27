@@ -9,7 +9,7 @@
 # Timo Pollmeier <timo.pollmeier@greenbone.net>
 #
 # Copyright:
-# Copyright (C) 2011-2012 Greenbone Networks GmbH
+# Copyright (C) 2011-2013 Greenbone Networks GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2,
@@ -214,6 +214,20 @@ db_migrate_9 () {
   echo "[i] Migration done."
 }
 
+db_migrate_10 () {
+  echo "[i] Migrating database to version 10."
+  sqlite3 "$SEC_DB"  "DROP TRIGGER affected_delete;
+                      CREATE TRIGGER affected_delete AFTER DELETE ON affected_products
+                      BEGIN
+                        UPDATE cpes set max_cvss = 0.0 WHERE id = old.cpe;
+                        UPDATE cpes set cve_refs = cve_refs -1 WHERE id = old.cpe;
+                      END;
+                      UPDATE meta
+                        SET value = '10'
+                        WHERE name = 'database_version';"
+  echo "[i] Migration done."
+}
+
 check_db_version () {
   DB_VERSION=`$SQLITE $SEC_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
@@ -225,7 +239,9 @@ check_db_version () {
     5) reinit;;
     6) reinit;;
     7) reinit;;
-    8) db_migrate_9;;
+    8) db_migrate_9
+       db_migrate_10;;
+    9) db_migrate_10;;
   esac
 }
 
@@ -292,6 +308,7 @@ update_sec_db () {
   fi
 
   xmlcount=$(ls $SCAP_DIR/nvdcve-2.0-*.xml 2> /dev/null | wc -l)
+  updated_cves=0
   if [ $xmlcount -ne 0 ]
   then
     for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
@@ -302,12 +319,41 @@ update_sec_db () {
         xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
           xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
           $SQLITE $SEC_DB
+        updated_cves=1
       else
         echo "[i] Skipping $cvefile, file is older than last revision"
       fi
     done
   else 
     echo "[w] No CVEs found in $SCAP_DIR"
+  fi
+
+  if [ 0 -ne $updated_cves ]
+  then
+    echo "[i] Updating CVSS scores and CVE counts"
+    sqlite3 "$SEC_DB"  "
+    PRAGMA recursive_triggers = OFF;
+    UPDATE cpes
+      SET max_cvss =
+          (
+            SELECT coalesce(max(cvss), 0.0)
+            FROM cves
+            WHERE id IN
+              (
+                SELECT cve
+                FROM affected_products
+                WHERE cpe=cpes.id
+              )
+          ),
+        cve_refs =
+          (
+            SELECT count(cve)
+            FROM affected_products
+            WHERE cpe=cpes.id
+          );
+    "
+  else
+    echo "[i] No CVEs updated, skipping CVSS and CVE recount."
   fi
 
   echo "[i] Updating OVAL data"
