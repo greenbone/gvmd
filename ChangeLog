@@ -1,3 +1,8 @@
+2013-02-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (slave_setup, delete_slave_task): Delete slave resources
+	(task, config, target, credentials) instead of moving them to trashcan.
+
 2013-02-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (convert_to_newlines): Rewrite conversion routine to be more

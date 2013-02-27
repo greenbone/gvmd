@@ -1506,6 +1506,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   gchar *slave_target_uuid, *slave_config_uuid;
   gchar *slave_task_uuid, *slave_report_uuid;
 
+  omp_delete_opts_t del_opts = omp_delete_opts_ultimate_defaults;
+
   if (last_stopped_report)
     {
       /* Resume the task on the slave. */
@@ -2105,12 +2107,12 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
   current_scanner_task = (task_t) 0;
 
-  omp_delete_task (session, slave_task_uuid);
+  omp_delete_task_ext (session, slave_task_uuid, del_opts);
   set_report_slave_task_uuid (current_report, "");
-  omp_delete_config (session, slave_config_uuid);
-  omp_delete_target (session, slave_target_uuid);
-  omp_delete_lsc_credential (session, slave_ssh_credential_uuid);
-  omp_delete_lsc_credential (session, slave_smb_credential_uuid);
+  omp_delete_config_ext (session, slave_config_uuid, del_opts);
+  omp_delete_target_ext (session, slave_target_uuid, del_opts);
+  omp_delete_lsc_credential_ext (session, slave_ssh_credential_uuid, del_opts);
+  omp_delete_lsc_credential_ext (session, slave_smb_credential_uuid, del_opts);
  succeed_stopped:
   free (slave_task_uuid);
   free (slave_report_uuid);
@@ -2125,20 +2127,20 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   omp_stop_task (session, slave_task_uuid);
   free (slave_report_uuid);
  fail_task:
-  omp_delete_task (session, slave_task_uuid);
+  omp_delete_task_ext (session, slave_task_uuid, del_opts);
   set_report_slave_task_uuid (current_report, "");
   free (slave_task_uuid);
  fail_config:
-  omp_delete_config (session, slave_config_uuid);
+  omp_delete_config_ext (session, slave_config_uuid, del_opts);
   free (slave_config_uuid);
  fail_target:
-  omp_delete_target (session, slave_target_uuid);
+  omp_delete_target_ext (session, slave_target_uuid, del_opts);
   free (slave_target_uuid);
  fail_credential:
-  omp_delete_lsc_credential (session, slave_smb_credential_uuid);
+  omp_delete_lsc_credential_ext (session, slave_smb_credential_uuid, del_opts);
   free (slave_smb_credential_uuid);
  fail_ssh_credential:
-  omp_delete_lsc_credential (session, slave_ssh_credential_uuid);
+  omp_delete_lsc_credential_ext (session, slave_ssh_credential_uuid, del_opts);
   free (slave_ssh_credential_uuid);
  fail:
   openvas_server_close (*socket, *session);
@@ -4335,6 +4337,8 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
   const char *slave_config_uuid, *slave_target_uuid;
   const char *slave_ssh_credential_uuid, *slave_smb_credential_uuid;
 
+  omp_delete_opts_t del_opts = omp_delete_opts_ultimate_defaults;
+
   assert (slave);
 
   /* Connect to the slave. */
@@ -4403,15 +4407,17 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
   /* Remove the slave resources. */
 
   omp_stop_task (&session, slave_task_uuid);
-  if (omp_delete_task (&session, slave_task_uuid))
+  if (omp_delete_task_ext (&session, slave_task_uuid, del_opts))
     goto fail_config;
-  if (omp_delete_config (&session, slave_config_uuid))
+  if (omp_delete_config_ext (&session, slave_config_uuid, del_opts))
     goto fail_target;
-  if (omp_delete_target (&session, slave_target_uuid))
+  if (omp_delete_target_ext (&session, slave_target_uuid, del_opts))
     goto fail_credential;
-  if (omp_delete_lsc_credential (&session, slave_smb_credential_uuid))
+  if (omp_delete_lsc_credential_ext (&session, slave_smb_credential_uuid,
+                                     del_opts))
     goto fail;
-  if (omp_delete_lsc_credential (&session, slave_ssh_credential_uuid))
+  if (omp_delete_lsc_credential_ext (&session, slave_ssh_credential_uuid,
+                                     del_opts))
     goto fail;
 
   /* Cleanup. */
@@ -4422,12 +4428,12 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
   return 0;
 
  fail_config:
-  omp_delete_config (&session, slave_config_uuid);
+  omp_delete_config_ext (&session, slave_config_uuid, del_opts);
  fail_target:
-  omp_delete_target (&session, slave_target_uuid);
+  omp_delete_target_ext (&session, slave_target_uuid, del_opts);
  fail_credential:
-  omp_delete_lsc_credential (&session, slave_smb_credential_uuid);
-  omp_delete_lsc_credential (&session, slave_ssh_credential_uuid);
+  omp_delete_lsc_credential_ext (&session, slave_smb_credential_uuid, del_opts);
+  omp_delete_lsc_credential_ext (&session, slave_ssh_credential_uuid, del_opts);
  fail_free:
   free_entity (get_targets);
  fail_free_task:
