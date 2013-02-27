@@ -1,3 +1,8 @@
+2013-02-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* tools/greenbone-scapdata-sync:
+	Add PRIVATE_SUBDIR and private directory functionality to RSYNC_DELETE.
+
 2013-02-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Check return value for
