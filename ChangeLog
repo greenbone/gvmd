@@ -1,3 +1,8 @@
+2013-02-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (convert_to_newlines): Rewrite conversion routine to be more
+	efficient with cleaner code.
+
 2013-02-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	SCAP sync now updates max_cvss and most cve_refs of CPEs after updating

@@ -7778,50 +7778,29 @@ send_reports (task_t task, int apply_overrides,
 static gchar*
 convert_to_newlines (const char *text)
 {
-  /** @todo Do this better. */
+  char *nptr, *new;
 
-  gsize left = strlen (text);
-  gchar *new, *ch;
+  new = g_malloc (strlen (text) + 1);
+  nptr = new;
+  while (*text)
+    if (*text == '\\')
+      {
+         /* Convert "\\n" to '\n' */
+         if (*(text+1) == 'n')
+           {
+             text += 2;
+             *nptr++ = '\n';
+           }
+         /* Skip "\\r" */
+         else if (*(text+1) == 'r')
+           text += 2;
+         else
+           *nptr++ = *text++;
+      }
+    else
+      *nptr++ = *text++;
+  *nptr = '\0';
 
-  /* Allocate buffer of a safe length. */
-  {
-    new = g_strdup (text);
-  }
-
-  ch = new;
-  while (*ch)
-    {
-      if (*ch == '\\')
-        {
-          ch++;
-          switch (*ch)
-            {
-              case 'r':
-                {
-                  /* \r is flushed */
-                  memmove (ch - 1, ch + 1, left);
-                  left--;
-                  ch -= 2;
-                  break;
-                }
-              case 'n':
-                {
-                  /* \n becomes "\n" (one newline) */
-                  memmove (ch, ch + 1, left);
-                  left--;
-                  *(ch - 1) = '\n';
-                  ch--;
-                  break;
-                }
-              default:
-                {
-                  ch--;
-                  break;
-                }
-            }
-        }
-      ch++; left--;
-    }
   return new;
 }
 
