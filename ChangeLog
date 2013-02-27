@@ -1,5 +1,10 @@
 2013-02-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* tools/greenbone-certdata-sync: New script to sync CERT data using
+	the Greenbone feed.
+
+2013-02-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* tools/greenbone-scapdata-sync:
 	Add PRIVATE_SUBDIR and private directory functionality to RSYNC_DELETE.
 

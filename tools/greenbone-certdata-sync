@@ -1,0 +1,406 @@
+#!/bin/bash
+#
+# greenbone-certdata-sync
+# This script synchronizes an OpenVAS installation with the Greenbone CERT
+# data directory.
+#
+# Authors:
+# Timo Pollmeier <timo.pollmeier@greenbone.net>
+#
+# Copyright:
+# Copyright (C) 2011, 2012, 2013 Greenbone Networks GmbH
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2,
+# or, at your option, any later version as published by the Free
+# Software Foundation
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+VERSION=20130220
+RESTRICTED=1
+
+# SETTINGS
+# ========
+
+# Path prefix for installation location
+PREFIX=
+
+# PRIVATE_SUBDIR defines a subdirectory of the CERT data directory
+# where files not part of the feed or database will not be deleted by rsync.
+if [ -z "$PRIVATE_SUBDIR" ]
+then
+  PRIVATE_SUBDIR="private"
+fi
+
+# RSYNC_DELETE controls whether files which are not part of the repository will
+# be removed from the local directory after synchronization. The default value
+# for this setting is
+# "--delete --exclude \"/cert.db\" --exclude \"$PRIVATE_SUBDIR/\"",
+# which means that files which are not part of the feed, database or private
+# directory will be deleted.
+RSYNC_DELETE="--delete --exclude \"/cert.db\" --exclude \"$PRIVATE_SUBDIR/\""
+
+# PORT controls the outgoing TCP port for updates. If PAT/Port-Translation is
+# not used, this should be "24". For some application layer firewalls or gates
+# the value 22 (Standard SSH) is useful. Only change if you know what you are
+# doing.
+PORT=24
+
+# LOGDIR and LOGFILE specify the location of the greenbone-certdata-sync logfile.
+# The default value for LOGDIR is  "/var/log/", the default value for
+# LOGFILE is "greenbone-certdata-sync.log". Please make sure this script has
+# sufficient right to access the logfile.
+LOGDIR="$PREFIX/var/log/openvas/"
+LOGFILE="greenbone-certdata-sync.log"
+
+# If ENABLED is set to 0, the sync script will not perform a synchronization.
+ENABLED=1
+
+# If REFRESH_ONLY is set to 1, the sync script will only update the OpenVAS
+# Manager database. This can be controlled via the --refresh parameter.
+REFRESH_ONLY=0
+
+SQLITE3="sqlite3 -noheader"
+
+[ -r $PREFIX/etc/openvas/greenbone-certdata-sync.conf ] && . $PREFIX/etc/openvas/greenbone-certdata-sync.conf
+
+BASE_SYNC_DIR="$PREFIX/var/lib/openvas"
+CERT_DIR="$BASE_SYNC_DIR/cert-data"
+
+if [ -z "$PREFIX" ] ; then
+  CERT_RES_DIR="/usr/share/openvas/cert"
+else
+  CERT_RES_DIR="$PREFIX/share/openvas/cert"
+fi
+
+CERT_DB="$CERT_DIR/cert.db"
+
+ACCESSKEY="$PREFIX/etc/openvas/gsf-access-key"
+
+SCRIPT_NAME="greenbone-certdata-sync"
+
+TIMESTAMP="$CERT_DIR/timestamp"
+
+if [ -z "$FEED_NAME" ] ; then
+  FEED_NAME="Greenbone CERT Feed"
+fi
+
+if [ -z "$FEED_VENDOR" ] ; then
+  FEED_VENDOR="Greenbone Networks GmbH"
+fi
+
+if [ -z "$FEED_HOME" ] ; then
+  FEED_HOME="http://www.greenbone.net/solutions/gbn_feed.html"
+fi
+
+do_describe () {
+  echo "This script synchronizes a CERT collection with the '$FEED_NAME'."
+  echo "The '$FEED_NAME' is provided by '$FEED_VENDOR'."
+  echo "Online information about this feed: '$FEED_HOME'."
+}
+
+do_feedversion () {
+  if [ -r $TIMESTAMP ] ; then
+      echo `cat $TIMESTAMP`
+  fi
+}
+
+if [[ ! -w $LOGDIR ]]
+then
+  NOLOG=1
+  echo
+  echo "== greenbone-certdata-sync $VERSION ================================================"
+  echo "Warning: The logfile directory"
+  echo "  ($LOGDIR)"
+  echo "does not exist or is not writeable. Please make sure this directory exists and"
+  echo "is writable."
+  echo "Please be aware that logging is not possible during this script run!"
+  echo "==============================================================================="
+  echo
+fi
+
+log_write(){
+  if (( $NOLOG ))
+  then
+    echo "LOG: [`date -R`] $1"
+  else
+    echo "[`date -R`] $1" >> $LOGDIR$LOGFILE
+  fi
+}
+
+if [ $ENABLED -ne 1 ]
+then
+  log_write "CERT synchronization is disabled, exiting."
+  exit 0
+fi
+
+RSYNC=`command -v rsync`
+if [[ -z $RSYNC ]]
+then
+  echo
+  echo "== greenbone-certdata-sync $VERSION ================================================"
+  echo "Could not find tools necessary for synchronization."
+  echo "Please make sure that the tool"
+  echo "  rsync"
+  echo "is installed and available in your PATH variable."
+  echo "If you are still not able to continue, please contact Greenbone Support at"
+  echo "support@greenbone.net and include the error messages displayed above (if any)"
+  echo "and your customer ID."
+  echo "==============================================================================="
+  echo
+  log_write "rsync not found, aborting synchronization."
+  logger "CERT synchronization: rsync not found, aborting synchronization."
+  exit 1
+fi
+
+SQLITE=`command -v sqlite3`
+if [[ -z $SQLITE ]]
+then
+  echo
+  echo "== greenbone-certdata-sync $VERSION ================================================"
+  echo "Could not find tools necessary for synchronization."
+  echo "Please make sure that the tool"
+  echo "  sqlite3"
+  echo "is installed and available in your PATH variable."
+  echo "If you are still not able to continue, please contact Greenbone Support at"
+  echo "support@greenbone.net and include the error messages displayed above (if any)"
+  echo "and your customer ID."
+  echo "==============================================================================="
+  echo
+  log_write "sqlite3 not found, aborting synchronization."
+  logger "CERT synchronization: sqlite3 not found, aborting synchronization."
+  exit 1
+fi
+
+if [ -z $BASE_SYNC_DIR ]
+then
+  echo
+  echo "BASE_SYNC_DIR ($BASE_SYNC_DIR) not found!"
+  echo
+  exit 1
+fi
+
+reinit () {
+  log_write " Reinitialization of the database necessary."
+  rm -f $CERT_DB
+  $SQLITE3 $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
+}
+
+check_db_version () {
+  DB_VERSION=`$SQLITE3 $CERT_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
+  case "$DB_VERSION" in
+    0) reinit;;
+    1) reinit;;
+    2) reinit;;
+  esac
+}
+
+do_help () {
+  echo "$0: Sync CERT data"
+  echo " --describe	display current feed info"
+  echo " --feedversion	display version of this feed"
+  echo " --help		display this help"
+  echo " --identify	display information"
+  echo " --refresh	update database without downloading new state"
+  echo " --selftest	perform self-test"
+  echo " --version	display version"
+  echo ""
+  exit 0
+}
+
+update_cert_db() {
+  if [ ! -f $CERT_DB ]
+  then
+    log_write "Initializing CERT database."
+    $SQLITE3 $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
+    DB_LASTUPDATE=0
+  else
+    check_db_version
+    DFN_REFDATE=`$SQLITE $CERT_DB "SELECT date(max(modification_time),'unixepoch') from dfn_cert_advs;" | tr -d "-"`
+  fi
+
+  DB_LASTUPDATE=`$SQLITE3 $CERT_DB "select value from meta where name = 'last_update';"`
+
+  if [ -z "$DFN_REFDATE" ]
+  then
+    DFN_REFDATE=0
+  fi
+
+  if [ -z "$DB_LASTUPDATE" ]
+  then
+    # Happens when initial sync was aborted
+    log_write "Error: Inconsistent data. Resetting CERT database."
+    rm -f $CERT_DB
+    $SQLITE3 $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
+    DFN_REFDATE=0
+    DB_LASTUPDATE=0
+  fi
+
+  xmlcount=$(ls $CERT_DIR/dfn-cert-*.xml 2> /dev/null | wc -l)
+  if [ $xmlcount -ne 0 ]
+  then
+    for certfile in `ls $CERT_DIR/dfn-cert-*.xml`
+    do
+      if [ `stat -c "%Y" $certfile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+      then
+        log_write "Updating $certfile"
+        xsltproc --stringparam refdate "$DFN_REFDATE" $CERT_RES_DIR/dfn_cert_update.xsl $certfile | $SQLITE3 $CERT_DB
+      else
+        log_write "Skipping $certfile, file is older than last revision"
+      fi
+    done
+  else
+    log_write "Warning: No DFN-CERT advisories found in $CERT_DIR"
+  fi
+
+  $SQLITE3 $CERT_DB "UPDATE meta SET value ='`date +%s`' WHERE name = 'last_update';"
+}
+
+sync_certdata(){
+  if [[ -e $ACCESSKEY ]]
+  then
+    echo "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone CERT data Repository ..."
+    notsynced=1
+    retried=0
+
+    if [ $REFRESH_ONLY -eq 1 ]
+    then
+      notsynced=0
+    fi
+
+    mkdir -p "$BASE_SYNC_DIR"
+    read feeduser < $ACCESSKEY
+    read -d "@" custid < $ACCESSKEY
+    if [[ -z $feeduser || -z $custid ]]
+    then
+      echo "== greenbone-certdata-sync $VERSION ================================================"
+      echo "Synchronization was not possible because credential information could not"
+      echo "be read from your access key."
+      echo "Please make sure that the key located at"
+      echo "  $sysconfdir/openvas/gsf-access-key"
+      echo "is intact and in a valid format."
+      echo "If you are still not able to continue, please contact Greenbone Support at"
+      echo "support@greenbone.net and include the error messages displayed above (if any)"
+      echo "and your customer ID."
+      echo "==============================================================================="
+      log_write "Could not determine credentials, aborting synchronization."
+      logger "CERT synchronization: Could not determine credentials, aborting synchronization."
+      exit 1
+    fi
+    while (($notsynced))
+    do
+      # --protocol=29 is a workaround for a known bug in rsync 3.0.3
+      if [[ -e /admin/ezcli.state ]]
+      then
+        gsmproxy=`grep proxy_feed /admin/ezcli.state | sed -e 's/^.*\/\///' -e 's/:/ /' -e 's/[\t ]*$//'`
+        PORT=`grep ^syncport /admin/ezcli.state | sed -e "s/^syncport\t//g"`
+      fi
+      if [[ $gsmproxy == "proxy_feed" || -z $gsmproxy ]]
+      then
+        rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
+      else
+        if [ -r /admin/proxyauth -a `stat -c %s /admin/proxyauth` != 0 ]; then
+          rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -o \"ProxyCommand corkscrew $gsmproxy %h %p /admin/proxyauth\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
+        else
+          rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -o \"ProxyCommand corkscrew $gsmproxy %h %p\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
+        fi
+      fi
+      if (( $? )) ; then
+        echo
+        echo "== greenbone-certdata-sync $VERSION ================================================"
+        echo "The synchronization with the repository failed. This may indicate a serious issue"
+        echo "with either your infrastructure or the repository itself."
+        echo "Your local CERT data repository may be damaged now. Please resolve any connection"
+        echo "issues and try again."
+        echo "If you suspect an issue with the Greenbone CERT data Repository, please contact"
+        echo "Greenbone support at support@greenbone.net and include the error messages"
+        echo "displayed above (if any) and your customer ID ($custid)."
+        echo "==============================================================================="
+        echo
+        log_write "rsync failed, aborting synchronization."
+        logger "CERT synchronization:  failed, aborting synchronization."
+        exit 1
+      fi
+      notsynced=0
+    done
+    echo "Synchronization with the Greenbone CERT data Repository successful."
+    log_write "Synchronization with the Greenbone CERT data Repository successful."
+    logger "CERT synchronization: Synchronization with the Greenbone CERT data Repository successful."
+    echo
+
+    update_cert_db
+  else
+    echo
+    echo "== greenbone-certdata-sync $VERSION ================================================"
+    echo "Could not find gsf-access-key."
+    echo
+    echo "This access key can be obtained from Greenbone Networks GmbH,"
+    echo "see http://greenbone.net/solutions/gbn_feed.html for details."
+    echo
+    echo "Please make sure the personal access key you obtained from"
+    echo "Greenbone is placed in the following directory:"
+    echo $ACCESSKEY
+    echo "Please make also sure that the filename is gsf-access-key."
+    echo "If you are still not able to synchronize, please contact Greenbone Support at"
+    echo "support@greenbone.net and include the error messages displayed above (if any)"
+    echo "and your customer ID."
+    echo "==============================================================================="
+    echo
+    log_write "gsf-access-key not found, aborting synchronization."
+    logger "CERT synchronization: gsf-access-key not found, aborting synchronization."
+    exit 1
+  fi
+}
+
+do_self_test () {
+  if [ -z "$SQLITE" ]; then
+    echo "[e] Error: sqlite3 not found (required)";
+    SELFTEST_FAIL=1
+  fi
+}
+
+while test $# -gt 0; do
+ case "$1" in
+        --version)
+          echo $VERSION
+          exit 0
+           ;;
+        --identify)
+          echo "CERTSYNC|$SCRIPT_NAME|$VERSION|$FEED_NAME|$RESTRICTED|CERTSYNC"
+          exit 0
+          ;;
+        --describe)
+          do_describe
+          exit 0
+          ;;
+        --feedversion)
+          do_feedversion
+          exit 0
+          ;;
+        --help)
+          do_help
+          exit 0
+          ;;
+        --refresh)
+          REFRESH_ONLY=1
+          ;;
+        --selftest)
+          SELFTEST_FAIL=0
+          do_self_test
+          exit $SELFTEST_FAIL
+          ;;
+ esac
+ shift
+done
+
+sync_certdata
+
+exit 0
