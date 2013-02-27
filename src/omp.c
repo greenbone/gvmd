@@ -18664,9 +18664,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               GString *result;
 
               /* Info's are currently always read only */
-              // TODO Check return like SEND_GET_COMMON does.
-              send_get_common ("info", &get_info_data->get, &info,
-                               write_to_client, write_to_client_data, 0, 0);
+              if (send_get_common ("info", &get_info_data->get, &info,
+                               write_to_client, write_to_client_data, 0, 0))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
 
               SENDF_TO_CLIENT_OR_FAIL ("<update_time>%s</update_time>",
                                        manage_scap_update_time ());

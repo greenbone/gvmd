@@ -1,3 +1,8 @@
+2013-02-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Check return value for
+	send_get_common() call in In CLIENT_GET_INFO case.
+
 2013-02-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl (prognostic-description): New
