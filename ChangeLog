@@ -1,3 +1,9 @@
+2013-02-28  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Post branch version bump.
+
+	* CMakeLists.txt: Updated version number.
+
 2013-02-27  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Remove unused functions.
