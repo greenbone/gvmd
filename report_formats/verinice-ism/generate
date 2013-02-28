@@ -36,15 +36,13 @@ SCAN_NAME=$(echo $SCAN_NAME | sed 's/ /_/g')
 mkdir -p  $TMP/files
 FILENAME=${SCAN_NAME}_${DATE}.xml
 FILELOC=$TMP/files/${FILENAME}
-cp "$XMLFILE" "$FILELOC"
 HTML_FILELOC=$(echo $FILELOC | sed 's/\.xml/\.html/')
 HTML_FILE=$(echo $FILENAME | sed 's/\.xml/\.html/')
 
 
 
 xsltproc ./html.xsl $1 > "$HTML_FILELOC"
-xsltproc --stringparam filename "$FILENAME" \
-         --stringparam htmlfilename "$HTML_FILE" \
+xsltproc --stringparam htmlfilename "$HTML_FILE" \
          --stringparam filedate `stat -c %Z $XMLFILE` ./gsm_verinice_ism.xsl $1 | \
         sed -e "s/\ xmlns=\"\"//g" | \
         xmlstarlet fo >  $TMP/verinice.xml && \
