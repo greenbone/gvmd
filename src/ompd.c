@@ -403,8 +403,7 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
 
           if (ompd_nvt_cache_mode)
             /* Request OTP 1.0 only in cache mode, because in this case Scanner
-             * sends extra info that we use, like plugins MD5 sum and
-             * preferences. */
+             * sends extra info that we use, like plugins preferences. */
             string = "< OTP/1.0 >\n";
           else
             /* Normal mode, request OTP 1.1, to skip extra info, for faster

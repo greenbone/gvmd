@@ -1,3 +1,12 @@
+2013-02-28  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/otp.c (process_otp_scanner_input): Rename OTP message
+	"PLUGINS_MD5" to "NVT_INFO".
+	Rename internal SCANNER_PLUGINS_MD5 to SCANNER_NVT_INFO.
+
+	* src/ompd.c (write_to_scanner): Update comment as MD5 does not play a
+	role anymore.
+
 2013-02-28  Andre Heinecke <andre.heinecke@greenbone.net>
 
 	* report_formats/verinice-ism/gsm_verinice_ism.xsl,

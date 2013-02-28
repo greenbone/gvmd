@@ -675,7 +675,7 @@ typedef enum
   SCANNER_NOTE_HOST,
   SCANNER_NOTE_NUMBER,
   SCANNER_NOTE_OID,
-  SCANNER_PLUGINS_MD5,
+  SCANNER_NVT_INFO,
   SCANNER_PLUGIN_LIST_BUGTRAQ_ID,
   SCANNER_PLUGIN_LIST_CATEGORY,
   SCANNER_PLUGIN_LIST_COPYRIGHT,
@@ -2162,10 +2162,10 @@ process_otp_scanner_input ()
                     }
                   break;
                 }
-              case SCANNER_PLUGINS_MD5:
+              case SCANNER_NVT_INFO:
                 {
                   char* md5 = g_strdup (field);
-                  tracef ("   scanner got plugins_md5: %s\n", md5);
+                  tracef ("   scanner got nvti_info: %s\n", md5);
                   if (scanner.plugins_md5) g_free (scanner.plugins_md5);
                   scanner.plugins_md5 = md5;
                   set_scanner_state (SCANNER_DONE);
@@ -2322,8 +2322,8 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_LOG_HOST);
                 else if (strcasecmp ("NOTE", field) == 0)
                   set_scanner_state (SCANNER_NOTE_HOST);
-                else if (strcasecmp ("PLUGINS_MD5", field) == 0)
-                  set_scanner_state (SCANNER_PLUGINS_MD5);
+                else if (strcasecmp ("NVT_INFO", field) == 0)
+                  set_scanner_state (SCANNER_NVT_INFO);
                 else if (strcasecmp ("PLUGIN_LIST", field) == 0)
                   {
                     set_scanner_state (SCANNER_PLUGIN_LIST_OID);
