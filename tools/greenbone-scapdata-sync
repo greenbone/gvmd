@@ -207,15 +207,15 @@ db_migrate_9 () {
 
 db_migrate_10 () {
   log_write "Migrating database to version 10."
-  $SQLITE3 "$SEC_DB"  "DROP TRIGGER affected_delete;
-                      CREATE TRIGGER affected_delete AFTER DELETE ON affected_products
-                      BEGIN
-                        UPDATE cpes set max_cvss = 0.0 WHERE id = old.cpe;
-                        UPDATE cpes set cve_refs = cve_refs -1 WHERE id = old.cpe;
-                      END;
-                      UPDATE meta
-                        SET value = '10'
-                        WHERE name = 'database_version';"
+  $SQLITE3 "$SCAP_DB" "DROP TRIGGER affected_delete;
+                       CREATE TRIGGER affected_delete AFTER DELETE ON affected_products
+                       BEGIN
+                         UPDATE cpes set max_cvss = 0.0 WHERE id = old.cpe;
+                         UPDATE cpes set cve_refs = cve_refs -1 WHERE id = old.cpe;
+                       END;
+                       UPDATE meta
+                         SET value = '10'
+                         WHERE name = 'database_version';"
   log_write "Migration done."
 }
 
