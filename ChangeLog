@@ -1,3 +1,9 @@
+2013-03-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* tools/greenbone-certdata-sync, tools/greenbone-scapdata-sync: Remove
+	bashisms not supported by dash like [[ ... ]] and (( ... )) and change
+	from #!/bin/bash to #!/bin/sh.
+
 2013-03-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/greenbone-certdata-sync (RSYNC_DELETE): Remove quotes causing
