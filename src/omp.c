@@ -393,6 +393,7 @@ static command_t omp_commands[]
     {"CREATE_CONFIG", "Create a config."},
     {"CREATE_ALERT", "Create an alert."},
     {"CREATE_FILTER", "Create a filter."},
+    {"CREATE_GROUP", "Create a group."},
     {"CREATE_LSC_CREDENTIAL", "Create a local security check credential."},
     {"CREATE_NOTE", "Create a note."},
     {"CREATE_OVERRIDE", "Create an override."},
@@ -408,6 +409,7 @@ static command_t omp_commands[]
     {"DELETE_CONFIG", "Delete a config."},
     {"DELETE_ALERT", "Delete an alert."},
     {"DELETE_FILTER", "Delete a filter."},
+    {"DELETE_GROUP", "Delete a group."},
     {"DELETE_LSC_CREDENTIAL", "Delete a local security check credential."},
     {"DELETE_NOTE", "Delete a note."},
     {"DELETE_OVERRIDE", "Delete an override."},
@@ -425,6 +427,7 @@ static command_t omp_commands[]
     {"GET_DEPENDENCIES", "Get dependencies for all available NVTs."},
     {"GET_ALERTS", "Get all alerts."},
     {"GET_FILTERS", "Get all filters."},
+    {"GET_GROUPS", "Get all groups."},
     {"GET_LSC_CREDENTIALS", "Get all local security check credentials."},
     {"GET_NOTES", "Get all notes."},
     {"GET_NVTS", "Get one or all available NVTs."},
@@ -928,6 +931,33 @@ create_filter_data_reset (create_filter_data_t *data)
   free (data->type);
 
   memset (data, 0, sizeof (create_filter_data_t));
+}
+
+/**
+ * @brief Command data for the create_group command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *copy;                    ///< UUID of resource to copy.
+  char *name;                    ///< Name of new group.
+  char *users;                   ///< Users belonging to new group.
+} create_group_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+create_group_data_reset (create_group_data_t *data)
+{
+  free (data->comment);
+  free (data->copy);
+  free (data->name);
+  free (data->users);
+
+  memset (data, 0, sizeof (create_group_data_t));
 }
 
 /**
@@ -1568,6 +1598,28 @@ delete_filter_data_reset (delete_filter_data_t *data)
 }
 
 /**
+ * @brief Command data for the delete_group command.
+ */
+typedef struct
+{
+  char *group_id;   ///< ID of group to delete.
+  int ultimate;      ///< Boolean.  Whether to remove entirely or to trashcan.
+} delete_group_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+delete_group_data_reset (delete_group_data_t *data)
+{
+  free (data->group_id);
+
+  memset (data, 0, sizeof (delete_group_data_t));
+}
+
+/**
  * @brief Command data for the delete_lsc_credential command.
  */
 typedef struct
@@ -1979,6 +2031,26 @@ get_filters_data_reset (get_filters_data_t *data)
 {
   get_data_reset (&data->get);
   memset (data, 0, sizeof (get_filters_data_t));
+}
+
+/**
+ * @brief Command data for the get_groups command.
+ */
+typedef struct
+{
+  get_data_t get;    ///< Get args.
+} get_groups_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_groups_data_reset (get_groups_data_t *data)
+{
+  get_data_reset (&data->get);
+  memset (data, 0, sizeof (get_groups_data_t));
 }
 
 /**
@@ -3273,6 +3345,7 @@ typedef union
   create_config_data_t create_config;                 ///< create_config
   create_alert_data_t create_alert;                   ///< create_alert
   create_filter_data_t create_filter;                 ///< create_filter
+  create_group_data_t create_group;                   ///< create_group
   create_lsc_credential_data_t create_lsc_credential; ///< create_lsc_credential
   create_note_data_t create_note;                     ///< create_note
   create_override_data_t create_override;             ///< create_override
@@ -3288,6 +3361,7 @@ typedef union
   delete_config_data_t delete_config;                 ///< delete_config
   delete_alert_data_t delete_alert;                   ///< delete_alert
   delete_filter_data_t delete_filter;                 ///< delete_filter
+  delete_group_data_t delete_group;                   ///< delete_group
   delete_lsc_credential_data_t delete_lsc_credential; ///< delete_lsc_credential
   delete_note_data_t delete_note;                     ///< delete_note
   delete_override_data_t delete_override;             ///< delete_override
@@ -3304,6 +3378,7 @@ typedef union
   get_dependencies_data_t get_dependencies;           ///< get_dependencies
   get_alerts_data_t get_alerts;                       ///< get_alerts
   get_filters_data_t get_filters;                     ///< get_filters
+  get_groups_data_t get_groups;                       ///< get_groups
   get_info_data_t get_info;                           ///< get_info
   get_lsc_credentials_data_t get_lsc_credentials;     ///< get_lsc_credentials
   get_notes_data_t get_notes;                         ///< get_notes
@@ -3389,6 +3464,12 @@ create_alert_data_t *create_alert_data
  */
 create_filter_data_t *create_filter_data
  = (create_filter_data_t*) &(command_data.create_filter);
+
+/**
+ * @brief Parser callback data for CREATE_GROUP.
+ */
+create_group_data_t *create_group_data
+ = (create_group_data_t*) &(command_data.create_group);
 
 /**
  * @brief Parser callback data for CREATE_LSC_CREDENTIAL.
@@ -3479,6 +3560,12 @@ delete_alert_data_t *delete_alert_data
  */
 delete_filter_data_t *delete_filter_data
  = (delete_filter_data_t*) &(command_data.delete_filter);
+
+/**
+ * @brief Parser callback data for DELETE_GROUP.
+ */
+delete_group_data_t *delete_group_data
+ = (delete_group_data_t*) &(command_data.delete_group);
 
 /**
  * @brief Parser callback data for DELETE_LSC_CREDENTIAL.
@@ -3575,6 +3662,12 @@ get_alerts_data_t *get_alerts_data
  */
 get_filters_data_t *get_filters_data
  = &(command_data.get_filters);
+
+/**
+ * @brief Parser callback data for GET_GROUPS.
+ */
+get_groups_data_t *get_groups_data
+ = &(command_data.get_groups);
 
 /**
  * @brief Parser callback data for GET_INFO.
@@ -3959,6 +4052,11 @@ typedef enum
   CLIENT_CREATE_FILTER_NAME_MAKE_UNIQUE,
   CLIENT_CREATE_FILTER_TERM,
   CLIENT_CREATE_FILTER_TYPE,
+  CLIENT_CREATE_GROUP,
+  CLIENT_CREATE_GROUP_COMMENT,
+  CLIENT_CREATE_GROUP_COPY,
+  CLIENT_CREATE_GROUP_NAME,
+  CLIENT_CREATE_GROUP_USERS,
   CLIENT_CREATE_LSC_CREDENTIAL,
   CLIENT_CREATE_LSC_CREDENTIAL_COPY,
   CLIENT_CREATE_LSC_CREDENTIAL_COMMENT,
@@ -4152,6 +4250,7 @@ typedef enum
   CLIENT_DELETE_CONFIG,
   CLIENT_DELETE_ALERT,
   CLIENT_DELETE_FILTER,
+  CLIENT_DELETE_GROUP,
   CLIENT_DELETE_LSC_CREDENTIAL,
   CLIENT_DELETE_NOTE,
   CLIENT_DELETE_OVERRIDE,
@@ -4169,6 +4268,7 @@ typedef enum
   CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_ALERTS,
   CLIENT_GET_FILTERS,
+  CLIENT_GET_GROUPS,
   CLIENT_GET_LSC_CREDENTIALS,
   CLIENT_GET_NOTES,
   CLIENT_GET_NVTS,
@@ -5051,6 +5151,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&create_filter_data->term, "");
             set_client_state (CLIENT_CREATE_FILTER);
           }
+        else if (strcasecmp ("CREATE_GROUP", element_name) == 0)
+          {
+            openvas_append_string (&create_group_data->users, "");
+            set_client_state (CLIENT_CREATE_GROUP);
+          }
         else if (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0)
           {
             openvas_append_string (&create_lsc_credential_data->comment, "");
@@ -5138,6 +5243,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               delete_filter_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_FILTER);
+          }
+        else if (strcasecmp ("DELETE_GROUP", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values, "group_id",
+                              &delete_group_data->group_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_group_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_group_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_GROUP);
           }
         else if (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0)
           {
@@ -5336,6 +5453,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               get_filters_data->alerts = 0;
             set_client_state (CLIENT_GET_FILTERS);
+          }
+        else if (strcasecmp ("GET_GROUPS", element_name) == 0)
+          {
+            get_data_parse_attributes (&get_groups_data->get, "group",
+                                       attribute_names,
+                                       attribute_values);
+            set_client_state (CLIENT_GET_GROUPS);
           }
         else if (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0)
           {
@@ -6708,6 +6832,20 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         if (strcasecmp ("MAKE_UNIQUE", element_name) == 0)
           set_client_state (CLIENT_CREATE_FILTER_NAME_MAKE_UNIQUE);
         ELSE_ERROR ("create_filter");
+
+      case CLIENT_CREATE_GROUP:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_GROUP_COMMENT);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_GROUP_COPY);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&create_group_data->name, "");
+            set_client_state (CLIENT_CREATE_GROUP_NAME);
+          }
+        else if (strcasecmp ("USERS", element_name) == 0)
+          set_client_state (CLIENT_CREATE_GROUP_USERS);
+        ELSE_ERROR ("create_group");
 
       case CLIENT_CREATE_LSC_CREDENTIAL:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -11277,6 +11415,59 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_DELETE_GROUP:
+        assert (strcasecmp ("DELETE_GROUP", element_name) == 0);
+        if (delete_group_data->group_id)
+          switch (delete_group (delete_group_data->group_id,
+                                 delete_group_data->ultimate))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_group"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group %s has been deleted",
+                       delete_group_data->group_id);
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_group",
+                                                          "Group is in use"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group %s could not be deleted",
+                       delete_group_data->group_id);
+                break;
+              case 2:
+                if (send_find_error_to_client ("delete_group",
+                                               "group",
+                                               delete_group_data->group_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group %s could not be deleted",
+                       delete_group_data->group_id);
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_group",
+                                    "Attempt to delete a predefined"
+                                    " group"));
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_group"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group %s could not be deleted",
+                       delete_group_data->group_id);
+            }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_group",
+                              "DELETE_GROUP requires a group_id attribute"));
+        delete_group_data_reset (delete_group_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_DELETE_LSC_CREDENTIAL:
         assert (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0);
         if (delete_lsc_credential_data->lsc_credential_id)
@@ -13408,6 +13599,140 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_FILTER, TYPE);
 
       CLOSE (CLIENT_CREATE_FILTER_NAME, MAKE_UNIQUE);
+
+      case CLIENT_CREATE_GROUP:
+        {
+          group_t new_group;
+
+          assert (strcasecmp ("CREATE_GROUP", element_name) == 0);
+          assert (create_group_data->users != NULL);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_group",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (create_group_data->copy)
+            switch (copy_group (create_group_data->name,
+                                create_group_data->comment,
+                                create_group_data->copy,
+                                &new_group))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = group_uuid (new_group);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_group"),
+                                             uuid);
+                    g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                           "Group %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_group",
+                                      "Group exists already"));
+                  g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                         "Group could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_group",
+                                                 "group",
+                                                 create_group_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                         "Group could not be created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_group",
+                                      "Permission denied"));
+                  g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                         "Group could not be created");
+                  break;
+                case 4:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_group",
+                                      "Syntax error in group name"));
+                  g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                         "Group could not be created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_group"));
+                  g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                         "Group could not be created");
+                  break;
+              }
+          else if (create_group_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_group",
+                                "CREATE_GROUP requires a NAME"));
+          else if (strlen (create_group_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_group",
+                                "CREATE_GROUP name must be at"
+                                " least one character long"));
+          else switch (create_group
+                        (create_group_data->name,
+                         create_group_data->comment,
+                         create_group_data->users,
+                         &new_group))
+            {
+              case 0:
+                {
+                  char *uuid = group_uuid (new_group);
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_group"),
+                                           uuid);
+                  g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                         "Group %s has been created", uuid);
+                  free (uuid);
+                  break;
+                }
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_group",
+                                    "Group exists already"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group could not be created");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_group",
+                                    "Type must be a valid OMP type"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group could not be created");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_group",
+                                    "Permission denied"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group could not be created");
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_group"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group could not be created");
+                break;
+            }
+
+          create_group_data_reset (create_group_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_CREATE_GROUP, COMMENT);
+      CLOSE (CLIENT_CREATE_GROUP, COPY);
+      CLOSE (CLIENT_CREATE_GROUP, NAME);
+      CLOSE (CLIENT_CREATE_GROUP, USERS);
 
       case CLIENT_CREATE_LSC_CREDENTIAL:
         {
@@ -18431,6 +18756,105 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
+      case CLIENT_GET_GROUPS:
+        {
+          iterator_t groups;
+          int count, filtered, ret, first;
+          get_data_t * get;
+
+          assert (strcasecmp ("GET_GROUPS", element_name) == 0);
+
+          get = &get_groups_data->get;
+          if ((!get->filter && !get->filt_id)
+              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+            {
+              char *user_filter = setting_filter ("Groups");
+
+              if (user_filter && strlen (user_filter))
+                {
+                  get->filt_id = user_filter;
+                  get->filter = filter_term (user_filter);
+                }
+              else
+                get->filt_id = g_strdup("0");
+            }
+
+          ret = init_group_iterator (&groups, &get_groups_data->get);
+          if (ret)
+            {
+              switch (ret)
+                {
+                  case 1:
+                    if (send_find_error_to_client ("get_groups",
+                                                   "group",
+                                                   get_groups_data->get.id,
+                                                   write_to_client,
+                                                   write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case 2:
+                    if (send_find_error_to_client
+                         ("get_groups",
+                          "group",
+                          get_groups_data->get.filt_id,
+                          write_to_client,
+                          write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("get_groups"));
+                    break;
+                }
+              get_groups_data_reset (get_groups_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          count = 0;
+          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+          SEND_GET_START ("group", &get_groups_data->get);
+          while (1)
+            {
+              gchar *users;
+
+              ret = get_next (&groups, get, &first, &count,
+                              init_group_iterator);
+              if (ret == 1)
+                break;
+              if (ret == -1)
+                {
+                  internal_error_send_to_client (error);
+                  return;
+                }
+
+              SEND_GET_COMMON (group, &get_groups_data->get, &groups);
+
+              users = group_users (get_iterator_resource (&groups));
+              SENDF_TO_CLIENT_OR_FAIL ("<users>%s</users>", users ? users : "");
+              g_free (users);
+
+              SEND_TO_CLIENT_OR_FAIL ("</group>");
+
+              count++;
+            }
+          cleanup_iterator (&groups);
+          filtered = get_groups_data->get.id
+                      ? 1
+                      : group_count (&get_groups_data->get);
+          SEND_GET_END ("group", &get_groups_data->get, count, filtered);
+
+          get_groups_data_reset (get_groups_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
       case CLIENT_GET_INFO:
         {
           iterator_t info;
@@ -20510,6 +20934,19 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_FILTER_TYPE,
               &create_filter_data->type);
+
+
+      APPEND (CLIENT_CREATE_GROUP_COMMENT,
+              &create_group_data->comment);
+
+      APPEND (CLIENT_CREATE_GROUP_COPY,
+              &create_group_data->copy);
+
+      APPEND (CLIENT_CREATE_GROUP_NAME,
+              &create_group_data->name);
+
+      APPEND (CLIENT_CREATE_GROUP_USERS,
+              &create_group_data->users);
 
 
       APPEND (CLIENT_CREATE_NOTE_ACTIVE,

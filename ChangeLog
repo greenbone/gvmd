@@ -1,3 +1,28 @@
+2013-03-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add basic user groups.
+
+	* src/manage_sql.c (create_tables): Create groups tables.
+	(find_group, copy_group, create_group, delete_group, group_uuid)
+	(group_users, group_writable, trash_group_writable, group_in_use)
+	(trash_group_in_use): New functions.
+	(GROUP_ITERATOR_FILTER_COLUMNS, GROUP_ITERATOR_COLUMNS): New defines.
+	(group_count, init_group_iterator): New functions.
+
+	* src/manage.h: Add headers accordingly.
+	(group_t): New type.
+
+	* src/omp.c (omp_commands): Add group commands.
+	(create_group_data_t, delete_group_data_t, get_groups_data_t): New
+	types.
+	(create_group_data_reset, delete_group_data_reset)
+	(get_groups_data_reset: New functions.
+	(command_data_t): Add group commands.
+	(create_group_data, delete_group_data, get_groups_data): New variables.
+	(client_state_t): Add group states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text_element): Handle group commands.
+
 2013-03-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/greenbone-scapdata-sync (db_migrate_10): Fix sqlite3 call using

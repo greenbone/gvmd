@@ -182,6 +182,7 @@ typedef long long int agent_t;
 typedef long long int config_t;
 typedef long long int alert_t;
 typedef long long int filter_t;
+typedef long long int group_t;
 typedef long long int slave_t;
 typedef long long int target_t;
 typedef long long int task_t;
@@ -2294,6 +2295,42 @@ slave_task_iterator_name (iterator_t*);
 
 const char*
 slave_task_iterator_uuid (iterator_t*);
+
+
+/* Groups. */
+
+int
+init_group_iterator (iterator_t *, const get_data_t *);
+
+int
+copy_group (const char *, const char *, const char *, group_t *);
+
+int
+create_group (const char *, const char *, const char *, group_t *);
+
+int
+delete_group (const char *, int);
+
+char*
+group_uuid (group_t);
+
+gchar *
+group_users (group_t);
+
+int
+trash_group_in_use (group_t);
+
+int
+group_in_use (group_t);
+
+int
+trash_group_writable (group_t);
+
+int
+group_writable (group_t);
+
+int
+group_count (const get_data_t*);
 
 
 /* Port lists. */

@@ -3558,6 +3558,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS alerts_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER, filter INTEGER, filter_location INTEGER, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS filters (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, type, term, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS filters_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, type, term, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS group_users (id INTEGER PRIMARY KEY, `group` INTEGER, user INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY, name UNIQUE, value);");
@@ -42821,6 +42823,466 @@ DEF_ACCESS (slave_task_iterator_name, 2);
  *         cleanup_iterator.
  */
 DEF_ACCESS (slave_task_iterator_uuid, 1);
+
+
+/* Groups. */
+
+/**
+ * @brief Find a group given a UUID.
+ *
+ * @param[in]   uuid   UUID of group.
+ * @param[out]  group  Group return, 0 if succesfully failed to find group.
+ *
+ * @return FALSE on success (including if failed to find group), TRUE on
+ *         error.
+ */
+gboolean
+find_group (const char* uuid, group_t* group)
+{
+  return find_resource ("group", uuid, group);
+}
+
+/**
+ * @brief Create a group from an existing group.
+ *
+ * @param[in]  name       Name of new group.  NULL to copy from existing.
+ * @param[in]  comment    Comment on new group.  NULL to copy from existing.
+ * @param[in]  group_id   UUID of existing group.
+ * @param[out] new_group  New group.
+ *
+ * @return 0 success, 1 group exists already, 2 failed to find existing
+ *         group, 99 permission denied, -1 error.
+ */
+int
+copy_group (const char *name, const char *comment, const char *group_id,
+            group_t *new_group_return)
+{
+  int ret;
+  group_t new_group;
+  gchar *quoted_group_id;
+
+  // TODO Wrap in transaction.
+
+  // FIX permission
+#if 0
+  if (user_may ("create_group") == 0)
+    return 99;
+#endif
+
+  ret = copy_resource ("group", name, comment, group_id, NULL, &new_group);
+  if (ret)
+    return ret;
+
+  quoted_group_id = sql_quote (group_id);
+  sql ("INSERT INTO group_users (`group`, user)"
+       " SELECT %llu, user FROM group_users"
+       " WHERE `group` = (SELECT ROWID FROM groups WHERE uuid = '%s');",
+       new_group,
+       quoted_group_id);
+  g_free (quoted_group_id);
+
+  if (new_group_return)
+    *new_group_return = new_group;
+
+  return 0;
+}
+
+/**
+ * @brief Create a group.
+ *
+ * @param[in]   group_name       Group.
+ * @param[in]   comment          Comment on group.
+ * @param[in]   users            Users group applies to.
+ * @param[in]   resource_id      UUID of resource.
+ *
+ * @return 0 success, 1 group exists already, 2 failed to find user, 3 failed
+ *         to find resource, 4 user name validation failed, 99 permission
+ *         denied, -1 error.
+ */
+int
+create_group (const char *group_name, const char *comment, const char *users,
+              group_t* group)
+{
+  gchar *quoted_group_name, *quoted_comment;
+
+  assert (current_credentials.uuid);
+  assert (group_name);
+
+  sql ("BEGIN IMMEDIATE;");
+
+  // FIX permission
+#if 0
+  if (user_may ("create_group") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+#endif
+
+  quoted_group_name = sql_quote (group_name);
+
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM groups WHERE name = '%s';",
+               quoted_group_name))
+    {
+      g_free (quoted_group_name);
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  quoted_comment = comment ? sql_quote (comment) : g_strdup ("");
+  sql ("INSERT INTO groups"
+       " (uuid, name, owner, comment, creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (), '%s',"
+       "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+       "  '%s', now (), now ());",
+       quoted_group_name,
+       current_credentials.uuid,
+       quoted_comment);
+  g_free (quoted_comment);
+  g_free (quoted_group_name);
+
+  if (group)
+    *group = sqlite3_last_insert_rowid (task_db);
+
+  if (users)
+    {
+      gchar **split, **point;
+      GList *added;
+
+      /* Add each user. */
+
+      added = NULL;
+      split = g_strsplit_set (users, " ,", 0);
+      point = split;
+
+      while (*point)
+        {
+          user_t user;
+          gchar *name;
+
+          name = *point;
+
+          g_strstrip (name);
+
+          if (strcmp (name, "") == 0)
+            {
+              point++;
+              continue;
+            }
+
+          if (g_list_find_custom (added, name, (GCompareFunc) strcmp))
+            {
+              point++;
+              continue;
+            }
+
+          added = g_list_prepend (added, name);
+
+          if (openvas_user_exists (name) == 0)
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              sql ("ROLLBACK;");
+              return 2;
+            }
+
+          if (find_user (name, &user))
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              sql ("ROLLBACK;");
+              return -1;
+            }
+
+          if (user == 0)
+            {
+              gchar *uuid;
+
+              /** @todo Similar to validate_user in openvas-administrator. */
+              if (g_regex_match_simple ("^[[:alnum:]-_]+$", name, 0, 0) == 0)
+                {
+                  g_list_free (added);
+                  g_strfreev (split);
+                  sql ("ROLLBACK;");
+                  return 4;
+                }
+
+              uuid = openvas_user_uuid (name);
+
+              if (uuid == NULL)
+                {
+                  g_list_free (added);
+                  g_strfreev (split);
+                  sql ("ROLLBACK;");
+                  return -1;
+                }
+
+              if (sql_int (0, 0,
+                           "SELECT count(*) FROM users WHERE uuid = '%s';",
+                           uuid)
+                  == 0)
+                {
+                  gchar *quoted_name;
+                  quoted_name = sql_quote (name);
+                  sql ("INSERT INTO users (uuid, name) VALUES ('%s', '%s');",
+                       uuid,
+                       quoted_name);
+                  g_free (quoted_name);
+
+                  user = sqlite3_last_insert_rowid (task_db);
+                }
+              else
+                {
+                  /* user_find should have found it. */
+                  assert (0);
+                  g_list_free (added);
+                  g_strfreev (split);
+                  sql ("ROLLBACK;");
+                  return -1;
+                }
+            }
+
+          sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",
+               *group,
+               user);
+
+          point++;
+        }
+
+      g_list_free (added);
+      g_strfreev (split);
+    }
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Delete a group.
+ *
+ * @param[in]  group_id  UUID of group.
+ * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 1 fail because a task refers to the group, 2 failed
+ *         to find group, 3 predefined group, -1 error.
+ */
+int
+delete_group (const char *group_id, int ultimate)
+{
+  group_t group = 0;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (find_group (group_id, &group))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (group == 0)
+    {
+#if 1
+      sql ("ROLLBACK;");
+      return 2;
+#else
+      if (find_trash ("group", group_id, &group))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (group == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      /* Check if it's in use by an alert in the trashcan. */
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM alerts_trash"
+                   " WHERE `group` = %llu"
+                   " AND group_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+                   group))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      sql ("DELETE FROM groups_trash WHERE ROWID = %llu;", group);
+      sql ("COMMIT;");
+      return 0;
+#endif
+    }
+
+  if (ultimate == 0)
+    {
+#if 0
+      sql ("INSERT INTO groups_trash"
+           " (uuid, owner, name, comment, type, term, creation_time,"
+           "  modification_time)"
+           " SELECT uuid, owner, name, comment, type, term, creation_time,"
+           "  modification_time"
+           " FROM groups WHERE ROWID = %llu;",
+           group);
+
+      // FIX move permissions to trashcan too
+#endif
+    }
+
+  sql ("DELETE FROM groups WHERE ROWID = %llu;", group);
+  sql ("DELETE FROM group_users WHERE `group` = %llu;", group);
+
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
+ * @brief Return the UUID of a group.
+ *
+ * @param[in]  group  Group.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+group_uuid (group_t group)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM groups WHERE ROWID = %llu;",
+                     group);
+}
+
+/**
+ * @brief Gets users of group as a string.
+ *
+ * @param[in]  group  Group.
+ *
+ * @return Users.
+ */
+gchar *
+group_users (group_t group)
+{
+  return sql_string (0, 0,
+                     "SELECT group_concat (name, ', ') FROM users, group_users"
+                     " WHERE group_users.`group` = %llu"
+                     " AND group_users.user = users.ROWID;",
+                     group);
+}
+
+/**
+ * @brief Check whether a group is writable.
+ *
+ * @param[in]  group  Group.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+group_writable (group_t group)
+{
+  return 1;
+}
+
+/**
+ * @brief Check whether a trashcan group is writable.
+ *
+ * @param[in]  group  Group.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_group_writable (group_t group)
+{
+  return 1;
+}
+
+/**
+ * @brief Check whether a group is in use.
+ *
+ * @param[in]  group  Group.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+group_in_use (group_t group)
+{
+  return 0;
+}
+
+/**
+ * @brief Check whether a trashcan group is in use.
+ *
+ * @param[in]  group  Group.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_group_in_use (group_t group)
+{
+  return 0;
+}
+
+/**
+ * @brief Filter columns for group iterator.
+ */
+#define GROUP_ITERATOR_FILTER_COLUMNS                                         \
+ { GET_ITERATOR_FILTER_COLUMNS, NULL }
+
+/**
+ * @brief Group iterator columns.
+ */
+#define GROUP_ITERATOR_COLUMNS                                                \
+  GET_ITERATOR_COLUMNS
+
+/**
+ * @brief Count number of groups.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of groups in grouped set.
+ */
+int
+group_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
+  return count ("group", get, GROUP_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
+                TRUE);
+}
+
+/**
+ * @brief Initialise a group iterator, including observed groups.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find group, failed to find group (filt_id),
+ *         -1 error.
+ */
+int
+init_group_iterator (iterator_t* iterator, const get_data_t *get)
+{
+  static const char *group_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "group",
+                            get,
+                            /* Columns. */
+                            GROUP_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            NULL,
+                            group_columns,
+                            NULL,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
 
 
 /* Port lists. */
