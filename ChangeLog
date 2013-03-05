@@ -1,3 +1,35 @@
+2013-03-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add functions to synchronize SCAP database with user defined OVAL
+	repositories in private subdirectory.
+
+	* CMakeLists.txt: Add oval_verify.xsl, ovaldef_list_ids.xsl.
+
+	* tools/openvas-scapdata-sync.in (do_help): Add --refresh-private text.
+	(init_sec_db_update): New function, contains database checks and
+	variable inits from update_sec_db.
+	(list_oval_files_sorted, list_oval_files_sortable): Change to search
+	directory given as parameter instead of fixed directory and skip files
+	without valid OVAL timestamp.
+	(update_sec_db_private): New function to sync scap.db with user defined
+	files. Currently supports validating, adding and removing OVAL
+	definitions.
+	(update_sec_db): Remove database checks and variable inits, call
+	init_sec_db_update instead. Change handling of OVAL files list to new
+	version of list_oval_files_sorted and print warnings for file without
+	valid timestamps. Add call of update_sec_db_private near end.
+	(do_refresh_private): New function to refresh user defined data only.
+	(): New command line option --refresh-private.
+
+	* tools/ovaldef_list_ids.xsl: New stylesheet to get a list of all IDs
+	in an OVAL repository.
+
+	* tools/oval_timestamp, tools/oval_update.xsl: Fix selection of
+	timestamps failing when relevant elements contain extra whitespaces.
+
+	* tools/oval_verify.xsl: New stylesheet for basic verification of OVAL
+	repository files.
+
 2013-03-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add basic user groups.

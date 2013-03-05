@@ -2,15 +2,13 @@
 <!--
 OpenVAS
 $Id$
-Description: Select OVAL definitions which have been updated after
-a certain date.
+Description: Output the OVAL identifiers of OVAL definitions in a file.
 
 Authors:
-Henri Doreau <henri.doreau@greenbone.net>
 Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 Copyright:
-Copyright (C) 2011 - 2012 Greenbone Networks GmbH
+Copyright (C) 2013 Greenbone Networks GmbH
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 2,
@@ -28,6 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 <xsl:stylesheet version="1.0" 
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns:ns6="http://scap.nist.gov/schema/scap-core/0.1"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:str="http://exslt.org/strings"
   xmlns:oval="http://oval.mitre.org/XMLSchema/oval-common-5"
@@ -36,7 +35,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   extension-element-prefixes="str"
   >
   <xsl:output method="text"/>
-  
-  <xsl:template match="/"><xsl:value-of select="normalize-space(oval_definitions:oval_definitions/oval_definitions:generator/oval:timestamp)"/></xsl:template>
-
+  <xsl:template match="/">
+    <xsl:for-each select="/oval_definitions:oval_definitions/oval_definitions:definitions/oval_definitions:definition">
+    <xsl:value-of select="@id"/><xsl:text>&#10;</xsl:text>
+    </xsl:for-each>
+  </xsl:template>
 </xsl:stylesheet>

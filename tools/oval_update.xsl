@@ -41,10 +41,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:output method="text"/>
 
   <xsl:variable name="filetimestamp"
-    select="oval_definitions:oval_definitions/oval_definitions:generator/oval:timestamp"/>
+    select="normalize-space(oval_definitions:oval_definitions/oval_definitions:generator/oval:timestamp)"/>
 
   <xsl:template match="oval_definitions:definition">
-    <xsl:variable name="definitiondate" select="(oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates/oval_definitions:submitted/@date | oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates/oval_definitions:status_change/@date | oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates/oval_definitions:modified/@date)[last()]" />
+    <xsl:variable name="definitiondate" select="normalize-space((oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates/oval_definitions:submitted/@date | oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates/oval_definitions:status_change/@date | oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:dates/oval_definitions:modified/@date)[last()])" />
 
     <xsl:choose>
     <xsl:when test="$definitiondate='' or number(translate(substring($definitiondate,1,10),'-','')) &gt; number($refdate)">
