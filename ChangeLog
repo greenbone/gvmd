@@ -1,3 +1,9 @@
+2013-03-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (update_all_config_caches): Use definition for
+	columns, so that the accessors will still work when the GET iterator
+	gets more columns.
+
 2013-03-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add functions to synchronize SCAP database with user defined OVAL
