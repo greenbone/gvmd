@@ -13462,6 +13462,7 @@ update_nvti_cache ()
       nvti_set_cve (nvti, nvt_iterator_cve (&nvts));
       nvti_set_bid (nvti, nvt_iterator_bid (&nvts));
       nvti_set_xref (nvti, nvt_iterator_xref (&nvts));
+      nvti_set_tag (nvti, nvt_iterator_tag (&nvts));
       nvtis_add (nvti_cache, nvti);
     }
   cleanup_iterator (&nvts);
@@ -19020,6 +19021,24 @@ result_iterator_nvt_xref (iterator_t *iterator)
   nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
   if (nvti)
     return nvti_xref (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT tags from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The tags of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_tag (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_tag (nvti);
   return NULL;
 }
 
