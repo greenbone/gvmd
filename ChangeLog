@@ -1,5 +1,10 @@
 2013-03-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc: Update
+	documentation for various results related commands.
+
+2013-03-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (update_nvt_cache): Set nvti tag.
 	(result_iterator_nvt_tag): New function.
 

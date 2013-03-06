@@ -549,6 +549,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>risk_factor</e>
         <e>cve</e>
         <e>bid</e>
+        <e>tags</e>
+        <e>cert</e>
         <e>xref</e>
       </pattern>
       <ele>
@@ -579,6 +581,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>bid</name>
         <summary>BID associated with the NVT</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>tags</name>
+        <summary>Tags associated with the NVT</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>cert</name>
+        <summary>List of CERT advisories associated with the NVT</summary>
         <pattern>text</pattern>
       </ele>
       <ele>
@@ -8440,6 +8452,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                     <name>Test NVT: fields with ISO-8859-1 chars ()</name>
                     <cvss_base>5.0</cvss_base>
                     <risk_factor>Medium</risk_factor>
+                    <cve>CVE-2013-1406</cve>
+                    <bid>51702</bid>
+                    <tags>NOTAGS</tags>
+                    <cert>
+                      <cert_ref id="DFN-CERT-2013-0246" type="DFN-CERT"/>
+                    </cert>
+                    <xref>NOXREF</xref>
                   </nvt>
                   <threat>Medium</threat>
                   <description>Test with  umlaut Warning Port 0.</description>
@@ -8887,7 +8906,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>risk_factor</e>
               <e>cve</e>
               <e>bid</e>
+              <e>tags</e>
               <e>cert</e>
+              <e>xref</e>
             </pattern>
             <ele>
               <name>name</name>
@@ -8915,6 +8936,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <pattern><t>integer</t></pattern>
             </ele>
             <ele>
+              <name>tags</name>
+              <summary>Tags associated with the NVT</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
               <name>cert</name>
               <summary>List of CERT advisories referencing this NVT via CVEs</summary>
               <pattern>
@@ -8936,6 +8962,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   </attrib>
                 </pattern>
               </ele>
+            </ele>
+            <ele>
+              <name>xref</name>
+              <summary>References associated with the NVT</summary>
+              <pattern>text</pattern>
             </ele>
           </ele>
           <ele>
@@ -8976,6 +9007,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <risk_factor>Medium</risk_factor>
                 <cve>CVE-2009-3095</cve>
                 <bid>36254</bid>
+                <tags>NOTAGS</tags>
+                <cert></cert>
+                <xref>NOXREF</xref>
               </nvt>
               <threat>Medium</threat>
               <description>Test with umlaut.</description>
@@ -9007,6 +9041,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <risk_factor>High</risk_factor>
                 <cve>CVE-2009-3095</cve>
                 <bid>36254</bid>
+                <tags>NOTAGS</tags>
+                <cert></cert>
+                <xref>NOXREF</xref>
               </nvt>
               <threat>High</threat>
               <description>Test with very long warning.</description>

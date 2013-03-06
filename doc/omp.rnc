@@ -640,6 +640,8 @@ result_nvt
        & result_nvt_risk_factor
        & result_nvt_cve
        & result_nvt_bid
+       & result_nvt_tags
+       & result_nvt_cert
        & result_nvt_xref
      }
 
@@ -681,6 +683,20 @@ result_nvt_cve
 # BID associated with the NVT.
 result_nvt_bid
  = element bid
+     {
+       text
+     }
+
+# Tags associated with the NVT.
+result_nvt_tags
+ = element tags
+     {
+       text
+     }
+
+# List of CERT advisories associated with the NVT.
+result_nvt_cert
+ = element cert
      {
        text
      }
@@ -7532,7 +7548,9 @@ get_results_response_results_result_nvt
        & get_results_response_results_result_nvt_risk_factor
        & get_results_response_results_result_nvt_cve
        & get_results_response_results_result_nvt_bid
+       & get_results_response_results_result_nvt_tags
        & get_results_response_results_result_nvt_cert
+       & get_results_response_results_result_nvt_xref
      }
 
 # The name of the NVT.
@@ -7570,6 +7588,13 @@ get_results_response_results_result_nvt_bid
        integer
      }
 
+# Tags associated with the NVT.
+get_results_response_results_result_nvt_tags
+ = element tags
+     {
+       text
+     }
+
 # List of CERT advisories referencing this NVT via CVEs.
 get_results_response_results_result_nvt_cert
  = element cert
@@ -7585,6 +7610,13 @@ get_results_response_results_result_nvt_cert_cert_ref
        attribute id { text }?
        & # Type of the advisory (e.g. "DFN-CERT", "CERT-BUND").
        attribute type { text }?
+     }
+
+# References associated with the NVT.
+get_results_response_results_result_nvt_xref
+ = element xref
+     {
+       text
      }
 
 get_results_response_results_result_threat
