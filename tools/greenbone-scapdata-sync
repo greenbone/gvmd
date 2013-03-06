@@ -69,6 +69,10 @@ ENABLED=1
 # If REFRESH_ONLY is set to 1, the sync script will only update the OpenVAS
 # Manager database. This can be controlled via the --refresh parameter.
 REFRESH_ONLY=0
+# If REFRESH_PRIVATE_ONLY is set to 1, the sync script will only update
+# private data in the OpenVAS Manager database.
+# This can be controlled via the --refresh-private parameter.
+REFRESH_PRIVATE_ONLY=0
 
 SQLITE3="sqlite3 -noheader"
 
@@ -237,33 +241,42 @@ check_db_version () {
 }
 
 list_oval_files_sorted () {
-for line in `list_oval_files_sortable | sort`
+for line in `list_oval_files_sortable "$1" | sort`
   do
     echo ${line#????????}
   done
 }
 
 list_oval_files_sortable () {
-for ovalfile in `find "$SCAP_DIR/oval/" -name "*.xml" -type f`
+for ovalfile in `find "$1" -name "*.xml" -type f`
   do
-    echo `xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`"$ovalfile"
+    timestamp_raw=""
+    timestamp_raw=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" 2>/dev/null`
+
+    if [ -n "$timestamp_raw" ] \
+       && [ -n `echo "$timestamp_raw" | egrep -x "[0-9]{4}\-(0[0-9]|1[012])\-([0-2][0-9]|3[01])[:alnum:]*"` ]
+    then
+      timestamp="`echo "$timestamp_raw" | sed -e 's/T.*//' | tr -d "-"`"
+      echo "$timestamp$ovalfile"
+    fi
   done
 }
 
 do_help () {
   echo "$0: Sync SCAP data"
-  echo " --describe	display current feed info"
-  echo " --feedversion	display version of this feed"
-  echo " --help		display this help"
-  echo " --identify	display information"
-  echo " --refresh	update database without downloading new state"
-  echo " --selftest	perform self-test"
-  echo " --version	display version"
+  echo " --describe        display current feed info"
+  echo " --feedversion     display version of this feed"
+  echo " --help            display this help"
+  echo " --identify        display information"
+  echo " --refresh         update database without downloading new state"
+  echo " --refresh-private update database using only user data"
+  echo " --selftest        perform self-test"
+  echo " --version         display version"
   echo ""
   exit 0
 }
 
-update_scap_db() {
+init_scap_db_update () {
   if [ ! -f $SCAP_DB ]
   then
     log_write "Initializing SCAP database."
@@ -291,104 +304,258 @@ update_scap_db() {
     DB_LASTUPDATE=0
   fi
 
-  CPEBASE="$SCAP_DIR/official-cpe-dictionary_v2.2.xml"
-  if [ -e $CPEBASE ]
+}
+
+update_scap_db_private () {
+  SCAP_PRIVATE_DIR="$SCAP_DIR/$PRIVATE_SUBDIR"
+  if [ -d "$SCAP_PRIVATE_DIR" ]
   then
-    if [ `stat -c "%Y" $CPEBASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+    log_write "Updating user defined data"
+
+    log_write "Updating user OVAL definitions"
+    xmlcount=0
+    xmlcount=$(find "$SCAP_PRIVATE_DIR/oval/" -name "*.xml" -type f 2> /dev/null | wc -l)
+    if [ -n "$xmlcount" ] && [ $xmlcount -ne 0 ]
     then
-      log_write "Updating CPEs"
-      sed 's/&/&amp;/g' $CPEBASE | \
-        xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - | \
-        xsltproc $SCAP_RES_DIR/cpe_update.xsl - | \
-        $SQLITE3 $SCAP_DB
+      if [ -z "$oval_files_sorted" ]
+      then
+        oval_files_sorted=`list_oval_files_sorted "$SCAP_DIR/oval/"`
+        ovaldir_xml_files=`find "$SCAP_DIR/oval/" -name "*.xml" -type f 2> /dev/null`
+
+        for xml_file in $ovaldir_xml_files
+        do
+          if [ -z `echo "$oval_files_sorted" | grep -x "$xml_file"` ]
+          then
+            log_write "Warning: Cannot find valid OVAL timestamp in '$xml_file'."
+          fi
+        done
+      fi
+
+      oval_files_sorted_private=`list_oval_files_sorted "$SCAP_PRIVATE_DIR/oval/"`
+      ovaldir_xml_files=`find "$SCAP_PRIVATE_DIR/oval/" -name "*.xml" -type f 2> /dev/null`
+
+      for xml_file in $ovaldir_xml_files
+      do
+        if [ -z `echo "$oval_files_sorted_private" | grep -x "$xml_file"` ]
+        then
+          log_write "Warning: Cannot find valid OVAL timestamp in '$xml_file'."
+        fi
+      done
+
+      for non_xml_file in `find "$SCAP_PRIVATE_DIR/oval/" -type f -and -not -name "*.xml" 2> /dev/null`
+      do
+        if [ "${non_xml_file%%.asc}" = "${non_xml_file}" ] || ! [ -f "${non_xml_file%%.asc}" ]
+        then
+          log_write "Warning: Found non-XML and non-signature file '$non_xml_file'."
+        fi
+      done
+
+      if [ -n "$oval_files_sorted" ]
+      then
+        for ovalfile in $oval_files_sorted_private
+        do
+          if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+          then
+            oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`
+
+            OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+            if [ -z "$OVAL_REFDATE" ]
+            then
+              OVAL_REFDATE=0
+            fi
+
+            if [ $oval_timestamp -ge $OVAL_REFDATE ]
+            then
+              validation_message=`xsltproc "$SCAP_RES_DIR/oval_verify.xsl" "$ovalfile" 2>/dev/null`
+              validation_return="$?"
+              if [ 0 -ne $validation_return ] && [ -n "$validation_message" ]
+              then
+                if [ 10 -eq $validation_return ]
+                then
+                  log_write "Warning: Validation of file '$ovalfile' failed: $validation_message"
+                else
+                  log_write "Warning: Error parsing '$ovalfile'."
+                fi
+              else
+                if ! [ "$validation_message" = "file valid" ]
+                then
+                  log_write "Warning: Validation of file '$ovalfile' failed: $validation_message"
+                else
+                  found_duplicates=0
+                  for feedfile in $oval_files_sorted
+                  do
+                    compare=`xsltproc "$SCAP_RES_DIR/ovaldef_list_ids.xsl" "$ovalfile"`
+                    duplicates=`xsltproc "$SCAP_RES_DIR/ovaldef_list_ids.xsl" "$feedfile" | grep -Fxc "$compare"`
+                    if [ 0 -lt $duplicates ]
+                    then
+                      log_write "Warning: Skipping '$ovalfile', found $duplicates definition(s) that are duplicates of one(s) in '$feedfile'"
+                      found_duplicates=1
+                    fi
+                  done
+                  if [ 0 -eq $found_duplicates ]
+                  then
+                    log_write "Updating '$ovalfile'"
+                    xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
+                    $SQLITE $SCAP_DB
+                  fi
+                fi
+              fi
+            else
+              log_write "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
+            fi
+          else
+            log_write "Skipping $ovalfile, file is older than last revision. (This is not an error)"
+          fi
+        done
+      fi
     else
-      log_write " Skipping CPEs, file is older than last revision (this is not an error)."
+      log_write "No user defined OVAL files found"
     fi
-  else
-    echo " Warning: No CPE dictionary found in $SCAP_DIR"
-  fi
 
-  updated_cves=0
-  xmlcount=$(ls $SCAP_DIR/nvdcve-2.0-*.xml 2> /dev/null | wc -l)
-  if [ $xmlcount -ne 0 ]
+    log_write "Cleaning up user OVAL data"
+    DIR_STR_LENGTH=$((`echo "$SCAP_DIR" | wc -c` + 1))
+
+    oval_files_shortened=""
+    if [ 0 != "$xmlcount" ]
+    then
+      for ovalfile in $oval_files_sorted_private
+      do
+        oval_files_shortened=$oval_files_shortened"', '"`echo $ovalfile | cut -c ${DIR_STR_LENGTH}- `
+      done
+      oval_files_shortened=${oval_files_shortened##"', "}"'"
+    fi
+
+    deleted=`$SQLITE3 "$SCAP_DB" "SELECT DISTINCT xml_file FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"`
+    if [ -n "$deleted" ]
+    then
+      log_write "Removing definitions formerly inserted from:"
+      log_write "$deleted"
+      $SQLITE3 "$SCAP_DB" "DELETE FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"
+    fi
+
+    $SQLITE3 $SCAP_DB "update meta set value ='`date +%s`' where name = 'last_update';"
+  else
+    log_write "No user data directory '$SCAP_PRIVATE_DIR' found."
+  fi
+}
+
+update_scap_db() {
+  init_scap_db_update
+
+  if [ 0 = "$REFRESH_PRIVATE_ONLY" ]
   then
-    for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
-    do
-      if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+    CPEBASE="$SCAP_DIR/official-cpe-dictionary_v2.2.xml"
+    if [ -e $CPEBASE ]
+    then
+      if [ `stat -c "%Y" $CPEBASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
       then
-        updated_cves=1
-        log_write "Updating $cvefile"
-        xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
-          xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
+        log_write "Updating CPEs"
+        sed 's/&/&amp;/g' $CPEBASE | \
+          xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - | \
+          xsltproc $SCAP_RES_DIR/cpe_update.xsl - | \
           $SQLITE3 $SCAP_DB
       else
-        log_write "Skipping $cvefile, file is older than last revision (this is not an error)."
+        log_write " Skipping CPEs, file is older than last revision (this is not an error)."
       fi
-    done
-  else
-    log_write " Warning: No CVEs found in $SCAP_DIR."
-  fi
+    else
+      echo " Warning: No CPE dictionary found in $SCAP_DIR"
+    fi
 
-  if [ 0 -ne $updated_cves ]
-  then
-    log_write "Updating CVSS scores and CVE counts"
-    $SQLITE3 "$SCAP_DB"  "
-    PRAGMA recursive_triggers = OFF;
-    UPDATE cpes
-      SET max_cvss =
-          (
-            SELECT coalesce(max(cvss), 0.0)
-            FROM cves
-            WHERE id IN
-              (
-                SELECT cve
-                FROM affected_products
-                WHERE cpe=cpes.id
-              )
-          ),
-        cve_refs =
-          (
-            SELECT count(cve)
-            FROM affected_products
-            WHERE cpe=cpes.id
-          );
-    "
-  else
-    log_write "No CVEs updated, skipping CVSS and CVE recount."
-  fi
-
-  log_write " Updating OVAL data"
-  xmlcount=$(find "$SCAP_DIR/oval/" -name "*.xml" -type f 2> /dev/null | wc -l)
-  if [ $xmlcount -ne 0 ]
-  then
-    for ovalfile in `list_oval_files_sorted`
-    do
-      if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
-      then
-        oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`
-
-        OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
-        if [ -z "$OVAL_REFDATE" ]
+    updated_cves=0
+    xmlcount=$(ls $SCAP_DIR/nvdcve-2.0-*.xml 2> /dev/null | wc -l)
+    if [ $xmlcount -ne 0 ]
+    then
+      for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
+      do
+        if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
         then
-          OVAL_REFDATE=0
-        fi
-
-        if [ $oval_timestamp -ge $OVAL_REFDATE ]
-        then
-          log_write " Updating $ovalfile"
-
-          xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
-          $SQLITE3 $SCAP_DB
+          updated_cves=1
+          log_write "Updating $cvefile"
+          xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
+            xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
+            $SQLITE3 $SCAP_DB
         else
-          log_write " Skipping $ovalfile, file has older timestamp than latest OVAL definition in database (this is not an error)."
+          log_write "Skipping $cvefile, file is older than last revision (this is not an error)."
         fi
-      else
-        log_write " Skipping $ovalfile, file is older than last revision (this is not an error)."
-      fi
-    done
-  else
-    log_write " Warning: No XML files found in $SCAP_DIR/oval/."
+      done
+    else
+      log_write " Warning: No CVEs found in $SCAP_DIR."
+    fi
+
+    if [ 0 -ne $updated_cves ]
+    then
+      log_write "Updating CVSS scores and CVE counts"
+      $SQLITE3 "$SCAP_DB"  "
+      PRAGMA recursive_triggers = OFF;
+      UPDATE cpes
+        SET max_cvss =
+            (
+              SELECT coalesce(max(cvss), 0.0)
+              FROM cves
+              WHERE id IN
+                (
+                  SELECT cve
+                  FROM affected_products
+                  WHERE cpe=cpes.id
+                )
+            ),
+          cve_refs =
+            (
+              SELECT count(cve)
+              FROM affected_products
+              WHERE cpe=cpes.id
+            );
+      "
+    else
+      log_write "No CVEs updated, skipping CVSS and CVE recount."
+    fi
+
+    log_write " Updating OVAL data"
+    xmlcount=$(find "$SCAP_DIR/oval/" -name "*.xml" -type f 2> /dev/null | wc -l)
+    if [ $xmlcount -ne 0 ]
+    then
+      oval_files_sorted=`list_oval_files_sorted "$SCAP_DIR/oval/"`
+      ovaldir_xml_files=`find "$SCAP_DIR/oval/" -name "*.xml" -type f 2> /dev/null`
+
+      for xml_file in $ovaldir_xml_files
+      do
+        if [ -z `echo "$oval_files_sorted" | grep -x "$xml_file"` ]
+        then
+          echo "[w] Cannot find valid OVAL timestamp in '$xml_file'."
+        fi
+      done
+
+      for ovalfile in $oval_files_sorted
+      do
+        if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+        then
+          oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`
+
+          OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+          if [ -z "$OVAL_REFDATE" ]
+          then
+            OVAL_REFDATE=0
+          fi
+
+          if [ $oval_timestamp -ge $OVAL_REFDATE ]
+          then
+            log_write " Updating $ovalfile"
+
+            xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
+            $SQLITE3 $SCAP_DB
+          else
+            log_write " Skipping $ovalfile, file has older timestamp than latest OVAL definition in database (this is not an error)."
+          fi
+        else
+          log_write " Skipping $ovalfile, file is older than last revision (this is not an error)."
+        fi
+      done
+    else
+      log_write " Warning: No XML files found in $SCAP_DIR/oval/."
+    fi
   fi
+
+  update_scap_db_private
 
   sqlite3 $SCAP_DB "update meta set value ='`date +%s`' where name = 'last_update';"
 }
@@ -520,6 +687,10 @@ while test $# -gt 0; do
           ;;
         --refresh)
           REFRESH_ONLY=1
+          ;;
+        --refresh-private)
+          REFRESH_ONLY=1
+          REFRESH_PRIVATE_ONLY=1
           ;;
         --selftest)
           SELFTEST_FAIL=0
