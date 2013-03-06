@@ -1,5 +1,10 @@
 2013-03-06  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
+	* doc/user-scap-data-HOWTO: New file, documentation for user defined
+	SCAP data.
+
+2013-03-06  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
 	Add updating of user (OVAL) data to greenbone-scapdata-sync.
 
 	* tools/greenbone-scapdata-sync (REFRESH_PRIVATE_ONLY): New variable.
