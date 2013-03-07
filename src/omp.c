@@ -12816,13 +12816,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_AGENT", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_agent",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_agent_data->copy)
+          if (create_agent_data->copy)
             switch (copy_agent (create_agent_data->name,
                                 create_agent_data->comment,
                                 create_agent_data->copy,
@@ -12857,6 +12851,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       return;
                     }
                   g_log ("event agent", G_LOG_LEVEL_MESSAGE,
+                         "Agent could not be created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_agent",
+                                      "Permission denied"));
+                  g_log ("event group", G_LOG_LEVEL_MESSAGE,
                          "Agent could not be created");
                   break;
                 case -1:
@@ -12915,6 +12916,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "Name may only contain alphanumeric"
                                     " characters"));
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_agent",
+                                    "Permission denied"));
+                break;
               default:
                 assert (0);
               case -1:
@@ -12946,13 +12952,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           /* For now the import element, GET_CONFIGS_RESPONSE, overrides
            * any other elements. */
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_config",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (import_config_data->import)
+          if (import_config_data->import)
             {
               char *name;
               array_terminate (import_config_data->nvt_selectors);
@@ -12992,6 +12992,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "Config exists already"));
                       g_log ("event config", G_LOG_LEVEL_MESSAGE,
                              "Scan config could not be created");
+                    break;
+                  case 99:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_config",
+                                        "Permission denied"));
                     break;
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
@@ -13087,6 +13092,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_log ("event config", G_LOG_LEVEL_MESSAGE,
                            "Scan config could not be created");
                     break;
+                  case 99:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_agent",
+                                        "Permission denied"));
+                    break;
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("create_config"));
@@ -13131,6 +13141,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "Config exists already"));
                 g_log ("event config", G_LOG_LEVEL_MESSAGE,
                        "Scan config could not be created");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_config",
+                                    "Permission denied"));
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -13237,13 +13252,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           array_terminate (create_alert_data->event_data);
           array_terminate (create_alert_data->method_data);
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_alert",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_alert_data->copy)
+          if (create_alert_data->copy)
             switch (copy_alert (create_alert_data->name,
                                 create_alert_data->comment,
                                 create_alert_data->copy,
@@ -13279,6 +13288,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   g_log ("event alert", G_LOG_LEVEL_MESSAGE,
                          "Alert could not be created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_alert",
+                                      "Permission denied"));
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -13382,6 +13396,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         " specified"));
                     g_log ("event alert", G_LOG_LEVEL_MESSAGE,
                            "Alert could not be created");
+                    break;
+                  case 99:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Permission denied"));
                     break;
                   default:
                     assert (0);
@@ -13490,13 +13509,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("CREATE_FILTER", element_name) == 0);
           assert (create_filter_data->term != NULL);
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_filter",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_filter_data->copy)
+          if (create_filter_data->copy)
             /* TODO make_unique (same for targets). */
             switch (copy_filter (create_filter_data->name,
                                  create_filter_data->comment,
@@ -13533,6 +13546,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   g_log ("event filter", G_LOG_LEVEL_MESSAGE,
                          "Filter could not be created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_filter",
+                                      "Permission denied"));
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -13583,6 +13601,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_log ("event filter", G_LOG_LEVEL_MESSAGE,
                        "Filter could not be created");
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_filter",
+                                    "Permission denied"));
+                break;
               default:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_filter"));
@@ -13610,13 +13633,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("CREATE_GROUP", element_name) == 0);
           assert (create_group_data->users != NULL);
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_group",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_group_data->copy)
+          if (create_group_data->copy)
             switch (copy_group (create_group_data->name,
                                 create_group_data->comment,
                                 create_group_data->copy,
@@ -13745,13 +13762,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (create_lsc_credential_data->name != NULL);
           assert (create_lsc_credential_data->login != NULL);
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_lsc_credential_data->copy)
+          if (create_lsc_credential_data->copy)
             switch (copy_lsc_credential (create_lsc_credential_data->name,
                                          create_lsc_credential_data->comment,
                                          create_lsc_credential_data->copy,
@@ -13787,6 +13798,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   g_log ("event lsc_credential", G_LOG_LEVEL_MESSAGE,
                          "LSC Credential could not be created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_lsc_credential",
+                                      "Permission denied"));
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -13849,6 +13865,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     " characters if autogenerating"
                                     " credential"));
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_lsc_credential",
+                                    "Permission denied"));
+                break;
               default:
                 assert (0);
               case -1:
@@ -13879,13 +13900,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_NOTE", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_note",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_note_data->copy)
+          if (create_note_data->copy)
             switch (copy_note (create_note_data->copy, &new_note))
               {
                 case 0:
@@ -13918,6 +13933,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   g_log ("event note", G_LOG_LEVEL_MESSAGE,
                          "Note could not be created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_note",
+                                      "Permission denied"));
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -14009,6 +14029,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_note",
+                                    "Permission denied"));
+                break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_note"));
@@ -14042,13 +14067,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_OVERRIDE", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_override",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_override_data->copy)
+          if (create_override_data->copy)
             switch (copy_override (create_override_data->copy, &new_override))
               {
                 case 0:
@@ -14081,6 +14100,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   g_log ("event override", G_LOG_LEVEL_MESSAGE,
                          "Override could not be created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_override",
+                                      "Permission denied"));
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -14167,6 +14191,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (uuid);
                   break;
                 }
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_override",
+                                    "Permission denied"));
+                break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_override"));
@@ -14204,13 +14233,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           /* The import element, GET_PORT_LISTS_RESPONSE, overrides any other
            * elements. */
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_port_list",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_port_list_data->import)
+          if (create_port_list_data->import)
             {
               array_terminate (create_port_list_data->ranges);
 
@@ -14273,6 +14296,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
                            "Port list could not be created");
                     break;
+                  case 99:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_port_list",
+                                        "Permission denied"));
+                    break;
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("create_port_list"));
@@ -14332,6 +14360,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
                          "Port List could not be created");
                   break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_port_list",
+                                      "Permission denied"));
+                  break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_port_list"));
@@ -14369,6 +14402,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "Error in port range"));
                 g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
                        "Port list could not be created");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_list",
+                                    "Permission denied"));
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -14431,15 +14469,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_PORT_RANGE", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_port_range",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_port_range_data->start == NULL
-                   || create_port_range_data->end == NULL
-                   || create_port_range_data->port_list_id == NULL)
+          if (create_port_range_data->start == NULL
+              || create_port_range_data->end == NULL
+              || create_port_range_data->port_list_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_port_range",
                                 "CREATE_PORT_RANGE requires a START, END and"
@@ -14500,6 +14532,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "New range overlaps an existing"
                                     " range"));
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_port_range",
+                                    "Permission denied"));
+                break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_port_range"));
@@ -14540,13 +14577,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           array_terminate (create_report_data->host_starts);
           array_terminate (create_report_data->details);
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_report",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_report_data->results == NULL)
+          if (create_report_data->results == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_report",
                                 "CREATE_REPORT requires a REPORT element"));
@@ -14567,6 +14598,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          create_report_data->details,
                          &uuid))
             {
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_report",
+                                    "Permission denied"));
+                break;
               case -1:
               case -2:
                 SEND_TO_CLIENT_OR_FAIL
@@ -14813,13 +14849,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           /* For now the import element, GET_REPORT_FORMATS_RESPONSE, overrides
            * any other elements. */
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_report_format",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_report_format_data->copy)
+          if (create_report_format_data->copy)
             {
               switch (copy_report_format (create_report_format_data->name,
                                           create_report_format_data->copy,
@@ -14856,6 +14886,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
                          "Report Format could not be created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_report_format",
+                                      "Permission denied"));
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -14990,6 +15025,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
                            "Report format could not be created");
                     break;
+                  case 99:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_report_format",
+                                        "Permission denied"));
+                    break;
                   default:
                     {
                       char *uuid = report_format_uuid (new_report_format);
@@ -15118,13 +15158,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_SCHEDULE", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_schedule",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_schedule_data->copy)
+          if (create_schedule_data->copy)
             switch (copy_schedule (create_schedule_data->name,
                                    create_schedule_data->comment,
                                    create_schedule_data->copy,
@@ -15160,6 +15194,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
                          "Schedule could not be created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_schedule",
+                                      "Permission denied"));
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -15247,6 +15286,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
                        "Schedule could not be created");
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_schedule",
+                                    "Permission denied"));
+                break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_schedule"));
@@ -15288,13 +15332,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_SLAVE", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_slave",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_slave_data->copy)
+          if (create_slave_data->copy)
             switch (copy_slave (create_slave_data->name,
                                 create_slave_data->comment,
                                 create_slave_data->copy,
@@ -15330,6 +15368,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   g_log ("event slave", G_LOG_LEVEL_MESSAGE,
                          "Slave could not be created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_slave",
+                                      "Permission denied"));
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -15401,6 +15444,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_log ("event slave", G_LOG_LEVEL_MESSAGE,
                        "Slave could not be created");
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_slave",
+                                    "Permission denied"));
+                break;
               default:
                 assert (0);
               case -1:
@@ -15431,13 +15479,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (create_target_data->target_locator
                   || create_target_data->hosts != NULL);
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_target",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_target_data->copy)
+          if (create_target_data->copy)
             switch (copy_target (create_target_data->name,
                                  create_target_data->comment,
                                  create_target_data->copy,
@@ -15473,6 +15515,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   g_log ("event target", G_LOG_LEVEL_MESSAGE,
                          "Target could not be created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_target",
+                                      "Permission denied"));
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -15611,6 +15658,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "Permission denied"));
+                break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
@@ -15675,17 +15727,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           /** @todo Any fail cases of the CLIENT_CREATE_TASK_* states must do
            *        so too. */
 
-          if (openvas_is_user_observer (current_credentials.username))
-            {
-              request_delete_task (&create_task_data->task);
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_task",
-                                  "CREATE is forbidden for observer users"));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
           if (create_task_data->copy)
             {
               int ret;
@@ -15734,6 +15775,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_log ("event task", G_LOG_LEVEL_MESSAGE,
                            "Task could not be created");
                     break;
+                  case 99:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_task",
+                                        "Permission denied"));
+                    break;
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("create_task"));
@@ -15741,6 +15787,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "Task could not be created");
                     break;
                 }
+              create_task_data_reset (create_task_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          /* Check permissions. */
+
+          if (user_may ("create_task") == 0)
+            {
+              request_delete_task (&create_task_data->task);
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_task",
+                                  "Permission denied"));
               create_task_data_reset (create_task_data);
               set_client_state (CLIENT_AUTHENTIC);
               break;

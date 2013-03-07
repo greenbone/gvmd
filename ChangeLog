@@ -1,3 +1,20 @@
+2013-03-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move the observer checks for CREATE operations into the functions that
+	do the operations.  This opens the way for controlling these permissions
+	via the database.
+
+	* src/manage_sql.c (user_may): New function.
+	(copy_resource, create_alert, copy_alert, create_report, copy_task)
+	(create_target, copy_target, create_config, create_config_rc)
+	(copy_config, create_lsc_credential, create_agent, create_note)
+	(create_override, create_report_format, copy_report_format, copy_group)
+	(create_group, create_port_list, copy_port_list, modify_port_list)
+	(create_port_range, create_filter): Add permission check.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle permission return in
+	all CREATE commands.
+
 2013-03-07  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* doc/user-scap-data-HOWTO: Slightly improved.

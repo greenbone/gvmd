@@ -748,6 +748,9 @@ next (iterator_t*);
 
 /* Access control. */
 
+int
+user_may (const char *);
+
 /**
  * @brief Actions.
  */

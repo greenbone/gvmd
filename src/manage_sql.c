@@ -1173,6 +1173,74 @@ vector_find_string (const gchar **vector, const gchar *string)
 }
 
 
+/* Access control layer. */
+
+/**
+ * @brief Test whether a user may perform an operation.
+ *
+ * @param[in]  operations  Name of operation.
+ *
+ * @return 1 if user has permission, else 0.
+ */
+int
+user_may (const char *operation)
+{
+  int ret;
+#if 0
+  gchar *quoted_operation;
+#endif
+
+  assert (current_credentials.username);
+  assert (operation);
+
+  if (openvas_is_user_admin (current_credentials.username))
+    return 1;
+
+  if (openvas_is_user_observer (current_credentials.username) == 0)
+    /* User has role "user".  Can do any OMP operation. */
+    return 1;
+
+#if 0
+  quoted_operation = sql_quote (operation);
+
+  ret = sql_int (0, 0,
+                 "SELECT count(*) FROM permissions"
+                 " WHERE resource = 0"
+                 " AND ((subject_type = 'user'"
+                 "       AND subject"
+                 "           = (SELECT ROWID FROM users"
+                 "              WHERE users.uuid = '%s'))"
+                 "      OR (subject_type = 'group'"
+                 "          AND subject"
+                 "              IN (SELECT DISTINCT `group`"
+                 "                  FROM group_users"
+                 "                  WHERE user = (SELECT ROWID"
+                 "                                FROM users"
+                 "                                WHERE users.uuid"
+                 "                                      = '%s')))"
+                 "      OR (subject_type = 'role'"
+                 "          AND subject"
+                 "              IN (SELECT DISTINCT role"
+                 "                  FROM role_users"
+                 "                  WHERE user = (SELECT ROWID"
+                 "                                FROM users"
+                 "                                WHERE users.uuid"
+                 "                                      = '%s'))))"
+                 " AND name = '%s';",
+                 current_credentials.uuid,
+                 current_credentials.uuid,
+                 current_credentials.uuid,
+                 quoted_operation);
+
+  g_free (quoted_operation);
+#else
+  ret = 0;
+#endif
+
+  return ret;
+}
+
+
 /* Filter utilities. */
 
 /**
@@ -2952,14 +3020,14 @@ find_resource_for_actions (const char* type, const char* uuid,
  * @param[out] new_resource  New resource.
  *
  * @return 0 success, 1 resource exists already, 2 failed to find existing
- *         resource, -1 error.
+ *         resource, 99 permission denied, -1 error.
  */
 int
 copy_resource (const char *type, const char *name, const char *comment,
                const char *resource_id, const char *columns,
                resource_t* new_resource)
 {
-  gchar *quoted_name, *quoted_uuid, *uniquify;
+  gchar *quoted_name, *quoted_uuid, *uniquify, *command;
   int named;
   user_t owner;
 
@@ -2969,6 +3037,15 @@ copy_resource (const char *type, const char *name, const char *comment,
     return -1;
 
   sql ("BEGIN IMMEDIATE;");
+
+  command = g_strdup_printf ("create_%s", type);
+  if (user_may (command) == 0)
+    {
+      g_free (command);
+      sql ("ROLLBACK;");
+      return 99;
+    }
+  g_free (command);
 
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
@@ -9650,7 +9727,7 @@ validate_email (const char* address)
  *
  * @return 0 success, 1 escalation exists already, 2 validation of email failed,
  *         3 failed to find filter, 4 type must be "report" if specified,
- *         -1 error.
+ *         99 permission denied, -1 error.
  */
 int
 create_alert (const char* name, const char* comment, const char* filter_id,
@@ -9667,6 +9744,12 @@ create_alert (const char* name, const char* comment, const char* filter_id,
   assert (current_credentials.uuid);
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("create_alert") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   filter = 0;
   if (filter_id && strcmp (filter_id, "0"))
@@ -9801,7 +9884,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
  * @param[out] new_alert     New alert.
  *
  * @return 0 success, 1 alert exists already, 2 failed to find existing
- *         alert, -1 error.
+ *         alert, 99 permission denied, -1 error.
  */
 int
 copy_alert (const char* name, const char* comment, const char* alert_id,
@@ -9818,6 +9901,12 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
     return -1;
 
   sql ("BEGIN IMMEDIATE");
+
+  if (user_may ("create_alert") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
@@ -17603,8 +17692,9 @@ host_detail_free (host_detail_t *detail)
  * @param[in]   details       Array of host_detail_t pointers.
  * @param[out]  report_id     Report ID.
  *
- * @return 0 success, -1 error, -2 failed to generate ID, -3 task_name is NULL,
- *         -4 failed to find task, -5 task must be container.
+ * @return 0 success, 99 permission denied, -1 error, -2 failed to generate ID,
+ *         -3 task_name is NULL, -4 failed to find task, -5 task must be
+ *         container.
  */
 int
 create_report (array_t *results, const char *task_id, const char *task_name,
@@ -17618,6 +17708,9 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   task_t task;
   pid_t pid;
   host_detail_t *detail;
+
+  if (user_may ("create_report") == 0)
+    return 99;
 
   if (task_id == NULL && task_name == NULL)
     return -3;
@@ -27101,7 +27194,8 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
  * @param[in]  task_id     UUID of existing task.
  * @param[out] new_task    New task.
  *
- * @return 0 success, 2 failed to find existing task, -1 error.
+ * @return 0 success, 2 failed to find existing task, 99 permission denied,
+ *         -1 error.
  */
 int
 copy_task (const char* name, const char* comment, const char *task_id,
@@ -27117,6 +27211,12 @@ copy_task (const char* name, const char* comment, const char *task_id,
     return -1;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("create_task") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
@@ -28799,8 +28899,8 @@ validate_port_range (const char* port_range)
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
- *         6 failed to find port list, -1 if import from target locator failed
- *         or response was empty.
+ *         6 failed to find port list, 99 permission denied, -1 if import from
+ *         target locator failed or response was empty.
  */
 int
 create_target (const char* name, const char* hosts, const char* comment,
@@ -28815,6 +28915,8 @@ create_target (const char* name, const char* hosts, const char* comment,
   port_list_t port_list;
   int ret;
 
+  assert (current_credentials.uuid);
+
   if (port_range == NULL)
     port_range = "default";
 
@@ -28826,7 +28928,11 @@ create_target (const char* name, const char* hosts, const char* comment,
 
   sql ("BEGIN IMMEDIATE;");
 
-  assert (current_credentials.uuid);
+  if (user_may ("create_target") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (make_name_unique)
     {
@@ -29009,7 +29115,7 @@ create_target (const char* name, const char* hosts, const char* comment,
  * @param[out] new_target  New target.
  *
  * @return 0 success, 1 target exists already, 2 failed to find existing
- *         target, -1 error.
+ *         target, 99 permission denied, -1 error.
  */
 int
 copy_target (const char* name, const char* comment, const char *target_id,
@@ -29024,6 +29130,12 @@ copy_target (const char* name, const char* comment, const char *target_id,
     return -1;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("create_target") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
@@ -30311,8 +30423,9 @@ config_insert_preferences (config_t config,
  * @param[out]  config         On success the config.
  * @param[out]  name           On success the name of the config.
  *
- * @return 0 success, 1 config exists already, -1 error, -2 name empty,
- *         -3 input error in selectors, -4 input error in preferences.
+ * @return 0 success, 1 config exists already, 99 permission denied, -1 error,
+ *         -2 name empty, -3 input error in selectors, -4 input error in
+ *         preferences.
  */
 int
 create_config (const char* proposed_name, const char* comment,
@@ -30333,10 +30446,17 @@ create_config (const char* proposed_name, const char* comment,
   if (selector_uuid == NULL)
     return -1;
 
+  sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("create_config") == 0)
+    {
+      sql ("ROLLBACK;");
+      free (selector_uuid);
+      return 99;
+    }
+
   candidate_name = g_strdup (proposed_name);
   quoted_candidate_name = sql_quote (candidate_name);
-
-  sql ("BEGIN IMMEDIATE;");
 
   while (1)
     {
@@ -30869,7 +30989,7 @@ insert_rc_into_config (config_t config, const char *config_name,
  * @param[in]   rc       RC file text.
  * @param[out]  config   Created config.
  *
- * @return 0 success, 1 config exists already, -1 error.
+ * @return 0 success, 1 config exists already, 99 permission denied, -1 error.
  */
 int
 create_config_rc (const char* name, const char* comment, char* rc,
@@ -30883,6 +31003,12 @@ create_config_rc (const char* name, const char* comment, char* rc,
   assert (current_credentials.uuid);
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("create_config") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM configs WHERE name = '%s'"
@@ -30967,7 +31093,7 @@ create_config_rc (const char* name, const char* comment, char* rc,
  * @param[out] new_config  New config.
  *
  * @return 0 success, 1 config exists already, 2 failed to find existing
- *         config, -1 error.
+ *         config, 99 permission denied, -1 error.
  */
 int
 copy_config (const char* name, const char* comment, config_t config,
@@ -30993,9 +31119,17 @@ copy_config (const char* name, const char* comment, config_t config,
 
   sql ("BEGIN IMMEDIATE;");
 
+  if (user_may ("create_config") == 0)
+    {
+      g_free (quoted_config_selector);
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
     {
+      g_free (quoted_config_selector);
       sql ("ROLLBACK;");
       return -1;
     }
@@ -34972,7 +35106,7 @@ find_lsc_credential_for_actions (const char* uuid,
  * @param[out] lsc_credential  Created LSC credential.
  *
  * @return 0 success, 1 LSC credential exists already, 2 name contains space,
- *         -1 error.
+ *         99 permission denied, -1 error.
  */
 int
 create_lsc_credential (const char* name, const char* comment,
@@ -34992,9 +35126,15 @@ create_lsc_credential (const char* name, const char* comment,
   assert (current_credentials.uuid);
   assert (comment);
 
-  quoted_name = sql_quote (name);
-
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("create_lsc_credential") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  quoted_name = sql_quote (name);
 
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM lsc_credentials WHERE name = '%s'"
@@ -36201,23 +36341,27 @@ verify_signature (const gchar *installer, gsize installer_size,
  * @param[in]  howto_use      Usage HOWTO, in base64.
  * @param[out] agent          Created agent.
  *
- * @return 0 success, 1 agent exists already, -1 error.
+ * @return 0 success, 1 agent exists already, 99 permission denied, -1 error.
  */
 int
 create_agent (const char* name, const char* comment, const char* installer_64,
               const char* installer_filename, const char* installer_signature_64,
               const char* howto_install, const char* howto_use, agent_t *agent)
 {
-  gchar *quoted_name = sql_nquote (name, strlen (name));
-  gchar *quoted_comment, *installer, *installer_signature;
-  int installer_trust = TRUST_UNKNOWN;
-  gsize installer_size = 0, installer_signature_size = 0;
+  gchar *quoted_name, *quoted_comment, *installer, *installer_signature;
+  int installer_trust;
+  gsize installer_size, installer_signature_size;
 
   assert (strlen (name) > 0);
   assert (installer_64);
   assert (installer_filename);
   assert (installer_signature_64);
   assert (current_credentials.uuid);
+
+  quoted_name = sql_quote (name);
+  installer_trust = TRUST_UNKNOWN;
+  installer_size = 0;
+  installer_signature_size = 0;
 
   /* Translate the installer and signature. */
 
@@ -36267,6 +36411,12 @@ create_agent (const char* name, const char* comment, const char* installer_64,
   /* Check that the name is unique. */
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("create_agent") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM agents WHERE name = '%s'"
@@ -36505,7 +36655,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
  * @param[out] new_agent     New agent.
  *
  * @return 0 success, 1 agent exists already, 2 failed to find existing
- *         agent, -1 error.
+ *         agent, 99 permission denied, -1 error.
  */
 int
 copy_agent (const char* name, const char* comment, const char *agent_id,
@@ -37209,6 +37359,9 @@ create_note (const char* active, const char* nvt, const char* text,
              task_t task, result_t result, note_t *note)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat, *quoted_nvt;
+
+  if (user_may ("create_note") == 0)
+    return 99;
 
   if (nvt == NULL)
     return -1;
@@ -37947,7 +38100,7 @@ find_override (const char* uuid, override_t* override)
  * @param[in]  result      Result to apply override to, 0 for any result.
  * @param[out] override    Created override.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 99 permission denied, -1 error.
  */
 int
 create_override (const char* active, const char* nvt, const char* text,
@@ -37957,6 +38110,9 @@ create_override (const char* active, const char* nvt, const char* text,
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
   gchar *quoted_new_threat;
+
+  if (user_may ("create_override") == 0)
+    return 99;
 
   if (nvt == NULL)
     return -1;
@@ -38713,19 +38869,27 @@ find_schedule (const char* uuid, schedule_t* schedule)
  *                          in.  0 means entire duration of action.
  * @param[out]  schedule    Created schedule.
  *
- * @return 0 success, 1 schedule exists already.
+ * @return 0 success, 1 schedule exists already, 99 permission denied.
  */
 int
 create_schedule (const char* name, const char *comment, time_t first_time,
                  time_t period, time_t period_months, time_t duration,
                  schedule_t *schedule)
 {
-  gchar *quoted_name = sql_quote (name);
+  gchar *quoted_name;
   long offset;
+
+  assert (current_credentials.uuid);
 
   sql ("BEGIN IMMEDIATE;");
 
-  assert (current_credentials.uuid);
+  if (user_may ("create_schedule") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  quoted_name = sql_quote (name);
 
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM schedules"
@@ -39996,7 +40160,8 @@ compare_files (gconstpointer one, gconstpointer two)
  * @return 0 success, 1 report format exists, 2 empty file name, 3 param value
  *         validation failed, 4 param value validation failed, 5 param default
  *         missing, 6 param min or max out of range, 7 param type missing,
- *         8 duplicate param name, 9 bogus param type name, -1 error.
+ *         8 duplicate param name, 9 bogus param type name, 99 permission
+ *         denied, -1 error.
  */
 int
 create_report_format (const char *uuid, const char *name,
@@ -40014,6 +40179,12 @@ create_report_format (const char *uuid, const char *name,
   gsize format_signature_size;
   int format_trust = TRUST_UNKNOWN;
   create_report_format_param_t *param;
+
+  assert (current_credentials.uuid);
+  assert (uuid);
+  assert (name);
+  assert (files);
+  assert (params);
 
   /* Verify the signature. */
 
@@ -40108,11 +40279,11 @@ create_report_format (const char *uuid, const char *name,
 
   sql ("BEGIN IMMEDIATE;");
 
-  assert (current_credentials.uuid);
-  assert (uuid);
-  assert (name);
-  assert (files);
-  assert (params);
+  if (user_may ("create_report_format") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM report_formats"
@@ -40503,7 +40674,7 @@ create_report_format (const char *uuid, const char *name,
  * @param[out] new_report_format    New Report Format.
  *
  * @return 0 success, 1 Report Format exists already, 2 failed to find existing
- *         Report Format, -1 error.
+ *         Report Format, 99 permission denied, -1 error.
  */
 int
 copy_report_format (const char* name, const char* source_uuid,
@@ -40522,6 +40693,12 @@ copy_report_format (const char* name, const char* source_uuid,
     return -1;
 
   sql ("BEGIN IMMEDIATE");
+
+  if (user_may ("create_report_format") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
@@ -42146,7 +42323,7 @@ find_slave (const char* uuid, slave_t* slave)
  * @param[in]   password        Password for \p login.
  * @param[out]  slave           NULL, or address for created slave.
  *
- * @return 0 success, 1 slave exists already, -1 error.
+ * @return 0 success, 1 slave exists already, 99 permission denied, -1 error.
  */
 int
 create_slave (const char* name, const char* comment, const char* host,
@@ -42161,12 +42338,17 @@ create_slave (const char* name, const char* comment, const char* host,
   assert (port);
   assert (login);
   assert (password);
-
-  quoted_name = sql_quote (name);
+  assert (current_credentials.uuid);
 
   sql ("BEGIN IMMEDIATE;");
 
-  assert (current_credentials.uuid);
+  if (user_may ("create_slave") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  quoted_name = sql_quote (name);
 
   /* Check whether a slave with the same name exists already. */
   if (sql_int (0, 0,
@@ -42880,11 +43062,8 @@ copy_group (const char *name, const char *comment, const char *group_id,
 
   // TODO Wrap in transaction.
 
-  // FIX permission
-#if 0
   if (user_may ("create_group") == 0)
     return 99;
-#endif
 
   ret = copy_resource ("group", name, comment, group_id, NULL, &new_group);
   if (ret)
@@ -42927,14 +43106,11 @@ create_group (const char *group_name, const char *comment, const char *users,
 
   sql ("BEGIN IMMEDIATE;");
 
-  // FIX permission
-#if 0
   if (user_may ("create_group") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
     }
-#endif
 
   quoted_group_name = sql_quote (group_name);
 
@@ -43710,7 +43886,7 @@ create_port_list_unique (const char *name, const char *comment,
  * @param[out]  port_list_return  Created port list.
  *
  * @return 0 success, 1 port list exists already, 4 error in port_ranges,
- *         -1 error.
+ *         99 permission denied, -1 error.
  */
 int
 create_port_list (const char* id, const char* name, const char* comment,
@@ -43720,6 +43896,8 @@ create_port_list (const char* id, const char* name, const char* comment,
   gchar *quoted_name;
   port_list_t port_list;
   int ret;
+
+  assert (current_credentials.uuid);
 
   if (ranges)
     {
@@ -43731,7 +43909,11 @@ create_port_list (const char* id, const char* name, const char* comment,
 
       sql ("BEGIN IMMEDIATE;");
 
-      assert (current_credentials.uuid);
+      if (user_may ("create_port_list") == 0)
+        {
+          sql ("ROLLBACK;");
+          return 99;
+        }
 
       /* Check whether this port list exists already. */
 
@@ -43796,20 +43978,21 @@ create_port_list (const char* id, const char* name, const char* comment,
       return 0;
     }
 
-  quoted_name = sql_quote (name);
-
   if (port_ranges == NULL)
     port_ranges = "default";
 
   if (validate_port_range (port_ranges))
-    {
-      g_free (quoted_name);
-      return 4;
-    }
+    return 4;
 
   sql ("BEGIN IMMEDIATE;");
 
-  assert (current_credentials.uuid);
+  if (user_may ("create_port_list") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  quoted_name = sql_quote (name);
 
   /* Check whether a port_list with the same name exists already. */
   if (sql_int (0, 0,
@@ -43878,7 +44061,7 @@ create_port_list (const char* id, const char* name, const char* comment,
  * @param[out] new_port_list    New Port List.
  *
  * @return 0 success, 1 Port List exists already, 2 failed to find existing
- *         Port List, -1 error.
+ *         Port List, 99 permission denied, -1 error.
  */
 int
 copy_port_list (const char* name, const char* comment,
@@ -43894,6 +44077,12 @@ copy_port_list (const char* name, const char* comment,
     return -1;
 
   sql ("BEGIN IMMEDIATE");
+
+  if (user_may ("create_port_list") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_user (current_credentials.username, &owner)
       || owner == 0)
@@ -44071,7 +44260,8 @@ modify_port_list (const char *port_list_id, const char *name,
  *
  * @return 0 success, 1 syntax error in start, 2 syntax error in end, 3 failed
  *         to find port list, 4 syntax error in type, 5 port list in use,
- *         6 new range overlaps an existing range, -1 error.
+ *         6 new range overlaps an existing range, 99 permission denied,
+ *         -1 error.
  */
 int
 create_port_range (const char *port_list_id, const char *type,
@@ -44107,6 +44297,12 @@ create_port_range (const char *port_list_id, const char *type,
     }
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("port_range") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   port_list = 0;
 
@@ -45019,7 +45215,8 @@ filter_term_value (const char *term, const char *column)
  * @param[in]   make_name_unique  Whether to make name unique.
  * @param[out]  filter          Created filter.
  *
- * @return 0 success, 1 filter exists already, 2 error in type.
+ * @return 0 success, 1 filter exists already, 2 error in type, 99 permission
+ *         denied.
  */
 int
 create_filter (const char *name, const char *comment, const char *type,
@@ -45034,6 +45231,12 @@ create_filter (const char *name, const char *comment, const char *type,
     return 2;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("create_filter") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (make_name_unique)
     {
