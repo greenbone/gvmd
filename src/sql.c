@@ -1380,6 +1380,12 @@ iterator_column_count (iterator_t* iterator)
 void
 cleanup_iterator (iterator_t* iterator)
 {
+  if (iterator == NULL)
+    {
+      g_warning ("%s: null iterator pointer.\n", __FUNCTION__);
+      return;
+    }
+
   if (iterator->prepared == 0)
     sqlite3_finalize (iterator->stmt);
   if (iterator->crypt_ctx)

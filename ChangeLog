@@ -1,5 +1,10 @@
 2013-03-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/sql.c (cleanup_iterator): Check iterator pointer before
+	dereferencing it.
+
+2013-03-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Add search All SecInfo feature.
 
 	* src/manage_sql (all_info_count, total_info_count)
