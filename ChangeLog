@@ -1,5 +1,14 @@
 2013-03-11  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
+	* tools/greenbone-scapdata-sync (update_scap_db_private)
+	(update_scap_db): Fix skipping of OVAL timestamp filter for cases when
+	REBUILD_OVAL is set to 1. Add default value for REBUILD_OVAL.
+
+	* tools/openvas-scapdata-sync (update_sec_db_private)
+	(update_sec_db): Fixes analogous to Greenbone version.
+
+2013-03-11  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
 	* tools/greenbone-certdata-sync (sync_certdata): Remove skipping of
 	rsync with previously nonexistent feed.
 
