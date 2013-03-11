@@ -1,3 +1,8 @@
+2013-03-11  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	* tools/greenbone-certdata-sync (sync_certdata): Remove skipping of
+	rsync with previously nonexistent feed.
+
 2013-03-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_set_setting): Add All SecInfo default filter
