@@ -47404,6 +47404,24 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 #define DFN_CERT_ADV_INFO_ITERATOR_COLUMNS                       \
   GET_ITERATOR_COLUMNS ", title, summary, cve_refs AS cves"
 
+/**
+ * @brief Filter columns for All SecInfo iterator.
+ */
+#define ALL_INFO_ITERATOR_FILTER_COLUMNS                \
+ { GET_ITERATOR_FILTER_COLUMNS, "type", NULL }
+
+/**
+ * @brief All SecInfo iterator columns.
+ */
+#define ALL_INFO_UNION_COLUMNS                                              \
+  "(SELECT " GET_ITERATOR_COLUMNS ", 'cve' AS type FROM cves"               \
+  " UNION SELECT " GET_ITERATOR_COLUMNS ", 'cpe' AS type FROM cpes"         \
+  " UNION SELECT " GET_ITERATOR_COLUMNS ", 'nvt' AS type FROM nvts"         \
+  " UNION SELECT " GET_ITERATOR_COLUMNS ", 'dfn_cert_adv' AS type"          \
+  "  FROM dfn_cert_advs"                                                    \
+  " UNION SELECT " GET_ITERATOR_COLUMNS ", 'ovaldef' AS type"               \
+  "  FROM ovaldefs)"
+
 
 /**
  * @brief Check whether SCAP is available.
@@ -48076,3 +48094,122 @@ get_ovaldef_short_filename (char* oval_id)
                      "SELECT xml_file FROM ovaldefs WHERE name = '%s';",
                      oval_id);
 }
+
+/* All SecInfo Data */
+
+/**
+ * @brief Count number of SecInfo entries.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of SecInfo entires in filtered set.
+ */
+int
+all_info_count (const get_data_t *get)
+{
+  return total_info_count (get, 1);
+}
+
+/**
+ * @brief Count number of all SecInfo entries.
+ *
+ * @param[in]   get  GET params.
+ * @param[in]   filtered Whether to count entries in filtered set only.
+ *
+ * @return Total number of SecInfo entires.
+ */
+int
+total_info_count (const get_data_t *get, int filtered)
+{
+  gchar *clause;
+
+  if (filtered)
+    {
+      static const char *filter_columns[] = ALL_INFO_ITERATOR_FILTER_COLUMNS;
+      gchar *filter;
+
+      if (get->filt_id && strcmp (get->filt_id, "0"))
+        {
+          filter = filter_term (get->filt_id);
+          if (filter == NULL)
+            return -1;
+        }
+      else
+        filter = NULL;
+
+      clause = filter_clause ("nvt", filter ? filter : get->filter,
+                              filter_columns, get->trash, NULL, NULL, NULL);
+      if (clause)
+        return sql_int (0, 0,
+                        "SELECT count (ROWID) FROM"
+                        ALL_INFO_UNION_COLUMNS
+                        " WHERE %s;",
+                        clause);
+      else
+        return sql_int (0, 0,
+                        "SELECT count (ROWID) FROM"
+                        ALL_INFO_UNION_COLUMNS ";");
+    }
+  else
+      return sql_int (0, 0,
+                      "SELECT count (ROWID) FROM"
+                      ALL_INFO_UNION_COLUMNS";");
+}
+
+/**
+ * @brief Initialise an info iterator.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ * @param[in]  name            Name of the info
+ *
+ * @return 0 success, 1 failed to find info, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_all_info_iterator (iterator_t* iterator, get_data_t *get,
+                        const char *name)
+{
+  int first, max;
+  gchar *clause, *filter, *order;
+
+  static const char *filter_columns[] = ALL_INFO_ITERATOR_FILTER_COLUMNS;
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  clause = filter_clause ("nvt", filter ? filter : get->filter,
+                          filter_columns, get->trash,
+                          &order, &first, &max);
+
+  init_iterator (iterator,
+                 "SELECT ROWID, uuid, name, comment, iso_time (created),"
+                 "       iso_time (modified), created, modified, type"
+                 " FROM" ALL_INFO_UNION_COLUMNS
+                 " WHERE %s%s"
+                 " LIMIT %d offset %d;",
+                 clause ? clause : "1=1",
+                 order,
+                 max,
+                 first);
+  return 0;
+}
+
+/**
+ * @brief Get the secinfo type from an all info iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The type of a secinfo entry,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (all_info_iterator_type, GET_ITERATOR_COLUMN_COUNT);
+
+

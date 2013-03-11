@@ -19028,6 +19028,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               info_count = dfn_cert_adv_info_count;
               get_info_data->get.subtype = g_strdup ("dfn_cert_adv");
             }
+          else if (g_strcmp0 ("allinfo", get_info_data->type) == 0)
+            {
+              init_info_iterator = init_all_info_iterator;
+              info_count = all_info_count;
+              get_info_data->get.subtype = g_strdup ("allinfo");
+            }
           else
             {
               if (send_find_error_to_client ("get_info",
@@ -19058,6 +19064,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 name = g_strdup ("DFN-CERT");
               else if (strcmp (get_info_data->type, "nvt") == 0)
                 name = g_strdup ("NVT");
+              else if (strcmp (get_info_data->type, "allinfo") == 0)
+                name = g_strdup ("ALLINFO");
               else
                 {
                   if (send_find_error_to_client ("get_info",
@@ -19302,6 +19310,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       return;
                     }
                 }
+              else if (g_strcmp0 ("allinfo", get_info_data->type) == 0)
+                {
+                  xml_string_append (result,
+                                     "<allinfo>"
+                                     "<type>%s</type>",
+                                     all_info_iterator_type (&info));
+                }
 
               /* Append raw data if full details are requested */
 
@@ -19329,7 +19344,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           filtered = get_info_data->get.id || get_info_data->name
                      ? 1
                      : info_count (&get_info_data->get);
-          SEND_GET_END ("info", &get_info_data->get, count, filtered);
+
+          if (strcmp (get_info_data->type, "allinfo"))
+            SEND_GET_END ("info", &get_info_data->get, count, filtered);
+          else
+            send_get_end ("info", &get_info_data->get, count, filtered,
+                          total_info_count(&get_info_data->get, 0),
+                          write_to_client, write_to_client_data);
 
           get_info_data_reset (get_info_data);
           set_client_state (CLIENT_AUTHENTIC);

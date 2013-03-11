@@ -1,3 +1,16 @@
+2013-03-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add search All SecInfo feature.
+
+	* src/manage_sql (all_info_count, total_info_count)
+	(init_all_info_iterator, all_info_iterator_type): New functions.
+	(ALL_INFO_ITERATOR_FILTER_COLUMNS, ALL_INFO_UNION_COLUMNS): New define.
+	(omp_xml_handle_end_element): Add allinfo handling in CLIENT_GET_INFO
+	case.
+
+	* src/manage.h: Add all_info_count, total_info_count,
+	init_all_info_iterator and all_info_iterator_type headers.
+
 2013-03-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move the observer checks for CREATE operations into the functions that
