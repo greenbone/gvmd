@@ -59,7 +59,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       def_class,
       title,
       description,
-      xml_file
+      xml_file,
+      status
     ) VALUES (
       "<xsl:value-of select="@id"/>",
       "<xsl:value-of select="@id"/>",
@@ -78,7 +79,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       "<xsl:value-of select="@class"/>",
       "<xsl:value-of select="str:replace(oval_definitions:metadata/oval_definitions:title/text(), '&quot;', '&quot;&quot;')"/>",
       "<xsl:value-of select="str:replace(oval_definitions:metadata/oval_definitions:description/text(), '&quot;', '&quot;&quot;')"/>",
-      "<xsl:copy-of select="$filename"/>"
+      "<xsl:copy-of select="$filename"/>",
+      <xsl:choose>
+        <xsl:when test="oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:status != ''">
+          "<xsl:value-of  select="oval_definitions:metadata/oval_definitions:oval_repository/oval_definitions:status"/>"
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:choose>
+            <xsl:when test="translate(@deprecated, $smallcase, $uppercase) = 'TRUE'">
+              <xsl:text>"DEPRECATED"</xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:text>""</xsl:text>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:otherwise>
+      </xsl:choose>
     );
     </xsl:when>
     <xsl:otherwise>

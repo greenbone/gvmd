@@ -2667,6 +2667,9 @@ ovaldef_info_iterator_description (iterator_t*);
 const char*
 ovaldef_info_iterator_xml_file (iterator_t*);
 
+const char*
+ovaldef_info_iterator_status (iterator_t*);
+
 /* CERT data */
 int
 manage_cert_loaded ();

@@ -47382,14 +47382,15 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  */
 #define OVALDEF_INFO_ITERATOR_FILTER_COLUMNS                \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "deprecated",    \
-   "def_class", "title", "description", "xml_file",  NULL }
+   "def_class", "title", "description", "xml_file",         \
+   "status", NULL }
 
 /**
  * @brief OVALDEF iterator columns.
  */
 #define OVALDEF_INFO_ITERATOR_COLUMNS                       \
   GET_ITERATOR_COLUMNS ", version, deprecated, def_class,"  \
-  "title, description, xml_file"
+  "title, description, xml_file, status"
 
 /**
  * @brief Filter columns for DFN_CERT_ADV iterator.
@@ -47927,6 +47928,17 @@ DEF_ACCESS (ovaldef_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 4);
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (ovaldef_info_iterator_xml_file, GET_ITERATOR_COLUMN_COUNT + 5);
+
+/**
+ * @brief Get the repository entry status from an OVALDEF iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The repository entry status of the OVAL definition,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (ovaldef_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /* CERT data */
 
