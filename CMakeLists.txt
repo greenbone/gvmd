@@ -377,4 +377,9 @@ install (FILES tools/greenbone-scapdata-sync
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
+install (FILES tools/greenbone-certdata-sync
+         DESTINATION ${SBINDIR}
+         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
 ## End
