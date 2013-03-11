@@ -1,3 +1,11 @@
+2013-03-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (manage_set_setting): Add All SecInfo default filter
+	setting.
+
+	* src/omp.c (omp_xml_handle_end_element): Use All SecInfo as default
+	filter name instead of ALLINFO in CLIENT_GET_INFO case.
+
 2013-03-11  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt: Install greenbone-certdata-sync.

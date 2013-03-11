@@ -47273,6 +47273,8 @@ manage_set_setting (const gchar *uuid, const gchar *name,
         filter_name = g_strdup ("OVAL Filter");
       else if (strcmp (uuid, "312350ed-bc06-44f3-8b3f-ab9eb828b80b") == 0)
         filter_name = g_strdup ("DFN-CERT Filter");
+      else if (strcmp (uuid, "feefe56b-e2da-4913-81cc-1a6ae3b36e64") == 0)
+        filter_name = g_strdup ("All SecInfo Filter");
       else
         filter_name = g_strdup ("");
     }
@@ -47295,7 +47297,8 @@ manage_set_setting (const gchar *uuid, const gchar *name,
                || strcmp (filter_name, "CVE Filter") == 0
                || strcmp (filter_name, "NVT Filter") == 0
                || strcmp (filter_name, "OVAL Filter") == 0
-               || strcmp (filter_name, "DFN-CERT Filter") == 0))
+               || strcmp (filter_name, "DFN-CERT Filter") == 0
+               || strcmp (filter_name, "All SecInfo Filter") == 0))
     {
       gchar *quoted_value;
 

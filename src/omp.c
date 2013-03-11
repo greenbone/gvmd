@@ -19065,7 +19065,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else if (strcmp (get_info_data->type, "nvt") == 0)
                 name = g_strdup ("NVT");
               else if (strcmp (get_info_data->type, "allinfo") == 0)
-                name = g_strdup ("ALLINFO");
+                name = g_strdup ("All SecInfo");
               else
                 {
                   if (send_find_error_to_client ("get_info",
