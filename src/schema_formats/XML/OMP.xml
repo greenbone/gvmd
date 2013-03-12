@@ -5895,6 +5895,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>deprecated</e>
             <e>def_class</e>
             <e>title</e>
+            <e>status</e>
             <o><e>description</e></o>
             <o><e>xml_file</e></o>
             <o><e>raw_data</e></o>
@@ -5911,12 +5912,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>deprecated</name>
             <summary>Whether the definition is deprecated</summary>
             <pattern>
-              <t>
-                <alts>
-                  <alt>Yes</alt>
-                  <alt>No</alt>
-                </alts>
-              </t>
+              <t>boolean</t>
             </pattern>
           </ele>
           <ele>
@@ -5929,6 +5925,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>title</name>
             <summary>Title of the definition</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>status</name>
+            <summary>Lifecycle status text of the definition</summary>
             <pattern>
               text
             </pattern>

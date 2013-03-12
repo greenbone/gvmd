@@ -1,3 +1,9 @@
+2013-03-12  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc: Add
+	OVAL definitions "status" element to get_info documentation.
+	Change documentation of "deprecated" element in OVALDEF to boolean type.
+
 2013-03-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (send_get_end): Don't printf filt_id when null.

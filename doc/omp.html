@@ -9781,6 +9781,11 @@ get_filters_response_filter_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>status</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Lifecycle status text of the definition.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>description</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Longer description of the definition. Only when details were requested.</div>
 <ul style="list-style: none"></ul>
@@ -10187,6 +10192,7 @@ get_info_response_info_ovaldef
        &amp; get_info_response_info_ovaldef_deprecated
        &amp; get_info_response_info_ovaldef_def_class
        &amp; get_info_response_info_ovaldef_title
+       &amp; get_info_response_info_ovaldef_status
        &amp; get_info_response_info_ovaldef_description?
        &amp; get_info_response_info_ovaldef_xml_file?
        &amp; get_info_response_info_ovaldef_raw_data?
@@ -10201,7 +10207,7 @@ get_info_response_info_ovaldef_version
 get_info_response_info_ovaldef_deprecated
  = element deprecated
      {
-       xsd:token { pattern = "Yes|No" }
+       boolean
      }
 
 get_info_response_info_ovaldef_def_class
@@ -10212,6 +10218,12 @@ get_info_response_info_ovaldef_def_class
 
 get_info_response_info_ovaldef_title
  = element title
+     {
+       text
+     }
+
+get_info_response_info_ovaldef_status
+ = element status
      {
        text
      }
