@@ -1,5 +1,9 @@
 2013-03-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/omp.c (send_get_end): Don't printf filt_id when null.
+
+2013-03-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc: Update
 	get_info documentation.
 
