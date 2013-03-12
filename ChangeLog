@@ -1,5 +1,10 @@
 2013-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_get_iterator): Remove used_by arg.  Recursive
+	access will be handled by explicit permissions.
+
+2013-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (migrate_74_to_75): Ensure table exists.
 
 2013-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
