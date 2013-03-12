@@ -1,5 +1,9 @@
 2013-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (migrate_74_to_75): Ensure table exists.
+
+2013-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add permissions table.  Manage task observers via permissions instead of
 	via the task_users table.  Hence increase database version to 75.  Add
 	database migration from version 74 to 75.

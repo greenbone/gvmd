@@ -9173,6 +9173,13 @@ migrate_74_to_75 ()
 
   /* Update the database. */
 
+  /* Ensure the new table exists for the migrator. */
+
+  sql ("CREATE TABLE IF NOT EXISTS permissions"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+       "  resource_type, resource, resource_uuid, resource_location,"
+       "  subject_type, subject, creation_time, modification_time);");
+
   /** @todo ROLLBACK on failure. */
 
   /* Task observers are now handled by permissions. */
