@@ -1,5 +1,13 @@
 2013-03-12  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
+	* tools/oval_timestamp.xsl, tools/oval_verify.xsl: Add recognition of
+	OVAL root elements oval_variables, oval_system_charactersistics and
+	oval_results. Variables files are now considered valid.
+
+	* tools/oval_update.xsl: Add compatibility with oval_variables files.
+
+2013-03-12  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc: Add
 	OVAL definitions "status" element to get_info documentation.
 	Change documentation of "deprecated" element in OVALDEF to boolean type.
