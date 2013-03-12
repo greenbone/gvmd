@@ -1,5 +1,10 @@
 2013-03-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc: Update
+	get_info documentation.
+
+2013-03-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (ALL_INFO_ITERATOR_FILTER_COLUMNS)
 	(ALL_INFO_UNION_COLUMNS, init_all_info_iterator): Add extra column
 	(all_info_iterator_extra): New function.

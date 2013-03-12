@@ -2939,7 +2939,7 @@ get_filters
 get_info
  = element get_info
      {
-       # Type must be either CPE, CVE, DFN_CERT_ADV, OVALDEF or NVT.
+       # Type must be either CPE, CVE, DFN_CERT_ADV, OVALDEF, NVT or ALLINFO.
        attribute type { text }
        & # Name or identifier of the requested information.
        attribute name { text }?
@@ -5665,6 +5665,7 @@ get_info_response_info
        & get_info_response_info_dfn_cert_adv?
        & get_info_response_info_ovaldef?
        & get_info_response_info_nvt?
+       & get_info_response_info_allinfo?
      }
 
 # The name of the info.
@@ -6023,6 +6024,28 @@ get_info_response_info_ovaldef_xml_file
 # Source representation of the information. Only when details were requested.
 get_info_response_info_ovaldef_raw_data
  = element raw_data
+     {
+       text
+     }
+
+# A SecInfo entry. Could be CPE, CVE, NVT, OVALDEF or DFN-CERT Advisory..
+get_info_response_info_allinfo
+ = element allinfo
+     {
+       get_info_response_info_allinfo_type
+       & get_info_response_info_allinfo_extra
+     }
+
+# Type of SecInfo entry..
+get_info_response_info_allinfo_type
+ = element type
+     {
+       text
+     }
+
+# Extra information from the entry like title or description..
+get_info_response_info_allinfo_extra
+ = element extra
      {
        text
      }

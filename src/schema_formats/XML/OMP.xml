@@ -5526,7 +5526,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <attrib>
         <name>type</name>
-        <summary>Type must be either CPE, CVE, DFN_CERT_ADV, OVALDEF or NVT</summary>
+        <summary>Type must be either CPE, CVE, DFN_CERT_ADV, OVALDEF, NVT or ALLINFO</summary>
         <type>text</type>
         <required>1</required>
       </attrib>
@@ -5592,6 +5592,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <o><e>dfn_cert_adv</e></o>
           <o><e>ovaldef</e></o>
           <o><e>nvt</e></o>
+          <o><e>allinfo</e></o>
         </pattern>
         <ele>
           <name>name</name>
@@ -5951,6 +5952,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Source representation of the information. Only when details were requested</summary>
             <pattern>
               text
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>allinfo</name>
+          <pattern>
+            <e>type</e>
+            <e>extra</e>
+          </pattern>
+          <summary>A SecInfo entry. Could be CPE, CVE, NVT, OVALDEF or DFN-CERT Advisory.</summary>
+          <ele>
+            <name>type</name>
+            <summary>Type of SecInfo entry.</summary>
+            <pattern>
+              <t>text</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>extra</name>
+            <summary>Extra information from the entry like title or description.</summary>
+            <pattern>
+              <t>text</t>
             </pattern>
           </ele>
         </ele>

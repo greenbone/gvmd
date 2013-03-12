@@ -9506,7 +9506,7 @@ get_filters_response_filter_count_page
 <li>
           @<b>type</b>
           (text)
-          Type must be either CPE, CVE, DFN_CERT_ADV, OVALDEF or NVT.
+          Type must be either CPE, CVE, DFN_CERT_ADV, OVALDEF, NVT or ALLINFO.
           </li>
 <li>
           @<b>name</b>
@@ -9802,6 +9802,22 @@ get_filters_response_filter_count_page
               ?<div style="margin-left: 15px; display: inline;">A NVT info element.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>allinfo</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">A SecInfo entry. Could be CPE, CVE, NVT, OVALDEF or DFN-CERT Advisory..</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Type of SecInfo entry..</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>extra</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Extra information from the entry like title or description..</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 <li>
@@ -9903,6 +9919,7 @@ get_info_response_info
        &amp; get_info_response_info_dfn_cert_adv?
        &amp; get_info_response_info_ovaldef?
        &amp; get_info_response_info_nvt?
+       &amp; get_info_response_info_allinfo?
      }
 
 get_info_response_info_name
@@ -10213,6 +10230,25 @@ get_info_response_info_ovaldef_xml_file
 
 get_info_response_info_ovaldef_raw_data
  = element raw_data
+     {
+       text
+     }
+
+get_info_response_info_allinfo
+ = element allinfo
+     {
+       get_info_response_info_allinfo_type
+       &amp; get_info_response_info_allinfo_extra
+     }
+
+get_info_response_info_allinfo_type
+ = element type
+     {
+       text
+     }
+
+get_info_response_info_allinfo_extra
+ = element extra
      {
        text
      }
