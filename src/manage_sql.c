@@ -334,6 +334,12 @@ valid_type (const char*);
 static gboolean
 find_user (const char *, user_t *user);
 
+int
+type_has_permissions (const char *);
+
+gboolean
+find_report_with_permission (const char *, report_t *, const char *);
+
 
 /* Variables. */
 
@@ -454,12 +460,13 @@ parse_actions (const char *actions_string)
  * @param[in]  resource  Type of resource, for example "task".
  * @param[in]  uuid      UUID of resource.
  * @param[in]  actions_string   Actions.
+ * @param[in]  permission       Permission.
  *
  * @return 1 if user may access resource, else 0.
  */
 static int
 user_has_access_uuid (const char *resource, const char *uuid,
-                      const char *actions_string)
+                      const char *actions_string, const char *permission)
 {
   int ret, actions;
 
@@ -468,6 +475,105 @@ user_has_access_uuid (const char *resource, const char *uuid,
   ret = user_owns_uuid (resource, uuid);
   if (ret)
     return ret;
+
+  if (type_has_permissions (resource))
+    {
+      if (strcasecmp (resource, "report") == 0)
+        {
+          char *uuid_task;
+          task_t task;
+          report_t report;
+
+          switch (sql_int64 (&report, 0, 0,
+                             "SELECT ROWID FROM reports WHERE uuid = '%s';",
+                             uuid))
+            {
+              case 0:
+                break;
+              case 1:        /* Too few rows in result of query. */
+                return 0;
+                break;
+              default:       /* Programming error. */
+                assert (0);
+              case -1:
+                return 0;
+                break;
+            }
+
+          report_task (report, &task);
+          if (task == 0)
+            return 0;
+          task_uuid (task, &uuid_task);
+          // FIX free (uuid);
+          uuid = uuid_task;
+        }
+
+      if (permission == NULL || strcmp (permission, "get") == 0)
+        return sql_int (0, 0,
+                        /* Any permission implies 'get'. */
+                        "SELECT count(*) FROM permissions"
+                        " WHERE resource_uuid = '%s'"
+                        " AND ((subject_type = 'user'"
+                        "       AND subject"
+                        "           = (SELECT ROWID FROM users"
+                        "              WHERE users.uuid = '%s'))"
+#if 0
+                        "      OR (subject_type = 'group'"
+                        "          AND subject"
+                        "              IN (SELECT DISTINCT `group`"
+                        "                  FROM group_users"
+                        "                  WHERE user = (SELECT ROWID"
+                        "                                FROM users"
+                        "                                WHERE users.uuid"
+                        "                                      = '%s')))"
+                        "      OR (subject_type = 'role'"
+                        "          AND subject"
+                        "              IN (SELECT DISTINCT role"
+                        "                  FROM role_users"
+                        "                  WHERE user = (SELECT ROWID"
+                        "                                FROM users"
+                        "                                WHERE users.uuid"
+                        "                                      = '%s')))",
+#else
+                        "      );",
+#endif
+                        uuid,
+                        current_credentials.uuid,
+                        current_credentials.uuid,
+                        current_credentials.uuid);
+      return sql_int (0, 0,
+                      "SELECT count(*) FROM permissions"
+                      " WHERE resource_uuid = '%s'"
+                      " AND ((subject_type = 'user'"
+                      "       AND subject"
+                      "           = (SELECT ROWID FROM users"
+                      "              WHERE users.uuid = '%s'))"
+#if 0
+                      "      OR (subject_type = 'group'"
+                      "          AND subject"
+                      "              IN (SELECT DISTINCT `group`"
+                      "                  FROM group_users"
+                      "                  WHERE user = (SELECT ROWID"
+                      "                                FROM users"
+                      "                                WHERE users.uuid"
+                      "                                      = '%s')))"
+                      "      OR (subject_type = 'role'"
+                      "          AND subject"
+                      "              IN (SELECT DISTINCT role"
+                      "                  FROM role_users"
+                      "                  WHERE user = (SELECT ROWID"
+                      "                                FROM users"
+                      "                                WHERE users.uuid"
+                      "                                      = '%s')))"
+#else
+                      "     )"
+#endif
+                      " AND name = '%s';",
+                      uuid,
+                      current_credentials.uuid,
+                      current_credentials.uuid,
+                      permission);
+    }
 
   if (actions_string == NULL || strlen (actions_string) == 0)
     return 0;
@@ -483,80 +589,42 @@ user_has_access_uuid (const char *resource, const char *uuid,
                     " WHERE results.uuid = '%s'"
                     " AND report_results.result = results.ROWID"
                     " AND report_results.report = reports.ROWID"
-                    " AND ((reports.owner IS NULL) OR (reports.owner ="
-                    " (SELECT users.ROWID FROM users WHERE users.uuid = '%s'))"
-                    "  OR reports.task IN"
-                    "     (SELECT task FROM task_users WHERE user ="
-                    "      (SELECT ROWID FROM users"
-                    "       WHERE users.uuid = '%s')"
-                    "      AND actions & %u = %u));",
-                    uuid,
-                    current_credentials.uuid,
-                    current_credentials.uuid,
-                    actions,
-                    actions);
+                    " AND ((reports.owner IS NULL)"
+                    "      OR (reports.owner ="
+                    "          (SELECT users.ROWID FROM users"
+                    "           WHERE users.uuid = '%s'))"
+                    "      OR EXISTS"
+                    "       (SELECT task FROM permissions"
+                    "        WHERE resource_type = 'task'"
+                    "        AND resource = task"
+                    "        AND resource_location"
+                    "            = " G_STRINGIFY (LOCATION_TABLE)
+                    "        AND ((subject_type = 'user'"
+                    "              AND subject"
+                    "                  = (SELECT ROWID FROM users"
+                    "                     WHERE users.uuid = '%s'))"
+#if 0
+                    "             OR (subject_type = 'group'"
+                    "                 AND subject"
+                    "                     IN (SELECT DISTINCT `group`"
+                    "                         FROM group_users"
+                    "                         WHERE user = (SELECT ROWID"
+                    "                                       FROM users"
+                    "                                       WHERE users.uuid"
+                    "                                             = '%s')))"
+                    "             OR (subject_type = 'role'"
+                    "                 AND subject"
+                    "                     IN (SELECT DISTINCT role"
+                    "                         FROM role_users"
+                    "                         WHERE user = (SELECT ROWID"
+                    "                                       FROM users"
+                    "                                       WHERE users.uuid"
+                    "                                             = '%s')))"
+#endif
+                    "     )"
+                    " AND name = '%s';",
 
-  if (strcmp (resource, "report") == 0)
-    return sql_int (0, 0,
-                    "SELECT count(*) FROM tasks"
-                    " WHERE ROWID = (SELECT task FROM %ss WHERE uuid = '%s')"
-                    " AND"
-                    " ((owner IS NULL) OR (owner ="
-                    "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s'))"
-                    "  OR ROWID IN"
-                    "     (SELECT task FROM task_users WHERE user ="
-                    "      (SELECT ROWID FROM users"
-                    "       WHERE users.uuid = '%s')"
-                    "      AND actions & %u = %u));",
-                    resource,
-                    uuid,
-                    current_credentials.uuid,
-                    current_credentials.uuid,
-                    actions,
-                    actions);
 
-  if (strcmp (resource, "lsc_credential") == 0)
-    return sql_int (0, 0,
-                    "SELECT count(*) FROM tasks, targets"
-                    " WHERE tasks.target = targets.ROWID"
-                    " AND (targets.lsc_credential ="
-                    "      (SELECT %ss.ROWID FROM %ss WHERE uuid = '%s')"
-                    "      OR"
-                    "      targets.smb_lsc_credential ="
-                    "      (SELECT %ss.ROWID FROM %ss WHERE uuid = '%s'))"
-                    " AND"
-                    " ((tasks.owner IS NULL) OR (tasks.owner ="
-                    "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s'))"
-                    "  OR tasks.ROWID IN"
-                    "     (SELECT task FROM task_users WHERE user ="
-                    "      (SELECT users.ROWID FROM users"
-                    "       WHERE users.uuid = '%s')"
-                    "      AND actions & %u = %u));",
-                    resource,
-                    resource,
-                    uuid,
-                    resource,
-                    resource,
-                    uuid,
-                    current_credentials.uuid,
-                    current_credentials.uuid,
-                    actions,
-                    actions);
-
-  if (strcmp (resource, "task"))
-    return sql_int (0, 0,
-                    "SELECT count(*) FROM tasks"
-                    " WHERE %s = (SELECT ROWID FROM %ss WHERE uuid = '%s')"
-                    " AND"
-                    " ((owner IS NULL) OR (owner ="
-                    "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s'))"
-                    "  OR ROWID IN"
-                    "     (SELECT task FROM task_users WHERE user ="
-                    "      (SELECT ROWID FROM users"
-                    "       WHERE users.uuid = '%s')"
-                    "      AND actions & %u = %u));",
-                    resource,
-                    resource,
                     uuid,
                     current_credentials.uuid,
                     current_credentials.uuid,
@@ -1210,6 +1278,7 @@ user_may (const char *operation)
                  "       AND subject"
                  "           = (SELECT ROWID FROM users"
                  "              WHERE users.uuid = '%s'))"
+#if 0
                  "      OR (subject_type = 'group'"
                  "          AND subject"
                  "              IN (SELECT DISTINCT `group`"
@@ -1225,7 +1294,9 @@ user_may (const char *operation)
                  "                  WHERE user = (SELECT ROWID"
                  "                                FROM users"
                  "                                WHERE users.uuid"
-                 "                                      = '%s'))))"
+                 "                                      = '%s')))"
+#endif
+                 "     )"
                  " AND name = '%s';",
                  current_credentials.uuid,
                  current_credentials.uuid,
@@ -2267,13 +2338,14 @@ get_join (int first, int last_was_and, int last_was_not)
  * @param[out] order_return  If given then order clause.
  * @param[out] first_return  If given then first row.
  * @param[out] max_return    If given then max rows.
+ * @param[out] permissions   When given then permissions string vector.
  *
  * @return WHERE clause for filter if one is required, else NULL.
  */
 static gchar *
 filter_clause (const char* type, const char* filter, const char **columns,
                int trash, gchar **order_return, int *first_return,
-               int *max_return)
+               int *max_return, array_t **permissions)
 {
   GString *clause, *order;
   keyword_t **point;
@@ -2284,6 +2356,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
     filter = "";
 
   while (*filter && isspace (*filter)) filter++;
+
+  if (permissions)
+    *permissions = make_array ();
 
   /* Add SQL to the clause for each keyword or phrase. */
 
@@ -2438,6 +2513,15 @@ filter_clause (const char* type, const char* filter, const char **columns,
         {
           if (max_return)
             *max_return = atoi (keyword->string);
+
+          point++;
+          continue;
+        }
+      else if (keyword->column
+               && (strcasecmp (keyword->column, "permission") == 0))
+        {
+          if (permissions)
+            array_add (*permissions, g_strdup (keyword->string));
 
           point++;
           continue;
@@ -2885,16 +2969,17 @@ type_named (const char *type)
 }
 
 /**
- * @brief Check whether a type has a users table.
+ * @brief Check whether a type has permission support.
  *
  * @param[in]  type          Type of resource.
  *
  * @return 1 yes, 0 no.
  */
 int
-type_has_users (const char *type)
+type_has_permissions (const char *type)
 {
-  return strcasecmp (type, "task") == 0;
+  return strcasecmp (type, "task") == 0
+         || strcasecmp (type, "report") == 0;
 }
 
 /**
@@ -2981,7 +3066,7 @@ find_resource_for_actions (const char* type, const char* uuid,
                            resource_t* resource, const char *actions)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid (type, quoted_uuid, actions) == 0)
+  if (user_has_access_uuid (type, quoted_uuid, actions, NULL) == 0)
     {
       g_free (quoted_uuid);
       *resource = 0;
@@ -3201,8 +3286,10 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
   else
     filter = NULL;
 
+  // FIX owner,permissions?
+
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          get->trash, &order, &first, &max);
+                          get->trash, &order, &first, &max, NULL);
 
   g_free (filter);
 
@@ -3304,6 +3391,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
 {
   int first, max, actions;
   gchar *clause, *order, *used_by_clause, *filter, *owned_and_used_by_clause;
+  array_t *permissions;
   resource_t resource = 0;
 
   assert (used_by ? current_credentials.uuid : "1");
@@ -3360,11 +3448,13 @@ init_get_iterator (iterator_t* iterator, const char *type,
     filter = NULL;
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          get->trash, &order, &first, &max);
+                          get->trash, &order, &first, &max, &permissions);
 
   g_free (filter);
 
+#if 0
   if (used_by && actions)
+    // FIX recursive permission for observed tasks.  convert to permissions.
     used_by_clause = g_strdup_printf ("  OR"
                                       "  (SELECT %ss.ROWID FROM %ss"
                                       "   WHERE %s = %ss.ROWID)"
@@ -3384,40 +3474,178 @@ init_get_iterator (iterator_t* iterator, const char *type,
                                       actions,
                                       actions);
   else
+#endif
     used_by_clause = NULL;
 
   if (owned)
     {
+      gchar *permission_clause;
+      GString *permission_or;
+      int index;
+
+      permission_or = g_string_new ("");
+      for (index = 0; index < permissions->len; index++)
+        {
+          gchar *permission;
+          permission = (gchar*) g_ptr_array_index (permissions, index);
+          if (strcasecmp (permission, "any") == 0)
+            {
+              g_string_free (permission_or, TRUE);
+              permission_or = g_string_new ("1");
+              index = 1;
+              break;
+            }
+          if (index == 0)
+            g_string_append_printf (permission_or, "name = '%s'", permission);
+          else
+            g_string_append_printf (permission_or, " OR name = '%s'",
+                                    permission);
+        }
+
+      array_free (permissions);
+
+      /* Check on index is because default is owner and global, for backward
+       * compatibility. */
+      if (current_credentials.uuid && index)
+        permission_clause
+         = g_strdup_printf ("OR EXISTS"
+                            " (SELECT ROWID FROM permissions"
+                            "  WHERE resource = %ss%s.ROWID"
+                            "  AND resource_type = '%s'"
+                            "  AND resource_location = %i"
+                            "  AND ((subject_type = 'user'"
+                            "        AND subject"
+                            "            = (SELECT ROWID FROM users"
+                            "               WHERE users.uuid = '%s'))"
+#if 0
+                            "       OR (subject_type = 'group'"
+                            "           AND subject"
+                            "               IN (SELECT DISTINCT `group`"
+                            "                   FROM group_users"
+                            "                   WHERE user = (SELECT ROWID"
+                            "                                 FROM users"
+                            "                                 WHERE users.uuid"
+                            "                                       = '%s')))"
+                            "       OR (subject_type = 'role'"
+                            "           AND subject"
+                            "               IN (SELECT DISTINCT role"
+                            "                   FROM role_users"
+                            "                   WHERE user = (SELECT ROWID"
+                            "                                 FROM users"
+                            "                                 WHERE users.uuid"
+                            "                                       = '%s'))))"
+#endif
+                            "      )"
+                            "  AND (%s))",
+                            type,
+                            get->trash ? "_trash" : "",
+                            type,
+                            get->trash ? 1 : 0,
+                            current_credentials.uuid,
+#if 0
+                            current_credentials.uuid,
+                            current_credentials.uuid,
+#endif
+                            permission_or->str);
+      else
+        permission_clause = NULL;
+
+      g_string_free (permission_or, TRUE);
+
       if (resource || (current_credentials.uuid == NULL))
         owned_and_used_by_clause
          = g_strdup_printf (" (1%s)",
                             used_by_clause ? used_by_clause : "1");
+      else if (get->trash && (strcasecmp (type, "task") == 0))
+        owned_and_used_by_clause
+         = g_strdup_printf (" (%ss.hidden = 2"
+                            "  AND ((%ss.owner IS NULL)"
+                            "       OR (%ss.owner"
+                            "           = (SELECT ROWID FROM users"
+                            "              WHERE users.uuid = '%s'))"
+                            "       %s"
+                            "       %s))",
+                            type,
+                            type,
+                            type,
+                            current_credentials.uuid,
+                            permission_clause ? permission_clause : "",
+                            used_by_clause ? used_by_clause : "");
+      else if (get->trash && type_has_permissions (type))
+        owned_and_used_by_clause
+         = g_strdup_printf (" ((%ss_trash.owner IS NULL)"
+                            "  OR (%ss_trash.owner"
+                            "      = (SELECT ROWID FROM users"
+                            "         WHERE users.uuid = '%s'))"
+                            "  %s"
+                            "  %s)",
+                            type,
+                            type,
+                            current_credentials.uuid,
+                            permission_clause ? permission_clause : "",
+                            used_by_clause ? used_by_clause : "");
       else if (get->trash)
         owned_and_used_by_clause = g_strdup_printf (" ((owner IS NULL) OR (owner ="
                                                     "  (SELECT ROWID FROM users"
                                                     "   WHERE users.uuid = '%s'))"
-                                                    " %s)",
+                                                    "  %s)",
                                                     current_credentials.uuid,
                                                     used_by_clause ? used_by_clause : "");
-      else if (type_has_users (type))
+      else if (strcmp (type, "permission") == 0)
         owned_and_used_by_clause
-         = g_strdup_printf (" ((%ss.owner IS NULL) OR (%ss.owner ="
-                            "  (SELECT ROWID FROM users"
-                            "   WHERE users.uuid = '%s')"
-                            "  OR (ROWID IN (SELECT %s FROM %s_users"
-                            "                WHERE user ="
-                            "                      (SELECT ROWID FROM users"
-                            "                       WHERE users.uuid = '%s')"
-                            "                AND actions & %u = %u)))"
-                            " %s)",
+         = g_strdup_printf (" ((%ss.owner = (SELECT ROWID FROM users"
+                            "                WHERE users.uuid = '%s'))"
+                            "  OR (%ss.subject_type = 'user'"
+                            "      AND %ss.subject"
+                            "          = (SELECT ROWID FROM users"
+                            "             WHERE users.uuid = '%s'))"
+#if 0
+                            "  OR (%ss.subject_type = 'group'"
+                            "      AND %ss.subject"
+                            "          IN (SELECT DISTINCT `group`"
+                            "              FROM group_users"
+                            "              WHERE user = (SELECT ROWID"
+                            "                            FROM users"
+                            "                            WHERE users.uuid"
+                            "                                  = '%s')))"
+                            "  OR (%ss.subject_type = 'role'"
+                            "      AND %ss.subject"
+                            "          IN (SELECT DISTINCT role"
+                            "              FROM role_users"
+                            "              WHERE user = (SELECT ROWID"
+                            "                            FROM users"
+                            "                            WHERE users.uuid"
+                            "                                  = '%s')))"
+#endif
+                            "  %s"
+                            "  %s)",
+                            type,
+                            current_credentials.uuid,
+                            type,
+                            type,
+                            current_credentials.uuid,
+#if 0
                             type,
                             type,
                             current_credentials.uuid,
                             type,
                             type,
                             current_credentials.uuid,
-                            actions,
-                            actions,
+#endif
+                            permission_clause ? permission_clause : "",
+                            used_by_clause ? used_by_clause : "");
+      else if (type_has_permissions (type))
+        owned_and_used_by_clause
+         = g_strdup_printf (" ((%ss.owner IS NULL)"
+                            "  OR (%ss.owner"
+                            "      = (SELECT ROWID FROM users"
+                            "         WHERE users.uuid = '%s'))"
+                            "  %s"
+                            "  %s)",
+                            type,
+                            type,
+                            current_credentials.uuid,
+                            permission_clause ? permission_clause : "",
                             used_by_clause ? used_by_clause : "");
       else
         owned_and_used_by_clause = g_strdup_printf (" ((%ss.owner IS NULL) OR (%ss.owner ="
@@ -3528,7 +3756,7 @@ count (const char *type, const get_data_t *get,
        int distinct, const char *extra_tables, const char *extra_where,
        int owned)
 {
-  int actions, ret;
+  int ret;
   gchar *clause, *owned_clause;
   gchar *filter;
 
@@ -3544,8 +3772,10 @@ count (const char *type, const get_data_t *get,
   else
     filter = NULL;
 
+  // FIX owner,permissions?
+
   clause = filter_clause (type, filter ? filter : get->filter, extra_columns,
-                          get->trash, NULL, NULL, NULL);
+                          get->trash, NULL, NULL, NULL, NULL);
   if (owned)
     owned_clause = g_strdup_printf ("((%ss.owner IS NULL) OR (%ss.owner ="
                                     " (SELECT ROWID FROM users"
@@ -3556,39 +3786,13 @@ count (const char *type, const get_data_t *get,
   else
     owned_clause = g_strdup ("1");
 
-  if (type_has_users (type) == 0
-      || get->actions == NULL
-      || strlen (get->actions) == 0
-      || (actions = parse_actions (get->actions)) == 0)
-    {
-      ret = sql_int (0, 0,
-                     "SELECT count (%s%ss.ROWID), %s"
-                     " FROM %ss%s"
-                     " WHERE %s"
-                     "%s%s%s;",
-                     distinct ? "DISTINCT " : "",
-                     type,
-                     iterator_columns,
-                     type,
-                     extra_tables ? extra_tables : "",
-                     owned_clause,
-                     clause ? " AND " : "",
-                     clause ? clause : "",
-                     extra_where ? extra_where : "");
-      g_free (owned_clause);
-      g_free (clause);
-      return ret;
-    }
+  if (get->actions)
+    g_warning ("%s: get->actions given", __FUNCTION__);
 
   ret = sql_int (0, 0,
                  "SELECT count (%s%ss.ROWID), %s"
                  " FROM %ss%s"
-                 " WHERE (%s OR"
-                 "  (ROWID IN"
-                 "   (SELECT %s FROM %s_users WHERE user ="
-                 "    (SELECT ROWID FROM users"
-                 "     WHERE users.uuid = '%s')"
-                 "    AND actions & %u = %u)))"
+                 " WHERE %s"
                  "%s%s%s;",
                  distinct ? "DISTINCT " : "",
                  type,
@@ -3596,15 +3800,9 @@ count (const char *type, const get_data_t *get,
                  type,
                  extra_tables ? extra_tables : "",
                  owned_clause,
-                 type,
-                 type,
-                 current_credentials.uuid,
-                 actions,
-                 actions,
                  clause ? " AND " : "",
                  clause ? clause : "",
                  extra_where ? extra_where : "");
-
   g_free (owned_clause);
   g_free (clause);
   return ret;
@@ -3653,6 +3851,7 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
   sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS overrides_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER, end_time);");
+  sql ("CREATE TABLE IF NOT EXISTS permissions (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment, resource_type, resource, resource_uuid, resource_location, subject_type, subject, creation_time, modification_time);");
   /* Overlapping port ranges will cause problems, at least for the port
    * counting.  OMP CREATE_PORT_LIST and CREATE_PORT_RANGE check for this,
    * but whoever creates a predefined port list must check this manually. */
@@ -3693,7 +3892,6 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS task_alerts (id INTEGER PRIMARY KEY, task INTEGER, alert INTEGER, alert_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_preferences (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER, upload_result_count INTEGER, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS task_users (id INTEGER PRIMARY KEY, task INTEGER, user INTEGER, actions INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password, timezone);");
 
   sql ("ANALYZE;");
@@ -8956,6 +9154,52 @@ migrate_73_to_74 ()
 }
 
 /**
+ * @brief Migrate the database from version 74 to version 75.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_74_to_75 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 74. */
+
+  if (manage_db_version () != 74)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Task observers are now handled by permissions. */
+
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+       "  resource_location, subject_type, subject, creation_time,"
+       "  modification_time)"
+       " SELECT make_uuid (),"
+       "        (SELECT owner FROM tasks WHERE ROWID = task),"
+       "        'get', '', 'task', task,"
+       "        (SELECT uuid FROM tasks WHERE ROWID = task),"
+       "        " G_STRINGIFY (LOCATION_TABLE) ", 'user', user, now (), now ()"
+       " FROM task_users;");
+
+  sql ("DROP TABLE task_users;");
+
+  /* Set the database version to 75. */
+
+  set_db_version (75);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9034,6 +9278,7 @@ static migrator_t database_migrators[]
     {72, migrate_71_to_72},
     {73, migrate_72_to_73},
     {74, migrate_73_to_74},
+    {75, migrate_74_to_75},
     /* End marker. */
     {-1, NULL}};
 
@@ -9553,16 +9798,18 @@ name (iterator_t* iterator) \
  * @param[in]  action    Action.
  */
 void
-init_task_user_iterator (iterator_t *iterator, task_t task, action_t action)
+init_task_user_iterator (iterator_t *iterator, task_t task)
 {
   init_iterator (iterator,
-                 "SELECT task_users.ROWID, task, user, actions,"
-                 " (SELECT name FROM users WHERE users.ROWID = task_users.user)"
-                 " FROM task_users"
-                 " WHERE task = %llu AND actions & %u = %u;",
-                 task,
-                 action,
-                 action);
+                 "SELECT ROWID, resource, subject,"
+                 " (SELECT name FROM users"
+                 "  WHERE users.ROWID = permissions.subject)"
+                 " FROM permissions"
+                 " WHERE resource_type = 'task'"
+                 " AND resource = %llu"
+                 " AND subject_type = 'user'"
+                 " AND name = 'get';",
+                 task);
 }
 
 /**
@@ -9593,21 +9840,7 @@ task_user_iterator_user (iterator_t* iterator)
   return sqlite3_column_int64 (iterator->stmt, 2);
 }
 
-/**
- * @brief Return the actions from a actions user iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Actions of the iterator or NULL if iteration is complete.
- */
-int
-task_user_iterator_actions (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return sqlite3_column_int64 (iterator->stmt, 3);
-}
-
-DEF_ACCESS (task_user_iterator_name, 4);
+DEF_ACCESS (task_user_iterator_name, 3);
 
 
 /* Events and Alerts. */
@@ -12978,7 +13211,7 @@ task_writable (task_t task)
   char *uuid;
 
   task_uuid (task, &uuid);
-  if (user_has_access_uuid ("task", uuid, "w") == 0)
+  if (user_has_access_uuid ("task", uuid, NULL, "modify") == 0)
     {
       free (uuid);
       return 0;
@@ -13004,7 +13237,7 @@ trash_task_writable (task_t task)
   char *uuid;
 
   task_uuid (task, &uuid);
-  if (user_has_access_uuid ("task", uuid, "w") == 0)
+  if (user_has_access_uuid ("task", uuid, NULL, "modify") == 0)
     {
       free (uuid);
       return 0;
@@ -15559,7 +15792,7 @@ task_observers (task_t task)
 
   observers = g_string_new ("");
 
-  init_task_user_iterator (&users, task, MANAGE_ACTION_GET);
+  init_task_user_iterator (&users, task);
   if (next (&users))
     {
       g_string_append (observers, task_user_iterator_name (&users));
@@ -16715,6 +16948,8 @@ set_task_observers (task_t task, const gchar *observers)
   gchar **split, **point;
   GList *added;
 
+  // TODO the tricky bit here is if you have to own the task to set observers.
+
   assert (current_credentials.username);
 
   added = NULL;
@@ -16722,7 +16957,8 @@ set_task_observers (task_t task, const gchar *observers)
 
   sql ("BEGIN IMMEDIATE;");
 
-  sql ("DELETE FROM task_users WHERE task = %llu;", task);
+  sql ("DELETE FROM permissions WHERE resource_type = 'task' AND resource = %llu;",
+       task);
 
   point = split;
   while (*point)
@@ -16813,9 +17049,17 @@ set_task_observers (task_t task, const gchar *observers)
             }
         }
 
-      sql ("INSERT INTO task_users (task, user, actions)"
-           " VALUES (%llu, %llu, %llu)",
-           task, user, (unsigned long long int) MANAGE_ACTION_GET);
+      sql ("INSERT INTO permissions"
+           " (uuid, owner, name, comment, resource_type, resource,"
+           "  resource_uuid, resource_location, subject_type, subject,"
+           "  creation_time, modification_time)"
+           " VALUES"
+           " (make_uuid (),"
+           "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+           "  'get', '', 'task', %llu,"
+           "  (SELECT uuid FROM tasks WHERE tasks.ROWID = %llu),"
+           "  " G_STRINGIFY (LOCATION_TABLE) ", 'user', %llu, now (), now ());",
+           current_credentials.uuid, task, task, user);
 
       point++;
     }
@@ -17043,7 +17287,7 @@ gboolean
 find_result_for_actions (const char *uuid, result_t *result,
                          const char *actions)
 {
-  if (user_has_access_uuid ("result", uuid, actions) == 0)
+  if (user_has_access_uuid ("result", uuid, actions, NULL) == 0)
     {
       *result = 0;
       return FALSE;
@@ -21158,8 +21402,10 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
                int autofp)
 {
   report_t report;
-  if (find_report_for_actions (report_id, &report, "g"))
+  // TODO Wrap in transaction.
+  if (find_report_with_permission (report_id, &report, "get"))
     return -1;
+  // TODO Check if report was found.
   return report_counts_id (report, debugs, holes, infos, logs, warnings,
                            false_positives, override, NULL, autofp);
 }
@@ -27712,7 +27958,7 @@ find_task (const char* uuid, task_t* task)
 gboolean
 find_task_for_actions (const char* uuid, task_t* task, const char *actions)
 {
-  if (user_has_access_uuid ("task", uuid, actions) == 0)
+  if (user_has_access_uuid ("task", uuid, actions, NULL) == 0)
     {
       *task = 0;
       return FALSE;
@@ -27809,6 +28055,48 @@ find_report (const char* uuid, report_t* report)
 }
 
 /**
+ * @brief Find a report for a set of permissions, given a UUID.
+ *
+ * @param[in]   uuid        UUID of report.
+ * @param[out]  report      Report return, 0 if succesfully failed to find
+ *                          report.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find report), TRUE on error.
+ */
+gboolean
+find_report_with_permission (const char* uuid, report_t* report,
+                             const char *permission)
+{
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_has_access_uuid ("report", quoted_uuid, NULL, permission) == 0)
+    {
+      g_free (quoted_uuid);
+      *report = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (report, 0, 0,
+                     "SELECT ROWID FROM reports WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *report = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
  * @brief Find a report given an identifier.
  *
  * @param[in]   uuid     A report identifier.
@@ -27821,7 +28109,7 @@ gboolean
 find_report_for_actions (const char* uuid, report_t* report,
                          const char *actions)
 {
-  if (user_has_access_uuid ("report", uuid, actions) == 0)
+  if (user_has_access_uuid ("report", uuid, actions, NULL) == 0)
     {
       *report = 0;
       return FALSE;
@@ -28032,7 +28320,7 @@ find_target_for_actions (const char* uuid, target_t* target,
                          const char *actions)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("target", quoted_uuid, actions) == 0)
+  if (user_has_access_uuid ("target", quoted_uuid, actions, NULL) == 0)
     {
       g_free (quoted_uuid);
       *target = 0;
@@ -30308,7 +30596,7 @@ find_config_for_actions (const char* uuid, config_t* config,
                          const char *actions)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("config", quoted_uuid, actions) == 0)
+  if (user_has_access_uuid ("config", quoted_uuid, actions, NULL) == 0)
     {
       g_free (quoted_uuid);
       *config = 0;
@@ -35057,7 +35345,7 @@ find_lsc_credential_for_actions (const char* uuid,
                                  const char *actions)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("lsc_credential", quoted_uuid, actions) == 0)
+  if (user_has_access_uuid ("lsc_credential", quoted_uuid, actions, NULL) == 0)
     {
       g_free (quoted_uuid);
       *lsc_credential = 0;
@@ -46875,7 +47163,7 @@ setting_count (const char *filter)
   assert (current_credentials.uuid);
 
   clause = filter_clause ("setting", filter, extra_columns, 0, NULL, NULL,
-                          NULL);
+                          NULL, NULL);
 
   ret = sql_int (0, 0,
                  "SELECT count (*)"
@@ -46945,7 +47233,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
     max = -1;
 
   clause = filter_clause ("setting", filter, extra_columns, 0, NULL, NULL,
-                          NULL);
+                          NULL, NULL);
 
   quoted_uuid = uuid ? sql_quote (uuid) : NULL;
 
@@ -48156,7 +48444,8 @@ total_info_count (const get_data_t *get, int filtered)
         filter = NULL;
 
       clause = filter_clause ("nvt", filter ? filter : get->filter,
-                              filter_columns, get->trash, NULL, NULL, NULL);
+                              filter_columns, get->trash, NULL, NULL, NULL,
+                              NULL);
       if (clause)
         return sql_int (0, 0,
                         "SELECT count (ROWID) FROM"
@@ -48204,7 +48493,7 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
 
   clause = filter_clause ("nvt", filter ? filter : get->filter,
                           filter_columns, get->trash,
-                          &order, &first, &max);
+                          &order, &first, &max, NULL);
 
   if (clause)
     init_iterator (iterator,

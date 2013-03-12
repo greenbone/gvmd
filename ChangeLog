@@ -1,5 +1,39 @@
 2013-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add permissions table.  Manage task observers via permissions instead of
+	via the task_users table.  Hence increase database version to 75.  Add
+	database migration from version 74 to 75.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 75.
+
+	* src/manage_sql.c (user_has_access_uuid): Add permission arg.  If type
+	has permissions support (currently task and report) then do the check
+	using the new permissions table.  Remove special case check for
+	lsc_credential because recursive access via task access will be removed
+	with the new permission system.  Update callers.
+	(vector_find_filter, underscore_sql_quote): New functions.  Helpers.
+	(user_may): Add #if 0 around already disabled code, for consistency.
+	(filter_clause): Add permissions arg.  Return with array of permissions
+	filter terms, if arg given.  Update callers.
+	(type_has_users): Remove.
+	(type_has_permissions): New function.
+	(init_get_iterator): Remove task_users based filtering.  Add permission
+	based filtering, which affects only tasks and reports.
+	(count): Remove special case based on actions parameter.  This was used
+	to control which tasks where visible.  Now done via permissions
+	parameter.
+	(create_tables): Add permissions.  Remove task_users.
+	(migrate_74_to_75): New function.  Converts task_users to permissions.
+	(migrators): Add migrate_74_to_75.
+	(init_task_user_iterator): Remove action arg.  Iterator over permissions
+	table instead of task_users.
+	(task_user_iterator_actions): Remove.  Adjust name position accordingly.
+	(set_task_observer): Use new table.
+	(report_counts): Use permission version of find function.
+	(find_report_with_permission): New function.
+
+2013-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): Correct SQL typo.
 
 2013-03-12  Timo Pollmeier  <timo.pollmeier@greenbone.net>
