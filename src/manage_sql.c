@@ -2550,7 +2550,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                     keyword->number);
           else
             g_string_append_printf (clause,
-                                    "%s(CAST (%s AS TEST) > '%s'",
+                                    "%s(CAST (%s AS TEXT) > '%s'",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
                                     quoted_column,

@@ -1,3 +1,7 @@
+2013-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Correct SQL typo.
+
 2013-03-12  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	* tools/oval_timestamp.xsl, tools/oval_verify.xsl: Add recognition of
@@ -78,7 +82,7 @@
 	(update_scap_db_private, update_scap_db): Add selective rebuild of OVAL
 	data.
 
-	* tools/openvas-scapdata-sync.in (db_migrate_11, check_db_version): See 
+	* tools/openvas-scapdata-sync.in (db_migrate_11, check_db_version): See
 	greenbone-scapdata-sync.
 	(update_sec_db_private, update_sec_db): See update_scap_db_private,
 	update_scap_db in greenbone-scapdata-sync.
