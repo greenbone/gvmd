@@ -2714,6 +2714,9 @@ init_all_info_iterator (iterator_t*, get_data_t*, const char*);
 const char*
 all_info_iterator_type (iterator_t*);
 
+const char*
+all_info_iterator_extra (iterator_t*);
+
 
 /* Settings. */
 

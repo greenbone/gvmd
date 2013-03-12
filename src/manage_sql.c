@@ -47412,19 +47412,22 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  * @brief Filter columns for All SecInfo iterator.
  */
 #define ALL_INFO_ITERATOR_FILTER_COLUMNS                \
- { GET_ITERATOR_FILTER_COLUMNS, "type", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "type", "extra", NULL }
 
 /**
  * @brief All SecInfo iterator columns.
  */
 #define ALL_INFO_UNION_COLUMNS                                              \
-  "(SELECT " GET_ITERATOR_COLUMNS ", 'cve' AS type FROM cves"               \
-  " UNION SELECT " GET_ITERATOR_COLUMNS ", 'cpe' AS type FROM cpes"         \
-  " UNION SELECT " GET_ITERATOR_COLUMNS ", 'nvt' AS type FROM nvts"         \
+  "(SELECT " GET_ITERATOR_COLUMNS ", 'cve' AS type, description as extra"   \
+  "  FROM cves"                                                             \
+  " UNION SELECT " GET_ITERATOR_COLUMNS ", 'cpe' AS type, title as extra"   \
+  "  FROM cpes"                                                             \
+  " UNION SELECT " GET_ITERATOR_COLUMNS ", 'nvt' AS type, summary as extra" \
+  "  FROM nvts"                                                             \
   " UNION SELECT " GET_ITERATOR_COLUMNS ", 'dfn_cert_adv' AS type"          \
-  "  FROM dfn_cert_advs"                                                    \
+  "  ,title as extra FROM dfn_cert_advs"                                    \
   " UNION SELECT " GET_ITERATOR_COLUMNS ", 'ovaldef' AS type"               \
-  "  FROM ovaldefs)"
+  "  ,title as extra FROM ovaldefs)"
 
 
 /**
@@ -48203,16 +48206,25 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
                           filter_columns, get->trash,
                           &order, &first, &max);
 
-  init_iterator (iterator,
-                 "SELECT ROWID, uuid, name, comment, iso_time (created),"
-                 "       iso_time (modified), created, modified, type"
-                 " FROM" ALL_INFO_UNION_COLUMNS
-                 " WHERE %s%s"
-                 " LIMIT %d offset %d;",
-                 clause ? clause : "1=1",
-                 order,
-                 max,
-                 first);
+  if (clause)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, comment, iso_time (created),"
+                   "       iso_time (modified), created, modified, type, extra"
+                   " FROM" ALL_INFO_UNION_COLUMNS
+                   " WHERE %s%s"
+                   " LIMIT %d offset %d;",
+                   clause,
+                   order,
+                   max,
+                   first);
+  else
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, comment, iso_time (created),"
+                   "       iso_time (modified), created, modified, type, extra"
+                   " FROM" ALL_INFO_UNION_COLUMNS
+                   " LIMIT %d offset %d;",
+                   max,
+                   first);
   return 0;
 }
 
@@ -48226,5 +48238,16 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (all_info_iterator_type, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the secinfo extra information from an all info iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return extra info secinfo entry,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (all_info_iterator_extra, GET_ITERATOR_COLUMN_COUNT + 1);
 
 

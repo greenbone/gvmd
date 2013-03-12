@@ -1,3 +1,14 @@
+2013-03-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (ALL_INFO_ITERATOR_FILTER_COLUMNS)
+	(ALL_INFO_UNION_COLUMNS, init_all_info_iterator): Add extra column
+	(all_info_iterator_extra): New function.
+
+	* src/omp.c (omp_xml_handle_end_element): Send allinfo extra element in
+	CLIENT_GET_INFO case.
+
+	* src/manage.h: Add all_info_iterator_extra header.
+
 2013-03-11  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	* tools/greenbone-scapdata-sync (update_scap_db_private)

@@ -19314,10 +19314,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else if (g_strcmp0 ("allinfo", get_info_data->type) == 0)
                 {
+                  const char *extra = all_info_iterator_extra (&info);
                   xml_string_append (result,
                                      "<allinfo>"
-                                     "<type>%s</type>",
-                                     all_info_iterator_type (&info));
+                                     "<type>%s</type>"
+                                     "<extra>%s</extra>",
+                                     all_info_iterator_type (&info),
+                                     extra ? extra : "");
                 }
 
               /* Append raw data if full details are requested */
