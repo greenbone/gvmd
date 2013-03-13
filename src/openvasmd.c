@@ -916,24 +916,29 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
    * value.  This invokes a scanner-only manager loop which will
    * request and cache the plugins, then exit. */
 
-  if (serve_omp (NULL, &scanner_session,
+  switch (serve_omp (NULL, &scanner_session,
                  NULL, &scanner_credentials,
                  update_nvt_cache ? -1 : -2,
                  &scanner_socket,
                  database,
                  NULL))
     {
-      openvas_server_free (scanner_socket,
-                           scanner_session,
-                           scanner_credentials);
-      return EXIT_FAILURE;
-    }
-  else
-    {
-      openvas_server_free (scanner_socket,
-                           scanner_session,
-                           scanner_credentials);
-      return EXIT_SUCCESS;
+      case 0:
+        openvas_server_free (scanner_socket,
+                             scanner_session,
+                             scanner_credentials);
+        return EXIT_SUCCESS;
+
+      case 1:
+        g_critical ("%s: failed to connect to scanner\n", __FUNCTION__);
+
+      default:
+      case -1:
+        openvas_server_free (scanner_socket,
+                             scanner_session,
+                             scanner_credentials);
+        return EXIT_FAILURE;
+        break;
     }
 }
 

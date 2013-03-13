@@ -617,7 +617,8 @@ recreate_session (int server_socket,
  * @param[in]  database             Location of manage database.
  * @param[in]  disable              Commands to disable.
  *
- * @return 0 on success, -1 on error.
+ * @return 0 on success, 1 failed to connect to scanner for cache
+ *         update/rebuild, -1 on error.
  */
 int
 serve_omp (gnutls_session_t* client_session,
@@ -672,7 +673,11 @@ serve_omp (gnutls_session_t* client_session,
   while ((ret = write_to_scanner (scanner_socket, scanner_session)) == -3
          && scanner_init_state == SCANNER_INIT_CONNECT_INTR);
   if (ret == -1)
-    scanner_up = 0;
+    {
+      if (ompd_nvt_cache_mode)
+        return 1;
+      scanner_up = 0;
+    }
 
   if (client_active)
     {

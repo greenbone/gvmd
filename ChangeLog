@@ -1,5 +1,13 @@
 2013-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/ompd.c (serve_omp): In cache update/rebuild mode, exit if
+	connecting to the scanner fails.
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache): Log when connecting to
+	scanner fails.
+
+2013-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (handle_sigabrt): Print backtrace when compiled with
 	debugging.
 
