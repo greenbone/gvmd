@@ -698,6 +698,11 @@ cleanup ()
   if (is_parent == 1) pidfile_remove ("openvasmd");
 }
 
+#ifndef NDEBUG
+#include <execinfo.h>
+#define BA_SIZE 100
+#endif
+
 /**
  * @brief Handle a SIGABRT signal.
  *
@@ -707,6 +712,22 @@ void
 handle_sigabrt (/*@unused@*/ int signal)
 {
   static int in_sigabrt = 0;
+
+#ifndef NDEBUG
+  void *frames[BA_SIZE];
+  int frame_count, index;
+  char **frames_text;
+
+  /* Print a backtrace. */
+  frame_count = backtrace (frames, BA_SIZE);
+  frames_text = backtrace_symbols (frames, frame_count);
+  if (frames_text == NULL)
+    perror ("backtrace symbols");
+  for (index = 0; index < frame_count; index++)
+    tracef ("%s\n", frames_text[index]);
+  free (frames_text);
+#endif
+
   if (in_sigabrt) _exit (EXIT_FAILURE);
   in_sigabrt = 1;
   manage_cleanup_process_error (signal);

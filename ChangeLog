@@ -1,7 +1,12 @@
+2013-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (handle_sigabrt): Print backtrace when compiled with
+	debugging.
+
 2013-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_get_iterator): Remove used_by arg.  Recursive
-	access will be handled by explicit permissions.
+	access will be handled by explicit permissions.  Update callers.
 
 2013-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
