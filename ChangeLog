@@ -1,5 +1,10 @@
 2013-03-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml, doc/proto_postgres.sql, doc/omp.html,
+	doc/omp.rnc: Update documentation for get_nvt_feed_version.
+
+2013-03-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Change Plugins MD5 Checksum to Feed version.
 
 	* src/manage.c (acknowledge_md5sum_info): Change function to

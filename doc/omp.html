@@ -332,8 +332,8 @@
 <td id="index"><div style="margin-left: 15px;">Get a list of all NVT families.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#command_get_nvt_feed_checksum">get_nvt_feed_checksum</a></td>
-<td id="index"><div style="margin-left: 15px;">Get checksum for entire NVT collection.</div></td>
+<td id="index"><a href="#command_get_nvt_feed_version">get_nvt_feed_version</a></td>
+<td id="index"><div style="margin-left: 15px;">Get NVT Feed version..</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_get_overrides">get_overrides</a></td>
@@ -549,7 +549,7 @@ command
     | get_notes
     | get_nvts
     | get_nvt_families
-    | get_nvt_feed_checksum
+    | get_nvt_feed_version
     | get_overrides
     | get_port_lists
     | get_preferences
@@ -636,7 +636,7 @@ response
     | get_notes_response
     | get_nvts_response
     | get_nvt_families_response
-    | get_nvt_feed_checksum_response
+    | get_nvt_feed_version_response
     | get_overrides_response
     | get_port_lists_response
     | get_preferences_response
@@ -3368,8 +3368,8 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
-          &lt;<b>get_nvt_feed_checksum&gt;</b><div style="margin-left: 15px; display: inline;">
-<a href="#command_get_nvt_feed_checksum">get_nvt_feed_checksum</a> command.
+          &lt;<b>get_nvt_feed_version&gt;</b><div style="margin-left: 15px; display: inline;">
+<a href="#command_get_nvt_feed_version">get_nvt_feed_version</a> command.
           </div>
 </li>
 <li>
@@ -3783,8 +3783,8 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
-          &lt;<b>get_nvt_feed_checksum_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_get_nvt_feed_checksum">get_nvt_feed_checksum</a> command.
+          &lt;<b>get_nvt_feed_version_response&gt;</b><div style="margin-left: 15px; display: inline;">
+            Response to <a href="#command_get_nvt_feed_version">get_nvt_feed_version</a> command.
           </div>
 </li>
 <li>
@@ -4029,7 +4029,7 @@ authenticate_response_timezone
            | get_notes
            | get_nvts
            | get_nvt_families
-           | get_nvt_feed_checksum
+           | get_nvt_feed_version
            | get_overrides
            | get_port_lists
            | get_preferences
@@ -4116,7 +4116,7 @@ authenticate_response_timezone
            | get_notes_response
            | get_nvts_response
            | get_nvt_families_response
-           | get_nvt_feed_checksum_response
+           | get_nvt_feed_version_response
            | get_overrides_response
            | get_port_lists_response
            | get_preferences_response
@@ -12089,37 +12089,25 @@ get_nvt_families_response_families_family_max_nvt_count
 </div>
 </div>
 <div>
-<div><h3 id="command_get_nvt_feed_checksum">7.44
-        Command <tt>get_nvt_feed_checksum</tt>
+<div><h3 id="command_get_nvt_feed_version">7.44
+        Command <tt>get_nvt_feed_version</tt>
 </h3></div>
-<p>In short: Get checksum for entire NVT collection.</p>
+<p>In short: Get NVT Feed version..</p>
 <p>
-        The client uses the get_nvt_feed_checksum command to request a
-        checksum for the complete NVT collection available through this
-        manager.  The client may specify an algorithm to be used for
-        computing this checksum.
-      </p>
-<p>
-        If the specified algorithm is not implemented in the manager, then
-        the manager will reply with a response code in the 4xx range.
-      </p>
-<p>
-        If the client does not specify a checksum algorithm, the manager is
-        expected to use the MD5 algorithm for computing the checksum.
+        The client uses the get_nvt_feed_version command to request a
+        feed version for the complete NVT collection available through this
+        manager.
       </p>
 <p>
         If the manager possesses such a collection, it will reply with a
-        response code indicating success, and the checksum over all NVT
-        files. If the manager cannot access a list of available NVTs at
-        present, it will reply with the 503 response.
+        response code indicating success, and the feed version files. If the
+        manager cannot access a list of available NVTs at present, it will reply
+        with the 503 response.
       </p>
 <h4>7.44.1 Structure</h4>
 <ul style="list-style: none">
 <li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>algorithm</b>
-          (text)
-          </li></ul>
+<i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -12132,47 +12120,43 @@ get_nvt_families_response_families_family_max_nvt_count
           (text)
           </li>
 <li>
-              &lt;<b>checksum</b>&gt;
-              <ul style="list-style: none"><li>
-          @<b>algorithm</b>
-          (text)
-          </li></ul>
+              &lt;<b>version</b>&gt;
+              <div style="margin-left: 15px; display: inline;">(<a href="#element_integer">integer</a>)</div>
+<div style="margin-left: 15px; display: inline;">NVT Feed version..</div>
+<ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
 </ul>
 <h4>7.44.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>get_nvt_feed_checksum
- = element get_nvt_feed_checksum
+<i>Command</i><div style="margin-left: 5%"><pre>get_nvt_feed_version
+ = element get_nvt_feed_version
      {
-       attribute algorithm { text }?
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>get_nvt_feed_checksum_response
- = element get_nvt_feed_checksum_response
+<i>Response</i><div style="margin-left: 5%"><pre>get_nvt_feed_version_response
+ = element get_nvt_feed_version_response
      {
        attribute status { status }
        &amp; attribute status_text { text }
-       &amp; get_nvt_feed_checksum_response_checksum
+       &amp; get_nvt_feed_version_response_version
      }
 
-get_nvt_feed_checksum_response_checksum
- = element checksum
+get_nvt_feed_version_response_version
+ = element version    # type integer
      {
-       text # RNC limitation: base64
-       &amp; attribute algorithm { text }
      }
 </pre></div>
 </div>
-<h4>7.44.3 Example: Get the NVT feed checksum</h4>
+<h4>7.44.3 Example: Get the NVT feed version</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvt_feed_checksum/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvt_feed_version/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvt_feed_checksum_response status="200"
-                                 status_text="OK"&gt;
-   &lt;checksum algorithm="md5"&gt;931db829a06b9a440a2ecaeb68c03715&lt;/checksum&gt;
- &lt;/get_nvt_feed_checksum_response&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvt_feed_version_response status="200"
+                                status_text="OK"&gt;
+   &lt;version&gt;201303060811&lt;/version&gt;
+ &lt;/get_nvt_feed_version_response&gt;
 </pre></div>
 </div>
 </div>
@@ -17732,7 +17716,7 @@ help_response_schema_protocol_command
             GET_NOTES              Get all notes.
             GET_NVTS               Get one or all available NVTs.
             GET_NVT_FAMILIES       Get a list of all NVT families.
-            GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.
+            GET_NVT_FEED_VERSION   Get NVT collection Feed version.
             GET_OVERRIDES          Get all overrides.
             GET_PORT_LISTS         Get all port lists.
             GET_PREFERENCES        Get preferences for all available NVTs.

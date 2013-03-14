@@ -1527,7 +1527,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_notes</c>
           <c>get_nvts</c>
           <c>get_nvt_families</c>
-          <c>get_nvt_feed_checksum</c>
+          <c>get_nvt_feed_version</c>
           <c>get_overrides</c>
           <c>get_port_lists</c>
           <c>get_preferences</c>
@@ -1624,7 +1624,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_notes</r>
             <r>get_nvts</r>
             <r>get_nvt_families</r>
-            <r>get_nvt_feed_checksum</r>
+            <r>get_nvt_feed_version</r>
             <r>get_overrides</r>
             <r>get_port_lists</r>
             <r>get_preferences</r>
@@ -7213,6 +7213,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <algorithm>md5</algorithm>
               2397586ea5cd3a69f953836f7be9ef7b
             </checksum>
+
             <preferences>
               <timeout></timeout>
               <preference>
@@ -7333,36 +7334,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>get_nvt_feed_checksum</name>
-    <summary>Get checksum for entire NVT collection</summary>
+    <name>get_nvt_feed_version</name>
+    <summary>Get NVT Feed version.</summary>
     <description>
       <p>
-        The client uses the get_nvt_feed_checksum command to request a
-        checksum for the complete NVT collection available through this
-        manager.  The client may specify an algorithm to be used for
-        computing this checksum.
-      </p>
-      <p>
-        If the specified algorithm is not implemented in the manager, then
-        the manager will reply with a response code in the 4xx range.
-      </p>
-      <p>
-        If the client does not specify a checksum algorithm, the manager is
-        expected to use the MD5 algorithm for computing the checksum.
+        The client uses the get_nvt_feed_version command to request a
+        feed version for the complete NVT collection available through this
+        manager.
       </p>
       <p>
         If the manager possesses such a collection, it will reply with a
-        response code indicating success, and the checksum over all NVT
-        files. If the manager cannot access a list of available NVTs at
-        present, it will reply with the 503 response.
+        response code indicating success, and the feed version files. If the
+        manager cannot access a list of available NVTs at present, it will reply
+        with the 503 response.
       </p>
     </description>
-    <pattern>
-      <attrib>
-        <name>algorithm</name>
-        <type>text</type>
-      </attrib>
-    </pattern>
     <response>
       <pattern>
         <attrib>
@@ -7375,29 +7361,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>text</type>
           <required>1</required>
         </attrib>
-        <e>checksum</e>
+        <e>version</e>
       </pattern>
       <ele>
-        <name>checksum</name>
-        <pattern>
-          <attrib>
-            <name>algorithm</name>
-            <type>text</type>
-            <required>1</required>
-          </attrib>
-          <t>base64</t>
-        </pattern>
+        <name>version</name>
+        <summary>NVT Feed version.</summary>
+        <type>integer</type>
       </ele>
     </response>
     <example>
-      <summary>Get the NVT feed checksum</summary>
+      <summary>Get the NVT feed version</summary>
       <request>
-        <get_nvt_feed_checksum></get_nvt_feed_checksum>
+        <get_nvt_feed_version></get_nvt_feed_version>
       </request>
       <response>
-        <get_nvt_feed_checksum_response status="200" status_text="OK">
-          <checksum algorithm="md5">931db829a06b9a440a2ecaeb68c03715</checksum>
-        </get_nvt_feed_checksum_response>
+        <get_nvt_feed_version_response status="200" status_text="OK">
+          <version>201303060811</version>
+        </get_nvt_feed_version_response>
       </response>
     </example>
   </command>
@@ -11141,7 +11121,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_NOTES              Get all notes.
             GET_NVTS               Get one or all available NVTs.
             GET_NVT_FAMILIES       Get a list of all NVT families.
-            GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.
+            GET_NVT_FEED_VERSION   Get NVT collection Feed version.
             GET_OVERRIDES          Get all overrides.
             GET_PORT_LISTS         Get all port lists.
             GET_PREFERENCES        Get preferences for all available NVTs.

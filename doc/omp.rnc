@@ -52,7 +52,7 @@ command
     | get_notes
     | get_nvts
     | get_nvt_families
-    | get_nvt_feed_checksum
+    | get_nvt_feed_version
     | get_overrides
     | get_port_lists
     | get_preferences
@@ -139,7 +139,7 @@ response
     | get_notes_response
     | get_nvts_response
     | get_nvt_families_response
-    | get_nvt_feed_checksum_response
+    | get_nvt_feed_version_response
     | get_overrides_response
     | get_port_lists_response
     | get_preferences_response
@@ -1576,7 +1576,7 @@ commands
            | get_notes
            | get_nvts
            | get_nvt_families
-           | get_nvt_feed_checksum
+           | get_nvt_feed_version
            | get_overrides
            | get_port_lists
            | get_preferences
@@ -3031,14 +3031,13 @@ get_nvt_families
        attribute sort_order { sort_order }?
      }
 
-## Command get_nvt_feed_checksum
+## Command get_nvt_feed_version
 ##
-## Get checksum for entire NVT collection.
+## Get NVT Feed version..
 
-get_nvt_feed_checksum
- = element get_nvt_feed_checksum
+get_nvt_feed_version
+ = element get_nvt_feed_version
      {
-       attribute algorithm { text }?
      }
 
 ## Command get_overrides
@@ -4528,7 +4527,7 @@ commands_response
            | get_notes_response
            | get_nvts_response
            | get_nvt_families_response
-           | get_nvt_feed_checksum_response
+           | get_nvt_feed_version_response
            | get_overrides_response
            | get_port_lists_response
            | get_preferences_response
@@ -6775,21 +6774,20 @@ get_nvt_families_response_families_family_max_nvt_count
        integer
      }
 
-## Response to get_nvt_feed_checksum
+## Response to get_nvt_feed_version
 
-get_nvt_feed_checksum_response
- = element get_nvt_feed_checksum_response
+get_nvt_feed_version_response
+ = element get_nvt_feed_version_response
      {
        attribute status { status }
        & attribute status_text { text }
-       & get_nvt_feed_checksum_response_checksum
+       & get_nvt_feed_version_response_version
      }
 
-get_nvt_feed_checksum_response_checksum
- = element checksum
+# NVT Feed version..
+get_nvt_feed_version_response_version
+ = element version    # type integer
      {
-       text # RNC limitation: base64
-       & attribute algorithm { text }
      }
 
 ## Response to get_overrides
