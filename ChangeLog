@@ -1,3 +1,8 @@
+2013-03-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (init_all_info_iterator): Clean code. Add order
+	clause in no filter clause case. Free allocated gchar's.
+
 2013-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ompd.c (serve_omp): In cache update/rebuild mode, exit if

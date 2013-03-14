@@ -48434,25 +48434,22 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
                           filter_columns, get->trash,
                           &order, &first, &max, NULL);
 
-  if (clause)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment, iso_time (created),"
-                   "       iso_time (modified), created, modified, type, extra"
-                   " FROM" ALL_INFO_UNION_COLUMNS
-                   " WHERE %s%s"
-                   " LIMIT %d offset %d;",
-                   clause,
-                   order,
-                   max,
-                   first);
-  else
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid, name, comment, iso_time (created),"
-                   "       iso_time (modified), created, modified, type, extra"
-                   " FROM" ALL_INFO_UNION_COLUMNS
-                   " LIMIT %d offset %d;",
-                   max,
-                   first);
+  init_iterator (iterator,
+                 "SELECT ROWID, uuid, name, comment, iso_time (created),"
+                 "       iso_time (modified), created, modified, type, extra"
+                 " FROM" ALL_INFO_UNION_COLUMNS
+                 " %s%s"
+                 " %s"
+                 " LIMIT %i OFFSET %i;",
+                 clause ? "WHERE " : "",
+                 clause ? clause   : "",
+                 order,
+                 max,
+                 first);
+
+  g_free (order);
+  g_free (filter);
+  g_free (clause);
   return 0;
 }
 
