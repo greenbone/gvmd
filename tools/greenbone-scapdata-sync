@@ -26,7 +26,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20130311
+VERSION=20130314
 RESTRICTED=1
 
 # SETTINGS
@@ -76,6 +76,9 @@ REFRESH_PRIVATE_ONLY=0
 # When set to 1, all OVAL definitions will be updated, not just new ones.
 # This is usually done by database migrations.
 REBUILD_OVAL=0
+# Setting this to 1 enables verbose mode, which outputs additional data.
+# This is usually done with the option --verbose
+VERBOSE=0
 
 SQLITE3="sqlite3 -noheader"
 
@@ -410,18 +413,24 @@ update_scap_db_private () {
                 then
                   log_write "Warning: Validation of file '$ovalfile' failed: $validation_message"
                 else
-                  found_duplicates=0
                   for feedfile in $oval_files_sorted
                   do
                     compare=`xsltproc "$SCAP_RES_DIR/ovaldef_list_ids.xsl" "$ovalfile"`
-                    duplicates=`xsltproc "$SCAP_RES_DIR/ovaldef_list_ids.xsl" "$feedfile" | grep -Fxc "$compare"`
-                    if [ 0 -lt $duplicates ]
+                    duplicates=`xsltproc "$SCAP_RES_DIR/ovaldef_list_ids.xsl" "$feedfile" | grep -Fx "$compare"`
+                    duplicates_count=`echo "$duplicates" | wc -l`
+                    if [ -n "$duplicates" ]
                     then
-                      log_write "Warning: Skipping '$ovalfile', found $duplicates definition(s) that are duplicates of one(s) in '$feedfile'"
-                      found_duplicates=1
+                      log_write "Warning: Skipping '$ovalfile', found $duplicates_count definition(s) that are duplicates of one(s) in '$feedfile'"
+                      if [ 0 -ne $VERBOSE ]
+                      then
+                        for duplicate in $duplicates
+                        do
+                          log_write "Duplicate ID: $duplicate"
+                        done
+                      fi
                     fi
                   done
-                  if [ 0 -eq $found_duplicates ]
+                  if [ 0 -eq $duplicates_count ]
                   then
                     log_write "Updating $ovalfile"
                     xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
@@ -717,6 +726,9 @@ while test $# -gt 0; do
         --help)
           do_help
           exit 0
+          ;;
+        --verbose)
+          VERBOSE=1
           ;;
         --refresh)
           REFRESH_ONLY=1

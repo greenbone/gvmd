@@ -1,3 +1,11 @@
+2013-03-14  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	* tools/greenbone-scapdata-sync (): Add --verbose option.
+	(update_scap_db): Add output of duplicate IDs in verbose mode.
+
+	* tools/openvas-scapdata-sync.in (): Add --verbose option.
+	(update_sec_db): Add output of duplicate IDs in verbose mode.
+
 2013-03-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml, doc/proto_postgres.sql, doc/omp.html,
