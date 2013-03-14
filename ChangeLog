@@ -1,3 +1,7 @@
+2013-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_group_iterator): Name variable more sensibly.
+
 2013-03-14  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	* tools/greenbone-scapdata-sync (): Add --verbose option.

@@ -43692,7 +43692,7 @@ group_count (const get_data_t *get)
 int
 init_group_iterator (iterator_t* iterator, const get_data_t *get)
 {
-  static const char *group_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
+  static const char *filter_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
 
   return init_get_iterator (iterator,
                             "group",
@@ -43701,7 +43701,7 @@ init_group_iterator (iterator_t* iterator, const get_data_t *get)
                             GROUP_ITERATOR_COLUMNS,
                             /* Columns for trashcan. */
                             NULL,
-                            group_columns,
+                            filter_columns,
                             0,
                             NULL,
                             NULL,
