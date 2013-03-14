@@ -299,6 +299,7 @@ do_help () {
   echo " --refresh-private update database using only user data"
   echo " --selftest        perform self-test"
   echo " --version         display version"
+  echo " --verbose         enable verbose log messages"
   echo ""
   exit 0
 }

@@ -111,6 +111,8 @@ do_help () {
   echo " --describe	display current scap feed info"
   echo " --feedversion   display current scap feed version"
   echo " --dst-dir <dir>	SCAP destination directory"
+  echo "Options:"
+  echo " --verbose       enable verbose log messages"
   echo ""
   echo "Environment variables:"
   echo "SCAP_DIR		where to extract plugins (absolute path)"
