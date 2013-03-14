@@ -9158,6 +9158,42 @@ migrate_74_to_75 ()
 }
 
 /**
+ * @brief Migrate the database from version 75 to version 76.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_75_to_76 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 75. */
+
+  if (manage_db_version () != 75)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Delete any nvts_checksum leftovers. */
+  sql ("DELETE FROM main.meta WHERE name = \"nvts_checksum\";");
+
+  /* Rename nvts_md5sum into nvts_feed_version */
+  sql ("UPDATE main.meta SET name = \"nvts_feed_version\""
+       " WHERE name = \"nvts_md5sum\";");
+
+  /* Set the database version to 76. */
+
+  set_db_version (76);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9237,6 +9273,7 @@ static migrator_t database_migrators[]
     {73, migrate_72_to_73},
     {74, migrate_73_to_74},
     {75, migrate_74_to_75},
+    {76, migrate_75_to_76},
     /* End marker. */
     {-1, NULL}};
 

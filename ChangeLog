@@ -1,3 +1,13 @@
+2013-03-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Migrate DB to version 76 for md5 checksum to feed version changes.
+
+	* src/manage_sql.c (migrate_75_to_76): New function. delete leftover
+	nvts_checksum value and rename nvts_md5sum to nvts_feed_version.
+	(migrators): Add migrate_75_to_76.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 76.
+
 2013-03-14  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	* tools/greenbone-scapdata-sync, tools/openvas-scapdata-sync.in
