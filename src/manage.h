@@ -52,7 +52,7 @@ typedef struct
 typedef struct
 {
   certificates_t* certificates;      ///< List of certificates.
-  char* plugins_md5;                 ///< MD5 sum over all tests.
+  char* plugins_feed_version;        ///<  Feed version of plugins set.
   GHashTable* plugins_dependencies;  ///< Dependencies between plugins.
   GPtrArray* rules;                  ///< Scanner rules.
   int rules_size;                    ///< Number of rules.
@@ -1325,10 +1325,10 @@ int
 nvts_size ();
 
 char*
-nvts_md5sum ();
+nvts_feed_version ();
 
 void
-set_nvts_md5sum (const char*);
+set_nvts_feed_version (const char*);
 
 nvt_t
 make_nvt_from_nvti (const nvti_t*, int);
@@ -1844,7 +1844,7 @@ int
 acknowledge_bye ();
 
 int
-acknowledge_md5sum_info ();
+acknowledge_feed_version_info ();
 
 int
 manage_check_current_task ();

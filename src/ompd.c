@@ -475,7 +475,7 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
       case SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE:
         assert (0);
         break;
-      case SCANNER_INIT_GOT_MD5SUM:
+      case SCANNER_INIT_GOT_FEED_VERSION:
         if (ompd_nvt_cache_mode)
           {
             static char* const ack = "CLIENT <|> COMPLETE_LIST <|> CLIENT\n";
@@ -870,7 +870,7 @@ serve_omp (gnutls_session_t* client_session,
                && to_server_buffer_space () > 0)
               || scanner_init_state == SCANNER_INIT_CONNECT_INTR
               || scanner_init_state == SCANNER_INIT_CONNECTED
-              || scanner_init_state == SCANNER_INIT_GOT_MD5SUM
+              || scanner_init_state == SCANNER_INIT_GOT_FEED_VERSION
               || scanner_init_state == SCANNER_INIT_GOT_PASSWORD
               || scanner_init_state == SCANNER_INIT_GOT_PLUGINS
               || scanner_init_state == SCANNER_INIT_GOT_USER))

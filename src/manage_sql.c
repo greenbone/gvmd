@@ -13228,7 +13228,6 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           sql ("BEGIN EXCLUSIVE;");
           sql ("DELETE FROM nvts;");
           sql ("DELETE FROM nvt_preferences;");
-          sql ("DELETE FROM main.meta WHERE name = 'nvts_checksum';");
         }
       return;
     }
@@ -13297,7 +13296,6 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           sql ("BEGIN EXCLUSIVE;");
           sql ("DELETE FROM nvts;");
           sql ("DELETE FROM nvt_preferences;");
-          sql ("DELETE FROM main.meta WHERE name = 'nvts_checksum';");
         }
     }
   else
@@ -14721,7 +14719,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
       if (sql_int64 (&count, 0, 0,
                      "SELECT count(*) FROM main.meta"
-                     " WHERE name = 'nvts_md5sum'"
+                     " WHERE name = 'nvts_feed_version'"
                      " OR name = 'nvt_preferences_enabled';")
           || count < 2)
         return -3;
@@ -32695,31 +32693,31 @@ nvts_size ()
 }
 
 /**
- * @brief Return md5sum of the plugins in the plugin cache.
+ * @brief Return feed version of the plugins in the plugin cache.
  *
  * @return Number of plugins if the plugins are cached, else NULL.
  */
 char*
-nvts_md5sum ()
+nvts_feed_version ()
 {
   return sql_string (0, 0,
                      "SELECT value FROM main.meta"
-                     " WHERE name = 'nvts_md5sum';");
+                     " WHERE name = 'nvts_feed_version';");
 }
 
 /**
- * @brief Set the md5sum of the plugins in the plugin cache.
+ * @brief Set the feed version of the plugins in the plugin cache.
  *
- * @param[in]  md5sum  New md5sum.
+ * @param[in]  feed_version  New feed version.
  *
  * Also queue an update to the nvti cache.
  */
 void
-set_nvts_md5sum (const char *md5sum)
+set_nvts_feed_version (const char *feed_version)
 {
-  gchar* quoted = sql_quote (md5sum);
+  gchar* quoted = sql_quote (feed_version);
   sql ("INSERT OR REPLACE INTO main.meta (name, value)"
-       " VALUES ('nvts_md5sum', '%s');",
+       " VALUES ('nvts_feed_version', '%s');",
        quoted);
   g_free (quoted);
 

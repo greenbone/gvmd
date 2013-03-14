@@ -1,5 +1,40 @@
 2013-03-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Change Plugins MD5 Checksum to Feed version.
+
+	* src/manage.c (acknowledge_md5sum_info): Change function to
+	acknowledge_feed_version_info.
+
+	* src/manage.h: Update function headers accordingly.
+	(scanner_t): Rename plugins_md5 element to plugins_feed_version.
+
+	* src/manage_sql.c (init_manage_process): Remove unused delete
+	references to nvts_checksum.
+	(init_manage): Rename main.meta value name nvts_md5sum to
+	nvts_feed_version.
+	(nvts_md5sum, set_nvts_md5sum): Rename and update for feed version
+	changes.
+
+	* src/omp.c (command_t): Rename GET_NVT_FEED_CHECKSUM to
+	GET_NVT_FEED_VERSION.
+	(get_nvt_feed_checksum_data_t, get_nvt_feed_checksum_data_reset)
+	(get_nvt_feed_checksum_data): Remove as unused.
+	(client_state_t): Rename CLIENT_GET_NVT_FEED_CHECKSUM to
+	CLIENT_GET_NVT_FEED_VERSION.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Update for
+	feed version changes.
+
+	* src/ompd.c (write_to_scanner, serve_omp): Update scanner init state
+	names.
+
+	* src/otp.c (init_otp_data, process_otp_scanner_input): Update function
+	and variables names and documentation accordingly.
+
+	* src/otp.h (scanner_init_state_t): Rename SCANNER_INIT_GOT_FEED_MD5SUM
+	to SCANNER_INIT_GOT_FEED_VERSION.
+
+2013-03-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (init_all_info_iterator): Clean code. Add order
 	clause in no filter clause case. Free allocated gchar's.
 

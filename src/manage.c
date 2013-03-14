@@ -3031,12 +3031,13 @@ acknowledge_bye ()
 }
 
 /**
- * @brief Acknowledge scanner PLUGINS_MD5 message, requesting all plugin info.
+ * @brief Acknowledge scanner PLUGINS_FEED_VERSION message,
+ * @brief requesting all plugin info.
  *
  * @return 0 on success, -1 if out of space in scanner output buffer.
  */
 int
-acknowledge_md5sum_info ()
+acknowledge_feed_version_info ()
 {
   if (send_to_server ("CLIENT <|> COMPLETE_LIST <|> CLIENT\n"))
     return -1;

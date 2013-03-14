@@ -639,7 +639,7 @@ init_otp_data ()
 {
   scanner.certificates = NULL;
   scanner.rules = NULL;
-  scanner.plugins_md5 = NULL;
+  scanner.plugins_feed_version = NULL;
 }
 
 /**
@@ -1408,11 +1408,11 @@ process_otp_scanner_input ()
       case SCANNER_INIT_GOT_PASSWORD:
         /* Input from scanner after "Password : " and before password sent. */
         return -1;
-      case SCANNER_INIT_GOT_MD5SUM:
+      case SCANNER_INIT_GOT_FEED_VERSION:
         /* Somehow called to process the input from the scanner that followed
-         * the initial md5sum, before the initial response to the md5sum has
-         * been sent.  A programming error, most likely in setting up for
-         * select in serve_omp. */
+         * the initial feed version, before the initial response to the feed
+         * version has been sent. A programming error, most likely in setting
+         * up for select in serve_omp. */
         assert (0);
         return -1;
       case SCANNER_INIT_GOT_PLUGINS:
@@ -2063,7 +2063,7 @@ process_otp_scanner_input ()
                                    == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE)
                               {
                                 set_scanner_init_state (SCANNER_INIT_GOT_PLUGINS);
-                                set_nvts_md5sum (scanner.plugins_md5);
+                                set_nvts_feed_version (scanner.plugins_feed_version);
                               }
                             break;
                           case -1: goto return_error;
@@ -2164,17 +2164,18 @@ process_otp_scanner_input ()
                 }
               case SCANNER_NVT_INFO:
                 {
-                  char* md5 = g_strdup (field);
-                  tracef ("   scanner got nvti_info: %s\n", md5);
-                  if (scanner.plugins_md5) g_free (scanner.plugins_md5);
-                  scanner.plugins_md5 = md5;
+                  char* feed_version = g_strdup (field);
+                  tracef ("   scanner got nvti_info: %s\n", feed_version);
+                  if (scanner.plugins_feed_version)
+                    g_free (scanner.plugins_feed_version);
+                  scanner.plugins_feed_version = feed_version;
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
                       case  0:
                         if (scanner_init_state == SCANNER_INIT_SENT_PASSWORD)
-                          set_scanner_init_state (SCANNER_INIT_GOT_MD5SUM);
-                        else if (acknowledge_md5sum_info ())
+                          set_scanner_init_state (SCANNER_INIT_GOT_FEED_VERSION);
+                        else if (acknowledge_feed_version_info ())
                           goto return_error;
                         break;
                       case -1: goto return_error;

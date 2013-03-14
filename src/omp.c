@@ -432,7 +432,7 @@ static command_t omp_commands[]
     {"GET_NOTES", "Get all notes."},
     {"GET_NVTS", "Get one or all available NVTs."},
     {"GET_NVT_FAMILIES", "Get a list of all NVT families."},
-    {"GET_NVT_FEED_CHECKSUM", "Get checksum for entire NVT collection."},
+    {"GET_NVT_FEED_VERSION", "Get NVT feed version."},
     {"GET_OVERRIDES", "Get all overrides."},
     {"GET_PORT_LISTS", "Get all port lists."},
     {"GET_PREFERENCES", "Get preferences for all available NVTs."},
@@ -2182,27 +2182,6 @@ get_nvt_families_data_reset (get_nvt_families_data_t *data)
 }
 
 /**
- * @brief Command data for the get_nvt_feed_checksum command.
- */
-typedef struct
-{
-  char *algorithm;  ///< Algorithm requested by client.
-} get_nvt_feed_checksum_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-get_nvt_feed_checksum_data_reset (get_nvt_feed_checksum_data_t *data)
-{
-  free (data->algorithm);
-
-  memset (data, 0, sizeof (get_nvt_feed_checksum_data_t));
-}
-
-/**
  * @brief Command data for the get_overrides command.
  */
 typedef struct
@@ -3384,7 +3363,6 @@ typedef union
   get_notes_data_t get_notes;                         ///< get_notes
   get_nvts_data_t get_nvts;                           ///< get_nvts
   get_nvt_families_data_t get_nvt_families;           ///< get_nvt_families
-  get_nvt_feed_checksum_data_t get_nvt_feed_checksum; ///< get_nvt_feed_checksum
   get_overrides_data_t get_overrides;                 ///< get_overrides
   get_port_lists_data_t get_port_lists;               ///< get_port_lists
   get_preferences_data_t get_preferences;             ///< get_preferences
@@ -3698,12 +3676,6 @@ get_nvts_data_t *get_nvts_data
  */
 get_nvt_families_data_t *get_nvt_families_data
  = &(command_data.get_nvt_families);
-
-/**
- * @brief Parser callback data for GET_NVT_FEED_CHECKSUM.
- */
-get_nvt_feed_checksum_data_t *get_nvt_feed_checksum_data
- = &(command_data.get_nvt_feed_checksum);
 
 /**
  * @brief Parser callback data for GET_OVERRIDES.
@@ -4273,7 +4245,7 @@ typedef enum
   CLIENT_GET_NOTES,
   CLIENT_GET_NVTS,
   CLIENT_GET_NVT_FAMILIES,
-  CLIENT_GET_NVT_FEED_CHECKSUM,
+  CLIENT_GET_NVT_FEED_VERSION,
   CLIENT_GET_OVERRIDES,
   CLIENT_GET_PORT_LISTS,
   CLIENT_GET_PREFERENCES,
@@ -5503,12 +5475,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_NOTES);
           }
-        else if (strcasecmp ("GET_NVT_FEED_CHECKSUM", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "algorithm",
-                              &get_nvt_feed_checksum_data->algorithm);
-            set_client_state (CLIENT_GET_NVT_FEED_CHECKSUM);
-          }
+        else if (strcasecmp ("GET_NVT_FEED_VERSION", element_name) == 0)
+            set_client_state (CLIENT_GET_NVT_FEED_VERSION);
         else if (strcasecmp ("GET_NVTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -9289,41 +9257,35 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
-      case CLIENT_GET_NVT_FEED_CHECKSUM:
+      case CLIENT_GET_NVT_FEED_VERSION:
         {
-          char *md5sum;
-          if (get_nvt_feed_checksum_data->algorithm
-              && strcasecmp (get_nvt_feed_checksum_data->algorithm, "md5"))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_nvt_feed_checksum",
-                                "GET_NVT_FEED_CHECKSUM algorithm must be md5"));
-          else if ((md5sum = nvts_md5sum ()))
+          char *feed_version;
+          if ((feed_version = nvts_feed_version ()))
             {
-              SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response"
+              SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_version_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">"
-                                      "<checksum algorithm=\"md5\">");
-              SEND_TO_CLIENT_OR_FAIL (md5sum);
-              free (md5sum);
-              SEND_TO_CLIENT_OR_FAIL ("</checksum>"
-                                      "</get_nvt_feed_checksum_response>");
+                                      "<version>");
+              SEND_TO_CLIENT_OR_FAIL (feed_version);
+              free (feed_version);
+              SEND_TO_CLIENT_OR_FAIL ("</version>"
+                                      "</get_nvt_feed_version_response>");
             }
           else
-            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_feed_checksum"));
-          get_nvt_feed_checksum_data_reset (get_nvt_feed_checksum_data);
+            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_feed_version"));
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
 
       case CLIENT_GET_NVTS:
         {
-          char *md5sum = nvts_md5sum ();
-          if (md5sum)
+          char *feed_version = nvts_feed_version ();
+          if (feed_version)
             {
               config_t config = (config_t) 0;
               nvt_t nvt = 0;
 
-              free (md5sum);
+              free (feed_version);
 
               if (get_nvts_data->nvt_oid && get_nvts_data->family)
                 SEND_TO_CLIENT_OR_FAIL
