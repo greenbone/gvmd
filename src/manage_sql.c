@@ -340,6 +340,9 @@ type_has_permissions (const char *);
 gboolean
 find_report_with_permission (const char *, report_t *, const char *);
 
+gboolean
+find_group (const char*, group_t*);
+
 
 /* Variables. */
 
@@ -9837,6 +9840,64 @@ task_user_iterator_user (iterator_t* iterator)
 
 DEF_ACCESS (task_user_iterator_name, 3);
 
+/**
+ * @brief Initialise an escalator data iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  task      Task.
+ * @param[in]  action    Action.
+ */
+void
+init_task_group_iterator (iterator_t *iterator, task_t task)
+{
+  init_iterator (iterator,
+                 "SELECT ROWID, resource, subject,"
+                 " (SELECT name FROM groups"
+                 "  WHERE groups.ROWID = permissions.subject),"
+                 " (SELECT uuid FROM groups"
+                 "  WHERE groups.ROWID = permissions.subject)"
+                 " FROM permissions"
+                 " WHERE resource_type = 'task'"
+                 " AND resource = %llu"
+                 " AND resource_location = " G_STRINGIFY (LOCATION_TABLE)
+                 " AND subject_type = 'group'"
+                 // FIX other types imply 'get' too?
+                 " AND name = 'get';",
+                 task);
+}
+
+/**
+ * @brief Return the task from a task group iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Task of the iterator or NULL if iteration is complete.
+ */
+task_t
+task_group_iterator_task (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int64 (iterator->stmt, 1);
+}
+
+/**
+ * @brief Return the group from a group group iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Group of the iterator or NULL if iteration is complete.
+ */
+group_t
+task_group_iterator_group (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int64 (iterator->stmt, 2);
+}
+
+DEF_ACCESS (task_group_iterator_name, 3);
+
+DEF_ACCESS (task_group_iterator_uuid, 4);
+
 
 /* Events and Alerts. */
 
@@ -16515,6 +16576,73 @@ set_task_alerts (task_t task, array_t *alerts, gchar **alert_id_return)
            " VALUES (%llu, %llu, " G_STRINGIFY (LOCATION_TABLE) ");",
            task,
            alert);
+    }
+
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
+ * @brief Set observer groups on a task, removing any previous groups.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  groups  Groups.
+ * @param[out] group_id_return  ID of group on "failed to find" error.
+ *
+ * @return 0 success, -1 error, 1 failed to find group.
+ */
+int
+set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
+{
+  group_t group = 0;
+  guint index;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  sql ("DELETE FROM permissions"
+       " WHERE resource_type = 'task'"
+       " AND resource = %llu"
+       " AND subject_type = 'group';",
+       task);
+
+  index = 0;
+  while (index < groups->len)
+    {
+      gchar *group_id;
+
+      group_id = (gchar*) g_ptr_array_index (groups, index);
+      if (strcmp (group_id, "0") == 0)
+        {
+          index++;
+          continue;
+        }
+
+      if (find_group (group_id, &group))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (group == 0)
+        {
+          sql ("ROLLBACK;");
+          if (group_id_return) *group_id_return = group_id;
+          return 1;
+        }
+
+      sql ("INSERT INTO permissions"
+           " (uuid, owner, name, comment, resource_type, resource,"
+           "  resource_uuid, resource_location, subject_type, subject,"
+           "  creation_time, modification_time)"
+           " VALUES"
+           " (make_uuid (),"
+           "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+           "  'get', '', 'task', %llu,"
+           "  (SELECT uuid FROM tasks WHERE tasks.ROWID = %llu),"
+           "  " G_STRINGIFY (LOCATION_TABLE) ", 'group', %llu, now (), now ());",
+           current_credentials.uuid, task, task, group);
+
+      index++;
     }
 
   sql ("COMMIT;");

@@ -1,3 +1,18 @@
+2013-03-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add observer groups to MODIFY_TASK and GET_TASKS.
+
+	* src/manage_sql.c (init_task_group_iterator, task_group_iterator_task)
+	(task_group_iterator_group, task_group_iterator_name)
+	(task_group_iterator_uuid, set_task_groups): New functions.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (modify_task_data_t, modify_task_data_reset): Add groups.
+	(client_state_t): Add observer group state.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add observer
+	groups.
+
 2013-03-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt: Increased dependency to gnutls from 2.2 to 2.8.

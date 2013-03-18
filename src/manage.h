@@ -562,6 +562,9 @@ int
 set_task_alerts (task_t, array_t*, gchar**);
 
 int
+set_task_groups (task_t, array_t*, gchar**);
+
+int
 set_task_schedule (task_t, schedule_t);
 
 unsigned int
@@ -1503,6 +1506,15 @@ task_preference_value (task_t, const char *);
 
 void
 set_task_preferences (task_t, array_t *);
+
+void
+init_task_group_iterator (iterator_t *, task_t);
+
+const char*
+task_group_iterator_name (iterator_t*);
+
+const char*
+task_group_iterator_uuid (iterator_t*);
 
 
 /* LSC credentials. */

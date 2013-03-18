@@ -2940,6 +2940,7 @@ typedef struct
   array_t *alerts;     ///< IDs of new alerts for task.
   char *file;          ///< File to attach to task.
   char *file_name;     ///< Name of file to attach to task.
+  array_t *groups;     ///< IDs of new groups for task.
   char *name;          ///< New name for task.
   char *observers;     ///< Space separated list of observer user names.
   name_value_t *preference;  ///< Current preference.
@@ -2960,6 +2961,7 @@ modify_task_data_reset (modify_task_data_t *data)
 {
   free (data->action);
   array_free (data->alerts);
+  array_free (data->groups);
   free (data->comment);
   free (data->file);
   free (data->file_name);
@@ -4375,6 +4377,7 @@ typedef enum
   CLIENT_MODIFY_TASK_FILE,
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_OBSERVERS,
+  CLIENT_MODIFY_TASK_OBSERVERS_GROUP,
   CLIENT_MODIFY_TASK_PREFERENCES,
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE,
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME,
@@ -6038,6 +6041,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "task_id",
                               &modify_task_data->task_id);
             modify_task_data->alerts = make_array ();
+            modify_task_data->groups = make_array ();
             set_client_state (CLIENT_MODIFY_TASK);
           }
         else if (strcasecmp ("PAUSE_TASK", element_name) == 0)
@@ -6582,6 +6586,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               openvas_append_string (&modify_task_data->action, "update");
             set_client_state (CLIENT_MODIFY_TASK_FILE);
+          }
+        ELSE_ERROR ("modify_task");
+
+      case CLIENT_MODIFY_TASK_OBSERVERS:
+        if (strcasecmp ("GROUP", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values, "id",
+                                &attribute))
+              array_add (modify_task_data->groups, g_strdup (attribute));
+            set_client_state (CLIENT_MODIFY_TASK_OBSERVERS_GROUP);
           }
         ELSE_ERROR ("modify_task");
 
@@ -12478,6 +12493,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             else if ((modify_task_data->action
                       || (modify_task_data->alerts->len > 1)
+                      || (modify_task_data->groups->len > 1)
                       || modify_task_data->name
                       || modify_task_data->comment
                       || modify_task_data->rcfile)
@@ -12488,6 +12504,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else if (modify_task_data->action
                      && (modify_task_data->comment
                          || modify_task_data->alerts->len
+                         || modify_task_data->groups->len
                          || modify_task_data->name
                          || modify_task_data->rcfile))
               SEND_TO_CLIENT_OR_FAIL
@@ -12496,6 +12513,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else if ((task_target (task) == 0)
                      && (modify_task_data->rcfile
                          || modify_task_data->alerts->len
+                         || modify_task_data->groups->len
                          || modify_task_data->schedule_id
                          || modify_task_data->slave_id))
               SEND_TO_CLIENT_OR_FAIL
@@ -12661,6 +12679,41 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
 
+                if (fail == 0 && modify_task_data->groups->len)
+                  {
+                    gchar *fail_group_id;
+                    switch ((fail = set_task_groups (task,
+                                                     modify_task_data->groups,
+                                                     &fail_group_id)))
+                      {
+                        case 0:
+                          break;
+                        case 1:
+                          if (send_find_error_to_client
+                               ("modify_task",
+                                "group",
+                                fail_group_id,
+                                write_to_client,
+                                write_to_client_data))
+                            {
+                              error_send_to_client (error);
+                              return;
+                            }
+                          fail = 1;
+                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                                 "Task %s could not be modified",
+                                 modify_task_data->task_id);
+                          break;
+                        case -1:
+                        default:
+                          SEND_TO_CLIENT_OR_FAIL
+                            (XML_INTERNAL_ERROR ("modify_task"));
+                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                                 "Task %s could not be modified",
+                                 modify_task_data->task_id);
+                      }
+                  }
+
                 if (fail == 0 && modify_task_data->schedule_id)
                   {
                     schedule_t schedule = 0;
@@ -12758,6 +12811,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TASK, SCHEDULE);
       CLOSE (CLIENT_MODIFY_TASK, SLAVE);
       CLOSE (CLIENT_MODIFY_TASK, FILE);
+
+      CLOSE (CLIENT_MODIFY_TASK_OBSERVERS, GROUP);
 
       case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE:
         assert (strcasecmp ("PREFERENCE", element_name) == 0);
@@ -20116,7 +20171,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int holes_2, infos_2, warnings_2;
               int false_positives;
               gchar *response;
-              iterator_t alerts;
+              iterator_t alerts, groups;
               gchar *in_assets, *max_checks, *max_hosts;
 
               index = get_iterator_resource (&tasks);
@@ -20432,7 +20487,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               response = g_strdup_printf
                           ("<owner><name>%s</name></owner>"
-                           "<observers>%s</observers>"
                            "<config id=\"%s\">"
                            "<name>%s</name>"
                            "<trash>%i</trash>"
@@ -20459,11 +20513,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "</schedule>"
                            "%s%s%s",
                            owner ? owner : "",
-                           ((owner == NULL)
-                            || (strcmp (owner,
-                                        current_credentials.username)))
-                             ? ""
-                             : observers,
                            config_uuid ? config_uuid : "",
                            config ? config : "",
                            task_config_in_trash (index),
@@ -20499,7 +20548,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_free (last_report);
               g_free (second_last_report);
               free (owner);
-              free (observers);
               g_free (description64);
               free (task_schedule_uuid);
               free (task_schedule_name);
@@ -20516,6 +20564,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
               g_free (response);
+
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<observers>%s",
+                ((owner == NULL)
+                 || (strcmp (owner,
+                             current_credentials.username)))
+                  ? ""
+                  : observers);
+              free (observers);
+
+              init_task_group_iterator (&groups, index);
+              while (next (&groups))
+                SENDF_TO_CLIENT_OR_FAIL
+                 ("<group id=\"%s\">"
+                  "<name>%s</name>"
+                  "</group>",
+                  task_group_iterator_uuid (&groups),
+                  task_group_iterator_name (&groups));
+              cleanup_iterator (&groups);
+
+              SENDF_TO_CLIENT_OR_FAIL ("</observers>");
 
               init_task_alert_iterator (&alerts, index, 0);
               while (next (&alerts))
