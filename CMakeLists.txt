@@ -182,7 +182,7 @@ message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 ## might occur.
 
 pkg_check_modules (LIBOPENVAS REQUIRED libopenvas>=6.0.0)
-pkg_check_modules (GNUTLS REQUIRED gnutls>=2.2)
+pkg_check_modules (GNUTLS REQUIRED gnutls>=2.8)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.16)
 pkg_check_modules (SQLITE3 REQUIRED sqlite3)
 pkg_check_modules (UUID REQUIRED uuid)
