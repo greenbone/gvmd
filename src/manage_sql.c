@@ -520,7 +520,6 @@ user_has_access_uuid (const char *resource, const char *uuid,
                         "       AND subject"
                         "           = (SELECT ROWID FROM users"
                         "              WHERE users.uuid = '%s'))"
-#if 0
                         "      OR (subject_type = 'group'"
                         "          AND subject"
                         "              IN (SELECT DISTINCT `group`"
@@ -529,6 +528,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
                         "                                FROM users"
                         "                                WHERE users.uuid"
                         "                                      = '%s')))"
+#if 0
                         "      OR (subject_type = 'role'"
                         "          AND subject"
                         "              IN (SELECT DISTINCT role"
@@ -551,7 +551,6 @@ user_has_access_uuid (const char *resource, const char *uuid,
                       "       AND subject"
                       "           = (SELECT ROWID FROM users"
                       "              WHERE users.uuid = '%s'))"
-#if 0
                       "      OR (subject_type = 'group'"
                       "          AND subject"
                       "              IN (SELECT DISTINCT `group`"
@@ -560,6 +559,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
                       "                                FROM users"
                       "                                WHERE users.uuid"
                       "                                      = '%s')))"
+#if 0
                       "      OR (subject_type = 'role'"
                       "          AND subject"
                       "              IN (SELECT DISTINCT role"
@@ -606,7 +606,6 @@ user_has_access_uuid (const char *resource, const char *uuid,
                     "              AND subject"
                     "                  = (SELECT ROWID FROM users"
                     "                     WHERE users.uuid = '%s'))"
-#if 0
                     "             OR (subject_type = 'group'"
                     "                 AND subject"
                     "                     IN (SELECT DISTINCT `group`"
@@ -615,6 +614,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
                     "                                       FROM users"
                     "                                       WHERE users.uuid"
                     "                                             = '%s')))"
+#if 0
                     "             OR (subject_type = 'role'"
                     "                 AND subject"
                     "                     IN (SELECT DISTINCT role"
@@ -626,9 +626,8 @@ user_has_access_uuid (const char *resource, const char *uuid,
 #endif
                     "     )"
                     " AND name = '%s';",
-
-
                     uuid,
+                    current_credentials.uuid,
                     current_credentials.uuid,
                     current_credentials.uuid,
                     actions,
@@ -1281,7 +1280,6 @@ user_may (const char *operation)
                  "       AND subject"
                  "           = (SELECT ROWID FROM users"
                  "              WHERE users.uuid = '%s'))"
-#if 0
                  "      OR (subject_type = 'group'"
                  "          AND subject"
                  "              IN (SELECT DISTINCT `group`"
@@ -1290,6 +1288,7 @@ user_may (const char *operation)
                  "                                FROM users"
                  "                                WHERE users.uuid"
                  "                                      = '%s')))"
+#if 0
                  "      OR (subject_type = 'role'"
                  "          AND subject"
                  "              IN (SELECT DISTINCT role"
@@ -3488,7 +3487,6 @@ init_get_iterator (iterator_t* iterator, const char *type,
                             "        AND subject"
                             "            = (SELECT ROWID FROM users"
                             "               WHERE users.uuid = '%s'))"
-#if 0
                             "       OR (subject_type = 'group'"
                             "           AND subject"
                             "               IN (SELECT DISTINCT `group`"
@@ -3497,6 +3495,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                             "                                 FROM users"
                             "                                 WHERE users.uuid"
                             "                                       = '%s')))"
+#if 0
                             "       OR (subject_type = 'role'"
                             "           AND subject"
                             "               IN (SELECT DISTINCT role"
@@ -3513,8 +3512,8 @@ init_get_iterator (iterator_t* iterator, const char *type,
                             type,
                             get->trash ? 1 : 0,
                             current_credentials.uuid,
-#if 0
                             current_credentials.uuid,
+#if 0
                             current_credentials.uuid,
 #endif
                             permission_or->str);
@@ -3563,7 +3562,6 @@ init_get_iterator (iterator_t* iterator, const char *type,
                             "      AND %ss.subject"
                             "          = (SELECT ROWID FROM users"
                             "             WHERE users.uuid = '%s'))"
-#if 0
                             "  OR (%ss.subject_type = 'group'"
                             "      AND %ss.subject"
                             "          IN (SELECT DISTINCT `group`"
@@ -3572,6 +3570,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                             "                            FROM users"
                             "                            WHERE users.uuid"
                             "                                  = '%s')))"
+#if 0
                             "  OR (%ss.subject_type = 'role'"
                             "      AND %ss.subject"
                             "          IN (SELECT DISTINCT role"
@@ -3587,10 +3586,10 @@ init_get_iterator (iterator_t* iterator, const char *type,
                             type,
                             type,
                             current_credentials.uuid,
-#if 0
                             type,
                             type,
                             current_credentials.uuid,
+#if 0
                             type,
                             type,
                             current_credentials.uuid,

@@ -1,5 +1,10 @@
 2013-03-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (user_has_access_uuid, user_may)
+	(init_get_iterator): Enable group permission checks.
+
+2013-03-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add observer groups to MODIFY_TASK and GET_TASKS.
 
 	* src/manage_sql.c (init_task_group_iterator, task_group_iterator_task)
