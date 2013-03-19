@@ -33,6 +33,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   xmlns:str="http://exslt.org/strings"
   xmlns:oval="http://oval.mitre.org/XMLSchema/oval-common-5"
   xmlns:oval_definitions="http://oval.mitre.org/XMLSchema/oval-definitions-5"
+  xmlns:oval_variables="http://oval.mitre.org/XMLSchema/oval-variables-5"
   xsi:schemaLocation="http://oval.mitre.org/language/version5.10.1/ovaldefinition/complete/oval-common-schema.xsd http://oval.mitre.org/language/version5.10.1/ovaldefinition/complete/oval-definitions-schema.xsd"
   extension-element-prefixes="str"
   >
@@ -118,6 +119,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template match="oval_definitions:objects" />
   <xsl:template match="oval_definitions:states" />
   <xsl:template match="oval_definitions:variables" />
+
+  <xsl:template match="oval_variables:variable" />
+  <xsl:template match="oval_variables:generator" />
 
   <xsl:template match="/">
     BEGIN TRANSACTION;
