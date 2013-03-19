@@ -1,5 +1,17 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15586. Patch by Timo Pollmeier.
+
+	* tools/greenbone-certdata-sync (RSYNC_DELETE): Remove quotes causing
+	exclude of private directory to be ignored.
+
+	* tools/greenbone-scapdata-sync (RSYNC_DELETE): Remove quotes causing
+	exclude of private directory to be ignored.
+	(update_scap_db): Fix recalculation of max_cvss being performed even if
+	no CVEs were updated.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15574. Patch by Andre Heinecke.
 
 	* report_formats/verinice-ism/gsm_verinice_ism.xsl,

@@ -26,7 +26,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20130227
+VERSION=20130301
 RESTRICTED=1
 
 # SETTINGS
@@ -45,10 +45,10 @@ fi
 # RSYNC_DELETE controls whether files which are not part of the repository will
 # be removed from the local directory after synchronization. The default value
 # for this setting is
-# "--delete --exclude \"/scap.db\" --exclude \"$PRIVATE_SUBDIR/\"",
+# "--delete --exclude scap.db --exclude $PRIVATE_SUBDIR/",
 # which means that files which are not part of the feed, database or private
 # directory will be deleted.
-RSYNC_DELETE="--delete --exclude \"/scap.db\" --exclude \"$PRIVATE_SUBDIR/\""
+RSYNC_DELETE="--delete --exclude scap.db --exclude $PRIVATE_SUBDIR/"
 
 # PORT controls the outgoing TCP port for updates. If PAT/Port-Translation is
 # not used, this should be "24". For some application layer firewalls or gates
@@ -312,11 +312,11 @@ update_scap_db() {
   xmlcount=$(ls $SCAP_DIR/nvdcve-2.0-*.xml 2> /dev/null | wc -l)
   if [ $xmlcount -ne 0 ]
   then
-    updated_cves=1
     for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
     do
       if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
       then
+        updated_cves=1
         log_write "Updating $cvefile"
         xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
           xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
