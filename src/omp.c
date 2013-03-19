@@ -4731,7 +4731,7 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
                                  "<page>%i</page>"
                                  "</%s_count>"
                                  "</get_%s_response>",
-                                 get->filt_id,
+                                 get->filt_id ? get->filt_id : "",
                                  filter || get->filter
                                   ? manage_clean_filter (filter
                                                           ? filter

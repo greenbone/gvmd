@@ -1,5 +1,11 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15660. Patch by Hani Benhabiles.
+
+	* src/omp.c (send_get_end): Don't printf filt_id when null.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15656. Patch by Timo Pollmeier.
 
 	* tools/greenbone-scapdata-sync (update_scap_db_private)
