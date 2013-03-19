@@ -1,5 +1,12 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15676. Patch by Matthew Mundell.
+
+	* src/openvasmd.c (handle_sigabrt): Print backtrace when compiled with
+	debugging.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15667. Patch by Matthew Mundell.
 
 	* src/manage_sql.c (filter_clause): Correct SQL typo.
