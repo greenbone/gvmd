@@ -9,7 +9,6 @@ scans from the given XML scan report using a XSL
 transformation with the tool xsltproc.
 
 Parameters:
-- filename: should contain the filename of the report
 - htmlfilename: should contain the filename of a html report
 - filedate: should contain the reports modification time as seconds since Epoch
 
@@ -35,7 +34,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:str="http://exslt.org/strings" version="1.0" extension-element-prefixes="str">
-  <xsl:param name="filename"/>
+  <xsl:param name="htmlfilename"/>
   <xsl:param name="filedate"/>
   <xsl:include href="classification.xsl"/>
   <xsl:output method="xml" encoding="UTF-8"/>
@@ -523,7 +522,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </xsl:call-template>
             </xsl:for-each>
         </children>
-        <file>
+        <!--        <file>
             <syncAttribute>
                 <name>attachment_file_name</name>
                 <value><xsl:value-of select="$filename"/></value>
@@ -542,7 +541,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </syncAttribute>
             <extId><xsl:value-of select="$filename"/></extId>
             <file>files/<xsl:value-of select="$filename"/></file>
-        </file>
+        </file> -->
         <file>
             <syncAttribute>
                 <name>attachment_file_name</name>
