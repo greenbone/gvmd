@@ -95,6 +95,8 @@ fi
 # When set to 1, all OVAL definitions will be updated, not just new ones.
 # This is usually done by database migrations.
 REBUILD_OVAL=0
+# Whether to output extra data
+VERBOSE=0
 
 do_help () {
   echo "$0: Sync SCAP data using different protocols"
@@ -405,18 +407,24 @@ update_sec_db_private () {
                 then
                   echo "[w] Validation of file '$ovalfile' failed: $validation_message"
                 else
-                  found_duplicates=0
                   for feedfile in $oval_files_sorted
                   do
                     compare=`xsltproc "$SCAP_RES_DIR/ovaldef_list_ids.xsl" "$ovalfile"`
-                    duplicates=`xsltproc "$SCAP_RES_DIR/ovaldef_list_ids.xsl" "$feedfile" | grep -Fxc "$compare"`
-                    if [ 0 -lt $duplicates ]
+                    duplicates=`xsltproc "$SCAP_RES_DIR/ovaldef_list_ids.xsl" "$feedfile" | grep -Fx "$compare"`
+                    duplicates_count=`echo "$duplicates" | wc -l`
+                    if [ -n "$duplicates" ]
                     then
-                      echo "[w] Skipping '$ovalfile', found $duplicates definition(s) that are duplicates of one(s) in '$feedfile'"
-                      found_duplicates=1
+                      echo "[w] Skipping '$ovalfile', found $duplicates_count definition(s) that are duplicates of one(s) in '$feedfile'"
+                      if [ 0 -ne $VERBOSE ]
+                      then
+                        for duplicate in $duplicates
+                        do
+                          echo "[w] Duplicate ID: $duplicate"
+                        done
+                      fi
                     fi
                   done
-                  if [ 0 -eq $found_duplicates ]
+                  if [ 0 -eq $duplicates_count ]
                   then
                     echo "[i] Updating $ovalfile"
                     xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
@@ -615,6 +623,9 @@ if [ -n "$1" ]; then
       --curl)
         do_curl
         exit 0
+        ;;
+      --verbose)
+        VERBOSE=1
         ;;
       --refresh)
         do_refresh

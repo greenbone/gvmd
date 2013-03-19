@@ -1,5 +1,15 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15687. Patch by Timo Pollmeier.
+
+	* tools/greenbone-scapdata-sync (): Add --verbose option.
+	(update_scap_db): Add output of duplicate IDs in verbose mode.
+
+	* tools/openvas-scapdata-sync.in (): Add --verbose option.
+	(update_sec_db): Add output of duplicate IDs in verbose mode.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15680. Patch by Matthew Mundell.
 
 	* src/ompd.c (serve_omp): In cache update/rebuild mode, exit if
