@@ -1,5 +1,11 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15650. Patch by Jan-Oliver Wagner.
+
+	* CMakeLists.txt: Install greenbone-certdata-sync.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15649. Patch by Timo Pollmeier.
 
 	Add "status" column to OVAL definitions in SCAP database.
