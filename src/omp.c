@@ -18783,10 +18783,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      "<ovaldef>"
                                      "<version>%s</version>"
                                      "<deprecated>%s</deprecated>"
+                                     "<status>%s</status>"
                                      "<def_class>%s</def_class>"
                                      "<title>%s</title>",
                                      ovaldef_info_iterator_version (&info),
                                      ovaldef_info_iterator_deprecated (&info),
+                                     ovaldef_info_iterator_status (&info),
                                      ovaldef_info_iterator_def_class (&info),
                                      ovaldef_info_iterator_title (&info));
                   description = ovaldef_info_iterator_description (&info);

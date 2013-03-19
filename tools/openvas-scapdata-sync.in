@@ -229,6 +229,24 @@ db_migrate_10 () {
   echo "[i] Migration done."
 }
 
+db_migrate_11 () {
+  echo "[i] Migrating database to version 11."
+  if [ 1 != "$REFRESH_PRIVATE_ONLY" ]
+  then
+    sqlite3 "$SEC_DB"  "ALTER TABLE ovaldefs
+                          ADD COLUMN status TEXT;
+                        UPDATE meta
+                          SET value = '11'
+                          WHERE name = 'database_version';
+                      "
+    REBUILD_OVAL=1
+    echo "[i] Migration done."
+  else
+    echo "[w] Migration to version 11 requires refresh of all SCAP data. Aborting."
+    exit 1
+  fi
+}
+
 check_db_version () {
   DB_VERSION=`$SQLITE $SEC_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
@@ -241,8 +259,11 @@ check_db_version () {
     6) reinit;;
     7) reinit;;
     8) db_migrate_9
-       db_migrate_10;;
-    9) db_migrate_10;;
+       db_migrate_10
+       db_migrate_11;;
+    9) db_migrate_10
+       db_migrate_11;;
+   10) db_migrate_11;;
   esac
 }
 
@@ -348,7 +369,7 @@ update_sec_db_private () {
       then
         for ovalfile in $oval_files_sorted_private
         do
-          if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+          if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ] || [ 1 = "$REBUILD_OVAL" ]
           then
             oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`
 
@@ -358,7 +379,7 @@ update_sec_db_private () {
               OVAL_REFDATE=0
             fi
 
-            if [ $oval_timestamp -ge $OVAL_REFDATE ]
+            if [ $oval_timestamp -ge $OVAL_REFDATE ] || [ 1 = "$REBUILD_OVAL" ]
             then
               validation_message=`xsltproc "$SCAP_RES_DIR/oval_verify.xsl" "$ovalfile" 2>/dev/null`
               validation_return="$?"
@@ -388,9 +409,25 @@ update_sec_db_private () {
                   done
                   if [ 0 -eq $found_duplicates ]
                   then
-                    echo "[i] Updating '$ovalfile'"
-                    xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
-                    $SQLITE $SEC_DB
+                    if [ 1 = "$REBUILD_OVAL" ]
+                    then
+                      OVAL_REFDATE=0
+                    else
+                      OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+                      if [ -z "$OVAL_REFDATE" ]
+                      then
+                        OVAL_REFDATE=0
+                      fi
+                    fi
+
+                    if [ $oval_timestamp -ge $OVAL_REFDATE ]
+                    then
+                      echo "[i] Updating $ovalfile"
+                      xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
+                      $SQLITE $SEC_DB
+                    else
+                      echo "[i] Skipping $ovalfile, file has older timestamp than latest OVAL definition in database."
+                    fi
                   fi
                 fi
               fi
@@ -520,14 +557,19 @@ update_sec_db () {
 
     for ovalfile in $oval_files_sorted
     do
-      if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+      if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ] || [ 1 = "$REBUILD_OVAL" ]
       then
         oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`
 
-        OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
-        if [ -z "$OVAL_REFDATE" ]
+        if [ 1 = "$REBUILD_OVAL" ]
         then
           OVAL_REFDATE=0
+        else
+          OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+          if [ -z "$OVAL_REFDATE" ]
+          then
+            OVAL_REFDATE=0
+          fi
         fi
 
         if [ $oval_timestamp -ge $OVAL_REFDATE ]
@@ -557,6 +599,7 @@ do_refresh () {
 }
 
 do_refresh_private () {
+  REFRESH_PRIVATE_ONLY=1
   init_sec_db_update
   update_sec_db_private
 }

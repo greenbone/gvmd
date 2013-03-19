@@ -37,7 +37,7 @@ DROP TABLE IF EXISTS ovaldefs;
 
 /* create new tables and indices */
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "10");
+INSERT INTO meta (name, value) VALUES ("database_version", "11");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
 CREATE TABLE cves (
@@ -97,7 +97,8 @@ CREATE TABLE ovaldefs (
   def_class TEXT, /* enum */ 
   title TEXT,
   description TEXT,
-  xml_file TEXT
+  xml_file TEXT,
+  status TEXT
 );
 CREATE UNIQUE INDEX ovaldefs_idx ON ovaldefs (name);
 

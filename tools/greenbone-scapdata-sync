@@ -26,7 +26,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20130306
+VERSION=20130311
 RESTRICTED=1
 
 # SETTINGS
@@ -223,6 +223,24 @@ db_migrate_10 () {
   log_write "Migration done."
 }
 
+db_migrate_11 () {
+  log_write "Migrating database to version 11."
+  if [ 1 != "$REFRESH_PRIVATE_ONLY" ]
+  then
+    sqlite3 "$SCAP_DB"  "ALTER TABLE ovaldefs
+                          ADD COLUMN status TEXT;
+                        UPDATE meta
+                          SET value = '11'
+                          WHERE name = 'database_version';
+                      "
+    REBUILD_OVAL=1
+    log_write "Migration done."
+  else
+    log_write "Warning: Migration to version 11 requires refresh of all SCAP data. Aborting."
+    exit 1
+  fi
+}
+
 check_db_version () {
   DB_VERSION=`$SQLITE3 $SCAP_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
@@ -235,8 +253,11 @@ check_db_version () {
     6) reinit;;
     7) reinit;;
     8) db_migrate_9
-       db_migrate_10;;
-    9) db_migrate_10;;
+       db_migrate_10
+       db_migrate_11;;
+    9) db_migrate_10
+       db_migrate_11;;
+   10) db_migrate_11;;
   esac
 }
 
@@ -394,9 +415,25 @@ update_scap_db_private () {
                   done
                   if [ 0 -eq $found_duplicates ]
                   then
-                    log_write "Updating '$ovalfile'"
-                    xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
-                    $SQLITE $SCAP_DB
+                    if [ 1 = "$REBUILD_OVAL" ]
+                    then
+                      OVAL_REFDATE=0
+                    else
+                      OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+                      if [ -z "$OVAL_REFDATE" ]
+                      then
+                        OVAL_REFDATE=0
+                      fi
+                    fi
+
+                    if [ $oval_timestamp -ge $OVAL_REFDATE ]
+                    then
+                      log_write "Updating $ovalfile"
+                      xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
+                      $SQLITE3 $SCAP_DB
+                    else
+                      log_write "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
+                    fi
                   fi
                 fi
               fi
@@ -531,20 +568,24 @@ update_scap_db() {
         then
           oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`
 
-          OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
-          if [ -z "$OVAL_REFDATE" ]
+          if [ 1 = "$REBUILD_OVAL" ]
           then
             OVAL_REFDATE=0
+          else
+            OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+            if [ -z "$OVAL_REFDATE" ]
+            then
+              OVAL_REFDATE=0
+            fi
           fi
 
           if [ $oval_timestamp -ge $OVAL_REFDATE ]
           then
-            log_write " Updating $ovalfile"
-
+            log_write "Updating $ovalfile"
             xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
             $SQLITE3 $SCAP_DB
           else
-            log_write " Skipping $ovalfile, file has older timestamp than latest OVAL definition in database (this is not an error)."
+            log_write "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
           fi
         else
           log_write " Skipping $ovalfile, file is older than last revision (this is not an error)."

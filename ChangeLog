@@ -1,5 +1,38 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15649. Patch by Timo Pollmeier.
+
+	Add "status" column to OVAL definitions in SCAP database.
+
+	* src/manage.h (ovaldef_info_iterator_status): New prototype.
+
+	* src/manage_sql.c (OVALDEF_INFO_ITERATOR_FILTER_COLUMNS)
+	(OVALDEF_INFO_ITERATOR_COLUMNS): Add "status" column.
+	(ovaldef_info_iterator_status): New function to get "status" from an
+	OVAL definition iterator.
+
+	* src/omp.c (omp_xml_handle_end_element): In ovaldef else if section,
+	add "status" to OMP output.
+
+	* tools/greenbone-scapdata-sync (db_migrate_11): New function to
+	migrate SCAP database to version 11.
+	(check_db_version): Add migration to version 11.
+	(update_scap_db_private, update_scap_db): Add selective rebuild of OVAL
+	data.
+
+	* tools/openvas-scapdata-sync.in (db_migrate_11, check_db_version): See
+	greenbone-scapdata-sync.
+	(update_sec_db_private, update_sec_db): See update_scap_db_private,
+	update_scap_db in greenbone-scapdata-sync.
+	(do_refresh_private): Set variable REFRESH_PRIVATE_ONLY to 1.
+
+	* tools/oval_update.xsl: Add insert of "status" data into SCAP database.
+
+	* tools/scap_db_init.sql (meta): Set version to 11.
+	(ovaldefs): Add column "status".
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15646. Patch by Hani Benhabiles.
 
 	* src/sql.c (cleanup_iterator): Check iterator pointer before
