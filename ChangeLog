@@ -1,5 +1,12 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15646. Patch by Hani Benhabiles.
+
+	* src/sql.c (cleanup_iterator): Check iterator pointer before
+	dereferencing it.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15631. Patch by Jan-Oliver Wagner.
 
 	* doc/user-scap-data-HOWTO: Slightly improved.
