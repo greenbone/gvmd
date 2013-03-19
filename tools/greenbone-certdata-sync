@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # greenbone-certdata-sync
 # This script synchronizes an OpenVAS installation with the Greenbone CERT
@@ -113,7 +113,7 @@ do_feedversion () {
   fi
 }
 
-if [[ ! -w $LOGDIR ]]
+if [ ! -w $LOGDIR ]
 then
   NOLOG=1
   echo
@@ -128,7 +128,7 @@ then
 fi
 
 log_write(){
-  if (( $NOLOG ))
+  if [ 1 = "$NOLOG" ]
   then
     echo "LOG: [`date -R`] $1"
   else
@@ -143,7 +143,7 @@ then
 fi
 
 RSYNC=`command -v rsync`
-if [[ -z $RSYNC ]]
+if [ -z $RSYNC ]
 then
   echo
   echo "== greenbone-certdata-sync $VERSION ================================================"
@@ -162,7 +162,7 @@ then
 fi
 
 SQLITE=`command -v sqlite3`
-if [[ -z $SQLITE ]]
+if [ -z $SQLITE ]
 then
   echo
   echo "== greenbone-certdata-sync $VERSION ================================================"
@@ -265,7 +265,7 @@ update_cert_db() {
 }
 
 sync_certdata(){
-  if [[ -e $ACCESSKEY ]]
+  if [ -e $ACCESSKEY ]
   then
     echo "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone CERT data Repository ..."
     notsynced=1
@@ -278,8 +278,8 @@ sync_certdata(){
 
     mkdir -p "$BASE_SYNC_DIR"
     read feeduser < $ACCESSKEY
-    read -d "@" custid < $ACCESSKEY
-    if [[ -z $feeduser || -z $custid ]]
+    custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
+    if [ -z $feeduser ] || [ -z $custid ]
     then
       echo "== greenbone-certdata-sync $VERSION ================================================"
       echo "Synchronization was not possible because credential information could not"
@@ -295,15 +295,15 @@ sync_certdata(){
       logger "CERT synchronization: Could not determine credentials, aborting synchronization."
       exit 1
     fi
-    while (($notsynced))
+    while [ 0 -eq $notsynced ]
     do
       # --protocol=29 is a workaround for a known bug in rsync 3.0.3
-      if [[ -e /admin/ezcli.state ]]
+      if [ -e /admin/ezcli.state ]
       then
         gsmproxy=`grep proxy_feed /admin/ezcli.state | sed -e 's/^.*\/\///' -e 's/:/ /' -e 's/[\t ]*$//'`
         PORT=`grep ^syncport /admin/ezcli.state | sed -e "s/^syncport\t//g"`
       fi
-      if [[ $gsmproxy == "proxy_feed" || -z $gsmproxy ]]
+      if [ -z $gsmproxy ] || [ "proxy_feed" = "$gsmproxy" ]
       then
         rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
       else
@@ -313,7 +313,7 @@ sync_certdata(){
           rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -o \"ProxyCommand corkscrew $gsmproxy %h %p\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 $RSYNC_DELETE $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
         fi
       fi
-      if (( $? )) ; then
+      if [ 0 -ne "$?" ] ; then
         echo
         echo "== greenbone-certdata-sync $VERSION ================================================"
         echo "The synchronization with the repository failed. This may indicate a serious issue"
