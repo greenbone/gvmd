@@ -1,5 +1,15 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15680. Patch by Matthew Mundell.
+
+	* src/ompd.c (serve_omp): In cache update/rebuild mode, exit if
+	connecting to the scanner fails.
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache): Log when connecting to
+	scanner fails.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15676. Patch by Matthew Mundell.
 
 	* src/openvasmd.c (handle_sigabrt): Print backtrace when compiled with
