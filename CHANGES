@@ -1,3 +1,33 @@
+openvas-manager 4.0+rc1 (2013-03-19)
+
+This is the first release candidate version of the upcoming 4.0 release of the
+OpenVAS Manager. It is the central management service between the actual
+security scanner and various user clients.
+
+This release adds many improvements and new features to scapdata and certdata
+syncing scripts, increses GnuTLS dependency version to 2.8, brings fixes to
+manager rebuilding and updating as well as various bug fixes and documentation
+updates.
+
+Many thanks to everyone who has contributed to this release:
+Andre Heinecke, Timo Pollmeier, Hani Benhabiles, Jan-Oliver Wagner, Matthew
+Mundell.
+
+Main changes since 4.0+beta5:
+* Don't attach raw xml to verinice report.
+* Multiple scapdat and certdata bug fixes.
+* User defined oval repositories in private directories.
+* Send nvt tags with results.
+* OMP Documentation update.
+* Add oval status.
+* Install greenbone-certdata-sync script.
+* print handle_sigabort backtrace in debugging mode.
+* Increase GnuTLS dependency to version 2.8.
+* Various small bug fixes.
+* Exit if connecting to scanner fails in rebuild/update mode.
+* scapdata-sync check for duplicate IDs in verbose mode.
+
+
 openvas-manager 4.0+beta5 (2013-02-22)
 
 This is the fifth beta version of the upcoming 4.0 release of the OpenVAS

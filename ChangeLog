@@ -1,5 +1,13 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Preparing the openvas-manager 4.0+rc1 release.
+
+	* CMakeLists.txt: Set version to 4.0+rc1.
+
+	* CHANGES: Updated.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15720. Patch by Jan-Oliver Wagner.
 
 	* CMakeLists.txt: Increased dependency to gnutls from 2.2 to 2.8.
