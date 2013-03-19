@@ -1,5 +1,20 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15624. Patch by Timo Pollmeier.
+
+	Add updating of user (OVAL) data to greenbone-scapdata-sync.
+
+	* tools/greenbone-scapdata-sync (REFRESH_PRIVATE_ONLY): New variable.
+	(list_oval_files_sortable, list_oval_files_sorted): Change to output
+	only files with timestamps and use parameter for directory to search.
+	(do_help): Add help for new --refresh-private option.
+	(init_scap_db_update): New function to initialize database variables.
+	(update_scap_db_private): New function to update user data.
+	(update_scap_db): Change to support updating user data.
+	(): Add command line option --refresh-private.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15623. Patch by Timo Pollmeier.
 
 	* tools/greenbone-scapdata-sync (sync_scapdata),
