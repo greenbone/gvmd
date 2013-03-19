@@ -1,5 +1,11 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15667. Patch by Matthew Mundell.
+
+	* src/manage_sql.c (filter_clause): Correct SQL typo.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15662. Patch by Timo Pollmeier.
 
 	* tools/oval_timestamp.xsl, tools/oval_verify.xsl: Add recognition of
