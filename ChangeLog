@@ -1,5 +1,16 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15620. Patch by Hani Benhabiles.
+
+	* src/manage_sql.c (update_nvt_cache): Set nvti tag.
+	(result_iterator_nvt_tag): New function.
+
+	* src/manage.h: Add result_iterator_nvt_tag header accordingly.
+
+	* src/omp.c (buffer_results_xml): Send nvt tags.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15614. Patch by Matthew Mundell.
 
 	* src/manage_sql.c (update_all_config_caches): Use definition for

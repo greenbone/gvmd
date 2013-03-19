@@ -8449,6 +8449,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *risk_factor = result_iterator_nvt_risk_factor (results);
   const char *cve = result_iterator_nvt_cve (results);
   const char *bid = result_iterator_nvt_bid (results);
+  const char *tags = result_iterator_nvt_tag (results);
   iterator_t cert_refs_iterator;
   const char *xref = result_iterator_nvt_xref (results);
   result_t result = result_iterator_result (results);
@@ -8497,6 +8498,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     "<risk_factor>%s</risk_factor>"
     "<cve>%s</cve>"
     "<bid>%s</bid>"
+    "<tags>%s</tags>"
     "<cert>",
     result_iterator_subnet (results),
     result_iterator_host (results),
@@ -8507,7 +8509,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     cvss_base ? cvss_base : "",
     risk_factor ? risk_factor : "",
     cve ? cve : "",
-    bid ? bid : "");
+    bid ? bid : "",
+    tags ? tags : "");
 
   if (manage_cert_loaded ())
     {
