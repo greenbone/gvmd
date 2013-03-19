@@ -1,5 +1,12 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15622. Patch by Hani Benhabiles.
+
+	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc: Update
+	documentation for various results related commands.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15620. Patch by Hani Benhabiles.
 
 	* src/manage_sql.c (update_nvt_cache): Set nvti tag.

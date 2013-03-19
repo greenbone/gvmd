@@ -1606,6 +1606,16 @@ result_overrides_override_orphan
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Tags associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>cert</b>&gt;
+              <div style="margin-left: 15px; display: inline;">List of CERT advisories associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>xref</b>&gt;
               <div style="margin-left: 15px; display: inline;">XREFs associated with the NVT.</div>
 <ul style="list-style: none"></ul>
@@ -1742,6 +1752,8 @@ result_nvt
        &amp; result_nvt_risk_factor
        &amp; result_nvt_cve
        &amp; result_nvt_bid
+       &amp; result_nvt_tags
+       &amp; result_nvt_cert
        &amp; result_nvt_xref
      }
 
@@ -1777,6 +1789,18 @@ result_nvt_cve
 
 result_nvt_bid
  = element bid
+     {
+       text
+     }
+
+result_nvt_tags
+ = element tags
+     {
+       text
+     }
+
+result_nvt_cert
+ = element cert
      {
        text
      }
@@ -13605,6 +13629,14 @@ get_reports_response_report
              &lt;name&gt;Test NVT: fields with ISO-8859-1 chars ()&lt;/name&gt;
              &lt;cvss_base&gt;5.0&lt;/cvss_base&gt;
              &lt;risk_factor&gt;Medium&lt;/risk_factor&gt;
+             &lt;cve&gt;CVE-2013-1406&lt;/cve&gt;
+             &lt;bid&gt;51702&lt;/bid&gt;
+             &lt;tags&gt;NOTAGS&lt;/tags&gt;
+             &lt;cert&gt;
+               &lt;cert_ref id="DFN-CERT-2013-0246"
+                         type="DFN-CERT"/&gt;
+             &lt;/cert&gt;
+             &lt;xref&gt;NOXREF&lt;/xref&gt;
            &lt;/nvt&gt;
            &lt;threat&gt;Medium&lt;/threat&gt;
            &lt;description&gt;Test with umlaut Warning Port 0.&lt;/description&gt;
@@ -14226,6 +14258,11 @@ get_report_formats_response_report_format_active
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Tags associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>cert</b>&gt;
               <div style="margin-left: 15px; display: inline;">List of CERT advisories referencing this NVT via CVEs.</div>
 <ul style="list-style: none"><li>
@@ -14244,6 +14281,11 @@ get_report_formats_response_report_format_active
           </li>
 </ul>
 </li></ul>
+</li>
+<li>
+              &lt;<b>xref</b>&gt;
+              <div style="margin-left: 15px; display: inline;">References associated with the NVT.</div>
+<ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
@@ -14341,7 +14383,9 @@ get_results_response_results_result_nvt
        &amp; get_results_response_results_result_nvt_risk_factor
        &amp; get_results_response_results_result_nvt_cve
        &amp; get_results_response_results_result_nvt_bid
+       &amp; get_results_response_results_result_nvt_tags
        &amp; get_results_response_results_result_nvt_cert
+       &amp; get_results_response_results_result_nvt_xref
      }
 
 get_results_response_results_result_nvt_name
@@ -14374,6 +14418,12 @@ get_results_response_results_result_nvt_bid
        integer
      }
 
+get_results_response_results_result_nvt_tags
+ = element tags
+     {
+       text
+     }
+
 get_results_response_results_result_nvt_cert
  = element cert
      {
@@ -14385,6 +14435,12 @@ get_results_response_results_result_nvt_cert_cert_ref
      {
        attribute id { text }?
        &amp; attribute type { text }?
+     }
+
+get_results_response_results_result_nvt_xref
+ = element xref
+     {
+       text
      }
 
 get_results_response_results_result_threat
@@ -14429,6 +14485,9 @@ get_results_response_results_result_overrides
          &lt;risk_factor&gt;Medium&lt;/risk_factor&gt;
          &lt;cve&gt;CVE-2009-3095&lt;/cve&gt;
          &lt;bid&gt;36254&lt;/bid&gt;
+         &lt;tags&gt;NOTAGS&lt;/tags&gt;
+         &lt;cert/&gt;
+         &lt;xref&gt;NOXREF&lt;/xref&gt;
        &lt;/nvt&gt;
        &lt;threat&gt;Medium&lt;/threat&gt;
        &lt;description&gt;Test with umlaut.&lt;/description&gt;
@@ -14458,6 +14517,9 @@ get_results_response_results_result_overrides
          &lt;risk_factor&gt;High&lt;/risk_factor&gt;
          &lt;cve&gt;CVE-2009-3095&lt;/cve&gt;
          &lt;bid&gt;36254&lt;/bid&gt;
+         &lt;tags&gt;NOTAGS&lt;/tags&gt;
+         &lt;cert/&gt;
+         &lt;xref&gt;NOXREF&lt;/xref&gt;
        &lt;/nvt&gt;
        &lt;threat&gt;High&lt;/threat&gt;
        &lt;description&gt;Test with very long warning.&lt;/description&gt;
