@@ -73,6 +73,9 @@ REFRESH_ONLY=0
 # private data in the OpenVAS Manager database.
 # This can be controlled via the --refresh-private parameter.
 REFRESH_PRIVATE_ONLY=0
+# When set to 1, all OVAL definitions will be updated, not just new ones.
+# This is usually done by database migrations.
+REBUILD_OVAL=0
 
 SQLITE3="sqlite3 -noheader"
 
@@ -375,14 +378,19 @@ update_scap_db_private () {
       then
         for ovalfile in $oval_files_sorted_private
         do
-          if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+          if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ] || [ 1 = $REBUILD_OVAL ]
           then
             oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`
 
-            OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
-            if [ -z "$OVAL_REFDATE" ]
+            if [ 1 = "$REBUILD_OVAL" ]
             then
               OVAL_REFDATE=0
+            else
+              OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+              if [ -z "$OVAL_REFDATE" ]
+              then
+                OVAL_REFDATE=0
+              fi
             fi
 
             if [ $oval_timestamp -ge $OVAL_REFDATE ]
@@ -415,25 +423,9 @@ update_scap_db_private () {
                   done
                   if [ 0 -eq $found_duplicates ]
                   then
-                    if [ 1 = "$REBUILD_OVAL" ]
-                    then
-                      OVAL_REFDATE=0
-                    else
-                      OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
-                      if [ -z "$OVAL_REFDATE" ]
-                      then
-                        OVAL_REFDATE=0
-                      fi
-                    fi
-
-                    if [ $oval_timestamp -ge $OVAL_REFDATE ]
-                    then
-                      log_write "Updating $ovalfile"
-                      xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
-                      $SQLITE3 $SCAP_DB
-                    else
-                      log_write "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
-                    fi
+                    log_write "Updating $ovalfile"
+                    xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
+                    $SQLITE3 $SCAP_DB
                   fi
                 fi
               fi
@@ -564,7 +556,7 @@ update_scap_db() {
 
       for ovalfile in $oval_files_sorted
       do
-        if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+        if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ] || [ 1 = $REBUILD_OVAL ]
         then
           oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`
 

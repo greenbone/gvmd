@@ -1,5 +1,16 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15656. Patch by Timo Pollmeier.
+
+	* tools/greenbone-scapdata-sync (update_scap_db_private)
+	(update_scap_db): Fix skipping of OVAL timestamp filter for cases when
+	REBUILD_OVAL is set to 1. Add default value for REBUILD_OVAL.
+
+	* tools/openvas-scapdata-sync (update_sec_db_private)
+	(update_sec_db): Fixes analogous to Greenbone version.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15654. Patch by Timo Pollmeier.
 
 	* tools/greenbone-certdata-sync (sync_certdata): Remove skipping of

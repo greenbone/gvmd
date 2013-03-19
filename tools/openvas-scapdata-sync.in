@@ -92,6 +92,10 @@ else
   SYNC_TMP_DIR="$TMPDIR"
 fi
 
+# When set to 1, all OVAL definitions will be updated, not just new ones.
+# This is usually done by database migrations.
+REBUILD_OVAL=0
+
 do_help () {
   echo "$0: Sync SCAP data using different protocols"
   echo " --rsync		sync with rsync (default)"
@@ -373,13 +377,18 @@ update_sec_db_private () {
           then
             oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`
 
-            OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
-            if [ -z "$OVAL_REFDATE" ]
+            if [ 1 = "$REBUILD_OVAL" ]
             then
               OVAL_REFDATE=0
+            else
+              OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+              if [ -z "$OVAL_REFDATE" ]
+              then
+                OVAL_REFDATE=0
+              fi
             fi
 
-            if [ $oval_timestamp -ge $OVAL_REFDATE ] || [ 1 = "$REBUILD_OVAL" ]
+            if [ $oval_timestamp -ge $OVAL_REFDATE ]
             then
               validation_message=`xsltproc "$SCAP_RES_DIR/oval_verify.xsl" "$ovalfile" 2>/dev/null`
               validation_return="$?"
@@ -409,25 +418,9 @@ update_sec_db_private () {
                   done
                   if [ 0 -eq $found_duplicates ]
                   then
-                    if [ 1 = "$REBUILD_OVAL" ]
-                    then
-                      OVAL_REFDATE=0
-                    else
-                      OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
-                      if [ -z "$OVAL_REFDATE" ]
-                      then
-                        OVAL_REFDATE=0
-                      fi
-                    fi
-
-                    if [ $oval_timestamp -ge $OVAL_REFDATE ]
-                    then
-                      echo "[i] Updating $ovalfile"
-                      xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
-                      $SQLITE $SEC_DB
-                    else
-                      echo "[i] Skipping $ovalfile, file has older timestamp than latest OVAL definition in database."
-                    fi
+                    echo "[i] Updating $ovalfile"
+                    xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
+                    $SQLITE $SEC_DB
                   fi
                 fi
               fi
