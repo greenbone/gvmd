@@ -1466,6 +1466,7 @@ typedef struct
   char *config_id;      ///< ID of task config.
   array_t *alerts;      ///< IDs of alerts.
   char *copy;           ///< UUID of resource to copy.
+  array_t *groups;      ///< IDs of groups.
   char *observers;      ///< Space separated names of observer users.
   name_value_t *preference;  ///< Current preference.
   array_t *preferences; ///< Preferences.
@@ -1486,6 +1487,7 @@ create_task_data_reset (create_task_data_t *data)
   free (data->config_id);
   free (data->copy);
   array_free (data->alerts);
+  array_free (data->groups);
   free (data->observers);
   if (data->preferences)
     {
@@ -4212,6 +4214,7 @@ typedef enum
   CLIENT_CREATE_TASK_ALERT,
   CLIENT_CREATE_TASK_NAME,
   CLIENT_CREATE_TASK_OBSERVERS,
+  CLIENT_CREATE_TASK_OBSERVERS_GROUP,
   CLIENT_CREATE_TASK_PREFERENCES,
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE,
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME,
@@ -5168,6 +5171,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             create_task_data->task = make_task (NULL, 0, NULL);
             create_task_data->alerts = make_array ();
+            create_task_data->groups = make_array ();
             set_client_state (CLIENT_CREATE_TASK);
           }
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
@@ -7539,6 +7543,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "id",
                               &create_task_data->target_id);
             set_client_state (CLIENT_CREATE_TASK_TARGET);
+          }
+        ELSE_ERROR ("create_task");
+
+      case CLIENT_CREATE_TASK_OBSERVERS:
+        if (strcasecmp ("GROUP", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values, "id",
+                                &attribute))
+              array_add (create_task_data->groups, g_strdup (attribute));
+            set_client_state (CLIENT_CREATE_TASK_OBSERVERS_GROUP);
           }
         ELSE_ERROR ("create_task");
 
@@ -15980,6 +15995,54 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
 
+          /* Set any observer groups. */
+
+          if (create_task_data->groups->len)
+            {
+              int fail;
+              gchar *fail_group_id;
+
+              fail = 0;
+              switch ((fail = set_task_groups (create_task_data->task,
+                                               create_task_data->groups,
+                                               &fail_group_id)))
+                {
+                  case 0:
+                    break;
+                  case 1:
+                    if (send_find_error_to_client
+                         ("create_task",
+                          "group",
+                          fail_group_id,
+                          write_to_client,
+                          write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    fail = 1;
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task could not be created");
+                    break;
+                  case -1:
+                  default:
+                    fail = 1;
+                    SEND_TO_CLIENT_OR_FAIL
+                      (XML_INTERNAL_ERROR ("create_task"));
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task could not be created");
+                }
+              if (fail)
+                {
+                  request_delete_task (&create_task_data->task);
+                  free (tsk_uuid);
+                  free (description);
+                  create_task_data_reset (create_task_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+            }
+
           /* Check for name. */
 
           name = task_name (create_task_data->task);
@@ -16213,6 +16276,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TASK, TARGET);
       CLOSE (CLIENT_CREATE_TASK, SCHEDULE);
       CLOSE (CLIENT_CREATE_TASK, SLAVE);
+
+      CLOSE (CLIENT_CREATE_TASK_OBSERVERS, GROUP);
 
       case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE:
         assert (strcasecmp ("PREFERENCE", element_name) == 0);
