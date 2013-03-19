@@ -1,5 +1,12 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15625. Patch by Timo Pollmeier.
+
+	* doc/user-scap-data-HOWTO: New file, documentation for user defined
+	SCAP data.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15624. Patch by Timo Pollmeier.
 
 	Add updating of user (OVAL) data to greenbone-scapdata-sync.
