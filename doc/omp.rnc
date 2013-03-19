@@ -5973,6 +5973,7 @@ get_info_response_info_ovaldef
        & get_info_response_info_ovaldef_deprecated
        & get_info_response_info_ovaldef_def_class
        & get_info_response_info_ovaldef_title
+       & get_info_response_info_ovaldef_status
        & get_info_response_info_ovaldef_description?
        & get_info_response_info_ovaldef_xml_file?
        & get_info_response_info_ovaldef_raw_data?
@@ -5989,7 +5990,7 @@ get_info_response_info_ovaldef_version
 get_info_response_info_ovaldef_deprecated
  = element deprecated
      {
-       xsd:token { pattern = "Yes|No" }
+       boolean
      }
 
 # Definition class of the definition.
@@ -6002,6 +6003,13 @@ get_info_response_info_ovaldef_def_class
 # Title of the definition.
 get_info_response_info_ovaldef_title
  = element title
+     {
+       text
+     }
+
+# Lifecycle status text of the definition.
+get_info_response_info_ovaldef_status
+ = element status
      {
        text
      }
