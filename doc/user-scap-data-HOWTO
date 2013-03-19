@@ -2,7 +2,9 @@ OPENVAS USER SCAP DATA HOWTO
 ============================
 
 The SCAP data sync scripts ("openvas-scapdata-sync" and
-"greenbone-scapdata-sync") support the import of user-defined SCAP data.
+"greenbone-scapdata-sync") do download SCAP data for the respective
+feed service. Additionalle they support the import of user-defined SCAP data.
+Currently only OVAL definitions are supported.
 However, a few things must be kept in mind for this to work correctly:
 
 The "private" subdirectory
@@ -13,7 +15,7 @@ directory from now on.
 By default this subdirectory is named "private".
 
 Placing your files there also ensures that they are not deleted during the sync
-when they are recognized not to be part of either the OpenVAS or Greenbone feed.
+when they are recognized not to be part of the feed content.
 
 Updating the database
 ---------------------
@@ -29,12 +31,12 @@ subdirectory of this and run the SCAP sync script as described above.
 
 Before any data is added from a file, it must pass a few tests:
 - The filename must match the pattern "*.xml" or match "*.asc" while another
-   file with the same name excluding the ".asc" suffix exists in the same
-   directory.
+  file with the same name excluding the ".asc" suffix exists in the same
+  directory.
 - The file must be valid XML and contain a valid OVAL generator timestamp.
 - The file must not include definitions for any identifiers that are also
-   defined in a file that is part of the feed. This is done to ensure
-   consistency of the data provided by the feed.
+  defined in a file that is part of the feed. This is done to ensure
+  consistency of the data provided by the feed.
 - The file must be newer than the date of the last database update.
 
 The sync script will insert all definitions with a newer timestamp than
