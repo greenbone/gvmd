@@ -17075,7 +17075,9 @@ set_task_observers (task_t task, const gchar *observers)
 
   sql ("BEGIN IMMEDIATE;");
 
-  sql ("DELETE FROM permissions WHERE resource_type = 'task' AND resource = %llu;",
+  sql ("DELETE FROM permissions"
+       " WHERE resource_type = 'task' AND resource = %llu"
+       " AND subject_type = 'user';",
        task);
 
   point = split;

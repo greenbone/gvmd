@@ -6045,7 +6045,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "task_id",
                               &modify_task_data->task_id);
             modify_task_data->alerts = make_array ();
-            modify_task_data->groups = make_array ();
             set_client_state (CLIENT_MODIFY_TASK);
           }
         else if (strcasecmp ("PAUSE_TASK", element_name) == 0)
@@ -6558,6 +6557,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("OBSERVERS", element_name) == 0)
           {
             openvas_append_string (&modify_task_data->observers, "");
+            modify_task_data->groups = make_array ();
             set_client_state (CLIENT_MODIFY_TASK_OBSERVERS);
           }
         else if (strcasecmp ("PREFERENCES", element_name) == 0)
@@ -12694,7 +12694,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
 
-                if (fail == 0 && modify_task_data->groups->len)
+                if (fail == 0 && modify_task_data->groups)
                   {
                     gchar *fail_group_id;
                     switch ((fail = set_task_groups (task,
@@ -20612,7 +20612,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_free (first_report);
               g_free (last_report);
               g_free (second_last_report);
-              free (owner);
               g_free (description64);
               free (task_schedule_uuid);
               free (task_schedule_name);
@@ -20637,6 +20636,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                              current_credentials.username)))
                   ? ""
                   : observers);
+              free (owner);
               free (observers);
 
               init_task_group_iterator (&groups, index);

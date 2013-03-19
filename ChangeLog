@@ -1,5 +1,16 @@
 2013-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (set_task_observers): Delete only user permissions,
+	so that group permissions can be left the same.
+
+	* src/omp.c (omp_xml_handle_start_element): Move MODIFY_TASK groups init
+	into observers.
+	(omp_xml_handle_end_element): In MODIFY_TASK check groups existence
+	instead of length, to make it possible to remove all observer groups
+	from the task.  Free owner after last use, instead of before.
+
+2013-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add observer groups to CREATE_TASK.
 
 	* src/omp.c (create_task_data_t, create_task_data_reset): Add groups.
