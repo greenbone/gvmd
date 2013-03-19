@@ -1,5 +1,11 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15720. Patch by Jan-Oliver Wagner.
+
+	* CMakeLists.txt: Increased dependency to gnutls from 2.2 to 2.8.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15689. Patch by Timo Pollmeier.
 
 	* tools/greenbone-scapdata-sync, tools/openvas-scapdata-sync.in
