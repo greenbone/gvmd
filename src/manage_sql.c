@@ -32975,9 +32975,7 @@ update_all_config_caches ()
 {
   iterator_t configs;
 
-  init_iterator (&configs, "SELECT ROWID, uuid, name, comment, '', '', '',"
-                           " '', nvt_selector"
-                           " FROM configs;");
+  init_iterator (&configs, "SELECT " CONFIG_ITERATOR_COLUMNS " FROM configs;");
   while (next (&configs))
     update_config_cache (&configs);
   cleanup_iterator (&configs);
