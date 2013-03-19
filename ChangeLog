@@ -1,5 +1,10 @@
 2013-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_task_user_iterator)
+	(init_task_group_iterator): Correct doc brief.
+
+2013-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (set_task_observers): Delete only user permissions,
 	so that group permissions can be left the same.
 

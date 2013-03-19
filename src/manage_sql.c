@@ -9788,7 +9788,7 @@ name (iterator_t* iterator) \
 }
 
 /**
- * @brief Initialise an escalator data iterator.
+ * @brief Initialise a task user iterator.
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  task      Task.
@@ -9840,7 +9840,7 @@ task_user_iterator_user (iterator_t* iterator)
 DEF_ACCESS (task_user_iterator_name, 3);
 
 /**
- * @brief Initialise an escalator data iterator.
+ * @brief Initialise a task group iterator.
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  task      Task.
