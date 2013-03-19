@@ -1,5 +1,14 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15623. Patch by Timo Pollmeier.
+
+	* tools/greenbone-scapdata-sync (sync_scapdata),
+	tools/greenbone-certdata-sync (sync_certdata): Add --chmod=D+x option
+	to rsync commands to fix problems with directories being created
+	without +x permissions.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15622. Patch by Hani Benhabiles.
 
 	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc: Update
