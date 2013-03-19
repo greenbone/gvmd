@@ -43875,6 +43875,291 @@ init_group_iterator (iterator_t* iterator, const get_data_t *get)
 }
 
 
+/* Permissions. */
+
+/**
+ * @brief Return the UUID of a permission.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+permission_uuid (permission_t permission)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM permissions WHERE ROWID = %llu;",
+                     permission);
+}
+
+/**
+ * @brief Return whether a permission is in use.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+permission_in_use (permission_t permission)
+{
+  return 0;
+}
+
+/**
+ * @brief Return whether a trashcan permission is referenced by a task.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+trash_permission_in_use (permission_t permission)
+{
+  return 0;
+}
+
+/**
+ * @brief Return whether a permission is writable.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+permission_writable (permission_t permission)
+{
+  return 1;
+}
+
+/**
+ * @brief Return whether a trashcan permission is writable.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+trash_permission_writable (permission_t permission)
+{
+  return 1;
+}
+
+/**
+ * @brief Filter columns for permission iterator.
+ */
+#define PERMISSION_ITERATOR_FILTER_COLUMNS                               \
+ { GET_ITERATOR_FILTER_COLUMNS, "resource_type", "resource_uuid", NULL }
+
+/**
+ * @brief Permission iterator columns.
+ */
+// FIX FROM tasks hardcoded
+#define PERMISSION_ITERATOR_COLUMNS                                         \
+  GET_ITERATOR_COLUMNS ", resource_type, resource, resource_uuid,"          \
+  " (SELECT name FROM tasks WHERE ROWID = resource) AS resource_name,"      \
+  " subject_type, subject,"                                                 \
+  " (CASE"                                                                  \
+  "  WHEN subject_type = 'user'"                                            \
+  "  THEN (SELECT uuid FROM users WHERE users.ROWID = subject)"             \
+  "  ELSE (SELECT uuid FROM groups WHERE groups.ROWID = subject)"           \
+  "  END) AS subject_uuid,"                                                 \
+  " (CASE"                                                                  \
+  "  WHEN subject_type = 'user'"                                            \
+  "  THEN (SELECT name FROM users WHERE users.ROWID = subject)"             \
+  "  ELSE (SELECT name FROM groups WHERE groups.ROWID = subject)"           \
+  "  END) AS subject_name"
+
+/**
+ * @brief Count number of permissions.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of permissions in filtered set.
+ */
+int
+permission_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = PERMISSION_ITERATOR_FILTER_COLUMNS;
+  return count ("permission", get, PERMISSION_ITERATOR_COLUMNS, extra_columns,
+                0, 0, 0, TRUE);
+}
+
+/**
+ * @brief Initialise a permission iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_permission_iterator (iterator_t* iterator, const get_data_t *get)
+{
+  static const char *filter_columns[] = PERMISSION_ITERATOR_FILTER_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "permission",
+                            get,
+                            /* Columns. */
+                            PERMISSION_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            NULL,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
+
+/**
+ * @brief Get the type of resource from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Type, or NULL if iteration is complete.
+ */
+DEF_ACCESS (permission_iterator_resource_type, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the UUID of the resource from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.
+ */
+DEF_ACCESS (permission_iterator_resource_uuid, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the name of the resource from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.
+ */
+DEF_ACCESS (permission_iterator_resource_name, GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get the type of subject from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Type, or NULL if iteration is complete.
+ */
+DEF_ACCESS (permission_iterator_subject_type, GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Get the subject UUID from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.
+ */
+DEF_ACCESS (permission_iterator_subject_uuid, GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Get the subject name from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.
+ */
+DEF_ACCESS (permission_iterator_subject_name, GET_ITERATOR_COLUMN_COUNT + 7);
+
+/**
+ * @brief Find a permission with a given permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of permission.
+ * @param[out]  permission  Permission return, 0 if succesfully failed to find
+ *                          permission.
+ * @param[in]   permission  Required permission, for example "delete".
+ *
+ * @return FALSE on success (including if failed to find permission), TRUE on
+ *         error.
+ */
+gboolean
+find_permission_with_permission (const char *uuid, permission_t *resource,
+                                 const char *permission)
+{
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_has_access_uuid ("permission", quoted_uuid, NULL, permission) == 0)
+    {
+      g_free (quoted_uuid);
+      *resource = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (resource, 0, 0,
+                     "SELECT ROWID FROM permissions WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *resource = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
+ * @brief Delete a permission.
+ *
+ * @param[in]  permission_id  UUID of permission.
+ * @param[in]  ultimate       Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 2 failed to find permission, 3 predefined permission,
+ *         -1 error.
+ */
+int
+delete_permission (const char *permission_id, int ultimate)
+{
+  permission_t permission = 0;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (find_permission_with_permission (permission_id, &permission, "delete"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (permission == 0)
+    {
+      sql ("ROLLBACK;");
+      return 2;
+    }
+
+  sql ("DELETE FROM permissions WHERE ROWID = %llu;", permission);
+
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
+ * @brief Find a permission given a UUID.
+ *
+ * @param[in]   uuid        UUID of permission.
+ * @param[out]  permission  Permission return, 0 if succesfully failed to find
+ *                          permission.
+ *
+ * @return FALSE on success (including if failed to find permission), TRUE on
+ *         error.
+ */
+gboolean
+find_permission (const char* uuid, permission_t* permission)
+{
+  return find_resource ("permission", uuid, permission);
+}
+
+
 /* Port lists. */
 
 /**

@@ -1,5 +1,33 @@
 2013-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add OMP DELETE_PERMISSION and GET_PERMISSIONS.
+
+	* src/manage_sql.c (permission_uuid, permission_in_use)
+	(trash_permission_in_use, permission_writable)
+	(trash_permission_writable): New functions.
+	(PERMISSION_ITERATOR_FILTER_COLUMNS, PERMISSION_ITERATOR_COLUMNS): New
+	defines.
+	(permission_count, init_permission_iterator)
+	(permission_iterator_resource_type, permission_iterator_resource_uuid)
+	(permission_iterator_resource_name, permission_iterator_subject_type)
+	(permission_iterator_subject_uuid, permission_iterator_subject_name)
+	(find_permission_with_permission, delete_permission)
+	(find_permission): New
+
+	* src/manage.h: Add headers accordingly.
+	(permission_t): New type.
+
+	* src/omp.c (omp_commands): Add new commands.
+	(delete_permission_data_t, get_permissions_data_t): New types.
+	(delete_permission_data_reset, get_permissions_data_reset): New
+	functions.
+	(command_data_t, client_state_t): Add new permission entries.
+	(delete_permission_data, get_permissions_data): New variables.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add new
+	commands.
+
+2013-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_task_user_iterator)
 	(init_task_group_iterator): Correct doc brief.
 

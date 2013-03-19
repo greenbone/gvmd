@@ -413,6 +413,7 @@ static command_t omp_commands[]
     {"DELETE_LSC_CREDENTIAL", "Delete a local security check credential."},
     {"DELETE_NOTE", "Delete a note."},
     {"DELETE_OVERRIDE", "Delete an override."},
+    {"DELETE_PERMISSION", "Delete a permission."},
     {"DELETE_PORT_LIST", "Delete a port list."},
     {"DELETE_PORT_RANGE", "Delete a port range."},
     {"DELETE_REPORT", "Delete a report."},
@@ -434,6 +435,7 @@ static command_t omp_commands[]
     {"GET_NVT_FAMILIES", "Get a list of all NVT families."},
     {"GET_NVT_FEED_VERSION", "Get NVT feed version."},
     {"GET_OVERRIDES", "Get all overrides."},
+    {"GET_PERMISSIONS", "Get all permissions."},
     {"GET_PORT_LISTS", "Get all port lists."},
     {"GET_PREFERENCES", "Get preferences for all available NVTs."},
     {"GET_REPORTS", "Get all reports."},
@@ -1675,6 +1677,28 @@ typedef struct
 } delete_override_data_t;
 
 /**
+ * @brief Command data for the delete_permission command.
+ */
+typedef struct
+{
+  char *permission_id; ///< ID of permission to delete.
+  int ultimate;        ///< Boolean.  Whether to remove entirely or to trashcan.
+} delete_permission_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+delete_permission_data_reset (delete_permission_data_t *data)
+{
+  free (data->permission_id);
+
+  memset (data, 0, sizeof (delete_permission_data_t));
+}
+
+/**
  * @brief Command data for the delete_port_list command.
  */
 typedef struct
@@ -2208,6 +2232,29 @@ get_overrides_data_reset (get_overrides_data_t *data)
   free (data->task_id);
 
   memset (data, 0, sizeof (get_overrides_data_t));
+}
+
+/**
+ * @brief Command data for the get_permissions command.
+ */
+typedef struct
+{
+  get_data_t get;     ///< Get args.
+  char *resource_id;  ///< Resource whose permissions to get.
+} get_permissions_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_permissions_data_reset (get_permissions_data_t *data)
+{
+  free (data->resource_id);
+
+  get_data_reset (&data->get);
+  memset (data, 0, sizeof (get_permissions_data_t));
 }
 
 /**
@@ -3348,6 +3395,7 @@ typedef union
   delete_lsc_credential_data_t delete_lsc_credential; ///< delete_lsc_credential
   delete_note_data_t delete_note;                     ///< delete_note
   delete_override_data_t delete_override;             ///< delete_override
+  delete_permission_data_t delete_permission;         ///< delete_permission
   delete_port_list_data_t delete_port_list;           ///< delete_port_list
   delete_port_range_data_t delete_port_range;         ///< delete_port_range
   delete_report_data_t delete_report;                 ///< delete_report
@@ -3368,6 +3416,7 @@ typedef union
   get_nvts_data_t get_nvts;                           ///< get_nvts
   get_nvt_families_data_t get_nvt_families;           ///< get_nvt_families
   get_overrides_data_t get_overrides;                 ///< get_overrides
+  get_permissions_data_t get_permissions;             ///< get_permissions
   get_port_lists_data_t get_port_lists;               ///< get_port_lists
   get_preferences_data_t get_preferences;             ///< get_preferences
   get_reports_data_t get_reports;                     ///< get_reports
@@ -3568,6 +3617,12 @@ delete_override_data_t *delete_override_data
  = (delete_override_data_t*) &(command_data.delete_override);
 
 /**
+ * @brief Parser callback data for DELETE_PERMISSION.
+ */
+delete_permission_data_t *delete_permission_data
+ = (delete_permission_data_t*) &(command_data.delete_permission);
+
+/**
  * @brief Parser callback data for DELETE_PORT_LIST.
  */
 delete_port_list_data_t *delete_port_list_data
@@ -3686,6 +3741,12 @@ get_nvt_families_data_t *get_nvt_families_data
  */
 get_overrides_data_t *get_overrides_data
  = &(command_data.get_overrides);
+
+/**
+ * @brief Parser callback data for GET_PERMISSIONS.
+ */
+get_permissions_data_t *get_permissions_data
+ = &(command_data.get_permissions);
 
 /**
  * @brief Parser callback data for GET_PORT_LISTS.
@@ -4231,6 +4292,7 @@ typedef enum
   CLIENT_DELETE_LSC_CREDENTIAL,
   CLIENT_DELETE_NOTE,
   CLIENT_DELETE_OVERRIDE,
+  CLIENT_DELETE_PERMISSION,
   CLIENT_DELETE_PORT_LIST,
   CLIENT_DELETE_PORT_RANGE,
   CLIENT_DELETE_REPORT,
@@ -4252,6 +4314,7 @@ typedef enum
   CLIENT_GET_NVT_FAMILIES,
   CLIENT_GET_NVT_FEED_VERSION,
   CLIENT_GET_OVERRIDES,
+  CLIENT_GET_PERMISSIONS,
   CLIENT_GET_PORT_LISTS,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
@@ -5273,6 +5336,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               delete_override_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_OVERRIDE);
           }
+        else if (strcasecmp ("DELETE_PERMISSION", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values,
+                              "permission_id",
+                              &delete_permission_data->permission_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_permission_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_permission_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_PERMISSION);
+          }
         else if (strcasecmp ("DELETE_PORT_LIST", element_name) == 0)
           {
             const gchar* attribute;
@@ -5575,6 +5651,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               get_port_lists_data->targets = 0;
             set_client_state (CLIENT_GET_PORT_LISTS);
+          }
+        else if (strcasecmp ("GET_PERMISSIONS", element_name) == 0)
+          {
+            get_data_parse_attributes (&get_permissions_data->get, "permission",
+                                       attribute_names,
+                                       attribute_values);
+            append_attribute (attribute_names, attribute_values, "resource_id",
+                              &get_permissions_data->resource_id);
+            set_client_state (CLIENT_GET_PERMISSIONS);
           }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
           {
@@ -9656,6 +9741,135 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
+      case CLIENT_GET_PERMISSIONS:
+        {
+          iterator_t permissions;
+          int count, filtered, ret, first;
+          get_data_t * get;
+
+          assert (strcasecmp ("GET_PERMISSIONS", element_name) == 0);
+
+          get = &get_permissions_data->get;
+
+          /* If no filter applied by the user , set the default one from
+           * settings. */
+          if ((!get->filter && !get->filt_id)
+              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+            {
+              char *user_filter = setting_filter ("Permissions");
+
+              if (user_filter && strlen (user_filter))
+                {
+                  get->filt_id = user_filter;
+                  get->filter = filter_term (user_filter);
+                }
+              else
+                get->filt_id = g_strdup("0");
+            }
+
+          ret = init_permission_iterator (&permissions,
+                                          &get_permissions_data->get);
+          if (ret)
+            {
+              switch (ret)
+                {
+                  case 1:
+                    if (send_find_error_to_client ("get_permissions",
+                                                   "permission",
+                                                   get_permissions_data->get.id,
+                                                   write_to_client,
+                                                   write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case 2:
+                    if (send_find_error_to_client
+                         ("get_permissions",
+                          "filter",
+                          get_permissions_data->get.filt_id,
+                          write_to_client,
+                          write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("get_permissions"));
+                    break;
+                }
+              get_permissions_data_reset (get_permissions_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          count = 0;
+          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+          SEND_GET_START ("permission", &get_permissions_data->get);
+          while (1)
+            {
+              const char *resource_type;
+
+              ret = get_next (&permissions, get, &first, &count,
+                              init_permission_iterator);
+              if (ret == 1)
+                break;
+              if (ret == -1)
+                {
+                  internal_error_send_to_client (error);
+                  return;
+                }
+
+              SEND_GET_COMMON (permission, &get_permissions_data->get, &permissions);
+
+              resource_type = permission_iterator_resource_type (&permissions);
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<resource>"
+                "<type>%s</type>"
+                "<%s id=\"%s\"><name>%s</name></%s>"
+                // FIX in trash?
+                "</resource>"
+                "<subject id=\"%s\">"
+                "<name>%s</name>"
+                "<type>%s</type>"
+                "<%s id=\"%s\"><name>%s</name></%s>"
+                "</subject>",
+                permission_iterator_resource_type (&permissions),
+                resource_type && strcmp (resource_type, "")
+                 ? resource_type
+                 : "resource",
+                permission_iterator_resource_uuid (&permissions),
+                resource_type && strcmp (resource_type, "")
+                 ? permission_iterator_resource_name (&permissions)
+                 : "",
+                resource_type && strcmp (resource_type, "")
+                 ? resource_type
+                 : "resource",
+                permission_iterator_subject_uuid (&permissions),
+                permission_iterator_subject_name (&permissions),
+                permission_iterator_subject_type (&permissions),
+                permission_iterator_subject_type (&permissions),
+                permission_iterator_subject_uuid (&permissions),
+                permission_iterator_subject_name (&permissions),
+                permission_iterator_subject_type (&permissions));
+
+              SEND_TO_CLIENT_OR_FAIL ("</permission>");
+              count++;
+            }
+          cleanup_iterator (&permissions);
+          filtered = get_permissions_data->get.id
+                      ? 1
+                      : permission_count (&get_permissions_data->get);
+          SEND_GET_END ("permission", &get_permissions_data->get, count, filtered);
+
+          get_permissions_data_reset (get_permissions_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
       case CLIENT_GET_PORT_LISTS:
         {
           iterator_t port_lists;
@@ -11501,6 +11715,63 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               "DELETE_LSC_CREDENTIAL requires an"
                               " lsc_credential_id attribute"));
         delete_lsc_credential_data_reset (delete_lsc_credential_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_DELETE_PERMISSION:
+        assert (strcasecmp ("DELETE_PERMISSION", element_name) == 0);
+        if (delete_permission_data->permission_id)
+          switch (delete_permission (delete_permission_data->permission_id,
+                                 delete_permission_data->ultimate))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_permission"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission %s has been deleted",
+                       delete_permission_data->permission_id);
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_permission",
+                                    "Permission is in use"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission %s could not be deleted",
+                       delete_permission_data->permission_id);
+                break;
+              case 2:
+                if (send_find_error_to_client
+                     ("delete_permission",
+                      "permission",
+                      delete_permission_data->permission_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission %s could not be deleted",
+                       delete_permission_data->permission_id);
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_permission",
+                                    "Attempt to delete a predefined"
+                                    " permission"));
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("delete_permission"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission %s could not be deleted",
+                       delete_permission_data->permission_id);
+            }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_permission",
+                              "DELETE_PERMISSION requires a permission_id"
+                              " attribute"));
+        delete_permission_data_reset (delete_permission_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

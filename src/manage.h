@@ -195,6 +195,7 @@ typedef long long int resource_t;
 typedef long long int note_t;
 typedef long long int nvt_t;
 typedef long long int override_t;
+typedef long long int permission_t;
 typedef long long int port_list_t;
 typedef long long int port_range_t;
 typedef long long int lsc_credential_t;
@@ -2349,6 +2350,60 @@ group_writable (group_t);
 
 int
 group_count (const get_data_t*);
+
+
+/* Permissions. */
+
+int
+copy_permission (const char*, const char *, permission_t *);
+
+char*
+permission_uuid (permission_t);
+
+int
+permission_in_use (permission_t);
+
+int
+trash_permission_in_use (permission_t);
+
+int
+permission_writable (permission_t);
+
+int
+trash_permission_writable (permission_t);
+
+int
+permission_count (const get_data_t *);
+
+int
+init_permission_iterator (iterator_t*, const get_data_t *);
+
+const char*
+permission_iterator_uuid (iterator_t*);
+
+const char*
+permission_iterator_permission (iterator_t*);
+
+const char*
+permission_iterator_resource_type (iterator_t*);
+
+const char*
+permission_iterator_resource_uuid (iterator_t*);
+
+const char*
+permission_iterator_resource_name (iterator_t*);
+
+const char*
+permission_iterator_subject_type (iterator_t*);
+
+const char*
+permission_iterator_subject_uuid (iterator_t*);
+
+const char*
+permission_iterator_subject_name (iterator_t*);
+
+int
+delete_permission (const char*, int);
 
 
 /* Port lists. */
