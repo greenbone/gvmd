@@ -24,7 +24,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20130306
+VERSION=20130311
 RESTRICTED=1
 
 # SETTINGS
@@ -295,7 +295,7 @@ sync_certdata(){
       logger "CERT synchronization: Could not determine credentials, aborting synchronization."
       exit 1
     fi
-    while [ 0 -eq $notsynced ]
+    while [ 1 -eq $notsynced ]
     do
       # --protocol=29 is a workaround for a known bug in rsync 3.0.3
       if [ -e /admin/ezcli.state ]
