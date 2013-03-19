@@ -353,6 +353,7 @@ install (FILES tools/scap_db_init.sql tools/cpe_update.xsl
          tools/cve_youngerthan.xsl tools/cpe_getbyname.xsl
          tools/cve_getbyname.xsl tools/oval_update.xsl
          tools/oval_timestamp.xsl tools/ovaldef_getbyname.xsl
+         tools/oval_verify.xsl tools/ovaldef_list_ids.xsl
          DESTINATION ${OPENVAS_SCAP_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 

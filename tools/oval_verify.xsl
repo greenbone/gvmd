@@ -2,15 +2,13 @@
 <!--
 OpenVAS
 $Id$
-Description: Select OVAL definitions which have been updated after
-a certain date.
+Description: Verification that a given XML file contains basic OVAL elements.
 
 Authors:
-Henri Doreau <henri.doreau@greenbone.net>
 Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 Copyright:
-Copyright (C) 2011 - 2012 Greenbone Networks GmbH
+Copyright (C) 2013 Greenbone Networks GmbH
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 2,
@@ -36,7 +34,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   extension-element-prefixes="str"
   >
   <xsl:output method="text"/>
-  
-  <xsl:template match="/"><xsl:value-of select="normalize-space(oval_definitions:oval_definitions/oval_definitions:generator/oval:timestamp)"/></xsl:template>
+
+  <xsl:template match="/">
+  <xsl:if test="count(oval_definitions:oval_definitions/oval_definitions:definitions/oval_definitions:definition) = 0">No OVAL definitions found<xsl:message terminate="yes"/></xsl:if>
+  <xsl:text>file valid</xsl:text>
+  </xsl:template>
 
 </xsl:stylesheet>
