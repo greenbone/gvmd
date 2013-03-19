@@ -1,5 +1,12 @@
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Backport for r15605. Patch by Timo Pollmeier.
+
+	* tools/greenbone-scapdata-sync (db_migrate_10): Fix sqlite3 call using
+	an undefined database file name parameter.
+
+2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r15603. Patch by Timo Pollmeier.
 
 	* tools/greenbone-certdata-sync, tools/greenbone-scapdata-sync: Remove
