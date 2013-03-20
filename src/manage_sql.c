@@ -2850,6 +2850,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "note") == 0)
          || (strcasecmp (type, "override") == 0)
          || (strcasecmp (type, "port_list") == 0)
+         || (strcasecmp (type, "permission") == 0)
          || (strcasecmp (type, "report") == 0)
          || (strcasecmp (type, "report_format") == 0)
          || (strcasecmp (type, "result") == 0)
@@ -2884,6 +2885,8 @@ type_pretty_name (const char* type)
     return "Note";
   if (strcasecmp (type, "override") == 0)
     return "Override";
+  if (strcasecmp (type, "permission") == 0)
+    return "Permission";
   if (strcasecmp (type, "port_list") == 0)
     return "Port List";
   if (strcasecmp (type, "report") == 0)
@@ -2935,6 +2938,8 @@ type_db_name (const char* type)
     return "note";
   if (strcasecmp (type, "Override") == 0)
     return "override";
+  if (strcasecmp (type, "Permission") == 0)
+    return "permission";
   if (strcasecmp (type, "Port List") == 0)
     return "port_list";
   if (strcasecmp (type, "Report") == 0)

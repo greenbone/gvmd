@@ -1,5 +1,10 @@
 2013-03-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (valid_type, type_pretty_name, type_db_name): Add
+	permissions, so that creating permission filters works.
+
+2013-03-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add the copy part of OMP CREATE_PERMISSION, for cloning.
 
 	* src/manage_sql.c (copy_resource): Add make_name_unique flag arg.
