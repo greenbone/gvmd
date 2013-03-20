@@ -1,3 +1,9 @@
+2013-03-20  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* INSTALL: Increased dependency note for gnutls to 2.8
+	and removed notes on openvas-adduser which is going
+	to be removed anyway.
+
 2013-03-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OMP MODIFY_GROUP.

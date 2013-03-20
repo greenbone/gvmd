@@ -12,7 +12,7 @@ Prerequisites for openvas-manager
 Prerequisites:
 * cmake
 * glib-2.0 >= 2.16
-* gnutls >= 2.2
+* gnutls >= 2.8
 * libuuid (from e2fsprogs)
 * openvas-libraries >= 6.0+beta5
 * sqlite3
@@ -107,16 +107,10 @@ to be prefixed with the prefix you have set earlier.
 Creating an administrator user for OpenVAS
 ------------------------------------------
 
-You can create a administrator user in two ways, either
-via the OpenVAS Administrator command line tool "openvasad":
+You can create a administrator user via the OpenVAS Administrator
+command line tool "openvasad":
 
 $ openvasad -c add_user --name=myuser --password=mypw --role=Admin
-
-or via the OpenVAS Scanner script tool "openvas-adduser":
-
-$ openvas-adduser
-[ ... follow the guide ... ]
-$ touch /var/lib/openvas/users/myuser/isadmin
 
 A administrator user can later create further users or
 administrators via clients like the Greenbone Security Assistant (GSA).
