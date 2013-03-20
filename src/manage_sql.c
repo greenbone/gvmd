@@ -3104,6 +3104,8 @@ find_resource_for_actions (const char* type, const char* uuid,
  * @param[in]  comment       Comment on new resource.  NULL to copy from existing.
  * @param[in]  resource_id   UUID of existing resource.
  * @param[in]  columns       Extra columns in resource.
+ * @param[in]  make_name_unique  When name NULL, whether to make existing name
+ *                               unique.
  * @param[out] new_resource  New resource.
  *
  * @return 0 success, 1 resource exists already, 2 failed to find existing
@@ -3112,7 +3114,7 @@ find_resource_for_actions (const char* type, const char* uuid,
 int
 copy_resource (const char *type, const char *name, const char *comment,
                const char *resource_id, const char *columns,
-               resource_t* new_resource)
+               int make_name_unique, resource_t* new_resource)
 {
   gchar *quoted_name, *quoted_uuid, *uniquify, *command;
   int named;
@@ -3180,8 +3182,11 @@ copy_resource (const char *type, const char *name, const char *comment,
 
   /* Copy the existing resource. */
 
-  uniquify = g_strdup_printf ("uniquify ('%s', name, %llu, ' Clone')",
-                              type, owner);
+  if (make_name_unique)
+    uniquify = g_strdup_printf ("uniquify ('%s', name, %llu, ' Clone')",
+                                type, owner);
+  else
+    uniquify = g_strdup ("name");
   if (named && comment && strlen (comment))
     {
       gchar *quoted_comment;
@@ -35816,7 +35821,7 @@ copy_lsc_credential (const char* name, const char* comment,
   return copy_resource ("lsc_credential", name, comment, lsc_credential_id,
                         "login, password, public_key, private_key, rpm,"
                         " deb, exe",
-                        new_lsc_credential);
+                        1, new_lsc_credential);
 }
 
 /**
@@ -37069,7 +37074,7 @@ copy_agent (const char* name, const char* comment, const char *agent_id,
                         "installer, installer_64, installer_filename,"
                         " installer_signature_64, installer_trust,"
                         " installer_trust_time, howto_install, howto_use",
-                        new_agent);
+                        1, new_agent);
 }
 
 /**
@@ -37840,7 +37845,7 @@ copy_note (const char *note_id, note_t* new_note)
 {
   return copy_resource ("note", NULL, NULL, note_id,
                         "nvt, text, hosts, port, threat, task, result, end_time",
-                        new_note);
+                        1, new_note);
 }
 
 /**
@@ -38610,7 +38615,7 @@ copy_override (const char *override_id, override_t* new_override)
   return copy_resource ("override", NULL, NULL, override_id,
                         "nvt, text, hosts, port, threat, new_threat, task,"
                         " result, end_time",
-                        new_override);
+                        1, new_override);
 }
 
 /**
@@ -39370,7 +39375,7 @@ copy_schedule (const char* name, const char* comment, const char *schedule_id,
   return copy_resource ("schedule", name, comment, schedule_id,
                         "first_time, period, period_months, duration,"
                         " timezone, initial_offset",
-                        new_schedule);
+                        1, new_schedule);
 }
 
 /**
@@ -42823,7 +42828,7 @@ copy_slave (const char* name, const char* comment, const char *slave_id,
 {
   return copy_resource ("slave", name, comment, slave_id,
                         "host, port, login, password",
-                        new_slave);
+                        1, new_slave);
 }
 
 /**
@@ -43463,7 +43468,7 @@ copy_group (const char *name, const char *comment, const char *group_id,
   if (user_may ("create_group") == 0)
     return 99;
 
-  ret = copy_resource ("group", name, comment, group_id, NULL, &new_group);
+  ret = copy_resource ("group", name, comment, group_id, NULL, 1, &new_group);
   if (ret)
     return ret;
 
@@ -43876,6 +43881,27 @@ init_group_iterator (iterator_t* iterator, const get_data_t *get)
 
 
 /* Permissions. */
+
+/**
+ * @brief Create a permission from an existing permission.
+ *
+ * @param[in]  name        Name of new permission.  NULL to copy from existing.
+ * @param[in]  comment     Comment on new permission.  NULL to copy from existing.
+ * @param[in]  permission_id   UUID of existing permission.
+ * @param[out] new_permission  New permission.
+ *
+ * @return 0 success, 1 permission exists already, 2 failed to find existing
+ *         permission, -1 error.
+ */
+int
+copy_permission (const char* comment, const char *permission_id,
+                 permission_t* new_permission)
+{
+  return copy_resource ("permission", NULL, comment, permission_id,
+                        "resource_type, resource, resource_uuid,"
+                        " resource_location, subject_type, subject",
+                        0, new_permission);
+}
 
 /**
  * @brief Return the UUID of a permission.
@@ -46019,7 +46045,7 @@ copy_filter (const char* name, const char* comment, const char *filter_id,
              filter_t* new_filter)
 {
   return copy_resource ("filter", name, comment, filter_id, "term, type",
-                        new_filter);
+                        1, new_filter);
 }
 
 /**

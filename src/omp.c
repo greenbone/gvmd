@@ -397,6 +397,7 @@ static command_t omp_commands[]
     {"CREATE_LSC_CREDENTIAL", "Create a local security check credential."},
     {"CREATE_NOTE", "Create a note."},
     {"CREATE_OVERRIDE", "Create an override."},
+    {"CREATE_PERMISSION", "Create a permission."},
     {"CREATE_PORT_LIST", "Create a port list."},
     {"CREATE_PORT_RANGE", "Create a port range in a port list."},
     {"CREATE_REPORT_FORMAT", "Create a report format."},
@@ -1072,6 +1073,38 @@ create_override_data_reset (create_override_data_t *data)
   free (data->threat);
 
   memset (data, 0, sizeof (create_override_data_t));
+}
+
+/**
+ * @brief Command data for the create_permission command.
+ */
+typedef struct
+{
+  char *comment;         ///< Comment.
+  char *copy;            ///< UUID of resource to copy.
+  char *group_id;        ///< Group that permission applies to.
+  char *name;            ///< Permission name.
+  char *resource_id;     ///< Resource permission applies to.
+  char *role_id;         ///< Role permission applies to.
+  char *users;           ///< Users that permission applies to.
+} create_permission_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+create_permission_data_reset (create_permission_data_t *data)
+{
+  free (data->comment);
+  free (data->copy);
+  free (data->name);
+  free (data->resource_id);
+  free (data->users);
+  free (data->group_id);
+
+  memset (data, 0, sizeof (create_permission_data_t));
 }
 
 /**
@@ -3379,6 +3412,7 @@ typedef union
   create_lsc_credential_data_t create_lsc_credential; ///< create_lsc_credential
   create_note_data_t create_note;                     ///< create_note
   create_override_data_t create_override;             ///< create_override
+  create_permission_data_t create_permission;         ///< create_permission
   create_port_list_data_t create_port_list;           ///< create_port_list
   create_port_range_data_t create_port_range;         ///< create_port_range
   create_report_data_t create_report;                 ///< create_report
@@ -3519,6 +3553,12 @@ create_note_data_t *create_note_data
  */
 create_override_data_t *create_override_data
  = (create_override_data_t*) &(command_data.create_override);
+
+/**
+ * @brief Parser callback data for CREATE_PERMISSION.
+ */
+create_permission_data_t *create_permission_data
+ = (create_permission_data_t*) &(command_data.create_permission);
 
 /**
  * @brief Parser callback data for CREATE_PORT_LIST.
@@ -4125,6 +4165,10 @@ typedef enum
   CLIENT_CREATE_OVERRIDE_TASK,
   CLIENT_CREATE_OVERRIDE_TEXT,
   CLIENT_CREATE_OVERRIDE_THREAT,
+  CLIENT_CREATE_PERMISSION,
+  CLIENT_CREATE_PERMISSION_COMMENT,
+  CLIENT_CREATE_PERMISSION_COPY,
+  CLIENT_CREATE_PERMISSION_NAME,
   CLIENT_CREATE_PORT_LIST,
   CLIENT_CREATE_PORT_LIST_COMMENT,
   CLIENT_CREATE_PORT_LIST_COPY,
@@ -5212,6 +5256,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_PORT_LIST);
         else if (strcasecmp ("CREATE_PORT_RANGE", element_name) == 0)
           set_client_state (CLIENT_CREATE_PORT_RANGE);
+        else if (strcasecmp ("CREATE_PERMISSION", element_name) == 0)
+          {
+            openvas_append_string (&create_permission_data->comment, "");
+            openvas_append_string (&create_permission_data->users, "");
+            set_client_state (CLIENT_CREATE_PERMISSION);
+          }
         else if (strcasecmp ("CREATE_REPORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT);
         else if (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0)
@@ -6996,6 +7046,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE_THREAT);
         ELSE_ERROR ("create_note");
+
+      case CLIENT_CREATE_PERMISSION:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PERMISSION_COMMENT);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PERMISSION_COPY);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&create_permission_data->name, "");
+            set_client_state (CLIENT_CREATE_PERMISSION_NAME);
+          }
+        ELSE_ERROR ("create_permission");
 
       case CLIENT_CREATE_PORT_LIST:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -14524,6 +14586,77 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_OVERRIDE, TEXT);
       CLOSE (CLIENT_CREATE_OVERRIDE, THREAT);
 
+      case CLIENT_CREATE_PERMISSION:
+        {
+          permission_t new_permission;
+
+          assert (strcasecmp ("CREATE_PERMISSION", element_name) == 0);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_permission",
+                                  "CREATE is forbidden for observer users"));
+            }
+          else if (create_permission_data->copy)
+            switch (copy_permission (create_permission_data->comment,
+                                     create_permission_data->copy,
+                                     &new_permission))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = permission_uuid (new_permission);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_permission"),
+                                             uuid);
+                    g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                           "Permission %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_permission",
+                                      "Permission exists already"));
+                  g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                         "Permission could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_permission",
+                                                 "permission",
+                                                 create_permission_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                         "Permission could not be created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_permission"));
+                  g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                         "Permission could not be created");
+                  break;
+              }
+          else
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_UNAVAILABLE ("create_permission"));
+              g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                     "Permission could not be created");
+            }
+
+          create_permission_data_reset (create_permission_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_CREATE_PERMISSION, COMMENT);
+      CLOSE (CLIENT_CREATE_PERMISSION, COPY);
+      CLOSE (CLIENT_CREATE_PERMISSION, NAME);
+
       case CLIENT_CREATE_PORT_LIST:
         {
           port_list_t new_port_list;
@@ -21443,6 +21576,16 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_OVERRIDE_THREAT,
               &create_override_data->threat);
+
+
+      APPEND (CLIENT_CREATE_PERMISSION_COMMENT,
+              &create_permission_data->comment);
+
+      APPEND (CLIENT_CREATE_PERMISSION_COPY,
+              &create_permission_data->copy);
+
+      APPEND (CLIENT_CREATE_PERMISSION_NAME,
+              &create_permission_data->name);
 
 
       APPEND (CLIENT_CREATE_PORT_LIST_COMMENT,

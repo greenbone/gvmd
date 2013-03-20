@@ -1,3 +1,19 @@
+2013-03-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add the copy part of OMP CREATE_PERMISSION, for cloning.
+
+	* src/manage_sql.c (copy_resource): Add make_name_unique flag arg.
+	Add to all callers.
+	(copy_permission): New function.
+
+	* src/omp.c (omp_commands): Add new command.
+	(create_permission_data_t): New type.
+	(create_permission_data_reset): New functions.
+	(command_data_t, client_state_t): Add new permission entries.
+	(create_permission_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add new
+	command.
+
 2013-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OMP DELETE_PERMISSION and GET_PERMISSIONS.
