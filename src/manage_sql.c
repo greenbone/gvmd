@@ -43492,6 +43492,127 @@ copy_group (const char *name, const char *comment, const char *group_id,
 }
 
 /**
+ * @brief Add users to a group.
+ *
+ * Caller must take care of transaction.
+ *
+ * @param[in]  group  Group.
+ * @param[in]  users  List of users.
+ *
+ * @return 0 success, 2 failed to find user, 4 user name validation failed,
+ *         -1 error.
+ */
+static int
+group_add_users (group_t group, const char *users)
+{
+  if (users)
+    {
+      gchar **split, **point;
+      GList *added;
+
+      /* Add each user. */
+
+      added = NULL;
+      split = g_strsplit_set (users, " ,", 0);
+      point = split;
+
+      while (*point)
+        {
+          user_t user;
+          gchar *name;
+
+          name = *point;
+
+          g_strstrip (name);
+
+          if (strcmp (name, "") == 0)
+            {
+              point++;
+              continue;
+            }
+
+          if (g_list_find_custom (added, name, (GCompareFunc) strcmp))
+            {
+              point++;
+              continue;
+            }
+
+          added = g_list_prepend (added, name);
+
+          if (openvas_user_exists (name) == 0)
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              return 2;
+            }
+
+          if (find_user (name, &user))
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              return -1;
+            }
+
+          if (user == 0)
+            {
+              gchar *uuid;
+
+              /** @todo Similar to validate_user in openvas-administrator. */
+              if (g_regex_match_simple ("^[[:alnum:]-_]+$", name, 0, 0) == 0)
+                {
+                  g_list_free (added);
+                  g_strfreev (split);
+                  return 4;
+                }
+
+              uuid = openvas_user_uuid (name);
+
+              if (uuid == NULL)
+                {
+                  g_list_free (added);
+                  g_strfreev (split);
+                  return -1;
+                }
+
+              if (sql_int (0, 0,
+                           "SELECT count(*) FROM users WHERE uuid = '%s';",
+                           uuid)
+                  == 0)
+                {
+                  gchar *quoted_name;
+                  quoted_name = sql_quote (name);
+                  sql ("INSERT INTO users (uuid, name) VALUES ('%s', '%s');",
+                       uuid,
+                       quoted_name);
+                  g_free (quoted_name);
+
+                  user = sqlite3_last_insert_rowid (task_db);
+                }
+              else
+                {
+                  /* user_find should have found it. */
+                  assert (0);
+                  g_list_free (added);
+                  g_strfreev (split);
+                  return -1;
+                }
+            }
+
+          sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",
+               group,
+               user);
+
+          point++;
+        }
+
+      g_list_free (added);
+      g_strfreev (split);
+    }
+
+  return 0;
+}
+
+/**
  * @brief Create a group.
  *
  * @param[in]   group_name       Group.
@@ -43499,14 +43620,14 @@ copy_group (const char *name, const char *comment, const char *group_id,
  * @param[in]   users            Users group applies to.
  * @param[in]   resource_id      UUID of resource.
  *
- * @return 0 success, 1 group exists already, 2 failed to find user, 3 failed
- *         to find resource, 4 user name validation failed, 99 permission
- *         denied, -1 error.
+ * @return 0 success, 1 group exists already, 2 failed to find user, 4 user
+ *         name validation failed, 99 permission denied, -1 error.
  */
 int
 create_group (const char *group_name, const char *comment, const char *users,
               group_t* group)
 {
+  int ret;
   gchar *quoted_group_name, *quoted_comment;
 
   assert (current_credentials.uuid);
@@ -43547,118 +43668,14 @@ create_group (const char *group_name, const char *comment, const char *users,
   if (group)
     *group = sqlite3_last_insert_rowid (task_db);
 
-  if (users)
-    {
-      gchar **split, **point;
-      GList *added;
+  ret = group_add_users (*group, users);
 
-      /* Add each user. */
+  if (ret)
+    sql ("ROLLBACK;");
+  else
+    sql ("COMMIT;");
 
-      added = NULL;
-      split = g_strsplit_set (users, " ,", 0);
-      point = split;
-
-      while (*point)
-        {
-          user_t user;
-          gchar *name;
-
-          name = *point;
-
-          g_strstrip (name);
-
-          if (strcmp (name, "") == 0)
-            {
-              point++;
-              continue;
-            }
-
-          if (g_list_find_custom (added, name, (GCompareFunc) strcmp))
-            {
-              point++;
-              continue;
-            }
-
-          added = g_list_prepend (added, name);
-
-          if (openvas_user_exists (name) == 0)
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              sql ("ROLLBACK;");
-              return 2;
-            }
-
-          if (find_user (name, &user))
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              sql ("ROLLBACK;");
-              return -1;
-            }
-
-          if (user == 0)
-            {
-              gchar *uuid;
-
-              /** @todo Similar to validate_user in openvas-administrator. */
-              if (g_regex_match_simple ("^[[:alnum:]-_]+$", name, 0, 0) == 0)
-                {
-                  g_list_free (added);
-                  g_strfreev (split);
-                  sql ("ROLLBACK;");
-                  return 4;
-                }
-
-              uuid = openvas_user_uuid (name);
-
-              if (uuid == NULL)
-                {
-                  g_list_free (added);
-                  g_strfreev (split);
-                  sql ("ROLLBACK;");
-                  return -1;
-                }
-
-              if (sql_int (0, 0,
-                           "SELECT count(*) FROM users WHERE uuid = '%s';",
-                           uuid)
-                  == 0)
-                {
-                  gchar *quoted_name;
-                  quoted_name = sql_quote (name);
-                  sql ("INSERT INTO users (uuid, name) VALUES ('%s', '%s');",
-                       uuid,
-                       quoted_name);
-                  g_free (quoted_name);
-
-                  user = sqlite3_last_insert_rowid (task_db);
-                }
-              else
-                {
-                  /* user_find should have found it. */
-                  assert (0);
-                  g_list_free (added);
-                  g_strfreev (split);
-                  sql ("ROLLBACK;");
-                  return -1;
-                }
-            }
-
-          sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",
-               *group,
-               user);
-
-          point++;
-        }
-
-      g_list_free (added);
-      g_strfreev (split);
-    }
-
-  sql ("COMMIT;");
-
-  return 0;
+  return ret;
 }
 
 /**
@@ -43882,6 +43899,101 @@ init_group_iterator (iterator_t* iterator, const get_data_t *get)
                             NULL,
                             NULL,
                             TRUE);
+}
+
+/**
+ * @brief Modify a group.
+ *
+ * @param[in]   group_id       UUID of group.
+ * @param[in]   name           Name of group.
+ * @param[in]   comment        Comment on group.
+ * @param[in]   users          Group users.
+ *
+ * @return 0 success, 1 failed to find group, 2 failed to find user, 3 group_id
+ *         required, 4 user name validation failed, 5 group with new name
+ *         exists, 99 permission denied, -1 internal error.
+ */
+int
+modify_group (const char *group_id, const char *name, const char *comment,
+              const char *users)
+{
+  int ret;
+  gchar *quoted_name, *quoted_comment;
+  group_t group;
+
+  assert (current_credentials.uuid);
+
+  if (group_id == NULL)
+    return 3;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("modify_group") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  group = 0;
+  if (find_group (group_id, &group))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (group == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  /* Check whether a group with the same name exists already. */
+  if (name)
+    {
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM groups"
+                   " WHERE name = '%s'"
+                   " AND ROWID != %llu"
+                   " AND ((owner IS NULL)"
+                   "      OR (owner = (SELECT users.ROWID FROM users"
+                   "                   WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   group,
+                   current_credentials.uuid))
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 5;
+        }
+    }
+  else
+    quoted_name = sql_quote("");
+
+  quoted_comment = sql_quote (comment ? comment : "");
+
+  sql ("UPDATE groups SET"
+       " name = '%s',"
+       " comment = '%s',"
+       " modification_time = now ()"
+       " WHERE ROWID = %llu;",
+       quoted_name,
+       quoted_comment,
+       group);
+
+  g_free (quoted_comment);
+  g_free (quoted_name);
+
+  sql ("DELETE FROM group_users WHERE `group` = %llu;", group);
+
+  ret = group_add_users (group, users);
+
+  if (ret)
+    sql ("ROLLBACK;");
+  else
+    sql ("COMMIT;");
+
+  return ret;
 }
 
 

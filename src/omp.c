@@ -457,6 +457,7 @@ static command_t omp_commands[]
     {"MODIFY_CONFIG", "Update an existing config."},
     {"MODIFY_LSC_CREDENTIAL", "Modify an existing LSC credential."},
     {"MODIFY_FILTER", "Modify an existing filter."},
+    {"MODIFY_GROUP", "Modify an existing group."},
     {"MODIFY_NOTE", "Modify an existing note."},
     {"MODIFY_OVERRIDE", "Modify an existing override."},
     {"MODIFY_PORT_LIST", "Modify an existing port list."},
@@ -2761,6 +2762,33 @@ modify_filter_data_reset (modify_filter_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_group command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *name;                    ///< Name of group.
+  char *group_id;                ///< Group UUID.
+  char *users;                   ///< Users for group.
+} modify_group_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_group_data_reset (modify_group_data_t *data)
+{
+  free (data->comment);
+  free (data->name);
+  free (data->group_id);
+  free (data->users);
+
+  memset (data, 0, sizeof (modify_group_data_t));
+}
+
+/**
  * @brief Command data for the modify_lsc_credential command.
  */
 typedef struct
@@ -3467,6 +3495,7 @@ typedef union
   modify_alert_data_t modify_alert;                   ///< modify_alert
   modify_config_data_t modify_config;                 ///< modify_config
   modify_filter_data_t modify_filter;                 ///< modify_filter
+  modify_group_data_t modify_group;                   ///< modify_group
   modify_lsc_credential_data_t modify_lsc_credential; ///< modify_lsc_credential
   modify_port_list_data_t modify_port_list;           ///< modify_port_list
   modify_report_data_t modify_report;                 ///< modify_report
@@ -3889,6 +3918,12 @@ modify_alert_data_t *modify_alert_data
  */
 modify_filter_data_t *modify_filter_data
  = &(command_data.modify_filter);
+
+/**
+ * @brief Parser callback data for MODIFY_GROUP.
+ */
+modify_group_data_t *modify_group_data
+ = &(command_data.modify_group);
 
 /**
  * @brief Parser callback data for MODIFY_LSC_CREDENTIAL.
@@ -4426,6 +4461,10 @@ typedef enum
   CLIENT_MODIFY_FILTER_NAME,
   CLIENT_MODIFY_FILTER_TERM,
   CLIENT_MODIFY_FILTER_TYPE,
+  CLIENT_MODIFY_GROUP,
+  CLIENT_MODIFY_GROUP_COMMENT,
+  CLIENT_MODIFY_GROUP_NAME,
+  CLIENT_MODIFY_GROUP_USERS,
   CLIENT_MODIFY_NOTE,
   CLIENT_MODIFY_NOTE_ACTIVE,
   CLIENT_MODIFY_NOTE_HOSTS,
@@ -6111,6 +6150,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_filter_data->filter_id);
             set_client_state (CLIENT_MODIFY_FILTER);
           }
+        else if (strcasecmp ("MODIFY_GROUP", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "group_id",
+                              &modify_group_data->group_id);
+            set_client_state (CLIENT_MODIFY_GROUP);
+          }
         else if (strcasecmp ("MODIFY_PORT_LIST", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values,
@@ -6489,6 +6534,24 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_FILTER_TYPE);
           }
         ELSE_ERROR ("modify_filter");
+
+      case CLIENT_MODIFY_GROUP:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_append_string (&modify_group_data->comment, "");
+            set_client_state (CLIENT_MODIFY_GROUP_COMMENT);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&modify_group_data->name, "");
+            set_client_state (CLIENT_MODIFY_GROUP_NAME);
+          }
+        else if (strcasecmp ("USERS", element_name) == 0)
+          {
+            openvas_append_string (&modify_group_data->users, "");
+            set_client_state (CLIENT_MODIFY_GROUP_USERS);
+          }
+        ELSE_ERROR ("modify_group");
 
       case CLIENT_MODIFY_PORT_LIST:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -17067,6 +17130,86 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_FILTER, TYPE);
       CLOSE (CLIENT_MODIFY_FILTER, TERM);
 
+      case CLIENT_MODIFY_GROUP:
+        {
+          assert (strcasecmp ("MODIFY_GROUP", element_name) == 0);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_group",
+                                  "MODIFY is forbidden for observer users"));
+            }
+          else switch (modify_group
+                        (modify_group_data->group_id,
+                         modify_group_data->name,
+                         modify_group_data->comment,
+                         modify_group_data->users))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_group"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group %s has been modified",
+                       modify_group_data->group_id);
+                break;
+              case 1:
+                if (send_find_error_to_client ("modify_group",
+                                               "group",
+                                               modify_group_data->group_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group could not be modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_group",
+                                    "Group with new name exists already"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group could not be modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_group",
+                                    "Error in type name"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group could not be modified");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_group",
+                                    "MODIFY_GROUP requires a group_id"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group could not be modified");
+                break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_group",
+                                    "Group is used by an alert so type must be"
+                                    " 'report' if specified"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group could not be modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_group"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group could not be modified");
+                break;
+            }
+
+          modify_group_data_reset (modify_group_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_GROUP, COMMENT);
+      CLOSE (CLIENT_MODIFY_GROUP, NAME);
+      CLOSE (CLIENT_MODIFY_GROUP, USERS);
+
       case CLIENT_MODIFY_PORT_LIST:
         {
           assert (strcasecmp ("MODIFY_PORT_LIST", element_name) == 0);
@@ -21919,6 +22062,16 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_FILTER_TYPE,
               &modify_filter_data->type);
+
+
+      APPEND (CLIENT_MODIFY_GROUP_COMMENT,
+              &modify_group_data->comment);
+
+      APPEND (CLIENT_MODIFY_GROUP_NAME,
+              &modify_group_data->name);
+
+      APPEND (CLIENT_MODIFY_GROUP_USERS,
+              &modify_group_data->users);
 
 
       APPEND (CLIENT_MODIFY_NOTE_ACTIVE,

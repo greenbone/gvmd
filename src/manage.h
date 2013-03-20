@@ -2351,6 +2351,9 @@ group_writable (group_t);
 int
 group_count (const get_data_t*);
 
+int
+modify_group (const char *, const char *, const char *, const char *);
+
 
 /* Permissions. */
 

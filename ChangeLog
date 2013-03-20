@@ -1,5 +1,24 @@
 2013-03-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add OMP MODIFY_GROUP.
+
+	* src/manage_sql.c (group_add_users): New function.  Body from
+	create_group.
+	(create_group): Call group_add_users to add users.
+	(modify_group): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_commands, command_data_t, client_state_t): Add
+	MODIFY_GROUP entries.
+	(modify_group_data_t): New type.
+	(modify_group_data_reset): New function.
+	(modify_group_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add MODIFY_GROUP.
+
+2013-03-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (valid_type, type_pretty_name, type_db_name): Add
 	permissions, so that creating permission filters works.
 
