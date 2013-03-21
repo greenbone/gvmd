@@ -63,7 +63,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       xml_file,
       status
     ) VALUES (
-      "<xsl:value-of select="@id"/>",
+      "<xsl:value-of select="@id"/>_"||(SELECT id FROM ovalfiles WHERE xml_file = "<xsl:value-of select="$filename"/>"),
       "<xsl:value-of select="@id"/>",
       "",
       <xsl:choose>
@@ -125,6 +125,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template match="/">
     BEGIN TRANSACTION;
+
+    INSERT OR IGNORE INTO ovalfiles (xml_file)
+      VALUES ("<xsl:value-of select="$filename"/>");
+
     <xsl:apply-templates />
     COMMIT;
   </xsl:template>

@@ -255,6 +255,49 @@ db_migrate_11 () {
   fi
 }
 
+db_migrate_12 () {
+  echo "[i] Migrating database to version 12."
+  if [ 1 != "$REFRESH_PRIVATE_ONLY" ]
+  then
+    sqlite3 "$SEC_DB"  "DROP TABLE ovaldefs;
+                        DROP INDEX IF EXISTS ovaldefs_idx;
+                        CREATE TABLE ovaldefs (
+                          id INTEGER PRIMARY KEY AUTOINCREMENT,
+                          uuid UNIQUE,
+                          name,
+                          comment,
+                          creation_time DATE,
+                          modification_time DATE,
+                          version INTEGER,
+                          deprecated BOOLEAN,
+                          def_class TEXT,
+                          title TEXT,
+                          description TEXT,
+                          xml_file TEXT,
+                          status TEXT
+                        );
+                        CREATE INDEX ovaldefs_idx ON ovaldefs (name);
+                        CREATE TABLE ovalfiles (
+                          id INTEGER PRIMARY KEY AUTOINCREMENT,
+                          xml_file TEXT UNIQUE
+                        );
+                        CREATE UNIQUE INDEX ovalfiles_idx ON ovalfiles (xml_file);
+                        CREATE TRIGGER ovalfiles_delete AFTER DELETE ON ovalfiles
+                        BEGIN
+                          DELETE FROM ovaldefs WHERE ovaldefs.xml_file = old.xml_file;
+                        END;
+                        UPDATE meta
+                          SET value = '12'
+                          WHERE name = 'database_version';
+                      "
+    REBUILD_OVAL=1
+    echo "[i] Migration done."
+  else
+    echo "[i] Migration to version 12 requires refresh of all SCAP data. Aborting."
+    exit 1
+  fi
+}
+
 check_db_version () {
   DB_VERSION=`$SQLITE $SEC_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
@@ -268,10 +311,14 @@ check_db_version () {
     7) reinit;;
     8) db_migrate_9
        db_migrate_10
-       db_migrate_11;;
+       db_migrate_11
+       db_migrate_12;;
     9) db_migrate_10
-       db_migrate_11;;
-   10) db_migrate_11;;
+       db_migrate_11
+       db_migrate_12;;
+   10) db_migrate_11
+       db_migrate_12;;
+   11) db_migrate_12;;
   esac
 }
 
@@ -409,29 +456,9 @@ update_sec_db_private () {
                 then
                   echo "[w] Validation of file '$ovalfile' failed: $validation_message"
                 else
-                  for feedfile in $oval_files_sorted
-                  do
-                    compare=`xsltproc "$SCAP_RES_DIR/ovaldef_list_ids.xsl" "$ovalfile"`
-                    duplicates=`xsltproc "$SCAP_RES_DIR/ovaldef_list_ids.xsl" "$feedfile" | grep -Fx "$compare"`
-                    duplicates_count=`echo "$duplicates" | wc -l`
-                    if [ -n "$duplicates" ]
-                    then
-                      echo "[w] Skipping '$ovalfile', found $duplicates_count definition(s) that are duplicates of one(s) in '$feedfile'"
-                      if [ 0 -ne $VERBOSE ]
-                      then
-                        for duplicate in $duplicates
-                        do
-                          echo "[w] Duplicate ID: $duplicate"
-                        done
-                      fi
-                    fi
-                  done
-                  if [ 0 -eq $duplicates_count ]
-                  then
-                    echo "[i] Updating $ovalfile"
-                    xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
-                    $SQLITE $SEC_DB
-                  fi
+                  echo "[i] Updating $ovalfile"
+                  xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
+                  $SQLITE $SEC_DB
                 fi
               fi
             else

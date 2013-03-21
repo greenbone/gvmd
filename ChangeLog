@@ -1,5 +1,23 @@
 2013-03-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* tools/greenbone-scapdata-sync (db_migrate_12, check_db_version): New
+	migration to SCAP database version 12.
+	(update_scap_db_private): Remove OVAL duplicate checks.
+
+	* tools/openvas-scapdata-sync.in (db_migrate_12, check_db_version): New
+	migration to SCAP database version 12.
+	(update_sec_db_private): Remove OVAL duplicate checks.
+
+	* tools/oval_update.xsl: Add file number suffix to uuids.
+	Add xml file name to table "ovalfiles".
+
+	* tools/scap_db_init.sql (ovaldefs, ovaldefs_idx): Remove UNIQUE
+	constraint for name.
+	(ovalfiles): New table for OVAL file names.
+	(ovalfiles_delete): New deletion trigger on ovalfiles.
+
+2013-03-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_INFO,
 	output xml_file for OVALDEF even if details are not requested.
 

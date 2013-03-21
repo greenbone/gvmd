@@ -88,7 +88,7 @@ CREATE INDEX afp_cve_idx ON affected_products (cve);
 CREATE TABLE ovaldefs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   uuid UNIQUE,
-  name UNIQUE, /* OVAL identifier */
+  name, /* OVAL identifier */
   comment,
   creation_time DATE,
   modification_time DATE,
@@ -100,8 +100,13 @@ CREATE TABLE ovaldefs (
   xml_file TEXT,
   status TEXT
 );
-CREATE UNIQUE INDEX ovaldefs_idx ON ovaldefs (name);
+CREATE INDEX ovaldefs_idx ON ovaldefs (name);
 
+CREATE TABLE ovalfiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  xml_file TEXT UNIQUE
+);
+CREATE UNIQUE INDEX ovalfiles_idx ON ovalfiles (xml_file);
 
 /* deletion triggers */
 CREATE TRIGGER cves_delete AFTER DELETE ON cves
@@ -113,4 +118,9 @@ CREATE TRIGGER affected_delete AFTER DELETE ON affected_products
 BEGIN
   UPDATE cpes set max_cvss = 0.0 WHERE id = old.cpe;
   UPDATE cpes set cve_refs = cve_refs -1 WHERE id = old.cpe;
+END;
+
+CREATE TRIGGER ovalfiles_delete AFTER DELETE ON ovalfiles
+BEGIN
+  DELETE FROM ovaldefs WHERE ovaldefs.xml_file = old.xml_file;
 END;
