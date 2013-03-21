@@ -5893,11 +5893,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             <e>version</e>
             <e>deprecated</e>
+            <e>status</e>
             <e>def_class</e>
             <e>title</e>
-            <e>status</e>
+            <e>xml_file</e>
             <o><e>description</e></o>
-            <o><e>xml_file</e></o>
             <o><e>raw_data</e></o>
           </pattern>
           <summary>An OVAL definition info element</summary>
@@ -5916,6 +5916,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
           </ele>
           <ele>
+            <name>status</name>
+            <summary>Lifecycle status text of the definition</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
             <name>def_class</name>
             <summary>Definition class of the definition</summary>
             <pattern>
@@ -5930,8 +5937,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
           </ele>
           <ele>
-            <name>status</name>
-            <summary>Lifecycle status text of the definition</summary>
+            <name>xml_file</name>
+            <summary>Path to the source xml file, relative to the SCAP data directory.</summary>
             <pattern>
               text
             </pattern>
@@ -5939,13 +5946,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>description</name>
             <summary>Longer description of the definition. Only when details were requested</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>xml_file</name>
-            <summary>Path to the source xml file, relative to the SCAP data directory. Only when details were requested</summary>
             <pattern>
               text
             </pattern>

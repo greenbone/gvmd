@@ -19906,19 +19906,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      "<deprecated>%s</deprecated>"
                                      "<status>%s</status>"
                                      "<def_class>%s</def_class>"
-                                     "<title>%s</title>",
+                                     "<title>%s</title>"
+                                     "<xml_file>%s</xml_file>",
                                      ovaldef_info_iterator_version (&info),
                                      ovaldef_info_iterator_deprecated (&info),
                                      ovaldef_info_iterator_status (&info),
                                      ovaldef_info_iterator_def_class (&info),
-                                     ovaldef_info_iterator_title (&info));
+                                     ovaldef_info_iterator_title (&info),
+                                     ovaldef_info_iterator_xml_file (&info));
                   description = ovaldef_info_iterator_description (&info);
                   if (get_info_data->details == 1)
                     xml_string_append (result,
-                                       "<description>%s</description>"
-                                       "<xml_file>%s</xml_file>",
-                                       description,
-                                       ovaldef_info_iterator_xml_file (&info));
+                                       "<description>%s</description>",
+                                       description);
                 }
               else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
                 {

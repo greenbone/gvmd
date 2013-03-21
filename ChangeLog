@@ -1,5 +1,14 @@
 2013-03-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_INFO,
+	output xml_file for OVALDEF even if details are not requested.
+
+	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc (get_info):
+	Move status and xml_file to reflect their real positions in OMP output.
+	Change xml_file to non-optional.
+
+2013-03-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Handle non-unique "name" and unique selection by "info_id" for get_info.
 
 	* src/manage.c (get_ovaldef_filename): Rename parameter from oval_id

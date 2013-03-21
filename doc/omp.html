@@ -9771,6 +9771,11 @@ get_filters_response_filter_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>status</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Lifecycle status text of the definition.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>def_class</b>&gt;
               <div style="margin-left: 15px; display: inline;">Definition class of the definition.</div>
 <ul style="list-style: none"></ul>
@@ -9781,18 +9786,13 @@ get_filters_response_filter_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>status</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Lifecycle status text of the definition.</div>
+              &lt;<b>xml_file</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Path to the source xml file, relative to the SCAP data directory..</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>description</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Longer description of the definition. Only when details were requested.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>xml_file</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Path to the source xml file, relative to the SCAP data directory. Only when details were requested.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -10190,11 +10190,11 @@ get_info_response_info_ovaldef
      {
        get_info_response_info_ovaldef_version
        &amp; get_info_response_info_ovaldef_deprecated
+       &amp; get_info_response_info_ovaldef_status
        &amp; get_info_response_info_ovaldef_def_class
        &amp; get_info_response_info_ovaldef_title
-       &amp; get_info_response_info_ovaldef_status
+       &amp; get_info_response_info_ovaldef_xml_file
        &amp; get_info_response_info_ovaldef_description?
-       &amp; get_info_response_info_ovaldef_xml_file?
        &amp; get_info_response_info_ovaldef_raw_data?
      }
 
@@ -10210,6 +10210,12 @@ get_info_response_info_ovaldef_deprecated
        boolean
      }
 
+get_info_response_info_ovaldef_status
+ = element status
+     {
+       text
+     }
+
 get_info_response_info_ovaldef_def_class
  = element def_class
      {
@@ -10222,20 +10228,14 @@ get_info_response_info_ovaldef_title
        text
      }
 
-get_info_response_info_ovaldef_status
- = element status
+get_info_response_info_ovaldef_xml_file
+ = element xml_file
      {
        text
      }
 
 get_info_response_info_ovaldef_description
  = element description
-     {
-       text
-     }
-
-get_info_response_info_ovaldef_xml_file
- = element xml_file
      {
        text
      }
