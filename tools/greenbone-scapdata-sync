@@ -201,7 +201,7 @@ then
 fi
 
 reinit () {
-  log_write " Reinitialization of the database necessary."
+  log_write "Reinitialization of the database necessary."
   rm -f $SCAP_DB
   $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
 }
@@ -521,10 +521,10 @@ update_scap_db() {
           xsltproc $SCAP_RES_DIR/cpe_update.xsl - | \
           $SQLITE3 $SCAP_DB
       else
-        log_write " Skipping CPEs, file is older than last revision (this is not an error)."
+        log_write "Skipping CPEs, file is older than last revision (this is not an error)."
       fi
     else
-      echo " Warning: No CPE dictionary found in $SCAP_DIR"
+      echo "Warning: No CPE dictionary found in $SCAP_DIR"
     fi
 
     updated_cves=0
@@ -545,7 +545,7 @@ update_scap_db() {
         fi
       done
     else
-      log_write " Warning: No CVEs found in $SCAP_DIR."
+      log_write "Warning: No CVEs found in $SCAP_DIR."
     fi
 
     if [ 0 -ne $updated_cves ]
@@ -576,7 +576,7 @@ update_scap_db() {
       log_write "No CVEs updated, skipping CVSS and CVE recount."
     fi
 
-    log_write " Updating OVAL data"
+    log_write "Updating OVAL data"
     xmlcount=$(find "$SCAP_DIR/oval/" -name "*.xml" -type f 2> /dev/null | wc -l)
     if [ $xmlcount -ne 0 ]
     then
@@ -617,11 +617,11 @@ update_scap_db() {
             log_write "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
           fi
         else
-          log_write " Skipping $ovalfile, file is older than last revision (this is not an error)."
+          log_write "Skipping $ovalfile, file is older than last revision (this is not an error)."
         fi
       done
     else
-      log_write " Warning: No XML files found in $SCAP_DIR/oval/."
+      log_write "Warning: No XML files found in $SCAP_DIR/oval/."
     fi
   fi
 

@@ -1,5 +1,10 @@
 2013-03-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* tools/greenbone-scapdata-sync, tools/openvas-scapdata-sync.in: Make
+	formatting of log messages more consistent.
+
+2013-03-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* tools/greenbone-scapdata-sync (db_migrate_12, check_db_version): New
 	migration to SCAP database version 12.
 	(update_scap_db_private): Remove OVAL duplicate checks.

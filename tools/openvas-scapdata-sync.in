@@ -85,7 +85,7 @@ if [ -z "$TMPDIR" ]; then
   SYNC_TMP_DIR=/tmp
   # If we have mktemp, create a temporary dir (safer)
   if [ -n "`which mktemp`" ]; then
-    SYNC_TMP_DIR=`mktemp -t -d openvas-scap-data-sync.XXXXXXXXXX` || { echo "ERROR: Cannot create temporary directory for file download" >&2; exit 1 ; }
+    SYNC_TMP_DIR=`mktemp -t -d openvas-scap-data-sync.XXXXXXXXXX` || { echo "[e] Error: Cannot create temporary directory for file download" >&2; exit 1 ; }
     trap "rm -rf $SYNC_TMP_DIR" EXIT HUP INT TRAP TERM
   fi
 else
@@ -159,7 +159,7 @@ do_rsync () {
     mkdir -p "$SCAP_DIR"
     eval "$CMD_RSYNC -ltvrP $RSYNC_DELETE \"$OV_RSYNC_FEED\" \"$SCAP_DIR\""
     if [ $? -ne 0 ] ; then
-      echo "Error: rsync failed. Your SCAP data might be broken now."
+      echo "[e] Error: rsync failed. Your SCAP data might be broken now."
       exit 1
     fi
   fi
@@ -345,7 +345,7 @@ init_sec_db_update () {
   if [ -z "$DB_LASTUPDATE" ]
   then
     # Happens when initial sync was aborted
-    echo "Error: Inconsistent data. Resetting SCAP database."
+    echo "[e] Error: Inconsistent data. Resetting SCAP database."
     rm -f $SEC_DB
     $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
     CVE_REFDATE=0
