@@ -4456,18 +4456,18 @@ get_cve_filename (char *item_id)
 /**
  * @brief Get the filename where a given OVAL definition can be found.
  *
- * @param[in] oval_id   Full OVAL identifier.
+ * @param[in] item_id   Full OVAL identifier with file suffix.
  *
  * @return A dynamically allocated string (to be g_free'd) containing the
  *         path to the desired file or NULL on error.
  */
 static char *
-get_ovaldef_filename (char *oval_id)
+get_ovaldef_filename (char *item_id)
 {
   char *result, *short_filename;
 
   result = NULL;
-  short_filename = get_ovaldef_short_filename (oval_id);
+  short_filename = get_ovaldef_short_filename (item_id);
 
   if (*short_filename)
     {
@@ -4838,6 +4838,7 @@ manage_cert_update_time ()
  * @brief Read raw information.
  *
  * @param[in]   type    Type of the requested information.
+ * @param[in]   uid     Unique identifier of the requested information
  * @param[in]   name    Name or identifier of the requested information.
  * @param[out]  result  Pointer to the read information location. Will point
  *                      to NULL on error.
@@ -4845,7 +4846,7 @@ manage_cert_update_time ()
  * @return 1 success, -1 error.
  */
 int
-manage_read_info (gchar *type, gchar *name, gchar **result)
+manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
 {
   gchar *fname;
   gchar *pnames[2] = { "refname", NULL };
@@ -4868,7 +4869,7 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
     }
   else if (g_ascii_strcasecmp ("CVE", type) == 0)
     {
-      fname = get_cve_filename (name);
+      fname = get_cve_filename (uid);
       if (fname)
         {
           gchar *cve;
@@ -4895,7 +4896,7 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
     }
   else if (g_ascii_strcasecmp ("OVALDEF", type) == 0)
     {
-      fname = get_ovaldef_filename (name);
+      fname = get_ovaldef_filename (uid);
       if (fname)
         {
           gchar *ovaldef;
@@ -4908,7 +4909,7 @@ manage_read_info (gchar *type, gchar *name, gchar **result)
     }
   else if (g_ascii_strcasecmp ("DFN_CERT_ADV", type) == 0)
     {
-      fname = get_dfn_cert_adv_filename (name);
+      fname = get_dfn_cert_adv_filename (uid);
       if (fname)
         {
           gchar *adv;

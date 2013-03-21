@@ -3771,6 +3771,28 @@ count (const char *type, const get_data_t *get,
   return ret;
 }
 
+/**
+ * @brief Count number of info of a given subtype with a given name.
+ *
+ * @param[in]  type  GET_INFO subtype.
+ * @param[out] name  Name of the info item.
+ *
+ * @return Total number of get_info items of given type, -1 on error.
+ */
+int
+info_name_count (const char *type, const char *name)
+{
+  assert(type);
+  assert(name);
+
+  return sql_int (0, 0,
+                  "SELECT COUNT(ROWID)"
+                  " FROM %ss"
+                  " WHERE name = '%s';",
+                  type,
+                  name);
+}
+
 
 /* Creation. */
 
@@ -48399,6 +48421,9 @@ init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
       gchar *quoted = sql_quote (get->id);
       clause = g_strdup_printf (" AND uuid = '%s'", quoted);
       g_free (quoted);
+      /* The entry is specified by ID, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
     }
   else if (name)
     {
@@ -48461,6 +48486,9 @@ init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
       gchar *quoted = sql_quote (get->id);
       clause = g_strdup_printf (" AND uuid = '%s'", quoted);
       g_free (quoted);
+      /* The entry is specified by ID, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
     }
   else if (name)
     {
@@ -48649,6 +48677,9 @@ init_ovaldef_info_iterator (iterator_t* iterator, get_data_t *get,
       gchar *quoted = sql_quote (get->id);
       clause = g_strdup_printf (" AND uuid = '%s'", quoted);
       g_free (quoted);
+      /* The entry is specified by ID, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
     }
   else if (name)
     {
@@ -48919,17 +48950,17 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
 /**
  * @brief Get the short file name for an OVALDEF.
  *
- * @param[in]  name  Full OVAL identifier.
+ * @param[in]  item_id  Full OVAL identifier with file suffix.
  *
  * @return The file name of the OVAL definition relative to the SCAP directory,
  *         Freed by g_free.
  */
 gchar*
-get_ovaldef_short_filename (char* oval_id)
+get_ovaldef_short_filename (char* item_id)
 {
   return sql_string (0, 0,
-                     "SELECT xml_file FROM ovaldefs WHERE name = '%s';",
-                     oval_id);
+                     "SELECT xml_file FROM ovaldefs WHERE uuid = '%s';",
+                     item_id);
 }
 
 /* All SecInfo Data */

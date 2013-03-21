@@ -19619,7 +19619,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               get_info_data->get.subtype = g_strdup ("nvt");
 
-              manage_read_info (get_info_data->type, get_info_data->name, &result);
+              manage_read_info (get_info_data->type, get_info_data->get.id,
+                                get_info_data->name, &result);
               if (result)
                 {
                   SEND_GET_START ("info", &get_info_data->get);
@@ -19957,10 +19958,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (get_info_data->details == 1)
                 {
                   gchar *raw_data = NULL;
+                  gchar *nonconst_id = g_strdup(get_iterator_uuid (&info));
                   gchar *nonconst_name = g_strdup(get_iterator_name (&info));
-                  manage_read_info (get_info_data->type, nonconst_name, &raw_data);
+                  manage_read_info (get_info_data->type, nonconst_id,
+                                    nonconst_name, &raw_data);
                   g_string_append_printf (result, "<raw_data>%s</raw_data>",
                                           raw_data);
+                  g_free(nonconst_id);
                   g_free(nonconst_name);
                   g_free(raw_data);
                 }
@@ -19975,9 +19979,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (get_info_data->details == 1)
             SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
 
-          filtered = get_info_data->get.id || get_info_data->name
+          filtered = get_info_data->get.id
                      ? 1
-                     : info_count (&get_info_data->get);
+                     : (
+                        get_info_data->name
+                        ? info_name_count (get_info_data->type,
+                                           get_info_data->name)
+                        : info_count (&get_info_data->get)
+                       );
 
           if (strcmp (get_info_data->type, "allinfo"))
             SEND_GET_END ("info", &get_info_data->get, count, filtered);

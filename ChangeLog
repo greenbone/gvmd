@@ -1,3 +1,30 @@
+2013-03-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Handle non-unique "name" and unique selection by "info_id" for get_info.
+
+	* src/manage.c (get_ovaldef_filename): Rename parameter from oval_id
+	to item_id and change comment to make clear that the OVAL ID with suffix
+	is to be passed as parameter.
+	(manage_read_info): New parameter uid (unique identifier), used to
+	look up files for CVE, OVALDEF, and DFN_CERT_ADV.
+
+	* src/manage.h (manage_read_info): Change prototype.
+	(info_name_count): New function prototype.
+
+	* src/manage_sql.c (info_name_count): New function, counts get_info
+	items with a given name by name.
+	(init_cpe_info_iterator, init_cve_info_iterator)
+	(init_ovaldef_info_iterator, init_dfn_cert_adv_info_iterator): Add
+	removal of filter if ID is supplies, as is done for name.
+	(get_ovaldef_short_filename): Rename parameter from oval_id
+	to item_id and change comment to make clear that the OVAL ID with suffix
+	is to be passed as parameter.
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_INFO,
+	pass ID to manage_read_info in addition to name.
+	Use info_count instead of assuming 1 when counting info selected by
+	name.
+
 2013-03-20  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* INSTALL: Increased dependency note for gnutls to 2.8

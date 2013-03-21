@@ -2635,7 +2635,10 @@ parse_tags (const char *, gchar **, gchar **, gchar **);
 /* SecInfo */
 
 int
-manage_read_info (gchar *, gchar *, gchar **);
+manage_read_info (gchar *, gchar *, gchar *, gchar **);
+
+int
+info_name_count (const gchar *, const gchar *);
 
 /* SCAP. */
 
