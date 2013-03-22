@@ -1,3 +1,13 @@
+2013-03-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Backport for r15825. Patch by Matthew Mundell.
+
+	* src/manage_sql.c (init_manage_process, manage_scap_loaded)
+	(manage_cert_loaded): Use access instead of stat to check for SCAP and
+	CERT databases.  Just put a warning instead of aborting when the access
+	fails.  Remove redundant manage_scap_loaded and  manage_cert_loaded
+	calls.
+
 2013-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Post release version bump.

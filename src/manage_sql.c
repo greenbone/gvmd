@@ -13022,13 +13022,9 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
   else
     {
-      struct stat state;
-      int err;
-
       /* Attach the SCAP database. */
 
-      err = stat (OPENVAS_STATE_DIR "/scap-data/scap.db", &state);
-      if (err)
+      if (access (OPENVAS_STATE_DIR "/scap-data/scap.db", R_OK))
         switch (errno)
           {
             case ENOENT:
@@ -13037,19 +13033,15 @@ init_manage_process (int update_nvt_cache, const gchar *database)
               g_warning ("%s: failed to stat SCAP database: %s\n",
                          __FUNCTION__,
                          strerror (errno));
-              abort ();
+              break;
           }
       else
-        {
-          sql ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
-               " AS scap;");
-          manage_scap_loaded ();
-        }
+        sql ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
+             " AS scap;");
 
       /* Attach the CERT database. */
 
-      err = stat (OPENVAS_STATE_DIR "/cert-data/cert.db", &state);
-      if (err)
+      if (access (OPENVAS_STATE_DIR "/cert-data/cert.db", R_OK))
         switch (errno)
           {
             case ENOENT:
@@ -13058,14 +13050,11 @@ init_manage_process (int update_nvt_cache, const gchar *database)
               g_warning ("%s: failed to stat CERT database: %s\n",
                          __FUNCTION__,
                          strerror (errno));
-              abort ();
+              break;
           }
       else
-        {
-          sql ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/cert-data/cert.db'"
-               " AS cert;");
-          manage_cert_loaded ();
-        }
+        sql ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/cert-data/cert.db'"
+             " AS cert;");
     }
 
   /* Define functions for SQL. */
@@ -46749,11 +46738,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 int
 manage_scap_loaded ()
 {
-  struct stat state;
-  int err;
-
-  err = stat (OPENVAS_STATE_DIR "/scap-data/scap.db", &state);
-  if (err)
+  if (access (OPENVAS_STATE_DIR "/scap-data/scap.db", R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -46763,7 +46748,6 @@ manage_scap_loaded ()
           g_warning ("%s: failed to stat SCAP database: %s\n",
                      __FUNCTION__,
                      strerror (errno));
-          abort ();
           return 0;
       }
 
@@ -46780,11 +46764,7 @@ manage_scap_loaded ()
 int
 manage_cert_loaded ()
 {
-  struct stat state;
-  int err;
-
-  err = stat (OPENVAS_STATE_DIR "/cert-data/cert.db", &state);
-  if (err)
+  if (access (OPENVAS_STATE_DIR "/cert-data/cert.db", R_OK))
     switch (errno)
       {
         case ENOENT:
@@ -46794,7 +46774,6 @@ manage_cert_loaded ()
           g_warning ("%s: failed to stat CERT database: %s\n",
                      __FUNCTION__,
                      strerror (errno));
-          abort ();
           return 0;
       }
 
