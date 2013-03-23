@@ -3837,6 +3837,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS overrides_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS permissions (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment, resource_type, resource, resource_uuid, resource_location, subject_type, subject, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS permissions_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment, resource_type, resource, resource_uuid, resource_location, subject_type, subject, creation_time, modification_time);");
   /* Overlapping port ranges will cause problems, at least for the port
    * counting.  OMP CREATE_PORT_LIST and CREATE_PORT_RANGE check for this,
    * but whoever creates a predefined port list must check this manually. */
@@ -44287,9 +44288,39 @@ delete_permission (const char *permission_id, int ultimate)
 
   if (permission == 0)
     {
-      sql ("ROLLBACK;");
-      return 2;
+      if (find_trash ("permission", permission_id, &permission))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (permission == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      sql ("DELETE FROM permissions_trash WHERE ROWID = %llu;", permission);
+      sql ("COMMIT;");
+      return 0;
     }
+
+  if (ultimate == 0)
+    sql ("INSERT INTO permissions_trash"
+         " (uuid, owner, name, comment, resource_type, resource,"
+         "  resource_uuid, resource_location, subject_type, subject,"
+         "  creation_time, modification_time)"
+         " SELECT uuid, owner, name, comment, resource_type, resource,"
+         "  resource_uuid, resource_location, subject_type, subject,"
+         "  creation_time, modification_time"
+         " FROM permissions"
+         " WHERE ROWID = %llu;",
+         permission);
 
   sql ("DELETE FROM permissions WHERE ROWID = %llu;", permission);
 
@@ -47123,6 +47154,32 @@ manage_restore (const char *id)
            resource);
       sql ("DELETE FROM overrides_trash WHERE ROWID = %llu;", resource);
       reports_clear_count_cache (1);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  /* Permission. */
+
+  if (find_trash ("permission", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      sql ("INSERT INTO permissions"
+           " (uuid, owner, name, comment, resource_type, resource,"
+           "  resource_uuid, resource_location, subject_type, subject,"
+           "  creation_time, modification_time)"
+           " SELECT uuid, owner, name, comment, resource_type, resource,"
+           "  resource_uuid, resource_location, subject_type, subject,"
+           "  creation_time, modification_time"
+           " FROM permissions_trash"
+           " WHERE ROWID = %llu;",
+           resource);
+
+      sql ("DELETE FROM permissions_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
       return 0;
     }

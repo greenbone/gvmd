@@ -1,5 +1,13 @@
 2013-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add permissions trashcan.
+
+	* src/manage_sql.c (create_tables): Add permissions_trash.
+	(delete_permission): Add trash case.
+	(manage_restore): Add permission restore.
+
+2013-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_INFO format
 	ternary conditional like others.
 
