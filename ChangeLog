@@ -1,3 +1,8 @@
+2013-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_INFO format
+	ternary conditional like others.
+
 2013-03-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage_process, manage_scap_loaded)

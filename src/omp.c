@@ -19980,13 +19980,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
 
           filtered = get_info_data->get.id
-                     ? 1
-                     : (
-                        get_info_data->name
-                        ? info_name_count (get_info_data->type,
-                                           get_info_data->name)
-                        : info_count (&get_info_data->get)
-                       );
+                      ? 1
+                      : (get_info_data->name
+                          ? info_name_count (get_info_data->type,
+                                             get_info_data->name)
+                          : info_count (&get_info_data->get));
 
           if (strcmp (get_info_data->type, "allinfo"))
             SEND_GET_END ("info", &get_info_data->get, count, filtered);
