@@ -1,3 +1,13 @@
+2013-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (vector_find_filter, underscore_sql_quote): New
+	functions.
+	(filter_clause): Use vector_find_filter instead of vector_find_string.
+	When a keyword matched a filter column with a leading underscore, then
+	add the underscore in the SQL.  This allows a filter column to have a
+	name that is used by some other column in the table.
+	(filter_term_value): Add underscore check.
+
 2013-03-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (total_info_count): Code refactor.

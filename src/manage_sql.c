@@ -1242,6 +1242,30 @@ vector_find_string (const gchar **vector, const gchar *string)
   return NULL;
 }
 
+/**
+ * @brief Find a filter string in a glib style string vector.
+ *
+ * @param[in]  vector  Vector.
+ * @param[in]  string  String.
+ *
+ * @return 1 if found, 2 if found with underscore prefix, else NULL.
+ */
+static int
+vector_find_filter (const gchar **vector, const gchar *string)
+{
+  gchar *underscore;
+  if (vector_find_string (vector, string))
+    return 1;
+  underscore = g_strdup_printf ("_%s", string);
+  if (vector_find_string (vector, underscore))
+    {
+      g_free (underscore);
+      return 2;
+    }
+  g_free (underscore);
+  return 0;
+}
+
 
 /* Access control layer. */
 
@@ -2331,6 +2355,23 @@ get_join (int first, int last_was_and, int last_was_not)
 }
 
 /**
+ * @brief SQL quote string after prepending an underscore.
+ *
+ * @param[in]  string  String.
+ *
+ * @return Quoted string with leading underscore.
+ */
+static gchar *
+underscore_sql_quote (const char *string)
+{
+  gchar *under, *quoted_under;
+  under = g_strdup_printf ("_%s", string);
+  quoted_under = sql_quote (under);
+  g_free (under);
+  return quoted_under;
+}
+
+/**
  * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
  *
  * @param[in]  type     Resource type.
@@ -2418,7 +2459,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
       if (keyword->column && (strcasecmp (keyword->column, "sort") == 0))
         {
           if (strcmp (keyword->string, "ROWID")
-              && (vector_find_string (columns, keyword->string) == 0))
+              && (vector_find_filter (columns, keyword->string) == 0))
             {
               point++;
               continue;
@@ -2459,7 +2500,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
                && (strcasecmp (keyword->column, "sort-reverse") == 0))
         {
           if (strcmp (keyword->string, "ROWID")
-              && (vector_find_string (columns, keyword->string) == 0))
+              && (vector_find_filter (columns, keyword->string) == 0))
             {
               point++;
               continue;
@@ -2531,9 +2572,13 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
       /* Add SQL to the clause for each column name. */
 
+      quoted_keyword = NULL;
+
       if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL)
         {
-          if (vector_find_string (columns, keyword->column) == 0)
+          int ret;
+
+          if ((ret = vector_find_filter (columns, keyword->column)) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;
@@ -2576,7 +2621,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
           else
             {
               quoted_keyword = sql_quote (keyword->string);
-              quoted_column = sql_quote (keyword->column);
+              quoted_column = ret == 2
+                               ? underscore_sql_quote (keyword->column)
+                               : sql_quote (keyword->column);
               if (strcmp (quoted_keyword, ""))
                 g_string_append_printf (clause,
                                         "%s(CAST (%s AS TEXT) = '%s'",
@@ -2597,7 +2644,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
         }
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
         {
-          if (vector_find_string (columns, keyword->column) == 0)
+          int ret;
+
+          if ((ret = vector_find_filter (columns, keyword->column)) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;
@@ -2606,7 +2655,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
             }
 
           quoted_keyword = sql_quote (keyword->string);
-          quoted_column = sql_quote (keyword->column);
+          quoted_column = ret == 2
+                           ? underscore_sql_quote (keyword->column)
+                           : sql_quote (keyword->column);
           g_string_append_printf (clause,
                                   "%s(CAST (%s AS TEXT) LIKE '%%%%%s%%%%'",
                                   get_join (first_keyword, last_was_and,
@@ -2617,7 +2668,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
         }
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE)
         {
-          if (vector_find_string (columns, keyword->column) == 0)
+          int ret;
+
+          if ((ret = vector_find_filter (columns, keyword->column)) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;
@@ -2626,7 +2679,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
             }
 
           quoted_keyword = sql_quote (keyword->string);
-          quoted_column = sql_quote (keyword->column);
+          quoted_column = ret == 2
+                           ? underscore_sql_quote (keyword->column)
+                           : sql_quote (keyword->column);
           if (keyword->type == KEYWORD_TYPE_NUMBER)
             g_string_append_printf (clause,
                                     "%s(CAST (%s AS INTEGER) > %i",
@@ -2645,7 +2700,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
         }
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
         {
-          if (vector_find_string (columns, keyword->column) == 0)
+          int ret;
+
+          if ((ret = vector_find_filter (columns, keyword->column)) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;
@@ -2654,7 +2711,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
             }
 
           quoted_keyword = sql_quote (keyword->string);
-          quoted_column = sql_quote (keyword->column);
+          quoted_column = ret == 2
+                           ? underscore_sql_quote (keyword->column)
+                           : sql_quote (keyword->column);
           if (keyword->type == KEYWORD_TYPE_NUMBER)
             g_string_append_printf (clause,
                                     "%s(CAST (%s AS INTEGER) < %i",
@@ -46059,7 +46118,10 @@ filter_term_value (const char *term, const char *column)
       keyword_t *keyword;
 
       keyword = *point;
-      if (keyword->column && (strcasecmp (keyword->column, column) == 0))
+      if (keyword->column
+          && ((strcasecmp (keyword->column, column) == 0)
+              || (keyword->column[0] == '_'
+                  && (strcasecmp (keyword->column + 1, column) == 0))))
         {
           gchar *ret = g_strdup (keyword->string);
           filter_free (split);
