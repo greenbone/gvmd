@@ -1,5 +1,13 @@
 2013-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (PERMISSION_ITERATOR_FILTER_COLUMNS): Match columns
+	to GSA.
+	(PERMISSION_ITERATOR_COLUMNS): Match columns to GSA, using underscore to
+	shadow existing column names.  Remove resource and subject until they
+	are actually needed.  Adjust accessor functions accordingly.
+
+2013-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (vector_find_filter, underscore_sql_quote): New
 	functions.
 	(filter_clause): Use vector_find_filter instead of vector_find_string.

@@ -44162,16 +44162,17 @@ trash_permission_writable (permission_t permission)
  * @brief Filter columns for permission iterator.
  */
 #define PERMISSION_ITERATOR_FILTER_COLUMNS                               \
- { GET_ITERATOR_FILTER_COLUMNS, "resource_type", "resource_uuid", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "type", "resource_uuid", "subject_type", \
+   "_subject", "_resource", NULL }
 
 /**
  * @brief Permission iterator columns.
  */
 // FIX FROM tasks hardcoded
 #define PERMISSION_ITERATOR_COLUMNS                                         \
-  GET_ITERATOR_COLUMNS ", resource_type, resource, resource_uuid,"          \
-  " (SELECT name FROM tasks WHERE ROWID = resource) AS resource_name,"      \
-  " subject_type, subject,"                                                 \
+  GET_ITERATOR_COLUMNS ", resource_type AS type, resource_uuid,"            \
+  " (SELECT name FROM tasks WHERE ROWID = resource) AS _resource,"          \
+  " subject_type,"                                                          \
   " (CASE"                                                                  \
   "  WHEN subject_type = 'user'"                                            \
   "  THEN (SELECT uuid FROM users WHERE users.ROWID = subject)"             \
@@ -44181,7 +44182,7 @@ trash_permission_writable (permission_t permission)
   "  WHEN subject_type = 'user'"                                            \
   "  THEN (SELECT name FROM users WHERE users.ROWID = subject)"             \
   "  ELSE (SELECT name FROM groups WHERE groups.ROWID = subject)"           \
-  "  END) AS subject_name"
+  "  END) AS _subject"
 
 /**
  * @brief Count number of permissions.
@@ -44242,7 +44243,7 @@ DEF_ACCESS (permission_iterator_resource_type, GET_ITERATOR_COLUMN_COUNT);
  *
  * @return UUID, or NULL if iteration is complete.
  */
-DEF_ACCESS (permission_iterator_resource_uuid, GET_ITERATOR_COLUMN_COUNT + 2);
+DEF_ACCESS (permission_iterator_resource_uuid, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
  * @brief Get the name of the resource from a permission iterator.
@@ -44251,7 +44252,7 @@ DEF_ACCESS (permission_iterator_resource_uuid, GET_ITERATOR_COLUMN_COUNT + 2);
  *
  * @return Name, or NULL if iteration is complete.
  */
-DEF_ACCESS (permission_iterator_resource_name, GET_ITERATOR_COLUMN_COUNT + 3);
+DEF_ACCESS (permission_iterator_resource_name, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the type of subject from a permission iterator.
@@ -44260,7 +44261,7 @@ DEF_ACCESS (permission_iterator_resource_name, GET_ITERATOR_COLUMN_COUNT + 3);
  *
  * @return Type, or NULL if iteration is complete.
  */
-DEF_ACCESS (permission_iterator_subject_type, GET_ITERATOR_COLUMN_COUNT + 4);
+DEF_ACCESS (permission_iterator_subject_type, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Get the subject UUID from a permission iterator.
@@ -44269,7 +44270,7 @@ DEF_ACCESS (permission_iterator_subject_type, GET_ITERATOR_COLUMN_COUNT + 4);
  *
  * @return UUID, or NULL if iteration is complete.
  */
-DEF_ACCESS (permission_iterator_subject_uuid, GET_ITERATOR_COLUMN_COUNT + 6);
+DEF_ACCESS (permission_iterator_subject_uuid, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
  * @brief Get the subject name from a permission iterator.
@@ -44278,7 +44279,7 @@ DEF_ACCESS (permission_iterator_subject_uuid, GET_ITERATOR_COLUMN_COUNT + 6);
  *
  * @return Name, or NULL if iteration is complete.
  */
-DEF_ACCESS (permission_iterator_subject_name, GET_ITERATOR_COLUMN_COUNT + 7);
+DEF_ACCESS (permission_iterator_subject_name, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Find a permission with a given permission, given a UUID.
