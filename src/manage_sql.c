@@ -48308,16 +48308,16 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 /**
  * @brief All SecInfo iterator columns.
  */
-#define ALL_INFO_UNION_COLUMNS                                              \
-  "(SELECT " GET_ITERATOR_COLUMNS ", 'cve' AS type, description as extra"   \
-  "  FROM cves"                                                             \
-  " UNION SELECT " GET_ITERATOR_COLUMNS ", 'cpe' AS type, title as extra"   \
-  "  FROM cpes"                                                             \
-  " UNION SELECT " GET_ITERATOR_COLUMNS ", 'nvt' AS type, summary as extra" \
-  "  FROM nvts"                                                             \
-  " UNION SELECT " GET_ITERATOR_COLUMNS ", 'dfn_cert_adv' AS type"          \
-  "  ,title as extra FROM dfn_cert_advs"                                    \
-  " UNION SELECT " GET_ITERATOR_COLUMNS ", 'ovaldef' AS type"               \
+#define ALL_INFO_UNION_COLUMNS                                                \
+  "(SELECT " GET_ITERATOR_COLUMNS ", 'cve' AS type, description as extra"     \
+  "  FROM cves"                                                               \
+  " UNION ALL SELECT " GET_ITERATOR_COLUMNS ", 'cpe' AS type, title as extra" \
+  "  FROM cpes"                                                               \
+  " UNION ALL SELECT " GET_ITERATOR_COLUMNS ", 'nvt' AS type"                 \
+  "  ,summary as extra FROM nvts"                                             \
+  " UNION ALL SELECT " GET_ITERATOR_COLUMNS ", 'dfn_cert_adv' AS type"        \
+  "  ,title as extra FROM dfn_cert_advs"                                      \
+  " UNION ALL SELECT " GET_ITERATOR_COLUMNS ", 'ovaldef' AS type"             \
   "  ,title as extra FROM ovaldefs)"
 
 
@@ -49050,15 +49050,11 @@ total_info_count (const get_data_t *get, int filtered)
                         ALL_INFO_UNION_COLUMNS
                         " WHERE %s;",
                         clause);
-      else
-        return sql_int (0, 0,
-                        "SELECT count (ROWID) FROM"
-                        ALL_INFO_UNION_COLUMNS ";");
     }
-  else
-      return sql_int (0, 0,
-                      "SELECT count (ROWID) FROM"
-                      ALL_INFO_UNION_COLUMNS";");
+
+  return sql_int (0, 0,
+                  "SELECT count (ROWID) FROM"
+                  ALL_INFO_UNION_COLUMNS ";");
 }
 
 /**
