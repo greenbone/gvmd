@@ -1,3 +1,32 @@
+2013-03-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* doc/omp.html, doc/omp.rnc, src/schema_formats/XML/OMP.xml:
+	Rename def_class to class, xml_file to file for OVAL definitions.
+
+	* src/manage.h (ovaldef_info_iterator_def_class): Removed, renamed to
+	ovaldef_info_iterator_class.
+	(ovaldef_info_iterator_class): New. Renamed
+	ovaldef_info_iterator_def_class.
+	(ovaldef_info_iterator_xml_file): Removed, renamed to
+	ovaldef_info_iterator_file.
+	(ovaldef_info_iterator_file): New. Renamed
+	ovaldef_info_iterator_xml_file.
+
+	* src/manage_sql.c (OVALDEF_INFO_ITERATOR_FILTER_COLUMNS)
+	(OVALDEF_INFO_ITERATOR_COLUMNS): Rename def_class to class,
+	xml_file to file.
+	(ovaldef_info_iterator_def_class): Removed. Renamed to
+	ovaldef_info_iterator_class.
+	(ovaldef_info_iterator_class): New. Renamed
+	ovaldef_info_iterator_def_class.
+	(ovaldef_info_iterator_xml_file): Removed. Renamed to
+	ovaldef_info_iterator_file.
+	(ovaldef_info_iterator_file): New. Renamed
+	ovaldef_info_iterator_xml_file.
+
+	* src/omp.c (xml_handle_end_element): In case CLIENT_GET_INFO,
+	rename element def_class to class, xml_file to file.
+
 2013-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add permissions trashcan.

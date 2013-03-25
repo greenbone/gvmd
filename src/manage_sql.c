@@ -48276,15 +48276,15 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  */
 #define OVALDEF_INFO_ITERATOR_FILTER_COLUMNS                \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "deprecated",    \
-   "def_class", "title", "description", "xml_file",         \
+   "class", "title", "description", "file",         \
    "status", NULL }
 
 /**
  * @brief OVALDEF iterator columns.
  */
-#define OVALDEF_INFO_ITERATOR_COLUMNS                       \
-  GET_ITERATOR_COLUMNS ", version, deprecated, def_class,"  \
-  "title, description, xml_file, status"
+#define OVALDEF_INFO_ITERATOR_COLUMNS                                \
+  GET_ITERATOR_COLUMNS ", version, deprecated, def_class AS class,"  \
+  "title, description, xml_file AS file, status"
 
 /**
  * @brief Filter columns for DFN_CERT_ADV iterator.
@@ -48787,7 +48787,7 @@ DEF_ACCESS (ovaldef_info_iterator_deprecated, GET_ITERATOR_COLUMN_COUNT + 1);
  *         definition, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (ovaldef_info_iterator_def_class, GET_ITERATOR_COLUMN_COUNT + 2);
+DEF_ACCESS (ovaldef_info_iterator_class, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the title from an OVALDEF iterator.
@@ -48820,7 +48820,7 @@ DEF_ACCESS (ovaldef_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 4);
  *         or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (ovaldef_info_iterator_xml_file, GET_ITERATOR_COLUMN_COUNT + 5);
+DEF_ACCESS (ovaldef_info_iterator_file, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the repository entry status from an OVALDEF iterator.

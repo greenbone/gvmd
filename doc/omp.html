@@ -9776,7 +9776,7 @@ get_filters_response_filter_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>def_class</b>&gt;
+              &lt;<b>class</b>&gt;
               <div style="margin-left: 15px; display: inline;">Definition class of the definition.</div>
 <ul style="list-style: none"></ul>
 </li>
@@ -9786,7 +9786,7 @@ get_filters_response_filter_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>xml_file</b>&gt;
+              &lt;<b>file</b>&gt;
               <div style="margin-left: 15px; display: inline;">Path to the source xml file, relative to the SCAP data directory..</div>
 <ul style="list-style: none"></ul>
 </li>
@@ -10191,9 +10191,9 @@ get_info_response_info_ovaldef
        get_info_response_info_ovaldef_version
        &amp; get_info_response_info_ovaldef_deprecated
        &amp; get_info_response_info_ovaldef_status
-       &amp; get_info_response_info_ovaldef_def_class
+       &amp; get_info_response_info_ovaldef_class
        &amp; get_info_response_info_ovaldef_title
-       &amp; get_info_response_info_ovaldef_xml_file
+       &amp; get_info_response_info_ovaldef_file
        &amp; get_info_response_info_ovaldef_description?
        &amp; get_info_response_info_ovaldef_raw_data?
      }
@@ -10216,8 +10216,8 @@ get_info_response_info_ovaldef_status
        text
      }
 
-get_info_response_info_ovaldef_def_class
- = element def_class
+get_info_response_info_ovaldef_class
+ = element class
      {
        text
      }
@@ -10228,8 +10228,8 @@ get_info_response_info_ovaldef_title
        text
      }
 
-get_info_response_info_ovaldef_xml_file
- = element xml_file
+get_info_response_info_ovaldef_file
+ = element file
      {
        text
      }

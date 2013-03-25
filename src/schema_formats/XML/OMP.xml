@@ -5894,9 +5894,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>version</e>
             <e>deprecated</e>
             <e>status</e>
-            <e>def_class</e>
+            <e>class</e>
             <e>title</e>
-            <e>xml_file</e>
+            <e>file</e>
             <o><e>description</e></o>
             <o><e>raw_data</e></o>
           </pattern>
@@ -5923,7 +5923,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
           </ele>
           <ele>
-            <name>def_class</name>
+            <name>class</name>
             <summary>Definition class of the definition</summary>
             <pattern>
               text
@@ -5937,7 +5937,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
           </ele>
           <ele>
-            <name>xml_file</name>
+            <name>file</name>
             <summary>Path to the source xml file, relative to the SCAP data directory.</summary>
             <pattern>
               text

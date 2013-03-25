@@ -19905,15 +19905,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      "<version>%s</version>"
                                      "<deprecated>%s</deprecated>"
                                      "<status>%s</status>"
-                                     "<def_class>%s</def_class>"
+                                     "<class>%s</class>"
                                      "<title>%s</title>"
-                                     "<xml_file>%s</xml_file>",
+                                     "<file>%s</file>",
                                      ovaldef_info_iterator_version (&info),
                                      ovaldef_info_iterator_deprecated (&info),
                                      ovaldef_info_iterator_status (&info),
-                                     ovaldef_info_iterator_def_class (&info),
+                                     ovaldef_info_iterator_class (&info),
                                      ovaldef_info_iterator_title (&info),
-                                     ovaldef_info_iterator_xml_file (&info));
+                                     ovaldef_info_iterator_file (&info));
                   description = ovaldef_info_iterator_description (&info);
                   if (get_info_data->details == 1)
                     xml_string_append (result,
