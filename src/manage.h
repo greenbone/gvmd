@@ -2832,6 +2832,15 @@ openvas_admin_list_users (const gchar *, int, const gchar *);
 int
 openvas_admin_user_access (const gchar *, gchar **, int *, const gchar *);
 
+void
+init_user_group_iterator (iterator_t *, const char *);
+
+const char*
+user_group_iterator_uuid (iterator_t*);
+
+const char*
+user_group_iterator_name (iterator_t*);
+
 
 /* Wizards. */
 

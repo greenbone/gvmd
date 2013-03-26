@@ -20775,6 +20775,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               gchar *sources;
               GSList *methods;
               int allow;
+              iterator_t groups;
+
               if (openvas_admin_user_access
                   (user->data, &hosts, &allow, OPENVAS_USERS_DIR))
                 /* @todo Buffer all hosts before sending anything. */
@@ -20794,7 +20796,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        allow,
                                        hosts ? hosts : "");
               SEND_TO_CLIENT_OR_FAIL (sources);
-              SEND_TO_CLIENT_OR_FAIL ("</user>");
+              SEND_TO_CLIENT_OR_FAIL ("<groups>");
+              init_user_group_iterator (&groups, user->data);
+              while (next (&groups))
+                SENDF_TO_CLIENT_OR_FAIL ("<group id=\"%s\">"
+                                         "<name>%s</name>"
+                                         "</group>",
+                                         user_group_iterator_uuid (&groups),
+                                         user_group_iterator_name (&groups));
+              cleanup_iterator (&groups);
+              SEND_TO_CLIENT_OR_FAIL ("</groups>"
+                                      "</user>");
               g_free (hosts);
               g_free (user->data);
               g_free (sources);

@@ -1,5 +1,14 @@
 2013-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_user_group_iterator, user_group_iterator_uuid)
+	(user_group_iterator_name): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_USERS add GROUPS.
+
+2013-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add DESCRIBE_AUTH and GET_USERS to OMP.  These are direct copies from
 	OAP in Administrator with some slight changes to fit in Manager, mostly
 	formatting.

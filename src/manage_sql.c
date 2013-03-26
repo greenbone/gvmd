@@ -49193,4 +49193,43 @@ DEF_ACCESS (all_info_iterator_type, GET_ITERATOR_COLUMN_COUNT);
  */
 DEF_ACCESS (all_info_iterator_extra, GET_ITERATOR_COLUMN_COUNT + 1);
 
+
+/* Users. */
 
+/**
+ * @brief Initialise an info iterator.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  username        Username.
+ */
+void
+init_user_group_iterator (iterator_t *iterator, const char *username)
+{
+  gchar *quoted_username;
+  quoted_username = sql_quote (username);
+  init_iterator (iterator,
+                 "SELECT DISTINCT ROWID, uuid, name FROM groups"
+                 " WHERE ROWID IN (SELECT `group` FROM group_users"
+                 "                 WHERE user = (SELECT ROWID FROM users"
+                 "                               WHERE users.name = '%s'));",
+                 quoted_username);
+  g_free (quoted_username);
+}
+
+/**
+ * @brief Get the UUID from a user group iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID or NULL if iteration is complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (user_group_iterator_uuid, 1);
+
+/**
+ * @brief Get the NAME from a user group iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NAME or NULL if iteration is complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (user_group_iterator_name, 2);
