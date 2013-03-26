@@ -44,6 +44,8 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <gcrypt.h>
+#include <glib/gstdio.h>
 #include <locale.h>
 #include <pwd.h>
 #include <sqlite3.h>
@@ -229,6 +231,9 @@ const char *message_type_threat (const char *);
 int delete_reports (task_t);
 
 int delete_slave_task (slave_t, const char *);
+
+int
+validate_username (const gchar *);
 
 
 /* Port range headers. */
@@ -49195,6 +49200,208 @@ DEF_ACCESS (all_info_iterator_extra, GET_ITERATOR_COLUMN_COUNT + 1);
 
 
 /* Users. */
+
+/**
+ * @brief Adds a new user to the OpenVAS installation.
+ *
+ * @todo Adding users authenticating with certificates is not yet implemented.
+ *
+ * @param[in]  name         The name of the new user.
+ * @param[in]  password     The password of the new user.
+ * @param[in]  role         The role of the user.
+ * @param[in]  hosts        The host the user is allowed/forbidden to scan.
+ * @param[in]  hosts_allow  Whether hosts is allow or forbid.
+ * @param[in]  directory    The directory containing the user directories.  It
+ *                          will be created if it does not exist already.
+ * @param[out] r_errdesc    If not NULL the address of a variable to receive
+ *                          a malloced string with the error description.  Will
+ *                          always be set to NULL on success.
+ *
+ * @return 0 if the user has been added successfully, -1 on error, -2 if user
+ *         exists already.
+ */
+int
+openvas_admin_add_user (const gchar * name, const gchar * password,
+                        const gchar * role, const gchar * hosts,
+                        int hosts_allow, const gchar * directory,
+                        const array_t * allowed_methods,
+                        gchar **r_errdesc)
+{
+  char *errstr;
+
+  assert (name != NULL);
+  assert (password != NULL);
+  assert (role != NULL);
+  assert (directory != NULL);
+  if (r_errdesc)
+    *r_errdesc = NULL;
+
+  if (validate_username (name) != 0)
+    {
+      g_warning ("Invalid characters in user name!");
+      if (r_errdesc)
+        *r_errdesc = g_strdup ("Invalid characters in user name");
+      return -1;
+    }
+
+  if (strcmp (name, "om") == 0)
+    {
+      g_warning ("Attempt to add special \"om\" user!");
+      if (r_errdesc)
+        *r_errdesc = g_strdup ("Attempt to add special \"om\" user");
+      return -1;
+    }
+
+  if ((errstr = openvas_validate_password (password, name)))
+    {
+      g_warning ("new password for '%s' rejected: %s", name, errstr);
+      if (r_errdesc)
+        *r_errdesc = errstr;
+      else
+        g_free (errstr);
+      return -1;
+    }
+
+  if (!g_file_test (directory, G_FILE_TEST_EXISTS))
+    {
+      if (g_mkdir (directory, 0700))
+        {
+          g_warning ("Could not create %s!", directory);
+          return -1;
+        }
+    }
+
+  if (g_file_test (directory, G_FILE_TEST_IS_DIR))
+    {
+      GError *error = NULL;
+      gchar *user_dir_name, *user_auth_dir_name;
+      gchar *user_hash_file_name, *hashes_out, *uuid_file_name, *contents;
+      char *uuid;
+
+      user_dir_name = g_build_filename (directory, name, NULL);
+
+      if (g_file_test (user_dir_name, G_FILE_TEST_EXISTS)
+          && g_file_test (user_dir_name, G_FILE_TEST_IS_DIR))
+        {
+          g_warning ("User %s already exists!", name);
+          g_free (user_dir_name);
+          return -2;
+        }
+
+      /* Make the user directory. */
+
+      if (g_mkdir (user_dir_name, 0700))
+        {
+          g_warning ("Could not create %s!", user_dir_name);
+          g_warning ("Failed to set up user directories for user %s", name);
+          g_free (user_dir_name);
+          return -1;
+        }
+
+      /* Make the auth subdirectory. */
+
+      user_auth_dir_name = g_build_filename (user_dir_name, "auth", NULL);
+      if (g_mkdir (user_auth_dir_name, 0700))
+        {
+          g_warning ("Could not create %s!", user_auth_dir_name);
+          if (openvas_file_remove_recurse (user_dir_name))
+            g_warning ("Could not remove %s while trying to revert changes!",
+                       user_dir_name);
+          g_warning ("Failed to set up user directories for user %s", name);
+          g_free (user_dir_name);
+          g_free (user_auth_dir_name);
+          return -1;
+        }
+
+      /* Make a UUID, and store it in the file "uuid". */
+
+      uuid = openvas_uuid_make ();
+      if (uuid == NULL)
+        {
+          g_free (user_dir_name);
+          g_free (user_auth_dir_name);
+          return -1;
+        }
+
+      contents = g_strdup_printf ("%s\n", uuid);
+      free (uuid);
+
+      uuid_file_name = g_build_filename (user_dir_name, "uuid", NULL);
+
+      if (!g_file_set_contents (uuid_file_name, contents, -1, &error))
+        {
+          g_warning ("Failed to store UUID: %s", error->message);
+          g_error_free (error);
+          if (openvas_file_remove_recurse (user_dir_name))
+            g_warning ("Could not remove %s while trying to revert changes!",
+                       user_dir_name);
+          g_free (contents);
+          g_free (uuid_file_name);
+          g_free (user_dir_name);
+          g_free (user_auth_dir_name);
+          return -1;
+        }
+      g_free (contents);
+      g_free (uuid_file_name);
+
+      /* Put the password hashes in auth/hash. */
+
+      hashes_out = get_password_hashes (GCRY_MD_MD5, password);
+      user_hash_file_name = g_build_filename (user_auth_dir_name, "hash", NULL);
+      if (!g_file_set_contents (user_hash_file_name, hashes_out, -1, &error))
+        {
+          g_warning ("%s", error->message);
+          g_error_free (error);
+          if (openvas_file_remove_recurse (user_dir_name))
+            g_warning ("Could not remove %s while trying to revert changes!",
+                       user_dir_name);
+          g_free (hashes_out);
+          g_free (user_dir_name);
+          g_free (user_auth_dir_name);
+          g_free (user_hash_file_name);
+          return -1;
+        }
+      g_chmod (user_hash_file_name, 0600);
+      g_free (hashes_out);
+      g_free (user_hash_file_name);
+
+      /* Create rules according to hosts. */
+
+      if (openvas_auth_store_user_rules (user_dir_name, hosts, hosts_allow) ==
+          -1)
+        {
+          if (openvas_file_remove_recurse (user_dir_name))
+            g_warning ("Could not remove %s while trying to revert changes!",
+                       user_dir_name);
+          g_free (user_dir_name);
+          return -1;
+        }
+
+      /* Set the role of the user. */
+
+      if (openvas_set_user_role (name, role, NULL))
+        {
+          if (openvas_file_remove_recurse (user_dir_name))
+            g_warning ("Could not remove %s while trying to revert changes!",
+                       user_dir_name);
+          return -1;
+        }
+
+      if (allowed_methods != NULL)
+        {
+           if (openvas_auth_user_set_allowed_methods (name, allowed_methods) != 1)
+             {
+               g_error ("Could not set allowed authentication methods for a user");
+               return -1;
+             }
+        }
+
+      return 0;
+    }
+
+  g_warning ("Could not access %s!", directory);
+  return -1;
+}
 
 /**
  * @brief Initialise an info iterator.

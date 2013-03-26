@@ -1,5 +1,23 @@
 2013-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add CREATE_USER to OMP.  This is a direct copy from OAP in Administrator
+	with some slight changes to fit in Manager, mostly formatting.
+
+	* src/manage.c (validate_username): New function.
+
+	* src/manage_sql.c (openvas_admin_add_user): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_commands, client_state_t): Add new command.
+	(create_user_data_t): New type.
+	(create_user_data_reset): New function.
+	(create_user_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Handle new command.
+
+2013-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_user_group_iterator, user_group_iterator_uuid)
 	(user_group_iterator_name): New functions.
 

@@ -406,6 +406,7 @@ static command_t omp_commands[]
     {"CREATE_SLAVE", "Create a slave."},
     {"CREATE_TARGET", "Create a target."},
     {"CREATE_TASK", "Create a task."},
+    {"CREATE_USER", "Create a new user."},
     {"DELETE_AGENT", "Delete an agent."},
     {"DELETE_CONFIG", "Delete a config."},
     {"DELETE_ALERT", "Delete an alert."},
@@ -1547,6 +1548,39 @@ create_task_data_reset (create_task_data_t *data)
   free (data->target_id);
 
   memset (data, 0, sizeof (create_task_data_t));
+}
+
+/* Command data passed between parser callbacks. */
+
+typedef struct
+{
+  int sort_order;
+  char *hosts;
+  int hosts_allow;
+  char *name;
+  char *password;
+  char *role;
+  gchar *current_source;
+  array_t *sources;
+} create_user_data_t;
+
+/**
+ * @brief Reset CREATE_USER data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+create_user_data_reset (create_user_data_t * data)
+{
+  g_free (data->name);
+  g_free (data->password);
+  g_free (data->role);
+  if (data->sources)
+    {
+      array_free (data->sources);
+    }
+  g_free (data->current_source);
+  memset (data, 0, sizeof (create_user_data_t));
 }
 
 /**
@@ -3470,6 +3504,7 @@ typedef union
   create_slave_data_t create_slave;                   ///< create_slave
   create_target_data_t create_target;                 ///< create_target
   create_task_data_t create_task;                     ///< create_task
+  create_user_data_t create_user;                     ///< create_user
   delete_agent_data_t delete_agent;                   ///< delete_agent
   delete_config_data_t delete_config;                 ///< delete_config
   delete_alert_data_t delete_alert;                   ///< delete_alert
@@ -3658,6 +3693,12 @@ create_target_data_t *create_target_data
  */
 create_task_data_t *create_task_data
  = (create_task_data_t*) &(command_data.create_task);
+
+/**
+ * @brief Parser callback data for CREATE_USER.
+ */
+create_user_data_t *create_user_data
+ = &(command_data.create_user);
 
 /**
  * @brief Parser callback data for DELETE_AGENT.
@@ -4391,6 +4432,13 @@ typedef enum
   CLIENT_CREATE_TASK_SCHEDULE,
   CLIENT_CREATE_TASK_SLAVE,
   CLIENT_CREATE_TASK_TARGET,
+  CLIENT_CREATE_USER,
+  CLIENT_CREATE_USER_HOSTS,
+  CLIENT_CREATE_USER_NAME,
+  CLIENT_CREATE_USER_PASSWORD,
+  CLIENT_CREATE_USER_ROLE,
+  CLIENT_CREATE_USER_SOURCES,
+  CLIENT_CREATE_USER_SOURCES_SOURCE,
   CLIENT_DELETE_AGENT,
   CLIENT_DELETE_CONFIG,
   CLIENT_DELETE_ALERT,
@@ -5356,6 +5404,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             create_task_data->groups = make_array ();
             set_client_state (CLIENT_CREATE_TASK);
           }
+        else if (strcasecmp ("CREATE_USER", element_name) == 0)
+          set_client_state (CLIENT_CREATE_USER);
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
           {
             const gchar* attribute;
@@ -7829,6 +7879,60 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE);
         ELSE_ERROR ("create_task");
+
+      case CLIENT_CREATE_USER:
+        if (strcasecmp ("HOSTS", element_name) == 0)
+          {
+            const gchar *attribute;
+            if (find_attribute
+                (attribute_names, attribute_values, "allow", &attribute))
+              create_user_data->hosts_allow = strcmp (attribute, "0");
+            else
+              create_user_data->hosts_allow = 1;
+            set_client_state (CLIENT_CREATE_USER_HOSTS);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_USER_NAME);
+        else if (strcasecmp ("PASSWORD", element_name) == 0)
+          set_client_state (CLIENT_CREATE_USER_PASSWORD);
+        else if (strcasecmp ("ROLE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_USER_ROLE);
+        else if (strcasecmp ("SOURCES", element_name) == 0)
+          {
+            create_user_data->sources = make_array ();
+            set_client_state (CLIENT_CREATE_USER_SOURCES);
+          }
+        else
+          {
+            if (send_element_error_to_client ("create_user", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+      case CLIENT_CREATE_USER_SOURCES:
+        if (strcasecmp ("SOURCE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_USER_SOURCES_SOURCE);
+        else
+          {
+            if (send_element_error_to_client ("create_user", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
 
       case CLIENT_MODIFY_NOTE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -16837,6 +16941,85 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       CLOSE (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE, VALUE);
 
+      case CLIENT_CREATE_USER:
+        {
+          gchar *errdesc;
+
+          assert (strcasecmp ("CREATE_USER", element_name) == 0);
+
+          if (create_user_data->name == NULL
+              || strlen (create_user_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                    ("create_user",
+                                     "CREATE_USER requires a name"));
+          else
+            switch (openvas_admin_add_user
+                     (create_user_data->name,
+                      create_user_data->password ? create_user_data->password : "",
+                      create_user_data->role ? create_user_data->role : "User",
+                      create_user_data->hosts, create_user_data->hosts_allow,
+                      OPENVAS_USERS_DIR, create_user_data->sources,
+                      &errdesc))
+              {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_user"));
+                g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                       "User %s with role %s has been created",
+                       create_user_data->name, create_user_data->role);
+                break;
+              case -2:
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                        ("create_user", "User already exists"));
+                break;
+              case -1:
+                if (errdesc)
+                  {
+                    char *buf = make_xml_error_syntax ("create_user", errdesc);
+                    SEND_TO_CLIENT_OR_FAIL (buf);
+                    g_free (buf);
+                    break;
+                  }
+                /* Fall through.  */
+              default:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_user"));
+                break;
+              }
+          create_user_data_reset (create_user_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          g_free (errdesc);
+          break;
+        }
+      case CLIENT_CREATE_USER_HOSTS:
+        assert (strcasecmp ("HOSTS", element_name) == 0);
+        set_client_state (CLIENT_CREATE_USER);
+        break;
+      case CLIENT_CREATE_USER_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_USER);
+        break;
+      case CLIENT_CREATE_USER_PASSWORD:
+        assert (strcasecmp ("PASSWORD", element_name) == 0);
+        set_client_state (CLIENT_CREATE_USER);
+        break;
+      case CLIENT_CREATE_USER_ROLE:
+        assert (strcasecmp ("ROLE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_USER);
+        break;
+      case CLIENT_CREATE_USER_SOURCES:
+        assert (strcasecmp ("SOURCES", element_name) == 0);
+        array_terminate (create_user_data->sources);
+        set_client_state (CLIENT_CREATE_USER);
+        break;
+      case CLIENT_CREATE_USER_SOURCES_SOURCE:
+        assert (strcasecmp ("SOURCE", element_name) == 0);
+        if (create_user_data->current_source)
+          array_add (create_user_data->sources,
+                     g_strdup (create_user_data->current_source));
+        g_free (create_user_data->current_source);
+        create_user_data->current_source = NULL;
+        set_client_state (CLIENT_CREATE_USER_SOURCES);
+        break;
+
       case CLIENT_EMPTY_TRASHCAN:
         switch (manage_empty_trashcan ())
           {
@@ -22165,6 +22348,22 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE,
               &create_task_data->preference->value);
+
+
+      APPEND (CLIENT_CREATE_USER_HOSTS,
+              &create_user_data->hosts);
+
+      APPEND (CLIENT_CREATE_USER_NAME,
+              &create_user_data->name);
+
+      APPEND (CLIENT_CREATE_USER_PASSWORD,
+              &create_user_data->password);
+
+      APPEND (CLIENT_CREATE_USER_ROLE,
+              &create_user_data->role);
+
+      APPEND (CLIENT_CREATE_USER_SOURCES_SOURCE,
+              &create_user_data->current_source);
 
 
       APPEND (CLIENT_MODIFY_AGENT_COMMENT,
