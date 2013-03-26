@@ -423,6 +423,7 @@ static command_t omp_commands[]
     {"DELETE_SLAVE", "Delete a slave."},
     {"DELETE_TARGET", "Delete a target."},
     {"DELETE_TASK", "Delete a task."},
+    {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
     {"GET_AGENTS", "Get all agents."},
     {"GET_CONFIGS", "Get all configs."},
@@ -449,6 +450,7 @@ static command_t omp_commands[]
     {"GET_TARGET_LOCATORS", "Get configured target locators."},
     {"GET_TARGETS", "Get all targets."},
     {"GET_TASKS", "Get all tasks."},
+    {"GET_USERS", "Get all users."},
     {"GET_VERSION", "Get the OpenVAS Manager Protocol version."},
     {"GET_INFO", "Get raw information for a given item."},
     {"HELP", "Get this help text."},
@@ -2568,6 +2570,25 @@ get_targets_data_reset (get_targets_data_t *data)
 }
 
 /**
+ * @brief Command data for the get_users command.
+ */
+typedef struct
+{
+  gchar *name;
+  int sort_order;
+} get_users_data_t;
+
+/**
+ * @brief Reset GET_USERS data.
+ */
+static void
+get_users_data_reset (get_users_data_t * data)
+{
+  g_free (data->name);
+  memset (data, 0, sizeof (get_users_data_t));
+}
+
+/**
  * @brief Command data for the modify_config command.
  */
 typedef struct
@@ -3490,6 +3511,7 @@ typedef union
   get_system_reports_data_t get_system_reports;       ///< get_system_reports
   get_targets_data_t get_targets;                     ///< get_targets
   get_tasks_data_t get_tasks;                         ///< get_tasks
+  get_users_data_t get_users;                         ///< get_users
   help_data_t help;                                   ///< help
   modify_agent_data_t modify_agent;                   ///< modify_agent
   modify_alert_data_t modify_alert;                   ///< modify_alert
@@ -3882,6 +3904,12 @@ get_targets_data_t *get_targets_data
  */
 get_tasks_data_t *get_tasks_data
  = &(command_data.get_tasks);
+
+/**
+ * @brief Parser callback data for GET_USERS.
+ */
+get_users_data_t *get_users_data
+ = &(command_data.get_users);
 
 /**
  * @brief Parser callback data for HELP.
@@ -4380,6 +4408,7 @@ typedef enum
   CLIENT_DELETE_SLAVE,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TARGET,
+  CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
   CLIENT_GET_AGENTS,
   CLIENT_GET_CONFIGS,
@@ -4406,6 +4435,7 @@ typedef enum
   CLIENT_GET_TARGET_LOCATORS,
   CLIENT_GET_TARGETS,
   CLIENT_GET_TASKS,
+  CLIENT_GET_USERS,
   CLIENT_GET_VERSION,
   CLIENT_GET_VERSION_AUTHENTIC,
   CLIENT_GET_INFO,
@@ -5523,6 +5553,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               delete_task_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_TASK);
           }
+        else if (strcasecmp ("DESCRIBE_AUTH", element_name) == 0)
+          set_client_state (CLIENT_DESCRIBE_AUTH);
         else if (strcasecmp ("EMPTY_TRASHCAN", element_name) == 0)
           set_client_state (CLIENT_EMPTY_TRASHCAN);
         else if (strcasecmp ("GET_AGENTS", element_name) == 0)
@@ -6088,6 +6120,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_tasks_data->rcfile = 0;
 
             set_client_state (CLIENT_GET_TASKS);
+          }
+        else if (strcasecmp ("GET_USERS", element_name) == 0)
+          {
+            const gchar *attribute;
+            if (find_attribute
+                (attribute_names, attribute_values, "name", &attribute))
+              openvas_append_string (&get_users_data->name, attribute);
+            if (find_attribute
+                (attribute_names, attribute_values, "sort_order", &attribute))
+              get_users_data->sort_order = strcmp (attribute, "descending");
+            else
+              get_users_data->sort_order = 1;
+            set_client_state (CLIENT_GET_USERS);
           }
         else if (strcasecmp ("GET_INFO", element_name) == 0)
           {
@@ -12160,6 +12205,39 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         delete_task_data_reset (delete_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
+
+      case CLIENT_DESCRIBE_AUTH:
+        {
+          gchar *config_file, *content, *resp;
+
+          assert (current_credentials.username);
+
+          /* Get base 64 encoded content of the auth configuration file. */
+          config_file = g_build_filename (OPENVAS_USERS_DIR,
+                                          ".auth.conf",
+                                          NULL);
+          content = keyfile_to_auth_conf_settings_xml (config_file);
+          g_free (config_file);
+          if (content == NULL)
+            {
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("describe_auth"));
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          resp = g_strdup_printf ("<describe_auth_response"
+                                  " status=\"" STATUS_OK "\""
+                                  " status_text=\"" STATUS_OK_TEXT "\">"
+                                  "%s"
+                                  "</describe_auth_response>",
+                                  content);
+          g_free (content);
+
+          SEND_TO_CLIENT_OR_FAIL (resp);
+          g_free (resp);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
 
       case CLIENT_HELP:
         if (help_data->format == NULL
@@ -20664,6 +20742,68 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_GET_END ("target", &get_targets_data->get, count, filtered);
             }
           get_targets_data_reset (get_targets_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
+      case CLIENT_GET_USERS:
+        {
+          GSList *users, *user;
+          assert (strcasecmp ("GET_USERS", element_name) == 0);
+
+            /** @todo Consider using user_t, find_user and user_iterator_t. */
+
+          user = users =
+            openvas_admin_list_users (OPENVAS_USERS_DIR,
+                                      get_users_data->sort_order,
+                                      get_users_data->name);
+          if (get_users_data->name && users == NULL)
+            {
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                      ("get_users", "Failed to find user"));
+              get_users_data_reset (get_users_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          SEND_TO_CLIENT_OR_FAIL ("<get_users_response"
+                                  " status=\"" STATUS_OK "\""
+                                  " status_text=\"" STATUS_OK_TEXT "\">");
+          while (user)
+            {
+              gchar *hosts;
+              gchar *sources;
+              GSList *methods;
+              int allow;
+              if (openvas_admin_user_access
+                  (user->data, &hosts, &allow, OPENVAS_USERS_DIR))
+                /* @todo Buffer all hosts before sending anything. */
+                abort ();
+              methods = openvas_auth_user_methods (user->data);
+              sources = openvas_string_list_to_xml (methods, "sources", "source");
+              SENDF_TO_CLIENT_OR_FAIL ("<user>"
+                                       "<name>%s</name>"
+                                       "<role>%s</role>"
+                                       "<hosts allow=\"%i\">%s</hosts>",
+                                       (gchar *) user->data,
+                                       openvas_is_user_admin (user->data)
+                                         ? "Admin"
+                                         : (openvas_is_user_observer (user->data)
+                                            ? "Observer"
+                                            : "User"),
+                                       allow,
+                                       hosts ? hosts : "");
+              SEND_TO_CLIENT_OR_FAIL (sources);
+              SEND_TO_CLIENT_OR_FAIL ("</user>");
+              g_free (hosts);
+              g_free (user->data);
+              g_free (sources);
+              openvas_string_list_free (methods);
+              user = g_slist_next (user);
+            }
+          g_slist_free (users);
+          get_users_data_reset (get_users_data);
+          SEND_TO_CLIENT_OR_FAIL ("</get_users_response>");
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }

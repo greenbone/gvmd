@@ -142,7 +142,23 @@
 scanner_t scanner = { NULL, NULL, NULL, NULL, 0 };
 
 
+/* Helpers. */
 
+/**
+ * @brief Descending strcmp.
+ *
+ * @param[in]  one  First string.
+ * @param[in]  two  Second string.
+ *
+ * @return Negation of return from strcmp on args.
+ */
+static int
+strcmp_desc (const char *one, const char *two)
+{
+  return -strcmp (one, two);
+}
+
+
 /* Threats. */
 
 /**
@@ -4925,6 +4941,252 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
     return -1;
 
   return 1;
+}
+
+
+/* Users. */
+
+/**
+ * @brief Returns list of user directories (= users) found in given directory.
+ *
+ * @param[in]  directory  The complete name of the directory.
+ * @param[in]  ascending  Ascending order if true, descending order if 0.
+ * @param[in]  name       Name of single user to list.  NULL for all users.
+ *
+ * @return A pointer to a GSList containing the names of the users or NULL if
+ *         the directory could not be opened, did not exist or was not a directory.
+ *         The list should be freed with g_slist_free when no longer needed.  Each
+ *         element of the list should be freed with g_free.
+ */
+GSList *
+openvas_admin_list_users (const gchar * directory, int ascending,
+                          const gchar * name)
+{
+  GSList *users = NULL;
+
+  if (g_file_test (directory, G_FILE_TEST_EXISTS)
+      && g_file_test (directory, G_FILE_TEST_IS_DIR))
+    {
+      const gchar *entry_name = NULL;
+      GError *error = NULL;
+      GDir *users_dir = NULL;
+
+      users_dir = g_dir_open (directory, 0, &error);
+      if (users_dir == NULL)
+        {
+          g_warning ("%s", error->message);
+          g_error_free (error);
+        }
+      else
+        {
+          while ((entry_name = g_dir_read_name (users_dir)))
+            {
+              gchar *user_hash_filename;
+              gchar *user_dname_filename;
+
+              if (strcmp (entry_name, "om") == 0)
+                continue;
+
+              if (name == NULL || (strcmp (name, entry_name) == 0))
+                {
+                  user_hash_filename =
+                    g_build_filename (directory, entry_name, "auth", "hash",
+                                      NULL);
+                  user_dname_filename =
+                    g_build_filename (directory, entry_name, "auth", "dname",
+                                      NULL);
+                  if (g_file_test (user_hash_filename, G_FILE_TEST_EXISTS))
+                    {
+                      users =
+                        g_slist_insert_sorted (users,
+                                               (gpointer) g_strdup (entry_name),
+                                               (GCompareFunc) (ascending ?
+                                                               strcmp :
+                                                               strcmp_desc));
+                    }
+                  else
+                    if (g_file_test (user_dname_filename, G_FILE_TEST_EXISTS))
+                    {
+                      users =
+                        g_slist_insert_sorted (users,
+                                               (gpointer) g_strdup (entry_name),
+                                               (GCompareFunc) (ascending ?
+                                                               strcmp :
+                                                               strcmp_desc));
+                    }
+                  g_free (user_hash_filename);
+                  g_free (user_dname_filename);
+                  if (name)
+                    break;
+                }
+            }
+          g_dir_close (users_dir);
+        }
+
+      return users;
+    }
+  else
+    {
+      g_warning ("Could not find %s!", directory);
+      return NULL;
+    }
+}
+
+#define RULES_HEADER "# This file is managed by the OpenVAS Administrator.\n# Any modifications must keep to the format that the Administrator expects.\n"
+
+/** @todo Move to/Use openvas-libraries/misc/openvas_auth module functionality */
+/**
+ * @brief Get access information for a user.
+ *
+ * @param[in]   name         The name of the new user.
+ * @param[out]  hosts        The hosts the user is allowed/forbidden to scan.
+ * @param[out]  hosts_allow  0 forbidden, 1 allowed, 2 all allowed, 3 custom.
+ * @param[in]   user_dir     The directory containing the user directories.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+openvas_admin_user_access (const gchar * name, gchar ** hosts, int *hosts_allow,
+                           const gchar * user_dir)
+{
+  gchar *rules_file, *rules;
+  GError *error = NULL;
+
+  assert (name != NULL);
+  assert (hosts != NULL);
+  assert (hosts_allow != NULL);
+
+  rules_file = g_build_filename (user_dir, name, "auth", "rules", NULL);
+  g_file_get_contents (rules_file, &rules, NULL, &error);
+  if (error)
+    {
+      g_warning ("%s", error->message);
+      g_error_free (error);
+      g_free (rules_file);
+      return -1;
+    }
+  g_free (rules_file);
+
+  if (strlen (rules))
+    {
+      int count, end = 0;
+
+      /* "# " ("allow " | "deny ") hosts */
+
+      count = sscanf (rules, RULES_HEADER "# allow %*[^\n]%n\n", &end);
+      if (count == 0 && end > 0)
+        {
+          *hosts =
+            g_strndup (rules + strlen (RULES_HEADER "# allow "),
+                       end - strlen (RULES_HEADER "# allow "));
+          *hosts_allow = 1;
+          g_free (rules);
+          return 0;
+        }
+
+      count = sscanf (rules, RULES_HEADER "# deny %*[^\n]%n\n", &end);
+      if (count == 0 && end > 0)
+        {
+          *hosts =
+            g_strndup (rules + strlen (RULES_HEADER "# deny "),
+                       end - strlen (RULES_HEADER "# deny "));
+          *hosts_allow = 0;
+          g_free (rules);
+          return 0;
+        }
+
+      if (strcmp (RULES_HEADER, rules) == 0)
+        {
+          *hosts = NULL;
+          *hosts_allow = 2;
+          g_free (rules);
+          return 0;
+        }
+
+      /* Failed to parse content. */
+      *hosts = NULL;
+      *hosts_allow = 3;
+      g_free (rules);
+      return 0;
+    }
+
+  *hosts = NULL;
+  *hosts_allow = 2;
+  g_free (rules);
+  return 0;
+}
+
+/**
+ * @brief Produce an stripped-down xml representation of a keyfile.
+ *
+ * For
+ * @code
+ * [first group]
+ * # this comment will be lost
+ * weather=good
+ * example=bad
+ * [empty group]
+ * @endcode
+ * the output will look like
+ * @code
+ * <group name="first group">
+ * <auth_conf_setting key="weather" value="good"/>
+ * <auth_conf_setting key="example" value="bad"/>
+ * </group>
+ * <group name="empty group">
+ * </group>
+ * @endcode
+ * .
+ *
+ * @param[in]  filename  Keyfile to read.
+ *
+ * @return NULL in case of any error, otherwise xml representation of keyfile
+ *         (free with g_free).
+ */
+gchar *
+keyfile_to_auth_conf_settings_xml (const gchar * filename)
+{
+  GKeyFile *key_file = g_key_file_new ();
+  GString *response = NULL;
+  gchar **groups = NULL;
+  gchar **group = NULL;
+
+  if (g_key_file_load_from_file (key_file, filename, G_KEY_FILE_NONE, NULL)
+      == FALSE)
+    {
+      g_key_file_free (key_file);
+      return NULL;
+    }
+
+  response = g_string_new ("");
+
+  groups = g_key_file_get_groups (key_file, NULL);
+
+  group = groups;
+  while (*group != NULL)
+    {
+      gchar **keys = g_key_file_get_keys (key_file, *group, NULL, NULL);
+      gchar **key = keys;
+      g_string_append_printf (response, "<group name=\"%s\">\n", *group);
+      while (*key != NULL)
+        {
+          gchar *value = g_key_file_get_value (key_file, *group, *key, NULL);
+          if (value)
+            g_string_append_printf (response,
+                                    "<auth_conf_setting key=\"%s\" value=\"%s\"/>",
+                                    *key, value);
+          g_free (value);
+          key++;
+        }
+      g_strfreev (keys);
+      g_string_append (response, "</group>");
+      group++;
+    }
+
+  g_strfreev (groups);
+  g_key_file_free (key_file);
+
+  return g_string_free (response, FALSE);
 }
 
 

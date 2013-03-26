@@ -2822,6 +2822,17 @@ int
 manage_set_setting (const gchar *, const gchar *, const gchar *, gchar **);
 
 
+/* Users. */
+
+gchar *keyfile_to_auth_conf_settings_xml (const gchar *);
+
+GSList *
+openvas_admin_list_users (const gchar *, int, const gchar *);
+
+int
+openvas_admin_user_access (const gchar *, gchar **, int *, const gchar *);
+
+
 /* Wizards. */
 
 int

@@ -1,3 +1,23 @@
+2013-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add DESCRIBE_AUTH and GET_USERS to OMP.  These are direct copies from
+	OAP in Administrator with some slight changes to fit in Manager, mostly
+	formatting.
+
+	* src/manage.c (strcmp_desc, openvas_admin_list_users): New functions.
+	(RULES_HEADER): New define.
+	(openvas_admin_user_access, keyfile_to_auth_conf_settings_xml): New
+	functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_commands, client_state_t): Add new commands.
+	(get_users_data_t): New type.
+	(get_users_data_reset): New function.
+	(get_users_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Handle new
+	commands.
+
 2013-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (PERMISSION_ITERATOR_FILTER_COLUMNS): Match columns
