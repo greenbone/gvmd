@@ -1,3 +1,18 @@
+2013-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add groups to CREATE_USER.
+
+	* src/manage_sql.c (openvas_admin_add_user): Add groups args.  Add user
+	to given groups.  Add user to database.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (client_state_t): Add CREATE_USER group states.
+	(create_user_data_t): Add groups
+	(create_user_data_reset): Free groups.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	CREATE_USER groups.
+
 2013-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add CREATE_USER to OMP.  This is a direct copy from OAP in Administrator

@@ -1555,6 +1555,7 @@ create_task_data_reset (create_task_data_t *data)
 typedef struct
 {
   int sort_order;
+  array_t *groups;      ///< IDs of groups.
   char *hosts;
   int hosts_allow;
   char *name;
@@ -1572,6 +1573,7 @@ typedef struct
 static void
 create_user_data_reset (create_user_data_t * data)
 {
+  array_free (data->groups);
   g_free (data->name);
   g_free (data->password);
   g_free (data->role);
@@ -4433,6 +4435,8 @@ typedef enum
   CLIENT_CREATE_TASK_SLAVE,
   CLIENT_CREATE_TASK_TARGET,
   CLIENT_CREATE_USER,
+  CLIENT_CREATE_USER_GROUPS,
+  CLIENT_CREATE_USER_GROUPS_GROUP,
   CLIENT_CREATE_USER_HOSTS,
   CLIENT_CREATE_USER_NAME,
   CLIENT_CREATE_USER_PASSWORD,
@@ -5405,7 +5409,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_CREATE_TASK);
           }
         else if (strcasecmp ("CREATE_USER", element_name) == 0)
-          set_client_state (CLIENT_CREATE_USER);
+          {
+            set_client_state (CLIENT_CREATE_USER);
+            create_user_data->groups = make_array ();
+          }
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
           {
             const gchar* attribute;
@@ -7881,7 +7888,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("create_task");
 
       case CLIENT_CREATE_USER:
-        if (strcasecmp ("HOSTS", element_name) == 0)
+        if (strcasecmp ("GROUPS", element_name) == 0)
+          set_client_state (CLIENT_CREATE_USER_GROUPS);
+        else if (strcasecmp ("HOSTS", element_name) == 0)
           {
             const gchar *attribute;
             if (find_attribute
@@ -7916,6 +7925,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          "Error");
           }
         break;
+
+      case CLIENT_CREATE_USER_GROUPS:
+        if (strcasecmp ("GROUP", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values, "id",
+                                &attribute))
+              array_add (create_user_data->groups, g_strdup (attribute));
+            set_client_state (CLIENT_CREATE_USER_GROUPS_GROUP);
+          }
+        ELSE_ERROR ("create_user");
+
       case CLIENT_CREATE_USER_SOURCES:
         if (strcasecmp ("SOURCE", element_name) == 0)
           set_client_state (CLIENT_CREATE_USER_SOURCES_SOURCE);
@@ -16944,6 +16965,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_USER:
         {
           gchar *errdesc;
+          gchar *fail_group_id;
 
           assert (strcasecmp ("CREATE_USER", element_name) == 0);
 
@@ -16959,6 +16981,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       create_user_data->role ? create_user_data->role : "User",
                       create_user_data->hosts, create_user_data->hosts_allow,
                       OPENVAS_USERS_DIR, create_user_data->sources,
+                      create_user_data->groups, &fail_group_id,
                       &errdesc))
               {
               case 0:
@@ -16966,6 +16989,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_log ("event user", G_LOG_LEVEL_MESSAGE,
                        "User %s with role %s has been created",
                        create_user_data->name, create_user_data->role);
+                break;
+              case 1:
+                if (send_find_error_to_client
+                     ("create_user",
+                      "group",
+                      fail_group_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                       "Task could not be created");
                 break;
               case -2:
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
@@ -16989,6 +17026,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           g_free (errdesc);
           break;
         }
+      CLOSE (CLIENT_CREATE_USER, GROUPS);
+      CLOSE (CLIENT_CREATE_USER_GROUPS, GROUP);
       case CLIENT_CREATE_USER_HOSTS:
         assert (strcasecmp ("HOSTS", element_name) == 0);
         set_client_state (CLIENT_CREATE_USER);

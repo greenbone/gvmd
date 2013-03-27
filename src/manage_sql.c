@@ -49213,6 +49213,8 @@ DEF_ACCESS (all_info_iterator_extra, GET_ITERATOR_COLUMN_COUNT + 1);
  * @param[in]  hosts_allow  Whether hosts is allow or forbid.
  * @param[in]  directory    The directory containing the user directories.  It
  *                          will be created if it does not exist already.
+ * @param[in]  groups       Groups.
+ * @param[out] group_id_return  ID of group on "failed to find" error.
  * @param[out] r_errdesc    If not NULL the address of a variable to receive
  *                          a malloced string with the error description.  Will
  *                          always be set to NULL on success.
@@ -49225,6 +49227,7 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
                         const gchar * role, const gchar * hosts,
                         int hosts_allow, const gchar * directory,
                         const array_t * allowed_methods,
+                        array_t *groups, gchar **group_id_return,
                         gchar **r_errdesc)
 {
   char *errstr;
@@ -49274,17 +49277,22 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
   if (g_file_test (directory, G_FILE_TEST_IS_DIR))
     {
       GError *error = NULL;
-      gchar *user_dir_name, *user_auth_dir_name;
+      gchar *user_dir_name, *user_auth_dir_name, *quoted_name;
       gchar *user_hash_file_name, *hashes_out, *uuid_file_name, *contents;
       char *uuid;
+      int index;
+      user_t user;
 
       user_dir_name = g_build_filename (directory, name, NULL);
+
+      sql ("BEGIN IMMEDIATE;");
 
       if (g_file_test (user_dir_name, G_FILE_TEST_EXISTS)
           && g_file_test (user_dir_name, G_FILE_TEST_IS_DIR))
         {
           g_warning ("User %s already exists!", name);
           g_free (user_dir_name);
+          sql ("ROLLBACK;");
           return -2;
         }
 
@@ -49295,6 +49303,7 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
           g_warning ("Could not create %s!", user_dir_name);
           g_warning ("Failed to set up user directories for user %s", name);
           g_free (user_dir_name);
+          sql ("ROLLBACK;");
           return -1;
         }
 
@@ -49310,6 +49319,7 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
           g_warning ("Failed to set up user directories for user %s", name);
           g_free (user_dir_name);
           g_free (user_auth_dir_name);
+          sql ("ROLLBACK;");
           return -1;
         }
 
@@ -49320,11 +49330,11 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
         {
           g_free (user_dir_name);
           g_free (user_auth_dir_name);
+          sql ("ROLLBACK;");
           return -1;
         }
 
       contents = g_strdup_printf ("%s\n", uuid);
-      free (uuid);
 
       uuid_file_name = g_build_filename (user_dir_name, "uuid", NULL);
 
@@ -49339,6 +49349,8 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
           g_free (uuid_file_name);
           g_free (user_dir_name);
           g_free (user_auth_dir_name);
+          free (uuid);
+          sql ("ROLLBACK;");
           return -1;
         }
       g_free (contents);
@@ -49359,6 +49371,8 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
           g_free (user_dir_name);
           g_free (user_auth_dir_name);
           g_free (user_hash_file_name);
+          free (uuid);
+          sql ("ROLLBACK;");
           return -1;
         }
       g_chmod (user_hash_file_name, 0600);
@@ -49374,6 +49388,8 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
             g_warning ("Could not remove %s while trying to revert changes!",
                        user_dir_name);
           g_free (user_dir_name);
+          free (uuid);
+          sql ("ROLLBACK;");
           return -1;
         }
 
@@ -49384,6 +49400,8 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
           if (openvas_file_remove_recurse (user_dir_name))
             g_warning ("Could not remove %s while trying to revert changes!",
                        user_dir_name);
+          free (uuid);
+          sql ("ROLLBACK;");
           return -1;
         }
 
@@ -49392,10 +49410,59 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
            if (openvas_auth_user_set_allowed_methods (name, allowed_methods) != 1)
              {
                g_error ("Could not set allowed authentication methods for a user");
+               free (uuid);
+               sql ("ROLLBACK;");
                return -1;
              }
         }
 
+      /* Add the user to the database. */
+
+      quoted_name = sql_quote (name);
+      sql ("INSERT INTO users (uuid, name) VALUES ('%s', '%s');",
+           uuid,
+           quoted_name);
+      free (uuid);
+      g_free (quoted_name);
+      user = sqlite3_last_insert_rowid (task_db);
+
+      /* Add the user to any given groups. */
+
+      index = 0;
+      while (groups && (index < groups->len))
+        {
+          gchar *group_id;
+          group_t group;
+
+          group_id = (gchar*) g_ptr_array_index (groups, index);
+          if (strcmp (group_id, "0") == 0)
+            {
+              index++;
+              continue;
+            }
+
+          if (find_group (group_id, &group))
+            {
+              sql ("ROLLBACK;");
+              return -1;
+            }
+
+          if (group == 0)
+            {
+              sql ("ROLLBACK;");
+              if (group_id_return) *group_id_return = group_id;
+              return 1;
+            }
+
+          sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",
+               group,
+               user);
+
+          index++;
+        }
+
+
+      sql ("COMMIT;");
       return 0;
     }
 
@@ -49414,6 +49481,7 @@ init_user_group_iterator (iterator_t *iterator, const char *username)
 {
   gchar *quoted_username;
   quoted_username = sql_quote (username);
+  // FIX user name is ambiguous in db.  must get uuid from fs.
   init_iterator (iterator,
                  "SELECT DISTINCT ROWID, uuid, name FROM groups"
                  " WHERE ROWID IN (SELECT `group` FROM group_users"

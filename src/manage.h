@@ -2844,7 +2844,7 @@ user_group_iterator_name (iterator_t*);
 int
 openvas_admin_add_user (const gchar *, const gchar *, const gchar *,
                         const gchar *, int, const gchar *, const array_t *,
-                        gchar **);
+                        array_t *, gchar **, gchar **);
 
 
 /* Wizards. */
