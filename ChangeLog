@@ -1,3 +1,10 @@
+2013-03-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (lsc_credential_iterator_rpm)
+	(lsc_credential_iterator_deb, lsc_credential_iterator_exe): Change
+	creation of packages to use login instead of name, which caused
+	problems, for example when the credential name contained whitespaces.
+
 2013-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add groups to CREATE_USER.
