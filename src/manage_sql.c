@@ -49486,7 +49486,8 @@ init_user_group_iterator (iterator_t *iterator, const char *username)
                  "SELECT DISTINCT ROWID, uuid, name FROM groups"
                  " WHERE ROWID IN (SELECT `group` FROM group_users"
                  "                 WHERE user = (SELECT ROWID FROM users"
-                 "                               WHERE users.name = '%s'));",
+                 "                               WHERE users.name = '%s'))"
+                 " ORDER by name;",
                  quoted_username);
   g_free (quoted_username);
 }
