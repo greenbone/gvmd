@@ -17028,22 +17028,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_CREATE_USER, GROUPS);
       CLOSE (CLIENT_CREATE_USER_GROUPS, GROUP);
-      case CLIENT_CREATE_USER_HOSTS:
-        assert (strcasecmp ("HOSTS", element_name) == 0);
-        set_client_state (CLIENT_CREATE_USER);
-        break;
-      case CLIENT_CREATE_USER_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_USER);
-        break;
-      case CLIENT_CREATE_USER_PASSWORD:
-        assert (strcasecmp ("PASSWORD", element_name) == 0);
-        set_client_state (CLIENT_CREATE_USER);
-        break;
-      case CLIENT_CREATE_USER_ROLE:
-        assert (strcasecmp ("ROLE", element_name) == 0);
-        set_client_state (CLIENT_CREATE_USER);
-        break;
+      CLOSE (CLIENT_CREATE_USER, HOSTS);
+      CLOSE (CLIENT_CREATE_USER, NAME);
+      CLOSE (CLIENT_CREATE_USER, PASSWORD);
+      CLOSE (CLIENT_CREATE_USER, ROLE);
       case CLIENT_CREATE_USER_SOURCES:
         assert (strcasecmp ("SOURCES", element_name) == 0);
         array_terminate (create_user_data->sources);
