@@ -126,9 +126,19 @@ typedef long long int user_t;
 #define CONFIG_UUID_EMPTY "085569ce-73ed-11df-83c3-002264764cea"
 
 /**
+ * @brief UUID of 'Discovery' config.
+ */
+#define CONFIG_UUID_DISCOVERY "8715c877-47a0-438d-98a3-27c7a6ab2196"
+
+/**
  * @brief UUID of 'All' NVT selector.
  */
 #define MANAGE_NVT_SELECTOR_UUID_ALL "54b45713-d4f4-4435-b20d-304c175ed8c5"
+
+/**
+ * @brief UUID of 'Discovery' NVT selector.
+ */
+#define MANAGE_NVT_SELECTOR_UUID_DISCOVERY "0d9a2738-8fe2-4e22-8f26-bb886179e759"
 
 /**
  * @brief UUID of 'OpenVAS Default' port list.
@@ -253,6 +263,9 @@ make_port_ranges_all_tcp_nmap_5_51_top_1000 (port_list_t);
 void
 make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
 
+void
+make_config_discovery (char *const selector);
+
 
 /* Static headers. */
 
@@ -270,9 +283,6 @@ nvt_selector_add (const char*, const char*, const char*, int);
 
 static int
 nvt_selector_families_growing (const char*);
-
-static int
-nvt_selector_family_count (const char*, int);
 
 static int
 nvt_selector_nvts_growing (const char*);
@@ -15127,6 +15137,22 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       /* Setup preferences for the config. */
       config = sqlite3_last_insert_rowid (task_db);
       setup_full_config_prefs (config, 1, 1, 0);
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM configs"
+               " WHERE name = 'Discovery';")
+      == 0)
+    {
+      sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
+           " family_count, nvt_count, nvts_growing, families_growing,"
+           " creation_time, modification_time)"
+           " VALUES ('" CONFIG_UUID_DISCOVERY "', 'Discovery', NULL, '"
+           MANAGE_NVT_SELECTOR_UUID_DISCOVERY "',"
+           " 'Network Discovery scan configuration.',"
+           " 0, 0, 0, 0, now (), now ());");
+
+      make_config_discovery (MANAGE_NVT_SELECTOR_UUID_DISCOVERY);
     }
 
   /* Ensure the predefined port lists exists. */
@@ -33727,7 +33753,7 @@ manage_complete_nvt_cache_update (int mode)
  *
  * @return The number of families selected by an NVT selector.
  */
-static int
+int
 nvt_selector_family_count (const char* quoted_selector, int families_growing)
 {
   if (families_growing)

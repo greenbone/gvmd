@@ -1,3 +1,18 @@
+2013-03-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add default "Discovery" scan configuration.
+
+	* src/manage_sql.c: Add make_config_discovery prototype.
+	(CONFIG_UUID_DISCOVERY, MANAGE_NVT_SELECTOR_DISCOVERY): New defines.
+	(init_manage): Create Discovery scan configuration if not found.
+	(nvt_selector_nvt_count): Remove static qualifier.
+
+	* src/manage.h: Add nvt_selector_family_count prototype.
+
+	* src/manage_config_discovery.c: New file. Contains function to create
+	Discovery Scan configuration.
+
+	* src/CMakeLists.txt: Add manage_config_discovery.c
 2013-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Use CLOSE for CREATE_USER

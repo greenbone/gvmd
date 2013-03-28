@@ -1437,6 +1437,9 @@ int
 nvt_selector_family_growing (const char *, const char *, int);
 
 int
+nvt_selector_family_count (const char*, int);
+
+int
 nvt_selector_nvt_count (const char *, const char *, int);
 
 void
