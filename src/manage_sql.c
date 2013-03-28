@@ -264,7 +264,7 @@ void
 make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
 
 void
-make_config_discovery (char *const selector);
+make_config_discovery (char *const uuid, char *const selector);
 
 
 /* Static headers. */
@@ -15141,7 +15141,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM configs"
-               " WHERE name = 'Discovery';")
+               " WHERE uuid = '%s';", CONFIG_UUID_DISCOVERY)
       == 0)
     {
       sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
@@ -15152,7 +15152,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " 'Network Discovery scan configuration.',"
            " 0, 0, 0, 0, now (), now ());");
 
-      make_config_discovery (MANAGE_NVT_SELECTOR_UUID_DISCOVERY);
+      make_config_discovery (CONFIG_UUID_DISCOVERY,
+                             MANAGE_NVT_SELECTOR_UUID_DISCOVERY);
     }
 
   /* Ensure the predefined port lists exists. */
@@ -32154,7 +32155,9 @@ config_in_use (config_t config)
       || config == CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE
       || sql_int (0, 0,
                   "SELECT count(*) FROM configs WHERE ROWID = %i AND "
-                  "(name = 'empty' OR name = 'Discovery');", config))
+                  "(name = 'empty'"
+                  " OR uuid = '" CONFIG_UUID_DISCOVERY "');",
+                  config))
     return 1;
 
   return sql_int (0, 0,

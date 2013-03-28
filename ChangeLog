@@ -1,5 +1,14 @@
 2013-03-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_config_discovery (make_config_discovery): Add uuid function
+	parameter. Use it instead of the fixed 'Discovery' name value.
+
+	* src/manage_sql.c: Adjust make_config_discovery prototype.
+	(init_manage, config_in_use): Check for default Discovery config with
+	uuid instead of name.
+
+2013-03-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/openvasmd.c: Include misc/proctitle.h
 	(main.c): Set process title when initializing.
 
