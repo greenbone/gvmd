@@ -1,5 +1,10 @@
 2013-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (escalate_1): Include note and override details, else
+	text element is truncated.
+
+2013-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (openvas_admin_list_users): Add uuid arg.  Return
 	matching user if uuid given, as for name.
 

@@ -12866,9 +12866,9 @@ escalate_1 (alert_t alert, task_t task, event_t event,
                      1,       /* Auto FP. */
                      0,       /* Show closed CVEs. */
                      1,       /* Notes. */
-                     0,       /* Notes details. */
+                     1,       /* Notes details. */
                      1,       /* Overrides. */
-                     0,       /* Overrides details. */
+                     1,       /* Overrides details. */
                      0,       /* First results. */
                      /* Max results. */
                      (method == ALERT_METHOD_EMAIL ? 1000 : -1));
