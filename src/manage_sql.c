@@ -13673,6 +13673,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 
   if (sqlite3_create_function (task_db,
+                               "user_uuid",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_user_uuid,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create user_uuid", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
                                "now",
                                0,               /* Number of args. */
                                SQLITE_UTF8,
@@ -49513,12 +49527,12 @@ init_user_group_iterator (iterator_t *iterator, const char *username)
 {
   gchar *quoted_username;
   quoted_username = sql_quote (username);
-  // FIX user name is ambiguous in db.  must get uuid from fs.
   init_iterator (iterator,
                  "SELECT DISTINCT ROWID, uuid, name FROM groups"
                  " WHERE ROWID IN (SELECT `group` FROM group_users"
                  "                 WHERE user = (SELECT ROWID FROM users"
-                 "                               WHERE users.name = '%s'))"
+                 "                               WHERE users.uuid"
+                 "                                     = user_uuid ('%s')))"
                  " ORDER by name;",
                  quoted_username);
   g_free (quoted_username);
