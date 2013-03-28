@@ -1,3 +1,8 @@
+2013-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Cleanup report_hosts iterator in
+	assets case, otherwise the db is closed with open statements.
+
 2013-03-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_config_discovery (make_config_discovery): Add uuid function
@@ -32,6 +37,7 @@
 	Discovery Scan configuration.
 
 	* src/CMakeLists.txt: Add manage_config_discovery.c
+
 2013-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Use CLOSE for CREATE_USER
