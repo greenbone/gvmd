@@ -2610,7 +2610,8 @@ get_targets_data_reset (get_targets_data_t *data)
  */
 typedef struct
 {
-  gchar *name;
+  get_data_t get;    ///< Get args.
+  gchar *name;       ///< User name.
   int sort_order;
 } get_users_data_t;
 
@@ -2620,6 +2621,7 @@ typedef struct
 static void
 get_users_data_reset (get_users_data_t * data)
 {
+  get_data_reset (&data->get);
   g_free (data->name);
   memset (data, 0, sizeof (get_users_data_t));
 }
@@ -6181,6 +6183,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_USERS", element_name) == 0)
           {
             const gchar *attribute;
+            get_data_parse_attributes (&get_users_data->get, "user",
+                                       attribute_names,
+                                       attribute_values);
             if (find_attribute
                 (attribute_names, attribute_values, "name", &attribute))
               openvas_append_string (&get_users_data->name, attribute);
@@ -20966,11 +20971,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           user = users =
             openvas_admin_list_users (OPENVAS_USERS_DIR,
                                       get_users_data->sort_order,
-                                      get_users_data->name);
-          if (get_users_data->name && users == NULL)
+                                      get_users_data->name,
+                                      get_users_data->get.id);
+          if ((get_users_data->name || get_users_data->get.id)
+              && users == NULL)
             {
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                      ("get_users", "Failed to find user"));
+                                       ("get_users", "Failed to find user"));
               get_users_data_reset (get_users_data);
               set_client_state (CLIENT_AUTHENTIC);
               break;
@@ -20993,10 +21000,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 abort ();
               methods = openvas_auth_user_methods (user->data);
               sources = openvas_string_list_to_xml (methods, "sources", "source");
-              SENDF_TO_CLIENT_OR_FAIL ("<user>"
+              SENDF_TO_CLIENT_OR_FAIL ("<user id=\"%s\">"
                                        "<name>%s</name>"
                                        "<role>%s</role>"
                                        "<hosts allow=\"%i\">%s</hosts>",
+                                       openvas_user_uuid (user->data),
                                        (gchar *) user->data,
                                        openvas_is_user_admin (user->data)
                                          ? "Admin"

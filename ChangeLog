@@ -1,5 +1,18 @@
 2013-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (openvas_admin_list_users): Add uuid arg.  Return
+	matching user if uuid given, as for name.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (get_users_data_t): Add get field.  Doc name.
+	(get_users_data_reset): Reset get.
+	(omp_xml_handle_start_element): Parse GET_USERS GET attributes.
+	(omp_xml_handle_end_element): In CLIENT_GET_USERS find user by ID if
+	given, and add USER/@id.
+
+2013-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage_process): Add SQL function user_uuid.
 	(init_user_group_iterator): Get the user via the UUID instead of via the
 	name, because the name is ambiguous in the db.

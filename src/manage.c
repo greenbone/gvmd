@@ -4952,6 +4952,7 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
  * @param[in]  directory  The complete name of the directory.
  * @param[in]  ascending  Ascending order if true, descending order if 0.
  * @param[in]  name       Name of single user to list.  NULL for all users.
+ * @param[in]  uuid       UUID of single user to list.  NULL for all users.
  *
  * @return A pointer to a GSList containing the names of the users or NULL if
  *         the directory could not be opened, did not exist or was not a directory.
@@ -4959,8 +4960,8 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
  *         element of the list should be freed with g_free.
  */
 GSList *
-openvas_admin_list_users (const gchar * directory, int ascending,
-                          const gchar * name)
+openvas_admin_list_users (const gchar *directory, int ascending,
+                          const gchar *name, const char *uuid)
 {
   GSList *users = NULL;
 
@@ -4981,13 +4982,16 @@ openvas_admin_list_users (const gchar * directory, int ascending,
         {
           while ((entry_name = g_dir_read_name (users_dir)))
             {
-              gchar *user_hash_filename;
-              gchar *user_dname_filename;
+              gchar *user_hash_filename, *user_dname_filename, *entry_uuid;
 
               if (strcmp (entry_name, "om") == 0)
                 continue;
 
-              if (name == NULL || (strcmp (name, entry_name) == 0))
+              entry_uuid = openvas_user_uuid (entry_name);
+
+              if ((name == NULL && uuid == NULL)
+                  || (name && (strcmp (name, entry_name) == 0))
+                  || (entry_uuid && uuid && (strcmp (uuid, entry_uuid) == 0)))
                 {
                   user_hash_filename =
                     g_build_filename (directory, entry_name, "auth", "hash",
@@ -5016,9 +5020,9 @@ openvas_admin_list_users (const gchar * directory, int ascending,
                     }
                   g_free (user_hash_filename);
                   g_free (user_dname_filename);
-                  if (name)
-                    break;
                 }
+
+              g_free (entry_uuid);
             }
           g_dir_close (users_dir);
         }
