@@ -1,5 +1,10 @@
 2013-03-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (delete_config, config_in_use): Check for 'Discovery'
+	predefined scan configuration too.
+
+2013-03-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Add default "Discovery" scan configuration.
 
 	* src/manage_sql.c: Add make_config_discovery prototype.

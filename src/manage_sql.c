@@ -31784,6 +31784,7 @@ delete_config (const char *config_id, int ultimate)
       || (strcmp (config_id, CONFIG_UUID_FULL_AND_FAST_ULTIMATE) == 0)
       || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP) == 0)
       || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE) == 0)
+      || (strcmp (config_id, CONFIG_UUID_DISCOVERY) == 0)
       || (strcmp (config_id, CONFIG_UUID_EMPTY) == 0))
     return 1;
 
@@ -32151,8 +32152,9 @@ config_in_use (config_t config)
       || config == CONFIG_ID_FULL_AND_FAST_ULTIMATE
       || config == CONFIG_ID_FULL_AND_VERY_DEEP
       || config == CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE
-      || config == sql_int (0, 0,
-                            "SELECT ROWID FROM configs WHERE name = 'empty';"))
+      || sql_int (0, 0,
+                  "SELECT count(*) FROM configs WHERE ROWID = %i AND "
+                  "(name = 'empty' OR name = 'Discovery');", config))
     return 1;
 
   return sql_int (0, 0,
