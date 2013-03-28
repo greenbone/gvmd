@@ -106,6 +106,7 @@
 
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_server.h>
+#include <openvas/misc/proctitle.h>
 #include <openvas/base/pidfile.h>
 #include <openvas/base/pwpolicy.h>
 
@@ -1106,7 +1107,7 @@ serve_and_schedule ()
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */
 int
-main (int argc, char** argv)
+main (int argc, char** argv, char **envp)
 {
   int manager_port, manager_port_2;
   gchar *gnupg_home;
@@ -1369,6 +1370,10 @@ main (int argc, char** argv)
     }
 
   /* Run the standard manager. */
+
+  /* Set process title. */
+  initsetproctitle (argc, argv, envp);
+  setproctitle ("openvasmd: Initializing.");
 
   if (manager_port_string)
     {
@@ -1726,6 +1731,9 @@ main (int argc, char** argv)
   /* Initialise the process for manage_schedule. */
 
   init_manage_process (0, database);
+
+  /* Reset process title. */
+  setproctitle ("openvasmd");
 
   /* Enter the main forever-loop. */
 

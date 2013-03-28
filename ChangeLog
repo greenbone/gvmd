@@ -1,5 +1,10 @@
 2013-03-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/openvasmd.c: Include misc/proctitle.h
+	(main.c): Set process title when initializing.
+
+2013-03-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (delete_config, config_in_use): Check for 'Discovery'
 	predefined scan configuration too.
 
