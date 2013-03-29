@@ -1,3 +1,8 @@
+2013-03-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (init_manage, config_in_use): Check empty scan config
+	by uuid instead of by name.
+
 2013-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (escalate_1): Include note and override details, else

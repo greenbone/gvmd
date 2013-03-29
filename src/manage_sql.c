@@ -15136,7 +15136,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM configs"
-               " WHERE name = 'empty';")
+               " WHERE uuid = '" CONFIG_UUID_EMPTY "';")
       == 0)
     {
       config_t config;
@@ -32170,7 +32170,7 @@ config_in_use (config_t config)
       || config == CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE
       || sql_int (0, 0,
                   "SELECT count(*) FROM configs WHERE ROWID = %i AND "
-                  "(name = 'empty'"
+                  "(uuid = '" CONFIG_UUID_EMPTY "'"
                   " OR uuid = '" CONFIG_UUID_DISCOVERY "');",
                   config))
     return 1;
