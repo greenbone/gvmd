@@ -24038,6 +24038,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               PRINT (out,
                      "</host>");
             }
+          cleanup_iterator (&report_hosts);
 
           if (host)
             break;
