@@ -1,5 +1,14 @@
 2013-03-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_ranges_all_tcp_nmap_5_51_top_100.c,
+	src/manage_ranges_all_tcp_nmap_5_51_top_1000.c,
+	src/manage_ranges_iana_tcp_2012.c,
+	src/manage_ranges_iana_tcp_udp_2012.c,
+	src/manage_ranges_nmap_5_51_top_2000_top_100.c: Wrap the insertions
+	bulks in sql transactions.
+
+2013-03-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (init_manage, config_in_use): Check empty scan config
 	by uuid instead of by name.
 

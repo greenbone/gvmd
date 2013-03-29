@@ -50,6 +50,8 @@
 void
 make_port_ranges_all_tcp_nmap_5_51_top_1000 (port_list_t list)
 {
+  sql ("BEGIN TRANSACTION");
+
   RANGE (PORT_PROTOCOL_TCP, 1, 65535);
 
   RANGE (PORT_PROTOCOL_UDP, 2, 3);
@@ -836,4 +838,6 @@ make_port_ranges_all_tcp_nmap_5_51_top_1000 (port_list_t list)
   RANGE (PORT_PROTOCOL_UDP, 64513, 64513);
   RANGE (PORT_PROTOCOL_UDP, 64590, 64590);
   RANGE (PORT_PROTOCOL_UDP, 64727, 64727);
+
+  sql ("END TRANSACTION");
 }
