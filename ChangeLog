@@ -1,3 +1,34 @@
+2013-04-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add CREATE_USER/COPY for cloning, including new user columns.  Hence
+	increase database version to 77.  Add database migration from version 76
+	to 77.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 77.
+
+	* src/manage_sql.c (user_t): Remove.  Now in manage.h.
+	(copy_resource): Use underscore instead of space in name for users.
+	(create_tables): Add standard columns.  Add placeholder columns for info
+	stored on disk.
+	(migrate_76_to_77): New function.
+	(migrators): Add migrate_76_to_77.
+	(copy_user, user_uuid): New functions.
+
+	* src/manage.h: Add headers accordingly.
+	(user_t): New type.  From manage_sql.c.
+
+	* src/omp.c (create_user_data_t, client_state_t): Add copy field.
+	(create_user_data_reset): Free copy.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add COPY to CREATE_USER.
+
+	* src/sql.c (sql_uniquify): Use underscore instead of space in name for
+	users.
+
+	* doc/db_postgres.sql (users): Add new columns.
+
+	* doc/db.png: Update from source.
+
 2013-03-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_ranges_all_tcp_nmap_5_51_top_100.c,

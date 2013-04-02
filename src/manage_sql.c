@@ -74,11 +74,6 @@
 /* Internal types and preprocessor definitions. */
 
 /**
- * @brief A user.
- */
-typedef long long int user_t;
-
-/**
  * @brief Database ROWID of 'Full and fast' config.
  */
 #define CONFIG_ID_FULL_AND_FAST 1
@@ -3262,8 +3257,10 @@ copy_resource (const char *type, const char *name, const char *comment,
   /* Copy the existing resource. */
 
   if (make_name_unique)
-    uniquify = g_strdup_printf ("uniquify ('%s', name, %llu, ' Clone')",
-                                type, owner);
+    uniquify = g_strdup_printf ("uniquify ('%s', name, %llu, '%cClone')",
+                                type,
+                                owner,
+                                strcmp (type, "user") ? ' ' : '_');
   else
     uniquify = g_strdup ("name");
   if (named && comment && strlen (comment))
@@ -3952,7 +3949,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS task_alerts (id INTEGER PRIMARY KEY, task INTEGER, alert INTEGER, alert_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_preferences (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER, upload_result_count INTEGER, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password, timezone);");
+  sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, password, timezone, role, hosts, hosts_allow, creation_time, modification_time);");
 
   sql ("ANALYZE;");
 }
@@ -9303,6 +9300,54 @@ migrate_75_to_76 ()
 }
 
 /**
+ * @brief Migrate the database from version 76 to version 77.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_76_to_77 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 76. */
+
+  if (manage_db_version () != 76)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Users got standard columns, and columns to mirror info stored on disk. */
+
+  sql ("ALTER TABLE users ADD COLUMN owner;");
+  sql ("ALTER TABLE users ADD COLUMN comment;");
+  sql ("ALTER TABLE users ADD COLUMN creation_time;");
+  sql ("ALTER TABLE users ADD COLUMN modification_time;");
+  sql ("ALTER TABLE users ADD COLUMN role;");
+  sql ("ALTER TABLE users ADD COLUMN hosts;");
+  sql ("ALTER TABLE users ADD COLUMN hosts_allow;");
+  sql ("UPDATE users SET"
+       " owner = NULL,"
+       " comment = '',"
+       " creation_time = 0,"
+       " modification_time = 0,"
+       /* These are temporary, and only used for clone. */
+       " role = 'User',"
+       " hosts = '',"
+       " hosts_allow = 2;");
+
+  /* Set the database version to 77. */
+
+  set_db_version (77);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9383,6 +9428,7 @@ static migrator_t database_migrators[]
     {74, migrate_73_to_74},
     {75, migrate_74_to_75},
     {76, migrate_75_to_76},
+    {77, migrate_76_to_77},
     /* End marker. */
     {-1, NULL}};
 
@@ -49514,6 +49560,78 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
 
   g_warning ("Could not access %s!", directory);
   return -1;
+}
+
+/**
+ * @brief Create a user from an existing user.
+ *
+ * @param[in]  name      Name of new user.  NULL to copy from existing.
+ * @param[in]  comment   Comment on new user.  NULL to copy from existing.
+ * @param[in]  user_id   UUID of existing user.
+ * @param[out] new_user  New user.
+ *
+ * @return 0 success, 1 user exists already, 2 failed to find existing
+ *         user, -1 error.
+ */
+int
+copy_user (const char* name, const char* comment, const char *user_id,
+           user_t* new_user)
+{
+  user_t user;
+  int ret, hosts_allow;
+  gchar *role, *hosts, *new_name;
+
+  /* TODO There are holes here, which will go away when users are only in db. */
+
+  ret = copy_resource ("user", name, comment, user_id,
+                       "password, timezone, role, hosts, hosts_allow",
+                       1, &user);
+  if (ret)
+    return ret;
+
+  if (name)
+    new_name = g_strdup (name);
+  else
+    new_name = sql_string (0, 0,
+                           "SELECT name FROM users WHERE ROWID = %llu", user);
+  role = sql_string (0, 0, "SELECT role FROM users WHERE ROWID = %llu", user);
+  hosts = sql_string (0, 0, "SELECT hosts FROM users WHERE ROWID = %llu", user);
+  hosts_allow = sql_int (0, 0,
+                         "SELECT hosts_allow FROM users WHERE ROWID = %llu",
+                         user);
+
+  ret = openvas_admin_add_user (new_name, "changeme", role, hosts, hosts_allow,
+                                OPENVAS_USERS_DIR, NULL, NULL, NULL, NULL);
+
+  // FIX handle return
+
+  // FIX add groups
+
+  if (new_user)
+    *new_user = user;
+
+  g_free (new_name);
+  g_free (role);
+  g_free (hosts);
+
+  return ret;
+}
+
+/**
+ * @brief Return the UUID of a user.
+ *
+ * Warning: this is only safe for users that are known to be in the db.
+ *
+ * @param[in]  user  User.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+user_uuid (user_t user)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM users WHERE ROWID = %llu;",
+                     user);
 }
 
 /**

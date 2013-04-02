@@ -708,7 +708,8 @@ sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
     }
 
   number = 0;
-  candidate_name = g_strdup_printf ("%s%s %i", proposed_name, suffix,
+  candidate_name = g_strdup_printf ("%s%s%c%i", proposed_name, suffix,
+                                    strcmp ((char*) type, "user") ? ' ' : '_',
                                     ++number);
   quoted_candidate_name = sql_quote (candidate_name);
 
@@ -721,7 +722,10 @@ sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
     {
       g_free (candidate_name);
       g_free (quoted_candidate_name);
-      candidate_name = g_strdup_printf ("%s%s %u", proposed_name, suffix,
+      candidate_name = g_strdup_printf ("%s%s%c%u", proposed_name, suffix,
+                                        strcmp ((char*) type, "user")
+                                          ? ' '
+                                          : '_',
                                         ++number);
       quoted_candidate_name = sql_quote (candidate_name);
     }

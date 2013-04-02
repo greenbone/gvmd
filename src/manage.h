@@ -201,6 +201,7 @@ typedef long long int port_range_t;
 typedef long long int lsc_credential_t;
 typedef long long int schedule_t;
 typedef long long int setting_t;
+typedef long long int user_t;
 
 #include <sqlite3.h>
 
@@ -2827,7 +2828,11 @@ manage_set_setting (const gchar *, const gchar *, const gchar *, gchar **);
 
 /* Users. */
 
-gchar *keyfile_to_auth_conf_settings_xml (const gchar *);
+int
+copy_user (const char*, const char*, const char*, user_t*);
+
+gchar *
+keyfile_to_auth_conf_settings_xml (const gchar *);
 
 GSList *
 openvas_admin_list_users (const gchar *, int, const gchar *, const gchar *);
@@ -2848,6 +2853,9 @@ int
 openvas_admin_add_user (const gchar *, const gchar *, const gchar *,
                         const gchar *, int, const gchar *, const array_t *,
                         array_t *, gchar **, gchar **);
+
+char*
+user_uuid (user_t);
 
 
 /* Wizards. */

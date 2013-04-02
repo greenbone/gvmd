@@ -125,9 +125,16 @@ CREATE TABLE filters_trash (
 CREATE TABLE users (
     id integer PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
+    owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
+    comment text,
     password text,
-    timezone text);
+    timezone text,
+    role text,
+    hosts text,
+    hosts_allow integer,
+    creation_time date,
+    modification_time date);
 
 CREATE TABLE nvt_selectors (
     id integer PRIMARY KEY,

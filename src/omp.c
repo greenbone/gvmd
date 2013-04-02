@@ -1554,8 +1554,9 @@ create_task_data_reset (create_task_data_t *data)
 
 typedef struct
 {
+  char *copy;             ///< UUID of resource to copy.
   int sort_order;
-  array_t *groups;      ///< IDs of groups.
+  array_t *groups;        ///< IDs of groups.
   char *hosts;
   int hosts_allow;
   char *name;
@@ -1573,6 +1574,7 @@ typedef struct
 static void
 create_user_data_reset (create_user_data_t * data)
 {
+  g_free (data->copy);
   array_free (data->groups);
   g_free (data->name);
   g_free (data->password);
@@ -4437,6 +4439,7 @@ typedef enum
   CLIENT_CREATE_TASK_SLAVE,
   CLIENT_CREATE_TASK_TARGET,
   CLIENT_CREATE_USER,
+  CLIENT_CREATE_USER_COPY,
   CLIENT_CREATE_USER_GROUPS,
   CLIENT_CREATE_USER_GROUPS_GROUP,
   CLIENT_CREATE_USER_HOSTS,
@@ -7893,7 +7896,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("create_task");
 
       case CLIENT_CREATE_USER:
-        if (strcasecmp ("GROUPS", element_name) == 0)
+        if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_USER_COPY);
+        else if (strcasecmp ("GROUPS", element_name) == 0)
           set_client_state (CLIENT_CREATE_USER_GROUPS);
         else if (strcasecmp ("HOSTS", element_name) == 0)
           {
@@ -16971,10 +16976,61 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           gchar *errdesc;
           gchar *fail_group_id;
+          user_t new_user;
 
           assert (strcasecmp ("CREATE_USER", element_name) == 0);
 
-          if (create_user_data->name == NULL
+          errdesc = NULL;
+          if (create_user_data->copy)
+            switch (copy_user (create_user_data->name,
+                               NULL,
+                               create_user_data->copy,
+                               &new_user))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = user_uuid (new_user);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_user"),
+                                             uuid);
+                    g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                           "User %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_user",
+                                      "User exists already"));
+                  g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                         "User could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_user",
+                                                 "user",
+                                                 create_user_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                         "User could not be created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_user",
+                                      "Permission denied"));
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_user"));
+                  g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                         "User could not be created");
+                  break;
+              }
+          else if (create_user_data->name == NULL
               || strlen (create_user_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
                                     ("create_user",
@@ -17031,6 +17087,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           g_free (errdesc);
           break;
         }
+      CLOSE (CLIENT_CREATE_USER, COPY);
       CLOSE (CLIENT_CREATE_USER, GROUPS);
       CLOSE (CLIENT_CREATE_USER_GROUPS, GROUP);
       CLOSE (CLIENT_CREATE_USER, HOSTS);
@@ -22384,6 +22441,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE,
               &create_task_data->preference->value);
 
+
+      APPEND (CLIENT_CREATE_USER_COPY,
+              &create_user_data->copy);
 
       APPEND (CLIENT_CREATE_USER_HOSTS,
               &create_user_data->hosts);
