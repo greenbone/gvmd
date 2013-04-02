@@ -50,6 +50,8 @@
 void
 make_port_ranges_iana_tcp_2012 (port_list_t list)
 {
+  sql ("BEGIN TRANSACTION");
+
   RANGE (PORT_PROTOCOL_TCP, 1, 80);
   RANGE (PORT_PROTOCOL_TCP, 82, 113);
   RANGE (PORT_PROTOCOL_TCP, 115, 224);
@@ -729,4 +731,6 @@ make_port_ranges_iana_tcp_2012 (port_list_t list)
   RANGE (PORT_PROTOCOL_TCP, 48128, 48129);
   RANGE (PORT_PROTOCOL_TCP, 48556, 48556);
   RANGE (PORT_PROTOCOL_TCP, 48619, 48619);
+
+  sql ("END TRANSACTION");
 }
