@@ -1,3 +1,10 @@
+2013-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/otp.c (process_otp_scanner_input): Get the length for g_convert
+	with strlen, because the strip and compress functions can change the
+	string length.  Thanks to Rodolfo Gouveia and Stefan Sperling for
+	spotting this.
+
 2013-04-03  Werner Koch  <wk@gnupg.org>
 
 	* src/ompd.c (serve_omp): Check for pending TLS records before the
