@@ -2854,6 +2854,9 @@ openvas_admin_add_user (const gchar *, const gchar *, const gchar *,
                         const gchar *, int, const gchar *, const array_t *,
                         array_t *, gchar **, gchar **);
 
+int
+delete_user (const char *, int);
+
 char*
 user_uuid (user_t);
 

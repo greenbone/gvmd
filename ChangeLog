@@ -1,3 +1,26 @@
+2013-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add DELETE_USER.  This is the same command as in Administrator, but it
+	takes a uuid parameter instead of a name.  Name parameter will follow,
+	for backward compatibility.
+
+	* src/manage_sql.c (find_user): Switch to finding by UUID like other
+	find functions.
+	(find_user_by_name): New function.  Body from old find_user.  Update
+	find_user callers to use this.
+	(openvas_admin_remove_user): New function.  From Administrator.
+	(delete_user): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_commands, client_state_t, command_data_t): Add
+	DELETE_USER entries.
+	(delete_user_data_t): New type.
+	(delete_user_data_reset): New function.
+	(delete_user_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Handle
+	DELETE_USER.
+
 2013-04-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add CREATE_USER/COPY for cloning, including new user columns.  Hence

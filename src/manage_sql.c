@@ -342,7 +342,7 @@ int
 valid_type (const char*);
 
 static gboolean
-find_user (const char *, user_t *user);
+find_user_by_name (const char *, user_t *user);
 
 int
 type_has_permissions (const char *);
@@ -352,6 +352,12 @@ find_report_with_permission (const char *, report_t *, const char *);
 
 gboolean
 find_group (const char*, group_t*);
+
+gboolean
+find_user (const char *uuid, user_t *user);
+
+static gboolean
+find_user_by_name (const char *, user_t *);
 
 
 /* Variables. */
@@ -3210,7 +3216,7 @@ copy_resource (const char *type, const char *name, const char *comment,
     }
   g_free (command);
 
-  if (find_user (current_credentials.username, &owner)
+  if (find_user_by_name (current_credentials.username, &owner)
       || owner == 0)
     {
       sql ("ROLLBACK;");
@@ -10349,7 +10355,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
       return 99;
     }
 
-  if (find_user (current_credentials.username, &owner)
+  if (find_user_by_name (current_credentials.username, &owner)
       || owner == 0)
     {
       sql ("ROLLBACK;");
@@ -17190,41 +17196,6 @@ set_task_schedule_next_time (task_t task, time_t time)
 }
 
 /**
- * @brief Find a user given a name.
- *
- * @param[in]   name  A user name.
- * @param[out]  user  User return, 0 if succesfully failed to find user.
- *
- * @return FALSE on success (including if failed to find user), TRUE on error.
- */
-static gboolean
-find_user (const char* name, user_t *user)
-{
-  gchar *quoted_name;
-  quoted_name = sql_quote (name);
-  switch (sql_int64 (user, 0, 0,
-                     "SELECT ROWID FROM users WHERE name = '%s'"
-                     " ORDER BY ROWID DESC;",
-                     quoted_name))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *user = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_name);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_name);
-  return FALSE;
-}
-
-/**
  * @brief Set the observers of a task.
  *
  * @param[in]  task       Task.
@@ -17286,7 +17257,7 @@ set_task_observers (task_t task, const gchar *observers)
           return 2;
         }
 
-      if (find_user (name, &user))
+      if (find_user_by_name (name, &user))
         {
           g_list_free (added);
           g_strfreev (split);
@@ -27758,7 +27729,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
       return 99;
     }
 
-  if (find_user (current_credentials.username, &owner)
+  if (find_user_by_name (current_credentials.username, &owner)
       || owner == 0)
     {
       sql ("ROLLBACK;");
@@ -29719,7 +29690,7 @@ copy_target (const char* name, const char* comment, const char *target_id,
       return 99;
     }
 
-  if (find_user (current_credentials.username, &owner)
+  if (find_user_by_name (current_credentials.username, &owner)
       || owner == 0)
     {
       sql ("ROLLBACK;");
@@ -31707,7 +31678,7 @@ copy_config (const char* name, const char* comment, config_t config,
       return 99;
     }
 
-  if (find_user (current_credentials.username, &owner)
+  if (find_user_by_name (current_credentials.username, &owner)
       || owner == 0)
     {
       g_free (quoted_config_selector);
@@ -41278,7 +41249,7 @@ copy_report_format (const char* name, const char* source_uuid,
       return 99;
     }
 
-  if (find_user (current_credentials.username, &owner)
+  if (find_user_by_name (current_credentials.username, &owner)
       || owner == 0)
     {
       sql ("ROLLBACK;");
@@ -43714,7 +43685,7 @@ group_add_users (group_t group, const char *users)
               return 2;
             }
 
-          if (find_user (name, &user))
+          if (find_user_by_name (name, &user))
             {
               g_list_free (added);
               g_strfreev (split);
@@ -45108,7 +45079,7 @@ copy_port_list (const char* name, const char* comment,
       return 99;
     }
 
-  if (find_user (current_credentials.username, &owner)
+  if (find_user_by_name (current_credentials.username, &owner)
       || owner == 0)
     {
       sql ("ROLLBACK;");
@@ -49294,6 +49265,55 @@ DEF_ACCESS (all_info_iterator_extra, GET_ITERATOR_COLUMN_COUNT + 1);
 /* Users. */
 
 /**
+ * @brief Find a user given a UUID.
+ *
+ * @param[in]   uuid    UUID of user.
+ * @param[out]  user  User return, 0 if succesfully failed to find user.
+ *
+ * @return FALSE on success (including if failed to find user), TRUE on error.
+ */
+gboolean
+find_user (const char *uuid, user_t *user)
+{
+  return find_resource ("user", uuid, user);
+}
+
+/**
+ * @brief Find a user given a name.
+ *
+ * @param[in]   name  A user name.
+ * @param[out]  user  User return, 0 if succesfully failed to find user.
+ *
+ * @return FALSE on success (including if failed to find user), TRUE on error.
+ */
+static gboolean
+find_user_by_name (const char* name, user_t *user)
+{
+  gchar *quoted_name;
+  quoted_name = sql_quote (name);
+  switch (sql_int64 (user, 0, 0,
+                     "SELECT ROWID FROM users WHERE name = '%s'"
+                     " ORDER BY ROWID DESC;",
+                     quoted_name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *user = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_name);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_name);
+  return FALSE;
+}
+
+/**
  * @brief Adds a new user to the OpenVAS installation.
  *
  * @todo Adding users authenticating with certificates is not yet implemented.
@@ -49615,6 +49635,119 @@ copy_user (const char* name, const char* comment, const char *user_id,
   g_free (hosts);
 
   return ret;
+}
+
+/**
+ * @brief Removes an user from the OpenVAS installation.
+ *
+ * @param[in]  name       The name of the user to be removed.
+ * @param[in]  directory  The directory containing the user directories.
+ *
+ * @return 0 if the user has been removed successfully, -1 on error,
+ *         -2 if failed to find such a user.
+ */
+static int
+openvas_admin_remove_user (const gchar * name, const gchar * directory)
+{
+  assert (name != NULL);
+
+  if (strcmp (name, "om") == 0)
+    {
+      g_warning ("Attempt to remove special \"om\" user!");
+      return -1;
+    }
+
+  if (g_file_test (directory, G_FILE_TEST_EXISTS)
+      && g_file_test (directory, G_FILE_TEST_IS_DIR))
+    {
+      gchar *user_dir_name = g_build_filename (directory, name, NULL);
+
+      if (g_file_test (user_dir_name, G_FILE_TEST_EXISTS)
+          && g_file_test (user_dir_name, G_FILE_TEST_IS_DIR))
+        {
+          if (openvas_file_remove_recurse (user_dir_name) == 0)
+            {
+              g_free (user_dir_name);
+              return 0;
+            }
+          else
+            {
+              g_warning ("Failed to remove %s!", user_dir_name);
+              g_free (user_dir_name);
+              return -1;
+            }
+        }
+      else
+        {
+          g_free (user_dir_name);
+          g_warning ("User %s does not exist!", name);
+          return -2;
+        }
+    }
+  else
+    {
+      g_warning ("Could not find %s!", directory);
+      return -1;
+    }
+}
+
+/**
+ * @brief Delete a user.
+ *
+ * @param[in]  user_id  UUID of user.
+ * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 2 failed to find user, -1 error.
+ */
+int
+delete_user (const char *user_id, int ultimate)
+{
+  gchar *name, *uuid;
+  user_t user;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  user = 0;
+  if (find_user (user_id, &user))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (user == 0)
+    return 2;
+
+  name = sql_string (0, 0, "SELECT name FROM users WHERE ROWID = %llu;", user);
+  if (name == NULL)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  uuid = openvas_user_uuid (name);
+  if (uuid && (strcmp (uuid, user_id) == 0))
+    switch (openvas_admin_remove_user (name, OPENVAS_USERS_DIR))
+      {
+        case 0:
+        case -2:  /* Failed to find user on disk.  Just remove from DB. */
+          break;
+        case -1:
+        default:
+          g_free (name);
+          g_free (uuid);
+          sql ("ROLLBACK;");
+          return -1;
+          break;
+      }
+  g_free (name);
+  g_free (uuid);
+
+  sql ("DELETE FROM users WHERE ROWID = %llu;", user);
+
+  /* TODO Remove user's tasks, etc.  How will this interact with trashcan? */
+
+  sql ("COMMIT;");
+  return 0;
 }
 
 /**

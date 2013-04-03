@@ -424,6 +424,7 @@ static command_t omp_commands[]
     {"DELETE_SLAVE", "Delete a slave."},
     {"DELETE_TARGET", "Delete a target."},
     {"DELETE_TASK", "Delete a task."},
+    {"DELETE_USER", "Delete an existing user."},
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
     {"GET_AGENTS", "Get all agents."},
@@ -1957,6 +1958,28 @@ delete_task_data_reset (delete_task_data_t *data)
   free (data->task_id);
 
   memset (data, 0, sizeof (delete_task_data_t));
+}
+
+/**
+ * @brief Command data for the delete_user command.
+ */
+typedef struct
+{
+  char *user_id;   ///< ID of user to delete.
+  int ultimate;    ///< Boolean.  Whether to remove entirely or to trashcan.
+} delete_user_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+delete_user_data_reset (delete_user_data_t *data)
+{
+  free (data->user_id);
+
+  memset (data, 0, sizeof (delete_user_data_t));
 }
 
 /**
@@ -3528,6 +3551,7 @@ typedef union
   delete_slave_data_t delete_slave;                   ///< delete_slave
   delete_target_data_t delete_target;                 ///< delete_target
   delete_task_data_t delete_task;                     ///< delete_task
+  delete_user_data_t delete_user;                     ///< delete_user
   get_agents_data_t get_agents;                       ///< get_agents
   get_configs_data_t get_configs;                     ///< get_configs
   get_dependencies_data_t get_dependencies;           ///< get_dependencies
@@ -3807,6 +3831,12 @@ delete_target_data_t *delete_target_data
  */
 delete_task_data_t *delete_task_data
  = (delete_task_data_t*) &(command_data.delete_task);
+
+/**
+ * @brief Parser callback data for DELETE_USER.
+ */
+delete_user_data_t *delete_user_data
+ = (delete_user_data_t*) &(command_data.delete_user);
 
 /**
  * @brief Parser callback data for GET_AGENTS.
@@ -4465,6 +4495,7 @@ typedef enum
   CLIENT_DELETE_SLAVE,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TARGET,
+  CLIENT_DELETE_USER,
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
   CLIENT_GET_AGENTS,
@@ -5614,6 +5645,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               delete_task_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_TASK);
+          }
+        else if (strcasecmp ("DELETE_USER", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values, "user_id",
+                              &delete_user_data->user_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_user_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_user_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_USER);
           }
         else if (strcasecmp ("DESCRIBE_AUTH", element_name) == 0)
           set_client_state (CLIENT_DESCRIBE_AUTH);
@@ -12338,6 +12381,52 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
            (XML_ERROR_SYNTAX ("delete_task",
                               "DELETE_TASK requires a task_id attribute"));
         delete_task_data_reset (delete_task_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_DELETE_USER:
+        assert (strcasecmp ("DELETE_USER", element_name) == 0);
+        if (delete_user_data->user_id)
+          switch (delete_user (delete_user_data->user_id,
+                               delete_user_data->ultimate))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_user"));
+                g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                       "User %s has been deleted",
+                       delete_user_data->user_id);
+                break;
+              case 2:
+                if (send_find_error_to_client ("delete_user",
+                                               "user",
+                                               delete_user_data->user_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                       "User %s could not be deleted",
+                       delete_user_data->user_id);
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_user",
+                                    "Attempt to delete a predefined"
+                                    " user"));
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_user"));
+                g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                       "User %s could not be deleted",
+                       delete_user_data->user_id);
+            }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_user",
+                              "DELETE_USER requires a user_id attribute"));
+        delete_user_data_reset (delete_user_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
