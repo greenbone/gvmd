@@ -1,5 +1,14 @@
 2013-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport from r15908.
+
+	* src/otp.c (process_otp_scanner_input): Get the length for g_convert
+	with strlen, because the strip and compress functions can change the
+	string length.  Thanks to Rodolfo Gouveia and Stefan Sperling for
+	spotting this.
+
+2013-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport from r15885.
 
 	* src/manage_sql.c (escalate_1): Include note and override details, else

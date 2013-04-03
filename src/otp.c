@@ -1563,7 +1563,7 @@ process_otp_scanner_input ()
             iso_field = openvas_strip_space (message, match);
             compressed = g_strcompress (iso_field);
             blank_control_chars (compressed);
-            field = g_convert (compressed, match - message - 1,
+            field = g_convert (compressed, strlen (compressed),
                                "UTF-8", "ISO_8859-1",
                                NULL, &size_dummy, NULL);
             g_free (compressed);
