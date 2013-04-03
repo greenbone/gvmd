@@ -1,3 +1,10 @@
+2013-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport from r15885.
+
+	* src/manage_sql.c (escalate_1): Include note and override details, else
+	text element is truncated.
+
 2013-04-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Backport for r15889. Patch by Hani Benhabiles.
