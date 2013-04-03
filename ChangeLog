@@ -1,4 +1,22 @@
-2013-03-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+2013-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add MODIFY_USER to OMP.  This is a direct copy from OAP in Administrator
+	with some slight changes to fit in Manager, mostly formatting.
+
+	* src/manage_sql.c (openvas_admin_modify_user): New function.  From
+	Administrator.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_commands, command_data_t, client_state_t): Add
+	MODIFY_USER entries.
+	(modify_user_data_t): New type.
+	(modify_user_data_reset): New function.
+	(modify_user_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Handle MODIFY_USER.
+
+2013-04-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/otp.c (process_otp_scanner_input): In SCANNER_HOLE_NUMBER,
 	SCANNER_INFO_NUMBER, SCANNER_NOTE_NUMBER, SCANNER_LOG_NUMBER,

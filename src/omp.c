@@ -472,6 +472,7 @@ static command_t omp_commands[]
     {"MODIFY_SLAVE", "Modify an existing slave."},
     {"MODIFY_TARGET", "Modify an existing target."},
     {"MODIFY_TASK", "Update an existing task."},
+    {"MODIFY_USER", "Modify a user."},
     {"PAUSE_TASK", "Pause a running task."},
     {"RESTORE", "Restore a resource."},
     {"RESUME_OR_START_TASK", "Resume task if stopped, else start task."},
@@ -3261,6 +3262,40 @@ modify_override_data_reset (modify_override_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_user command.
+ */
+typedef struct
+{
+  int sort_order;
+  gchar *hosts;
+  int hosts_allow;
+  gboolean modify_password;
+  gchar *name;
+  gchar *password;
+  gchar *role;
+  array_t *sources;
+  gchar *current_source;
+} modify_user_data_t;
+
+/**
+ * @brief Reset MODIFY_USER data.
+ */
+static void
+modify_user_data_reset (modify_user_data_t * data)
+{
+  g_free (data->name);
+  g_free (data->password);
+  g_free (data->role);
+  // TODO: Evaluate memleak: hosts
+  if (data->sources)
+    {
+      array_free (data->sources);
+    }
+  g_free (data->current_source);
+  memset (data, 0, sizeof (modify_user_data_t));
+}
+
+/**
  * @brief Command data for the pause_task command.
  */
 typedef struct
@@ -3592,6 +3627,7 @@ typedef union
   modify_slave_data_t modify_slave;                   ///< modify_slave
   modify_target_data_t modify_target;                 ///< modify_target
   modify_task_data_t modify_task;                     ///< modify_task
+  modify_user_data_t modify_user;                     ///< modify_user
   pause_task_data_t pause_task;                       ///< pause_task
   restore_data_t restore;                             ///< restore
   resume_or_start_task_data_t resume_or_start_task;   ///< resume_or_start_task
@@ -4095,6 +4131,11 @@ modify_target_data_t *modify_target_data
  */
 modify_task_data_t *modify_task_data
  = &(command_data.modify_task);
+
+/**
+ * @brief Parser callback data for MODIFY_USER.
+ */
+modify_user_data_t *modify_user_data = &(command_data.modify_user);
 
 /**
  * @brief Parser callback data for PAUSE_TASK.
@@ -4652,6 +4693,13 @@ typedef enum
   CLIENT_MODIFY_TASK_RCFILE,
   CLIENT_MODIFY_TASK_SCHEDULE,
   CLIENT_MODIFY_TASK_SLAVE,
+  CLIENT_MODIFY_USER,
+  CLIENT_MODIFY_USER_HOSTS,
+  CLIENT_MODIFY_USER_NAME,
+  CLIENT_MODIFY_USER_PASSWORD,
+  CLIENT_MODIFY_USER_ROLE,
+  CLIENT_MODIFY_USER_SOURCES,
+  CLIENT_MODIFY_USER_SOURCES_SOURCE,
   CLIENT_PAUSE_TASK,
   CLIENT_RESTORE,
   CLIENT_RESUME_OR_START_TASK,
@@ -6380,6 +6428,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             modify_task_data->alerts = make_array ();
             set_client_state (CLIENT_MODIFY_TASK);
           }
+        else if (strcasecmp ("MODIFY_USER", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_USER);
         else if (strcasecmp ("PAUSE_TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "task_id",
@@ -6972,6 +7022,80 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE);
         ELSE_ERROR ("modify_task");
+
+      case CLIENT_MODIFY_USER:
+        if (strcasecmp ("HOSTS", element_name) == 0)
+          {
+            const gchar *attribute;
+            if (find_attribute
+                (attribute_names, attribute_values, "allow", &attribute))
+              modify_user_data->hosts_allow = strcmp (attribute, "0");
+            else
+              modify_user_data->hosts_allow = 1;
+            /* Init, so that openvas_admin_modify_user clears hosts if this
+             * entity is empty. */
+            openvas_append_string (&modify_user_data->hosts, "");
+            set_client_state (CLIENT_MODIFY_USER_HOSTS);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_USER_NAME);
+        else if (strcasecmp ("PASSWORD", element_name) == 0)
+          {
+            const gchar *attribute;
+            if (find_attribute
+                (attribute_names, attribute_values, "modify", &attribute))
+              modify_user_data->modify_password = strcmp (attribute, "0");
+            else
+              modify_user_data->modify_password = 1;
+            set_client_state (CLIENT_MODIFY_USER_PASSWORD);
+          }
+        else if (strcasecmp ("ROLE", element_name) == 0)
+          {
+            /* Init, so that openvas_admin_modify_user gets an empty string
+             * if the entity is empty. */
+            openvas_append_string (&modify_user_data->role, "");
+            set_client_state (CLIENT_MODIFY_USER_ROLE);
+          }
+        else if (strcasecmp ("SOURCES", element_name) == 0)
+          {
+            modify_user_data->sources = make_array ();
+            set_client_state (CLIENT_MODIFY_USER_SOURCES);
+          }
+        else
+          {
+            if (send_element_error_to_client ("modify_user", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_MODIFY_USER_SOURCES:
+        if (strcasecmp ("SOURCE", element_name) == 0)
+         {
+           set_client_state (CLIENT_MODIFY_USER_SOURCES_SOURCE);
+         }
+        else
+          {
+            if (send_element_error_to_client ("modify_user_sources",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
 
       case CLIENT_CREATE_AGENT:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -13539,6 +13663,105 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE);
         break;
       CLOSE (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE, VALUE);
+
+      case CLIENT_MODIFY_USER:
+        {
+          assert (strcasecmp ("MODIFY_USER", element_name) == 0);
+
+          array_terminate (modify_user_data->sources);
+
+          if (modify_user_data->name == NULL
+              || strlen (modify_user_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                    ("modify_user",
+                                     "MODIFY_USER requires a name"));
+          else
+            {
+              gchar *errdesc = NULL;
+              int was_admin = openvas_is_user_admin (modify_user_data->name);
+
+              switch (openvas_admin_modify_user
+                      (modify_user_data->name,
+                       ((modify_user_data->modify_password
+                         && modify_user_data->password) ? modify_user_data->
+                        password
+                        /* Leave the password as it is. */
+                        : NULL), modify_user_data->role, modify_user_data->hosts,
+                       modify_user_data->hosts_allow, OPENVAS_USERS_DIR,
+                       modify_user_data->sources, &errdesc))
+                {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
+                  if (was_admin && (strcmp (modify_user_data->role, "User") == 0))
+                    {
+                      g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                             "Role of user %s has been changed from Admin to User",
+                             modify_user_data->name);
+                    }
+                  if (!was_admin
+                      && (strcmp (modify_user_data->role, "Admin") == 0))
+                    {
+                      g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                             "Role of user %s has been changed from User to Admin",
+                             modify_user_data->name);
+                    }
+                  break;
+                case -2:
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                          ("modify_user", "Unknown role"));
+                  break;
+                case -3:
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                          ("modify_user", "User already exists"));
+                  break;
+                case -1:
+                  if (errdesc)
+                    {
+                      char *buf = make_xml_error_syntax ("modify_user", errdesc);
+                      SEND_TO_CLIENT_OR_FAIL (buf);
+                      g_free (buf);
+                      break;
+                    }
+                /* Fall through.  */
+                default:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_user"));
+                  break;
+                }
+              g_free (errdesc);
+            }
+          modify_user_data_reset (modify_user_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_MODIFY_USER_HOSTS:
+        assert (strcasecmp ("HOSTS", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_USER);
+        break;
+      case CLIENT_MODIFY_USER_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_USER);
+        break;
+      case CLIENT_MODIFY_USER_PASSWORD:
+        assert (strcasecmp ("PASSWORD", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_USER);
+        break;
+      case CLIENT_MODIFY_USER_ROLE:
+        assert (strcasecmp ("ROLE", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_USER);
+        break;
+      case CLIENT_MODIFY_USER_SOURCES:
+        assert (strcasecmp ("SOURCES", element_name) == 0);
+        array_terminate (modify_user_data->sources);
+        set_client_state (CLIENT_MODIFY_USER);
+        break;
+      case CLIENT_MODIFY_USER_SOURCES_SOURCE:
+        assert (strcasecmp ("SOURCE", element_name) == 0);
+        array_add (modify_user_data->sources,
+                   g_strdup (modify_user_data->current_source));
+        g_free (modify_user_data->current_source);
+        modify_user_data->current_source = NULL;
+        set_client_state (CLIENT_MODIFY_USER_SOURCES);
+        break;
 
       case CLIENT_CREATE_AGENT:
         {
@@ -22034,6 +22257,22 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE,
               &modify_task_data->preference->value);
+
+
+      APPEND (CLIENT_MODIFY_USER_HOSTS,
+              &modify_user_data->hosts);
+
+      APPEND (CLIENT_MODIFY_USER_NAME,
+              &modify_user_data->name);
+
+      APPEND (CLIENT_MODIFY_USER_PASSWORD,
+              &modify_user_data->password);
+
+      APPEND (CLIENT_MODIFY_USER_ROLE,
+              &modify_user_data->role);
+
+      APPEND (CLIENT_MODIFY_USER_SOURCES_SOURCE,
+              &modify_user_data->current_source);
 
 
       APPEND (CLIENT_CREATE_AGENT_COMMENT,

@@ -49765,6 +49765,53 @@ delete_user (const char *user_id, int ultimate)
 }
 
 /**
+ * @brief Modify a user.
+ *
+ * @param[in]  name         The name of the new user.
+ * @param[in]  password     The password of the new user.  NULL to leave as is.
+ * @param[in]  role         The role of the user.  NULL to leave as is.
+ * @param[in]  hosts        The host the user is allowed/forbidden to scan.
+ *                          NULL to leave as is.
+ * @param[in]  hosts_allow  Whether hosts is allow or forbid.
+ * @param[in]  directory    The directory containing the user directories.  It
+ *                          will be created if it does not exist already.
+ * @param[out] r_errdesc    If not NULL the address of a variable to receive
+ *                          a malloced string with the error description.  Will
+ *                          always be set to NULL on success.
+ *
+ * @return 0 if the user has been added successfully, -1 on error, -2 for an
+ *         unknown role, -3 if user exists already.
+ */
+int
+openvas_admin_modify_user (const gchar * name, const gchar * password,
+                           const gchar * role, const gchar * hosts,
+                           int hosts_allow, const gchar * directory,
+                           const array_t * allowed_methods,
+                           gchar **r_errdesc)
+{
+  char *errstr;
+
+  if (r_errdesc)
+    *r_errdesc = NULL;
+
+  if (name && password)
+    {
+      if ((errstr = openvas_validate_password (password, name)))
+        {
+          g_warning ("new password for '%s' rejected: %s", name, errstr);
+          if (r_errdesc)
+            *r_errdesc = errstr;
+          else
+            g_free (errstr);
+          return -1;
+        }
+    }
+
+  return openvas_user_modify (name, password, role, hosts, hosts_allow,
+                              directory, allowed_methods);
+}
+
+/**
  * @brief Return the UUID of a user.
  *
  * Warning: this is only safe for users that are known to be in the db.

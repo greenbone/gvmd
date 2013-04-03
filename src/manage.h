@@ -2860,6 +2860,11 @@ openvas_admin_add_user (const gchar *, const gchar *, const gchar *,
 int
 delete_user (const char *, int);
 
+int
+openvas_admin_modify_user (const gchar *, const gchar *, const gchar *,
+                           const gchar *, int, const gchar *, const array_t *,
+                           gchar **);
+
 char*
 user_uuid (user_t);
 
