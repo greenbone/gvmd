@@ -1671,18 +1671,16 @@ process_otp_scanner_input ()
                 {
                   /** @todo Field could be "general". */
                   int number;
-                  char *name;
-                  char *protocol;
+                  char *protocol, *port_name, *formatted;
 
                   assert (current_message);
 
-                  name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
 
                   /* RATS: ignore, buffers are allocated to field length. */
-                  if (sscanf (field, "%s (%i/%[^)])",
-                              name, &number, protocol)
-                      != 3)
+                  if (sscanf (field, "%i/%s",
+                              &number, protocol)
+                      != 2)
                     {
                       number = atoi (field);
                       protocol[0] = '\0';
@@ -1692,7 +1690,17 @@ process_otp_scanner_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
-                  set_message_port_string (current_message, g_strdup (field));
+                  port_name = manage_port_name (number, protocol);
+                  if (port_name && number)
+                    {
+                      formatted = g_strdup_printf
+                                   ("%i/%s (IANA: %s)",
+                                    number, protocol, port_name);
+                      free (port_name);
+                    }
+                  else
+                    formatted = g_strdup (field);
+                  set_message_port_string (current_message, formatted);
 
                   set_scanner_state (SCANNER_ERRMSG_DESCRIPTION);
                   break;
@@ -1745,18 +1753,18 @@ process_otp_scanner_input ()
                 {
                   /** @todo Field could be "general". */
                   int number;
-                  char *name;
                   char *protocol;
+                  char *port_name;
+                  char *formatted;
 
                   assert (current_message);
 
-                  name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
 
                   /* RATS: ignore, buffers are allocated to field length. */
-                  if (sscanf (field, "%s (%i/%[^)])",
-                              name, &number, protocol)
-                      != 3)
+                  if (sscanf (field, "%i/%s",
+                              &number, protocol)
+                      != 2)
                     {
                       number = atoi (field);
                       protocol[0] = '\0';
@@ -1766,7 +1774,17 @@ process_otp_scanner_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
-                  set_message_port_string (current_message, g_strdup (field));
+                  port_name = manage_port_name (number, protocol);
+                  if (port_name && number)
+                    {
+                      formatted = g_strdup_printf
+                                   ("%i/%s (IANA: %s)",
+                                    number, protocol, port_name);
+                      free (port_name);
+                    }
+                  else
+                    formatted = g_strdup (field);
+                  set_message_port_string (current_message, formatted);
 
                   set_scanner_state (SCANNER_HOLE_DESCRIPTION);
                   break;
@@ -1816,18 +1834,16 @@ process_otp_scanner_input ()
                 {
                   /** @todo Field could be "general". */
                   int number;
-                  char *name;
-                  char *protocol;
+                  char *protocol, *port_name, *formatted;
 
                   assert (current_message);
 
-                  name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
 
                   /* RATS: ignore, buffers are allocated to field length. */
-                  if (sscanf (field, "%s (%i/%[^)])",
-                              name, &number, protocol)
-                      != 3)
+                  if (sscanf (field, "%i/%s",
+                              &number, protocol)
+                      != 2)
                     {
                       number = atoi (field);
                       protocol[0] = '\0';
@@ -1837,7 +1853,17 @@ process_otp_scanner_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
-                  set_message_port_string (current_message, g_strdup (field));
+                  port_name = manage_port_name (number, protocol);
+                  if (port_name && number)
+                    {
+                      formatted = g_strdup_printf
+                                   ("%i/%s (IANA: %s)",
+                                    number, protocol, port_name);
+                      free (port_name);
+                    }
+                  else
+                    formatted = g_strdup (field);
+                  set_message_port_string (current_message, formatted);
 
                   set_scanner_state (SCANNER_INFO_DESCRIPTION);
                   break;
@@ -1887,18 +1913,16 @@ process_otp_scanner_input ()
                 {
                   /** @todo Field could be "general". */
                   int number;
-                  char *name;
-                  char *protocol;
+                  char *protocol, *port_name, *formatted;
 
                   assert (current_message);
 
-                  name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
 
                   /* RATS: ignore, buffers are allocated to field length. */
-                  if (sscanf (field, "%s (%i/%[^)])",
-                              name, &number, protocol)
-                      != 3)
+                  if (sscanf (field, "%i/%s",
+                              &number, protocol)
+                      != 2)
                     {
                       number = atoi (field);
                       protocol[0] = '\0';
@@ -1908,7 +1932,17 @@ process_otp_scanner_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
-                  set_message_port_string (current_message, g_strdup (field));
+                  port_name = manage_port_name (number, protocol);
+                  if (port_name && number)
+                    {
+                      formatted = g_strdup_printf
+                                   ("%i/%s (IANA: %s)",
+                                    number, protocol, port_name);
+                      free (port_name);
+                    }
+                  else
+                    formatted = g_strdup (field);
+                  set_message_port_string (current_message, formatted);
 
                   set_scanner_state (SCANNER_LOG_DESCRIPTION);
                   break;
@@ -1958,18 +1992,16 @@ process_otp_scanner_input ()
                 {
                   /** @todo Field could be "general". */
                   int number;
-                  char *name;
-                  char *protocol;
+                  char *protocol, *port_name, *formatted;
 
                   assert (current_message);
 
-                  name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
 
                   /* RATS: ignore, buffers are allocated to field length. */
-                  if (sscanf (field, "%s (%i/%[^)])",
-                              name, &number, protocol)
-                      != 3)
+                  if (sscanf (field, "%i/%s",
+                              &number, protocol)
+                      != 2)
                     {
                       number = atoi (field);
                       protocol[0] = '\0';
@@ -1979,7 +2011,17 @@ process_otp_scanner_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
-                  set_message_port_string (current_message, g_strdup (field));
+                  port_name = manage_port_name (number, protocol);
+                  if (port_name && number)
+                    {
+                      formatted = g_strdup_printf
+                                   ("%i/%s (IANA: %s)",
+                                    number, protocol, port_name);
+                      free (port_name);
+                    }
+                  else
+                    formatted = g_strdup (field);
+                  set_message_port_string (current_message, formatted);
 
                   set_scanner_state (SCANNER_NOTE_DESCRIPTION);
                   break;

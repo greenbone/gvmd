@@ -1,3 +1,15 @@
+2013-03-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/otp.c (process_otp_scanner_input): In SCANNER_HOLE_NUMBER,
+	SCANNER_INFO_NUMBER, SCANNER_NOTE_NUMBER, SCANNER_LOG_NUMBER,
+	SCANNER_ERRMSG_NUMBER cases, fix port number and protocol
+	extraction format string to match scanner changes and use
+	manage_port_name function to get port number associated name.
+
+	* src/manage_sql.c (manage_port_name): New function.
+
+	* src/manage.h: Add manage_port_name header.
+
 2013-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add DELETE_USER.  This is the same command as in Administrator, but it

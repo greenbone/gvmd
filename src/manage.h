@@ -97,6 +97,9 @@ manage_db_supported_version ();
 int
 manage_db_version ();
 
+char *
+manage_port_name (int, const char *);
+
 gboolean
 manage_migrate_needs_timezone (GSList *, const gchar *);
 

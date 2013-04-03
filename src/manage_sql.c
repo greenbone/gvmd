@@ -4171,6 +4171,20 @@ manage_db_version ()
 }
 
 /**
+ * @brief Returns associated name for a tcp/ip port.
+ *
+ * @param   port  Port number to get name for.
+ * @param   proto  Protocol type of port.
+ *
+ * @return  associated name for port if found, NULL otherwise.
+ */
+char *
+manage_port_name (int port, const char *proto)
+{
+  return NULL;
+}
+
+/**
  * @brief Set the database version of the actual database.
  *
  * @param  version  New version number.
