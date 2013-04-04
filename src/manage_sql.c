@@ -17337,11 +17337,14 @@ set_task_observers (task_t task, const gchar *observers)
             {
               /* user_find should have found it. */
               assert (0);
+              g_free (uuid);
               g_list_free (added);
               g_strfreev (split);
               sql ("ROLLBACK;");
               return -1;
             }
+
+          g_free (uuid);
         }
 
       sql ("INSERT INTO permissions"
@@ -43762,10 +43765,13 @@ group_add_users (group_t group, const char *users)
                 {
                   /* user_find should have found it. */
                   assert (0);
+                  g_free (uuid);
                   g_list_free (added);
                   g_strfreev (split);
                   return -1;
                 }
+
+              g_free (uuid);
             }
 
           sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",

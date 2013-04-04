@@ -1,5 +1,10 @@
 2013-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (set_task_observers, group_add_users): Free
+	openvas_user_uuid return.
+
+2013-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_user): Add NULL check on role for now, to keep
 	it working.
 
