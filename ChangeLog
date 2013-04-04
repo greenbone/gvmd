@@ -1,3 +1,10 @@
+2013-04-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Backport for r15907. Patch by Werner Koch.
+
+	* src/ompd.c (serve_omp): Check for pending TLS records before the
+	main select.
+
 2013-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport from r15908.

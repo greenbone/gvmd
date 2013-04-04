@@ -6,7 +6,7 @@
  * Matthew Mundell <matthew.mundell@greenbone.net>
  *
  * Copyright:
- * Copyright (C) 2009 Greenbone Networks GmbH
+ * Copyright (C) 2009, 2013 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -812,7 +812,6 @@ serve_omp (gnutls_session_t* client_session,
   while (1)
     {
       int ret;
-      struct timeval timeout;
       uint8_t fd_info;  /* What `select' is going to watch. */
 
       /* Setup for select. */
@@ -880,12 +879,54 @@ serve_omp (gnutls_session_t* client_session,
           fd_info |= FD_SCANNER_WRITE;
         }
 
-      /* Select, then handle result. */
+      tracef ("   SELECT ON:%s%s%s%s",
+              (fd_info & FD_CLIENT_READ)? " read-client":"",
+              (fd_info & FD_CLIENT_WRITE)? " write-client":"",
+              (fd_info & FD_SCANNER_READ)? " read-scanner":"",
+              (fd_info & FD_SCANNER_WRITE)? " write-scanner":"");
 
-      /* Timeout periodically, so that process_omp_change runs periodically. */
-      timeout.tv_usec = 0;
-      timeout.tv_sec = 1;
-      ret = select (nfds, &readfds, &writefds, &exceptfds, &timeout);
+      /* Select, then handle result.  Due to GNUTLS internal buffering
+         we test for pending records first and emulate a select call
+         in that case.  Note, that GNUTLS guarantees that writes are
+         not buffered.  Note also that GNUTLS versions < 3 did not
+         exhibit a problem in OpenVAS due to a different buffering
+         strategy.  */
+      ret = 0;
+      if ((fd_info & FD_CLIENT_READ)
+          && gnutls_record_check_pending (*client_session))
+        {
+          if (!ret)
+            {
+              FD_ZERO (&exceptfds);
+              FD_ZERO (&readfds);
+              FD_ZERO (&writefds);
+            }
+          ret++;
+          FD_SET (client_socket, &readfds);
+        }
+      if ((fd_info & FD_SCANNER_READ)
+          && gnutls_record_check_pending (*scanner_session))
+        {
+          if (!ret)
+            {
+              FD_ZERO (&exceptfds);
+              FD_ZERO (&readfds);
+              FD_ZERO (&writefds);
+            }
+          ret++;
+          FD_SET (scanner_socket, &readfds);
+        }
+
+      if (!ret)
+        {
+          /* Timeout periodically, so that process_omp_change runs
+             periodically. */
+          struct timeval timeout;
+
+          timeout.tv_usec = 0;
+          timeout.tv_sec = 1;
+          ret = select (nfds, &readfds, &writefds, &exceptfds, &timeout);
+        }
       if (ret < 0)
         {
           if (errno == EINTR)
