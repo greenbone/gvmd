@@ -49651,8 +49651,9 @@ copy_user (const char* name, const char* comment, const char *user_id,
                          "SELECT hosts_allow FROM users WHERE ROWID = %llu",
                          user);
 
-  ret = openvas_admin_add_user (new_name, "changeme", role, hosts, hosts_allow,
-                                OPENVAS_USERS_DIR, NULL, NULL, NULL, NULL);
+  ret = openvas_admin_add_user (new_name, "changeme", role ? role : "User",
+                                hosts, hosts_allow, OPENVAS_USERS_DIR, NULL,
+                                NULL, NULL, NULL);
 
   // FIX handle return
 
