@@ -259,7 +259,10 @@ void
 make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
 
 void
-make_config_discovery (char *const uuid, char *const selector);
+make_config_discovery (char *const, const char * const);
+
+void
+make_port_names ();
 
 
 /* Static headers. */
@@ -3920,6 +3923,7 @@ create_tables ()
    * but whoever creates a predefined port list must check this manually. */
   sql ("CREATE TABLE IF NOT EXISTS port_lists (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS port_lists_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS port_names (id INTEGER PRIMARY KEY, number INTEGER, protocol, name, UNIQUE (number, protocol) ON CONFLICT REPLACE);");
   sql ("CREATE TABLE IF NOT EXISTS port_ranges (id INTEGER PRIMARY KEY, uuid UNIQUE, port_list INTEGER, type, start, end, comment, exclude);");
   sql ("CREATE TABLE IF NOT EXISTS port_ranges_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, port_list INTEGER, type, start, end, comment, exclude);");
   sql ("CREATE TABLE IF NOT EXISTS report_host_details (id INTEGER PRIMARY KEY, report_host INTEGER, source_type, source_name, source_description, name, value);");
@@ -4173,15 +4177,21 @@ manage_db_version ()
 /**
  * @brief Returns associated name for a tcp/ip port.
  *
- * @param   port  Port number to get name for.
- * @param   proto  Protocol type of port.
+ * @param   number      Port number to get name for.
+ * @param   protocol    Protocol type of port.
  *
  * @return  associated name for port if found, NULL otherwise.
  */
 char *
-manage_port_name (int port, const char *proto)
+manage_port_name (int number, const char *protocol)
 {
-  return NULL;
+  if (protocol == NULL || number <= 0 || number > 65535)
+    return NULL;
+
+  return sql_string (0, 0,
+                     "SELECT name FROM port_names"
+                     " WHERE number = %i AND protocol = '%s' LIMIT 0,1;",
+                     number, protocol);
 }
 
 /**
@@ -15236,7 +15246,14 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
                              MANAGE_NVT_SELECTOR_UUID_DISCOVERY);
     }
 
-  /* Ensure the predefined port lists exists. */
+  /* Ensure port names exist. */
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM port_names;")
+      < 10000)
+    make_port_names ();
+
+  /* Ensure the predefined port lists exist. */
 
   ensure_predefined_port_lists_exist ();
 

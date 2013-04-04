@@ -1,3 +1,17 @@
+2013-04-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add port_names to resolve Network services names and load content from
+	official IANA list.
+
+	* src/manage_port_names.c: New file.
+
+	* src/CMakeLists.txt: Add manage_port_names.c.
+
+	* src/manage_sql.c: Declare make_port_names prototype.
+	(create_tables): Create port_names table.
+	(manage_port_name): Return service name value from port_names table.
+	(init_manage): Call make_port_names if port_names table has few entries.
+
 2013-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add name attribute to DELETE_USER, to be compatible with Administrator.
