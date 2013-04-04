@@ -1,5 +1,19 @@
 2013-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add name attribute to DELETE_USER, to be compatible with Administrator.
+
+	* src/manage_sql.c (delete_user): Add name arg.  Delete by name if given
+	user ID is NULL.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (delete_user_data_t, delete_user_data_reset): Add name.
+	(omp_xml_handle_start_element): Parse DELETE_USER name attribute.
+	(omp_xml_handle_end_element): In CLIENT_DELETE_USER pass name to delete
+	function.
+
+2013-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/otp.c (process_otp_scanner_input): Get the length for g_convert
 	with strlen, because the strip and compress functions can change the
 	string length.  Thanks to Rodolfo Gouveia and Stefan Sperling for

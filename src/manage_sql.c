@@ -49708,21 +49708,33 @@ openvas_admin_remove_user (const gchar * name, const gchar * directory)
 /**
  * @brief Delete a user.
  *
- * @param[in]  user_id  UUID of user.
+ * @param[in]  user_id    UUID of user.
+ * @param[in]  name       Name of user.  Overridden by user_id.
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 2 failed to find user, -1 error.
  */
 int
-delete_user (const char *user_id, int ultimate)
+delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
 {
-  gchar *name, *uuid;
+  gchar *name, *user_id, *uuid;
   user_t user;
+
+  assert (user_id_arg || name_arg);
 
   sql ("BEGIN IMMEDIATE;");
 
   user = 0;
-  if (find_user (user_id, &user))
+  if (user_id_arg)
+    {
+      if (find_user (user_id_arg, &user))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+    }
+  // TODO Fails when db has old users.  Moving users from disk to db will solve.
+  else if (find_user_by_name (name_arg, &user))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -49731,11 +49743,27 @@ delete_user (const char *user_id, int ultimate)
   if (user == 0)
     return 2;
 
-  name = sql_string (0, 0, "SELECT name FROM users WHERE ROWID = %llu;", user);
-  if (name == NULL)
+  if (user_id_arg)
     {
-      sql ("ROLLBACK;");
-      return -1;
+      name = sql_string (0, 0, "SELECT name FROM users WHERE ROWID = %llu;",
+                         user);
+      user_id = g_strdup (user_id_arg);
+      if (name == NULL)
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+    }
+  else
+    {
+      name = g_strdup (name_arg);
+      user_id = sql_string (0, 0, "SELECT uuid FROM users WHERE ROWID = %llu;",
+                            user);
+      if (user_id == NULL)
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
     }
 
   uuid = openvas_user_uuid (name);
@@ -49748,12 +49776,14 @@ delete_user (const char *user_id, int ultimate)
         case -1:
         default:
           g_free (name);
+          g_free (user_id);
           g_free (uuid);
           sql ("ROLLBACK;");
           return -1;
           break;
       }
   g_free (name);
+  g_free (user_id);
   g_free (uuid);
 
   sql ("DELETE FROM users WHERE ROWID = %llu;", user);

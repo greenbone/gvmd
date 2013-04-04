@@ -1966,6 +1966,7 @@ delete_task_data_reset (delete_task_data_t *data)
  */
 typedef struct
 {
+  char *name;      ///< Name of user to delete.
   char *user_id;   ///< ID of user to delete.
   int ultimate;    ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_user_data_t;
@@ -1978,6 +1979,7 @@ typedef struct
 static void
 delete_user_data_reset (delete_user_data_t *data)
 {
+  free (data->name);
   free (data->user_id);
 
   memset (data, 0, sizeof (delete_user_data_t));
@@ -5697,6 +5699,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("DELETE_USER", element_name) == 0)
           {
             const gchar* attribute;
+            append_attribute (attribute_names, attribute_values, "name",
+                              &delete_user_data->name);
             append_attribute (attribute_names, attribute_values, "user_id",
                               &delete_user_data->user_id);
             if (find_attribute (attribute_names, attribute_values,
@@ -12510,8 +12514,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_USER:
         assert (strcasecmp ("DELETE_USER", element_name) == 0);
-        if (delete_user_data->user_id)
+        if (delete_user_data->user_id || delete_user_data->name)
           switch (delete_user (delete_user_data->user_id,
+                               delete_user_data->name,
                                delete_user_data->ultimate))
             {
               case 0:
@@ -12523,7 +12528,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 2:
                 if (send_find_error_to_client ("delete_user",
                                                "user",
-                                               delete_user_data->user_id,
+                                               delete_user_data->user_id
+                                                ? delete_user_data->user_id
+                                                : delete_user_data->name,
                                                write_to_client,
                                                write_to_client_data))
                   {
