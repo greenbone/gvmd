@@ -778,7 +778,6 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.103978", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14221", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11414", "General");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.80091", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800324", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11040", "General");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100121", "General");

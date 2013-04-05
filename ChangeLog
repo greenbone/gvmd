@@ -1,3 +1,8 @@
+2013-04-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_config_discovery.c (make_config_discovery): Remove tcp
+	timestamps from default discovery config scan as it has a cvss > 0.0.
+
 2013-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (set_task_observers, group_add_users): Free
