@@ -1,3 +1,8 @@
+2013-04-07  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage_sql.c (setup_full_config_prefs): Remove handling
+	of "silent_dependencies".
+
 2013-04-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_config_discovery.c (make_config_discovery): Remove tcp
