@@ -1499,6 +1499,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_report_format</c>
           <c>create_schedule</c>
           <c>create_slave</c>
+          <c>create_tag</c>
           <c>create_target</c>
           <c>create_task</c>
           <c>delete_agent</c>
@@ -1514,6 +1515,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_port_range</c>
           <c>delete_schedule</c>
           <c>delete_slave</c>
+          <c>delete_tag</c>
           <c>delete_target</c>
           <c>delete_task</c>
           <c>empty_trashcan</c>
@@ -1538,6 +1540,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_settings</c>
           <c>get_slaves</c>
           <c>get_system_reports</c>
+          <c>get_tags</c>
           <c>get_target_locators</c>
           <c>get_targets</c>
           <c>get_tasks</c>
@@ -1555,6 +1558,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_schedule</c>
           <c>modify_setting</c>
           <c>modify_slave</c>
+          <c>modify_tag</c>
           <c>modify_target</c>
           <c>modify_task</c>
           <c>pause_task</c>
@@ -1596,6 +1600,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_port_range</r>
             <r>create_schedule</r>
             <r>create_slave</r>
+            <r>create_tag</r>
             <r>create_target</r>
             <r>create_task</r>
             <r>delete_agent</r>
@@ -1611,6 +1616,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_report_format</r>
             <r>delete_schedule</r>
             <r>delete_slave</r>
+            <r>delete_tag</r>
             <r>delete_target</r>
             <r>delete_task</r>
             <r>empty_trashcan</r>
@@ -1635,6 +1641,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_schedules</r>
             <r>get_settings</r>
             <r>get_system_reports</r>
+            <r>get_tags</r>
             <r>get_target_locators</r>
             <r>get_targets</r>
             <r>get_tasks</r>
@@ -1652,6 +1659,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_schedule</r>
             <r>modify_setting</r>
             <r>modify_slave</r>
+            <r>modify_tag</r>
             <r>modify_target</r>
             <r>modify_task</r>
             <r>pause_task</r>
@@ -3112,6 +3120,99 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>create_tag</name>
+    <summary>Create a tag</summary>
+    <description>
+      <p>
+        The client uses the create_tag command to create a new tag.
+        A name and the type and ID of a resource to attach to must be provided.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <e>attach</e>
+      <o><e>value</e></o>
+      <o><e>comment</e></o>
+      <o><e>active</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A full tag name consisting of namespace and predicate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>attach</name>
+      <summary>Identifies a resource the tag is to be attached to</summary>
+      <pattern>
+        <e>type</e>
+        <e>id</e>
+      </pattern>
+      <ele>
+        <name>type</name>
+        <summary>OMP type of the resource the tag is to be attached to</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>id</name>
+        <summary>ID of the resource the tag is to be attached to</summary>
+        <pattern>text</pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>value</name>
+      <summary>Value associated with the tag</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment to add to the tag</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>active</name>
+      <summary>Whether the tag is active</summary>
+      <pattern>boolean</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a tag attached to a target.</summary>
+      <request>
+        <create_tag>
+          <name>geo:long</name>
+          <attach>
+            <type>target</type>
+            <id>b493b7a8-7489-11df-a3ec-002264764cea</id>
+          </attach>
+          <value>52.2788</value>
+        </create_tag>
+      </request>
+      <response>
+        <create_tag_response status="201"
+                             status_text="OK, resource created"
+                             id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_tag_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>create_target</name>
     <summary>Create a target</summary>
     <description>
@@ -4094,6 +4195,57 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <delete_slave_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+    <command>
+    <name>delete_tag</name>
+    <summary>Delete a tag</summary>
+    <description>
+      <p>
+        The client uses the delete_tag command to delete an existing tag.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>tag_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a tag</summary>
+      <request>
+        <delete_tag target_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_tag>
+      </request>
+      <response>
+        <delete_tag_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -9685,6 +9837,221 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>get_tags</name>
+    <summary>Get all tags</summary>
+    <description>
+      <p>
+        The client uses the get_tags command to get tag information.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>tag_id</name>
+        <summary>ID of single tag to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get tags from the trashcan instead</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>tag</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>tags</e>
+        <e>tag_count</e>
+      </pattern>
+      <ele>
+        <name>tag</name>
+        <summary>Information on a single tag</summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of the tag</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>attach</e>
+          <e>value</e>
+          <e>active</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>Name of the tag (usually namespace:predicate)</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>Comment for the tag</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the tag was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the tag was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>attach</name>
+          <summary>Identifies a resource the tag is attached to</summary>
+          <pattern>
+            <e>type</e>
+            <e>id</e>
+          </pattern>
+          <ele>
+            <name>type</name>
+            <summary>OMP type of the resource the tag is attached to</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>id</name>
+            <summary>ID of the resource the tag is attached to</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>Value associated with the tag</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>active</name>
+          <summary>Whether the tag is active</summary>
+          <pattern>boolean</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>tags</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First tag</summary>
+            <type><t>number</t></type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of tags</summary>
+            <type><t>number</t></type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>tag_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of tags after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of tags on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all tags</summary>
+      <request>
+        <get_tags></get_tags>
+      </request>
+      <response>
+        <get_tags_response status="200" status_text="OK">
+          <tag id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+            <name>geo:long</name>
+            <comment></comment>
+            <creation_time>Fri Apr 12 08:49:43 2013</creation_time>
+            <modification_time>Fri Apr 12 08:49:43 2013</modification_time>
+            <attach>
+              <type>target</type>
+              <id>b493b7a8-7489-11df-a3ec-002264764cea</id>
+            </attach>
+            <value>52.2788</value>
+            <active>1</active>
+          </tag>
+          <truncated>...</truncated>
+        </get_tags_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_target_locators</name>
     <summary>Get configured target locators</summary>
     <description>
@@ -12704,6 +13071,92 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_target_response status="200" status_text="OK">
         </modify_target_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_tag</name>
+    <summary>Modify a tag</summary>
+    <description>
+      <p>
+        The client uses the modify_tag command to change an existing tag.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>tag_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>name</e></o>
+      <o><e>attach</e></o>
+      <o><e>value</e></o>
+      <o><e>comment</e></o>
+      <o><e>active</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A full tag name consisting of namespace and predicate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>attach</name>
+      <summary>Identifies a resource the tag is to be attached to</summary>
+      <pattern>
+        <e>type</e>
+        <e>id</e>
+      </pattern>
+      <ele>
+        <name>type</name>
+        <summary>OMP type of the resource the tag is to be attached to</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>id</name>
+        <summary>ID of the resource the tag is to be attached to</summary>
+        <pattern>text</pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>value</name>
+      <summary>Value associated with the tag</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment to add to the tag</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>active</name>
+      <summary>Whether the tag is active</summary>
+      <pattern>boolean</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Deactivate a tag.</summary>
+      <request>
+        <modify_tag tag_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <active>0</active>
+        </modify_tag>
+      </request>
+      <response>
+        <modify_tag_response status="200"
+                             status_text="OK">
+        </modify_tag_response>
       </response>
     </example>
   </command>

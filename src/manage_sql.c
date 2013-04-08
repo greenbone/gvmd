@@ -3960,6 +3960,18 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS task_preferences (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER, upload_result_count INTEGER, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, password, timezone, role, hosts, hosts_allow, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS tags"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+       "  creation_time, modification_time, attach_type, attach_id,"
+       "  active, value);");
+  sql ("CREATE UNIQUE INDEX IF NOT EXISTS tags_by_uuid ON tags (uuid);");
+  sql ("CREATE INDEX IF NOT EXISTS tags_by_name ON tags (name);");
+  sql ("CREATE INDEX IF NOT EXISTS tags_by_attach"
+       " ON tags (attach_type, attach_id);");
+  sql ("CREATE TABLE IF NOT EXISTS tags_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+       "  creation_time, modification_time, attach_type, attach_id,"
+       "  active, value);");
 
   sql ("ANALYZE;");
 }
@@ -30438,6 +30450,21 @@ target_iterator_port_list_trash (iterator_t* iterator)
 }
 
 /**
+ * @brief Return the UUID of a tag.
+ *
+ * @param[in]  tag  Tag.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+tag_uuid (tag_t tag)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM tags WHERE ROWID = %llu;",
+                     tag);
+}
+
+/**
  * @brief Return the UUID of a target.
  *
  * @param[in]  target  Target.
@@ -47645,6 +47672,29 @@ manage_restore (const char *id)
       return 0;
     }
 
+  /* Tag */
+
+  if (find_trash ("tag", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      sql ("INSERT INTO tags"
+           " (uuid, owner, name, comment, creation_time,"
+           "  modification_time, attach_type, attach_id, active, value)"
+           " SELECT uuid, owner, name, comment, creation_time,"
+           "        modification_time, attach_type, attach_id, active, value"
+           " FROM tags_trash WHERE ROWID = %llu;",
+           resource);
+
+      sql ("DELETE FROM tags_trash WHERE ROWID = %llu;", resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
   /* Target. */
 
   if (find_trash ("target", id, &resource))
@@ -49918,3 +49968,376 @@ DEF_ACCESS (user_group_iterator_uuid, 1);
  * @return NAME or NULL if iteration is complete.  Freed by cleanup_iterator.
  */
 DEF_ACCESS (user_group_iterator_name, 2);
+
+
+
+/* Tags */
+
+/**
+ * @brief Create a tag.
+ *
+ * @param[in]  name        Name of the tag.
+ * @param[in]  comment     Comment for the tag.
+ * @param[in]  value       Value of the tag.
+ * @param[in]  attach_type Resource type to attach the tag to.
+ * @param[in]  attach_id   Unique ID of the resource to attach the tag to.
+ * @param[in]  active      0 for inactive, NULL or any other value for active.
+ * @param[out] note        Created tag.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+create_tag (const char * name, const char * comment, const char * value,
+            const char * attach_type, const char * attach_id,
+            const char * active, tag_t * tag)
+{
+  if (user_may ("create_tag") == 0)
+    return 99;
+
+  gchar *quoted_name, *quoted_comment, *quoted_value,
+        *lc_attach_type, *quoted_attach_type, *quoted_attach_id;
+
+  if (name == NULL || attach_type == NULL || attach_id == NULL)
+    return -1;
+
+  quoted_name = sql_insert (name);
+  lc_attach_type = g_ascii_strdown(attach_type, -1);
+  quoted_attach_type = sql_insert (lc_attach_type);
+  quoted_attach_id = sql_insert (attach_id);
+
+  quoted_comment = sql_insert (comment ? comment : "");
+  quoted_value = sql_insert (value ? value : "");
+
+  sql ("INSERT INTO tags"
+      " (uuid, owner, creation_time, modification_time, name, comment,"
+      "  value, attach_type, attach_id, active)"
+      " VALUES"
+      " (make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+      "  %i, %i, %s, %s, %s, %s, %s, %i);",
+      current_credentials.uuid,
+      time (NULL),
+      time (NULL),
+      quoted_name,
+      quoted_comment,
+      quoted_value,
+      quoted_attach_type,
+      quoted_attach_id,
+      active
+        ? (strcmp(active, "0") == 0
+           ? 0
+           : 1)
+        : 1);
+
+  g_free (quoted_name);
+  g_free (lc_attach_type);
+  g_free (quoted_attach_type);
+  g_free (quoted_attach_id);
+  g_free (quoted_comment);
+  g_free (quoted_value);
+
+  if (tag)
+    *tag = sqlite3_last_insert_rowid (task_db);
+
+  return 0;
+}
+
+/**
+ * @brief Delete a tag.
+ *
+ * @param[in]  tag_id     UUID of tag.
+ * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 1 failed to find tag, -1 error.
+ */
+int
+delete_tag (const char *tag_id, int ultimate)
+{
+  tag_t tag = 0;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (find_tag (tag_id, &tag))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (tag == 0)
+    {
+      if (find_trash ("tag", tag_id, &tag))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (tag == 0)
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      sql ("DELETE FROM tags_trash WHERE ROWID = %llu;", tag);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  if (ultimate == 0)
+    {
+      sql ("INSERT INTO tags_trash"
+           " (uuid, owner, name, comment, creation_time,"
+           "  modification_time, attach_type, attach_id, active, value)"
+           " SELECT uuid, owner, name, comment, creation_time,"
+           "        modification_time, attach_type, attach_id, active, value"
+           " FROM tags WHERE ROWID = %llu;",
+           tag);
+    }
+
+  sql ("DELETE FROM tags WHERE ROWID = %llu;", tag);
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Find a tag given a UUID.
+ *
+ * @param[in]   uuid    UUID of tag.
+ * @param[out]  tag     Tag return, 0 if succesfully failed to find target.
+ *
+ * @return FALSE on success (including if failed to find target), TRUE on error.
+ */
+gboolean
+find_tag (const char* uuid, tag_t* tag)
+{
+  return find_resource ("tag", uuid, tag);
+}
+
+/**
+ * @brief Modify a tag.
+ *
+ * @param[in]   tag_id      UUID of tag.
+ * @param[in]   name        New name of the tag or NULL.
+ * @param[in]   comment     New comment for the tag or NULL.
+ * @param[in]   value       New value of the tag or NULL.
+ * @param[in]   attach_type New resource type to attach the tag to or NULL.
+ * @param[in]   attach_id   New Unique ID of the resource to attach or NULL.
+ * @param[in]   active      0 for inactive, any other for active or NULL.
+ *
+ * @return 0 success, 1 failed to find tag, 2 tag_id required,
+ * -1 internal error.
+ */
+int
+modify_tag (const char *tag_id, const char *name, const char *comment,
+            const char *value, const char *attach_type, const char *attach_id,
+            const char *active)
+{
+  gchar *quoted_name, *quoted_comment, *quoted_value,
+        *lc_attach_type, *quoted_attach_type, *quoted_attach_id;
+  tag_t tag;
+
+  if (tag_id == NULL)
+    return 2;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+
+  tag = 0;
+  if (find_tag (tag_id, &tag))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (tag == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  quoted_name = sql_insert (name ? name : "");
+  lc_attach_type = (attach_type
+                      ? g_ascii_strdown(attach_type, -1)
+                      : g_strdup (""));
+  quoted_attach_type = sql_insert (lc_attach_type);
+  quoted_attach_id = sql_insert (attach_id ? attach_id : "");
+  quoted_comment = sql_insert (comment ? comment : "");
+  quoted_value = sql_insert (value ? value : "");
+
+  if (name)
+    {
+      sql ("UPDATE tags SET"
+           " name = %s"
+           " WHERE ROWID = %llu;",
+           quoted_name,
+           tag);
+    }
+
+  if (attach_type)
+    {
+      sql ("UPDATE tags SET"
+           " attach_type = %s"
+           " WHERE ROWID = %llu;",
+           quoted_attach_type,
+           tag);
+    }
+
+  if (attach_id)
+    {
+      sql ("UPDATE tags SET"
+           " attach_id = %s"
+           " WHERE ROWID = %llu;",
+           quoted_attach_id,
+           tag);
+    }
+
+  if (comment)
+    {
+      sql ("UPDATE tags SET"
+           " comment = %s"
+           " WHERE ROWID = %llu;",
+           quoted_comment,
+           tag);
+    }
+
+  if (value)
+    {
+      sql ("UPDATE tags SET"
+           " name = %s"
+           " WHERE ROWID = %llu;",
+           quoted_value,
+           tag);
+    }
+
+  if (active)
+    {
+      sql ("UPDATE tags SET"
+           " active = %i"
+           " WHERE ROWID = %llu;",
+           strcmp(active, "0") ? 1 : 0,
+           tag);
+    }
+
+  sql ("UPDATE tags SET"
+       " modification_time = %i"
+       " WHERE ROWID = %llu;",
+       time (NULL),
+       tag);
+
+  g_free (quoted_name);
+  g_free (lc_attach_type);
+  g_free (quoted_attach_type);
+  g_free (quoted_attach_id);
+  g_free (quoted_comment);
+  g_free (quoted_value);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+
+/**
+ * @brief Filter columns for Tag iterator.
+ */
+#define TAG_ITERATOR_FILTER_COLUMNS                         \
+ { GET_ITERATOR_FILTER_COLUMNS, "attach_type", "attach_id", \
+   "active", "value",  NULL }
+
+/**
+ * @brief Tag iterator columns.
+ */
+#define TAG_ITERATOR_COLUMNS                                \
+  GET_ITERATOR_COLUMNS ", attach_type, attach_id,"          \
+  "active, value"
+
+/**
+ * @brief Tag iterator trash columns.
+ */
+#define TAG_ITERATOR_TRASH_COLUMNS                          \
+  GET_ITERATOR_COLUMNS ", attach_type, attach_id,"          \
+  "active, value"
+
+/**
+ * @brief Initialise a tag iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find tag, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_tag_iterator (iterator_t* iterator, const get_data_t *get)
+{
+  static const char *filter_columns[] = TAG_ITERATOR_FILTER_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "tag",
+                            get,
+                            /* Columns. */
+                            TAG_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            TAG_ITERATOR_TRASH_COLUMNS,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
+
+/**
+ * @brief Count number of tags.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of targets in filtered set.
+ */
+int
+tag_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = TAG_ITERATOR_FILTER_COLUMNS;
+  return count ("tag", get, TAG_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
+                TRUE);
+}
+
+/**
+ * @brief Get the attach_type from a Tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The resource type attached to a tag.
+ */
+DEF_ACCESS (tag_iterator_attach_type, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the attach_id from a Tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The ID of the resource attached to a tag.
+ */
+DEF_ACCESS (tag_iterator_attach_id, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get if a tag is active from a Tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether a tag is active (0 = inactive, 1 = active).
+ */
+DEF_ACCESS (tag_iterator_active, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the value from a Tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The value associated with a tag.
+ */
+DEF_ACCESS (tag_iterator_value, GET_ITERATOR_COLUMN_COUNT + 3);

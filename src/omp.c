@@ -404,6 +404,7 @@ static command_t omp_commands[]
     {"CREATE_REPORT", "Create a report."},
     {"CREATE_SCHEDULE", "Create a schedule."},
     {"CREATE_SLAVE", "Create a slave."},
+    {"CREATE_TAG", "Create a tag."},
     {"CREATE_TARGET", "Create a target."},
     {"CREATE_TASK", "Create a task."},
     {"CREATE_USER", "Create a new user."},
@@ -422,6 +423,7 @@ static command_t omp_commands[]
     {"DELETE_REPORT_FORMAT", "Delete a report format."},
     {"DELETE_SCHEDULE", "Delete a schedule."},
     {"DELETE_SLAVE", "Delete a slave."},
+    {"DELETE_TAG", "Delete a tag."},
     {"DELETE_TARGET", "Delete a target."},
     {"DELETE_TASK", "Delete a task."},
     {"DELETE_USER", "Delete an existing user."},
@@ -449,6 +451,7 @@ static command_t omp_commands[]
     {"GET_SETTINGS", "Get all settings."},
     {"GET_SLAVES", "Get all slaves."},
     {"GET_SYSTEM_REPORTS", "Get all system reports."},
+    {"GET_TAGS", "Get all tags."},
     {"GET_TARGET_LOCATORS", "Get configured target locators."},
     {"GET_TARGETS", "Get all targets."},
     {"GET_TASKS", "Get all tasks."},
@@ -470,6 +473,7 @@ static command_t omp_commands[]
     {"MODIFY_SCHEDULE", "Modify an existing schedule."},
     {"MODIFY_SETTING", "Modify an existing setting."},
     {"MODIFY_SLAVE", "Modify an existing slave."},
+    {"MODIFY_TAG", "Modify an existing tag."},
     {"MODIFY_TARGET", "Modify an existing target."},
     {"MODIFY_TASK", "Update an existing task."},
     {"MODIFY_USER", "Modify a user."},
@@ -1500,6 +1504,37 @@ create_target_data_reset (create_target_data_t *data)
 }
 
 /**
+ * @brief Command data for the create_tag command.
+ */
+typedef struct
+{
+  char *active;       ///< Whether the tag is active.
+  char *attach_id;    ///< ID of the resource to which to attach the tag.
+  char *attach_type;  ///< Type of the resource to which to attach the tag.
+  char *comment;      ///< Comment to add to the tag
+  char *name;         ///< Name of the tag
+  char *value;        ///< Value of the tag.
+} create_tag_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+create_tag_data_reset (create_tag_data_t *data)
+{
+  free (data->active);
+  free (data->attach_type);
+  free (data->attach_id);
+  free (data->comment);
+  free (data->name);
+  free (data->value);
+
+  memset (data, 0, sizeof (create_tag_data_t));
+}
+
+/**
  * @brief Command data for the create_task command.
  */
 typedef struct
@@ -1915,6 +1950,28 @@ delete_slave_data_reset (delete_slave_data_t *data)
   free (data->slave_id);
 
   memset (data, 0, sizeof (delete_slave_data_t));
+}
+
+/**
+ * @brief Command data for the delete_tag command.
+ */
+typedef struct
+{
+  char *tag_id;      ///< ID of tag to delete.
+  int ultimate;      ///< Boolean.  Whether to remove entirely or to trashcan.
+} delete_tag_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+delete_tag_data_reset (delete_tag_data_t *data)
+{
+  free (data->tag_id);
+
+  memset (data, 0, sizeof (delete_tag_data_t));
 }
 
 /**
@@ -2613,6 +2670,26 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 }
 
 /**
+ * @brief Command data for the get_tags command.
+ */
+typedef struct
+{
+  get_data_t get;    ///< Get args.
+} get_tags_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_tags_data_reset (get_tags_data_t *data)
+{
+  get_data_reset (&data->get);
+  memset (data, 0, sizeof (get_tags_data_t));
+}
+
+/**
  * @brief Command data for the get_targets command.
  */
 typedef struct
@@ -3059,6 +3136,39 @@ modify_slave_data_reset (modify_slave_data_t *data)
   free (data->password);
 
   memset (data, 0, sizeof (modify_slave_data_t));
+}
+
+/**
+ * @brief Command data for the modify_tag command.
+ */
+typedef struct
+{
+  char *tag_id;       ///< UUID of the tag.
+  char *active;       ///< Whether the tag is active.
+  char *attach_id;    ///< ID of the resource to which to attach the tag.
+  char *attach_type;  ///< Type of the resource to which to attach the tag.
+  char *comment;      ///< Comment to add to the tag
+  char *name;         ///< Name of the tag
+  char *value;        ///< Value of the tag.
+} modify_tag_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_tag_data_reset (modify_tag_data_t *data)
+{
+  free (data->tag_id);
+  free (data->active);
+  free (data->attach_type);
+  free (data->attach_id);
+  free (data->comment);
+  free (data->name);
+  free (data->value);
+
+  memset (data, 0, sizeof (modify_tag_data_t));
 }
 
 /**
@@ -3568,6 +3678,7 @@ typedef union
   create_report_format_data_t create_report_format;   ///< create_report_format
   create_schedule_data_t create_schedule;             ///< create_schedule
   create_slave_data_t create_slave;                   ///< create_slave
+  create_tag_data_t create_tag;                       ///< create_tag
   create_target_data_t create_target;                 ///< create_target
   create_task_data_t create_task;                     ///< create_task
   create_user_data_t create_user;                     ///< create_user
@@ -3586,6 +3697,7 @@ typedef union
   delete_report_format_data_t delete_report_format;   ///< delete_report_format
   delete_schedule_data_t delete_schedule;             ///< delete_schedule
   delete_slave_data_t delete_slave;                   ///< delete_slave
+  delete_tag_data_t delete_tag;                       ///< delete_tag
   delete_target_data_t delete_target;                 ///< delete_target
   delete_task_data_t delete_task;                     ///< delete_task
   delete_user_data_t delete_user;                     ///< delete_user
@@ -3611,6 +3723,7 @@ typedef union
   get_settings_data_t get_settings;                   ///< get_settings
   get_slaves_data_t get_slaves;                       ///< get_slaves
   get_system_reports_data_t get_system_reports;       ///< get_system_reports
+  get_tags_data_t get_tags;                           ///< get_tags
   get_targets_data_t get_targets;                     ///< get_targets
   get_tasks_data_t get_tasks;                         ///< get_tasks
   get_users_data_t get_users;                         ///< get_users
@@ -3627,6 +3740,7 @@ typedef union
   modify_schedule_data_t modify_schedule;             ///< modify_schedule
   modify_setting_data_t modify_setting;               ///< modify_setting
   modify_slave_data_t modify_slave;                   ///< modify_slave
+  modify_tag_data_t modify_tag;                       ///< modify_tag
   modify_target_data_t modify_target;                 ///< modify_target
   modify_task_data_t modify_task;                     ///< modify_task
   modify_user_data_t modify_user;                     ///< modify_user
@@ -3751,6 +3865,12 @@ create_slave_data_t *create_slave_data
  = (create_slave_data_t*) &(command_data.create_slave);
 
 /**
+ * @brief Parser callback data for CREATE_TAG.
+ */
+create_tag_data_t *create_tag_data
+ = (create_tag_data_t*) &(command_data.create_tag);
+
+/**
  * @brief Parser callback data for CREATE_TARGET.
  */
 create_target_data_t *create_target_data
@@ -3857,6 +3977,12 @@ delete_schedule_data_t *delete_schedule_data
  */
 delete_slave_data_t *delete_slave_data
  = (delete_slave_data_t*) &(command_data.delete_slave);
+
+/**
+ * @brief Parser callback data for DELETE_TAG.
+ */
+delete_tag_data_t *delete_tag_data
+ = (delete_tag_data_t*) &(command_data.delete_tag);
 
 /**
  * @brief Parser callback data for DELETE_TARGET.
@@ -4009,6 +4135,12 @@ get_system_reports_data_t *get_system_reports_data
  = &(command_data.get_system_reports);
 
 /**
+ * @brief Parser callback data for GET_TAGS.
+ */
+get_tags_data_t *get_tags_data
+ = &(command_data.get_tags);
+
+/**
  * @brief Parser callback data for GET_TARGETS.
  */
 get_targets_data_t *get_targets_data
@@ -4121,6 +4253,12 @@ modify_setting_data_t *modify_setting_data
  */
 modify_slave_data_t *modify_slave_data
  = &(command_data.modify_slave);
+
+/**
+ * @brief Parser callback data for MODIFY_TAG.
+ */
+modify_tag_data_t *modify_tag_data
+ = (modify_tag_data_t*) &(command_data.modify_tag);
 
 /**
  * @brief Parser callback data for MODIFY_TARGET.
@@ -4481,6 +4619,14 @@ typedef enum
   CLIENT_CREATE_SLAVE_NAME,
   CLIENT_CREATE_SLAVE_PASSWORD,
   CLIENT_CREATE_SLAVE_PORT,
+  CLIENT_CREATE_TAG,
+  CLIENT_CREATE_TAG_ACTIVE,
+  CLIENT_CREATE_TAG_ATTACH,
+  CLIENT_CREATE_TAG_ATTACH_ID,
+  CLIENT_CREATE_TAG_ATTACH_TYPE,
+  CLIENT_CREATE_TAG_COMMENT,
+  CLIENT_CREATE_TAG_NAME,
+  CLIENT_CREATE_TAG_VALUE,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_COPY,
@@ -4536,6 +4682,7 @@ typedef enum
   CLIENT_DELETE_REPORT_FORMAT,
   CLIENT_DELETE_SCHEDULE,
   CLIENT_DELETE_SLAVE,
+  CLIENT_DELETE_TAG,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TARGET,
   CLIENT_DELETE_USER,
@@ -4563,6 +4710,7 @@ typedef enum
   CLIENT_GET_SETTINGS,
   CLIENT_GET_SLAVES,
   CLIENT_GET_SYSTEM_REPORTS,
+  CLIENT_GET_TAGS,
   CLIENT_GET_TARGET_LOCATORS,
   CLIENT_GET_TARGETS,
   CLIENT_GET_TASKS,
@@ -4670,6 +4818,14 @@ typedef enum
   CLIENT_MODIFY_SLAVE_PORT,
   CLIENT_MODIFY_SLAVE_LOGIN,
   CLIENT_MODIFY_SLAVE_PASSWORD,
+  CLIENT_MODIFY_TAG,
+  CLIENT_MODIFY_TAG_ACTIVE,
+  CLIENT_MODIFY_TAG_ATTACH,
+  CLIENT_MODIFY_TAG_ATTACH_ID,
+  CLIENT_MODIFY_TAG_ATTACH_TYPE,
+  CLIENT_MODIFY_TAG_COMMENT,
+  CLIENT_MODIFY_TAG_NAME,
+  CLIENT_MODIFY_TAG_VALUE,
   CLIENT_MODIFY_TARGET,
   CLIENT_MODIFY_TARGET_COMMENT,
   CLIENT_MODIFY_TARGET_HOSTS,
@@ -5481,6 +5637,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_SCHEDULE", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE);
+        else if (strcasecmp ("CREATE_TAG", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_TAG);
+          }
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
           {
             openvas_append_string (&create_target_data->comment, "");
@@ -5671,6 +5831,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               delete_slave_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_SLAVE);
+          }
+        else if (strcasecmp ("DELETE_TAG", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values, "tag_id",
+                              &delete_tag_data->tag_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_tag_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_tag_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_TAG);
           }
         else if (strcasecmp ("DELETE_TARGET", element_name) == 0)
           {
@@ -6229,6 +6401,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_slaves_data->tasks = 0;
             set_client_state (CLIENT_GET_SLAVES);
           }
+        else if (strcasecmp ("GET_TAGS", element_name) == 0)
+          {
+            get_data_parse_attributes (&get_tags_data->get, "tag",
+                                       attribute_names,
+                                       attribute_values);
+            set_client_state (CLIENT_GET_TAGS);
+          }
         else if (strcasecmp ("GET_TARGET_LOCATORS", element_name) == 0)
           {
             set_client_state (CLIENT_GET_TARGET_LOCATORS);
@@ -6418,6 +6597,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "slave_id",
                               &modify_slave_data->slave_id);
             set_client_state (CLIENT_MODIFY_SLAVE);
+          }
+        else if (strcasecmp ("MODIFY_TAG", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "tag_id",
+                              &modify_tag_data->tag_id);
+            set_client_state (CLIENT_MODIFY_TAG);
           }
         else if (strcasecmp ("MODIFY_TARGET", element_name) == 0)
           {
@@ -6901,6 +7086,44 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_SLAVE_PASSWORD);
           }
         ELSE_ERROR ("modify_slave");
+
+      case CLIENT_MODIFY_TAG:
+        if (strcasecmp ("ACTIVE", element_name) == 0)
+          {
+            openvas_append_string (&modify_tag_data->active, "");
+            set_client_state (CLIENT_MODIFY_TAG_ACTIVE);
+          }
+        else if (strcasecmp ("ATTACH", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TAG_ATTACH);
+        else if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_append_string (&modify_tag_data->comment, "");
+            set_client_state (CLIENT_MODIFY_TAG_COMMENT);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&modify_tag_data->name, "");
+            set_client_state (CLIENT_MODIFY_TAG_NAME);
+          }
+        else if (strcasecmp ("VALUE", element_name) == 0)
+          {
+            openvas_append_string (&modify_tag_data->value, "");
+            set_client_state (CLIENT_MODIFY_TAG_VALUE);
+          }
+        ELSE_ERROR ("modify_tag");
+
+      case CLIENT_MODIFY_TAG_ATTACH:
+        if (strcasecmp ("ID", element_name) == 0)
+          {
+            openvas_append_string (&modify_tag_data->attach_id, "");
+            set_client_state (CLIENT_MODIFY_TAG_ATTACH_ID);
+          }
+        else if (strcasecmp ("TYPE", element_name) == 0)
+          {
+            openvas_append_string (&modify_tag_data->attach_type, "");
+            set_client_state (CLIENT_MODIFY_TAG_ATTACH_TYPE);
+          }
+        ELSE_ERROR ("modify_tag");
 
       case CLIENT_MODIFY_TARGET:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7925,6 +8148,44 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_SLAVE_PORT);
         ELSE_ERROR ("create_slave");
+
+      case CLIENT_CREATE_TAG:
+        if (strcasecmp ("ACTIVE", element_name) == 0)
+          {
+            openvas_append_string (&create_tag_data->active, "");
+            set_client_state (CLIENT_CREATE_TAG_ACTIVE);
+          }
+        else if (strcasecmp ("ATTACH", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TAG_ATTACH);
+        else if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_append_string (&create_tag_data->comment, "");
+            set_client_state (CLIENT_CREATE_TAG_COMMENT);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&create_tag_data->name, "");
+            set_client_state (CLIENT_CREATE_TAG_NAME);
+          }
+        else if (strcasecmp ("VALUE", element_name) == 0)
+          {
+            openvas_append_string (&create_tag_data->value, "");
+            set_client_state (CLIENT_CREATE_TAG_VALUE);
+          }
+        ELSE_ERROR ("create_tag");
+
+      case CLIENT_CREATE_TAG_ATTACH:
+        if (strcasecmp ("ID", element_name) == 0)
+          {
+            openvas_append_string (&create_tag_data->attach_id, "");
+            set_client_state (CLIENT_CREATE_TAG_ATTACH_ID);
+          }
+        else if (strcasecmp ("TYPE", element_name) == 0)
+          {
+            openvas_append_string (&create_tag_data->attach_type, "");
+            set_client_state (CLIENT_CREATE_TAG_ATTACH_TYPE);
+          }
+        ELSE_ERROR ("create_tag");
 
       case CLIENT_CREATE_TARGET:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -11537,6 +11798,108 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
+      case CLIENT_GET_TAGS:
+        {
+          iterator_t tags;
+          get_data_t* get;
+          int ret, count, first, filtered;
+          gchar* comment_esc;
+          gchar* value_esc;
+
+          assert (strcasecmp ("GET_TAGS", element_name) == 0);
+
+          ret = init_tag_iterator (&tags, &get_tags_data->get);
+          switch (ret)
+            {
+              case 1:
+                if (send_find_error_to_client ("get_tags",
+                                                "tag",
+                                                get_tags_data->get.id,
+                                                write_to_client,
+                                                write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 2:
+                if (send_find_error_to_client
+                      ("get_tags",
+                      "filter",
+                      get_tags_data->get.filt_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_INTERNAL_ERROR ("get_tags"));
+                break;
+            }
+
+          get = &get_tags_data->get;
+          count = 0;
+          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+          SEND_GET_START ("tag", &get_filters_data->get);
+
+          while (1)
+            {
+              ret = get_next (&tags, get, &first, &count,
+                              init_filter_iterator);
+              if (ret == 1)
+                break;
+              if (ret == -1)
+                {
+                  internal_error_send_to_client (error);
+                  return;
+                }
+
+              comment_esc = g_markup_escape_text (get_iterator_comment (&tags),
+                                                  -1);
+              value_esc = g_markup_escape_text (tag_iterator_value (&tags),
+                                                -1);
+
+              SENDF_TO_CLIENT_OR_FAIL ("<tag id=\"%s\">"
+                                    "<name>%s</name>"
+                                    "<comment>%s</comment>"
+                                    "<creation_time>%s</creation_time>"
+                                    "<modification_time>%s</modification_time>"
+                                    "<attach>"
+                                      "<type>%s</type>"
+                                      "<id>%s</id>"
+                                    "</attach>"
+                                    "<value>%s</value>"
+                                    "<active>%s</active>"
+                                  "</tag>",
+                                  get_iterator_uuid (&tags),
+                                  get_iterator_name (&tags),
+                                  comment_esc,
+                                  get_iterator_creation_time (&tags),
+                                  get_iterator_modification_time (&tags),
+                                  tag_iterator_attach_type (&tags),
+                                  tag_iterator_attach_id (&tags),
+                                  value_esc,
+                                  tag_iterator_active (&tags));
+
+              g_free (comment_esc);
+              g_free (value_esc);
+
+              count++;
+            }
+          cleanup_iterator (&tags);
+          filtered = get_tags_data->get.id
+                      ? 1
+                      : tag_count (&get_tags_data->get);
+          SEND_GET_END ("tag", &get_tags_data->get, count, filtered);
+
+          get_tags_data_reset (get_tags_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
       case CLIENT_GET_TARGET_LOCATORS:
         {
           assert (strcasecmp ("GET_TARGET_LOCATORS", element_name) == 0);
@@ -12400,6 +12763,46 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
            (XML_ERROR_SYNTAX ("delete_slave",
                               "DELETE_SLAVE requires a slave_id attribute"));
         delete_slave_data_reset (delete_slave_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_DELETE_TAG:
+        assert (strcasecmp ("DELETE_TAG", element_name) == 0);
+        if (delete_tag_data->tag_id)
+          switch (delete_tag (delete_tag_data->tag_id,
+                              delete_tag_data->ultimate))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_tag"));
+                g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                       "Tag %s has been deleted",
+                       delete_tag_data->tag_id);
+                break;
+              case 1:
+                if (send_find_error_to_client ("delete_target",
+                                               "target",
+                                               delete_target_data->target_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                       "Tag %s could not be deleted",
+                       delete_tag_data->tag_id);
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_tag"));
+                g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                       "Tag %s could not be deleted",
+                       delete_tag_data->tag_id);
+            }
+        else
+           SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_tag",
+                              "DELETE_TAG requires a tag_id attribute"));
+        delete_tag_data_reset (delete_tag_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -16503,6 +16906,103 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_SLAVE, PASSWORD);
       CLOSE (CLIENT_CREATE_SLAVE, PORT);
 
+      case CLIENT_CREATE_TAG:
+        {
+          tag_t new_tag;
+
+          assert (strcasecmp ("CREATE_TAG", element_name) == 0);
+
+          if (create_tag_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_tag",
+                                "CREATE_TAG requires a NAME"));
+          else if (strlen (create_tag_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_tag",
+                                "CREATE_TAG name must be at"
+                                " least one character long"));
+          else if (create_tag_data->attach_type == NULL
+                   || create_tag_data->attach_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_tag",
+                                "CREATE_TAG requires an ATTACH"));
+          else
+            {
+              switch (create_tag (create_tag_data->name,
+                                  create_tag_data->comment,
+                                  create_tag_data->value,
+                                  create_tag_data->attach_type,
+                                  create_tag_data->attach_id,
+                                  create_tag_data->active,
+                                  &new_tag))
+                {
+                  case 0:
+                    {
+                      char *uuid;
+                      uuid = tag_uuid (new_tag);
+                      SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_tag"),
+                                              uuid);
+                      g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                            "Tag %s has been created", uuid);
+                      free (uuid);
+                      break;
+                    }
+                  case 99:
+                    SEND_TO_CLIENT_OR_FAIL
+                      (XML_ERROR_SYNTAX ("create_target",
+                                        "Permission denied"));
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                      (XML_INTERNAL_ERROR ("create_target"));
+                    g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                            "Target could not be created");
+                    break;
+                }
+            }
+          g_debug ("trying reset");
+          create_tag_data_reset (create_tag_data);
+          g_debug ("trying set client state");
+          set_client_state (CLIENT_AUTHENTIC);
+
+          break;
+        }
+
+      CLOSE (CLIENT_CREATE_TAG, ACTIVE);
+      CLOSE (CLIENT_CREATE_TAG, COMMENT);
+      CLOSE (CLIENT_CREATE_TAG, NAME);
+      CLOSE (CLIENT_CREATE_TAG, VALUE);
+
+      case CLIENT_CREATE_TAG_ATTACH:
+        {
+          assert (strcasecmp ("ATTACH", element_name) == 0);
+
+          if (create_tag_data->attach_type == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_tag",
+                                "ATTACH in CREATE_TAG requires a TYPE"));
+          else if (strlen (create_tag_data->attach_type) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_tag",
+                                "ATTACH type must be at"
+                                " least one character long"));
+          else if (create_tag_data->attach_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_tag",
+                                "ATTACH in CREATE_TAG requires an ID"));
+          else if (strlen (create_tag_data->attach_id) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_tag",
+                                "ATTACH attach_id must be at"
+                                " least one character long"));
+
+          set_client_state(CLIENT_CREATE_TAG);
+
+          break;
+        }
+      CLOSE (CLIENT_CREATE_TAG_ATTACH, ID);
+      CLOSE (CLIENT_CREATE_TAG_ATTACH, TYPE);
+
       case CLIENT_CREATE_TARGET:
         {
           lsc_credential_t ssh_lsc_credential = 0, smb_lsc_credential = 0;
@@ -18369,6 +18869,107 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_SLAVE, PORT);
       CLOSE (CLIENT_MODIFY_SLAVE, LOGIN);
       CLOSE (CLIENT_MODIFY_SLAVE, PASSWORD);
+
+      case CLIENT_MODIFY_TAG:
+        {
+          assert (strcasecmp ("MODIFY_TAG", element_name) == 0);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_tag",
+                                  "MODIFY is forbidden for observer users"));
+            }
+          else if (modify_tag_data->tag_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_tag",
+                                "MODIFY_TAG requires a tag_id attribute"));
+          else if (modify_tag_data->name
+                   && strcmp(modify_tag_data->name, "") == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_tag",
+                                "name in MODIFY_TAG must be at least one"
+                                "character long or omitted completely."));
+          else switch (modify_tag (modify_tag_data->tag_id,
+                                   modify_tag_data->name,
+                                   modify_tag_data->comment,
+                                   modify_tag_data->value,
+                                   modify_tag_data->attach_type,
+                                   modify_tag_data->attach_id,
+                                   modify_tag_data->active))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_tag"));
+                  g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                         "Tag %s has been modified",
+                         modify_tag_data->tag_id);
+                break;
+              case 1:
+                if (send_find_error_to_client ("modify_tag",
+                                               "tag",
+                                               modify_tag_data->tag_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                       "Tag could not be modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                (XML_ERROR_SYNTAX ("modify_tag",
+                                  "MODIFY_TAG requires a tag_id"));
+                g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                      "Tag could not be modified");
+              default:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("modify_tag"));
+                g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                       "Tag could not be modified");
+                break;
+            }
+
+          modify_tag_data_reset (modify_tag_data);
+          set_client_state(CLIENT_AUTHENTIC);
+          break;
+        }
+
+      CLOSE (CLIENT_MODIFY_TAG, ACTIVE);
+      CLOSE (CLIENT_MODIFY_TAG, COMMENT);
+      CLOSE (CLIENT_MODIFY_TAG, NAME);
+      CLOSE (CLIENT_MODIFY_TAG, VALUE);
+
+      case CLIENT_MODIFY_TAG_ATTACH:
+        {
+          assert (strcasecmp ("ATTACH", element_name) == 0);
+
+          if (modify_tag_data->attach_type == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_tag",
+                                "ATTACH in MODIFY_TAG requires a TYPE"));
+          else if (strlen (modify_tag_data->attach_type) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_tag",
+                                "ATTACH type must be at"
+                                " least one character long"));
+          else if (modify_tag_data->attach_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_tag",
+                                "ATTACH in MODIFY_TAG requires an ID"));
+          else if (strlen (modify_tag_data->attach_id) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_tag",
+                                "ATTACH attach_id must be at"
+                                " least one character long"));
+
+          set_client_state(CLIENT_MODIFY_TAG);
+
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_TAG_ATTACH, ID);
+      CLOSE (CLIENT_MODIFY_TAG_ATTACH, TYPE);
 
       case CLIENT_MODIFY_TARGET:
         {
@@ -22720,6 +23321,25 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
               &create_slave_data->port);
 
 
+      APPEND (CLIENT_CREATE_TAG_ACTIVE,
+              &create_tag_data->active);
+
+      APPEND (CLIENT_CREATE_TAG_ATTACH_ID,
+              &create_tag_data->attach_id);
+
+      APPEND (CLIENT_CREATE_TAG_ATTACH_TYPE,
+              &create_tag_data->attach_type);
+
+      APPEND (CLIENT_CREATE_TAG_COMMENT,
+              &create_tag_data->comment);
+
+      APPEND (CLIENT_CREATE_TAG_NAME,
+              &create_tag_data->name);
+
+      APPEND (CLIENT_CREATE_TAG_VALUE,
+              &create_tag_data->value);
+
+
       APPEND (CLIENT_CREATE_TARGET_COMMENT,
               &create_target_data->comment);
 
@@ -22960,6 +23580,26 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_SLAVE_PASSWORD,
               &modify_slave_data->password);
+
+
+      APPEND (CLIENT_MODIFY_TAG_ACTIVE,
+              &modify_tag_data->active);
+
+      APPEND (CLIENT_MODIFY_TAG_ATTACH_ID,
+              &modify_tag_data->attach_id);
+
+      APPEND (CLIENT_MODIFY_TAG_ATTACH_TYPE,
+              &modify_tag_data->attach_type);
+
+      APPEND (CLIENT_MODIFY_TAG_COMMENT,
+              &modify_tag_data->comment);
+
+      APPEND (CLIENT_MODIFY_TAG_NAME,
+              &modify_tag_data->name);
+
+      APPEND (CLIENT_MODIFY_TAG_VALUE,
+              &modify_tag_data->value);
+
 
       APPEND (CLIENT_MODIFY_TARGET_COMMENT,
               &modify_target_data->comment);

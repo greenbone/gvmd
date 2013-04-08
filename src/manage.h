@@ -187,6 +187,7 @@ typedef long long int alert_t;
 typedef long long int filter_t;
 typedef long long int group_t;
 typedef long long int slave_t;
+typedef long long int tag_t;
 typedef long long int target_t;
 typedef long long int task_t;
 typedef long long int result_t;
@@ -2633,7 +2634,7 @@ int
 manage_empty_trashcan ();
 
 
-/* Tags. */
+/* Scanner tags. */
 
 void
 parse_tags (const char *, gchar **, gchar **, gchar **);
@@ -2867,6 +2868,44 @@ openvas_admin_modify_user (const gchar *, const gchar *, const gchar *,
 
 char*
 user_uuid (user_t);
+
+
+/* Tags */
+
+char*
+tag_uuid (target_t);
+
+int
+create_tag (const char *, const char *, const char *, const char *,
+            const char *, const char *, tag_t *);
+
+int
+delete_tag (const char *, int);
+
+gboolean
+find_tag (const char*, tag_t*);
+
+int
+modify_tag (const char *, const char *, const char *, const char *,
+            const char *, const char *, const char *);
+
+int
+init_tag_iterator (iterator_t*, const get_data_t*);
+
+int
+tag_count (const get_data_t *get);
+
+const char*
+tag_iterator_attach_type (iterator_t*);
+
+const char*
+tag_iterator_attach_id (iterator_t*);
+
+const char*
+tag_iterator_active (iterator_t*);
+
+const char*
+tag_iterator_value (iterator_t*);
 
 
 /* Wizards. */

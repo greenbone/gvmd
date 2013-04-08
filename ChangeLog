@@ -1,3 +1,42 @@
+2013-04-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add tag management OMP commands (create_tag, delete_tag, get_tags,
+	modify_tag).
+
+	* src/manage.h (tag_t): New typedef.
+	(tag_uuid, create_tag, delete_tag, find_tag, modify_tag)
+	(init_tag_iterator, tag_count, tag_iterator_attach_type)
+	(tag_iterator_attach_id, tag_iterator_active, tag_iterator_active)
+	(tag_iterator_value): New function prototypes. See manage_sql.c.
+
+	* src/manage_sql.c (create_tables): Add definition of tables "tags" and
+	"tags_trash" as well as indexes.
+	(tag_uuid): New function, gets the UUID of a tag.
+	(manage_restore): Add restore of tags in trashcan.
+	(create_tag, delete_tag, find_tag, modify_tag): New functions for tag
+	management.
+	(TAG_ITERATOR_FILTER_COLUMNS, TAG_ITERATOR_COLUMNS)
+	(TAG_ITERATOR_TRASH_COLUMNS): New #defines for tag iterator columns.
+	(init_tag_iterator, tag_count, tag_iterator_attach_type)
+	(tag_iterator_attach_id, tag_iterator_active, tag_iterator_active)
+	(tag_iterator_value): New iterator functions for tags.
+
+	* src/omp.c (omp_commands): Add help text for new tag commands.
+	(create_tag_data_t, delete_tag_data_t, get_tags_data_t)
+	(modify_tag_data_t): New structs for command data of tag commands.
+	(create_tag_data_reset, delete_tag_data_reset, get_tags_data_reset)
+	(modify_tag_data_reset): New functions that reset tag command data.
+	(command_data_t): Add new command data types.
+	(create_tag_data, delete_tag_data, get_tags_data, modify_tag_data): New
+	variables for tag command data.
+	(client_state_t): Add new tag command client states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add handling of tag-related XML elements.
+
+	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc: Add
+	documentation of new commands (create_tag, delete_tag, get_tags,
+	modify_tag).
+
 2013-04-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Add script to update DB port names data from a port names xml file list.

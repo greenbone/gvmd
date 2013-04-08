@@ -24,6 +24,7 @@ command
     | create_report_format
     | create_schedule
     | create_slave
+    | create_tag
     | create_target
     | create_task
     | delete_agent
@@ -39,6 +40,7 @@ command
     | delete_report_format
     | delete_schedule
     | delete_slave
+    | delete_tag
     | delete_target
     | delete_task
     | empty_trashcan
@@ -63,6 +65,7 @@ command
     | get_settings
     | get_slaves
     | get_system_reports
+    | get_tags
     | get_target_locators
     | get_targets
     | get_tasks
@@ -82,6 +85,7 @@ command
     | modify_setting
     | modify_slave
     | modify_target
+    | modify_tag
     | modify_task
     | pause_task
     | restore
@@ -111,6 +115,7 @@ response
     | create_report_format_response
     | create_schedule_response
     | create_slave_response
+    | create_tag_response
     | create_target_response
     | create_task_response
     | delete_agent_response
@@ -126,6 +131,7 @@ response
     | delete_report_format_response
     | delete_schedule_response
     | delete_slave_response
+    | delete_tag_response
     | delete_target_response
     | delete_task_response
     | empty_trashcan_response
@@ -150,6 +156,7 @@ response
     | get_settings_response
     | get_slaves_response
     | get_system_reports_response
+    | get_tags_response
     | get_target_locators_response
     | get_targets_response
     | get_tasks_response
@@ -169,6 +176,7 @@ response
     | modify_setting_response
     | modify_slave_response
     | modify_target_response
+    | modify_tag_response
     | modify_task_response
     | pause_task_response
     | restore_response
@@ -1548,6 +1556,7 @@ commands
            | create_report_format
            | create_schedule
            | create_slave
+           | create_tag
            | create_target
            | create_task
            | delete_agent
@@ -1563,6 +1572,7 @@ commands
            | delete_port_range
            | delete_schedule
            | delete_slave
+           | delete_tag
            | delete_target
            | delete_task
            | empty_trashcan
@@ -1587,6 +1597,7 @@ commands
            | get_settings
            | get_slaves
            | get_system_reports
+           | get_tags
            | get_target_locators
            | get_targets
            | get_tasks
@@ -1604,6 +1615,7 @@ commands
            | modify_schedule
            | modify_setting
            | modify_slave
+           | modify_tag
            | modify_target
            | modify_task
            | pause_task
@@ -2429,6 +2441,70 @@ create_slave_password
        text
      }
 
+## Command create_tag
+##
+## Create a tag.
+
+create_tag
+ = element create_tag
+     {
+       create_tag_name
+       & create_tag_attach
+       & create_tag_value?
+       & create_tag_comment?
+       & create_tag_active?
+     }
+
+# A full tag name consisting of namespace and predicate.
+create_tag_name
+ = element name
+     {
+       text
+     }
+
+# Identifies a resource the tag is to be attached to.
+create_tag_attach
+ = element attach
+     {
+       create_tag_attach_type
+       & create_tag_attach_id
+     }
+
+# OMP type of the resource the tag is to be attached to.
+create_tag_attach_type
+ = element type
+     {
+       text
+     }
+
+# ID of the resource the tag is to be attached to.
+create_tag_attach_id
+ = element id
+     {
+       text
+     }
+
+# Value associated with the tag.
+create_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment to add to the tag.
+create_tag_comment
+ = element comment
+     {
+       text
+     }
+
+# Whether the tag is active.
+create_tag_active
+ = element active
+     {
+       boolean
+     }
+
 ## Command create_target
 ##
 ## Create a target.
@@ -2799,6 +2875,18 @@ delete_slave
  = element delete_slave
      {
        attribute slave_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
+     }
+
+## Command delete_tag
+##
+## Delete a tag.
+
+delete_tag
+ = element delete_tag
+     {
+       attribute tag_id { uuid }
        & # Whether to remove entirely, or to the trashcan.
        attribute ultimate { boolean }
      }
@@ -3267,6 +3355,23 @@ get_system_reports
        attribute brief { boolean }?
        & # Slave from which to get report.
        attribute slave_id { uuid }?
+     }
+
+## Command get_tags
+##
+## Get all tags.
+
+get_tags
+ = element get_tags
+     {
+       # ID of single tag to get.
+       attribute tag_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { text }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { text }?
+       & # Whether to get tags from the trashcan instead.
+       attribute trash { boolean }?
      }
 
 ## Command get_target_locators
@@ -4203,6 +4308,71 @@ modify_target_target_locator_password
        text
      }
 
+## Command modify_tag
+##
+## Modify a tag.
+
+modify_tag
+ = element modify_tag
+     {
+       attribute tag_id { uuid }
+       & modify_tag_name?
+       & modify_tag_attach?
+       & modify_tag_value?
+       & modify_tag_comment?
+       & modify_tag_active?
+     }
+
+# A full tag name consisting of namespace and predicate.
+modify_tag_name
+ = element name
+     {
+       text
+     }
+
+# Identifies a resource the tag is to be attached to.
+modify_tag_attach
+ = element attach
+     {
+       modify_tag_attach_type
+       & modify_tag_attach_id
+     }
+
+# OMP type of the resource the tag is to be attached to.
+modify_tag_attach_type
+ = element type
+     {
+       text
+     }
+
+# ID of the resource the tag is to be attached to.
+modify_tag_attach_id
+ = element id
+     {
+       text
+     }
+
+# Value associated with the tag.
+modify_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment to add to the tag.
+modify_tag_comment
+ = element comment
+     {
+       text
+     }
+
+# Whether the tag is active.
+modify_tag_active
+ = element active
+     {
+       boolean
+     }
+
 ## Command modify_task
 ##
 ## Modify an existing task.
@@ -4499,6 +4669,7 @@ commands_response
            | create_port_range_response
            | create_schedule_response
            | create_slave_response
+           | create_tag_response
            | create_target_response
            | create_task_response
            | delete_agent_response
@@ -4514,6 +4685,7 @@ commands_response
            | delete_report_format_response
            | delete_schedule_response
            | delete_slave_response
+           | delete_tag_response
            | delete_target_response
            | delete_task_response
            | empty_trashcan_response
@@ -4538,6 +4710,7 @@ commands_response
            | get_schedules_response
            | get_settings_response
            | get_system_reports_response
+           | get_tags_response
            | get_target_locators_response
            | get_targets_response
            | get_tasks_response
@@ -4555,6 +4728,7 @@ commands_response
            | modify_schedule_response
            | modify_setting_response
            | modify_slave_response
+           | modify_tag_response
            | modify_target_response
            | modify_task_response
            | pause_task_response
@@ -4698,6 +4872,16 @@ create_slave_response
        & attribute id { uuid }
      }
 
+## Response to create_tag
+
+create_tag_response
+ = element create_tag_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
 ## Response to create_target
 
 create_target_response
@@ -4830,6 +5014,15 @@ delete_schedule_response
 
 delete_slave_response
  = element delete_slave_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_tag
+
+delete_tag_response
+ = element delete_tag_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -8030,6 +8223,163 @@ get_system_reports_response_system_report_report
        & attribute duration { integer }
      }
 
+## Response to get_tags
+
+get_tags_response
+ = element get_tags_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_tags_response_tag*
+       & get_tags_response_filters
+       & get_tags_response_sort
+       & get_tags_response_tags
+       & get_tags_response_tag_count
+     }
+
+# Information on a single tag.
+get_tags_response_tag
+ = element tag
+     {
+       # UUID of the tag.
+       attribute id { uuid }
+       & get_tags_response_tag_name
+       & get_tags_response_tag_comment
+       & get_tags_response_tag_creation_time
+       & get_tags_response_tag_modification_time
+       & get_tags_response_tag_attach
+       & get_tags_response_tag_value
+       & get_tags_response_tag_active
+     }
+
+# Name of the tag (usually namespace:predicate).
+get_tags_response_tag_name
+ = element name
+     {
+       text
+     }
+
+# Comment for the tag.
+get_tags_response_tag_comment
+ = element comment
+     {
+       text
+     }
+
+# Date and time the tag was created.
+get_tags_response_tag_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the tag was last modified.
+get_tags_response_tag_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# Identifies a resource the tag is attached to.
+get_tags_response_tag_attach
+ = element attach
+     {
+       get_tags_response_tag_attach_type
+       & get_tags_response_tag_attach_id
+     }
+
+# OMP type of the resource the tag is attached to.
+get_tags_response_tag_attach_type
+ = element type
+     {
+       text
+     }
+
+# ID of the resource the tag is attached to.
+get_tags_response_tag_attach_id
+ = element id
+     {
+       text
+     }
+
+# Value associated with the tag.
+get_tags_response_tag_value
+ = element value
+     {
+       text
+     }
+
+# Whether the tag is active.
+get_tags_response_tag_active
+ = element active
+     {
+       boolean
+     }
+
+get_tags_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_tags_response_filters_term
+     }
+
+# Filter term.
+get_tags_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_tags_response_sort
+ = element sort
+     {
+       text
+       & get_tags_response_sort_field
+     }
+
+get_tags_response_sort_field
+ = element field
+     {
+       get_tags_response_sort_field_order
+     }
+
+get_tags_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_tags_response_tags
+ = element tags
+     {
+       # First tag.
+       attribute start {  }
+       & # Maximum number of tags.
+       attribute max {  }
+     }
+
+get_tags_response_tag_count
+ = element tag_count
+     {
+       get_tags_response_tag_count_filtered
+       & get_tags_response_tag_count_page
+     }
+
+# Number of tags after filtering.
+get_tags_response_tag_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of tags on current page.
+get_tags_response_tag_count_page
+ = element page
+     {
+       integer
+     }
+
 ## Response to get_target_locators
 
 get_target_locators_response
@@ -9152,6 +9502,15 @@ modify_slave_response
 
 modify_target_response
  = element modify_target_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_tag
+
+modify_tag_response
+ = element modify_tag_response
      {
        attribute status { status }
        & attribute status_text { text }
