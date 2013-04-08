@@ -11871,7 +11871,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     schedule_iterator_duration (&schedules),
                     simple_duration,
                     simple_duration_unit,
-                    schedule_iterator_timezone (&schedules));
+                    schedule_iterator_timezone (&schedules)
+                     ? schedule_iterator_timezone (&schedules)
+                     : "UTC");
 
                   g_free (iso);
                   if (get_schedules_data->tasks)
