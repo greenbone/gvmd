@@ -1,3 +1,16 @@
+2013-04-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add script to update DB port names data from a port names xml file list.
+	Currently supports IANA service names official list.
+
+	* tools/openvas-portnames-update.in: New script to update
+
+	* tools/portnames_update.xsl: New template to generate SQL queries for
+	DB port names data creation.
+
+	* CMakeLists.txt: Install tools/portnames_update.xsl and
+	tools/openvas-portnames-update files.
+
 2013-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_SCHEDULES use

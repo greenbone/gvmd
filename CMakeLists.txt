@@ -105,6 +105,7 @@ set (CPACK_SOURCE_IGNORE_FILES
 "VERSION$"
 "tools/openvas-scapdata-sync$"
 "tools/openvas-certdata-sync$"
+"tools/openvas-portnames-update$"
 )
 
 include (CPack)
@@ -247,6 +248,7 @@ configure_file (doc/Doxyfile_full.in doc/Doxyfile_full)
 configure_file (VERSION.in VERSION)
 configure_file (src/openvasmd_log_conf.cmake_in src/openvasmd_log.conf)
 configure_file (tools/openvas-scapdata-sync.in tools/openvas-scapdata-sync @ONLY)
+configure_file (tools/openvas-portnames-update.in tools/openvas-portnames-update @ONLY)
 configure_file (tools/openvas-certdata-sync.in tools/openvas-certdata-sync @ONLY)
 
 ## Program
@@ -348,6 +350,10 @@ install (FILES src/wizards/quick_first_scan.xml
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/wizards/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
+install (FILES tools/portnames_update.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
 install (FILES tools/scap_db_init.sql tools/cpe_update.xsl
          tools/cpe_youngerthan.xsl tools/cve_update.xsl
          tools/cve_youngerthan.xsl tools/cpe_getbyname.xsl
@@ -363,6 +369,11 @@ install (FILES tools/cert_db_init.sql tools/dfn_cert_update.xsl
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-scapdata-sync
+         DESTINATION ${SBINDIR}
+         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-portnames-update
          DESTINATION ${SBINDIR}
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
