@@ -17930,11 +17930,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
                 g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                       "Task could not be created");
+                       "User could not be created");
                 break;
               case -2:
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
                                         ("create_user", "User already exists"));
+                g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                       "User could not be created");
                 break;
               case -1:
                 if (errdesc)
@@ -17947,6 +17949,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 /* Fall through.  */
               default:
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_user"));
+                g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                       "User could not be created");
                 break;
               }
           create_user_data_reset (create_user_data);
