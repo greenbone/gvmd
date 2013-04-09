@@ -1,5 +1,10 @@
 2013-04-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Use CLOSE for MODIFY_USER
+	states.
+
+2013-04-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_USER correct
 	log message, and add logs to all cases.
 
