@@ -1399,6 +1399,7 @@ typedef struct
   char *period_unit;             ///< Unit of period: "hour", "day", "week", ....
   char *duration;                ///< Duration of schedule (how long it runs for).
   char *duration_unit;           ///< Unit of duration: "hour", "day", "week", ....
+  char *timezone;                ///< Time zone of the schedule
 } create_schedule_data_t;
 
 /**
@@ -1421,6 +1422,7 @@ create_schedule_data_reset (create_schedule_data_t *data)
   free (data->period_unit);
   free (data->duration);
   free (data->duration_unit);
+  free (data->timezone);
 
   memset (data, 0, sizeof (create_schedule_data_t));
 }
@@ -4611,6 +4613,7 @@ typedef enum
   CLIENT_CREATE_SCHEDULE_DURATION_UNIT,
   CLIENT_CREATE_SCHEDULE_PERIOD,
   CLIENT_CREATE_SCHEDULE_PERIOD_UNIT,
+  CLIENT_CREATE_SCHEDULE_TIMEZONE,
   CLIENT_CREATE_SLAVE,
   CLIENT_CREATE_SLAVE_COMMENT,
   CLIENT_CREATE_SLAVE_COPY,
@@ -6731,6 +6734,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCHEDULE_NAME);
         else if (strcasecmp ("PERIOD", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD);
+        else if (strcasecmp ("TIMEZONE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_TIMEZONE);
         ELSE_ERROR ("create_schedule");
 
       case CLIENT_CREATE_SCHEDULE_FIRST_TIME:
@@ -16653,7 +16658,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    create_schedule_data->first_time_day_of_month,
                                    create_schedule_data->first_time_month,
                                    create_schedule_data->first_time_year,
-                                   NULL))
+                                   create_schedule_data->timezone))
                    == -1)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
@@ -16703,6 +16708,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         period,
                                         period_months,
                                         duration,
+                                        create_schedule_data->timezone,
                                         &new_schedule))
             {
               case 0:
@@ -16751,6 +16757,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_SCHEDULE, FIRST_TIME);
       CLOSE (CLIENT_CREATE_SCHEDULE, NAME);
       CLOSE (CLIENT_CREATE_SCHEDULE, PERIOD);
+      CLOSE (CLIENT_CREATE_SCHEDULE, TIMEZONE);
 
       CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, DAY_OF_MONTH);
       CLOSE (CLIENT_CREATE_SCHEDULE_FIRST_TIME, HOUR);
@@ -23297,6 +23304,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_SCHEDULE_PERIOD_UNIT,
               &create_schedule_data->period_unit);
+
+      APPEND (CLIENT_CREATE_SCHEDULE_TIMEZONE,
+              &create_schedule_data->timezone);
 
 
       APPEND (CLIENT_CREATE_SLAVE_COMMENT,

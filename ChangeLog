@@ -1,3 +1,14 @@
+2013-04-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.h, src/manage_sql.c (create_schedule): Add timezone
+	parameter.
+
+	* src/omp.c (create_schedule_data_t, create_schedule_data_reset): Add
+	timezone.
+	(client_state_t): New state CLIENT_CREATE_SCHEDULE_TIMEZONE.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add timezone element to create_schedule.
+
 2013-04-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add tag management OMP commands (create_tag, delete_tag, get_tags,
