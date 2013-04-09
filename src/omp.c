@@ -22007,8 +22007,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   " status_text=\"" STATUS_OK_TEXT "\">");
           while (user)
             {
-              gchar *hosts;
-              gchar *sources;
+              gchar *hosts, *sources, *uuid;
               GSList *methods;
               int allow;
               iterator_t groups;
@@ -22019,11 +22018,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 abort ();
               methods = openvas_auth_user_methods (user->data);
               sources = openvas_string_list_to_xml (methods, "sources", "source");
+              uuid = openvas_user_uuid (user->data);
               SENDF_TO_CLIENT_OR_FAIL ("<user id=\"%s\">"
                                        "<name>%s</name>"
                                        "<role>%s</role>"
                                        "<hosts allow=\"%i\">%s</hosts>",
-                                       openvas_user_uuid (user->data),
+                                       uuid,
                                        (gchar *) user->data,
                                        openvas_is_user_admin (user->data)
                                          ? "Admin"
@@ -22032,6 +22032,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             : "User"),
                                        allow,
                                        hosts ? hosts : "");
+              g_free (uuid);
               SEND_TO_CLIENT_OR_FAIL (sources);
               SEND_TO_CLIENT_OR_FAIL ("<groups>");
               init_user_group_iterator (&groups, user->data);
