@@ -39547,7 +39547,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
       return 1;
     }
 
-  if (timezone && strcmp(timezone,""))
+  if (timezone && strcmp(timezone, ""))
     insert_timezone = g_strdup (timezone);
   else
     {
@@ -39559,14 +39559,15 @@ create_schedule (const char* name, const char *comment, time_t first_time,
 
   if (insert_timezone == NULL)
     insert_timezone = g_strdup ("UTC");
-  else {
-    insert_timezone = g_strstrip(insert_timezone);
-    if (strcmp(insert_timezone, "") == 0)
-      {
-        g_free (insert_timezone);
-        insert_timezone = g_strdup ("UTC");
-      }
-  }
+  else
+    {
+      insert_timezone = g_strstrip(insert_timezone);
+      if (strcmp(insert_timezone, "") == 0)
+        {
+          g_free (insert_timezone);
+          insert_timezone = g_strdup ("UTC");
+        }
+    }
 
   offset = current_offset (insert_timezone);
 
