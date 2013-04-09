@@ -6625,10 +6625,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_TASK);
           }
         else if (strcasecmp ("MODIFY_USER", element_name) == 0)
-          {
-            modify_user_data->groups = make_array ();
-            set_client_state (CLIENT_MODIFY_USER);
-          }
+          set_client_state (CLIENT_MODIFY_USER);
         else if (strcasecmp ("PAUSE_TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "task_id",
@@ -7264,7 +7261,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_USER:
         if (strcasecmp ("GROUPS", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_USER_GROUPS);
+          {
+            if (modify_user_data->groups)
+              array_free (modify_user_data->groups);
+            modify_user_data->groups = make_array ();
+            set_client_state (CLIENT_MODIFY_USER_GROUPS);
+          }
         else if (strcasecmp ("HOSTS", element_name) == 0)
           {
             const gchar *attribute;

@@ -49948,7 +49948,7 @@ openvas_admin_modify_user (const gchar * name, const gchar * password,
                            array_t *groups, gchar **group_id_return,
                            gchar **r_errdesc)
 {
-  int ret, index;
+  int ret;
   char *errstr;
   gchar *uuid;
   user_t user;
@@ -49999,37 +49999,43 @@ openvas_admin_modify_user (const gchar * name, const gchar * password,
 
   /* Add the user to any given groups. */
 
-  index = 0;
-  while (groups && (index < groups->len))
+  if (groups)
     {
-      gchar *group_id;
-      group_t group;
+      int index;
 
-      group_id = (gchar*) g_ptr_array_index (groups, index);
-      if (strcmp (group_id, "0") == 0)
+      sql ("DELETE FROM group_users WHERE user = %llu;", user);
+      index = 0;
+      while (groups && (index < groups->len))
         {
+          gchar *group_id;
+          group_t group;
+
+          group_id = (gchar*) g_ptr_array_index (groups, index);
+          if (strcmp (group_id, "0") == 0)
+            {
+              index++;
+              continue;
+            }
+
+          if (find_group (group_id, &group))
+            {
+              sql ("ROLLBACK;");
+              return -1;
+            }
+
+          if (group == 0)
+            {
+              sql ("ROLLBACK;");
+              if (group_id_return) *group_id_return = group_id;
+              return 1;
+            }
+
+          sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",
+               group,
+               user);
+
           index++;
-          continue;
         }
-
-      if (find_group (group_id, &group))
-        {
-          sql ("ROLLBACK;");
-          return -1;
-        }
-
-      if (group == 0)
-        {
-          sql ("ROLLBACK;");
-          if (group_id_return) *group_id_return = group_id;
-          return 1;
-        }
-
-      sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",
-           group,
-           user);
-
-      index++;
     }
 
   sql ("COMMIT;");

@@ -1,5 +1,15 @@
 2013-04-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (openvas_admin_modify_user): Leave groups alone if
+	groups arg is NULL.  If setting groups then clear before, otherwise the
+	old groups may remain.
+
+	* src/omp.c (omp_xml_handle_start_element): Init the MODIFY_USER groups
+	array only when a GROUPS element is given, so that the client has a way
+	to preserve the existing groups.
+
+2013-04-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Use CLOSE for MODIFY_USER
 	states.
 
