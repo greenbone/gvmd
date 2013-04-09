@@ -39547,22 +39547,20 @@ create_schedule (const char* name, const char *comment, time_t first_time,
       return 1;
     }
 
-  if (timezone && strcmp(timezone, ""))
+  if (timezone && strcmp (timezone, ""))
     insert_timezone = g_strdup (timezone);
   else
-    {
-      insert_timezone = sql_string (0, 0,
-                                    "SELECT timezone FROM users"
-                                    " WHERE users.uuid = '%s';",
-                                    current_credentials.uuid);
-    }
+    insert_timezone = sql_string (0, 0,
+                                  "SELECT timezone FROM users"
+                                  " WHERE users.uuid = '%s';",
+                                  current_credentials.uuid);
 
   if (insert_timezone == NULL)
     insert_timezone = g_strdup ("UTC");
   else
     {
-      insert_timezone = g_strstrip(insert_timezone);
-      if (strcmp(insert_timezone, "") == 0)
+      insert_timezone = g_strstrip (insert_timezone);
+      if (strcmp (insert_timezone, "") == 0)
         {
           g_free (insert_timezone);
           insert_timezone = g_strdup ("UTC");
@@ -50154,10 +50152,10 @@ create_tag (const char * name, const char * comment, const char * value,
       quoted_attach_type,
       quoted_attach_id,
       active
-        ? (strcmp(active, "0") == 0
+       ? (strcmp (active, "0") == 0
            ? 0
            : 1)
-        : 1);
+       : 1);
 
   g_free (quoted_name);
   g_free (lc_attach_type);
@@ -50293,8 +50291,8 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
 
   quoted_name = sql_insert (name ? name : "");
   lc_attach_type = (attach_type
-                      ? g_ascii_strdown(attach_type, -1)
-                      : g_strdup (""));
+                     ? g_ascii_strdown(attach_type, -1)
+                     : g_strdup (""));
   quoted_attach_type = sql_insert (lc_attach_type);
   quoted_attach_id = sql_insert (attach_id ? attach_id : "");
   quoted_comment = sql_insert (comment ? comment : "");
@@ -50350,7 +50348,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
       sql ("UPDATE tags SET"
            " active = %i"
            " WHERE ROWID = %llu;",
-           strcmp(active, "0") ? 1 : 0,
+           strcmp (active, "0") ? 1 : 0,
            tag);
     }
 

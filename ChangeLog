@@ -1,5 +1,10 @@
 2013-04-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_schedule): Neaten formatting.
+	(create_tag, modify_tag): Format overhangs of ternaries like others.
+
+2013-04-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_USERS free uuid
 	from openvas_user_uuid.
 
