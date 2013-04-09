@@ -1,5 +1,11 @@
 2013-04-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/html/XML/OMP.xml, doc/omp.html, doc/omp.rnc (create_schedule): Add
+	timezone element. Mark all elements other than name as optional to make
+	consistent with actual behavior.
+
+2013-04-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage.h, src/manage_sql.c (create_schedule): Add timezone
 	parameter.
 

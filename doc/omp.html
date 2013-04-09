@@ -5926,7 +5926,7 @@ create_report_task_comment
 </li>
 <li>
               &lt;<b>first_time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The first time the schedule will run.</div>
+              ?<div style="margin-left: 15px; display: inline;">The first time the schedule will run.</div>
 <ul style="list-style: none">
 <li>
               &lt;<b>minute</b>&gt;
@@ -5952,7 +5952,7 @@ create_report_task_comment
 </li>
 <li>
               &lt;<b>duration</b>&gt;
-              <div style="margin-left: 15px; display: inline;">How long the Manager will run the scheduled task for.</div>
+              ?<div style="margin-left: 15px; display: inline;">How long the Manager will run the scheduled task for.</div>
 <ul style="list-style: none"><li>
               &lt;<b>unit</b>&gt;
               <div style="margin-left: 15px; display: inline;">Duration time unit.</div>
@@ -5961,12 +5961,17 @@ create_report_task_comment
 </li>
 <li>
               &lt;<b>period</b>&gt;
-              <div style="margin-left: 15px; display: inline;">How often the Manager will repeat the scheduled task.</div>
+              ?<div style="margin-left: 15px; display: inline;">How often the Manager will repeat the scheduled task.</div>
 <ul style="list-style: none"><li>
               &lt;<b>unit</b>&gt;
               <div style="margin-left: 15px; display: inline;">Period time unit.</div>
 <ul style="list-style: none"></ul>
 </li></ul>
+</li>
+<li>
+              &lt;<b>timezone</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The timezone the schedule will follow.</div>
+<ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
@@ -5994,9 +5999,10 @@ create_report_task_comment
      {
        create_schedule_name
        &amp; create_schedule_comment?
-       &amp; create_schedule_first_time
-       &amp; create_schedule_duration
-       &amp; create_schedule_period
+       &amp; create_schedule_first_time?
+       &amp; create_schedule_duration?
+       &amp; create_schedule_period?
+       &amp; create_schedule_timezone?
      }
 
 create_schedule_name
@@ -6073,6 +6079,12 @@ create_schedule_period_unit
  = element unit
      {
        time_unit
+     }
+
+create_schedule_timezone
+ = element timezone
+     {
+       text
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_schedule_response
