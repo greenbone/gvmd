@@ -1,5 +1,10 @@
 2013-04-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (create_schedule): Fix timezone default overwriting
+	existing value. Remove superfluous "!= 0" and braces.
+
+2013-04-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Set to 78.
 
 	* src/manage_sql.c (migrate_77_to_78): New function. Change duration
