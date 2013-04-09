@@ -49470,8 +49470,8 @@ find_user_by_name (const char* name, user_t *user)
  *                          a malloced string with the error description.  Will
  *                          always be set to NULL on success.
  *
- * @return 0 if the user has been added successfully, -1 on error, -2 if user
- *         exists already.
+ * @return 0 if the user has been added successfully, 1 failed to find group,
+ *         -1 on error, -2 if user exists already.
  */
 int
 openvas_admin_add_user (const gchar * name, const gchar * password,
@@ -49934,18 +49934,24 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
  * @param[out] r_errdesc    If not NULL the address of a variable to receive
  *                          a malloced string with the error description.  Will
  *                          always be set to NULL on success.
+ * @param[in]  groups       Groups.
+ * @param[out] group_id_return  ID of group on "failed to find" error.
  *
- * @return 0 if the user has been added successfully, -1 on error, -2 for an
- *         unknown role, -3 if user exists already.
+ * @return 0 if the user has been added successfully, 1 failed to find group,
+ *         -1 on error, -2 for an unknown role, -3 if user exists already.
  */
 int
 openvas_admin_modify_user (const gchar * name, const gchar * password,
                            const gchar * role, const gchar * hosts,
                            int hosts_allow, const gchar * directory,
                            const array_t * allowed_methods,
+                           array_t *groups, gchar **group_id_return,
                            gchar **r_errdesc)
 {
+  int ret, index;
   char *errstr;
+  gchar *uuid;
+  user_t user;
 
   if (r_errdesc)
     *r_errdesc = NULL;
@@ -49963,8 +49969,72 @@ openvas_admin_modify_user (const gchar * name, const gchar * password,
         }
     }
 
-  return openvas_user_modify (name, password, role, hosts, hosts_allow,
-                              directory, allowed_methods);
+  sql ("BEGIN IMMEDIATE;");
+
+  ret = openvas_user_modify (name, password, role, hosts, hosts_allow,
+                             directory, allowed_methods);
+
+  if (ret)
+    sql ("ROLLBACK;");
+
+  uuid = openvas_user_uuid (name);
+  if (uuid == NULL)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  if (find_user (uuid, &user))
+    {
+      g_free (uuid);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  g_free (uuid);
+  if (user == 0)
+    {
+      /* TODO: Add to db. */
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Add the user to any given groups. */
+
+  index = 0;
+  while (groups && (index < groups->len))
+    {
+      gchar *group_id;
+      group_t group;
+
+      group_id = (gchar*) g_ptr_array_index (groups, index);
+      if (strcmp (group_id, "0") == 0)
+        {
+          index++;
+          continue;
+        }
+
+      if (find_group (group_id, &group))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (group == 0)
+        {
+          sql ("ROLLBACK;");
+          if (group_id_return) *group_id_return = group_id;
+          return 1;
+        }
+
+      sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",
+           group,
+           user);
+
+      index++;
+    }
+
+  sql ("COMMIT;");
+
+  return ret;
 }
 
 /**

@@ -3380,6 +3380,7 @@ modify_override_data_reset (modify_override_data_t *data)
  */
 typedef struct
 {
+  array_t *groups;        ///< IDs of groups.
   int sort_order;
   gchar *hosts;
   int hosts_allow;
@@ -3397,6 +3398,7 @@ typedef struct
 static void
 modify_user_data_reset (modify_user_data_t * data)
 {
+  array_free (data->groups);
   g_free (data->name);
   g_free (data->password);
   g_free (data->role);
@@ -4855,6 +4857,8 @@ typedef enum
   CLIENT_MODIFY_TASK_SCHEDULE,
   CLIENT_MODIFY_TASK_SLAVE,
   CLIENT_MODIFY_USER,
+  CLIENT_MODIFY_USER_GROUPS,
+  CLIENT_MODIFY_USER_GROUPS_GROUP,
   CLIENT_MODIFY_USER_HOSTS,
   CLIENT_MODIFY_USER_NAME,
   CLIENT_MODIFY_USER_PASSWORD,
@@ -6621,7 +6625,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_TASK);
           }
         else if (strcasecmp ("MODIFY_USER", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_USER);
+          {
+            modify_user_data->groups = make_array ();
+            set_client_state (CLIENT_MODIFY_USER);
+          }
         else if (strcasecmp ("PAUSE_TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "task_id",
@@ -7256,7 +7263,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("modify_task");
 
       case CLIENT_MODIFY_USER:
-        if (strcasecmp ("HOSTS", element_name) == 0)
+        if (strcasecmp ("GROUPS", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_USER_GROUPS);
+        else if (strcasecmp ("HOSTS", element_name) == 0)
           {
             const gchar *attribute;
             if (find_attribute
@@ -7307,6 +7316,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          "Error");
           }
         break;
+
+      case CLIENT_MODIFY_USER_GROUPS:
+        if (strcasecmp ("GROUP", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values, "id",
+                                &attribute))
+              array_add (modify_user_data->groups, g_strdup (attribute));
+            set_client_state (CLIENT_MODIFY_USER_GROUPS_GROUP);
+          }
+        ELSE_ERROR ("modify_user");
 
       case CLIENT_MODIFY_USER_SOURCES:
         if (strcasecmp ("SOURCE", element_name) == 0)
@@ -14094,8 +14114,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      "MODIFY_USER requires a name"));
           else
             {
-              gchar *errdesc = NULL;
-              int was_admin = openvas_is_user_admin (modify_user_data->name);
+              gchar *fail_group_id, *errdesc;
+              int was_admin;
+
+              was_admin = openvas_is_user_admin (modify_user_data->name);
+              errdesc = NULL;
 
               switch (openvas_admin_modify_user
                       (modify_user_data->name,
@@ -14105,7 +14128,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         /* Leave the password as it is. */
                         : NULL), modify_user_data->role, modify_user_data->hosts,
                        modify_user_data->hosts_allow, OPENVAS_USERS_DIR,
-                       modify_user_data->sources, &errdesc))
+                       modify_user_data->sources,
+                       modify_user_data->groups, &fail_group_id,
+                       &errdesc))
                 {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
@@ -14121,6 +14146,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       g_log ("event user", G_LOG_LEVEL_MESSAGE,
                              "Role of user %s has been changed from User to Admin",
                              modify_user_data->name);
+                    }
+                  break;
+                case 1:
+                  if (send_find_error_to_client
+                       ("modify_user",
+                        "group",
+                        fail_group_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
                     }
                   break;
                 case -2:
@@ -14150,6 +14187,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_MODIFY_USER, GROUPS);
+      CLOSE (CLIENT_MODIFY_USER_GROUPS, GROUP);
       case CLIENT_MODIFY_USER_HOSTS:
         assert (strcasecmp ("HOSTS", element_name) == 0);
         set_client_state (CLIENT_MODIFY_USER);

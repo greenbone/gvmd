@@ -1,3 +1,14 @@
+2013-04-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (openvas_admin_add_user): Add args for groups.
+
+	* src/omp.c (modify_user_data_t, client_state_t): Add groups entries.
+	(modify_user_data_reset): Free groups
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add GROUPS
+	to MODIFY_USER.
+
+	* src/manage.h: Update header accordingly.
+
 2013-04-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (create_schedule): Clean up spacing and
