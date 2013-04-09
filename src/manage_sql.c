@@ -9390,6 +9390,39 @@ migrate_76_to_77 ()
 }
 
 /**
+ * @brief Migrate the database from version 77 to version 78.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_77_to_78 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  sql ("UPDATE schedules"
+       " SET duration = 0"
+       " WHERE duration = -1;");
+
+  sql ("UPDATE schedules"
+       " SET period = 0"
+       " WHERE period = -1;");
+
+  sql ("UPDATE schedules_trash"
+       " SET duration = 0"
+       " WHERE duration = -1;");
+
+  sql ("UPDATE schedules_trash"
+       " SET period = 0"
+       " WHERE period = -1;");
+
+  set_db_version (78);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9471,6 +9504,7 @@ static migrator_t database_migrators[]
     {75, migrate_74_to_75},
     {76, migrate_75_to_76},
     {77, migrate_76_to_77},
+    {78, migrate_77_to_78},
     /* End marker. */
     {-1, NULL}};
 

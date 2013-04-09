@@ -16705,9 +16705,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else switch (create_schedule (create_schedule_data->name,
                                         create_schedule_data->comment,
                                         first_time,
-                                        period,
+                                        period == -1 ? 0 : period,
                                         period_months,
-                                        duration,
+                                        duration == -1 ? 0 : duration,
                                         create_schedule_data->timezone,
                                         &new_schedule))
             {
@@ -18732,9 +18732,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          modify_schedule_data->name,
                          modify_schedule_data->comment,
                          first_time,
-                         period,
+                         period == -1 ? 0 : period,
                          period_months,
-                         duration,
+                         duration == -1 ? 0 : duration,
                          modify_schedule_data->timezone))
             {
               case 0:

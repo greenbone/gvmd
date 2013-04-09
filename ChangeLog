@@ -1,5 +1,17 @@
 2013-04-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Set to 78.
+
+	* src/manage_sql.c (migrate_77_to_78): New function. Change duration
+	and period of schedules to 0 if they were -1.
+	(database_migrators): Add migrate_77_to_78.
+
+	* src/omp.c (omp_xml_handle_end_element): In cases
+	CLIENT_CREATE_SCHEDULE and CLIENT_MODIFY_SCHEDULE set period and
+	duration to 0 instead of -1 if they are not specified.
+
+2013-04-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/html/XML/OMP.xml, doc/omp.html, doc/omp.rnc (create_schedule): Add
 	timezone element. Mark all elements other than name as optional to make
 	consistent with actual behavior.
