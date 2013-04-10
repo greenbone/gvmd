@@ -1,3 +1,16 @@
+2013-04-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c: Remove make_port_names prototype.
+	(init_manage): Don't check and update port_names as it is done
+	externally now.
+
+	* src/manage_port_names.c: Remove file as it is not needed anymore.
+
+	* CMakeLists.txt: Remove reference to manage_port_names.c
+
+	* INSTALL: Update for steps to import port names from IANA service names
+	list.
+
 2013-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add MODIFY_AUTH to OMP.  This is a direct copy from OAP in Administrator

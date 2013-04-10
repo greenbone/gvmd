@@ -34,7 +34,6 @@ add_library (manage STATIC
              manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
              manage_ranges_nmap_5_51_top_2000_top_100.c
              manage_config_discovery.c
-             manage_port_names.c
              manage_sql.c lsc_user.c lsc_crypt.c)
 set_target_properties (manage PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 

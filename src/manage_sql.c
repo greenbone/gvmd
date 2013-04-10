@@ -261,9 +261,6 @@ make_port_ranges_nmap_5_51_top_2000_top_100 (port_list_t);
 void
 make_config_discovery (char *const, const char * const);
 
-void
-make_port_names ();
-
 
 /* Static headers. */
 
@@ -15473,13 +15470,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       make_config_discovery (CONFIG_UUID_DISCOVERY,
                              MANAGE_NVT_SELECTOR_UUID_DISCOVERY);
     }
-
-  /* Ensure port names exist. */
-
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM port_names;")
-      < 10000)
-    make_port_names ();
 
   /* Ensure the predefined port lists exist. */
 
