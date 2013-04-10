@@ -3882,96 +3882,253 @@ info_name_count (const char *type, const char *name)
 static void
 create_tables ()
 {
-  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, installer_trust_time, howto_install TEXT, howto_use TEXT, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS agents_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, installer_trust_time, howto_install TEXT, howto_use TEXT, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS config_preferences_trash (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS configs_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS alert_condition_data (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS alert_condition_data_trash (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS alert_event_data (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS alert_event_data_trash (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS alert_method_data (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS alert_method_data_trash (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER, filter INTEGER, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS alerts_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER, filter INTEGER, filter_location INTEGER, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS filters (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, type, term, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS filters_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, type, term, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS group_users (id INTEGER PRIMARY KEY, `group` INTEGER, user INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY, name UNIQUE, value);");
-  sql ("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, result INTEGER, end_time);");
-  sql ("CREATE TABLE IF NOT EXISTS notes_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, result INTEGER, end_time);");
-  sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
-  /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* in manage.h). */
-  sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
-  sql ("CREATE INDEX IF NOT EXISTS nvt_selectors_by_name ON nvt_selectors (name);");
-  sql ("CREATE INDEX IF NOT EXISTS nvt_selectors_by_family_or_nvt ON nvt_selectors (type, family_or_nvt);");
-  sql ("CREATE TABLE IF NOT EXISTS nvts (id INTEGER PRIMARY KEY, uuid, oid, version, name, comment, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category INTEGER, family, cvss_base, risk_factor, creation_time, modification_time);");
-  sql ("CREATE INDEX IF NOT EXISTS nvts_by_oid ON nvts (oid);");
-  sql ("CREATE INDEX IF NOT EXISTS nvts_by_name ON nvts (name);");
-  sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
-  sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER, end_time);");
-  sql ("CREATE TABLE IF NOT EXISTS overrides_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER, end_time);");
-  sql ("CREATE TABLE IF NOT EXISTS permissions (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment, resource_type, resource, resource_uuid, resource_location, subject_type, subject, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS permissions_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment, resource_type, resource, resource_uuid, resource_location, subject_type, subject, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS agents"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  installer TEXT, installer_64 TEXT, installer_filename,"
+       "  installer_signature_64 TEXT, installer_trust INTEGER,"
+       "  installer_trust_time, howto_install TEXT, howto_use TEXT,"
+       "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS agents_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  installer TEXT, installer_64 TEXT, installer_filename,"
+       "  installer_signature_64 TEXT, installer_trust INTEGER,"
+       "  installer_trust_time, howto_install TEXT, howto_use TEXT,"
+       "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS config_preferences"
+       " (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
+  sql ("CREATE TABLE IF NOT EXISTS config_preferences_trash"
+       " (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
+  sql ("CREATE TABLE IF NOT EXISTS configs"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
+       "  nvt_selector, comment, family_count INTEGER, nvt_count INTEGER,"
+       "  families_growing INTEGER, nvts_growing INTEGER, creation_time,"
+       "  modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS configs_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
+       "  nvt_selector, comment, family_count INTEGER, nvt_count INTEGER,"
+       "  families_growing INTEGER, nvts_growing INTEGER, creation_time,"
+       "  modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS alert_condition_data"
+       " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS alert_condition_data_trash"
+       " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS alert_event_data"
+       " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS alert_event_data_trash"
+       " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS alert_method_data"
+       " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS alert_method_data_trash"
+       " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS alerts"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  event INTEGER, condition INTEGER, method INTEGER, filter INTEGER,"
+       "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS alerts_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  event INTEGER, condition INTEGER, method INTEGER, filter INTEGER,"
+       "  filter_location INTEGER, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS filters"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  type, term, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS filters_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  type, term, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS groups"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS group_users"
+       " (id INTEGER PRIMARY KEY, `group` INTEGER, user INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
+       "  password, comment, public_key TEXT, private_key TEXT, rpm TEXT,"
+       "  deb TEXT, exe TEXT, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
+       "  password, comment, public_key TEXT, private_key TEXT, rpm TEXT,"
+       "  deb TEXT, exe TEXT, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS meta"
+       " (id INTEGER PRIMARY KEY, name UNIQUE, value);");
+  sql ("CREATE TABLE IF NOT EXISTS notes"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       "  creation_time, modification_time, text, hosts, port, threat,"
+       "  task INTEGER, result INTEGER, end_time);");
+  sql ("CREATE TABLE IF NOT EXISTS notes_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       "  creation_time, modification_time, text, hosts, port, threat,"
+       "  task INTEGER, result INTEGER, end_time);");
+  sql ("CREATE TABLE IF NOT EXISTS nvt_preferences"
+       " (id INTEGER PRIMARY KEY, name, value);");
+  /* nvt_selectors types: 0 all, 1 family, 2 NVT
+   * (NVT_SELECTOR_TYPE_* in manage.h). */
+  sql ("CREATE TABLE IF NOT EXISTS nvt_selectors"
+       " (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER,"
+       "  family_or_nvt, family);");
+  sql ("CREATE INDEX IF NOT EXISTS nvt_selectors_by_name"
+       " ON nvt_selectors (name);");
+  sql ("CREATE INDEX IF NOT EXISTS nvt_selectors_by_family_or_nvt"
+       " ON nvt_selectors (type, family_or_nvt);");
+  sql ("CREATE TABLE IF NOT EXISTS nvts"
+       " (id INTEGER PRIMARY KEY, uuid, oid, version, name, comment, summary,"
+       "  description, copyright, cve, bid, xref, tag, sign_key_ids,"
+       "  category INTEGER, family, cvss_base, risk_factor, creation_time,"
+       "  modification_time);");
+  sql ("CREATE INDEX IF NOT EXISTS nvts_by_oid"
+       " ON nvts (oid);");
+  sql ("CREATE INDEX IF NOT EXISTS nvts_by_name"
+       " ON nvts (name);");
+  sql ("CREATE INDEX IF NOT EXISTS nvts_by_family"
+       " ON nvts (family);");
+  sql ("CREATE TABLE IF NOT EXISTS overrides"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       "  creation_time, modification_time, text, hosts, port, threat,"
+       "  new_threat, task INTEGER, result INTEGER, end_time);");
+  sql ("CREATE TABLE IF NOT EXISTS overrides_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       "  creation_time, modification_time, text, hosts, port, threat,"
+       "  new_threat, task INTEGER, result INTEGER, end_time);");
+  sql ("CREATE TABLE IF NOT EXISTS permissions"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+       "  resource_type, resource, resource_uuid, resource_location,"
+       "  subject_type, subject, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS permissions_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+       "  resource_type, resource, resource_uuid, resource_location,"
+       "  subject_type, subject, creation_time, modification_time);");
   /* Overlapping port ranges will cause problems, at least for the port
    * counting.  OMP CREATE_PORT_LIST and CREATE_PORT_RANGE check for this,
    * but whoever creates a predefined port list must check this manually. */
-  sql ("CREATE TABLE IF NOT EXISTS port_lists (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS port_lists_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS port_names (id INTEGER PRIMARY KEY, number INTEGER, protocol, name, UNIQUE (number, protocol) ON CONFLICT REPLACE);");
-  sql ("CREATE TABLE IF NOT EXISTS port_ranges (id INTEGER PRIMARY KEY, uuid UNIQUE, port_list INTEGER, type, start, end, comment, exclude);");
-  sql ("CREATE TABLE IF NOT EXISTS port_ranges_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, port_list INTEGER, type, start, end, comment, exclude);");
-  sql ("CREATE TABLE IF NOT EXISTS report_host_details (id INTEGER PRIMARY KEY, report_host INTEGER, source_type, source_name, source_description, name, value);");
-  sql ("CREATE INDEX IF NOT EXISTS report_host_details_by_report_host_and_name_and_value ON report_host_details (report_host, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
-  sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_host ON report_hosts (host);");
-  sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_report ON report_hosts (report);");
-  sql ("CREATE TABLE IF NOT EXISTS report_format_param_options (id INTEGER PRIMARY KEY, report_format_param, value);");
-  sql ("CREATE TABLE IF NOT EXISTS report_format_param_options_trash (id INTEGER PRIMARY KEY, report_format_param, value);");
-  sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value, type_min, type_max, type_regex, fallback);");
-  sql ("CREATE TABLE IF NOT EXISTS report_format_params_trash (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value, type_min, type_max, type_regex, fallback);");
-  sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS report_formats_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER, original_uuid, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
-  sql ("CREATE INDEX IF NOT EXISTS report_results_by_report ON report_results (report);");
-  sql ("CREATE INDEX IF NOT EXISTS report_results_by_result ON report_results (result);");
-  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress, slave_task_uuid, highs, mediums, lows, logs, fps, override_highs, override_mediums, override_lows, override_logs, override_fps);");
-  sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description, report)");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_host ON results (host);");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_report_host ON results (report, host);");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_task ON results (task);");
-  sql ("CREATE INDEX IF NOT EXISTS results_by_type ON results (type);");
-  sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration, timezone, initial_offset, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS schedules_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration, timezone, initial_offset, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS slaves (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS slaves_trash (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");
-  /* port_range in the following two is actually a port list.  Migrating a
-   * column rename is lots of work. */
-  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS targets_trash (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER, port_list_location INTEGER, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
-  sql ("CREATE TABLE IF NOT EXISTS task_alerts (id INTEGER PRIMARY KEY, task INTEGER, alert INTEGER, alert_location INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS task_preferences (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER, config_location INTEGER, target_location INTEGER, schedule_location INTEGER, slave_location INTEGER, upload_result_count INTEGER, creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, password, timezone, role, hosts, hosts_allow, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS port_lists"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS port_lists_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS port_names"
+       " (id INTEGER PRIMARY KEY, number INTEGER, protocol, name,"
+       "  UNIQUE (number, protocol) ON CONFLICT REPLACE);");
+  sql ("CREATE TABLE IF NOT EXISTS port_ranges"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, port_list INTEGER, type, start,"
+       "  end, comment, exclude);");
+  sql ("CREATE TABLE IF NOT EXISTS port_ranges_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, port_list INTEGER, type, start,"
+       "  end, comment, exclude);");
+  sql ("CREATE TABLE IF NOT EXISTS report_host_details"
+       " (id INTEGER PRIMARY KEY, report_host INTEGER, source_type, source_name,"
+       "  source_description, name, value);");
+  sql ("CREATE INDEX IF NOT EXISTS"
+       " report_host_details_by_report_host_and_name_and_value"
+       " ON report_host_details (report_host, name, value);");
+  sql ("CREATE TABLE IF NOT EXISTS report_hosts"
+       " (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time,"
+       "  attack_state, current_port, max_port);");
+  sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_host"
+       " ON report_hosts (host);");
+  sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_report"
+       " ON report_hosts (report);");
+  sql ("CREATE TABLE IF NOT EXISTS report_format_param_options"
+       " (id INTEGER PRIMARY KEY, report_format_param, value);");
+  sql ("CREATE TABLE IF NOT EXISTS report_format_param_options_trash"
+       " (id INTEGER PRIMARY KEY, report_format_param, value);");
+  sql ("CREATE TABLE IF NOT EXISTS report_format_params"
+       " (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value,"
+       "  type_min, type_max, type_regex, fallback);");
+  sql ("CREATE TABLE IF NOT EXISTS report_format_params_trash"
+       " (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value,"
+       "  type_min, type_max, type_regex, fallback);");
+  sql ("CREATE TABLE IF NOT EXISTS report_formats"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension,"
+       "  content_type, summary, description, signature, trust INTEGER,"
+       "  trust_time, flags INTEGER, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS report_formats_trash"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension,"
+       "  content_type, summary, description, signature, trust INTEGER,"
+       "  trust_time, flags INTEGER, original_uuid, creation_time,"
+       "  modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS report_results"
+       " (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
+  sql ("CREATE INDEX IF NOT EXISTS report_results_by_report"
+       " ON report_results (report);");
+  sql ("CREATE INDEX IF NOT EXISTS report_results_by_result"
+       " ON report_results (result);");
+  sql ("CREATE TABLE IF NOT EXISTS reports"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER,"
+       "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
+       "  scan_run_status INTEGER, slave_progress, slave_task_uuid, highs,"
+       "  mediums, lows, logs, fps, override_highs, override_mediums,"
+       "  override_lows, override_logs, override_fps);");
+  sql ("CREATE TABLE IF NOT EXISTS results"
+       " (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt,"
+       "  type, description, report)");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_host"
+       " ON results (host);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_report_host"
+       " ON results (report, host);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_task"
+       " ON results (task);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_type"
+       " ON results (type);");
+  sql ("CREATE TABLE IF NOT EXISTS schedules"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
+       "  first_time, period, period_months, duration, timezone,"
+       "  initial_offset, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS schedules_trash"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
+       "  first_time, period, period_months, duration, timezone,"
+       "  initial_offset, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS slaves"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host,"
+       "  port, login, password, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS slaves_trash"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host,"
+       "  port, login, password, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS settings"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");
   sql ("CREATE TABLE IF NOT EXISTS tags"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  creation_time, modification_time, attach_type, attach_id,"
        "  active, value);");
-  sql ("CREATE UNIQUE INDEX IF NOT EXISTS tags_by_uuid ON tags (uuid);");
-  sql ("CREATE INDEX IF NOT EXISTS tags_by_name ON tags (name);");
   sql ("CREATE INDEX IF NOT EXISTS tags_by_attach"
        " ON tags (attach_type, attach_id);");
+  sql ("CREATE INDEX IF NOT EXISTS tags_by_name"
+       " ON tags (name);");
+  sql ("CREATE UNIQUE INDEX IF NOT EXISTS tags_by_uuid"
+       " ON tags (uuid);");
   sql ("CREATE TABLE IF NOT EXISTS tags_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  creation_time, modification_time, attach_type, attach_id,"
        "  active, value);");
+  /* port_range in the following two is actually a port list.  Migrating a
+   * column rename is lots of work. */
+  sql ("CREATE TABLE IF NOT EXISTS targets"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
+       "  comment, lsc_credential INTEGER, ssh_port,"
+       "  smb_lsc_credential INTEGER, port_range, creation_time,"
+       "  modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS targets_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
+       "  comment, lsc_credential INTEGER, ssh_port,"
+       "  smb_lsc_credential INTEGER, port_range, ssh_location INTEGER,"
+       "  smb_location INTEGER, port_list_location INTEGER, creation_time,"
+       "  modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS task_files"
+       " (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
+  sql ("CREATE TABLE IF NOT EXISTS task_alerts"
+       " (id INTEGER PRIMARY KEY, task INTEGER, alert INTEGER,"
+       "  alert_location INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS task_preferences"
+       " (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER,"
+       "  time, comment, description, run_status INTEGER, start_time, end_time,"
+       "  config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time,"
+       "  slave INTEGER, config_location INTEGER, target_location INTEGER,"
+       "  schedule_location INTEGER, slave_location INTEGER, "
+       "  upload_result_count INTEGER, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS users"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  password, timezone, role, hosts, hosts_allow, creation_time,"
+       "  modification_time);");
 
   sql ("ANALYZE;");
 }
@@ -3982,23 +4139,51 @@ create_tables ()
 static void
 create_tables_version_4 ()
 {
-  sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, name, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
-  sql ("CREATE TABLE IF NOT EXISTS meta    (id INTEGER PRIMARY KEY, name UNIQUE, value);");
-  sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
+  sql ("CREATE TABLE IF NOT EXISTS config_preferences"
+       " (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
+  sql ("CREATE TABLE IF NOT EXISTS configs"
+       " (id INTEGER PRIMARY KEY, name UNIQUE, nvt_selector, comment,"
+       "  family_count INTEGER, nvt_count INTEGER, families_growing INTEGER,"
+       "  nvts_growing INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
+       " (id INTEGER PRIMARY KEY, name, password, comment, public_key TEXT,"
+       "  private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS meta"
+       " (id INTEGER PRIMARY KEY, name UNIQUE, value);");
+  sql ("CREATE TABLE IF NOT EXISTS nvt_preferences"
+       " (id INTEGER PRIMARY KEY, name, value);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
-  sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
-  sql ("CREATE TABLE IF NOT EXISTS nvts (id INTEGER PRIMARY KEY, oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category INTEGER, family);");
-  sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
-  sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_report_and_host ON report_hosts (report, host);");
-  sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, task INTEGER, subnet, host, port, nvt, type, description)");
-  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, name, hosts, comment);");
-  sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, name, hidden INTEGER, time, comment, description, owner" /** @todo INTEGER */ ", run_status INTEGER, start_time, end_time, config, target);");
-  sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, name UNIQUE, password);");
+  sql ("CREATE TABLE IF NOT EXISTS nvt_selectors"
+       " (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER,"
+       "  family_or_nvt, family);");
+  sql ("CREATE TABLE IF NOT EXISTS nvts"
+       " (id INTEGER PRIMARY KEY, oid, version, name, summary, description,"
+       "  copyright, cve, bid, xref, tag, sign_key_ids, category INTEGER,"
+       "  family);");
+  sql ("CREATE TABLE IF NOT EXISTS report_hosts"
+       " (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time,"
+       "  attack_state, current_port, max_port);");
+  sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_report_and_host"
+       " ON report_hosts (report, host);");
+  sql ("CREATE TABLE IF NOT EXISTS report_results"
+       " (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS reports"
+       " (id INTEGER PRIMARY KEY, uuid, hidden INTEGER, task INTEGER,"
+       "  date INTEGER, start_time, end_time, nbefile, comment,"
+       "  scan_run_status INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS results"
+       " (id INTEGER PRIMARY KEY, task INTEGER, subnet, host, port, nvt, type,"
+       "  description)");
+  sql ("CREATE TABLE IF NOT EXISTS targets"
+       " (id INTEGER PRIMARY KEY, name, hosts, comment);");
+  sql ("CREATE TABLE IF NOT EXISTS task_files"
+       " (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks"
+       " (id INTEGER PRIMARY KEY, uuid, name, hidden INTEGER, time, comment,"
+       "  description, owner" /** @todo INTEGER */ ", run_status INTEGER,"
+       "  start_time, end_time, config, target);");
+  sql ("CREATE TABLE IF NOT EXISTS users"
+       " (id INTEGER PRIMARY KEY, name UNIQUE, password);");
 }
 
 
