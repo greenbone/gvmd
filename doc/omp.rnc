@@ -8255,6 +8255,8 @@ get_tags_response_tag
        & get_tags_response_tag_comment
        & get_tags_response_tag_creation_time
        & get_tags_response_tag_modification_time
+       & get_tags_response_tag_writable
+       & get_tags_response_tag_in_use
        & get_tags_response_tag_attach
        & get_tags_response_tag_value
        & get_tags_response_tag_active
@@ -8286,6 +8288,20 @@ get_tags_response_tag_modification_time
  = element modification_time
      {
        iso_time
+     }
+
+# Whether the tag is writable.
+get_tags_response_tag_writable
+ = element writable
+     {
+       boolean
+     }
+
+# Whether any tasks are using the tag.
+get_tags_response_tag_in_use
+ = element in_use
+     {
+       boolean
      }
 
 # Identifies a resource the tag is attached to.

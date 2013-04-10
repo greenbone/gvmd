@@ -1513,9 +1513,10 @@ typedef struct
   char *active;       ///< Whether the tag is active.
   char *attach_id;    ///< ID of the resource to which to attach the tag.
   char *attach_type;  ///< Type of the resource to which to attach the tag.
-  char *comment;      ///< Comment to add to the tag
-  char *name;         ///< Name of the tag
+  char *comment;      ///< Comment to add to the tag.
+  char *name;         ///< Name of the tag.
   char *value;        ///< Value of the tag.
+  int  attach_count;  ///< Number of attach tags.
 } create_tag_data_t;
 
 /**
@@ -3149,9 +3150,10 @@ typedef struct
   char *active;       ///< Whether the tag is active.
   char *attach_id;    ///< ID of the resource to which to attach the tag.
   char *attach_type;  ///< Type of the resource to which to attach the tag.
-  char *comment;      ///< Comment to add to the tag
-  char *name;         ///< Name of the tag
+  char *comment;      ///< Comment to add to the tag.
+  char *name;         ///< Name of the tag.
   char *value;        ///< Value of the tag.
+  int  attach_count;  ///< Number of attach tags.
 } modify_tag_data_t;
 
 /**
@@ -7103,7 +7105,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_TAG_ACTIVE);
           }
         else if (strcasecmp ("ATTACH", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_TAG_ATTACH);
+          {
+            modify_tag_data->attach_count ++;
+            set_client_state (CLIENT_MODIFY_TAG_ATTACH);
+          }
         else if (strcasecmp ("COMMENT", element_name) == 0)
           {
             openvas_append_string (&modify_tag_data->comment, "");
@@ -8183,7 +8188,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_CREATE_TAG_ACTIVE);
           }
         else if (strcasecmp ("ATTACH", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TAG_ATTACH);
+          {
+            create_tag_data->attach_count ++;
+            set_client_state (CLIENT_CREATE_TAG_ATTACH);
+          }
         else if (strcasecmp ("COMMENT", element_name) == 0)
           {
             openvas_append_string (&create_tag_data->comment, "");
@@ -11830,7 +11838,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           iterator_t tags;
           get_data_t* get;
           int ret, count, first, filtered;
-          gchar* comment_esc;
           gchar* value_esc;
 
           assert (strcasecmp ("GET_TAGS", element_name) == 0);
@@ -11840,10 +11847,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               case 1:
                 if (send_find_error_to_client ("get_tags",
-                                                "tag",
-                                                get_tags_data->get.id,
-                                                write_to_client,
-                                                write_to_client_data))
+                                               "tag",
+                                               get_tags_data->get.id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -11852,10 +11859,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 2:
                 if (send_find_error_to_client
                       ("get_tags",
-                      "filter",
-                      get_tags_data->get.filt_id,
-                      write_to_client,
-                      write_to_client_data))
+                       "filter",
+                       get_tags_data->get.filt_id,
+                       write_to_client,
+                       write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -11884,36 +11891,32 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
 
-              comment_esc = g_markup_escape_text (get_iterator_comment (&tags),
-                                                  -1);
               value_esc = g_markup_escape_text (tag_iterator_value (&tags),
                                                 -1);
 
-              SENDF_TO_CLIENT_OR_FAIL ("<tag id=\"%s\">"
-                                    "<name>%s</name>"
-                                    "<comment>%s</comment>"
-                                    "<creation_time>%s</creation_time>"
-                                    "<modification_time>%s</modification_time>"
-                                    "<attach>"
-                                      "<type>%s</type>"
-                                      "<id>%s</id>"
-                                    "</attach>"
-                                    "<value>%s</value>"
-                                    "<active>%s</active>"
-                                  "</tag>",
-                                  get_iterator_uuid (&tags),
-                                  get_iterator_name (&tags),
-                                  comment_esc,
-                                  get_iterator_creation_time (&tags),
-                                  get_iterator_modification_time (&tags),
-                                  tag_iterator_attach_type (&tags),
-                                  tag_iterator_attach_id (&tags),
-                                  value_esc,
-                                  tag_iterator_active (&tags));
+              // TODO: add functions to test if writeable / in use
+              if (send_get_common ("tag", get, &tags,
+                                   write_to_client, write_to_client_data,
+                                   (get)->trash ? 0 : 1,
+                                   0))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
 
-              g_free (comment_esc);
+              SENDF_TO_CLIENT_OR_FAIL ("<attach>"
+                                       "<type>%s</type>"
+                                       "<id>%s</id>"
+                                       "</attach>"
+                                       "<value>%s</value>"
+                                       "<active>%s</active>",
+                                       tag_iterator_attach_type (&tags),
+                                       tag_iterator_attach_id (&tags),
+                                       value_esc,
+                                       tag_iterator_active (&tags));
+
+              SENDF_TO_CLIENT_OR_FAIL ("</tag>");
               g_free (value_esc);
-
               count++;
             }
           cleanup_iterator (&tags);
@@ -12806,9 +12809,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                        delete_tag_data->tag_id);
                 break;
               case 1:
-                if (send_find_error_to_client ("delete_target",
-                                               "target",
-                                               delete_target_data->target_id,
+                if (send_find_error_to_client ("delete_tag",
+                                               "tag",
+                                               delete_tag_data->tag_id,
                                                write_to_client,
                                                write_to_client_data))
                   {
@@ -16951,17 +16954,38 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (create_tag_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "CREATE_TAG requires a NAME"));
+                                "CREATE_TAG requires"
+                                " a NAME element"));
           else if (strlen (create_tag_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "CREATE_TAG name must be at"
-                                " least one character long"));
-          else if (create_tag_data->attach_type == NULL
-                   || create_tag_data->attach_id == NULL)
+                                "CREATE_TAG name must be"
+                                " at least one character long"));
+          else if (create_tag_data->attach_count != 1)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "CREATE_TAG requires an ATTACH"));
+                                "CREATE_TAG requires"
+                                " a single ATTACH element"));
+          else if (create_tag_data->attach_type == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_tag",
+                                "ATTACH in CREATE_TAG requires "
+                                " a TYPE element"));
+          else if (strlen (create_tag_data->attach_type) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_tag",
+                                "ATTACH type must be"
+                                " at least one character long"));
+          else if (create_tag_data->attach_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_tag",
+                                "ATTACH in CREATE_TAG requires"
+                                " an ID element"));
+          else if (strlen (create_tag_data->attach_id) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_tag",
+                                "ATTACH attach_id must be "
+                                " at least one character long"));
           else
             {
               switch (create_tag (create_tag_data->name,
@@ -17012,28 +17036,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TAG_ATTACH:
         {
           assert (strcasecmp ("ATTACH", element_name) == 0);
-
-          if (create_tag_data->attach_type == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_tag",
-                                "ATTACH in CREATE_TAG requires a TYPE"));
-          else if (strlen (create_tag_data->attach_type) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_tag",
-                                "ATTACH type must be at"
-                                " least one character long"));
-          else if (create_tag_data->attach_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_tag",
-                                "ATTACH in CREATE_TAG requires an ID"));
-          else if (strlen (create_tag_data->attach_id) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_tag",
-                                "ATTACH attach_id must be at"
-                                " least one character long"));
-
           set_client_state(CLIENT_CREATE_TAG);
-
           break;
         }
       CLOSE (CLIENT_CREATE_TAG_ATTACH, ID);
@@ -18929,7 +18932,35 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
                                 "name in MODIFY_TAG must be at least one"
-                                "character long or omitted completely."));
+                                " character long or omitted completely"));
+          else if (modify_tag_data->attach_count > 1)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_tag",
+                                "MODIFY_TAG can have only one ATTACH element"));
+          else if (modify_tag_data->attach_count > 0
+                   && modify_tag_data->attach_type == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_tag",
+                                "ATTACH in MODIFY_TAG requires"
+                                " a TYPE element"));
+          else if (modify_tag_data->attach_count > 0
+                   && modify_tag_data->attach_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_tag",
+                                "ATTACH in MODIFY_TAG requires"
+                                " an ID element"));
+          else if (modify_tag_data->attach_type
+                   && strlen (modify_tag_data->attach_type) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_tag",
+                                "ATTACH type must be"
+                                " at least one character long"));
+          else if (modify_tag_data->attach_id
+                   && strlen (modify_tag_data->attach_id) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_tag",
+                                "ATTACH attach_id must be"
+                                " at least one character long"));
           else switch (modify_tag (modify_tag_data->tag_id,
                                    modify_tag_data->name,
                                    modify_tag_data->comment,
@@ -18984,28 +19015,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_TAG_ATTACH:
         {
           assert (strcasecmp ("ATTACH", element_name) == 0);
-
-          if (modify_tag_data->attach_type == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_tag",
-                                "ATTACH in MODIFY_TAG requires a TYPE"));
-          else if (strlen (modify_tag_data->attach_type) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_tag",
-                                "ATTACH type must be at"
-                                " least one character long"));
-          else if (modify_tag_data->attach_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_tag",
-                                "ATTACH in MODIFY_TAG requires an ID"));
-          else if (strlen (modify_tag_data->attach_id) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_tag",
-                                "ATTACH attach_id must be at"
-                                " least one character long"));
-
           set_client_state(CLIENT_MODIFY_TAG);
-
           break;
         }
       CLOSE (CLIENT_MODIFY_TAG_ATTACH, ID);

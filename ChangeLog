@@ -1,3 +1,20 @@
+2013-04-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (create_tag_data_t, modify_tag_data_t): Add attach_count.
+	Add missing periods in comment.
+	(omp_xml_handle_start_element): In cases CLIENT_MODIFY_TAG,
+	CLIENT_CREATE_TAG add incrementation of attach_count.
+	(omp_xml_handle_end_element): In case CLIENT_GET_TAGS fix indentation,
+	change to use send_get_common for common get elements.
+	In case CLIENT_DELETE_TAG, fix parameters of send_find_error_to_client.
+	In cases CLIENT_MODIFY_TAG, CLIENT_CREATE_TAG add new checks for attach
+	subelement and clarify error messages.
+	In cases CLIENT_MODIFY_TAG_ATTACH, CLIENT_CREATE_TAG_ATTACH remove value
+	checks, now handled by CLIENT_MODIFY_TAG and CLIENT_CREATE_TAG.
+
+	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc (get_tags):
+	Add writable and in_use elements in response.
+
 2013-04-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Order iteration over families

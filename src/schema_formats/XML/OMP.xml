@@ -9904,6 +9904,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>comment</e>
           <e>creation_time</e>
           <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
           <e>attach</e>
           <e>value</e>
           <e>active</e>
@@ -9927,6 +9929,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>modification_time</name>
           <summary>Date and time the tag was last modified</summary>
           <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the tag is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any tasks are using the tag</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>attach</name>
@@ -10045,6 +10057,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <comment></comment>
             <creation_time>Fri Apr 12 08:49:43 2013</creation_time>
             <modification_time>Fri Apr 12 08:49:43 2013</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
             <attach>
               <type>target</type>
               <id>b493b7a8-7489-11df-a3ec-002264764cea</id>

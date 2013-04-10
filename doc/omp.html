@@ -15870,6 +15870,16 @@ get_system_reports_response_system_report_report
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the tag is writable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>in_use</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether any tasks are using the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>attach</b>&gt;
               <div style="margin-left: 15px; display: inline;">Identifies a resource the tag is attached to.</div>
 <ul style="list-style: none">
@@ -15986,6 +15996,8 @@ get_tags_response_tag
        &amp; get_tags_response_tag_comment
        &amp; get_tags_response_tag_creation_time
        &amp; get_tags_response_tag_modification_time
+       &amp; get_tags_response_tag_writable
+       &amp; get_tags_response_tag_in_use
        &amp; get_tags_response_tag_attach
        &amp; get_tags_response_tag_value
        &amp; get_tags_response_tag_active
@@ -16013,6 +16025,18 @@ get_tags_response_tag_modification_time
  = element modification_time
      {
        iso_time
+     }
+
+get_tags_response_tag_writable
+ = element writable
+     {
+       boolean
+     }
+
+get_tags_response_tag_in_use
+ = element in_use
+     {
+       boolean
      }
 
 get_tags_response_tag_attach
@@ -16116,6 +16140,8 @@ get_tags_response_tag_count_page
      &lt;comment/&gt;
      &lt;creation_time&gt;Fri Apr 12 08:49:43 2013&lt;/creation_time&gt;
      &lt;modification_time&gt;Fri Apr 12 08:49:43 2013&lt;/modification_time&gt;
+     &lt;writable&gt;1&lt;/writable&gt;
+     &lt;in_use&gt;0&lt;/in_use&gt;
      &lt;attach&gt;
        &lt;type&gt;target&lt;/type&gt;
        &lt;id&gt;b493b7a8-7489-11df-a3ec-002264764cea&lt;/id&gt;
