@@ -18480,8 +18480,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               item = g_slist_next (item);
             }
 
-            /** @todo Implement sighup in and send to openvas-manager in order
-              *       for the changed config to take effect. */
+          /** @todo Implement sighup in and send to openvas-manager in order
+            *       for the changed config to take effect. */
           switch (openvas_auth_write_config (key_file))
             {
             case 0:
@@ -18498,7 +18498,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          // FIX do in all cases
           g_key_file_free (key_file);
           modify_auth_data_reset (modify_auth_data);
           set_client_state (CLIENT_AUTHENTIC);
