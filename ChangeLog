@@ -1,3 +1,10 @@
+2013-04-10  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport for r15943. Patch by Matthew Mundell.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_SCHEDULES use
+	"UTC" when the timezone is NULL, else "(null)" ends up in the response.
+
 2013-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* ChangeLog: Clarify backport.
