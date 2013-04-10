@@ -142,23 +142,31 @@ to run the migration:
 
 $ openvasmd --migrate
 
+
 Import/Update IANA Services Names
 ----------------------
 
 If you want the Manager to resolve port names when outputing reports for
 instance, you need to import the information from a Services Names list.
 
-In order to update the database, download the port names list.
-    $ wget http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xml
-And provide it as an argument to openvas-portnames-update script.
-    $ openvas-portnames-update service-names-port-numbers.xml
+In order to update the database, download the port names list:
+
+$ wget http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xml
+
+Then provide it as an argument to openvas-portnames-update script:
+
+$ openvas-portnames-update service-names-port-numbers.xml
+
 You can safely delete the list after that as it is not needed and all relevant
 information has been imported into the database.
-    $ rm service-names-port-numbers.xml
+
+$ rm service-names-port-numbers.xml
+
 Note that IANA updates this list frequently. The same steps could be followed to
 update the information in the database from a newer list.
 
 Currently, the helper tool supports only the official IANA Services Names list.
+
 
 Encrypted Credentials
 ---------------------

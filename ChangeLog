@@ -1,3 +1,11 @@
+2013-04-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* INSTALL: Adjusted formatting.
+
+	* tools/openvas-portnames-update.in: Use cmake variable instead of
+	fixed path to allow individual installation prefix.
+	Also added output of number of processed items.
+
 2013-04-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (manage_set_setting): Add Tags Filter.

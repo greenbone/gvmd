@@ -65,7 +65,8 @@ if [ ! -f $TASKS_DB ]; then
   exit 1;
 fi
 
-XSL="/usr/share/openvas/openvasmd/portnames_update.xsl"
+DATA_DIR=@OPENVAS_DATA_DIR@
+XSL="$DATA_DIR/openvasmd/portnames_update.xsl"
 if [ ! -f $XSL ]; then
   echo "$XSL file not found.";
   exit 1;
@@ -74,4 +75,7 @@ fi
 SQLITE="sqlite3 $TASKS_DB"
 SED="sed s/^<.*>$//g"
 
+COUNT=`xsltproc "$XSL" "$XML" | grep INSERT | wc -l`
 xsltproc "$XSL" "$XML" | $SED | $SQLITE
+
+echo "Updated $COUNT entries."
