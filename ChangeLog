@@ -1,3 +1,18 @@
+2013-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add MODIFY_AUTH to OMP.  This is a direct copy from OAP in Administrator
+	with some slight changes to fit in Manager, mostly formatting.
+
+	* src/omp.c (auth_conf_setting_t): New type.
+	(auth_conf_setting_from_xml): New function.
+	(omp_commands): Add MODIFY_AUTH.
+	(auth_group_t, modify_auth_data_t): New types.
+	(modify_auth_data_reset): New function.
+	(command_data_t, client_state_t): Add MODIFY_AUTH entries.
+	(modify_auth_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	MODIFY_AUTH handling.
+
 2013-04-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.h (tag_in_use, trash_tag_in_use, tag_writable)
