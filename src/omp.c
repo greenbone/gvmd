@@ -12067,6 +12067,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_TAGS", element_name) == 0);
 
+          get = &get_tags_data->get;
+
+          if ((!get->filter && !get->filt_id)
+              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+            {
+              char *user_filter = setting_filter ("Tags");
+
+              if (user_filter && strlen (user_filter))
+                {
+                  get->filt_id = user_filter;
+                  get->filter = filter_term (user_filter);
+                }
+              else
+                get->filt_id = g_strdup("0");
+            }
+
           ret = init_tag_iterator (&tags, &get_tags_data->get);
           switch (ret)
             {
@@ -12093,54 +12109,54 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
                 break;
-              case -1:
+              case 0:
+                count = 0;
+                manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+                SEND_GET_START ("tag", &get_filters_data->get);
+
+                while (1)
+                  {
+                    ret = get_next (&tags, get, &first, &count,
+                                    init_filter_iterator);
+                    if (ret == 1)
+                      break;
+                    if (ret == -1)
+                      {
+                        internal_error_send_to_client (error);
+                        return;
+                      }
+
+                    value_esc = g_markup_escape_text (tag_iterator_value
+                                                        (&tags),
+                                                      -1);
+
+                    SEND_GET_COMMON (tag, &get_tags_data->get, &tags);
+
+                    SENDF_TO_CLIENT_OR_FAIL ("<attach>"
+                                            "<type>%s</type>"
+                                            "<id>%s</id>"
+                                            "</attach>"
+                                            "<value>%s</value>"
+                                            "<active>%s</active>",
+                                            tag_iterator_attach_type (&tags),
+                                            tag_iterator_attach_id (&tags),
+                                            value_esc,
+                                            tag_iterator_active (&tags));
+
+                    SENDF_TO_CLIENT_OR_FAIL ("</tag>");
+                    g_free (value_esc);
+                    count++;
+                  }
+                cleanup_iterator (&tags);
+                filtered = get_tags_data->get.id
+                            ? 1
+                            : tag_count (&get_tags_data->get);
+                SEND_GET_END ("tag", &get_tags_data->get, count, filtered);
+                break;
+              default:
                 SEND_TO_CLIENT_OR_FAIL
                   (XML_INTERNAL_ERROR ("get_tags"));
-                break;
             }
-
-          get = &get_tags_data->get;
-          count = 0;
-          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
-          SEND_GET_START ("tag", &get_filters_data->get);
-
-          while (1)
-            {
-              ret = get_next (&tags, get, &first, &count,
-                              init_filter_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-
-              value_esc = g_markup_escape_text (tag_iterator_value (&tags),
-                                                -1);
-
-              SEND_GET_COMMON (tag, &get_tags_data->get, &tags);
-
-              SENDF_TO_CLIENT_OR_FAIL ("<attach>"
-                                       "<type>%s</type>"
-                                       "<id>%s</id>"
-                                       "</attach>"
-                                       "<value>%s</value>"
-                                       "<active>%s</active>",
-                                       tag_iterator_attach_type (&tags),
-                                       tag_iterator_attach_id (&tags),
-                                       value_esc,
-                                       tag_iterator_active (&tags));
-
-              SENDF_TO_CLIENT_OR_FAIL ("</tag>");
-              g_free (value_esc);
-              count++;
-            }
-          cleanup_iterator (&tags);
-          filtered = get_tags_data->get.id
-                      ? 1
-                      : tag_count (&get_tags_data->get);
-          SEND_GET_END ("tag", &get_tags_data->get, count, filtered);
 
           get_tags_data_reset (get_tags_data);
           set_client_state (CLIENT_AUTHENTIC);

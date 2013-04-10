@@ -48593,6 +48593,8 @@ manage_set_setting (const gchar *uuid, const gchar *name,
         filter_name = g_strdup ("Schedules Filter");
       else if (strcmp (uuid, "2681c32a-8dfd-40c9-a9c6-8d4e2c7799eb") == 0)
         filter_name = g_strdup ("Slaves Filter");
+      else if (strcmp (uuid, "108eea3b-fc61-483c-9da9-046762f137a8") == 0)
+        filter_name = g_strdup ("Tags Filter");
       else if (strcmp (uuid, "236e2e41-9771-4e7a-8124-c432045985e0") == 0)
         filter_name = g_strdup ("Targets Filter");
       else if (strcmp (uuid, "1c981851-8244-466c-92c4-865ffe05e721") == 0)
@@ -48625,6 +48627,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
                || strcmp (filter_name, "Report Formats Filter") == 0
                || strcmp (filter_name, "Schedules Filter") == 0
                || strcmp (filter_name, "Slaves Filter") == 0
+               || strcmp (filter_name, "Tags Filter") == 0
                || strcmp (filter_name, "Targets Filter") == 0
                || strcmp (filter_name, "Tasks Filter") == 0
                || strcmp (filter_name, "CPE Filter") == 0
