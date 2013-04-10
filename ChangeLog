@@ -1,3 +1,21 @@
+2013-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Cleanup the MODIFY_AUTH implementation.
+
+	* src/omp.c (modify_auth_data_t, modify_auth_data_reset): Remove
+	curr_group_name.
+	(omp_xml_handle_start_element): Remove MODIFY_AUTH doc, this will be in
+	the OMP doc.  Remove TODO, this is a general feature that applies to all
+	commands.  Reformat CLIENT_MODIFY_AUTH to match others, using
+	ELSE_ERROR.  In CLIENT_MODIFY_AUTH allocate the group instead of storing
+	the name separately.  Remove FIX on
+	CLIENT_MODIFY_AUTH_GROUP_AUTHCONFSETTING because it's basically what the
+	the others do.
+	(omp_xml_handle_end_element): In CLIENT_MODIFY_AUTH add group name check
+	and move key_file declaration to top of block.  In
+	CLIENT_MODIFY_AUTH_GROUP just add the settings, and leave the name
+	checking to the end handler.
+
 2013-04-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* INSTALL: Adjusted formatting.

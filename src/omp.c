@@ -2937,7 +2937,6 @@ typedef struct
 {
   GSList *groups;               ///< List of auth_group_t
   GSList *curr_group_settings;  ///< Settings of currently parsed group.
-  gchar *curr_group_name;       ///< Name of currently parsed group.
 } modify_auth_data_t;
 
 /**
@@ -2982,7 +2981,6 @@ modify_auth_data_reset (modify_auth_data_t * data)
         }
       g_slist_free (data->curr_group_settings);
     }
-  g_free (data->curr_group_name);
   memset (data, 0, sizeof (modify_auth_data_t));
 }
 
@@ -6962,89 +6960,37 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_ALERT_METHOD_DATA_NAME);
         ELSE_ERROR ("modify_alert");
 
-      /** @internal The modify_auth command.
-       * @code
-       * <modify_auth>
-       *   <group name="groupname">
-       *   <auth_conf_setting key="groupname-key1" value="Value1"/>
-       *   <auth_conf_setting key="groupname-key2" value="Value2"/>
-       *  </group>
-       * </modify_auth>
-       * @endcode:
-       *
-       * Corresponding states:
-       * CLIENT_MODIFY_AUTH
-       *   CLIENT_MODIFY_AUTH_GROUP
-       */
-      /** @todo the MODIFY_AUTH states could send more specific error messages
-         (especially syntax errors instead of "bogus element" errors). */
       case CLIENT_MODIFY_AUTH:
-        {
-          if (strcasecmp ("GROUP", element_name) == 0)
-            {
-              // FIX create group here
-              const gchar* attribute;
-              assert (modify_auth_data->curr_group_name == NULL);
-              if (find_attribute (attribute_names, attribute_values, "name",
-                                  &attribute))
-                modify_auth_data->curr_group_name = g_strdup (attribute);
-              set_client_state (CLIENT_MODIFY_AUTH_GROUP);
-            }
-          else
-            {
-              modify_auth_data_reset (modify_auth_data);
-              /* Not a "group" element. */
-              if (send_element_error_to_client ("modify_auth", element_name,
-                                                write_to_client,
-                                                write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-              set_client_state (CLIENT_AUTHENTIC);
-              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                           "Error");
-            }
+        if (strcasecmp ("GROUP", element_name) == 0)
+          {
+            const gchar* attribute;
+            auth_group_t *new_group;
 
-          break;
-        }
+            new_group = g_malloc0 (sizeof (auth_group_t));
+            if (find_attribute (attribute_names, attribute_values, "name",
+                                &attribute))
+              new_group->group_name = g_strdup (attribute);
+            modify_auth_data->groups =
+              g_slist_prepend (modify_auth_data->groups, new_group);
+            set_client_state (CLIENT_MODIFY_AUTH_GROUP);
+          }
+        ELSE_ERROR ("modify_auth");
 
       case CLIENT_MODIFY_AUTH_GROUP:
-        {
-          if (strcasecmp ("AUTH_CONF_SETTING", element_name) == 0)
-            {
-              set_client_state (CLIENT_MODIFY_AUTH_GROUP_AUTHCONFSETTING);
-              auth_conf_setting_t *setting =
-                auth_conf_setting_from_xml (element_name,
-                                            attribute_names,
-                                            attribute_values);
-              modify_auth_data->curr_group_settings =
-                g_slist_prepend (modify_auth_data->curr_group_settings, setting);
-            }
-          else
-            {
-              // FIX buffer info for end handler instead of replying to client
-              /* Group without settings or without proper setting
-                 (auth_conf_setting) element, handle as error. */
-              modify_auth_data_reset (modify_auth_data);
-              if (send_element_error_to_client ("group", element_name,
-                                                write_to_client,
-                                                write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-              set_client_state (CLIENT_AUTHENTIC);
-              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                           "Error");
-            }
-
-          break;
-        }
+        if (strcasecmp ("AUTH_CONF_SETTING", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_AUTH_GROUP_AUTHCONFSETTING);
+            auth_conf_setting_t *setting =
+              auth_conf_setting_from_xml (element_name,
+                                          attribute_names,
+                                          attribute_values);
+            modify_auth_data->curr_group_settings =
+              g_slist_prepend (modify_auth_data->curr_group_settings, setting);
+          }
+        ELSE_ERROR ("modify_auth");
 
       case CLIENT_MODIFY_AUTH_GROUP_AUTHCONFSETTING:
         {
-          // FIX buffer info for end handler instead of replying to client
           /* AUTH_CONF_SETTING should not have any children. */
           if (send_element_error_to_client ("auth_conf_setting", element_name,
                                             write_to_client,
@@ -18497,17 +18443,33 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_AUTH:
         {
+          GKeyFile *key_file;
+
           assert (strcasecmp ("MODIFY_AUTH", element_name) == 0);
 
-          GKeyFile *key_file = g_key_file_new ();
+          key_file = g_key_file_new ();
 
           /* Lets output the data for now. */
           GSList *item = modify_auth_data->groups;
           while (item)
             {
-              auth_group_t *auth_group = (auth_group_t *) item->data;
-              gchar *group = auth_group->group_name;
-              GSList *setting = auth_group->settings;
+              auth_group_t *auth_group;
+              gchar *group;
+              GSList *setting;
+
+              auth_group = (auth_group_t *) item->data;
+              group = auth_group->group_name;
+              if (group == NULL)
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                           ("modify_auth",
+                                            "GROUP requires a name attribute"));
+                  g_key_file_free (key_file);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  modify_auth_data_reset (modify_auth_data);
+                  break;
+                }
+              setting = auth_group->settings;
               while (setting)
                 {
                   auth_conf_setting_t *kvp =
@@ -18536,6 +18498,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
+          // FIX do in all cases
           g_key_file_free (key_file);
           modify_auth_data_reset (modify_auth_data);
           set_client_state (CLIENT_AUTHENTIC);
@@ -18545,33 +18508,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_AUTH_GROUP:
         {
-          // FIX buffer and do client comm in end element
-
           assert (strcasecmp ("GROUP", element_name) == 0);
-          /* Group needs to have a name. */
-          if (modify_auth_data->curr_group_name == NULL)
+
+          /* Add settings to group. */
+          if (modify_auth_data->curr_group_settings)
             {
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                      ("group",
-                                       "group requires a name attribute"));
-              set_client_state (CLIENT_AUTHENTIC);
-              modify_auth_data_reset (modify_auth_data);
-              break;
+              auth_group_t *new_group;
+              assert (modify_auth_data->groups);
+              new_group = modify_auth_data->groups->data;
+              assert (new_group);
+              new_group->settings = modify_auth_data->curr_group_settings;
             }
 
-          /* Now, add this group with its settings. */
-          auth_group_t *new_group = g_malloc0 (sizeof (auth_group_t));
-          new_group->group_name = modify_auth_data->curr_group_name;
-          if (modify_auth_data->curr_group_settings)
-            new_group->settings = modify_auth_data->curr_group_settings;
-
-          modify_auth_data->groups =
-            g_slist_prepend (modify_auth_data->groups, new_group);
-          /* Done with this group. */
-          modify_auth_data->curr_group_name = NULL;
           modify_auth_data->curr_group_settings = NULL;
-
-          /* More groups can come. */
           set_client_state (CLIENT_MODIFY_AUTH);
           break;
         }
