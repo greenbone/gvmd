@@ -50655,3 +50655,55 @@ DEF_ACCESS (tag_iterator_active, GET_ITERATOR_COLUMN_COUNT + 2);
  * @return The value associated with a tag.
  */
 DEF_ACCESS (tag_iterator_value, GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Return whether a tag is in use by a task.
+ *
+ * @param[in]  tag  Tag.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+tag_in_use (tag_t tag)
+{
+  return 0;
+}
+
+/**
+ * @brief Return whether a trashcan tag is referenced by a task.
+ *
+ * @param[in]  tag  Tag.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+trash_tag_in_use (tag_t tag)
+{
+  return 0;
+}
+
+/**
+ * @brief Return whether a tag is writable.
+ *
+ * @param[in]  tag  Tag.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+tag_writable (tag_t tag)
+{
+  return 1;
+}
+
+/**
+ * @brief Return whether a trashcan tag is writable.
+ *
+ * @param[in]  tag  Tag.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+trash_tag_writable (tag_t tag)
+{
+  return 0;
+}

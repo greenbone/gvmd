@@ -11894,15 +11894,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               value_esc = g_markup_escape_text (tag_iterator_value (&tags),
                                                 -1);
 
-              // TODO: add functions to test if writeable / in use
-              if (send_get_common ("tag", get, &tags,
-                                   write_to_client, write_to_client_data,
-                                   (get)->trash ? 0 : 1,
-                                   0))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+              SEND_GET_COMMON (tag, &get_tags_data->get, &tags);
 
               SENDF_TO_CLIENT_OR_FAIL ("<attach>"
                                        "<type>%s</type>"

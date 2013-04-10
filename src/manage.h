@@ -2907,6 +2907,18 @@ tag_iterator_active (iterator_t*);
 const char*
 tag_iterator_value (iterator_t*);
 
+int
+tag_in_use (tag_t);
+
+int
+trash_tag_in_use (tag_t);
+
+int
+tag_writable (tag_t);
+
+int
+trash_tag_writable (tag_t);
+
 
 /* Wizards. */
 

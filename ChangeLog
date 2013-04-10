@@ -1,5 +1,18 @@
 2013-04-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage.h (tag_in_use, trash_tag_in_use, tag_writable)
+	(trash_tag_writable): New function prototypes.
+
+	* src/manage_sql.c (tag_in_use, trash_tag_in_use): New functions
+	for compatibility with SEND_GET_COMMON macro.
+	(tag_writable, trash_tag_writable): New functions for compatibility with
+	SEND_GET_COMMON macro.
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_TAGS,
+	change to use SEND_GET_COMMON macro instead of send_get_common function.
+
+2013-04-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/omp.c (create_tag_data_t, modify_tag_data_t): Add attach_count.
 	Add missing periods in comment.
 	(omp_xml_handle_start_element): In cases CLIENT_MODIFY_TAG,
