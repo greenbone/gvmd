@@ -1,3 +1,7 @@
+2013-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* ChangeLog: Clarify backport.
+
 2013-04-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Backport for r15907. Patch by Werner Koch.
@@ -16,7 +20,7 @@
 
 2013-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Backport from r15885.
+	Backport from r15885.  Previous attempt was missing patch.
 
 	* src/manage_sql.c (escalate_1): Include note and override details, else
 	text element is truncated.
