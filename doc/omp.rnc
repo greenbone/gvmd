@@ -2998,7 +2998,11 @@ delete_task
 delete_user
  = element delete_user
      {
-       delete_user_name
+       # The ID of the user to be deleted. Overrides name.
+       attribute user_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
+       & delete_user_name
      }
 
 # The name of the user to be deleted.
@@ -3540,7 +3544,8 @@ get_tasks
 get_users
  = element get_users
      {
-       ""
+       # ID of single user to get.
+       attribute user_id { uuid }?
      }
 
 ## Command get_version
@@ -9514,7 +9519,9 @@ get_users_response
 get_users_response_user
  = element user
      {
-       get_users_response_user_name
+       # ID of user.
+       attribute id { uuid }
+       & get_users_response_user_name
        & get_users_response_user_role
        & get_users_response_user_hosts
        & get_users_response_user_sources

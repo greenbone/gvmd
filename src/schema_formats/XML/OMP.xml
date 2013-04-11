@@ -4471,6 +4471,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </p>
     </description>
     <pattern>
+      <attrib>
+        <name>user_id</name>
+        <summary>The ID of the user to be deleted.  Overrides name</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
       <e>name</e>
     </pattern>
     <ele>
@@ -11537,6 +11549,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </p>
     </description>
     <pattern>
+      <attrib>
+        <name>user_id</name>
+        <summary>ID of single user to get</summary>
+        <type>uuid</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -11555,6 +11572,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>user</name>
         <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>ID of user</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
           <e>name</e>
           <e>role</e>
           <e>hosts</e>

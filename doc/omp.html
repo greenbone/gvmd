@@ -8188,11 +8188,23 @@ create_user_role
 <h4>7.36.1 Structure</h4>
 <ul style="list-style: none">
 <li>
-<i>Command</i><ul style="list-style: none"><li>
+<i>Command</i><ul style="list-style: none">
+<li>
+          @<b>user_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          The ID of the user to be deleted. Overrides name.
+          </li>
+<li>
+          @<b>ultimate</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to remove entirely, or to the trashcan.
+          </li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the user to be deleted.</div>
 <ul style="list-style: none"></ul>
-</li></ul>
+</li>
+</ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -8212,7 +8224,9 @@ create_user_role
 <i>Command</i><div style="margin-left: 5%"><pre>delete_user
  = element delete_user
      {
-       delete_user_name
+       attribute user_id { uuid }
+       &amp; attribute ultimate { boolean }
+       &amp; delete_user_name
      }
 
 delete_user_name
@@ -18471,7 +18485,11 @@ get_tasks_response_task_preferences_preference_value
 <h4>7.64.1 Structure</h4>
 <ul style="list-style: none">
 <li>
-<i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>user_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of single user to get.
+          </li></ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -18486,6 +18504,11 @@ get_tasks_response_task_preferences_preference_value
 <li>
               &lt;<b>user</b>&gt;
               *<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of user.
+          </li>
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the user.</div>
@@ -18521,7 +18544,7 @@ get_tasks_response_task_preferences_preference_value
 <i>Command</i><div style="margin-left: 5%"><pre>get_users
  = element get_users
      {
-       ""
+       attribute user_id { uuid }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_users_response
@@ -18535,7 +18558,8 @@ get_tasks_response_task_preferences_preference_value
 get_users_response_user
  = element user
      {
-       get_users_response_user_name
+       attribute id { uuid }
+       &amp; get_users_response_user_name
        &amp; get_users_response_user_role
        &amp; get_users_response_user_hosts
        &amp; get_users_response_user_sources

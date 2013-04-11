@@ -1,3 +1,11 @@
+2013-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (delete_user): Add user_id and ultimate
+	attribs.
+	(get_users): Add user_id attrib.  Add USER/@id to response.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-04-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.h (copy_tag): New function prototype.
@@ -18,6 +26,15 @@
 
 	* src/manage_sql.c (manage_empty_trashcan): Also clear tags_trash
 	table when trashcan is emptied.
+
+2013-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (create_user, delete_user)
+	(describe_auth, get_users, modify_auth, modify_user): New commands.
+	From OAP schema in Administrator.
+	(help): Update to match help text.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
 
 2013-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
