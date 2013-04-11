@@ -48044,6 +48044,7 @@ manage_empty_trashcan ()
   sql ("DELETE FROM port_lists_trash;");
   sql ("DELETE FROM schedules_trash;");
   sql ("DELETE FROM slaves_trash;");
+  sql ("DELETE FROM tags_trash;");
   sql ("DELETE FROM targets_trash;");
   if (delete_trash_tasks ())
     {

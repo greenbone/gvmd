@@ -1,3 +1,8 @@
+2013-04-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (manage_empty_trashcan): Also clear tags_trash
+	table when trashcan is emptied.
+
 2013-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (create_user, delete_user)
