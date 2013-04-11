@@ -1,3 +1,8 @@
+2013-04-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (modify_tag): Fix "value" parameter changing
+	name instead of value.
+
 2013-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_MODIFY_AUTH align

@@ -50515,7 +50515,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
   if (value)
     {
       sql ("UPDATE tags SET"
-           " name = %s"
+           " value = %s"
            " WHERE ROWID = %llu;",
            quoted_value,
            tag);
