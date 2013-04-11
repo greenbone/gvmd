@@ -27,6 +27,7 @@ command
     | create_tag
     | create_target
     | create_task
+    | create_user
     | delete_agent
     | delete_config
     | delete_alert
@@ -43,6 +44,8 @@ command
     | delete_tag
     | delete_target
     | delete_task
+    | delete_user
+    | describe_auth
     | empty_trashcan
     | get_agents
     | get_configs
@@ -69,10 +72,12 @@ command
     | get_target_locators
     | get_targets
     | get_tasks
+    | get_users
     | get_version
     | help
     | modify_agent
     | modify_alert
+    | modify_auth
     | modify_config
     | modify_filter
     | modify_lsc_credential
@@ -87,6 +92,7 @@ command
     | modify_target
     | modify_tag
     | modify_task
+    | modify_user
     | pause_task
     | restore
     | resume_or_start_task
@@ -118,6 +124,7 @@ response
     | create_tag_response
     | create_target_response
     | create_task_response
+    | create_user_response
     | delete_agent_response
     | delete_config_response
     | delete_alert_response
@@ -134,6 +141,8 @@ response
     | delete_tag_response
     | delete_target_response
     | delete_task_response
+    | delete_user_response
+    | describe_auth_response
     | empty_trashcan_response
     | get_agents_response
     | get_configs_response
@@ -160,10 +169,12 @@ response
     | get_target_locators_response
     | get_targets_response
     | get_tasks_response
+    | get_users_response
     | get_version_response
     | help_response
     | modify_agent_response
     | modify_alert_response
+    | modify_auth_response
     | modify_config_response
     | modify_filter_response
     | modify_lsc_credential_response
@@ -178,6 +189,7 @@ response
     | modify_target_response
     | modify_tag_response
     | modify_task_response
+    | modify_user_response
     | pause_task_response
     | restore_response
     | resume_or_start_task_response
@@ -1559,6 +1571,7 @@ commands
            | create_tag
            | create_target
            | create_task
+           | create_user
            | delete_agent
            | delete_alert
            | delete_config
@@ -1575,6 +1588,8 @@ commands
            | delete_tag
            | delete_target
            | delete_task
+           | delete_user
+           | describe_auth
            | empty_trashcan
            | get_agents
            | get_alerts
@@ -1601,10 +1616,12 @@ commands
            | get_target_locators
            | get_targets
            | get_tasks
+           | get_users
            | get_version
            | help
            | modify_agent
            | modify_alert
+           | modify_auth
            | modify_config
            | modify_filter
            | modify_lsc_credential
@@ -1618,6 +1635,7 @@ commands
            | modify_tag
            | modify_target
            | modify_task
+           | modify_user
            | pause_task
            | restore
            | resume_or_start_task
@@ -2733,6 +2751,48 @@ create_task_rcfile
        base64
      }
 
+## Command create_user
+##
+## Create a user.
+
+create_user
+ = element create_user
+     {
+       create_user_name
+       & create_user_hosts?
+       & create_user_password?
+       & create_user_role?
+     }
+
+# The name of the user to be created.
+create_user_name
+ = element name
+     {
+       text
+     }
+
+# User access rules: a textual list of hosts.
+create_user_hosts
+ = element hosts
+     {
+       text
+       & attribute allow { boolean }?
+     }
+
+# The password for the user.
+create_user_password
+ = element password
+     {
+       text
+     }
+
+# The role of the user.
+create_user_role
+ = element role
+     {
+       xsd:token { pattern = "Administrator|User|Observer" }
+     }
+
 ## Command delete_agent
 ##
 ## Delete an agent.
@@ -2921,6 +2981,33 @@ delete_task
        attribute task_id { uuid }
        & # Whether to remove entirely, or to the trashcan.
        attribute ultimate { boolean }
+     }
+
+## Command delete_user
+##
+## Delete a user.
+
+delete_user
+ = element delete_user
+     {
+       delete_user_name
+     }
+
+# The name of the user to be deleted.
+delete_user_name
+ = element name
+     {
+       text
+     }
+
+## Command describe_auth
+##
+## Describe an auth.
+
+describe_auth
+ = element describe_auth
+     {
+       ""
      }
 
 ## Command empty_trashcan
@@ -3438,6 +3525,16 @@ get_tasks
        & attribute sort_field { text }?
      }
 
+## Command get_users
+##
+## Get all users.
+
+get_users
+ = element get_users
+     {
+       ""
+     }
+
 ## Command get_version
 ##
 ## Get the OpenVAS Manager Protocol version.
@@ -3591,6 +3688,30 @@ modify_alert_filter
  = element filter
      {
        attribute id { uuid }
+     }
+
+## Command modify_auth
+##
+## Modify the authentication methods.
+
+modify_auth
+ = element modify_auth
+     {
+       modify_auth_group
+     }
+
+modify_auth_group
+ = element group
+     {
+       modify_auth_group_auth_conf_setting*
+     }
+
+# A setting to modify.
+modify_auth_group_auth_conf_setting
+ = element auth_conf_setting
+     {
+       attribute key { text }
+       & attribute value { text }
      }
 
 ## Command modify_config
@@ -4485,6 +4606,55 @@ modify_task_file
        & attribute action { xsd:token { pattern = "update|remove" } }
      }
 
+## Command modify_user
+##
+## Modify a user.
+
+modify_user
+ = element modify_user
+     {
+       modify_user_name
+       & modify_user_password?
+       & modify_user_role
+       & modify_user_hosts?
+       & modify_user_sources?
+     }
+
+# The name of the user to be modified.
+modify_user_name
+ = element name
+     {
+       text
+     }
+
+# User access rules: a textual list of hosts.
+modify_user_hosts
+ = element hosts
+     {
+       text
+       & attribute allow { boolean }?
+     }
+
+# The password for the user.
+modify_user_password
+ = element password
+     {
+       text
+     }
+
+# The role of the user.
+modify_user_role
+ = element role
+     {
+       xsd:token { pattern = "Administrator|User|Observer" }
+     }
+
+# List of authentication sources for this user (if omitted, no changes).
+modify_user_sources
+ = element sources    # type sources
+     {
+     }
+
 ## Command pause_task
 ##
 ## Pause a running task.
@@ -4680,6 +4850,7 @@ commands_response
            | create_tag_response
            | create_target_response
            | create_task_response
+           | create_user_response
            | delete_agent_response
            | delete_alert_response
            | delete_config_response
@@ -4696,6 +4867,8 @@ commands_response
            | delete_tag_response
            | delete_target_response
            | delete_task_response
+           | delete_user_response
+           | describe_auth_response
            | empty_trashcan_response
            | get_agents_response
            | get_alerts_response
@@ -4722,10 +4895,12 @@ commands_response
            | get_target_locators_response
            | get_targets_response
            | get_tasks_response
+           | get_users_response
            | get_version_response
            | help_response
            | modify_agent_response
            | modify_alert_response
+           | modify_auth_response
            | modify_config_response
            | modify_filter_response
            | modify_lsc_credential_response
@@ -4739,6 +4914,7 @@ commands_response
            | modify_tag_response
            | modify_target_response
            | modify_task_response
+           | modify_user_response
            | pause_task_response
            | restore_response
            | resume_or_start_task_response
@@ -4910,6 +5086,16 @@ create_task_response
        & attribute id { uuid }
      }
 
+## Response to create_user
+
+create_user_response
+ = element create_user_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
 ## Response to delete_agent
 
 delete_agent_response
@@ -5052,6 +5238,40 @@ delete_task_response
      {
        attribute status { status }
        & attribute status_text { text }
+     }
+
+## Response to delete_user
+
+delete_user_response
+ = element delete_user_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to describe_auth
+
+describe_auth_response
+ = element describe_auth_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & describe_auth_response_group
+     }
+
+# Config group.
+describe_auth_response_group
+ = element group
+     {
+       attribute name { text }
+       & describe_auth_response_group_auth_conf_setting
+     }
+
+describe_auth_response_group_auth_conf_setting
+ = element auth_conf_setting
+     {
+       attribute key { text }
+       & attribute value { text }
      }
 
 ## Response to empty_trashcan
@@ -9273,6 +9493,54 @@ get_tasks_response_task_preferences_preference_value
        text
      }
 
+## Response to get_users
+
+get_users_response
+ = element get_users_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_users_response_user*
+     }
+
+get_users_response_user
+ = element user
+     {
+       get_users_response_user_name
+       & get_users_response_user_role
+       & get_users_response_user_hosts
+       & get_users_response_user_sources
+     }
+
+# The name of the user.
+get_users_response_user_name
+ = element name
+     {
+       text
+     }
+
+# The role of the user.
+get_users_response_user_role
+ = element role
+     {
+       xsd:token { pattern = "Admin|User|Observer" }
+     }
+
+# Host access rule for the user.
+get_users_response_user_hosts
+ = element hosts
+     {
+       text
+       & # 0 forbidden, 1 allowed, 2 all allowed, 3 custom.
+       attribute allow { xsd:token { pattern = "0|1|2|3" } }
+     }
+
+# Sources allowed for authentication for this user.
+get_users_response_user_sources
+ = element sources    # type sources
+     {
+     }
+
 ## Response to get_version
 
 get_version_response
@@ -9423,6 +9691,15 @@ modify_alert_response
        & attribute status_text { text }
      }
 
+## Response to modify_auth
+
+modify_auth_response
+ = element modify_auth_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
 ## Response to modify_config
 
 modify_config_response
@@ -9544,6 +9821,15 @@ modify_tag_response
 
 modify_task_response
  = element modify_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_user
+
+modify_user_response
+ = element modify_user_response
      {
        attribute status { status }
        & attribute status_text { text }

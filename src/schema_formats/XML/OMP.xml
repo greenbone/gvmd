@@ -1502,6 +1502,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_tag</c>
           <c>create_target</c>
           <c>create_task</c>
+          <c>create_user</c>
           <c>delete_agent</c>
           <c>delete_alert</c>
           <c>delete_config</c>
@@ -1518,6 +1519,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_tag</c>
           <c>delete_target</c>
           <c>delete_task</c>
+          <c>delete_user</c>
+          <c>describe_auth</c>
           <c>empty_trashcan</c>
           <c>get_agents</c>
           <c>get_alerts</c>
@@ -1544,10 +1547,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_target_locators</c>
           <c>get_targets</c>
           <c>get_tasks</c>
+          <c>get_users</c>
           <c>get_version</c>
           <c>help</c>
           <c>modify_agent</c>
           <c>modify_alert</c>
+          <c>modify_auth</c>
           <c>modify_config</c>
           <c>modify_filter</c>
           <c>modify_lsc_credential</c>
@@ -1561,6 +1566,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_tag</c>
           <c>modify_target</c>
           <c>modify_task</c>
+          <c>modify_user</c>
           <c>pause_task</c>
           <c>restore</c>
           <c>resume_or_start_task</c>
@@ -1603,6 +1609,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_tag</r>
             <r>create_target</r>
             <r>create_task</r>
+            <r>create_user</r>
             <r>delete_agent</r>
             <r>delete_alert</r>
             <r>delete_config</r>
@@ -1619,6 +1626,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_tag</r>
             <r>delete_target</r>
             <r>delete_task</r>
+            <r>delete_user</r>
+            <r>describe_auth</r>
             <r>empty_trashcan</r>
             <r>get_agents</r>
             <r>get_alerts</r>
@@ -1645,10 +1654,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_target_locators</r>
             <r>get_targets</r>
             <r>get_tasks</r>
+            <r>get_users</r>
             <r>get_version</r>
             <r>help</r>
             <r>modify_agent</r>
             <r>modify_alert</r>
+            <r>modify_auth</r>
             <r>modify_config</r>
             <r>modify_filter</r>
             <r>modify_lsc_credential</r>
@@ -1662,6 +1673,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_tag</r>
             <r>modify_target</r>
             <r>modify_task</r>
+            <r>modify_user</r>
             <r>pause_task</r>
             <r>restore</r>
             <r>resume_or_start_task</r>
@@ -3543,6 +3555,87 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>create_user</name>
+    <summary>Create a user</summary>
+    <description>
+      <p>
+        The client uses the create_user command to create a new user.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>hosts</e></o>
+      <o><e>password</e></o>
+      <o><e>role</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>The name of the user to be created</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>hosts</name>
+      <summary>User access rules: a textual list of hosts</summary>
+      <pattern>
+        <attrib>
+          <name>allow</name>
+          <type>boolean</type>
+        </attrib>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>password</name>
+      <summary>The password for the user</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>role</name>
+      <summary>The role of the user</summary>
+      <pattern>
+        <t>
+          <alts>
+            <alt>Administrator</alt>
+            <alt>User</alt>
+            <alt>Observer</alt>
+          </alts>
+        </t>
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a user</summary>
+      <request>
+        <create_user>
+          <name>foobar</name>
+          <password>f00bar</password>
+          <role>User</role>
+        </create_user>
+      </request>
+      <response>
+        <create_user_response status="201" status_text="OK, resource created"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>delete_agent</name>
     <summary>Delete an agent</summary>
     <description>
@@ -4355,6 +4448,125 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <delete_task_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_user</name>
+    <summary>Delete a user</summary>
+    <description>
+      <p>
+        The client uses the delete_user command to delete an existing user.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Administrator.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>The name of the user to be deleted</summary>
+      <pattern>text</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a user</summary>
+      <request>
+        <delete_user name="foobar">
+        </delete_user>
+      </request>
+      <response>
+        <delete_user_response status="200" status_text="OK">
+        </delete_user_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>describe_auth</name>
+    <summary>Describe an auth</summary>
+    <description>
+      <p>
+        The client uses the "describe_auth" command to get details about the
+        used authentication methods.
+      </p>
+      <p>
+        The administrator will reply with a list of all used authentication
+        methods if such a list is available.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>group</e>
+      </pattern>
+      <ele>
+        <name>group</name>
+        <summary>Config group</summary>
+        <pattern>
+          <attrib>
+            <name>name</name>
+            <type>text</type>
+            <required>1</required>
+          </attrib>
+          <e>auth_conf_setting</e>
+        </pattern>
+        <ele>
+          <name>auth_conf_setting</name>
+          <pattern>
+            <attrib>
+              <name>key</name>
+              <type>text</type>
+              <required>1</required>
+            </attrib>
+            <attrib>
+              <name>value</name>
+              <type>text</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Describe the authentication methods</summary>
+      <request>
+        <describe_auth>
+        </describe_auth>
+      </request>
+      <response>
+        <describe_auth_response status="200" status_text="OK">
+          <group name="Foo">
+            <auth_conf_setting key="Bar" value="Baz"/>
+          </group>
+        </describe_auth_response>
       </response>
     </example>
   </command>
@@ -11310,6 +11522,101 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>get_users</name>
+    <summary>Get all users</summary>
+    <description>
+      <p>
+        The client uses the "get_users" command to retrieve the list of user
+        accounts on the Scanner.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>user</e></any>
+      </pattern>
+      <ele>
+        <name>user</name>
+        <pattern>
+          <e>name</e>
+          <e>role</e>
+          <e>hosts</e>
+          <e>sources</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the user</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>role</name>
+          <summary>The role of the user</summary>
+          <pattern>
+            <t>
+              <alts>
+                <alt>Admin</alt>
+                <alt>User</alt>
+                <alt>Observer</alt>
+              </alts>
+            </t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>hosts</name>
+          <summary>Host access rule for the user</summary>
+          <pattern>
+            <attrib>
+              <name>allow</name>
+              <summary>0 forbidden, 1 allowed, 2 all allowed, 3 custom</summary>
+              <type>
+                <alts>
+                  <alt>0</alt>
+                  <alt>1</alt>
+                  <alt>2</alt>
+                  <alt>3</alt>
+                </alts>
+              </type>
+              <required>1</required>
+            </attrib>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>sources</name>
+          <summary>Sources allowed for authentication for this user</summary>
+          <type>sources</type>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get the users</summary>
+      <request>
+        <get_users></get_users>
+      </request>
+      <response>
+        <get_users_response status="200" status_text="OK">
+          <user>
+            <name>foobar</name>
+            <role>User</role>
+            <hosts allow="2"></hosts>
+            <sources><source>file</source></sources>
+          </user>
+        </get_users_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_version</name>
     <summary>Get the OpenVAS Manager Protocol version</summary>
     <pattern></pattern>
@@ -11472,44 +11779,55 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             CREATE_CONFIG          Create a config.
             CREATE_ALERT           Create an alert.
             CREATE_FILTER          Create a filter.
+            CREATE_GROUP           Create a group.
             CREATE_LSC_CREDENTIAL  Create a local security check credential.
             CREATE_NOTE            Create a note.
             CREATE_OVERRIDE        Create an override.
+            CREATE_PERMISSION      Create a permission.
             CREATE_PORT_LIST       Create a port list.
             CREATE_PORT_RANGE      Create a port range in a port list.
             CREATE_REPORT_FORMAT   Create a report format.
             CREATE_REPORT          Create a report.
             CREATE_SCHEDULE        Create a schedule.
             CREATE_SLAVE           Create a slave.
+            CREATE_TAG             Create a tag.
             CREATE_TARGET          Create a target.
             CREATE_TASK            Create a task.
+            CREATE_USER            Create a new user.
             DELETE_AGENT           Delete an agent.
             DELETE_CONFIG          Delete a config.
             DELETE_ALERT           Delete an alert.
             DELETE_FILTER          Delete a filter.
+            DELETE_GROUP           Delete a group.
             DELETE_LSC_CREDENTIAL  Delete a local security check credential.
             DELETE_NOTE            Delete a note.
             DELETE_OVERRIDE        Delete an override.
+            DELETE_PERMISSION      Delete a permission.
             DELETE_PORT_LIST       Delete a port list.
             DELETE_PORT_RANGE      Delete a port range.
             DELETE_REPORT          Delete a report.
             DELETE_REPORT_FORMAT   Delete a report format.
             DELETE_SCHEDULE        Delete a schedule.
             DELETE_SLAVE           Delete a slave.
+            DELETE_TAG             Delete a tag.
             DELETE_TARGET          Delete a target.
             DELETE_TASK            Delete a task.
+            DELETE_USER            Delete an existing user.
+            DESCRIBE_AUTH          Get details about the used authentication methods.
             EMPTY_TRASHCAN         Empty the trashcan.
             GET_AGENTS             Get all agents.
             GET_CONFIGS            Get all configs.
             GET_DEPENDENCIES       Get dependencies for all available NVTs.
             GET_ALERTS             Get all alerts.
             GET_FILTERS            Get all filters.
+            GET_GROUPS             Get all groups.
             GET_LSC_CREDENTIALS    Get all local security check credentials.
             GET_NOTES              Get all notes.
             GET_NVTS               Get one or all available NVTs.
             GET_NVT_FAMILIES       Get a list of all NVT families.
-            GET_NVT_FEED_VERSION   Get NVT collection Feed version.
+            GET_NVT_FEED_VERSION   Get NVT feed version.
             GET_OVERRIDES          Get all overrides.
+            GET_PERMISSIONS        Get all permissions.
             GET_PORT_LISTS         Get all port lists.
             GET_PREFERENCES        Get preferences for all available NVTs.
             GET_REPORTS            Get all reports.
@@ -11519,27 +11837,33 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_SETTINGS           Get all settings.
             GET_SLAVES             Get all slaves.
             GET_SYSTEM_REPORTS     Get all system reports.
+            GET_TAGS               Get all tags.
             GET_TARGET_LOCATORS    Get configured target locators.
             GET_TARGETS            Get all targets.
             GET_TASKS              Get all tasks.
+            GET_USERS              Get all users.
             GET_VERSION            Get the OpenVAS Manager Protocol version.
             GET_INFO               Get raw information for a given item.
             HELP                   Get this help text.
-            MODIFY_AGENT           modify an existing agent.
-            MODIFY_ALERT           modify an existing alert.
-            MODIFY_CONFIG          modify an existing config.
+            MODIFY_AGENT           Modify an existing agent.
+            MODIFY_ALERT           Modify an existing alert.
+            MODIFY_AUTH            Modify the authentication methods.
+            MODIFY_CONFIG          Update an existing config.
             MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.
             MODIFY_FILTER          Modify an existing filter.
+            MODIFY_GROUP           Modify an existing group.
             MODIFY_NOTE            Modify an existing note.
             MODIFY_OVERRIDE        Modify an existing override.
             MODIFY_PORT_LIST       Modify an existing port list.
             MODIFY_REPORT          Modify an existing report.
             MODIFY_REPORT_FORMAT   Modify an existing report format.
             MODIFY_SCHEDULE        Modify an existing schedule.
-            MODIFY_SLAVE           Modify an existing slave.
             MODIFY_SETTING         Modify an existing setting.
+            MODIFY_SLAVE           Modify an existing slave.
+            MODIFY_TAG             Modify an existing tag.
             MODIFY_TARGET          Modify an existing target.
             MODIFY_TASK            Update an existing task.
+            MODIFY_USER            Modify a user.
             PAUSE_TASK             Pause a running task.
             RESTORE                Restore a resource.
             RESUME_OR_START_TASK   Resume task if stopped, else start task.
@@ -11854,6 +12178,69 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_alert_response status="200" status_text="OK">
         </modify_alert_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_auth</name>
+    <summary>Modify the authentication methods</summary>
+    <description>
+      <p>
+        The client uses the "modify_auth" command to modify the authentication
+        methods.
+      </p>
+    </description>
+    <pattern>
+      <e>group</e>
+    </pattern>
+    <ele>
+      <name>group</name>
+      <pattern>
+        <any><e>auth_conf_setting</e></any>
+      </pattern>
+      <ele>
+        <name>auth_conf_setting</name>
+        <summary>A setting to modify</summary>
+        <pattern>
+          <attrib>
+            <name>key</name>
+            <type>text</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>value</name>
+            <type>text</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify a single setting for an authentication method</summary>
+      <request>
+        <modify_auth>
+          <group name="Foo">
+            <auth_conf_setting key="Bar" value="Baz"/>
+          </group>
+        </modify_auth>
+      </request>
+      <response>
+        <modify_auth_response status="200" status_text="OK">
+        </modify_auth_response>
       </response>
     </example>
   </command>
@@ -13334,6 +13721,94 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_task_response status="200" status_text="OK">
         </modify_task_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_user</name>
+    <summary>Modify a user</summary>
+    <description>
+      <p>
+        The client uses the "modify_user" command to modify an user account
+        on the OpenVAS server.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>password</e></o>
+      <e>role</e>
+      <o><e>hosts</e></o>
+      <o><e>sources</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>The name of the user to be modified</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>hosts</name>
+      <summary>User access rules: a textual list of hosts</summary>
+      <description>
+        User is allowed to access any host if this element is missing.
+      </description>
+      <pattern>
+        <attrib>
+          <name>allow</name>
+          <type>boolean</type>
+        </attrib>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>password</name>
+      <summary>The password for the user</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>role</name>
+      <summary>The role of the user</summary>
+      <pattern>
+        <t>
+          <alts>
+            <alt>Administrator</alt>
+            <alt>User</alt>
+            <alt>Observer</alt>
+          </alts>
+        </t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>sources</name>
+      <summary>List of authentication sources for this user (if omitted, no changes)</summary>
+      <type>sources</type>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify a user</summary>
+      <request>
+        <modify_user>
+          <name>Foobar</name>
+          <password modify="0"></password>
+          <role>Admin</role>
+          <hosts allow="0"></hosts>
+        </modify_user>
+      </request>
+      <response>
+        <modify_user_response status="200" status_text="OK">
+        </modify_user_response>
       </response>
     </example>
   </command>
