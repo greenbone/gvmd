@@ -3149,6 +3149,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <e>attach</e>
+      <o><e>copy</e></o>
       <o><e>value</e></o>
       <o><e>comment</e></o>
       <o><e>active</e></o>
@@ -3175,6 +3176,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>ID of the resource the tag is to be attached to</summary>
         <pattern>text</pattern>
       </ele>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>UUID of an existing tag to copy</summary>
+      <pattern>uuid</pattern>
     </ele>
     <ele>
       <name>value</name>

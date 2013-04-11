@@ -2476,6 +2476,7 @@ create_tag
      {
        create_tag_name
        & create_tag_attach
+       & create_tag_copy?
        & create_tag_value?
        & create_tag_comment?
        & create_tag_active?
@@ -2508,6 +2509,13 @@ create_tag_attach_id
  = element id
      {
        text
+     }
+
+# UUID of an existing tag to copy.
+create_tag_copy
+ = element copy
+     {
+       uuid
      }
 
 # Value associated with the tag.

@@ -50282,6 +50282,113 @@ DEF_ACCESS (user_group_iterator_name, 2);
 /* Tags */
 
 /**
+ * @brief Create a tag from an existing tag.
+ *
+ * @param[in]  name        Name of new tag.  NULL to copy from existing.
+ * @param[in]  comment     Comment on new tag.  NULL to copy from existing.
+ * @param[in]  tag_id      UUID of existing tag.
+ * @param[out] new_tag     New tag.
+ *
+ * @return 0 success, 2 failed to find existing tag,
+ *         99 permission denied, -1 error.
+ */
+int
+copy_tag (const char* name, const char* comment, const char *tag_id,
+          tag_t* new_tag)
+{
+  gchar *quoted_name, *quoted_uuid;
+  user_t owner;
+
+  assert (current_credentials.uuid);
+
+  if (tag_id == NULL)
+    return -1;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("create_tag") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  if (find_user_by_name (current_credentials.username, &owner)
+      || owner == 0)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (name && strlen (name))
+    quoted_name = sql_quote (name);
+  else
+    quoted_name = NULL;
+
+  quoted_uuid = sql_quote (tag_id);
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM tags"
+               " WHERE uuid = '%s'"
+               " AND ((owner IS NULL) OR (owner = %llu))",
+               quoted_uuid,
+               owner)
+      == 0)
+    {
+      sql ("ROLLBACK;");
+      g_free (quoted_name);
+      return 2;
+    }
+
+  /* Copy the existing tag. */
+
+  if (comment && strlen (comment))
+    {
+      gchar *quoted_comment;
+      quoted_comment = sql_nquote (comment, strlen (comment));
+      sql ( "INSERT INTO tags"
+            " (uuid, owner, creation_time, modification_time, name, comment,"
+            "  value, attach_type, attach_id, active)"
+            " SELECT"
+            "  make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+            "  %i, %i, %s%s%s, '%s', value, attach_type, attach_id, active"
+            " FROM tags"
+            " WHERE uuid = '%s';",
+            current_credentials.uuid,
+            time (NULL),
+            time (NULL),
+            quoted_name ? "'" : "",
+            quoted_name ? quoted_name : "name",
+            quoted_name ? "'" : "",
+            quoted_comment,
+            quoted_uuid);
+      g_free (quoted_comment);
+    }
+  else
+    sql ( "INSERT INTO tags"
+          " (uuid, owner, creation_time, modification_time, name, comment,"
+          "  value, attach_type, attach_id, active)"
+          " SELECT"
+          "  make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+          "  %i, %i, %s%s%s, comment, value, attach_type, attach_id, active"
+          " FROM tags"
+          " WHERE uuid = '%s';",
+          current_credentials.uuid,
+          time (NULL),
+          time (NULL),
+          quoted_name ? "'" : "",
+          quoted_name ? quoted_name : "name",
+          quoted_name ? "'" : "",
+          quoted_uuid);
+
+  if (new_tag)
+    *new_tag = sqlite3_last_insert_rowid (task_db);
+
+  sql ("COMMIT;");
+  g_free (quoted_uuid);
+  g_free (quoted_name);
+  return 0;
+}
+
+/**
  * @brief Create a tag.
  *
  * @param[in]  name        Name of the tag.

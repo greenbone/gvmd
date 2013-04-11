@@ -2876,6 +2876,9 @@ char*
 tag_uuid (target_t);
 
 int
+copy_tag (const char*, const char*, const char*, tag_t*);
+
+int
 create_tag (const char *, const char *, const char *, const char *,
             const char *, const char *, tag_t *);
 

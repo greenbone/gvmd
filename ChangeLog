@@ -1,5 +1,21 @@
 2013-04-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage.h (copy_tag): New function prototype.
+
+	* src/manage_sql.c (copy_tag): New function to create copies of existing
+	tags.
+
+	* src/omp.c (create_tag_data_t, create_tag_data_reset): Add field
+	"copy".
+	(client_state_t): Add new state CLIENT_CREATE_TAG_COPY.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add handling of new create_tag subelement "copy".
+
+	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc
+	(create_tag): Add optional subelement "copy" to command.
+
+2013-04-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (manage_empty_trashcan): Also clear tags_trash
 	table when trashcan is emptied.
 

@@ -6401,6 +6401,11 @@ create_slave_password
 </ul>
 </li>
 <li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">UUID of an existing tag to copy.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>value</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Value associated with the tag.</div>
 <ul style="list-style: none"></ul>
@@ -6441,6 +6446,7 @@ create_slave_password
      {
        create_tag_name
        &amp; create_tag_attach
+       &amp; create_tag_copy?
        &amp; create_tag_value?
        &amp; create_tag_comment?
        &amp; create_tag_active?
@@ -6469,6 +6475,12 @@ create_tag_attach_id
  = element id
      {
        text
+     }
+
+create_tag_copy
+ = element copy
+     {
+       uuid
      }
 
 create_tag_value

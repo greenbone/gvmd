@@ -1566,6 +1566,7 @@ typedef struct
   char *comment;      ///< Comment to add to the tag.
   char *name;         ///< Name of the tag.
   char *value;        ///< Value of the tag.
+  char *copy;         ///< UUID of resource to copy.
   int  attach_count;  ///< Number of attach tags.
 } create_tag_data_t;
 
@@ -1583,7 +1584,7 @@ create_tag_data_reset (create_tag_data_t *data)
   free (data->comment);
   free (data->name);
   free (data->value);
-
+  free (data->copy);
   memset (data, 0, sizeof (create_tag_data_t));
 }
 
@@ -4752,6 +4753,7 @@ typedef enum
   CLIENT_CREATE_TAG_ATTACH_ID,
   CLIENT_CREATE_TAG_ATTACH_TYPE,
   CLIENT_CREATE_TAG_COMMENT,
+  CLIENT_CREATE_TAG_COPY,
   CLIENT_CREATE_TAG_NAME,
   CLIENT_CREATE_TAG_VALUE,
   CLIENT_CREATE_TARGET,
@@ -8367,6 +8369,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             openvas_append_string (&create_tag_data->comment, "");
             set_client_state (CLIENT_CREATE_TAG_COMMENT);
+          }
+        else if (strcasecmp ("COPY", element_name) == 0)
+          {
+            openvas_append_string (&create_tag_data->copy, "");
+            set_client_state (CLIENT_CREATE_TAG_COPY);
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           {
@@ -17130,7 +17137,56 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_TAG", element_name) == 0);
 
-          if (create_tag_data->name == NULL)
+          if (create_tag_data->copy)
+            switch (copy_tag (create_tag_data->name,
+                              create_tag_data->comment,
+                              create_tag_data->copy,
+                              &new_tag))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = tag_uuid (new_tag);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_tag"),
+                                             uuid);
+                    g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                           "Tag %s has been created", uuid);
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_tag",
+                                      "Tag exists already"));
+                  g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                         "Tag could not be created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_tag",
+                                                 "tag",
+                                                 create_tag_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                         "Tag could not be created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_tag",
+                                      "Permission denied"));
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_tag"));
+                  g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                         "Tag could not be created");
+                  break;
+              }
+          else if (create_tag_data->name == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
                                 "CREATE_TAG requires"
@@ -17208,6 +17264,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
 
       CLOSE (CLIENT_CREATE_TAG, ACTIVE);
+      CLOSE (CLIENT_CREATE_TAG, COPY);
       CLOSE (CLIENT_CREATE_TAG, COMMENT);
       CLOSE (CLIENT_CREATE_TAG, NAME);
       CLOSE (CLIENT_CREATE_TAG, VALUE);
@@ -23651,6 +23708,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_TAG_ATTACH_TYPE,
               &create_tag_data->attach_type);
+
+      APPEND (CLIENT_CREATE_TAG_COPY,
+              &create_tag_data->copy);
 
       APPEND (CLIENT_CREATE_TAG_COMMENT,
               &create_tag_data->comment);
