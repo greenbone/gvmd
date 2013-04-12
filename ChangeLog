@@ -1,5 +1,11 @@
 2013-04-12  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Post release version bump.
+
+	* CMakeLists.txt: Update version number to 4.0.1.
+
+2013-04-12  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Preparing the openvas-manager 4.0.0 release.
 
 	* CMakeLists.txt: Set version to 4.0.0. Switch version scheme.
