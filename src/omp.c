@@ -2886,6 +2886,7 @@ typedef struct
 {
   char *action;        ///< What to do to file: "update" or "remove".
   char *comment;       ///< Comment.
+  char *config_id;     ///< ID of new config for task.
   array_t *alerts;     ///< IDs of new alerts for task.
   char *file;          ///< File to attach to task.
   char *file_name;     ///< Name of file to attach to task.
@@ -2896,6 +2897,7 @@ typedef struct
   char *rcfile;        ///< New definition for task, as an RC file.
   char *schedule_id;   ///< ID of new schedule for task.
   char *slave_id;      ///< ID of new slave for task.
+  char *target_id;     ///< ID of new target for task.
   char *task_id;       ///< ID of task to modify.
 } modify_task_data_t;
 
@@ -2910,6 +2912,7 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->action);
   array_free (data->alerts);
   free (data->comment);
+  free (data->config_id);
   free (data->file);
   free (data->file_name);
   free (data->name);
@@ -2932,6 +2935,7 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->rcfile);
   free (data->schedule_id);
   free (data->slave_id);
+  free (data->target_id);
   free (data->task_id);
 
   memset (data, 0, sizeof (modify_task_data_t));
@@ -4300,6 +4304,7 @@ typedef enum
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_COMMENT,
   CLIENT_MODIFY_TASK_ALERT,
+  CLIENT_MODIFY_TASK_CONFIG,
   CLIENT_MODIFY_TASK_FILE,
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_OBSERVERS,
@@ -4310,6 +4315,7 @@ typedef enum
   CLIENT_MODIFY_TASK_RCFILE,
   CLIENT_MODIFY_TASK_SCHEDULE,
   CLIENT_MODIFY_TASK_SLAVE,
+  CLIENT_MODIFY_TASK_TARGET,
   CLIENT_PAUSE_TASK,
   CLIENT_RESTORE,
   CLIENT_RESUME_OR_START_TASK,
@@ -6453,6 +6459,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               array_add (modify_task_data->alerts, g_strdup (attribute));
             set_client_state (CLIENT_MODIFY_TASK_ALERT);
           }
+        else if (strcasecmp ("CONFIG", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_task_data->config_id);
+            set_client_state (CLIENT_MODIFY_TASK_CONFIG);
+          }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_NAME);
         else if (strcasecmp ("OBSERVERS", element_name) == 0)
@@ -6478,6 +6490,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "id",
                               &modify_task_data->slave_id);
             set_client_state (CLIENT_MODIFY_TASK_SLAVE);
+          }
+        else if (strcasecmp ("TARGET", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_task_data->target_id);
+            set_client_state (CLIENT_MODIFY_TASK_TARGET);
           }
         else if (strcasecmp ("FILE", element_name) == 0)
           {
@@ -12448,6 +12466,42 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
 
+                if (fail == 0 && modify_task_data->config_id)
+                  {
+                    config_t config = 0;
+
+                    if (strcmp (modify_task_data->config_id, "0") == 0)
+                      {
+                        /* Leave it as it is. */
+                      }
+                    else if ((fail = (task_run_status (task)
+                                      != TASK_STATUS_NEW)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("modify_task",
+                                          "Status must be New to edit Config"));
+                    else if ((fail = find_config
+                                      (modify_task_data->config_id,
+                                       &config)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("modify_task"));
+                    else if (config == 0)
+                      {
+                        if (send_find_error_to_client
+                             ("modify_task",
+                              "config",
+                              modify_task_data->config_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        fail = 1;
+                      }
+                    else
+                     set_task_config (task, config);
+                  }
+
                 if (fail == 0 && modify_task_data->observers)
                   {
                     fail = set_task_observers (task,
@@ -12578,6 +12632,42 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
 
+                if (fail == 0 && modify_task_data->target_id)
+                  {
+                    target_t target = 0;
+
+                    if (strcmp (modify_task_data->target_id, "0") == 0)
+                      {
+                        /* Leave it as it is. */
+                      }
+                    else if ((fail = (task_run_status (task)
+                                      != TASK_STATUS_NEW)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("modify_task",
+                                          "Status must be New to edit Target"));
+                    else if ((fail = find_target
+                                      (modify_task_data->target_id,
+                                       &target)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("modify_task"));
+                    else if (target == 0)
+                      {
+                        if (send_find_error_to_client
+                             ("modify_task",
+                              "target",
+                              modify_task_data->target_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        fail = 1;
+                      }
+                    else
+                      set_task_target (task, target);
+                  }
+
                 if (fail == 0 && modify_task_data->preferences)
                   set_task_preferences (task,
                                         modify_task_data->preferences);
@@ -12599,6 +12689,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
       CLOSE (CLIENT_MODIFY_TASK, COMMENT);
+      CLOSE (CLIENT_MODIFY_TASK, CONFIG);
       CLOSE (CLIENT_MODIFY_TASK, ALERT);
       CLOSE (CLIENT_MODIFY_TASK, NAME);
       CLOSE (CLIENT_MODIFY_TASK, OBSERVERS);
@@ -12606,6 +12697,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TASK, RCFILE);
       CLOSE (CLIENT_MODIFY_TASK, SCHEDULE);
       CLOSE (CLIENT_MODIFY_TASK, SLAVE);
+      CLOSE (CLIENT_MODIFY_TASK, TARGET);
       CLOSE (CLIENT_MODIFY_TASK, FILE);
 
       case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE:
