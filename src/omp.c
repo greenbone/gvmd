@@ -17977,7 +17977,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_family_iterator (&families,
                                         config_families_growing,
                                         selector,
-                                        0);
+                                        1);
                   while (next (&families))
                     {
                       int family_growing, family_max;

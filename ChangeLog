@@ -1,3 +1,10 @@
+2013-04-12  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport for r15975. Patch by Hani Benhabiles.
+
+	* src/omp.c (omp_xml_handle_end_element): Order iteration over families
+	descendingly in CLIENT_GET_CONFIGS case.
+
 2013-04-10  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport for r15943. Patch by Matthew Mundell.
