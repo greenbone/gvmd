@@ -1,3 +1,93 @@
+openvas-manager 4.0.0 (2013-04-12)
+
+This is the first release of the openvas-manager 4.0 module for the Open
+Vulnerability Assessment System release 6 (OpenVAS-6). The OpenVAS Manager is
+the central management service between the actual security scanner and various
+user clients.
+
+OpenVAS Manager 4.0 contains a number of new and improved features, for example
+automatic management of likely false positives and improved access to security
+information data like OVAL or DFN-CERT.
+For a complete list of changes, please refer to the list below.
+The whole functionality is available via the extended protocol: OMP 4.0.
+
+Many thanks to everyone who has contributed to this release:
+Sebastien Aucouturier, Hani Benhabiles, Andre Heinecke, Werner Koch, Matthew
+Mundell, Timo Pollmeier, Jan-Oliver Wagner and Michael Wiegand.
+
+Main changes since 3.0.x:
+* "Escalator" has been renamed to "Alert".
+* The GnuTLS dependency has been increased to 2.8.
+* The openvas-libraries dependency has been increased to 6.0.0.
+* New: Auto-FP feature to filter out likely false positives in a report.
+* New: Manage closed CVEs, as reported by the Scanner (trusted vendor updates).
+* New: Multiple alerts can now be attached to a task.
+* New: Wizard framework with first wizard "quick_first_scan" and user setting
+  for wizard appearance.
+* Added keyword filter, pagination and edit to Targets.
+* New command line options --listen2 and --port2 for a second OMP address.
+* Improvements to the target object management; targets can now be edited when
+  they are associated with a task and the task has not yet run.
+* The protocol documentation has been updated.
+* The powerfilter now handles spaces in index filters.
+* Object management has been extended to support creation and modification
+  times.
+* Support for disabling OMP commands via the command line has been added.
+* New: Management for Filter objects.
+* New: Report format plugins for ISMS tool "verinice".
+* New: Alert for sending results to a verinice .PRO server.
+* New: Support for accessing OVAL SecInfo data.
+* New: Support for accessing DFN-CERT SecInfo data.
+* New: The risk factor of an NVT is now calculated from the CVSS score.
+* New: Support for encrypted credentials has been added.
+* New: Support for checking user passwords against a policy has been
+  added.
+* Extended: Management for information such as CPE, including a extended SCAP
+  data synchronization.
+* Extended: Powerfilter now available for Reports.
+* Extended: Powerfilters can now be attached to Alerts.
+* Extended: New object management now supports for schedules, tasks,
+  slaves, report formats, port lists and scan configs.
+* Improved: Task overview now faster via extra caching methods.
+* Improved: Handle daylight saving in schedules.
+* Improved: Extended features of Powerfilter such as sorting and result ranges.
+* Improved: When importing a report, now the host details are also imported.
+* Improved: Reduced database locking times during some operations so that
+  less blocking happens.
+* Improved: Manager serves OMP even when the scanner is down.
+* Improved: Notes management now supports Powerfilter and Trashcan.
+* Improved: Added switch to control whether a task should contribute to asset
+  management.
+* Improved: Report exports now also contain the comment of the respective task.
+* Improved: Report exports now also contain the family of NVTs.
+* Improved: Faster report format plugins LaTeX and PDF.
+* Improved: Override management now supports Powerfilter and Trashcan.
+* Improved: Additional parameters in SCAP synchronization script.
+* Improved: Handling of the SCAP database.
+* Improved: Classification in the report format plugin for ISMS tool "verinice".
+* Improved: Performance with large database.
+* Improved: Handling of client timeouts during very long operations.
+* Improved: Faster report format plugins LaTeX, TXT, HTML and PDF.
+* Improved: Master-Slave communication.
+* Improved: IPv6 address validation.
+* The ARF report format plugin is now a pre-defined format.
+* Added creation and modification times to the powerfilter.
+* Added handling of OTP 1.1.
+* Improved: Hostname validation.
+* Simplified Report Format Plugin handling for pre-defined plugins.
+* Various bug fixes and small improvements.
+* User defined oval repositories in private directories.
+* Send nvt tags with results.
+* Install greenbone-certdata-sync script.
+* Exit if connecting to scanner fails in rebuild/update mode.
+* scapdata-sync check for duplicate IDs in verbose mode.
+
+And additionally changes compared to last release candidate 4.0+rc1:
+* Improved handling of SCAP and CERT databases.
+* Editing an associated config or target is now possible as long as a task is
+  in the "New" status.
+
+
 openvas-manager 4.0+rc1 (2013-03-19)
 
 This is the first release candidate version of the upcoming 4.0 release of the

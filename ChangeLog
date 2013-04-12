@@ -1,5 +1,15 @@
 2013-04-12  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Preparing the openvas-manager 4.0.0 release.
+
+	* CMakeLists.txt: Set version to 4.0.0. Switch version scheme.
+
+	* CHANGES: Updated.
+
+	* INSTALL: Updated dependencies.
+
+2013-04-12  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Backport for r16026. Patch by Matthew Mundell.
 
 	* src/omp.c (modify_task_data_t, modify_task_data_reset)
