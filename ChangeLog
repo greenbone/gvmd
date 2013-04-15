@@ -1,3 +1,8 @@
+2013-04-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (valid_type, type_pretty_name, type_db_name):
+	Add new resource type "Tag" for filters.
+
 2013-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (modify_task_data_t, modify_task_data_reset)

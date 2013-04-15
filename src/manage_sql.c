@@ -2931,6 +2931,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "result") == 0)
          || (strcasecmp (type, "schedule") == 0)
          || (strcasecmp (type, "slave") == 0)
+         || (strcasecmp (type, "tag") == 0)
          || (strcasecmp (type, "target") == 0)
          || (strcasecmp (type, "task") == 0)
          || (strcasecmp (type, "info") == 0);
@@ -2974,6 +2975,8 @@ type_pretty_name (const char* type)
     return "Schedule";
   if (strcasecmp (type, "slave") == 0)
     return "Slave";
+  if (strcasecmp (type, "tag") == 0)
+    return "Tag";
   if (strcasecmp (type, "target") == 0)
     return "Target";
   if (strcasecmp (type, "task") == 0)
@@ -3027,6 +3030,8 @@ type_db_name (const char* type)
     return "schedule";
   if (strcasecmp (type, "Slave") == 0)
     return "slave";
+  if (strcasecmp (type, "Tag") == 0)
+    return "tag";
   if (strcasecmp (type, "Target") == 0)
     return "target";
   if (strcasecmp (type, "Task") == 0)
