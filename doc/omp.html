@@ -16304,6 +16304,11 @@ get_system_reports_response_system_report_report
               <div style="margin-left: 15px; display: inline;">ID of the resource the tag is attached to.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the attach resource if available, empty otherwise.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -16314,6 +16319,11 @@ get_system_reports_response_system_report_report
 <li>
               &lt;<b>active</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the tag is active.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>orphaned</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the tag is attached to a nonexistent resource.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -16412,6 +16422,7 @@ get_tags_response_tag
        &amp; get_tags_response_tag_attach
        &amp; get_tags_response_tag_value
        &amp; get_tags_response_tag_active
+       &amp; get_tags_response_tag_orphaned
      }
 
 get_tags_response_tag_name
@@ -16455,6 +16466,7 @@ get_tags_response_tag_attach
      {
        get_tags_response_tag_attach_type
        &amp; get_tags_response_tag_attach_id
+       &amp; get_tags_response_tag_attach_name
      }
 
 get_tags_response_tag_attach_type
@@ -16469,6 +16481,12 @@ get_tags_response_tag_attach_id
        text
      }
 
+get_tags_response_tag_attach_name
+ = element name
+     {
+       text
+     }
+
 get_tags_response_tag_value
  = element value
      {
@@ -16477,6 +16495,12 @@ get_tags_response_tag_value
 
 get_tags_response_tag_active
  = element active
+     {
+       boolean
+     }
+
+get_tags_response_tag_orphaned
+ = element orphaned
      {
        boolean
      }
@@ -16556,9 +16580,11 @@ get_tags_response_tag_count_page
      &lt;attach&gt;
        &lt;type&gt;target&lt;/type&gt;
        &lt;id&gt;b493b7a8-7489-11df-a3ec-002264764cea&lt;/id&gt;
+       &lt;name&gt;Server 1&lt;/name&gt;
      &lt;/attach&gt;
      &lt;value&gt;52.2788&lt;/value&gt;
      &lt;active&gt;1&lt;/active&gt;
+     &lt;orphaned&gt;0&lt;/orphaned&gt;
    &lt;/tag&gt;
    ...
  &lt;/get_tags_response&gt;

@@ -1237,6 +1237,163 @@ sql_run_status_name (sqlite3_context *context, int argc, sqlite3_value** argv)
   return;
 }
 
+/**
+ * @brief Get if a resource exists by its type and ID.
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_resource_exists (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  const unsigned char *type, *id;
+  sqlite3_stmt *stmt;
+  int ret;
+  int exists;
+
+  assert (argc == 2);
+
+  type = sqlite3_value_text (argv[0]);
+  if (type == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get type argument", -1);
+      return;
+    }
+  if (valid_db_resource_type ((char*)type) == 0)
+    {
+      sqlite3_result_error (context, "Invalid resource type argument", -1);
+      return;
+    }
+
+  id = sqlite3_value_text (argv[1]);
+  if (id == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get id argument", -1);
+      return;
+    }
+
+  stmt = sql_prepare ("SELECT EXISTS ("
+                      " SELECT ROWID"
+                      "  FROM %ss"
+                      "  WHERE uuid = '%s'"
+                      ");",
+                      type,
+                      id);
+
+  do
+    {
+      ret = sqlite3_step (stmt);
+    }
+  while (ret == SQLITE_BUSY);
+
+  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+    {
+      if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
+      g_warning ("%s: sqlite3_step failed: %s",
+                  __FUNCTION__,
+                  sqlite3_errmsg (task_db));
+      return;
+    }
+
+  exists = sqlite3_column_int (stmt, 0);
+  sqlite3_result_int (context, exists);
+  return;
+}
+
+/**
+ * @brief Get the name of a resource by its type and ID.
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  const char *type, *id;
+  sqlite3_stmt *stmt;
+  int ret;
+  const char *name;
+
+  assert (argc == 2);
+
+  type = (char*) sqlite3_value_text (argv[0]);
+  if (type == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get type argument", -1);
+      return;
+    }
+
+  id = (char*) sqlite3_value_text (argv[1]);
+  if (id == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get id argument", -1);
+      return;
+    }
+
+  if (valid_db_resource_type (type) == 0)
+    {
+      sqlite3_result_error (context, "Invalid resource type argument", -1);
+      return;
+    }
+  else if (strcasecmp (type, "note") == 0)
+    stmt = sql_prepare ("SELECT 'Note for: '"
+                        " || (SELECT name"
+                        "     FROM nvts"
+                        "     WHERE nvts.uuid = notes.nvt)"
+                        " FROM notes"
+                        " WHERE uuid = '%s';",
+                        id);
+  else if (strcasecmp (type, "override") == 0)
+    stmt = sql_prepare ("SELECT 'Override for: '"
+                        " || (SELECT name"
+                        "     FROM nvts"
+                        "     WHERE nvts.uuid = overrides.nvt)"
+                        " FROM overrides"
+                        " WHERE uuid = '%s';",
+                        id);
+  else if (strcasecmp (type, "report") == 0)
+    stmt = sql_prepare ("SELECT (SELECT name FROM tasks WHERE id = task)"
+                        " || ' - ' || datetime(end_time, 'unixepoch')"
+                        " FROM reports"
+                        " WHERE uuid = '%s';",
+                        id);
+  else
+    stmt = sql_prepare ("SELECT name"
+                        " FROM %ss"
+                        " WHERE uuid = '%s';",
+                        type,
+                        id);
+
+  do
+    {
+      ret = sqlite3_step (stmt);
+    }
+  while (ret == SQLITE_BUSY);
+
+  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+    {
+      if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
+      g_warning ("%s: sqlite3_step failed: %s",
+                  __FUNCTION__,
+                  sqlite3_errmsg (task_db));
+      return;
+    }
+
+  name = (const char*) sqlite3_column_text (stmt, 0);
+  if (name != NULL)
+    sqlite3_result_text (context, name, -1, SQLITE_TRANSIENT);
+  else
+    sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
+  return;
+
+}
+
 
 /* Iterators. */
 

@@ -1,3 +1,40 @@
+2013-04-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (parse_tags): Change comment to "Scanner Tags".
+	(valid_db_resource_type): New function to test if a string is a valid
+	resource type.
+
+	* src/manage.h (tag_iterator_attach_name, tag_iterator_orphaned): New
+	iterator function prototypes.
+	(valid_db_resource_type): New function prototype.
+
+	* src/manage_sql.c (init_manage_process): Add creation of SQLite
+	functions resource_exists, resource_name.
+	(TAG_ITERATOR_FILTER_COLUMNS, TAG_ITERATOR_COLUMNS): Add columns
+	"orphaned" and "attach_name".
+	(tag_iterator_orphaned, tag_iterator_attach_name): New iterator
+	functions.
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_TAGS,
+	add "name" element to "attach", add "orphaned" element to "tag" to
+	response.
+	In case CLIENT_CREATE_TAG, remove a superfluous whitespace.
+	In cases CLIENT_CREATE_TAG, CLIENT_MODIFY_TAG add validation of
+	attach_type using valid_db_resource_type.
+
+	* src/sql.c (sql_resource_exists): New SQLite function to test if a
+	resource of arbitrary type exists.
+	(sql_resource_name): New SQLite function to get the name of a resource
+	or construct one from various info.
+
+	* src/sql.h (sql_resource_exists, sql_resource_name): New SQLite
+	function prototypes.
+
+	* src/schema_formats/XML/OMP.xml (get_tags): Add response elements
+	attach/name and orphaned and update example to include these.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-04-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (valid_type, type_pretty_name, type_db_name):

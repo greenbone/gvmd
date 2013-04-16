@@ -8493,6 +8493,7 @@ get_tags_response_tag
        & get_tags_response_tag_attach
        & get_tags_response_tag_value
        & get_tags_response_tag_active
+       & get_tags_response_tag_orphaned
      }
 
 # Name of the tag (usually namespace:predicate).
@@ -8543,6 +8544,7 @@ get_tags_response_tag_attach
      {
        get_tags_response_tag_attach_type
        & get_tags_response_tag_attach_id
+       & get_tags_response_tag_attach_name
      }
 
 # OMP type of the resource the tag is attached to.
@@ -8559,6 +8561,13 @@ get_tags_response_tag_attach_id
        text
      }
 
+# Name of the attach resource if available, empty otherwise.
+get_tags_response_tag_attach_name
+ = element name
+     {
+       text
+     }
+
 # Value associated with the tag.
 get_tags_response_tag_value
  = element value
@@ -8569,6 +8578,13 @@ get_tags_response_tag_value
 # Whether the tag is active.
 get_tags_response_tag_active
  = element active
+     {
+       boolean
+     }
+
+# Whether the tag is attached to a nonexistent resource.
+get_tags_response_tag_orphaned
+ = element orphaned
      {
        boolean
      }

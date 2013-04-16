@@ -2910,6 +2910,12 @@ tag_iterator_active (iterator_t*);
 const char*
 tag_iterator_value (iterator_t*);
 
+const char*
+tag_iterator_attach_name (iterator_t*);
+
+const char*
+tag_iterator_orphaned (iterator_t*);
+
 int
 tag_in_use (tag_t);
 
@@ -2940,5 +2946,8 @@ iso_time_tz (time_t *, const char *);
 
 gchar *
 xsl_transform (gchar *, gchar *, gchar **, gchar **);
+
+int
+valid_db_resource_type (const char*);
 
 #endif /* not OPENVAS_MANAGER_MANAGE_H */

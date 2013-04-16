@@ -14092,6 +14092,34 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       g_warning ("%s: failed to create run_status_name", __FUNCTION__);
       abort ();
     }
+
+  if (sqlite3_create_function (task_db,
+                               "resource_exists",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_resource_exists,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create resource_exists", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "resource_name",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_resource_name,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create resource_name", __FUNCTION__);
+      abort ();
+    }
 }
 
 /**
@@ -50667,14 +50695,16 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
  */
 #define TAG_ITERATOR_FILTER_COLUMNS                         \
  { GET_ITERATOR_FILTER_COLUMNS, "attach_type", "attach_id", \
-   "active", "value",  NULL }
+   "active", "value", "orphaned", "attach_name", NULL }
 
 /**
  * @brief Tag iterator columns.
  */
-#define TAG_ITERATOR_COLUMNS                                \
-  GET_ITERATOR_COLUMNS ", attach_type, attach_id,"          \
-  "active, value"
+#define TAG_ITERATOR_COLUMNS                                    \
+  GET_ITERATOR_COLUMNS ", attach_type, attach_id,"              \
+  "active, value,"                                              \
+  "NOT resource_exists (attach_type, attach_id) AS orphaned,"   \
+  "resource_name(attach_type, attach_id) AS attach_name"
 
 /**
  * @brief Tag iterator trash columns.
@@ -50761,6 +50791,24 @@ DEF_ACCESS (tag_iterator_active, GET_ITERATOR_COLUMN_COUNT + 2);
  * @return The value associated with a tag.
  */
 DEF_ACCESS (tag_iterator_value, GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get the orphaned from a Tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether a tag is orphaned.
+ */
+DEF_ACCESS (tag_iterator_orphaned, GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Get the attach_name from a Tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the resource attached to a tag.
+ */
+DEF_ACCESS (tag_iterator_attach_name, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Return whether a tag is in use by a task.

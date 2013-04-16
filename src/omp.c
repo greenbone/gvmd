@@ -12106,13 +12106,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SENDF_TO_CLIENT_OR_FAIL ("<attach>"
                                             "<type>%s</type>"
                                             "<id>%s</id>"
+                                            "<name>%s</name>"
                                             "</attach>"
                                             "<value>%s</value>"
-                                            "<active>%s</active>",
+                                            "<active>%s</active>"
+                                            "<orphaned>%s</orphaned>",
                                             tag_iterator_attach_type (&tags),
                                             tag_iterator_attach_id (&tags),
+                                            tag_iterator_attach_name (&tags),
                                             value_esc,
-                                            tag_iterator_active (&tags));
+                                            tag_iterator_active (&tags),
+                                            tag_iterator_orphaned (&tags));
 
                     SENDF_TO_CLIENT_OR_FAIL ("</tag>");
                     g_free (value_esc);
@@ -17296,13 +17300,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else if (create_tag_data->attach_type == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "ATTACH in CREATE_TAG requires "
+                                "ATTACH in CREATE_TAG requires"
                                 " a TYPE element"));
-          else if (strlen (create_tag_data->attach_type) == 0)
+          else if (valid_db_resource_type (create_tag_data->attach_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "ATTACH type must be"
-                                " at least one character long"));
+                                "TYPE in CREATE_TAG/ATTACH must be"
+                                " a valid resource type."));
+          else if (strcasecmp (create_tag_data->attach_type, "tag") == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_tag",
+                                "TYPE type in CREATE_TAG/ATTACH must not"
+                                " be 'tag'."));
           else if (create_tag_data->attach_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
@@ -19360,6 +19369,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("modify_tag",
                                 "ATTACH in MODIFY_TAG requires"
                                 " a TYPE element"));
+          else if (valid_db_resource_type (modify_tag_data->attach_type) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_tag",
+                                "TYPE in MODIFY_TAG/ATTACH must be"
+                                " a valid resource type."));
+          else if (strcasecmp (modify_tag_data->attach_type, "tag") == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_tag",
+                                "TYPE type in MODIFY_TAG/ATTACH must not"
+                                " be 'tag'."));
           else if (modify_tag_data->attach_count > 0
                    && modify_tag_data->attach_id == NULL)
             SEND_TO_CLIENT_OR_FAIL

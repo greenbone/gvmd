@@ -10139,6 +10139,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>attach</e>
           <e>value</e>
           <e>active</e>
+          <e>orphaned</e>
         </pattern>
         <ele>
           <name>name</name>
@@ -10176,6 +10177,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             <e>type</e>
             <e>id</e>
+            <e>name</e>
           </pattern>
           <ele>
             <name>type</name>
@@ -10187,6 +10189,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>ID of the resource the tag is attached to</summary>
             <pattern>text</pattern>
           </ele>
+          <ele>
+            <name>name</name>
+            <summary>Name of the attach resource if available, empty otherwise</summary>
+            <pattern>text</pattern>
+          </ele>
         </ele>
         <ele>
           <name>value</name>
@@ -10196,6 +10203,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>active</name>
           <summary>Whether the tag is active</summary>
+          <pattern>boolean</pattern>
+        </ele>
+        <ele>
+          <name>orphaned</name>
+          <summary>Whether the tag is attached to a nonexistent resource</summary>
           <pattern>boolean</pattern>
         </ele>
       </ele>
@@ -10292,9 +10304,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <attach>
               <type>target</type>
               <id>b493b7a8-7489-11df-a3ec-002264764cea</id>
+              <name>Server 1</name>
             </attach>
             <value>52.2788</value>
             <active>1</active>
+            <orphaned>0</orphaned>
           </tag>
           <truncated>...</truncated>
         </get_tags_response>
