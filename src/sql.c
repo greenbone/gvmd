@@ -1259,7 +1259,7 @@ sql_resource_exists (sqlite3_context *context, int argc, sqlite3_value** argv)
   type = sqlite3_value_text (argv[0]);
   if (type == NULL)
     {
-      sqlite3_result_error (context, "Failed to get type argument", -1);
+      sqlite3_result_null (context);
       return;
     }
   if (valid_db_resource_type ((char*)type) == 0)
@@ -1271,7 +1271,7 @@ sql_resource_exists (sqlite3_context *context, int argc, sqlite3_value** argv)
   id = sqlite3_value_text (argv[1]);
   if (id == NULL)
     {
-      sqlite3_result_error (context, "Failed to get id argument", -1);
+      sqlite3_result_null (context);
       return;
     }
 
@@ -1325,14 +1325,14 @@ sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
   type = (char*) sqlite3_value_text (argv[0]);
   if (type == NULL)
     {
-      sqlite3_result_error (context, "Failed to get type argument", -1);
+      sqlite3_result_null (context);
       return;
     }
 
   id = (char*) sqlite3_value_text (argv[1]);
   if (id == NULL)
     {
-      sqlite3_result_error (context, "Failed to get id argument", -1);
+      sqlite3_result_null (context);
       return;
     }
 

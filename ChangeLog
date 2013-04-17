@@ -1,3 +1,10 @@
+2013-04-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/sql.c (sql_resource_exists, sql_resource_name): Change SQL
+	function to return null when at least one of the parameters is null
+	instead of treating it as an error, which caused problems with empty
+	tables.
+
 2013-04-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (parse_tags): Change comment to "Scanner Tags".
