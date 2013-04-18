@@ -28092,8 +28092,10 @@ copy_task (const char* name, const char* comment, const char *task_id,
 
   set_task_run_status (task, TASK_STATUS_NEW);
   sql ("INSERT INTO task_preferences (task, name, value)"
-       " VALUES (%llu, 'in_assets', 'yes')",
-       task);
+       " SELECT %llu, name, value FROM task_preferences"
+       " WHERE task = (SELECT ROWID FROM tasks WHERE uuid = '%s');",
+       task,
+       quoted_uuid);
 
   sql ("COMMIT;");
   g_free (quoted_uuid);

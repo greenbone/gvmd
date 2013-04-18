@@ -1,3 +1,8 @@
+2013-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (copy_task): Copy all preferences from existing task.
+	This includes the "Add to Assets" flag and the Scan Intensity settings.
+
 2013-04-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/sql.c (sql_resource_exists, sql_resource_name): Change SQL
