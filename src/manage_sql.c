@@ -4394,6 +4394,45 @@ manage_port_name (int number, const char *protocol)
 }
 
 /**
+ * @brief Returns formatted port number, protocol and iana name from
+ * @brief field in "number/proto" form.
+ *
+ * @param   field       Number/Protocol string.
+ *
+ * @return  Formatted port name string, NULL if error.
+ */
+gchar *
+port_name_formatted (const char *field)
+{
+  int number;
+  char *protocol, *port_name;
+
+  if (field == NULL)
+    return NULL;
+
+  protocol = g_newa (char, strlen (field));
+
+  if (sscanf (field, "%i/%s",
+              &number, protocol)
+      != 2)
+    return g_strdup (field);
+
+  port_name = manage_port_name (number, protocol);
+  if (port_name)
+    {
+      char *formatted = g_strdup_printf
+                         ("%i/%s (IANA: %s)",
+                          number,
+                          protocol,
+                          port_name);
+      free (port_name);
+      return formatted;
+    }
+  else
+    return g_strdup (field);
+}
+
+/**
  * @brief Set the database version of the actual database.
  *
  * @param  version  New version number.

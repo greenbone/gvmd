@@ -98,6 +98,9 @@ int
 manage_db_version ();
 
 char *
+port_name_formatted (const char *);
+
+char *
 manage_port_name (int, const char *);
 
 gboolean

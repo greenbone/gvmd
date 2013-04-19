@@ -1671,7 +1671,7 @@ process_otp_scanner_input ()
                 {
                   /** @todo Field could be "general". */
                   int number;
-                  char *protocol, *port_name, *formatted;
+                  char *protocol, *formatted;
 
                   assert (current_message);
 
@@ -1690,15 +1690,9 @@ process_otp_scanner_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
-                  port_name = manage_port_name (number, protocol);
-                  if (port_name && number)
-                    {
-                      formatted = g_strdup_printf
-                                   ("%i/%s (IANA: %s)",
-                                    number, protocol, port_name);
-                      free (port_name);
-                    }
-                  else
+
+                  formatted = port_name_formatted (field);
+                  if (formatted == NULL)
                     formatted = g_strdup (field);
                   set_message_port_string (current_message, formatted);
 
@@ -1753,9 +1747,7 @@ process_otp_scanner_input ()
                 {
                   /** @todo Field could be "general". */
                   int number;
-                  char *protocol;
-                  char *port_name;
-                  char *formatted;
+                  char *protocol, *formatted;
 
                   assert (current_message);
 
@@ -1774,15 +1766,9 @@ process_otp_scanner_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
-                  port_name = manage_port_name (number, protocol);
-                  if (port_name && number)
-                    {
-                      formatted = g_strdup_printf
-                                   ("%i/%s (IANA: %s)",
-                                    number, protocol, port_name);
-                      free (port_name);
-                    }
-                  else
+
+                  formatted = port_name_formatted (field);
+                  if (formatted == NULL)
                     formatted = g_strdup (field);
                   set_message_port_string (current_message, formatted);
 
@@ -1834,7 +1820,7 @@ process_otp_scanner_input ()
                 {
                   /** @todo Field could be "general". */
                   int number;
-                  char *protocol, *port_name, *formatted;
+                  char *protocol, *formatted;
 
                   assert (current_message);
 
@@ -1853,15 +1839,9 @@ process_otp_scanner_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
-                  port_name = manage_port_name (number, protocol);
-                  if (port_name && number)
-                    {
-                      formatted = g_strdup_printf
-                                   ("%i/%s (IANA: %s)",
-                                    number, protocol, port_name);
-                      free (port_name);
-                    }
-                  else
+
+                  formatted = port_name_formatted (field);
+                  if (formatted == NULL)
                     formatted = g_strdup (field);
                   set_message_port_string (current_message, formatted);
 
@@ -1913,7 +1893,7 @@ process_otp_scanner_input ()
                 {
                   /** @todo Field could be "general". */
                   int number;
-                  char *protocol, *port_name, *formatted;
+                  char *protocol, *formatted;
 
                   assert (current_message);
 
@@ -1932,15 +1912,9 @@ process_otp_scanner_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
-                  port_name = manage_port_name (number, protocol);
-                  if (port_name && number)
-                    {
-                      formatted = g_strdup_printf
-                                   ("%i/%s (IANA: %s)",
-                                    number, protocol, port_name);
-                      free (port_name);
-                    }
-                  else
+
+                  formatted = port_name_formatted (field);
+                  if (formatted == NULL)
                     formatted = g_strdup (field);
                   set_message_port_string (current_message, formatted);
 
@@ -1992,7 +1966,7 @@ process_otp_scanner_input ()
                 {
                   /** @todo Field could be "general". */
                   int number;
-                  char *protocol, *port_name, *formatted;
+                  char *protocol, *formatted;
 
                   assert (current_message);
 
@@ -2011,15 +1985,9 @@ process_otp_scanner_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
-                  port_name = manage_port_name (number, protocol);
-                  if (port_name && number)
-                    {
-                      formatted = g_strdup_printf
-                                   ("%i/%s (IANA: %s)",
-                                    number, protocol, port_name);
-                      free (port_name);
-                    }
-                  else
+
+                  formatted = port_name_formatted (field);
+                  if (formatted == NULL)
                     formatted = g_strdup (field);
                   set_message_port_string (current_message, formatted);
 
@@ -2237,9 +2205,17 @@ process_otp_scanner_input ()
               case SCANNER_PORT_NUMBER:
                 {
                   if (current_scanner_task)
-                    append_task_open_port (current_scanner_task,
-                                           current_host,
-                                           field);
+                    {
+                      char *formatted;
+
+                      formatted = port_name_formatted (field);
+
+                      append_task_open_port (current_scanner_task,
+                                             current_host,
+                                             formatted ? formatted : field);
+
+                      g_free (formatted);
+                    }
                   g_free (current_host);
                   current_host = NULL;
                   set_scanner_state (SCANNER_DONE);

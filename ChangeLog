@@ -1,3 +1,13 @@
+2013-04-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (port_name_formatted): New function.
+
+	* src/manage.h: Add port_name_formatted declaration.
+
+	* src/otp.c (process_otp_scanner_input): Use port_name_formatted for
+	SCANNER_PORT_NUMBER, SCANNER_ERRMSG_NUMBER, SCANNER_HOLE_NUMBER,
+	SCANNER_LOG_NUMBER, SCANNER_INFO_NUMBER, SCANNER_NOTE_NUMBER cases.
+
 2013-04-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (copy_task): Copy all preferences from existing task.
