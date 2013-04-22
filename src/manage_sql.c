@@ -9649,6 +9649,42 @@ migrate_77_to_78 ()
 }
 
 /**
+ * @brief Migrate the database from version 78 to version 79.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_78_to_79 ()
+{
+  sql ("BEGIN TRANSACTION;");
+
+  /* Remove tcp timestamps nvt from Discovery Scan Config. */
+  sql ("DELETE FROM nvt_selectors WHERE "
+       " name='" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
+       " AND family_or_nvt='1.3.6.1.4.1.25623.1.0.80091';");
+
+  /* Add preferences for "Ping Host" nvt in Discovery Scan Config. */
+  sql ("INSERT INTO config_preferences (config, type, name, value)"
+       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '"
+                  CONFIG_UUID_DISCOVERY "'),"
+       "         'PLUGINS_PREFS',"
+       "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
+       " 'yes');");
+  sql ("INSERT INTO config_preferences (config, type, name, value)"
+       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '"
+                  CONFIG_UUID_DISCOVERY "'),"
+       "         'PLUGINS_PREFS',"
+       "         'Ping Host[checkbox]:Report about unrechable Hosts',"
+       " 'yes');");
+
+  set_db_version (79);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9731,6 +9767,7 @@ static migrator_t database_migrators[]
     {76, migrate_75_to_76},
     {77, migrate_76_to_77},
     {78, migrate_77_to_78},
+    {79, migrate_78_to_79},
     /* End marker. */
     {-1, NULL}};
 
