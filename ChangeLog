@@ -1,3 +1,13 @@
+2013-04-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_config_discovery.c (make_config_discovery): Set ping host
+	nvt preferences "Mark unrechable Hosts as dead (not scanning)" and
+	"Report about unrechable Hosts" to yes. Create the new config within the
+	transaction.
+
+	* src/manage_sql.c (init_manage): Let the make_config_discovery add the
+	discovery config to the configs table.
+
 2013-04-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (port_name_formatted): New function.

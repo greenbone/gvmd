@@ -46,6 +46,18 @@ void
 make_config_discovery (char *const uuid, char *const selector_name)
 {
   sql ("BEGIN TRANSACTION");
+
+  /* First, create the Discovery config. */
+  sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
+       " family_count, nvt_count, nvts_growing, families_growing,"
+       " creation_time, modification_time)"
+       " VALUES ('%s', 'Discovery', NULL,"
+       "         '%s', 'Network Discovery scan configuration.',"
+       "         0, 0, 0, 0, now (), now ());",
+       uuid,
+       selector_name);
+
+  /* Setup the appropriate NVTs for the config. */
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.11929", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.900534", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.902018", "Service detection");
@@ -1010,6 +1022,20 @@ make_config_discovery (char *const uuid, char *const selector_name)
        " WHERE uuid = '%s';",
        nvt_selector_family_count (selector_name, 0),
        nvt_selector_nvt_count (selector_name, NULL, 0),
+       uuid);
+
+  /* Add preferences for "ping host" nvt. */
+  sql ("INSERT INTO config_preferences (config, type, name, value)"
+       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '%s'),"
+       "         'PLUGINS_PREFS',"
+       "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
+       " 'yes');",
+       uuid);
+  sql ("INSERT INTO config_preferences (config, type, name, value)"
+       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '%s'),"
+       "         'PLUGINS_PREFS',"
+       "         'Ping Host[checkbox]:Report about unrechable Hosts',"
+       " 'yes');",
        uuid);
 
   sql ("END TRANSACTION");

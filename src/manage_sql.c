@@ -15530,18 +15530,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
                "SELECT count(*) FROM configs"
                " WHERE uuid = '%s';", CONFIG_UUID_DISCOVERY)
       == 0)
-    {
-      sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
-           " family_count, nvt_count, nvts_growing, families_growing,"
-           " creation_time, modification_time)"
-           " VALUES ('" CONFIG_UUID_DISCOVERY "', 'Discovery', NULL, '"
-           MANAGE_NVT_SELECTOR_UUID_DISCOVERY "',"
-           " 'Network Discovery scan configuration.',"
-           " 0, 0, 0, 0, now (), now ());");
-
-      make_config_discovery (CONFIG_UUID_DISCOVERY,
-                             MANAGE_NVT_SELECTOR_UUID_DISCOVERY);
-    }
+    make_config_discovery (CONFIG_UUID_DISCOVERY,
+                           MANAGE_NVT_SELECTOR_UUID_DISCOVERY);
 
   /* Ensure the predefined port lists exist. */
 
