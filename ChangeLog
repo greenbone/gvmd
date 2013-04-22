@@ -1,5 +1,13 @@
 2013-04-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_config_discovery.c (make_config_discovery): Add preference
+	for "Services" nvt to test SSL based services.
+
+	* src/manage_sql.c (migrate_78_to_79): Add preference for "Services"
+	nvt.
+
+2013-04-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Migrate DB to set some preferences for "Ping Host" nvt and remove "tcp
 	timestamps" nvt for Discovery Scan Config.
 
