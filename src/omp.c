@@ -2538,7 +2538,6 @@ typedef struct
   char *host_search_phrase;  ///< Search phrase result filter.
   char *min_cvss_base;   ///< Minimum CVSS base filter.
   int autofp;            ///< Boolean.  Whether to apply auto FP filter.
-  int show_closed_cves;  ///< Boolean.  Whether to include Closed CVEs detail.
   int notes;             ///< Boolean.  Whether to include associated notes.
   int notes_details;     ///< Boolean.  Whether to include details of above.
   int overrides;         ///< Boolean.  Whether to include associated overrides.
@@ -6342,12 +6341,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_reports_data->autofp = strcmp (attribute, "0");
             else
               get_reports_data->autofp = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "show_closed_cves", &attribute))
-              get_reports_data->show_closed_cves = strcmp (attribute, "0");
-            else
-              get_reports_data->show_closed_cves = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "notes", &attribute))
@@ -11459,7 +11452,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->apply_overrides,
                                       get_reports_data->search_phrase,
                                       get_reports_data->autofp,
-                                      get_reports_data->show_closed_cves,
+                                      1,
                                       get_reports_data->notes,
                                       get_reports_data->notes_details,
                                       get_reports_data->overrides,
@@ -11545,7 +11538,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->apply_overrides,
                                       get_reports_data->search_phrase,
                                       get_reports_data->autofp,
-                                      get_reports_data->show_closed_cves,
+                                      1,
                                       get_reports_data->notes,
                                       get_reports_data->notes_details,
                                       get_reports_data->overrides,
@@ -11660,7 +11653,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->apply_overrides,
                                       get_reports_data->search_phrase,
                                       get_reports_data->autofp,
-                                      get_reports_data->show_closed_cves,
+                                      1,
                                       get_reports_data->notes,
                                       get_reports_data->notes_details,
                                       get_reports_data->overrides,

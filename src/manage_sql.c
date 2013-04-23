@@ -2022,7 +2022,6 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  *                                 if NULL or "".
  * @param[out]  search_phrase_exact  Whether search phrase is exact.
  * @param[out]  autofp             Whether to apply auto FP filter.
- * @param[out]  show_closed_cves   Whether to include the Closed CVEs host detail.
  * @param[out]  notes              Whether to include notes.
  * @param[out]  overrides          Whether to include overrides.
  */
@@ -2032,8 +2031,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
                                int *result_hosts_only, gchar **min_cvss_base,
                                gchar **levels, gchar **delta_states,
                                gchar **search_phrase, int *search_phrase_exact,
-                               int *autofp, int *show_closed_cves, int *notes,
-                               int *overrides)
+                               int *autofp, int *notes, int *overrides)
 {
   keyword_t **point;
   array_t *split;
@@ -2165,16 +2163,6 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
         *autofp = 0;
       else
         *autofp = val;
-    }
-
-  if (show_closed_cves)
-    {
-      if (filter_control_int ((keyword_t **) split->pdata,
-                              "show_closed_cves",
-                              &val))
-        *show_closed_cves = 0;
-      else
-        *show_closed_cves = val;
     }
 
   if (notes)
@@ -24366,7 +24354,7 @@ report_filter_term (int sort_order, const char* sort_field,
                     const char *min_cvss_base,
                     const char *levels, const char *delta_states,
                     const char *search_phrase, int search_phrase_exact,
-                    int autofp, int show_closed_cves, int notes, int overrides,
+                    int autofp, int notes, int overrides,
                     int first_result, int max_results)
 {
   return g_strdup_printf ("%s%s%s"
@@ -24375,7 +24363,6 @@ report_filter_term (int sort_order, const char* sort_field,
                           " min_cvss_base=%s"
                           " levels=%s"
                           " autofp=%i"
-                          " show_closed_cves=%i"
                           " notes=%i"
                           " overrides=%i"
                           " first=%i"
@@ -24394,7 +24381,6 @@ report_filter_term (int sort_order, const char* sort_field,
                           min_cvss_base ? min_cvss_base : "",
                           levels ? levels : "hmlgd",
                           autofp,
-                          show_closed_cves,
                           notes,
                           overrides,
                           first_result + 1,
@@ -24427,7 +24413,6 @@ report_filter_term (int sort_order, const char* sort_field,
  * @param[in]  given_search_phrase  Phrase that results must include.  All
  *                                  results if NULL or "".
  * @param[in]  autofp             Whether to apply the auto FP filter.
- * @param[in]  show_closed_cves   Whether to include the Closed CVEs host detail.
  * @param[in]  notes              Whether to include notes.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides          Whether to include overrides.
@@ -24457,10 +24442,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   int sort_order, const char *given_sort_field, int result_hosts_only,
                   const char *given_min_cvss_base, report_format_t report_format,
                   const char *given_levels, const char *given_delta_states,
-                  int apply_overrides, const char *given_search_phrase, int autofp,
-                  int show_closed_cves, int notes, int notes_details,
-                  int overrides, int overrides_details, int first_result,
-                  int max_results, const char *type, const char *host, int pos,
+                  int apply_overrides, const char *given_search_phrase,
+                  int autofp, int notes, int notes_details, int overrides,
+                  int overrides_details, int first_result, int max_results,
+                  const char *type, const char *host, int pos,
                   const char *host_search_phrase, const char *host_levels,
                   int host_first_result, int host_max_results)
 {
@@ -24530,8 +24515,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                      &sort_order, &result_hosts_only,
                                      &min_cvss_base, &levels, &delta_states,
                                      &search_phrase, &search_phrase_exact,
-                                     &autofp, &show_closed_cves, &notes,
-                                     &overrides);
+                                     &autofp, &notes, &overrides);
     }
   else
     {
@@ -24546,8 +24530,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       term = report_filter_term (sort_order, sort_field, result_hosts_only,
                                  min_cvss_base, levels, delta_states,
                                  search_phrase, search_phrase_exact, autofp,
-                                 show_closed_cves, notes, overrides,
-                                 first_result, max_results);
+                                 notes, overrides, first_result, max_results);
     }
 
   levels = levels ? levels : g_strdup ("hmlgd");
@@ -24651,7 +24634,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     "%s"
     "<phrase>%s</phrase>"
     "<autofp>%i</autofp>"
-    "<show_closed_cves>%i</show_closed_cves>"
     "<notes>%i</notes>"
     "<overrides>%i</overrides>"
     "<apply_overrides>%i</apply_overrides>"
@@ -24664,7 +24646,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     levels,
     search_phrase ? search_phrase : "",
     autofp,
-    show_closed_cves,
     notes ? 1 : 0,
     overrides ? 1 : 0,
     apply_overrides ? 1 : 0,
@@ -26385,7 +26366,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                 }
               cleanup_iterator (&details);
 
-              if (show_closed_cves && cves->len > 0)
+              if (cves->len > 0)
                 {
                   GString *detail_cves;
 
@@ -26484,7 +26465,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             }
           cleanup_iterator (&details);
 
-          if (show_closed_cves && cves->len > 0)
+          if (cves->len > 0)
             {
               GString *detail_cves;
 
@@ -26637,8 +26618,8 @@ manage_report (report_t report, report_format_t report_format,
                           sort_order, sort_field,
                           result_hosts_only, min_cvss_base, report_format,
                           levels, NULL, apply_overrides, search_phrase, autofp,
-                          show_closed_cves, notes, notes_details, overrides,
-                          overrides_details, first_result, max_results, type,
+                          notes, notes_details, overrides, overrides_details,
+                          first_result, max_results, type,
                           NULL, 0, NULL, NULL, 0, 0);
   g_free (get.filt_id);
   if (ret)
@@ -27146,11 +27127,10 @@ manage_send_report (report_t report, report_t delta_report,
   ret = print_report_xml (report, delta_report, task, xml_file, get, sort_order,
                           sort_field, result_hosts_only, min_cvss_base,
                           report_format, levels, delta_states, apply_overrides,
-                          search_phrase, autofp, show_closed_cves, notes,
-                          notes_details, overrides, overrides_details,
-                          first_result, max_results, type,
-                          host, pos, host_search_phrase, host_levels,
-                          host_first_result, host_max_results);
+                          search_phrase, autofp, notes, notes_details,
+                          overrides, overrides_details, first_result,
+                          max_results, type, host, pos, host_search_phrase,
+                          host_levels, host_first_result, host_max_results);
   if (ret)
     {
       g_free (xml_file);

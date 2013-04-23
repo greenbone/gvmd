@@ -1,5 +1,16 @@
 2013-04-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (manage_report_filter_controls, report_filter_term)
+	(print_report_xml): Remove show_closed_cves parameter.
+
+	* src/manage.h: Adapt manage_report_filter_controls header.
+
+	* src/omp.c (get_reports_data_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Remove show_closed_cves element. Adapt
+	manage_send_report function calls.
+
+2013-04-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_config_discovery.c (make_config_discovery): Add preference
 	for "Services" nvt to test SSL based services.
 
