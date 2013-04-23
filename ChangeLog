@@ -1,4 +1,9 @@
-2013-04-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+2013-04-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (migrate_78_to_79): Follow same structure as previous
+	migrators.
+
+2013-04-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_report_filter_controls, report_filter_term)
 	(print_report_xml): Remove show_closed_cves parameter.

@@ -9644,9 +9644,20 @@ migrate_77_to_78 ()
 static int
 migrate_78_to_79 ()
 {
-  sql ("BEGIN TRANSACTION;");
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 78. */
+
+  if (manage_db_version () != 78)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
 
   /* Remove tcp timestamps nvt from Discovery Scan Config. */
+
   sql ("DELETE FROM nvt_selectors WHERE "
        " name='" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
        " AND family_or_nvt='1.3.6.1.4.1.25623.1.0.80091';");
@@ -9672,6 +9683,8 @@ migrate_78_to_79 ()
        "         'PLUGINS_PREFS',"
        "         'Services[radio]:Test SSL based services',"
        "         'All;Known SSL ports;None');");
+
+  /* Set the database version to 79. */
 
   set_db_version (79);
 
