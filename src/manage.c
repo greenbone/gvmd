@@ -4698,8 +4698,9 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
   gchar* name_text = g_markup_escape_text (name, strlen (name));
   if (details)
     {
-      GString* cert_refs_str;
-      iterator_t cert_refs_iterator;
+      GString *cert_refs_str, *tags_str;
+      iterator_t cert_refs_iterator, tags;
+      gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
 
 #ifndef S_SPLINT_S
       DEF (copyright);
@@ -4729,11 +4730,50 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
           g_string_append(cert_refs_str, "<warning>database not available</warning>");
         }
 
+      tags_str = g_string_new ("");
+      g_string_append_printf (tags_str,
+                              "<count>%i</count>",
+                              resource_tag_count ("nvt",
+                                                  get_iterator_uuid
+                                                    (nvts),
+                                                  1));
+
+      init_resource_tag_iterator (&tags, "nvt",
+                                  get_iterator_uuid (nvts),
+                                  1, NULL, 1);
+      while (next (&tags))
+        {
+          tag_name_esc = g_markup_escape_text (resource_tag_iterator_name
+                                                (&tags),
+                                               -1);
+          tag_value_esc = g_markup_escape_text (resource_tag_iterator_value
+                                                  (&tags),
+                                                -1);
+          tag_comment_esc = g_markup_escape_text (resource_tag_iterator_comment
+                                                    (&tags),
+                                                  -1);
+          g_string_append_printf (tags_str,
+                                  "<tag id=\"%s\">"
+                                  "<name>%s</name>"
+                                  "<value>%s</value>"
+                                  "<comment>%s</comment>"
+                                  "</tag>",
+                                  resource_tag_iterator_uuid (&tags),
+                                  tag_name_esc,
+                                  tag_value_esc,
+                                  tag_comment_esc);
+          g_free (tag_name_esc);
+          g_free (tag_value_esc);
+          g_free (tag_comment_esc);
+        }
+      cleanup_iterator (&tags);
+
       msg = g_strdup_printf ("<nvt"
                              " oid=\"%s\">"
                              "<name>%s</name>"
                              "<creation_time>%s</creation_time>"
                              "<modification_time>%s</modification_time>"
+                             "<user_tags>%s</user_tags>"
                              "<category>%s</category>"
                              "<copyright>%s</copyright>"
                              "<description>%s</description>"
@@ -4763,6 +4803,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              get_iterator_modification_time (nvts)
                               ? get_iterator_modification_time (nvts)
                               : "",
+                             tags_str->str,
                              category_name (nvt_iterator_category (nvts)),
                              copyright_text,
                              description_text,
@@ -4791,18 +4832,27 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       g_free (version_text);
       g_free (tag_text);
       g_string_free(cert_refs_str, 1);
+      g_string_free(tags_str, 1);
+
     }
   else
     msg = g_strdup_printf ("<nvt"
                            " oid=\"%s\">"
                            "<name>%s</name>"
+                           "<user_tags>"
+                           "<count>%i</count>"
+                           "</user_tags>"
                            "<checksum>"
                            "<algorithm>md5</algorithm>"
                             /** @todo Implement checksum. */
                            "2397586ea5cd3a69f953836f7be9ef7b"
                            "</checksum>",
                            oid,
-                           name_text);
+                           name_text,
+                           resource_tag_count ("nvt",
+                                                get_iterator_uuid
+                                                  (nvts),
+                                                1));
   g_free (name_text);
   return msg;
 }

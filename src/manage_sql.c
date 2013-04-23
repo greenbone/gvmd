@@ -50815,7 +50815,7 @@ init_tag_iterator (iterator_t* iterator, const get_data_t *get)
  *
  * @param[in]  get  GET params.
  *
- * @return Total number of targets in filtered set.
+ * @return Total number of tags in filtered set.
  */
 int
 tag_count (const get_data_t *get)
@@ -50878,6 +50878,115 @@ DEF_ACCESS (tag_iterator_orphaned, GET_ITERATOR_COLUMN_COUNT + 4);
  * @return The name of the resource attached to a tag.
  */
 DEF_ACCESS (tag_iterator_attach_name, GET_ITERATOR_COLUMN_COUNT + 5);
+
+/**
+ * @brief Initialise a iterator of tags attached to a resource.
+ *
+ * @param[in]  iterator         Iterator.
+ * @param[in]  type             Resource type.
+ * @param[in]  id               Resource ID.
+ * @param[in]  active_only      Whether to select only active tags.
+ * @param[in]  sort_field       Field to sort by.
+ * @param[in]  ascending        Whether to sort in ascending order.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+init_resource_tag_iterator (iterator_t* iterator, const char* type,
+                            const char* id, int active_only,
+                            const char* sort_field,
+                            int ascending)
+{
+  assert (type);
+  assert (id);
+
+  init_iterator (iterator,
+                 "SELECT ROWID, uuid, name, value, comment, active"
+                 " FROM tags"
+                 " WHERE attach_type = '%s'"
+                 "   AND attach_id = '%s'"
+                 "   %s"
+                 " ORDER BY %s %s;",
+                 type,
+                 id,
+                 active_only ? "AND active=1": "",
+                 sort_field ? sort_field : "active DESC, name",
+                 ascending ? "ASC" : "DESC");
+
+  return 0;
+}
+
+/**
+ * @brief Get the Tag UUID from a resource Tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The UUID of the tag.
+ */
+DEF_ACCESS (resource_tag_iterator_uuid, 1);
+
+/**
+ * @brief Get the Tag name from a resource Tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the tag.
+ */
+DEF_ACCESS (resource_tag_iterator_name, 2);
+
+/**
+ * @brief Get the Tag value from a resource Tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The value of the tag.
+ */
+DEF_ACCESS (resource_tag_iterator_value, 3);
+
+/**
+ * @brief Get the Tag comment from a resource Tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The comment of the tag.
+ */
+DEF_ACCESS (resource_tag_iterator_comment, 4);
+
+/**
+ * @brief Get if Tag is active from a resource Tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether the tag is active.
+ */
+DEF_ACCESS (resource_tag_iterator_active, 5);
+
+/**
+ * @brief Count number of tags attached to a resource.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of tags attached to the resource.
+ */
+int
+resource_tag_count (const char* type, const char* id, int active_only)
+{
+  int ret;
+  assert (type);
+  assert (id);
+
+  ret = sql_int (0, 0,
+                 "SELECT count (ROWID)"
+                 " FROM tags"
+                 " WHERE attach_type = '%s'"
+                 "   AND attach_id = '%s'"
+                 "   %s;",
+                 type,
+                 id,
+                 active_only ? "AND active=1": "");
+
+  return ret;
+}
 
 /**
  * @brief Return whether a tag is in use by a task.

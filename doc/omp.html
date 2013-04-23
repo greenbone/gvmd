@@ -8472,8 +8472,105 @@ describe_auth_response_group_auth_conf_setting
           (text)
           </li>
 <li>
-              &lt;<a href="#element_"><b>agent</b></a>&gt;
-              *<div style="margin-left: 15px; display: inline;">.</div>
+              &lt;<b>agent</b>&gt;
+              *<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the agent.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The comment on the agent.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the agent was created.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the agent was last modified.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>in_use</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the agent is in use.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the agent is writable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the agent.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<i>One of</i><b></b><ul style="list-style: none">
+<li>
+              &lt;<b>installer</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>trust</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether signature verification succeeded.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">When the signature was verified.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>package</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Either the installer or one of the HOWTOs.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>filename</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filename of the package.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+</ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>filters</b>&gt;
@@ -8553,90 +8650,131 @@ describe_auth_response_group_auth_conf_setting
      {
        attribute status { status }
        &amp; attribute status_text { text }
-       &amp; agent*
+       &amp; get_agents_response_agent*
        &amp; get_agents_response_filters
        &amp; get_agents_response_sort
        &amp; get_agents_response_agents
        &amp; get_agents_response_agent_count
      }
 
-get_agents_response_agent_id
- = element agent_id
+get_agents_response_agent
+ = element agent
      {
        attribute id { uuid }
-       &amp; get_agents_response_agent_id_name
-       &amp; get_agents_response_agent_id_comment
-       &amp; get_agents_response_agent_id_creation_time
-       &amp; get_agents_response_agent_id_modification_time
-       &amp; get_agents_response_agent_id_in_use
-       &amp; get_agents_response_agent_id_writable
-       &amp; ( get_agents_response_agent_id_installer
-           | get_agents_response_agent_id_package )
+       &amp; get_agents_response_agent_name
+       &amp; get_agents_response_agent_comment
+       &amp; get_agents_response_agent_creation_time
+       &amp; get_agents_response_agent_modification_time
+       &amp; get_agents_response_agent_in_use
+       &amp; get_agents_response_agent_writable
+       &amp; get_agents_response_agent_user_tags
+       &amp; ( get_agents_response_agent_installer
+           | get_agents_response_agent_package )
      }
 
-get_agents_response_agent_id_name
+get_agents_response_agent_name
  = element name
      {
        name
      }
 
-get_agents_response_agent_id_comment
+get_agents_response_agent_comment
  = element comment
      {
        text
      }
 
-get_agents_response_agent_id_creation_time
+get_agents_response_agent_creation_time
  = element creation_time
      {
        iso_time
      }
 
-get_agents_response_agent_id_modification_time
+get_agents_response_agent_modification_time
  = element modification_time
      {
        iso_time
      }
 
-get_agents_response_agent_id_in_use
+get_agents_response_agent_in_use
  = element in_use
      {
        boolean
      }
 
-get_agents_response_agent_id_writable
+get_agents_response_agent_writable
  = element writable
      {
        boolean
      }
 
-get_agents_response_agent_id_installer
- = element installer
+get_agents_response_agent_user_tags
+ = element user_tags
      {
-       get_agents_response_agent_id_installer_trust
+       get_agents_response_agent_user_tags_count
+       &amp; get_agents_response_agent_user_tags_tag*
      }
 
-get_agents_response_agent_id_installer_trust
+get_agents_response_agent_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_agents_response_agent_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_agents_response_agent_user_tags_tag_name
+       &amp; get_agents_response_agent_user_tags_tag_value
+       &amp; get_agents_response_agent_user_tags_tag_comment
+     }
+
+get_agents_response_agent_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_agents_response_agent_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_agents_response_agent_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
+get_agents_response_agent_installer
+ = element installer
+     {
+       get_agents_response_agent_installer_trust
+     }
+
+get_agents_response_agent_installer_trust
  = element trust
      {
        text # RNC limitation: xsd:token { pattern = "yes|no|unknown" }
-       &amp; get_agents_response_agent_id_installer_trust_time
+       &amp; get_agents_response_agent_installer_trust_time
      }
 
-get_agents_response_agent_id_installer_trust_time
+get_agents_response_agent_installer_trust_time
  = element time
      {
        iso_time
      }
 
-get_agents_response_agent_id_package
+get_agents_response_agent_package
  = element package
      {
        text # RNC limitation: base64
-       &amp; get_agents_response_agent_id_package_filename
+       &amp; get_agents_response_agent_package_filename
      }
 
-get_agents_response_agent_id_package_filename
+get_agents_response_agent_package_filename
  = element filename
      {
        text
@@ -8714,6 +8852,9 @@ get_agents_response_agent_count_page
      &lt;modification_time&gt;2013-01-23T10:44:00+01:00&lt;/modification_time&gt;
      &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;installer&gt;
        &lt;trust&gt;
          yes
@@ -8738,6 +8879,9 @@ get_agents_response_agent_count_page
      &lt;modification_time&gt;2013-01-23T10:44:00+01:00&lt;/modification_time&gt;
      &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;installer&gt;
        &lt;trust&gt;
          yes
@@ -8904,6 +9048,43 @@ get_agents_response_agent_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the config.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>tasks</b>&gt;
               <div style="margin-left: 15px; display: inline;">All tasks using the config.</div>
 <ul style="list-style: none"><li>
@@ -9032,6 +9213,7 @@ get_configs_response_config
        &amp; get_configs_response_config_known_nvt_count
        &amp; get_configs_response_config_in_use
        &amp; get_configs_response_config_writable
+       &amp; get_configs_response_config_user_tags
        &amp; get_configs_response_config_tasks
        &amp; get_configs_response_config_families?
        &amp; get_configs_response_config_preferences?
@@ -9109,6 +9291,46 @@ get_configs_response_config_writable
  = element writable
      {
        boolean
+     }
+
+get_configs_response_config_user_tags
+ = element user_tags
+     {
+       get_configs_response_config_user_tags_count
+       &amp; get_configs_response_config_user_tags_tag*
+     }
+
+get_configs_response_config_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_configs_response_config_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_configs_response_config_user_tags_tag_name
+       &amp; get_configs_response_config_user_tags_tag_value
+       &amp; get_configs_response_config_user_tags_tag_comment
+     }
+
+get_configs_response_config_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_configs_response_config_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_configs_response_config_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_configs_response_config_tasks
@@ -9239,6 +9461,9 @@ get_configs_response_config_preferences_preference_value
      &lt;/nvt_count&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
      &lt;writable&gt;0&lt;/writable&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
    &lt;/config&gt;
    ...
  &lt;/get_configs_response&gt;
@@ -9267,6 +9492,9 @@ get_configs_response_config_preferences_preference_value
        &lt;growing&gt;1&lt;/growing&gt;
      &lt;/nvt_count&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;tasks&gt;
        &lt;task id="13bb418a-4220-4575-b35b-ec398bff7417"&gt;
          &lt;name&gt;Web Servers&lt;/name&gt;
@@ -9530,6 +9758,43 @@ get_dependencies_response_nvt_requires_nvt_name
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the alert.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>condition</b>&gt;
               <div style="margin-left: 15px; display: inline;">The condition that must be satisfied for the alert to occur.</div>
 <ul style="list-style: none"><li>
@@ -9621,6 +9886,7 @@ get_alerts_response_alert
        &amp; get_alerts_response_alert_modification_time
        &amp; get_alerts_response_alert_in_use
        &amp; get_alerts_response_alert_writable
+       &amp; get_alerts_response_alert_user_tags
        &amp; get_alerts_response_alert_condition
        &amp; get_alerts_response_alert_event
        &amp; get_alerts_response_alert_method
@@ -9661,6 +9927,46 @@ get_alerts_response_alert_modification_time
  = element modification_time
      {
        iso_time
+     }
+
+get_alerts_response_alert_user_tags
+ = element user_tags
+     {
+       get_alerts_response_alert_user_tags_count
+       &amp; get_alerts_response_alert_user_tags_tag*
+     }
+
+get_alerts_response_alert_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_alerts_response_alert_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_alerts_response_alert_user_tags_tag_name
+       &amp; get_alerts_response_alert_user_tags_tag_value
+       &amp; get_alerts_response_alert_user_tags_tag_comment
+     }
+
+get_alerts_response_alert_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_alerts_response_alert_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_alerts_response_alert_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_alerts_response_alert_condition
@@ -9757,6 +10063,9 @@ get_alerts_response_alert_filter_trash
      &lt;modification_time&gt;2012-08-28T12:14:00+01:00&lt;/modification_time&gt;
      &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;condition&gt;
        Threat level at least
        &lt;data&gt;
@@ -9888,6 +10197,43 @@ get_alerts_response_alert_filter_trash
               &lt;<b>writable</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the filter is writable.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the filter.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>alerts</b>&gt;
@@ -10023,6 +10369,7 @@ get_filters_response_filter
        &amp; get_filters_response_filter_modification_time
        &amp; get_filters_response_filter_in_use
        &amp; get_filters_response_filter_writable
+       &amp; get_filters_response_filter_user_tags
        &amp; get_filters_response_filter_alerts?
      }
 
@@ -10072,6 +10419,46 @@ get_filters_response_filter_writable
  = element writable
      {
        boolean
+     }
+
+get_filters_response_filter_user_tags
+ = element user_tags
+     {
+       get_filters_response_filter_user_tags_count
+       &amp; get_filters_response_filter_user_tags_tag*
+     }
+
+get_filters_response_filter_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_filters_response_filter_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_filters_response_filter_user_tags_tag_name
+       &amp; get_filters_response_filter_user_tags_tag_value
+       &amp; get_filters_response_filter_user_tags_tag_comment
+     }
+
+get_filters_response_filter_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_filters_response_filter_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_filters_response_filter_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_filters_response_filter_alerts
@@ -10165,6 +10552,9 @@ get_filters_response_filter_count_page
      &lt;type&gt;target&lt;/type&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
      &lt;writable&gt;1&lt;/writable&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;creation_time&gt;Sun Jun 27 08:49:46 2010&lt;/creation_time&gt;
      &lt;modification_time&gt;Sun Jun 27 08:49:46 2010&lt;/modification_time&gt;
    &lt;/filter&gt;
@@ -10186,6 +10576,9 @@ get_filters_response_filter_count_page
      &lt;type/&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
      &lt;writable&gt;1&lt;/writable&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;creation_time&gt;Sun Jun 27 08:49:43 2010&lt;/creation_time&gt;
      &lt;modification_time&gt;Sun Jun 27 08:49:43 2010&lt;/modification_time&gt;
      &lt;alerts&gt;
@@ -10283,6 +10676,43 @@ get_filters_response_filter_count_page
               &lt;<b>modification_time</b>&gt;
               <div style="margin-left: 15px; display: inline;">Date and time the info was last modified.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the info.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>update_time</b>&gt;
@@ -10629,6 +11059,7 @@ get_info_response_info
        &amp; get_info_response_info_comment
        &amp; get_info_response_info_creation_time
        &amp; get_info_response_info_modification_time
+       &amp; get_info_response_info_user_tags
        &amp; get_info_response_info_update_time
        &amp; get_info_response_info_cpe?
        &amp; get_info_response_info_cve?
@@ -10666,6 +11097,46 @@ get_info_response_info_update_time
  = element update_time
      {
        iso_time
+     }
+
+get_info_response_info_user_tags
+ = element user_tags
+     {
+       get_info_response_info_user_tags_count
+       &amp; get_info_response_info_user_tags_tag*
+     }
+
+get_info_response_info_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_info_response_info_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_info_response_info_user_tags_tag_name
+       &amp; get_info_response_info_user_tags_tag_value
+       &amp; get_info_response_info_user_tags_tag_comment
+     }
+
+get_info_response_info_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_info_response_info_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_info_response_info_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_info_response_info_cpe
@@ -11054,6 +11525,9 @@ get_info_response_details
      &lt;modification_time&gt;2007-09-14T17:36:49Z&lt;/modification_time&gt;
      &lt;writable&gt;0&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;update_time&gt;2012-10-26T13:18:00.000+0000&lt;/update_time&gt;
      &lt;cpe&gt;
        &lt;title&gt;GNU Gzip 1.3.3&lt;/title&gt;
@@ -11151,6 +11625,9 @@ get_info_response_details
      &lt;writable&gt;0&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
      &lt;update_time&gt;2012-10-26T13:18:00.000+0000&lt;/update_time&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;cve&gt;
        &lt;cvss&gt;9.0&lt;/cvss&gt;
        &lt;vector&gt;NETWORK&lt;/vector&gt;
@@ -11287,6 +11764,43 @@ get_info_response_details
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the credential.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>type</b>&gt;
               <div style="margin-left: 15px; display: inline;">The type of the LSC credential.</div>
 <ul style="list-style: none"></ul>
@@ -11358,6 +11872,7 @@ get_lsc_credentials_response_lsc_credential
        &amp; get_lsc_credentials_response_lsc_credential_modification_time
        &amp; get_lsc_credentials_response_lsc_credential_writable
        &amp; get_lsc_credentials_response_lsc_credential_in_use
+       &amp; get_lsc_credentials_response_lsc_credential_user_tags
        &amp; get_lsc_credentials_response_lsc_credential_type
        &amp; get_lsc_credentials_response_lsc_credential_targets
        &amp; get_lsc_credentials_response_lsc_credential_public_key?
@@ -11404,6 +11919,46 @@ get_lsc_credentials_response_lsc_credential_in_use
  = element in_use
      {
        boolean
+     }
+
+get_lsc_credentials_response_lsc_credential_user_tags
+ = element user_tags
+     {
+       get_lsc_credentials_response_lsc_credential_user_tags_count
+       &amp; get_lsc_credentials_response_lsc_credential_user_tags_tag*
+     }
+
+get_lsc_credentials_response_lsc_credential_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_lsc_credentials_response_lsc_credential_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_lsc_credentials_response_lsc_credential_user_tags_tag_name
+       &amp; get_lsc_credentials_response_lsc_credential_user_tags_tag_value
+       &amp; get_lsc_credentials_response_lsc_credential_user_tags_tag_comment
+     }
+
+get_lsc_credentials_response_lsc_credential_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_lsc_credentials_response_lsc_credential_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_lsc_credentials_response_lsc_credential_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_lsc_credentials_response_lsc_credential_type
@@ -11459,6 +12014,9 @@ get_lsc_credentials_response_lsc_credential_package
      &lt;modification_time&gt;2012-05-28T11:19:20+01:00&lt;/modification_time&gt;
      &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;type&gt;gen&lt;/type&gt;
    &lt;/lsc_credential&gt;
    &lt;lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15"&gt;
@@ -11490,6 +12048,9 @@ get_lsc_credentials_response_lsc_credential_package
      &lt;modification_time&gt;2012-11-18T13:17:00+01:00&lt;/modification_time&gt;
      &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;login&gt;bob&lt;/login&gt;
      &lt;type&gt;pass&lt;/type&gt;
      &lt;targets&gt;
@@ -11519,6 +12080,9 @@ get_lsc_credentials_response_lsc_credential_package
      &lt;modification_time&gt;2012-11-18T13:17:00+01:00&lt;/modification_time&gt;
      &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;type&gt;pass&lt;/type&gt;
      &lt;targets&gt;
        &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
@@ -11624,6 +12188,43 @@ get_lsc_credentials_response_lsc_credential_package
               &lt;<b>orphan</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the note is an orphan.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the note.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
 </li>
 <li>
 <i>The group</i><b>?</b><ul style="list-style: none">
@@ -11883,6 +12484,7 @@ get_notes_response_note
        get_notes_response_note_nvt
        &amp; get_notes_response_note_text
        &amp; get_notes_response_note_orphan
+       &amp; get_notes_response_note_user_tags
        &amp; ( get_notes_response_note_creation_time
            &amp; get_notes_response_note_modification_time
            &amp; get_notes_response_note_hosts
@@ -11918,6 +12520,46 @@ get_notes_response_note_orphan
  = element orphan
      {
        boolean
+     }
+
+get_notes_response_note_user_tags
+ = element user_tags
+     {
+       get_notes_response_note_user_tags_count
+       &amp; get_notes_response_note_user_tags_tag*
+     }
+
+get_notes_response_note_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_notes_response_note_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_notes_response_note_user_tags_tag_name
+       &amp; get_notes_response_note_user_tags_tag_value
+       &amp; get_notes_response_note_user_tags_tag_comment
+     }
+
+get_notes_response_note_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_notes_response_note_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_notes_response_note_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_notes_response_note_creation_time
@@ -12068,6 +12710,9 @@ get_notes_response_note_result_description
      &lt;in_use&gt;0&lt;/in_use&gt;
      &lt;active&gt;1&lt;/active&gt;
      &lt;orphan&gt;1&lt;/orphan&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;text excerpt="0"&gt;This is the full text of the note.&lt;/text&gt;
    &lt;/note&gt;
    ...
@@ -12100,6 +12745,9 @@ get_notes_response_note_result_description
        &lt;name&gt;test&lt;/name&gt;
      &lt;/task&gt;
      &lt;orphan&gt;0&lt;/orphan&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de"&gt;
        &lt;subnet&gt;127.0.0.1&lt;/subnet&gt;
        &lt;host&gt;127.0.0.1&lt;/host&gt;
@@ -12242,6 +12890,43 @@ get_notes_response_note_result_description
 <li>
               &lt;<b>modification_time</b>&gt;
               <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the NVT.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
 </li>
 <li>
 <i>The group</i><b>?</b><ul style="list-style: none">
@@ -12402,6 +13087,7 @@ get_nvts_response_nvt
        &amp; get_nvts_response_nvt_checksum
        &amp; get_nvts_response_nvt_creation_time
        &amp; get_nvts_response_nvt_modification_time
+       &amp; get_nvts_response_nvt_user_tags
        &amp; ( get_nvts_response_nvt_category
            &amp; get_nvts_response_nvt_copyright
            &amp; get_nvts_response_nvt_description
@@ -12443,6 +13129,46 @@ get_nvts_response_nvt_modification_time
  = element modification_time
      {
        iso_time
+     }
+
+get_nvts_response_nvt_user_tags
+ = element user_tags
+     {
+       get_nvts_response_nvt_user_tags_count
+       &amp; get_nvts_response_nvt_user_tags_tag*
+     }
+
+get_nvts_response_nvt_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_nvts_response_nvt_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_nvts_response_nvt_user_tags_tag_name
+       &amp; get_nvts_response_nvt_user_tags_tag_value
+       &amp; get_nvts_response_nvt_user_tags_tag_comment
+     }
+
+get_nvts_response_nvt_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_nvts_response_nvt_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_nvts_response_nvt_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_nvts_response_nvt_copyright
@@ -12620,6 +13346,9 @@ get_nvts_response_nvt_preferences_preference_value
      &lt;name&gt;Services&lt;/name&gt;
      &lt;creation_time&gt;2011-01-14T10:12:23+01:00&lt;/creation_time&gt;
      &lt;modification_time&gt;2012-09-19T20:56:15+02:00&lt;/modification_time&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;category&gt;Services&lt;/category&gt;
      &lt;copyright&gt;GNU GPL v2&lt;/copyright&gt;
      &lt;description&gt;
@@ -12678,6 +13407,9 @@ get_nvts_response_nvt_preferences_preference_value
                     status_text="OK"&gt;
    &lt;nvt oid="1.3.6.1.4.1.25623.1.0.10330"&gt;
      &lt;name&gt;Services&lt;/name&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;checksum&gt;
        2397586ea5cd3a69f953836f7be9ef7b
        &lt;algorithm&gt;md5&lt;/algorithm&gt;
@@ -12992,6 +13724,43 @@ get_nvt_feed_version_response_version
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the override.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
 <i>The group</i><b>?</b><ul style="list-style: none">
 <li>
               &lt;<b>hosts</b>&gt;
@@ -13242,6 +14011,7 @@ get_overrides_response_override
        &amp; get_overrides_response_override_threat
        &amp; get_overrides_response_override_new_threat
        &amp; get_overrides_response_override_orphan
+       &amp; get_overrides_response_override_user_tags
        &amp; ( get_overrides_response_override_hosts
            &amp; get_overrides_response_override_port
            &amp; get_overrides_response_override_task
@@ -13310,6 +14080,46 @@ get_overrides_response_override_orphan
  = element orphan
      {
        boolean
+     }
+
+get_overrides_response_override_user_tags
+ = element user_tags
+     {
+       get_overrides_response_override_user_tags_count
+       &amp; get_overrides_response_override_user_tags_tag*
+     }
+
+get_overrides_response_override_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_overrides_response_override_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_overrides_response_override_user_tags_tag_name
+       &amp; get_overrides_response_override_user_tags_tag_value
+       &amp; get_overrides_response_override_user_tags_tag_comment
+     }
+
+get_overrides_response_override_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_overrides_response_override_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_overrides_response_override_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_overrides_response_override_hosts
@@ -13444,6 +14254,9 @@ get_overrides_response_override_result_description
      &lt;text excerpt="0"&gt;This is the full text of the override.&lt;/text&gt;
      &lt;new_threat&gt;Log&lt;/new_threat&gt;
      &lt;orphan&gt;1&lt;/orphan&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
    &lt;/override&gt;
    ...
  &lt;/get_overrides_response&gt;
@@ -13475,6 +14288,9 @@ get_overrides_response_override_result_description
        &lt;name&gt;test&lt;/name&gt;
      &lt;/task&gt;
      &lt;orphan&gt;0&lt;/orphan&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de"/&gt;
    &lt;/override&gt;
    ...
@@ -13569,6 +14385,43 @@ get_overrides_response_override_result_description
               &lt;<b>in_use</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether any targets are using the port list.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the port list.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>port_count</b>&gt;
@@ -13680,6 +14533,7 @@ get_port_lists_response_port_list
        &amp; get_port_lists_response_port_list_modification_time
        &amp; get_port_lists_response_port_list_writable
        &amp; get_port_lists_response_port_list_in_use
+       &amp; get_port_lists_response_port_list_user_tags
        &amp; get_port_lists_response_port_list_port_count
        &amp; ( get_port_lists_response_port_list_port_ranges
            &amp; get_port_lists_response_port_list_targets )?
@@ -13719,6 +14573,46 @@ get_port_lists_response_port_list_in_use
  = element in_use
      {
        boolean
+     }
+
+get_port_lists_response_port_list_user_tags
+ = element user_tags
+     {
+       get_port_lists_response_port_list_user_tags_count
+       &amp; get_port_lists_response_port_list_user_tags_tag*
+     }
+
+get_port_lists_response_port_list_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_port_lists_response_port_list_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_port_lists_response_port_list_user_tags_tag_name
+       &amp; get_port_lists_response_port_list_user_tags_tag_value
+       &amp; get_port_lists_response_port_list_user_tags_tag_comment
+     }
+
+get_port_lists_response_port_list_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_port_lists_response_port_list_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_port_lists_response_port_list_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_port_lists_response_port_list_port_count
@@ -13822,6 +14716,9 @@ get_port_lists_response_port_list_targets_target_name
      &lt;modification_time&gt;2012-12-31T16:38:45+01:00&lt;/modification_time&gt;
      &lt;writable&gt;0&lt;/writable&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;port_count&gt;
        &lt;all&gt;65535&lt;/all&gt;
        &lt;tcp&gt;65535&lt;/tcp&gt;
@@ -14491,6 +15388,43 @@ get_reports_response_report
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the report format.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>extension</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -14640,6 +15574,7 @@ get_report_formats_response_report_format
        &amp; get_report_formats_response_report_format_modification_time
        &amp; get_report_formats_response_report_format_writable
        &amp; get_report_formats_response_report_format_in_use
+       &amp; get_report_formats_response_report_format_user_tags
        &amp; get_report_formats_response_report_format_extension
        &amp; get_report_formats_response_report_format_content_type
        &amp; get_report_formats_response_report_format_summary
@@ -14681,6 +15616,46 @@ get_report_formats_response_report_format_in_use
  = element in_use
      {
        boolean
+     }
+
+get_report_formats_response_report_format_user_tags
+ = element user_tags
+     {
+       get_report_formats_response_report_format_user_tags_count
+       &amp; get_report_formats_response_report_format_user_tags_tag*
+     }
+
+get_report_formats_response_report_format_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_report_formats_response_report_format_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_report_formats_response_report_format_user_tags_tag_name
+       &amp; get_report_formats_response_report_format_user_tags_tag_value
+       &amp; get_report_formats_response_report_format_user_tags_tag_comment
+     }
+
+get_report_formats_response_report_format_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_report_formats_response_report_format_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_report_formats_response_report_format_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_report_formats_response_report_format_summary
@@ -14825,6 +15800,9 @@ get_report_formats_response_report_format_active
      &lt;modification_time&gt;2013-01-31T16:46:32+01:00&lt;/modification_time&gt;
      &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;extension&gt;html&lt;/extension&gt;
      &lt;content_type&gt;text/html&lt;/content_type&gt;
      &lt;summary&gt;Single page HTML report.&lt;/summary&gt;
@@ -14858,6 +15836,9 @@ get_report_formats_response_report_format_active
      &lt;modification_time&gt;2013-01-18T18:24:10+01:00&lt;/modification_time&gt;
      &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;extension&gt;html&lt;/extension&gt;
      &lt;content_type&gt;text/html&lt;/content_type&gt;
      &lt;summary&gt;Single page HTML report.&lt;/summary&gt;
@@ -15367,6 +16348,43 @@ get_results_response_results_result_overrides
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the schedule.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>first_time</b>&gt;
               <div style="margin-left: 15px; display: inline;">First time the task ran or will run.</div>
 <ul style="list-style: none"></ul>
@@ -15466,6 +16484,7 @@ get_schedules_response_schedule
        &amp; get_schedules_response_schedule_modification_time
        &amp; get_schedules_response_schedule_writable
        &amp; get_schedules_response_schedule_in_use
+       &amp; get_schedules_response_schedule_user_tags
        &amp; get_schedules_response_schedule_first_time
        &amp; get_schedules_response_schedule_next_time
        &amp; get_schedules_response_schedule_timezone
@@ -15511,6 +16530,46 @@ get_schedules_response_schedule_in_use
  = element in_use
      {
        boolean
+     }
+
+get_schedules_response_schedule_user_tags
+ = element user_tags
+     {
+       get_schedules_response_schedule_user_tags_count
+       &amp; get_schedules_response_schedule_user_tags_tag*
+     }
+
+get_schedules_response_schedule_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_schedules_response_schedule_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_schedules_response_schedule_user_tags_tag_name
+       &amp; get_schedules_response_schedule_user_tags_tag_value
+       &amp; get_schedules_response_schedule_user_tags_tag_comment
+     }
+
+get_schedules_response_schedule_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_schedules_response_schedule_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_schedules_response_schedule_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_schedules_response_schedule_first_time
@@ -15608,6 +16667,9 @@ get_schedules_response_schedule_tasks_task_name
      &lt;modification_time&gt;2013-01-18T12:07:36+01:00&lt;/modification_time&gt;
      &lt;writable&gt;0&lt;/writable&gt;
      &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;first_time&gt;Tue Jun 29 00:00:00 2010&lt;/first_time&gt;
      &lt;next_time&gt;Tue Jun 29 00:00:00 2010&lt;/next_time&gt;
      &lt;period&gt;86400&lt;/period&gt;
@@ -15871,6 +16933,43 @@ get_settings_response_settings_setting_value
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the slave.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>host</b>&gt;
               <div style="margin-left: 15px; display: inline;">The host that the slave Manager is running on.</div>
 <ul style="list-style: none"></ul>
@@ -15937,6 +17036,7 @@ get_slaves_response_slave
        &amp; get_slaves_response_slave_modification_time
        &amp; get_slaves_response_slave_writable
        &amp; get_slaves_response_slave_in_use
+       &amp; get_slaves_response_slave_user_tags
        &amp; get_slaves_response_slave_host
        &amp; get_slaves_response_slave_port
        &amp; get_slaves_response_slave_login
@@ -15977,6 +17077,46 @@ get_slaves_response_slave_in_use
  = element in_use
      {
        boolean
+     }
+
+get_slaves_response_slave_user_tags
+ = element user_tags
+     {
+       get_slaves_response_slave_user_tags_count
+       &amp; get_slaves_response_slave_user_tags_tag*
+     }
+
+get_slaves_response_slave_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_slaves_response_slave_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_slaves_response_slave_user_tags_tag_name
+       &amp; get_slaves_response_slave_user_tags_tag_value
+       &amp; get_slaves_response_slave_user_tags_tag_comment
+     }
+
+get_slaves_response_slave_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_slaves_response_slave_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_slaves_response_slave_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_slaves_response_slave_host
@@ -16030,6 +17170,9 @@ get_slaves_response_slave_tasks_task_name
      &lt;modification_time&gt;2012-12-28T12:07:36+01:00&lt;/modification_time&gt;
      &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;host&gt;192.0.32.10&lt;/host&gt;
      &lt;login&gt;sally&lt;/login&gt;
      &lt;tasks&gt;
@@ -16764,6 +17907,43 @@ get_target_locators_response_target_locator_name
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the target.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>hosts</b>&gt;
               <div style="margin-left: 15px; display: inline;">A list of hosts.</div>
 <ul style="list-style: none"></ul>
@@ -16954,6 +18134,7 @@ get_targets_response_target
        &amp; get_targets_response_target_modification_time
        &amp; get_targets_response_target_writable
        &amp; get_targets_response_target_in_use
+       &amp; get_targets_response_target_user_tags
        &amp; get_targets_response_target_hosts
        &amp; get_targets_response_target_max_hosts
        &amp; get_targets_response_target_ssh_lsc_credential
@@ -17009,6 +18190,46 @@ get_targets_response_target_in_use
  = element in_use
      {
        boolean
+     }
+
+get_targets_response_target_user_tags
+ = element user_tags
+     {
+       get_targets_response_target_user_tags_count
+       &amp; get_targets_response_target_user_tags_tag*
+     }
+
+get_targets_response_target_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_targets_response_target_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_targets_response_target_user_tags_tag_name
+       &amp; get_targets_response_target_user_tags_tag_value
+       &amp; get_targets_response_target_user_tags_tag_comment
+     }
+
+get_targets_response_target_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_targets_response_target_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_targets_response_target_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_targets_response_target_ssh_lsc_credential
@@ -17175,6 +18396,9 @@ get_targets_response_target_count_page
      &lt;modification_time&gt;Sun Jun 27 08:49:43 2010&lt;/modification_time&gt;
      &lt;writable&gt;0&lt;/writable&gt;
      &lt;in_use&gt;7&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;hosts&gt;localhost&lt;/hosts&gt;
      &lt;max_hosts&gt;1&lt;/max_hosts&gt;
      &lt;ssh_lsc_credential id=""&gt;
@@ -17202,6 +18426,9 @@ get_targets_response_target_count_page
      &lt;modification_time&gt;Sun Jun 27 08:49:43 2010&lt;/modification_time&gt;
      &lt;writable&gt;0&lt;/writable&gt;
      &lt;in_use&gt;4&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;hosts&gt;dik.example.org&lt;/hosts&gt;
      &lt;max_hosts&gt;1&lt;/max_hosts&gt;
      &lt;ssh_lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4"&gt;
@@ -17338,6 +18565,43 @@ get_targets_response_target_count_page
               &lt;<b>in_use</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether this task is currently in use.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the task.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>owner</b>&gt;
@@ -17753,6 +19017,7 @@ get_tasks_response_task
        &amp; get_tasks_response_task_modification_time
        &amp; get_tasks_response_task_writable
        &amp; get_tasks_response_task_in_use
+       &amp; get_tasks_response_task_user_tags
        &amp; get_tasks_response_task_owner
        &amp; get_tasks_response_task_status
        &amp; get_tasks_response_task_progress
@@ -17806,6 +19071,46 @@ get_tasks_response_task_in_use
  = element in_use
      {
        boolean
+     }
+
+get_tasks_response_task_user_tags
+ = element user_tags
+     {
+       get_tasks_response_task_user_tags_count
+       &amp; get_tasks_response_task_user_tags_tag*
+     }
+
+get_tasks_response_task_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_tasks_response_task_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_tasks_response_task_user_tags_tag_name
+       &amp; get_tasks_response_task_user_tags_tag_value
+       &amp; get_tasks_response_task_user_tags_tag_comment
+     }
+
+get_tasks_response_task_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_tasks_response_task_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_tasks_response_task_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_tasks_response_task_status
@@ -18271,6 +19576,9 @@ get_tasks_response_task_preferences_preference_value
      &lt;modification_time&gt;2013-01-11T16:03:24+01:00&lt;/modification_time&gt;
      &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;owner&gt;
        &lt;name&gt;admin&lt;/name&gt;
      &lt;/owner&gt;
@@ -18374,6 +19682,9 @@ get_tasks_response_task_preferences_preference_value
      &lt;modification_time&gt;2013-01-11T16:03:24+01:00&lt;/modification_time&gt;
      &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;owner&gt;
        &lt;name&gt;admin&lt;/name&gt;
      &lt;/owner&gt;
@@ -18555,6 +19866,43 @@ get_tasks_response_task_preferences_preference_value
           </li></ul>
 </li>
 <li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the user.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>sources</b>&gt;
               <div style="margin-left: 15px; display: inline;">(<a href="#element_sources">sources</a>)</div>
 <div style="margin-left: 15px; display: inline;">Sources allowed for authentication for this user.</div>
@@ -18588,6 +19936,7 @@ get_users_response_user
        &amp; get_users_response_user_name
        &amp; get_users_response_user_role
        &amp; get_users_response_user_hosts
+       &amp; get_users_response_user_user_tags
        &amp; get_users_response_user_sources
      }
 
@@ -18610,6 +19959,46 @@ get_users_response_user_hosts
        &amp; attribute allow { xsd:token { pattern = "0|1|2|3" } }
      }
 
+get_users_response_user_user_tags
+ = element user_tags
+     {
+       get_users_response_user_user_tags_count
+       &amp; get_users_response_user_user_tags_tag*
+     }
+
+get_users_response_user_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_users_response_user_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_users_response_user_user_tags_tag_name
+       &amp; get_users_response_user_user_tags_tag_value
+       &amp; get_users_response_user_user_tags_tag_comment
+     }
+
+get_users_response_user_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_users_response_user_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_users_response_user_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
 get_users_response_user_sources
  = element sources    # type sources
      {
@@ -18626,6 +20015,9 @@ get_users_response_user_sources
      &lt;name&gt;foobar&lt;/name&gt;
      &lt;role&gt;User&lt;/role&gt;
      &lt;hosts allow="2"/&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
      &lt;sources&gt;
        &lt;source&gt;file&lt;/source&gt;
      &lt;/sources&gt;

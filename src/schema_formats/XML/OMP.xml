@@ -4706,7 +4706,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>agent_count</e>
       </pattern>
       <ele>
-        <name>agent_id</name>
+        <name>agent</name>
         <pattern>
           <attrib>
             <name>id</name>
@@ -4719,6 +4719,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>in_use</e>
           <e>writable</e>
+          <e>user_tags</e>
           <or>
             <e>installer</e>
             <e>package</e>
@@ -4753,6 +4754,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>writable</name>
           <summary>Whether the agent is writable</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the agent</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>installer</name>
@@ -4883,6 +4930,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-23T10:44:00+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <installer>
               <trust>
                 yes
@@ -4909,6 +4959,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-23T10:44:00+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <installer>
               <trust>
                 yes
@@ -5026,6 +5079,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>known_nvt_count</e>
           <e>in_use</e>
           <e>writable</e>
+          <e>user_tags</e>
           <e>tasks</e>
           <o><e>families</e></o>
           <o><e>preferences</e></o>
@@ -5106,6 +5160,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             Whether any tasks are using the config, including trashcan tasks
           </summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the config</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>tasks</name>
@@ -5240,6 +5340,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </nvt_count>
             <in_use>1</in_use>
             <writable>0</writable>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
           </config>
           <truncated>...</truncated>
         </get_configs_response>
@@ -5265,6 +5368,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <growing>1</growing>
             </nvt_count>
             <in_use>1</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <tasks>
               <task id="13bb418a-4220-4575-b35b-ec398bff7417">
                 <name>Web Servers</name>
@@ -5460,6 +5566,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>in_use</e>
           <e>writable</e>
+          <e>user_tags</e>
           <e>condition</e>
           <e>event</e>
           <e>method</e>
@@ -5496,6 +5603,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>modification_time</name>
           <summary>Last time the alert was modified</summary>
           <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the alert</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>condition</name>
@@ -5605,6 +5758,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2012-08-28T12:14:00+01:00</modification_time>
             <writable>1</writable>
             <in_use>1</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <condition>
               Threat level at least
               <data>
@@ -5707,6 +5863,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>in_use</e>
           <e>writable</e>
+          <e>user_tags</e>
           <o><e>alerts</e></o>
         </pattern>
         <ele>
@@ -5752,6 +5909,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>writable</name>
           <summary>Whether the filter is writable</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the filter</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>alerts</name>
@@ -5867,6 +6070,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>target</type>
             <in_use>1</in_use>
             <writable>1</writable>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <creation_time>Sun Jun 27 08:49:46 2010</creation_time>
             <modification_time>Sun Jun 27 08:49:46 2010</modification_time>
           </filter>
@@ -5889,6 +6095,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type></type>
             <in_use>1</in_use>
             <writable>1</writable>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <creation_time>Sun Jun 27 08:49:43 2010</creation_time>
             <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
             <alerts>
@@ -5974,6 +6183,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>comment</e>
           <e>creation_time</e>
           <e>modification_time</e>
+          <e>user_tags</e>
           <e>update_time</e>
           <o><e>cpe</e></o>
           <o><e>cve</e></o>
@@ -6006,6 +6216,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>update_time</name>
           <summary>Date and time the source of the info was read</summary>
           <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the info</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>cpe</name>
@@ -6464,6 +6720,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2007-09-14T17:36:49Z</modification_time>
             <writable>0</writable>
             <in_use>0</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <update_time>2012-10-26T13:18:00.000+0000</update_time>
             <cpe>
               <title>GNU Gzip 1.3.3</title>
@@ -6596,6 +6855,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <writable>0</writable>
             <in_use>0</in_use>
             <update_time>2012-10-26T13:18:00.000+0000</update_time>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <cve>
               <cvss>9.0</cvss>
               <vector>NETWORK</vector>
@@ -6701,6 +6963,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>user_tags</e>
           <e>type</e>
           <e>targets</e>
           <o><e>public_key</e></o>
@@ -6740,6 +7003,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether any targets are using the LSC credential</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the credential</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>type</name>
@@ -6814,6 +7123,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2012-05-28T11:19:20+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <type>gen</type>
           </lsc_credential>
           <lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15">
@@ -6847,6 +7159,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2012-11-18T13:17:00+01:00</modification_time>
             <writable>1</writable>
             <in_use>1</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <login>bob</login>
             <type>pass</type>
             <targets>
@@ -6879,6 +7194,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2012-11-18T13:17:00+01:00</modification_time>
             <writable>1</writable>
             <in_use>1</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <type>pass</type>
             <targets>
               <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
@@ -7039,6 +7357,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>nvt</e>
           <e>text</e>
           <e>orphan</e>
+          <e>user_tags</e>
           <o>
             <g>
               <e>creation_time</e>
@@ -7085,6 +7404,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>orphan</name>
           <summary>Whether the note is an orphan</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the note</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>creation_time</name>
@@ -7231,6 +7596,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <in_use>0</in_use>
             <active>1</active>
             <orphan>1</orphan>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <text excerpt="0">This is the full text of the note.</text>
           </note>
           <truncated>...</truncated>
@@ -7263,6 +7631,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>test</name>
             </task>
             <orphan>0</orphan>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de">
               <subnet>127.0.0.1</subnet>
               <host>127.0.0.1</host>
@@ -7393,6 +7764,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>checksum</e>
           <e>creation_time</e>
           <e>modification_time</e>
+          <e>user_tags</e>
           <o>
             <g>
               <e>category</e>
@@ -7431,6 +7803,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>modification_time</name>
           <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the NVT</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>copyright</name>
@@ -7581,6 +7999,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>Services</name>
             <creation_time>2011-01-14T10:12:23+01:00</creation_time>
             <modification_time>2012-09-19T20:56:15+02:00</modification_time>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <category>Services</category>
             <copyright>GNU GPL v2</copyright>
             <description>This script attempts to detect which service is running on which port.</description>
@@ -7638,6 +8059,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <get_nvts_response status="200" status_text="OK">
           <nvt oid="1.3.6.1.4.1.25623.1.0.10330">
             <name>Services</name>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <checksum>
               <algorithm>md5</algorithm>
               2397586ea5cd3a69f953836f7be9ef7b
@@ -7923,6 +8347,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>threat</e>
           <e>new_threat</e>
           <e>orphan</e>
+          <e>user_tags</e>
           <o>
             <g>
               <e>hosts</e>
@@ -7996,6 +8421,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>orphan</name>
           <summary>Whether the override is an orphan</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the override</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>hosts</name>
@@ -8129,6 +8600,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <text excerpt="0">This is the full text of the override.</text>
             <new_threat>Log</new_threat>
             <orphan>1</orphan>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
           </override>
           <truncated>...</truncated>
         </get_overrides_response>
@@ -8161,6 +8635,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>test</name>
             </task>
             <orphan>0</orphan>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de" />
           </override>
           <truncated>...</truncated>
@@ -8235,6 +8712,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>user_tags</e>
           <e>port_count</e>
           <o>
             <g>
@@ -8270,6 +8748,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether any targets are using the port list</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the port list</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>port_count</name>
@@ -8375,6 +8899,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2012-12-31T16:38:45+01:00</modification_time>
             <writable>0</writable>
             <in_use>1</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <port_count>
               <all>65535</all>
               <tcp>65535</tcp>
@@ -8940,6 +9467,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>user_tags</e>
           <e>extension</e>
           <e>content_type</e>
           <e>summary</e>
@@ -8980,6 +9508,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether any alerts are using the report format</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the report format</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>summary</name>
@@ -9129,6 +9703,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-31T16:46:32+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <extension>html</extension>
             <content_type>text/html</content_type>
             <summary>Single page HTML report.</summary>
@@ -9164,6 +9741,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-18T18:24:10+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <extension>html</extension>
             <content_type>text/html</content_type>
             <summary>Single page HTML report.</summary>
@@ -9520,6 +10100,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>user_tags</e>
           <e>first_time</e>
           <e>next_time</e>
           <e>timezone</e>
@@ -9563,6 +10144,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether any tasks are using the schedule</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the schedule</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>first_time</name>
@@ -9657,6 +10284,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-18T12:07:36+01:00</modification_time>
             <writable>0</writable>
             <in_use>1</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <first_time>Tue Jun 29 00:00:00 2010</first_time>
             <next_time>Tue Jun 29 00:00:00 2010</next_time>
             <period>86400</period>
@@ -9840,6 +10470,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>user_tags</e>
           <e>host</e>
           <e>port</e>
           <e>login</e>
@@ -9874,6 +10505,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether any slaves are using the slave</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the slave</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>host</name>
@@ -9934,6 +10611,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2012-12-28T12:07:36+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <host>192.0.32.10</host>
             <login>sally</login>
             <tasks>
@@ -10440,6 +11120,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>user_tags</e>
           <e>hosts</e>
           <e>max_hosts</e>
           <e>ssh_lsc_credential</e>
@@ -10491,6 +11172,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether any tasks are using the target</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the target</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>ssh_lsc_credential</name>
@@ -10689,6 +11416,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
             <writable>0</writable>
             <in_use>7</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <hosts>localhost</hosts>
             <max_hosts>1</max_hosts>
             <ssh_lsc_credential id="">
@@ -10717,6 +11447,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
             <writable>0</writable>
             <in_use>4</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <hosts>dik.example.org</hosts>
             <max_hosts>1</max_hosts>
             <ssh_lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
@@ -10849,6 +11582,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>user_tags</e>
           <e>owner</e>
           <e>status</e>
           <e>progress</e>
@@ -10896,6 +11630,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether this task is currently in use</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the task</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>status</name>
@@ -11338,6 +12118,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-11T16:03:24+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <owner>
               <name>admin</name>
             </owner>
@@ -11439,6 +12222,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>2013-01-11T16:03:24+01:00</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <owner>
               <name>admin</name>
             </owner>
@@ -11595,6 +12381,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>name</e>
           <e>role</e>
           <e>hosts</e>
+          <e>user_tags</e>
           <e>sources</e>
         </pattern>
         <ele>
@@ -11636,6 +12423,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
         </ele>
         <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the user</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
           <name>sources</name>
           <summary>Sources allowed for authentication for this user</summary>
           <type>sources</type>
@@ -11653,6 +12486,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>foobar</name>
             <role>User</role>
             <hosts allow="2"></hosts>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
             <sources><source>file</source></sources>
           </user>
         </get_users_response>

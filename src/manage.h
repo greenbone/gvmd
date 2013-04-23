@@ -2920,6 +2920,28 @@ const char*
 tag_iterator_orphaned (iterator_t*);
 
 int
+init_resource_tag_iterator (iterator_t*, const char*, const char*, int,
+                            const char*, int);
+
+const char*
+resource_tag_iterator_uuid (iterator_t*);
+
+const char*
+resource_tag_iterator_name (iterator_t*);
+
+const char*
+resource_tag_iterator_value (iterator_t*);
+
+const char*
+resource_tag_iterator_comment (iterator_t*);
+
+const char*
+resource_tag_iterator_active (iterator_t*);
+
+int
+resource_tag_count (const char*, const char*, int);
+
+int
 tag_in_use (tag_t);
 
 int
