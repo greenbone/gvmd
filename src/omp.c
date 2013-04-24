@@ -5367,7 +5367,6 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                             in_use);
 
   tag_type = get->subtype ? get->subtype : get->type;
-  g_debug ("TEST get tag_type : %s", tag_type);
 
   if (get->details || get->id)
     {
