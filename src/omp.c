@@ -17488,17 +17488,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
 
       CLOSE (CLIENT_CREATE_TAG, ACTIVE);
+      CLOSE (CLIENT_CREATE_TAG, ATTACH);
       CLOSE (CLIENT_CREATE_TAG, COPY);
       CLOSE (CLIENT_CREATE_TAG, COMMENT);
       CLOSE (CLIENT_CREATE_TAG, NAME);
       CLOSE (CLIENT_CREATE_TAG, VALUE);
 
-      case CLIENT_CREATE_TAG_ATTACH:
-        {
-          assert (strcasecmp ("ATTACH", element_name) == 0);
-          set_client_state(CLIENT_CREATE_TAG);
-          break;
-        }
       CLOSE (CLIENT_CREATE_TAG_ATTACH, ID);
       CLOSE (CLIENT_CREATE_TAG_ATTACH, TYPE);
 
@@ -19492,7 +19487,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("modify_tag",
                                 "ATTACH in MODIFY_TAG requires"
                                 " a TYPE element"));
-          else if (valid_db_resource_type (modify_tag_data->attach_type) == 0)
+          else if (modify_tag_data->attach_type &&
+                   valid_db_resource_type (modify_tag_data->attach_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
                                 "TYPE in MODIFY_TAG/ATTACH must be"
@@ -19567,16 +19563,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
 
       CLOSE (CLIENT_MODIFY_TAG, ACTIVE);
+      CLOSE (CLIENT_MODIFY_TAG, ATTACH);
       CLOSE (CLIENT_MODIFY_TAG, COMMENT);
       CLOSE (CLIENT_MODIFY_TAG, NAME);
       CLOSE (CLIENT_MODIFY_TAG, VALUE);
 
-      case CLIENT_MODIFY_TAG_ATTACH:
-        {
-          assert (strcasecmp ("ATTACH", element_name) == 0);
-          set_client_state(CLIENT_MODIFY_TAG);
-          break;
-        }
       CLOSE (CLIENT_MODIFY_TAG_ATTACH, ID);
       CLOSE (CLIENT_MODIFY_TAG_ATTACH, TYPE);
 

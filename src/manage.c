@@ -4446,6 +4446,9 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
 int
 valid_db_resource_type (const char* type)
 {
+  if (type == NULL)
+    return 0;
+
   return (strcasecmp (type, "agent") == 0)
          || (strcasecmp (type, "alert") == 0)
          || (strcasecmp (type, "config") == 0)

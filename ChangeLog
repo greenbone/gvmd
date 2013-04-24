@@ -1,5 +1,14 @@
 2013-04-24  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
+	* src/manage.c (valid_db_resource_type): Return 0 when tested type is
+	NULL.
+
+	* src/omp.c (xml_handle_end_element): Change CLIENT_CREATE_TAG_ATTACH
+	and CLIENT_MODIFY_TAG_ATTACH to use CLOSE macro. In CLIENT_MODIFY_TAG,
+	add check if resource type is NULL before validating it.
+
+2013-04-24  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
 	* src/omp.c (send_get_common): Remove debug output left from testing.
 
 2013-04-23  Timo Pollmeier  <timo.pollmeier@greenbone.net>
