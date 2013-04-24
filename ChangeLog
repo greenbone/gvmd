@@ -1,5 +1,10 @@
 2013-04-24  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (migrate_77_to_78): Add check if database version
+	is correct and add comments.
+
+2013-04-24  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
 	* src/manage.c (valid_db_resource_type): Return 0 when tested type is
 	NULL.
 

@@ -9613,6 +9613,17 @@ migrate_77_to_78 ()
 {
   sql ("BEGIN EXCLUSIVE;");
 
+  /* Ensure that the database is currently version 77. */
+  if (manage_db_version () != 77)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Set schedule durations and periods to 0 if they were -1,
+     which was the old default value of the create_schedule command. */
   sql ("UPDATE schedules"
        " SET duration = 0"
        " WHERE duration = -1;");
@@ -9628,6 +9639,8 @@ migrate_77_to_78 ()
   sql ("UPDATE schedules_trash"
        " SET period = 0"
        " WHERE period = -1;");
+
+  /* Set the database version to 78. */
 
   set_db_version (78);
 
