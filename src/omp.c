@@ -5850,6 +5850,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_CREATE_USER);
             create_user_data->groups = make_array ();
+            create_user_data->hosts_allow = 2;
           }
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
           {

@@ -1,5 +1,11 @@
 2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_start_element): In CLIENT_AUTHENTIC_COMMANDS
+	CREATE_USER case, init hosts_allow so that the default is allow all
+	instead of deny.
+
+2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Allow users called "om", now that Manager and Scanner users are
 	separate.
 
