@@ -2494,7 +2494,7 @@ create_tag_attach
  = element attach
      {
        create_tag_attach_type
-       & create_tag_attach_id
+       & create_tag_attach_id?
      }
 
 # OMP type of the resource the tag is to be attached to.
@@ -4477,7 +4477,7 @@ modify_tag_attach
  = element attach
      {
        modify_tag_attach_type
-       & modify_tag_attach_id
+       & modify_tag_attach_id?
      }
 
 # OMP type of the resource the tag is to be attached to.

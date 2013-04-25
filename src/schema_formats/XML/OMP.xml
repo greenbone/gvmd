@@ -3143,7 +3143,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <description>
       <p>
         The client uses the create_tag command to create a new tag.
-        A name and the type and ID of a resource to attach to must be provided.
+        A name and the resource type must be provided. If a resource ID is
+        also given, it must refer to an existing resource.
       </p>
     </description>
     <pattern>
@@ -3164,7 +3165,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>Identifies a resource the tag is to be attached to</summary>
       <pattern>
         <e>type</e>
-        <e>id</e>
+        <o><e>id</e></o>
       </pattern>
       <ele>
         <name>type</name>
@@ -14390,7 +14391,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>Identifies a resource the tag is to be attached to</summary>
       <pattern>
         <e>type</e>
-        <e>id</e>
+        <o><e>id</e></o>
       </pattern>
       <ele>
         <name>type</name>

@@ -16209,6 +16209,25 @@ resource_count (const char *type, const get_data_t *get)
 }
 
 /**
+ * @brief Return if a resource of the given type and unique ID exists.
+ *
+ * @param[in]  type  Type.
+ * @param[in]  id    Unique ID.
+ *
+ * @return The number of resources associated with the current user.
+ */
+int
+resource_id_exists (const char *type, const char * id)
+{
+  return !!sql_int (0, 0,
+                    "SELECT count(*)"
+                    " FROM %ss"
+                    " WHERE uuid='%s';",
+                    type,
+                    id);
+}
+
+/**
  * @brief Return the number of tasks associated with the current user.
  *
  * @param[in]  get  GET params.
@@ -50514,7 +50533,7 @@ copy_tag (const char* name, const char* comment, const char *tag_id,
  * @param[in]  active      0 for inactive, NULL or any other value for active.
  * @param[out] note        Created tag.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 99 permission denied, -1 error.
  */
 int
 create_tag (const char * name, const char * comment, const char * value,
@@ -50527,13 +50546,19 @@ create_tag (const char * name, const char * comment, const char * value,
   gchar *quoted_name, *quoted_comment, *quoted_value,
         *lc_attach_type, *quoted_attach_type, *quoted_attach_id;
 
-  if (name == NULL || attach_type == NULL || attach_id == NULL)
+  if (name == NULL || attach_type == NULL)
     return -1;
 
   quoted_name = sql_insert (name);
   lc_attach_type = g_ascii_strdown(attach_type, -1);
+  if (strcmp (lc_attach_type, "")
+      && valid_db_resource_type (lc_attach_type) == 0)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
   quoted_attach_type = sql_insert (lc_attach_type);
-  quoted_attach_id = sql_insert (attach_id);
+  quoted_attach_id = attach_id ? sql_insert (attach_id) : g_strdup ("''");
 
   quoted_comment = sql_insert (comment ? comment : "");
   quoted_value = sql_insert (value ? value : "");
@@ -50691,10 +50716,18 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
     }
 
   quoted_name = sql_insert (name ? name : "");
+
   lc_attach_type = (attach_type
                      ? g_ascii_strdown(attach_type, -1)
                      : g_strdup (""));
+  if (strcmp (lc_attach_type, "")
+      && valid_db_resource_type (lc_attach_type) == 0)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
   quoted_attach_type = sql_insert (lc_attach_type);
+
   quoted_attach_id = sql_insert (attach_id ? attach_id : "");
   quoted_comment = sql_insert (comment ? comment : "");
   quoted_value = sql_insert (value ? value : "");

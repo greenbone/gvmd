@@ -1,3 +1,23 @@
+2013-04-25  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	* src/manage.h (resource_id_exists): New function prototype.
+
+	* src/manage_sql.c (resource_id_exists): New function. Tests if a
+	resource with a given ID exists.
+	(create_tag): Add code 99 (permission denied) to comment.
+	Add check if attach_type is valid. Make attach_id optional.
+	(modify_tag): Add check if attach_type is valid.
+
+	* src/omp.xsl (xml_handle_end_element): In cases CLIENT_CREATE_TAG,
+	CLIENT_MODIFY_TAG make attach_id optional and check if it refers to
+	an existing resource when it is not empty.
+
+	* src/schema_formats/XML/OMP.xml (create_tag, modify_tag): Make element
+	attach/id in command optional and change description to require
+	an existing resource id.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-04-24  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (migrate_77_to_78): Add check if database version

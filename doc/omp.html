@@ -6373,7 +6373,8 @@ create_slave_password
 <p>In short: Create a tag.</p>
 <p>
         The client uses the create_tag command to create a new tag.
-        A name and the type and ID of a resource to attach to must be provided.
+        A name and the resource type must be provided. If a resource ID is
+        also given, it must refer to an existing resource.
       </p>
 <h4>7.16.1 Structure</h4>
 <ul style="list-style: none">
@@ -6395,7 +6396,7 @@ create_slave_password
 </li>
 <li>
               &lt;<b>id</b>&gt;
-              <div style="margin-left: 15px; display: inline;">ID of the resource the tag is to be attached to.</div>
+              ?<div style="margin-left: 15px; display: inline;">ID of the resource the tag is to be attached to.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -6462,7 +6463,7 @@ create_tag_attach
  = element attach
      {
        create_tag_attach_type
-       &amp; create_tag_attach_id
+       &amp; create_tag_attach_id?
      }
 
 create_tag_attach_type
@@ -22699,7 +22700,7 @@ modify_target_target_locator_password
 </li>
 <li>
               &lt;<b>id</b>&gt;
-              <div style="margin-left: 15px; display: inline;">ID of the resource the tag is to be attached to.</div>
+              ?<div style="margin-left: 15px; display: inline;">ID of the resource the tag is to be attached to.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -22757,7 +22758,7 @@ modify_tag_attach
  = element attach
      {
        modify_tag_attach_type
-       &amp; modify_tag_attach_id
+       &amp; modify_tag_attach_id?
      }
 
 modify_tag_attach_type

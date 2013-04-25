@@ -17435,16 +17435,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_tag",
                                 "TYPE type in CREATE_TAG/ATTACH must not"
                                 " be 'tag'."));
-          else if (create_tag_data->attach_id == NULL)
+          else if (create_tag_data
+                   && strlen (create_tag_data->attach_id) > 0
+                   && resource_id_exists (create_tag_data->attach_type,
+                                          create_tag_data->attach_id) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "ATTACH in CREATE_TAG requires"
-                                " an ID element"));
-          else if (strlen (create_tag_data->attach_id) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_tag",
-                                "ATTACH attach_id must be "
-                                " at least one character long"));
+                                "ATTACH attach_id must refer to an existing"
+                                " resource or be empty."));
           else
             {
               switch (create_tag (create_tag_data->name,
@@ -19498,24 +19496,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("modify_tag",
                                 "TYPE type in MODIFY_TAG/ATTACH must not"
                                 " be 'tag'."));
-          else if (modify_tag_data->attach_count > 0
-                   && modify_tag_data->attach_id == NULL)
+          else if (modify_tag_data
+                   && strlen (modify_tag_data->attach_id) > 0
+                   && resource_id_exists (modify_tag_data->attach_type,
+                                          modify_tag_data->attach_id) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
-                                "ATTACH in MODIFY_TAG requires"
-                                " an ID element"));
-          else if (modify_tag_data->attach_type
-                   && strlen (modify_tag_data->attach_type) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_tag",
-                                "ATTACH type must be"
-                                " at least one character long"));
-          else if (modify_tag_data->attach_id
-                   && strlen (modify_tag_data->attach_id) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_tag",
-                                "ATTACH attach_id must be"
-                                " at least one character long"));
+                                "ATTACH attach_id must refer to an existing"
+                                " resource or be empty."));
           else switch (modify_tag (modify_tag_data->tag_id,
                                    modify_tag_data->name,
                                    modify_tag_data->comment,

@@ -269,6 +269,9 @@ get_iterator_modification_time (iterator_t*);
 int
 resource_count (const char *, const get_data_t *);
 
+int
+resource_id_exists (const char *, const char *);
+
 
 /* Events and Alerts. */
 
