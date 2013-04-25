@@ -14771,20 +14771,6 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 
   if (sqlite3_create_function (task_db,
-                               "user_uuid",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_user_uuid,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
-      != SQLITE_OK)
-    {
-      g_warning ("%s: failed to create user_uuid", __FUNCTION__);
-      abort ();
-    }
-
-  if (sqlite3_create_function (task_db,
                                "now",
                                0,               /* Number of args. */
                                SQLITE_UTF8,

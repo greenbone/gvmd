@@ -80,9 +80,6 @@ void
 sql_uniquify (sqlite3_context *, int argc, sqlite3_value **);
 
 void
-sql_user_uuid (sqlite3_context *, int, sqlite3_value**);
-
-void
 sql_iso_time (sqlite3_context *, int argc, sqlite3_value **);
 
 void

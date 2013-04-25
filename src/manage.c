@@ -142,23 +142,6 @@
 scanner_t scanner = { NULL, NULL, NULL, NULL, 0 };
 
 
-/* Helpers. */
-
-/**
- * @brief Descending strcmp.
- *
- * @param[in]  one  First string.
- * @param[in]  two  Second string.
- *
- * @return Negation of return from strcmp on args.
- */
-static int
-strcmp_desc (const char *one, const char *two)
-{
-  return -strcmp (one, two);
-}
-
-
 /* Threats. */
 
 /**
@@ -5038,96 +5021,6 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
 
 
 /* Users. */
-
-/**
- * @brief Returns list of user directories (= users) found in given directory.
- *
- * @param[in]  directory  The complete name of the directory.
- * @param[in]  ascending  Ascending order if true, descending order if 0.
- * @param[in]  name       Name of single user to list.  NULL for all users.
- * @param[in]  uuid       UUID of single user to list.  NULL for all users.
- *
- * @return A pointer to a GSList containing the names of the users or NULL if
- *         the directory could not be opened, did not exist or was not a directory.
- *         The list should be freed with g_slist_free when no longer needed.  Each
- *         element of the list should be freed with g_free.
- */
-GSList *
-openvas_admin_list_users (const gchar *directory, int ascending,
-                          const gchar *name, const char *uuid)
-{
-  GSList *users = NULL;
-
-  if (g_file_test (directory, G_FILE_TEST_EXISTS)
-      && g_file_test (directory, G_FILE_TEST_IS_DIR))
-    {
-      const gchar *entry_name = NULL;
-      GError *error = NULL;
-      GDir *users_dir = NULL;
-
-      users_dir = g_dir_open (directory, 0, &error);
-      if (users_dir == NULL)
-        {
-          g_warning ("%s", error->message);
-          g_error_free (error);
-        }
-      else
-        {
-          while ((entry_name = g_dir_read_name (users_dir)))
-            {
-              gchar *user_hash_filename, *user_dname_filename, *entry_uuid;
-
-              if (strcmp (entry_name, "om") == 0)
-                continue;
-
-              entry_uuid = openvas_user_uuid (entry_name);
-
-              if ((name == NULL && uuid == NULL)
-                  || (name && (strcmp (name, entry_name) == 0))
-                  || (entry_uuid && uuid && (strcmp (uuid, entry_uuid) == 0)))
-                {
-                  user_hash_filename =
-                    g_build_filename (directory, entry_name, "auth", "hash",
-                                      NULL);
-                  user_dname_filename =
-                    g_build_filename (directory, entry_name, "auth", "dname",
-                                      NULL);
-                  if (g_file_test (user_hash_filename, G_FILE_TEST_EXISTS))
-                    {
-                      users =
-                        g_slist_insert_sorted (users,
-                                               (gpointer) g_strdup (entry_name),
-                                               (GCompareFunc) (ascending ?
-                                                               strcmp :
-                                                               strcmp_desc));
-                    }
-                  else
-                    if (g_file_test (user_dname_filename, G_FILE_TEST_EXISTS))
-                    {
-                      users =
-                        g_slist_insert_sorted (users,
-                                               (gpointer) g_strdup (entry_name),
-                                               (GCompareFunc) (ascending ?
-                                                               strcmp :
-                                                               strcmp_desc));
-                    }
-                  g_free (user_hash_filename);
-                  g_free (user_dname_filename);
-                }
-
-              g_free (entry_uuid);
-            }
-          g_dir_close (users_dir);
-        }
-
-      return users;
-    }
-  else
-    {
-      g_warning ("Could not find %s!", directory);
-      return NULL;
-    }
-}
 
 /**
  * @brief Produce an stripped-down xml representation of a keyfile.

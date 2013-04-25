@@ -737,41 +737,6 @@ sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
- * @brief Get the UUID of a user from the user directory.
- *
- * This is a callback for a scalar SQL function of one argument.
- *
- * @param[in]  context  SQL context.
- * @param[in]  argc     Number of arguments.
- * @param[in]  argv     Argument array.
- */
-void
-sql_user_uuid (sqlite3_context *context, int argc, sqlite3_value** argv)
-{
-  const unsigned char *name;
-  gchar *uuid;
-
-  assert (argc == 1);
-
-  name = sqlite3_value_text (argv[0]);
-  if (name == NULL)
-    {
-      sqlite3_result_error (context, "Failed to get name argument", -1);
-      return;
-    }
-
-  uuid = openvas_user_uuid ((gchar*) name);
-  if (uuid == NULL)
-    {
-      sqlite3_result_error (context, "Failed to get UUID from name", -1);
-      return;
-    }
-
-  sqlite3_result_text (context, uuid, -1, SQLITE_TRANSIENT);
-  g_free (uuid);
-}
-
-/**
  * @brief Convert an epoch time into a string in ISO format.
  *
  * This is a callback for a scalar SQL function of one argument.

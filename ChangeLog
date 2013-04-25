@@ -1,5 +1,16 @@
 2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (strcmp_desc, openvas_admin_list_users): Remove.  Out of
+	use.
+
+	* src/manage_sql.c (init_manage_process): Remove user_uuid SQL init.
+
+	* src/sql.c (sql_user_uuid): Remove.  Out of use.
+
+	* src/sql.h: Remove header accordingly.
+
+2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (handle_sigabrt): Check for recursion before printing
 	backtrace.
 
