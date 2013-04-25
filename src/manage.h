@@ -2838,6 +2838,21 @@ manage_set_setting (const gchar *, const gchar *, const gchar *, gchar **);
 
 /* Users. */
 
+gchar *
+manage_user_hash (const gchar *);
+
+gchar *
+manage_user_uuid (const gchar *, auth_method_t);
+
+int
+manage_user_set_role (const gchar *, const gchar *, const gchar *);
+
+int
+manage_user_set_rules (const gchar *, const gchar *, const gchar *, int);
+
+int
+manage_user_exists (const gchar *, auth_method_t);
+
 int
 copy_user (const char*, const char*, const char*, user_t*);
 
@@ -2848,7 +2863,19 @@ GSList *
 openvas_admin_list_users (const gchar *, int, const gchar *, const gchar *);
 
 int
-openvas_admin_user_access (const gchar *, gchar **, int *, const gchar *);
+init_user_iterator (iterator_t*, const get_data_t*);
+
+const char*
+user_iterator_role (iterator_t*);
+
+const char*
+user_iterator_method (iterator_t*);
+
+const char*
+user_iterator_hosts (iterator_t*);
+
+int
+user_iterator_hosts_allow (iterator_t*);
 
 void
 init_user_group_iterator (iterator_t *, const char *);
@@ -2861,16 +2888,37 @@ user_group_iterator_name (iterator_t*);
 
 int
 openvas_admin_add_user (const gchar *, const gchar *, const gchar *,
-                        const gchar *, int, const gchar *, const array_t *,
-                        array_t *, gchar **, gchar **);
+                        const gchar *, int, const array_t *, array_t *,
+                        gchar **, gchar **);
 
 int
 delete_user (const char *, const char *, int);
 
 int
 openvas_admin_modify_user (const gchar *, const gchar *, const gchar *,
-                           const gchar *, int, const gchar *, const array_t *,
-                           array_t *, gchar **, gchar **);
+                           const gchar *, int, const array_t *, array_t *,
+                           gchar **, gchar **);
+
+int
+user_is_admin (const char *);
+
+int
+user_is_observer (const char *);
+
+int
+user_in_use (user_t);
+
+int
+trash_user_in_use (user_t);
+
+int
+user_writable (user_t);
+
+int
+trash_user_writable (user_t);
+
+int
+user_count (const get_data_t*);
 
 char*
 user_uuid (user_t);

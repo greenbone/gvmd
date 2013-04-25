@@ -14515,8 +14515,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_USER", element_name) == 0);
 
-          array_terminate (modify_user_data->sources);
-
           if (modify_user_data->name == NULL
               || strlen (modify_user_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
@@ -14527,7 +14525,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               gchar *fail_group_id, *errdesc;
               int was_admin;
 
-              was_admin = openvas_is_user_admin (modify_user_data->name);
+              was_admin = user_is_admin (modify_user_data->name);
               errdesc = NULL;
 
               switch (openvas_admin_modify_user
@@ -14537,7 +14535,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         password
                         /* Leave the password as it is. */
                         : NULL), modify_user_data->role, modify_user_data->hosts,
-                       modify_user_data->hosts_allow, OPENVAS_USERS_DIR,
+                       modify_user_data->hosts_allow,
                        modify_user_data->sources,
                        modify_user_data->groups, &fail_group_id,
                        &errdesc))
@@ -14570,13 +14568,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       return;
                     }
                   break;
+                case 2:
+                  if (send_find_error_to_client
+                       ("modify_user",
+                        "user",
+                        modify_user_data->name,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
                 case -2:
                   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
                                           ("modify_user", "Unknown role"));
                   break;
                 case -3:
                   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                          ("modify_user", "User already exists"));
+                                          ("modify_user", "Error in SOURCES"));
                   break;
                 case -1:
                   if (errdesc)
@@ -16034,7 +16044,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_PERMISSION", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
+          if (user_is_observer (current_credentials.username))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_permission",
@@ -18353,9 +18363,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                      (create_user_data->name,
                       create_user_data->password ? create_user_data->password : "",
                       create_user_data->role ? create_user_data->role : "User",
-                      create_user_data->hosts, create_user_data->hosts_allow,
-                      OPENVAS_USERS_DIR, create_user_data->sources,
-                      create_user_data->groups, &fail_group_id,
+                      create_user_data->hosts,
+                      create_user_data->hosts_allow,
+                      create_user_data->sources,
+                      create_user_data->groups,
+                      &fail_group_id,
                       &errdesc))
               {
               case 0:
@@ -18381,6 +18393,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case -2:
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
                                         ("create_user", "User already exists"));
+                g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                       "User could not be created");
+                break;
+              case -3:
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                        ("create_user", "Error in SOURCE"));
                 g_log ("event task", G_LOG_LEVEL_MESSAGE,
                        "User could not be created");
                 break;
@@ -18447,7 +18465,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_AGENT", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
+          if (user_is_observer (current_credentials.username))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_agent",
@@ -18522,7 +18540,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           array_terminate (modify_alert_data->condition_data);
           array_terminate (modify_alert_data->method_data);
 
-          if (openvas_is_user_observer (current_credentials.username))
+          if (user_is_observer (current_credentials.username))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_alert",
@@ -18756,6 +18774,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           /** @todo Implement sighup in and send to openvas-manager in order
             *       for the changed config to take effect. */
+            // FIX
           switch (openvas_auth_write_config (key_file))
             {
             case 0:
@@ -18808,7 +18827,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_FILTER", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
+          if (user_is_observer (current_credentials.username))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_filter",
@@ -18890,7 +18909,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_GROUP", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
+          if (user_is_observer (current_credentials.username))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_group",
@@ -18970,7 +18989,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_PORT_LIST", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
+          if (user_is_observer (current_credentials.username))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_port_list",
@@ -19247,7 +19266,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         || modify_schedule_data->first_time_month
                         || modify_schedule_data->first_time_year;
 
-          if (openvas_is_user_observer (current_credentials.username))
+          if (user_is_observer (current_credentials.username))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_schedule",
@@ -19388,7 +19407,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_SLAVE", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
+          if (user_is_observer (current_credentials.username))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_slave",
@@ -19459,7 +19478,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_TAG", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
+          if (user_is_observer (current_credentials.username))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_tag",
@@ -19564,7 +19583,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_TARGET", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
+          if (user_is_observer (current_credentials.username))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_target",
@@ -22531,109 +22550,102 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_USERS:
         {
-          GSList *users, *user;
+          iterator_t users;
+          int count, filtered, ret, first;
+          get_data_t *get;
+
           assert (strcasecmp ("GET_USERS", element_name) == 0);
 
-            /** @todo Consider using user_t, find_user and user_iterator_t. */
-
-          user = users =
-            openvas_admin_list_users (OPENVAS_USERS_DIR,
-                                      get_users_data->sort_order,
-                                      get_users_data->name,
-                                      get_users_data->get.id);
-          if ((get_users_data->name || get_users_data->get.id)
-              && users == NULL)
+          get = &get_users_data->get;
+          if ((!get->filter && !get->filt_id)
+              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
             {
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                       ("get_users", "Failed to find user"));
+              char *user_filter = setting_filter ("Users");
+
+              if (user_filter && strlen (user_filter))
+                {
+                  get->filt_id = user_filter;
+                  get->filter = filter_term (user_filter);
+                }
+              else
+                get->filt_id = g_strdup ("0");
+            }
+
+          ret = init_user_iterator (&users, &get_users_data->get);
+          if (ret)
+            {
+              switch (ret)
+                {
+                  case 1:
+                    if (send_find_error_to_client ("get_users",
+                                                   "user",
+                                                   get_users_data->get.id,
+                                                   write_to_client,
+                                                   write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case 2:
+                    if (send_find_error_to_client
+                         ("get_users",
+                          "user",
+                          get_users_data->get.filt_id,
+                          write_to_client,
+                          write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("get_users"));
+                    break;
+                }
               get_users_data_reset (get_users_data);
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
 
-          SEND_TO_CLIENT_OR_FAIL ("<get_users_response"
-                                  " status=\"" STATUS_OK "\""
-                                  " status_text=\"" STATUS_OK_TEXT "\">");
-          while (user)
+          count = 0;
+          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+          SEND_GET_START ("user", &get_users_data->get);
+          while (1)
             {
-              gchar *hosts, *sources, *uuid;
-              GSList *methods;
-              int allow;
               iterator_t groups;
+              const char *user_name;
 
-              if (openvas_admin_user_access
-                  (user->data, &hosts, &allow, OPENVAS_USERS_DIR))
-                /* @todo Buffer all hosts before sending anything. */
-                abort ();
-              methods = openvas_auth_user_methods (user->data);
-              sources = openvas_string_list_to_xml (methods, "sources", "source");
-              uuid = openvas_user_uuid (user->data);
-              SENDF_TO_CLIENT_OR_FAIL ("<user id=\"%s\">"
-                                       "<name>%s</name>"
-                                       "<role>%s</role>"
-                                       "<hosts allow=\"%i\">%s</hosts>",
-                                       uuid,
-                                       (gchar *) user->data,
-                                       openvas_is_user_admin (user->data)
-                                         ? "Admin"
-                                         : (openvas_is_user_observer (user->data)
-                                            ? "Observer"
-                                            : "User"),
-                                       allow,
-                                       hosts ? hosts : "");
-
-              if (get_users_data->get.id || get_users_data->get.details)
+              ret = get_next (&users, get, &first, &count,
+                              init_user_iterator);
+              if (ret == 1)
+                break;
+              if (ret == -1)
                 {
-                  GString *tags_buffer;
-                  iterator_t tags;
-
-                  tags_buffer = g_string_new("");
-                  buffer_xml_append_printf (tags_buffer,
-                                            "<user_tags>"
-                                            "<count>%i</count>",
-                                            resource_tag_count ("user",
-                                                                uuid,
-                                                                1));
-
-                  init_resource_tag_iterator (&tags, "user", uuid,
-                                              1, NULL, 1);
-                  while (next (&tags))
-                    {
-                      buffer_xml_append_printf
-                        (
-                          tags_buffer,
-                          "<tag id=\"%s\">"
-                          "<name>%s</name>"
-                          "<value>%s</value>"
-                          "<comment>%s</comment>"
-                          "</tag>",
-                          resource_tag_iterator_uuid (&tags),
-                          resource_tag_iterator_name (&tags),
-                          resource_tag_iterator_value (&tags),
-                          resource_tag_iterator_comment (&tags)
-                        );
-                    }
-                  buffer_xml_append_printf (tags_buffer,
-                                            "</user_tags>");
-                  SEND_TO_CLIENT_OR_FAIL (tags_buffer->str);
-
-                  cleanup_iterator (&tags);
-                  g_string_free (tags_buffer, 1);
-                }
-              else
-                {
-                  SENDF_TO_CLIENT_OR_FAIL ("<user_tags>"
-                                           "<count>%i</count>"
-                                           "</user_tags>",
-                                           resource_tag_count ("user",
-                                                               uuid,
-                                                               1));
+                  internal_error_send_to_client (error);
+                  return;
                 }
 
-              g_free (uuid);
-              SEND_TO_CLIENT_OR_FAIL (sources);
+              SEND_GET_COMMON (user, &get_users_data->get, &users);
+
+              user_name = get_iterator_name (&users);
+              SENDF_TO_CLIENT_OR_FAIL ("<role>%s</role>"
+                                       "<hosts allow=\"%i\">%s</hosts>"
+                                       "<sources><source>%s</source></sources>",
+                                       user_iterator_role (&users)
+                                        ? user_iterator_role (&users)
+                                        : "User",
+                                       user_iterator_hosts_allow (&users),
+                                       user_iterator_hosts (&users)
+                                        ? user_iterator_hosts (&users)
+                                        : "",
+                                       user_iterator_method (&users)
+                                        ? user_iterator_method (&users)
+                                        : "file");
+
               SEND_TO_CLIENT_OR_FAIL ("<groups>");
-              init_user_group_iterator (&groups, user->data);
+              init_user_group_iterator (&groups, user_name);
               while (next (&groups))
                 SENDF_TO_CLIENT_OR_FAIL ("<group id=\"%s\">"
                                          "<name>%s</name>"
@@ -22643,15 +22655,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               cleanup_iterator (&groups);
               SEND_TO_CLIENT_OR_FAIL ("</groups>"
                                       "</user>");
-              g_free (hosts);
-              g_free (user->data);
-              g_free (sources);
-              openvas_string_list_free (methods);
-              user = g_slist_next (user);
+              count++;
             }
-          g_slist_free (users);
+          cleanup_iterator (&users);
+          filtered = get_users_data->get.id
+                      ? 1
+                      : user_count (&get_users_data->get);
+          SEND_GET_END ("user", &get_users_data->get, count, filtered);
+
           get_users_data_reset (get_users_data);
-          SEND_TO_CLIENT_OR_FAIL ("</get_users_response>");
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }

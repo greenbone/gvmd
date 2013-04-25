@@ -1016,6 +1016,7 @@ send_user_rules (report_t stopped_report)
 
   empty = 1;
 
+  // FIX
   if (openvas_auth_user_uuid_rules (current_credentials.username,
                                     current_credentials.uuid,
                                     &rules)
@@ -5126,90 +5127,6 @@ openvas_admin_list_users (const gchar *directory, int ascending,
       g_warning ("Could not find %s!", directory);
       return NULL;
     }
-}
-
-#define RULES_HEADER "# This file is managed by the OpenVAS Administrator.\n# Any modifications must keep to the format that the Administrator expects.\n"
-
-/** @todo Move to/Use openvas-libraries/misc/openvas_auth module functionality */
-/**
- * @brief Get access information for a user.
- *
- * @param[in]   name         The name of the new user.
- * @param[out]  hosts        The hosts the user is allowed/forbidden to scan.
- * @param[out]  hosts_allow  0 forbidden, 1 allowed, 2 all allowed, 3 custom.
- * @param[in]   user_dir     The directory containing the user directories.
- *
- * @return 0 success, -1 error.
- */
-int
-openvas_admin_user_access (const gchar * name, gchar ** hosts, int *hosts_allow,
-                           const gchar * user_dir)
-{
-  gchar *rules_file, *rules;
-  GError *error = NULL;
-
-  assert (name != NULL);
-  assert (hosts != NULL);
-  assert (hosts_allow != NULL);
-
-  rules_file = g_build_filename (user_dir, name, "auth", "rules", NULL);
-  g_file_get_contents (rules_file, &rules, NULL, &error);
-  if (error)
-    {
-      g_warning ("%s", error->message);
-      g_error_free (error);
-      g_free (rules_file);
-      return -1;
-    }
-  g_free (rules_file);
-
-  if (strlen (rules))
-    {
-      int count, end = 0;
-
-      /* "# " ("allow " | "deny ") hosts */
-
-      count = sscanf (rules, RULES_HEADER "# allow %*[^\n]%n\n", &end);
-      if (count == 0 && end > 0)
-        {
-          *hosts =
-            g_strndup (rules + strlen (RULES_HEADER "# allow "),
-                       end - strlen (RULES_HEADER "# allow "));
-          *hosts_allow = 1;
-          g_free (rules);
-          return 0;
-        }
-
-      count = sscanf (rules, RULES_HEADER "# deny %*[^\n]%n\n", &end);
-      if (count == 0 && end > 0)
-        {
-          *hosts =
-            g_strndup (rules + strlen (RULES_HEADER "# deny "),
-                       end - strlen (RULES_HEADER "# deny "));
-          *hosts_allow = 0;
-          g_free (rules);
-          return 0;
-        }
-
-      if (strcmp (RULES_HEADER, rules) == 0)
-        {
-          *hosts = NULL;
-          *hosts_allow = 2;
-          g_free (rules);
-          return 0;
-        }
-
-      /* Failed to parse content. */
-      *hosts = NULL;
-      *hosts_allow = 3;
-      g_free (rules);
-      return 0;
-    }
-
-  *hosts = NULL;
-  *hosts_allow = 2;
-  g_free (rules);
-  return 0;
 }
 
 /**

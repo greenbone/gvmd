@@ -1,3 +1,41 @@
+2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move user management from disk into the database.  Hence increase
+	database version to 80.  Add database migration from version 79 to 80.
+
+	Migration will remove all ldap and ads users, and their db resources.
+	All orphaned users in the database will also be removed, with their db
+	resources.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 80.
+
+	* src/manage.c (openvas_admin_user_access): Remove.  Info now in db.
+
+	* src/manage_sql.c (user_is_admin, user_is_observer): New functions.
+	(user_may): Switch to new role functions.
+	(copy_resource_lock): New function.  Body from copy_resource, without
+	locking.
+	(copy_resource): Call through to copy_resource_lock.
+	(create_tables): Add method to users.
+	(migrate_9_to_10_user_uuid): New function.
+	(migrate_9_to_10): Call migrate_9_to_10_user_uuid instead of the library
+	function, because it accesses the disk.
+	(MIGRATE_79_to_80_DELETE): New macro.
+	(migrate_79_to_80_remove_users, migrate_79_to_80_user_access)
+	(migrate_79_to_80): New function.
+	(database_migrators): Add migrate_79_to_80.
+	(copy_user, user_uuid): New functions.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Switch to new role functions.
+	Remove directory args that were for disk users. In MODIFY_USER remove
+	duplicate array terminate, add new return case and correct errror
+	message.  In CREATE_USER add new return case.  In GET_USERS switch to
+	user iterator and standard GET facilities.
+
+	* src/openvasmd.c (main): Init auth with new funcs function.
+
 2013-04-25  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (xml_handle_end_element): In cases CLIENT_CREATE_TAG,
@@ -618,8 +656,33 @@
 	(create_tables): Add standard columns.  Add placeholder columns for info
 	stored on disk.
 	(migrate_76_to_77): New function.
-	(migrators): Add migrate_76_to_77.
-	(copy_user, user_uuid): New functions.
+	(database_migrators): Add migrate_76_to_77.
+	(init_manage): Remove creationg of "om" user.  Now only needed on scanner
+	side.
+	(manage_user_hash, manage_user_uuid, user_ensure_in_db)
+	(manage_user_set_role, manage_user_set_rules, manage_user_exists): New
+	functions.
+	(authenticate): Authenticate with the method function, to get the method,
+	and because user UUIDs are in db now.  Get UUID from db.  Switch to new
+	role functions.  Call user_ensure_in_db to ensure user exists in db.
+	(manage_set_settings): Set password in db instead of with library.
+	(openvas_admin_add_user): Remove directory arg.  Add user to db instead
+	of disk.
+	(copy_user): Set generic password instead of copying from other user.
+	Remove call to add user on disk.
+	(openvas_admin_remove_user): Remove.  Was doing the disk removal.
+	(delete_user): Remove disk part.
+	(openvas_admin_modify_user): Modify in db instead of on disk.
+	(user_in_use, trash_user_in_use, user_writable)
+	(trash_user_writable): New function.
+	(USER_ITERATOR_FILTER_COLUMNS, USER_ITERATOR_COLUMNS)
+	(USER_ITERATOR_TRASH_COLUMNS): New defines.
+	(user_count, init_user_iterator, user_iterator_role)
+	(user_iterator_method, user_iterator_hosts)
+	(user_iterator_hosts_allow): New functions.
+	(init_user_group_iterator): Get user ID by name now that users are in
+	db only.
+	(RULES_HEADER): New define.
 
 	* src/manage.h: Add headers accordingly.
 	(user_t): New type.  From manage_sql.c.

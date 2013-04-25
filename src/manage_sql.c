@@ -359,6 +359,9 @@ find_user (const char *uuid, user_t *user);
 static gboolean
 find_user_by_name (const char *, user_t *);
 
+int
+user_ensure_in_db (const gchar *, const gchar *);
+
 
 /* Variables. */
 
@@ -1286,6 +1289,50 @@ vector_find_filter (const gchar **vector, const gchar *string)
 /* Access control layer. */
 
 /**
+ * @brief Check whether a user is an Admin.
+ *
+ * @param[in]  uuid  Uuid of user.
+ *
+ * @return 1 if user is an Admin, else 0.
+ */
+int
+user_is_admin (const char *uuid)
+{
+  int ret;
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  ret = sql_int (0, 0,
+                 "SELECT count (*) FROM users"
+                 " WHERE uuid = '%s' AND role = 'Admin';",
+                 quoted_uuid);
+  g_free (quoted_uuid);
+  return ret;
+}
+
+/**
+ * @brief Check whether a user is an Observer.
+ *
+ * @param[in]  uuid  Uuid of user.
+ *
+ * @return 1 if user is an Observer, else 0.
+ */
+int
+user_is_observer (const char *uuid)
+{
+  int ret;
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  ret = sql_int (0, 0,
+                 "SELECT count (*) FROM users"
+                 " WHERE uuid = '%s' AND role = 'Observer';",
+                 quoted_uuid);
+  g_free (quoted_uuid);
+  return ret;
+}
+
+/**
  * @brief Test whether a user may perform an operation.
  *
  * @param[in]  operations  Name of operation.
@@ -1300,13 +1347,13 @@ user_may (const char *operation)
   gchar *quoted_operation;
 #endif
 
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
   assert (operation);
 
-  if (openvas_is_user_admin (current_credentials.username))
+  if (user_is_admin (current_credentials.uuid))
     return 1;
 
-  if (openvas_is_user_observer (current_credentials.username) == 0)
+  if (user_is_observer (current_credentials.uuid) == 0)
     /* User has role "user".  Can do any OMP operation. */
     return 1;
 
@@ -3184,27 +3231,22 @@ find_resource_for_actions (const char* type, const char* uuid,
  * @return 0 success, 1 resource exists already, 2 failed to find existing
  *         resource, 99 permission denied, -1 error.
  */
-int
-copy_resource (const char *type, const char *name, const char *comment,
-               const char *resource_id, const char *columns,
-               int make_name_unique, resource_t* new_resource)
+static int
+copy_resource_lock (const char *type, const char *name, const char *comment,
+                    const char *resource_id, const char *columns,
+                    int make_name_unique, resource_t* new_resource)
 {
   gchar *quoted_name, *quoted_uuid, *uniquify, *command;
   int named;
   user_t owner;
 
-  assert (current_credentials.uuid);
-
   if (resource_id == NULL)
     return -1;
-
-  sql ("BEGIN IMMEDIATE;");
 
   command = g_strdup_printf ("create_%s", type);
   if (user_may (command) == 0)
     {
       g_free (command);
-      sql ("ROLLBACK;");
       return 99;
     }
   g_free (command);
@@ -3212,7 +3254,6 @@ copy_resource (const char *type, const char *name, const char *comment,
   if (find_user_by_name (current_credentials.username, &owner)
       || owner == 0)
     {
-      sql ("ROLLBACK;");
       return -1;
     }
 
@@ -3229,7 +3270,6 @@ copy_resource (const char *type, const char *name, const char *comment,
                    quoted_name,
                    current_credentials.uuid))
         {
-          sql ("ROLLBACK;");
           g_free (quoted_name);
           return 1;
         }
@@ -3247,7 +3287,6 @@ copy_resource (const char *type, const char *name, const char *comment,
                owner)
       == 0)
     {
-      sql ("ROLLBACK;");
       g_free (quoted_name);
       g_free (quoted_uuid);
       return 2;
@@ -3320,11 +3359,47 @@ copy_resource (const char *type, const char *name, const char *comment,
   if (new_resource)
     *new_resource = sqlite3_last_insert_rowid (task_db);
 
-  sql ("COMMIT;");
   g_free (quoted_uuid);
   g_free (quoted_name);
   g_free (uniquify);
   return 0;
+}
+
+/**
+ * @brief Create a resource from an existing resource.
+ *
+ * @param[in]  type          Type of resource.
+ * @param[in]  name          Name of new resource.  NULL to copy from existing.
+ * @param[in]  comment       Comment on new resource.  NULL to copy from existing.
+ * @param[in]  resource_id   UUID of existing resource.
+ * @param[in]  columns       Extra columns in resource.
+ * @param[in]  make_name_unique  When name NULL, whether to make existing name
+ *                               unique.
+ * @param[out] new_resource  New resource.
+ *
+ * @return 0 success, 1 resource exists already, 2 failed to find existing
+ *         resource, 99 permission denied, -1 error.
+ */
+int
+copy_resource (const char *type, const char *name, const char *comment,
+               const char *resource_id, const char *columns,
+               int make_name_unique, resource_t* new_resource)
+{
+  int ret;
+
+  assert (current_credentials.uuid);
+
+  sql ("BEGIN IMMEDIATE;");
+
+  ret = copy_resource_lock (type, name, comment, resource_id, columns,
+                            make_name_unique, new_resource);
+
+  if (ret)
+    sql ("ROLLBACK;");
+  else
+    sql ("COMMIT;");
+
+  return ret;
 }
 
 /**
@@ -4115,9 +4190,11 @@ create_tables ()
        "  slave INTEGER, config_location INTEGER, target_location INTEGER,"
        "  schedule_location INTEGER, slave_location INTEGER, "
        "  upload_result_count INTEGER, creation_time, modification_time);");
+  /* Field password contains the hash. */
+  /* Field hosts_allow: 0 deny, 1 allow, 2 allow all. */
   sql ("CREATE TABLE IF NOT EXISTS users"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
-       "  password, timezone, role, hosts, hosts_allow, creation_time,"
+       "  password, timezone, role, hosts, hosts_allow, method, creation_time,"
        "  modification_time);");
 
   sql ("ANALYZE;");
@@ -5444,6 +5521,43 @@ migrate_8_to_9 ()
 }
 
 /**
+ * @brief Return the UUID of a user from the OpenVAS user UUID file.
+ *
+ * @todo Untested
+ *
+ * @param[in]  name   User name.
+ *
+ * @return UUID of given user if user exists, else NULL.
+ */
+static gchar *
+migrate_9_to_10_user_uuid (const char *name)
+{
+  gchar *uuid_file;
+
+  uuid_file = g_build_filename (OPENVAS_USERS_DIR, name, "uuid", NULL);
+  if (g_file_test (uuid_file, G_FILE_TEST_EXISTS))
+    {
+      gsize size;
+      gchar *uuid;
+      /* File exists, get its content (the uuid). */
+      if (g_file_get_contents (uuid_file, &uuid, &size, NULL))
+        {
+          if (strlen (uuid) < 36)
+            g_free (uuid);
+          else
+            {
+              g_free (uuid_file);
+              /* Drop any trailing characters. */
+              uuid[36] = '\0';
+              return uuid;
+            }
+        }
+    }
+  g_free (uuid_file);
+  return NULL;
+}
+
+/**
  * @brief Migrate the database from version 9 to version 10.
  *
  * @return 0 success, -1 error.
@@ -5480,7 +5594,7 @@ migrate_9_to_10 ()
     {
       gchar *quoted_name, *quoted_password, *uuid;
 
-      uuid = openvas_user_uuid (iterator_string (&rows, 1));
+      uuid = migrate_9_to_10_user_uuid (iterator_string (&rows, 1));
       if (uuid == NULL)
         {
           uuid = openvas_uuid_make ();
@@ -9706,6 +9820,582 @@ migrate_78_to_79 ()
   return 0;
 }
 
+#define MIGRATE_79_to_80_DELETE(table)                                \
+ sql ("DELETE FROM " table                                            \
+      " WHERE owner IN (SELECT ROWID FROM users WHERE %s);",          \
+      where)
+
+/**
+ * @brief Delete users according to a condition.
+ *
+ * @param[in]  where  Where clause.
+ */
+void
+migrate_79_to_80_remove_users (const char *where)
+{
+  /* Remove everything that is owned by the user. */
+  MIGRATE_79_to_80_DELETE ("agents");
+  MIGRATE_79_to_80_DELETE ("agents_trash");
+  sql ("DELETE FROM config_preferences"
+       " WHERE config IN (SELECT ROWID FROM configs"
+       "                  WHERE owner IN (SELECT ROWID FROM users"
+       "                                  WHERE %s));",
+       where);
+  sql ("DELETE FROM config_preferences_trash"
+       " WHERE config IN (SELECT ROWID FROM configs"
+       "                  WHERE owner IN (SELECT ROWID FROM users"
+       "                                  WHERE %s));",
+       where);
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE name IN (SELECT nvt_selector FROM configs"
+       "                WHERE owner IN (SELECT ROWID FROM users"
+       "                                WHERE %s));",
+       where);
+  MIGRATE_79_to_80_DELETE ("configs");
+  MIGRATE_79_to_80_DELETE ("configs_trash");
+  sql ("DELETE FROM alert_condition_data"
+       " WHERE alert IN (SELECT ROWID FROM alerts"
+       "                 WHERE owner IN (SELECT ROWID FROM users"
+       "                                 WHERE %s));",
+       where);
+  sql ("DELETE FROM alert_condition_data_trash"
+       " WHERE alert IN (SELECT ROWID FROM alerts_trash"
+       "                 WHERE owner IN (SELECT ROWID FROM users"
+       "                                 WHERE %s));",
+       where);
+  sql ("DELETE FROM alert_event_data"
+       " WHERE alert IN (SELECT ROWID FROM alerts"
+       "                 WHERE owner IN (SELECT ROWID FROM users"
+       "                                 WHERE %s));",
+       where);
+  sql ("DELETE FROM alert_event_data_trash"
+       " WHERE alert IN (SELECT ROWID FROM alerts_trash"
+       "                 WHERE owner IN (SELECT ROWID FROM users"
+       "                                 WHERE %s));",
+       where);
+  sql ("DELETE FROM alert_method_data"
+       " WHERE alert IN (SELECT ROWID FROM alerts"
+       "                 WHERE owner IN (SELECT ROWID FROM users"
+       "                                 WHERE %s));",
+       where);
+  sql ("DELETE FROM alert_method_data_trash"
+       " WHERE alert IN (SELECT ROWID FROM alerts_trash"
+       "                 WHERE owner IN (SELECT ROWID FROM users"
+       "                                 WHERE %s));",
+       where);
+  MIGRATE_79_to_80_DELETE ("alerts");
+  MIGRATE_79_to_80_DELETE ("alerts_trash");
+  MIGRATE_79_to_80_DELETE ("filters");
+  MIGRATE_79_to_80_DELETE ("filters_trash");
+  sql ("DELETE FROM group_users"
+       " WHERE `group` IN (SELECT ROWID FROM groups"
+       "                   WHERE owner IN (SELECT ROWID FROM users"
+       "                                   WHERE %s));",
+       where);
+  MIGRATE_79_to_80_DELETE ("groups");
+  MIGRATE_79_to_80_DELETE ("lsc_credentials");
+  MIGRATE_79_to_80_DELETE ("lsc_credentials_trash");
+  MIGRATE_79_to_80_DELETE ("notes");
+  MIGRATE_79_to_80_DELETE ("notes_trash");
+  MIGRATE_79_to_80_DELETE ("overrides");
+  MIGRATE_79_to_80_DELETE ("overrides_trash");
+  MIGRATE_79_to_80_DELETE ("permissions");
+  MIGRATE_79_to_80_DELETE ("permissions_trash");
+  MIGRATE_79_to_80_DELETE ("port_lists");
+  MIGRATE_79_to_80_DELETE ("port_lists_trash");
+  sql ("DELETE FROM port_ranges"
+       " WHERE port_list IN (SELECT ROWID FROM port_lists"
+       "                     WHERE owner IN (SELECT ROWID FROM users"
+       "                                     WHERE %s));",
+       where);
+  sql ("DELETE FROM port_ranges_trash"
+       " WHERE port_list IN (SELECT ROWID FROM port_lists_trash"
+       "                     WHERE owner IN (SELECT ROWID FROM users"
+       "                                     WHERE %s));",
+       where);
+  sql ("DELETE FROM report_format_param_options"
+       " WHERE report_format_param"
+       "       IN (SELECT ROWID FROM report_format_params"
+       "           WHERE report_format"
+       "                 IN (SELECT ROWID FROM report_formats"
+       "                     WHERE owner IN (SELECT ROWID FROM users"
+       "                                     WHERE %s)));",
+       where);
+  sql ("DELETE FROM report_format_param_options_trash"
+       " WHERE report_format_param"
+       "       IN (SELECT ROWID FROM report_format_params_trash"
+       "           WHERE report_format"
+       "                 IN (SELECT ROWID FROM report_formats"
+       "                     WHERE owner IN (SELECT ROWID FROM users"
+       "                                     WHERE %s)));",
+       where);
+  sql ("DELETE FROM report_format_params"
+       " WHERE report_format IN (SELECT ROWID FROM report_formats"
+       "                         WHERE owner IN (SELECT ROWID FROM users"
+       "                                         WHERE %s));",
+       where);
+  sql ("DELETE FROM report_format_params_trash"
+       " WHERE report_format IN (SELECT ROWID FROM report_formats"
+       "                         WHERE owner IN (SELECT ROWID FROM users"
+       "                                         WHERE %s));",
+       where);
+  MIGRATE_79_to_80_DELETE ("report_formats");
+  MIGRATE_79_to_80_DELETE ("report_formats_trash");
+  sql ("DELETE FROM report_host_details"
+       " WHERE report_host"
+       "       IN (SELECT ROWID FROM report_hosts"
+       "           WHERE report IN (SELECT ROWID FROM reports"
+       "                            WHERE owner IN (SELECT ROWID FROM users"
+       "                                            WHERE %s)));",
+       where);
+  sql ("DELETE FROM report_results"
+       " WHERE report IN (SELECT ROWID FROM reports"
+       "                  WHERE owner IN (SELECT ROWID FROM users"
+       "                                  WHERE %s));",
+       where);
+  sql ("DELETE FROM results"
+       " WHERE report IN (SELECT ROWID FROM reports"
+       "                  WHERE owner IN (SELECT ROWID FROM users"
+       "                                  WHERE %s));",
+       where);
+  MIGRATE_79_to_80_DELETE ("reports");
+  MIGRATE_79_to_80_DELETE ("schedules");
+  MIGRATE_79_to_80_DELETE ("schedules_trash");
+  MIGRATE_79_to_80_DELETE ("slaves");
+  MIGRATE_79_to_80_DELETE ("slaves_trash");
+  MIGRATE_79_to_80_DELETE ("settings");
+  MIGRATE_79_to_80_DELETE ("tags");
+  MIGRATE_79_to_80_DELETE ("tags_trash");
+  MIGRATE_79_to_80_DELETE ("targets");
+  MIGRATE_79_to_80_DELETE ("targets_trash");
+  sql ("DELETE FROM task_files"
+       " WHERE task IN (SELECT ROWID FROM tasks"
+       "                WHERE owner IN (SELECT ROWID FROM users"
+       "                                WHERE %s));",
+       where);
+  sql ("DELETE FROM task_alerts"
+       " WHERE task IN (SELECT ROWID FROM tasks"
+       "                WHERE owner IN (SELECT ROWID FROM users"
+       "                                WHERE %s));",
+       where);
+  sql ("DELETE FROM task_preferences"
+       " WHERE task IN (SELECT ROWID FROM tasks"
+       "                WHERE owner IN (SELECT ROWID FROM users"
+       "                                WHERE %s));",
+       where);
+  MIGRATE_79_to_80_DELETE ("tasks");
+  sql ("DELETE FROM users WHERE %s;",
+       where);
+}
+
+#define RULES_HEADER "# This file is managed by the OpenVAS Administrator.\n# Any modifications must keep to the format that the Administrator expects.\n"
+
+/**
+ * @brief Get access information for a user.
+ *
+ * @param[in]   user_dir     The directory containing the user.
+ * @param[out]  hosts        The hosts the user is allowed/forbidden to scan.
+ * @param[out]  hosts_allow  0 forbidden, 1 allowed, 2 all allowed, 3 custom.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_79_to_80_user_access (const gchar *user_dir, gchar ** hosts,
+                              int *hosts_allow)
+{
+  gchar *rules_file, *rules;
+  GError *error = NULL;
+
+  assert (hosts != NULL);
+  assert (hosts_allow != NULL);
+
+  rules_file = g_build_filename (user_dir, "auth", "rules", NULL);
+  if (g_file_test (rules_file, G_FILE_TEST_EXISTS) == FALSE)
+    {
+      *hosts = NULL;
+      *hosts_allow = 2;
+      return 0;
+    }
+
+  g_file_get_contents (rules_file, &rules, NULL, &error);
+  if (error)
+    {
+      g_warning ("%s", error->message);
+      g_error_free (error);
+      g_free (rules_file);
+      return -1;
+    }
+  g_free (rules_file);
+
+  if (strlen (rules))
+    {
+      int count, end = 0;
+
+      /* "# " ("allow " | "deny ") hosts */
+
+      count = sscanf (rules, RULES_HEADER "# allow %*[^\n]%n\n", &end);
+      if (count == 0 && end > 0)
+        {
+          *hosts =
+            g_strndup (rules + strlen (RULES_HEADER "# allow "),
+                       end - strlen (RULES_HEADER "# allow "));
+          *hosts_allow = 1;
+          g_free (rules);
+          return 0;
+        }
+
+      count = sscanf (rules, RULES_HEADER "# deny %*[^\n]%n\n", &end);
+      if (count == 0 && end > 0)
+        {
+          *hosts =
+            g_strndup (rules + strlen (RULES_HEADER "# deny "),
+                       end - strlen (RULES_HEADER "# deny "));
+          *hosts_allow = 0;
+          g_free (rules);
+          return 0;
+        }
+
+      if (strcmp (RULES_HEADER, rules) == 0)
+        {
+          *hosts = NULL;
+          *hosts_allow = 2;
+          g_free (rules);
+          return 0;
+        }
+
+      /* Failed to parse content. */
+      *hosts = NULL;
+      *hosts_allow = 3;
+      g_free (rules);
+      return 0;
+    }
+
+  *hosts = NULL;
+  *hosts_allow = 2;
+  g_free (rules);
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 79 to version 80.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_79_to_80 ()
+{
+  struct dirent **names;
+  int count, index;
+  array_t *dirs;
+  gchar *dir;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 79. */
+
+  if (manage_db_version () != 79)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Users got new column "method".  User data moved from disk to database. */
+
+  sql ("ALTER TABLE users ADD COLUMN methods;");
+  sql ("UPDATE users SET method = 'file';");
+
+  count = scandir (OPENVAS_USERS_DIR, &names, NULL, alphasort);
+  if (count < 0)
+    {
+      g_warning ("%s: failed to open dir %s: %s\n",
+                 __FUNCTION__,
+                 OPENVAS_USERS_DIR,
+                 strerror (errno));
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  dirs = make_array ();
+
+  /* Set a flag on every user, to see which are left over. */
+
+  sql ("UPDATE users SET password = -1;");
+
+  /* Update db users from classic classic users, checking for ldap_connect at
+   * the same time.  Assume that all ldap_connect users have at least one
+   * classic user of the same name.  Remove all other users, both from disk
+   * and from the db.  Remove special user "om" from the database.  */
+
+  for (index = 0; index < count; index++)
+    {
+      gchar *role, *role_file, *uuid, *uuid_file, *classic_dir, *remote_dir;
+      gchar *hash, *hosts, *quoted_hash, *quoted_hosts, *quoted_method;
+      gchar *quoted_name, *quoted_uuid, *where, *file, *remote_flag_file;
+      auth_method_t method;
+      GError *error;
+      guint len;
+      user_t user;
+      int hosts_allow;
+
+      if ((strcmp (names[index]->d_name, ".") == 0)
+          || (strcmp (names[index]->d_name, "..") == 0)
+          || (strcmp (names[index]->d_name, "om") == 0))
+        {
+          free (names[index]);
+          continue;
+        }
+
+      /* Figure out the user dir. */
+
+      remote_dir = g_build_filename (OPENVAS_STATE_DIR,
+                                     "users-remote",
+                                     "ldap_connect",
+                                     names[index]->d_name,
+                                     NULL);
+      classic_dir = g_build_filename (OPENVAS_USERS_DIR,
+                                      names[index]->d_name,
+                                      NULL);
+      remote_flag_file = g_build_filename (classic_dir,
+                                           "auth",
+                                           "methods",
+                                           "ldap_connect",
+                                           NULL);
+      tracef ("          user: %s\n", names[index]->d_name);
+      tracef ("    remote dir: %s\n", remote_dir);
+      tracef ("   classic dir: %s\n", classic_dir);
+      tracef ("     flag file: %s\n", remote_flag_file);
+      if (g_file_test (remote_dir, G_FILE_TEST_IS_DIR)
+          && g_file_test (remote_flag_file, G_FILE_TEST_EXISTS))
+        method = AUTHENTICATION_METHOD_LDAP_CONNECT;
+      else
+        {
+          g_free (remote_dir);
+          method = AUTHENTICATION_METHOD_FILE;
+          if (g_file_test (classic_dir, G_FILE_TEST_IS_DIR) == FALSE)
+            {
+              free (names[index]);
+              g_free (classic_dir);
+              g_free (remote_flag_file);
+              continue;
+            }
+          remote_dir = g_strdup (classic_dir);
+        }
+      g_free (remote_flag_file);
+
+      /* Get UUID from file. */
+
+      uuid_file = g_build_filename (remote_dir, "uuid", NULL);
+      error = NULL;
+      g_file_get_contents (uuid_file,
+                           &uuid,
+                           &len,
+                           &error);
+      if (error)
+        {
+          g_warning ("%s: Failed to read %s: %s\n",
+                     __FUNCTION__,
+                     uuid_file,
+                     error->message);
+          g_free (classic_dir);
+          g_free (remote_dir);
+          g_free (uuid_file);
+          g_error_free (error);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      g_free (uuid_file);
+
+      /* Check UUID. */
+
+      if (uuid == NULL || strlen (g_strchomp (uuid)) != 36)
+        {
+          g_warning ("%s: Error in UUID: %s\n",
+                     __FUNCTION__,
+                     uuid);
+          g_free (classic_dir);
+          g_free (remote_dir);
+          g_free (uuid);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      tracef ("          uuid: %s\n", uuid);
+
+      /* Get role. */
+
+      role = "User";
+
+      role_file = g_build_filename (remote_dir, "isobserver", NULL);
+      if (g_file_test (role_file, G_FILE_TEST_EXISTS))
+        role = "Observer";
+      g_free (role_file);
+
+      role_file = g_build_filename (remote_dir, "isadmin", NULL);
+      if (g_file_test (role_file, G_FILE_TEST_EXISTS))
+        role = "Admin";
+      g_free (role_file);
+
+      /* Find user in db. */
+
+      quoted_uuid = sql_quote (uuid);
+      switch (sql_int64 (&user, 0, 0,
+                         "SELECT ROWID FROM users WHERE uuid = '%s';",
+                         quoted_uuid))
+        {
+          case 0:
+            break;
+          case 1:        /* Too few rows in result of query. */
+            quoted_name = sql_quote (names[index]->d_name);
+            sql ("INSERT INTO users"
+                 " (uuid, owner, name, comment, password, timezone, method,"
+                 "  hosts, hosts_allow)"
+                 " VALUES"
+                 " ('%s', NULL, '%s', '', NULL, NULL, 'file', '', 2);",
+                 quoted_uuid,
+                 quoted_name);
+            g_free (quoted_name);
+            user = sqlite3_last_insert_rowid (task_db);
+            break;
+          default:       /* Programming error. */
+            assert (0);
+          case -1:
+            g_warning ("%s: Error finding user %s\n",
+                       __FUNCTION__,
+                       uuid);
+            g_free (uuid);
+            g_free (quoted_uuid);
+            g_free (classic_dir);
+            g_free (remote_dir);
+            sql ("ROLLBACK;");
+            return -1;
+            break;
+        }
+
+      /* Get hash. */
+
+      file = g_build_filename (classic_dir, "auth", "hash", NULL);
+      error = NULL;
+      if (file && g_file_test (file, G_FILE_TEST_EXISTS))
+        {
+          g_file_get_contents (file,
+                               &hash,
+                               &len,
+                               &error);
+          if (error)
+            {
+              g_warning ("%s: Failed to read %s: %s\n",
+                         __FUNCTION__,
+                         file,
+                         error->message);
+              g_free (classic_dir);
+              g_free (remote_dir);
+              g_free (quoted_uuid);
+              g_free (file);
+              g_error_free (error);
+              sql ("ROLLBACK;");
+              return -1;
+            }
+          assert (hash);
+          g_strchomp (hash);
+        }
+      else
+        hash = NULL;
+      g_free (file);
+
+      /* Get host access rules. */
+
+      hosts = NULL;
+      hosts_allow = 2;
+      if (migrate_79_to_80_user_access (classic_dir, &hosts, &hosts_allow))
+        {
+          g_warning ("%s: Failed to get user rules from %s\n",
+                     __FUNCTION__,
+                     classic_dir);
+          g_free (classic_dir);
+          g_free (remote_dir);
+          g_free (quoted_uuid);
+          g_error_free (error);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (hosts_allow == 3)
+        /* If they were custom rules, just make is allow all. */
+        hosts_allow = 2;
+
+      /* Update db from disk. */
+
+      quoted_method = sql_quote (auth_method_name (method));
+      quoted_hash = sql_quote (hash ? hash : "");
+      quoted_hosts = sql_quote (hosts ? hosts : "");
+      sql ("UPDATE users"
+           " SET role = '%s',"
+           "     uuid = '%s',"
+           "     method = '%s',"
+           "     password = %s%s%s,"
+           "     hosts = '%s',"
+           "     hosts_allow = %i"
+           " WHERE ROWID = %llu;",
+           role,
+           quoted_uuid,
+           quoted_method,
+           hash ? "'" : "",
+           hash ? quoted_hash : "NULL",
+           hash ? "'" : "",
+           quoted_hosts,
+           hosts_allow,
+           user);
+      g_free (quoted_uuid);
+      g_free (quoted_method);
+      g_free (quoted_hash);
+      g_free (quoted_hosts);
+
+      /* Remove all other users with this name from the db. */
+
+      quoted_name = sql_quote (names[index]->d_name);
+      where = g_strdup_printf ("name = '%s' AND ROWID != %llu",
+                               quoted_name,
+                               user);
+      g_free (quoted_name);
+      migrate_79_to_80_remove_users (where);
+      g_free (where);
+
+      /* Store user directory for removal after last possible ROLLBACK. */
+
+      array_add (dirs, classic_dir);
+
+      free (names[index]);
+    }
+  free (names);
+
+  /* TODO To preserve ldap and ads, create db entries here. */
+
+  /* Remove remaining users. */
+
+  migrate_79_to_80_remove_users ("password = -1");
+
+  /* Remove entire user-remote dir. */
+
+  dir = g_build_filename (OPENVAS_STATE_DIR, "users-remote", NULL);
+  openvas_file_remove_recurse (dir);
+  g_free (dir);
+
+  /* Remove user dirs. */
+
+  for (index = 0; index < dirs->len; index++)
+    openvas_file_remove_recurse (g_ptr_array_index (dirs, index));
+  array_free (dirs);
+
+  /* Set the database version to 80. */
+
+  set_db_version (80);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 /**
  * @brief Array of database version migrators.
  */
@@ -9790,6 +10480,7 @@ static migrator_t database_migrators[]
     {77, migrate_76_to_77},
     {78, migrate_77_to_78},
     {79, migrate_78_to_79},
+    {80, migrate_79_to_80},
     /* End marker. */
     {-1, NULL}};
 
@@ -15372,11 +16063,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   set_db_version (OPENVASMD_DATABASE_VERSION);
 
-  /* Ensure the special "om" user exists. */
-
-  if (sql_int (0, 0, "SELECT count(*) FROM users WHERE name = 'om';") == 0)
-    sql ("INSERT into users (name, password) VALUES ('om', '');");
-
   /* Ensure the nvti cache update flag exists and is clear. */
 
   if (sql_int (0, 0,
@@ -16104,6 +16790,199 @@ manage_cleanup_process_error (/*@unused@*/ int signal)
 }
 
 /**
+ * @brief Get user hash.
+ *
+ * This is for "file" users, now entirely stored in db.
+ *
+ * @param[in]  username  User name.
+ *
+ * @return Hash.
+ */
+gchar *
+manage_user_hash (const gchar *username)
+{
+  gchar *hash, *quoted_username;
+  quoted_username = sql_quote (username);
+  hash = sql_string (0, 0,
+                     "SELECT password FROM users WHERE name = '%s';",
+                     quoted_username);
+  g_free (quoted_username);
+  return hash;
+}
+
+/**
+ * @brief Get user uuid.
+ *
+ * @param[in]  username  User name.
+ *
+ * @return Uuid.
+ */
+gchar *
+manage_user_uuid (const gchar *username, auth_method_t method)
+{
+  gchar *uuid, *quoted_username, *quoted_method;
+  quoted_username = sql_quote (username);
+  quoted_method = sql_quote (auth_method_name (method));
+  uuid = sql_string (0, 0,
+                     "SELECT uuid FROM users"
+                     " WHERE name = '%s' AND method = '%s';",
+                     quoted_username,
+                     quoted_method);
+  g_free (quoted_username);
+  g_free (quoted_method);
+  return uuid;
+}
+
+/**
+ * @brief Ensure the user exists in the database.
+ *
+ * @param[in]  name    User name.
+ * @param[in]  method  Auth method.
+ *
+ * @return 0 success.
+ */
+int
+user_ensure_in_db (const gchar *name, const gchar *method)
+{
+  gchar *quoted_name, *quoted_method;
+
+  if ((method == NULL) || (strcasecmp (method, "file") == 0))
+    /* A "file" user, now entirely stored in db. */
+    return 0;
+
+  /* SELECT then INSERT instead of using "INSERT OR REPLACE", so that the
+   * ROWID stays the same. */
+
+  quoted_name = sql_quote (name);
+  quoted_method = sql_quote (method);
+
+  if (sql_int (0, 0,
+               "SELECT count(*)"
+               " FROM users WHERE name = '%s' and method = '%s';",
+               quoted_name,
+               quoted_method))
+    {
+      g_free (quoted_method);
+      g_free (quoted_name);
+      return 0;
+    }
+
+  sql ("INSERT INTO users"
+       " (uuid, owner, name, comment, password, timezone, method, hosts,"
+       "  hosts_allow)"
+       " VALUES"
+       " (make_uuid (),"
+       "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+       "  '%s', '', NULL, NULL, '%s', '', 2);",
+       current_credentials.uuid,
+       quoted_name,
+       quoted_method);
+
+  g_free (quoted_method);
+  g_free (quoted_name);
+
+  return 0;
+}
+
+/**
+ * @brief Set user role.
+ *
+ * This works for any auth method.
+ *
+ * @param[in]  name    User name.
+ * @param[in]  method  Auth method.
+ * @param[in]  role    User role.
+ *
+ * @return 0 success.
+ */
+int
+manage_user_set_role (const gchar *name, const gchar *method, const gchar *role)
+{
+  gchar *quoted_role, *quoted_name, *quoted_method;
+
+  user_ensure_in_db (name, method);
+
+  quoted_role = sql_quote (role);
+  quoted_name = sql_quote (name);
+  quoted_method = sql_quote (method);
+  sql ("UPDATE users"
+       " SET role = '%s'"
+       " WHERE name = '%s' AND method = '%s';",
+       quoted_role,
+       quoted_name,
+       quoted_method);
+  g_free (quoted_role);
+  g_free (quoted_name);
+  g_free (quoted_method);
+
+  return 0;
+}
+
+/**
+ * @brief Set user rules.
+ *
+ * This works for any auth method.
+ *
+ * @param[in]  name    User name.
+ * @param[in]  method  Auth method.
+ * @param[in]  hosts   Rules hosts.
+ * @param[in]  hosts_allow  Hosts allow flag.
+ *
+ * @return 0 success.
+ */
+int
+manage_user_set_rules (const gchar *name, const gchar *method,
+                       const gchar *hosts, int hosts_allow)
+{
+  gchar *quoted_hosts, *quoted_name, *quoted_method;
+
+  user_ensure_in_db (name, method);
+
+  quoted_hosts = sql_quote (hosts ? hosts : "");
+  quoted_name = sql_quote (name);
+  quoted_method = sql_quote (method);
+  sql ("UPDATE users"
+       " SET hosts = '%s', hosts_allow = %i"
+       " WHERE name = '%s' AND method = '%s';",
+       quoted_hosts,
+       hosts_allow,
+       quoted_name,
+       quoted_method);
+  g_free (quoted_hosts);
+  g_free (quoted_name);
+  g_free (quoted_method);
+
+  return 0;
+}
+
+/**
+ * @brief Check if user exists.
+ *
+ * @param[in]  name    User name.
+ * @param[in]  method  Auth method.
+ *
+ * @return 0 yes, 1 no.
+ */
+int
+manage_user_exists (const gchar *name, auth_method_t method)
+{
+  gchar *quoted_name, *quoted_method;
+  int ret;
+
+  quoted_name = sql_quote (name);
+  quoted_method = sql_quote (auth_method_name (method));
+  ret = sql_int (0, 0,
+                 "SELECT count (*) FROM users"
+                 " WHERE name = '%s' AND method = '%s';",
+                 quoted_name,
+                 quoted_method);
+  g_free (quoted_name);
+  g_free (quoted_method);
+
+  return ret;
+}
+
+/**
  * @brief Authenticate credentials.
  *
  * The user "om" will never be authenticated with success.
@@ -16118,6 +16997,7 @@ authenticate (credentials_t* credentials)
   if (credentials->username && credentials->password)
     {
       int fail;
+      auth_method_t auth_method;
 
       if (strcmp (credentials->username, "om") == 0) return 1;
 
@@ -16132,43 +17012,38 @@ authenticate (credentials_t* credentials)
           return -1;
         }
 
-      fail = openvas_authenticate_uuid (credentials->username,
-                                        credentials->password,
-                                        &credentials->uuid);
+      fail = openvas_authenticate_method (credentials->username,
+                                          credentials->password,
+                                          &auth_method);
       // Authentication succeeded.
       if (fail == 0)
         {
-          gchar* quoted_name;
+          gchar *quoted_name, *quoted_method;
+
+          user_ensure_in_db (credentials->username,
+                             auth_method_name (auth_method));
+
+          quoted_name = sql_quote (credentials->username);
+          quoted_method = sql_quote (auth_method_name (auth_method));
+          credentials->uuid = sql_string (0, 0,
+                                          "SELECT uuid FROM users"
+                                          " WHERE name = '%s'"
+                                          " AND method = '%s';",
+                                          quoted_name,
+                                          quoted_method);
+          g_free (quoted_name);
+          g_free (quoted_method);
+
+          assert (credentials->uuid);
 
           credentials->role
-            = g_strdup (openvas_is_user_admin (credentials->username)
+            = g_strdup (user_is_admin (credentials->uuid)
                          ? "Admin"
-                         : (openvas_is_user_observer (credentials->username)
+                         : (user_is_observer (credentials->uuid)
                              ? "Observer"
                              : "User"));
 
-          /* Ensure the user exists in the database.  SELECT then INSERT
-           * instead of using "INSERT OR REPLACE", so that the ROWID stays
-           * the same. */
 
-          if (sql_int (0, 0,
-                       "SELECT count(*) FROM users WHERE uuid = '%s';",
-                       credentials->uuid))
-            {
-              credentials->timezone = sql_string (0, 0,
-                                                  "SELECT timezone FROM users"
-                                                  " WHERE uuid = '%s';",
-                                                  credentials->uuid);
-              return 0;
-            }
-
-          quoted_name = sql_quote (credentials->username);
-          sql ("INSERT INTO users (uuid, name, timezone)"
-               " VALUES ('%s', '%s', NULL);",
-               credentials->uuid,
-               quoted_name);
-          g_free (quoted_name);
-          credentials->timezone = NULL;
           return 0;
         }
       return fail;
@@ -48593,7 +49468,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
   if (name && (strcmp (name, "Password") == 0))
     {
       gsize value_size;
-      gchar *value;
+      gchar *value, *hash;
       gchar *errstr;
 
       assert (current_credentials.username);
@@ -48617,8 +49492,12 @@ manage_set_setting (const gchar *uuid, const gchar *name,
             g_free (errstr);
           return -1;
         }
-      return openvas_user_modify (current_credentials.username, value,
-                                  NULL, NULL, 0, OPENVAS_USERS_DIR, NULL);
+      hash = get_password_hashes (GCRY_MD_MD5, value);
+      sql ("UPDATE users SET password = '%s' WHERE uuid = '%s';",
+           hash,
+           current_credentials.uuid);
+      g_free (hash);
+      return 0;
     }
 
   if (uuid && (strcmp (uuid, "5f5a8712-8017-11e1-8556-406186ea4fc5") == 0
@@ -49787,19 +50666,30 @@ find_user_by_name (const char* name, user_t *user)
 int
 openvas_admin_add_user (const gchar * name, const gchar * password,
                         const gchar * role, const gchar * hosts,
-                        int hosts_allow, const gchar * directory,
-                        const array_t * allowed_methods,
+                        int hosts_allow, const array_t * allowed_methods,
                         array_t *groups, gchar **group_id_return,
                         gchar **r_errdesc)
 {
   char *errstr;
+  gchar *quoted_hosts, *quoted_method, *quoted_name, *quoted_role, *hash;
+  int index;
+  user_t user;
 
-  assert (name != NULL);
-  assert (password != NULL);
-  assert (role != NULL);
-  assert (directory != NULL);
+  assert (name);
+  assert (password);
+  assert (role);
+
   if (r_errdesc)
     *r_errdesc = NULL;
+
+  /* allowed_methods is a NULL terminated array. */
+  if (allowed_methods && (allowed_methods->len > 2))
+    return -3;
+
+  if (allowed_methods && (allowed_methods->len == 0))
+    allowed_methods = NULL;
+
+  // TODO validate methods  single source, one of ldap, ...
 
   if (validate_username (name) != 0)
     {
@@ -49827,209 +50717,87 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
       return -1;
     }
 
-  if (!g_file_test (directory, G_FILE_TEST_EXISTS))
+  sql ("BEGIN IMMEDIATE;");
+
+  /* Check if user exists already. */
+
+  quoted_name = sql_quote (name);
+  if (sql_int (0, 0, "SELECT count (*) FROM users WHERE name = '%s'",
+               quoted_name))
     {
-      if (g_mkdir (directory, 0700))
-        {
-          g_warning ("Could not create %s!", directory);
-          return -1;
-        }
-    }
-
-  if (g_file_test (directory, G_FILE_TEST_IS_DIR))
-    {
-      GError *error = NULL;
-      gchar *user_dir_name, *user_auth_dir_name, *quoted_name;
-      gchar *user_hash_file_name, *hashes_out, *uuid_file_name, *contents;
-      char *uuid;
-      int index;
-      user_t user;
-
-      user_dir_name = g_build_filename (directory, name, NULL);
-
-      sql ("BEGIN IMMEDIATE;");
-
-      if (g_file_test (user_dir_name, G_FILE_TEST_EXISTS)
-          && g_file_test (user_dir_name, G_FILE_TEST_IS_DIR))
-        {
-          g_warning ("User %s already exists!", name);
-          g_free (user_dir_name);
-          sql ("ROLLBACK;");
-          return -2;
-        }
-
-      /* Make the user directory. */
-
-      if (g_mkdir (user_dir_name, 0700))
-        {
-          g_warning ("Could not create %s!", user_dir_name);
-          g_warning ("Failed to set up user directories for user %s", name);
-          g_free (user_dir_name);
-          sql ("ROLLBACK;");
-          return -1;
-        }
-
-      /* Make the auth subdirectory. */
-
-      user_auth_dir_name = g_build_filename (user_dir_name, "auth", NULL);
-      if (g_mkdir (user_auth_dir_name, 0700))
-        {
-          g_warning ("Could not create %s!", user_auth_dir_name);
-          if (openvas_file_remove_recurse (user_dir_name))
-            g_warning ("Could not remove %s while trying to revert changes!",
-                       user_dir_name);
-          g_warning ("Failed to set up user directories for user %s", name);
-          g_free (user_dir_name);
-          g_free (user_auth_dir_name);
-          sql ("ROLLBACK;");
-          return -1;
-        }
-
-      /* Make a UUID, and store it in the file "uuid". */
-
-      uuid = openvas_uuid_make ();
-      if (uuid == NULL)
-        {
-          g_free (user_dir_name);
-          g_free (user_auth_dir_name);
-          sql ("ROLLBACK;");
-          return -1;
-        }
-
-      contents = g_strdup_printf ("%s\n", uuid);
-
-      uuid_file_name = g_build_filename (user_dir_name, "uuid", NULL);
-
-      if (!g_file_set_contents (uuid_file_name, contents, -1, &error))
-        {
-          g_warning ("Failed to store UUID: %s", error->message);
-          g_error_free (error);
-          if (openvas_file_remove_recurse (user_dir_name))
-            g_warning ("Could not remove %s while trying to revert changes!",
-                       user_dir_name);
-          g_free (contents);
-          g_free (uuid_file_name);
-          g_free (user_dir_name);
-          g_free (user_auth_dir_name);
-          free (uuid);
-          sql ("ROLLBACK;");
-          return -1;
-        }
-      g_free (contents);
-      g_free (uuid_file_name);
-
-      /* Put the password hashes in auth/hash. */
-
-      hashes_out = get_password_hashes (GCRY_MD_MD5, password);
-      user_hash_file_name = g_build_filename (user_auth_dir_name, "hash", NULL);
-      if (!g_file_set_contents (user_hash_file_name, hashes_out, -1, &error))
-        {
-          g_warning ("%s", error->message);
-          g_error_free (error);
-          if (openvas_file_remove_recurse (user_dir_name))
-            g_warning ("Could not remove %s while trying to revert changes!",
-                       user_dir_name);
-          g_free (hashes_out);
-          g_free (user_dir_name);
-          g_free (user_auth_dir_name);
-          g_free (user_hash_file_name);
-          free (uuid);
-          sql ("ROLLBACK;");
-          return -1;
-        }
-      g_chmod (user_hash_file_name, 0600);
-      g_free (hashes_out);
-      g_free (user_hash_file_name);
-
-      /* Create rules according to hosts. */
-
-      if (openvas_auth_store_user_rules (user_dir_name, hosts, hosts_allow) ==
-          -1)
-        {
-          if (openvas_file_remove_recurse (user_dir_name))
-            g_warning ("Could not remove %s while trying to revert changes!",
-                       user_dir_name);
-          g_free (user_dir_name);
-          free (uuid);
-          sql ("ROLLBACK;");
-          return -1;
-        }
-
-      /* Set the role of the user. */
-
-      if (openvas_set_user_role (name, role, NULL))
-        {
-          if (openvas_file_remove_recurse (user_dir_name))
-            g_warning ("Could not remove %s while trying to revert changes!",
-                       user_dir_name);
-          free (uuid);
-          sql ("ROLLBACK;");
-          return -1;
-        }
-
-      if (allowed_methods != NULL)
-        {
-           if (openvas_auth_user_set_allowed_methods (name, allowed_methods) != 1)
-             {
-               g_error ("Could not set allowed authentication methods for a user");
-               free (uuid);
-               sql ("ROLLBACK;");
-               return -1;
-             }
-        }
-
-      /* Add the user to the database. */
-
-      quoted_name = sql_quote (name);
-      sql ("INSERT INTO users (uuid, name) VALUES ('%s', '%s');",
-           uuid,
-           quoted_name);
-      free (uuid);
       g_free (quoted_name);
-      user = sqlite3_last_insert_rowid (task_db);
-
-      /* Add the user to any given groups. */
-
-      index = 0;
-      while (groups && (index < groups->len))
-        {
-          gchar *group_id;
-          group_t group;
-
-          group_id = (gchar*) g_ptr_array_index (groups, index);
-          if (strcmp (group_id, "0") == 0)
-            {
-              index++;
-              continue;
-            }
-
-          if (find_group (group_id, &group))
-            {
-              sql ("ROLLBACK;");
-              return -1;
-            }
-
-          if (group == 0)
-            {
-              sql ("ROLLBACK;");
-              if (group_id_return) *group_id_return = group_id;
-              return 1;
-            }
-
-          sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",
-               group,
-               user);
-
-          index++;
-        }
-
-
-      sql ("COMMIT;");
-      return 0;
+      sql ("ROLLBACK;");
+      return -2;
     }
 
-  g_warning ("Could not access %s!", directory);
-  return -1;
+  /* Get the password hashes. */
+
+  hash = get_password_hashes (GCRY_MD_MD5, password);
+
+  /* Add the user to the database. */
+
+  quoted_role = sql_quote (role ? role : "User");
+  quoted_hosts = sql_quote (hosts ? hosts : "");
+  quoted_method = sql_quote (allowed_methods
+                              ? g_ptr_array_index (allowed_methods, 0)
+                              : "file");
+  sql ("INSERT INTO users"
+       " (uuid, owner, name, password, role, hosts, hosts_allow, method)"
+       " VALUES"
+       " (make_uuid (),"
+       "  (SELECT ROWID FROM users WHERE uuid = '%s'),"
+       "  '%s', '%s', '%s', '%s', %i, '%s');",
+       current_credentials.uuid,
+       quoted_name,
+       hash,
+       quoted_role,
+       quoted_hosts,
+       hosts_allow,
+       quoted_method);
+  g_free (hash);
+  g_free (quoted_hosts);
+  g_free (quoted_role);
+  g_free (quoted_method);
+  g_free (quoted_name);
+  user = sqlite3_last_insert_rowid (task_db);
+
+  /* Add the user to any given groups. */
+
+  index = 0;
+  while (groups && (index < groups->len))
+    {
+      gchar *group_id;
+      group_t group;
+
+      group_id = (gchar*) g_ptr_array_index (groups, index);
+      if (strcmp (group_id, "0") == 0)
+        {
+          index++;
+          continue;
+        }
+
+      if (find_group (group_id, &group))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (group == 0)
+        {
+          sql ("ROLLBACK;");
+          if (group_id_return) *group_id_return = group_id;
+          return 1;
+        }
+
+      sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",
+           group,
+           user);
+
+      index++;
+    }
+
+  sql ("COMMIT;");
+  return 0;
 }
 
 /**
@@ -50048,98 +50816,33 @@ copy_user (const char* name, const char* comment, const char *user_id,
            user_t* new_user)
 {
   user_t user;
-  int ret, hosts_allow;
-  gchar *role, *hosts, *new_name;
+  int ret;
+  gchar *hash;
 
-  /* TODO There are holes here, which will go away when users are only in db. */
+  sql ("BEGIN IMMEDIATE;");
 
-  ret = copy_resource ("user", name, comment, user_id,
-                       "password, timezone, role, hosts, hosts_allow",
-                       1, &user);
+  ret = copy_resource_lock ("user", name, comment, user_id,
+                            "password, timezone, role, hosts, hosts_allow,"
+                            " method",
+                            1, &user);
   if (ret)
-    return ret;
+    {
+      sql ("ROLLBACK;");
+      return ret;
+    }
 
-  if (name)
-    new_name = g_strdup (name);
-  else
-    new_name = sql_string (0, 0,
-                           "SELECT name FROM users WHERE ROWID = %llu", user);
-  role = sql_string (0, 0, "SELECT role FROM users WHERE ROWID = %llu", user);
-  hosts = sql_string (0, 0, "SELECT hosts FROM users WHERE ROWID = %llu", user);
-  hosts_allow = sql_int (0, 0,
-                         "SELECT hosts_allow FROM users WHERE ROWID = %llu",
-                         user);
-
-  ret = openvas_admin_add_user (new_name, "changeme", role ? role : "User",
-                                hosts, hosts_allow, OPENVAS_USERS_DIR, NULL,
-                                NULL, NULL, NULL);
-
-  // FIX handle return
+  hash = get_password_hashes (GCRY_MD_MD5, "changeme");
+  sql ("UPDATE users SET password = '%s' WHERE ROWID = %llu;", hash, user);
+  g_free (hash);
 
   // FIX add groups
+
+  sql ("COMMIT;");
 
   if (new_user)
     *new_user = user;
 
-  g_free (new_name);
-  g_free (role);
-  g_free (hosts);
-
   return ret;
-}
-
-/**
- * @brief Removes an user from the OpenVAS installation.
- *
- * @param[in]  name       The name of the user to be removed.
- * @param[in]  directory  The directory containing the user directories.
- *
- * @return 0 if the user has been removed successfully, -1 on error,
- *         -2 if failed to find such a user.
- */
-static int
-openvas_admin_remove_user (const gchar * name, const gchar * directory)
-{
-  assert (name != NULL);
-
-  if (strcmp (name, "om") == 0)
-    {
-      g_warning ("Attempt to remove special \"om\" user!");
-      return -1;
-    }
-
-  if (g_file_test (directory, G_FILE_TEST_EXISTS)
-      && g_file_test (directory, G_FILE_TEST_IS_DIR))
-    {
-      gchar *user_dir_name = g_build_filename (directory, name, NULL);
-
-      if (g_file_test (user_dir_name, G_FILE_TEST_EXISTS)
-          && g_file_test (user_dir_name, G_FILE_TEST_IS_DIR))
-        {
-          if (openvas_file_remove_recurse (user_dir_name) == 0)
-            {
-              g_free (user_dir_name);
-              return 0;
-            }
-          else
-            {
-              g_warning ("Failed to remove %s!", user_dir_name);
-              g_free (user_dir_name);
-              return -1;
-            }
-        }
-      else
-        {
-          g_free (user_dir_name);
-          g_warning ("User %s does not exist!", name);
-          return -2;
-        }
-    }
-  else
-    {
-      g_warning ("Could not find %s!", directory);
-      return -1;
-    }
 }
 
 /**
@@ -50154,7 +50857,6 @@ openvas_admin_remove_user (const gchar * name, const gchar * directory)
 int
 delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
 {
-  gchar *name, *user_id, *uuid;
   user_t user;
 
   assert (user_id_arg || name_arg);
@@ -50170,7 +50872,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
           return -1;
         }
     }
-  // TODO Fails when db has old users.  Moving users from disk to db will solve.
   else if (find_user_by_name (name_arg, &user))
     {
       sql ("ROLLBACK;");
@@ -50180,52 +50881,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
   if (user == 0)
     return 2;
 
-  if (user_id_arg)
-    {
-      name = sql_string (0, 0, "SELECT name FROM users WHERE ROWID = %llu;",
-                         user);
-      user_id = g_strdup (user_id_arg);
-      if (name == NULL)
-        {
-          sql ("ROLLBACK;");
-          return -1;
-        }
-    }
-  else
-    {
-      name = g_strdup (name_arg);
-      user_id = sql_string (0, 0, "SELECT uuid FROM users WHERE ROWID = %llu;",
-                            user);
-      if (user_id == NULL)
-        {
-          sql ("ROLLBACK;");
-          return -1;
-        }
-    }
-
-  uuid = openvas_user_uuid (name);
-  if (uuid && (strcmp (uuid, user_id) == 0))
-    switch (openvas_admin_remove_user (name, OPENVAS_USERS_DIR))
-      {
-        case 0:
-        case -2:  /* Failed to find user on disk.  Just remove from DB. */
-          break;
-        case -1:
-        default:
-          g_free (name);
-          g_free (user_id);
-          g_free (uuid);
-          sql ("ROLLBACK;");
-          return -1;
-          break;
-      }
-  g_free (name);
-  g_free (user_id);
-  g_free (uuid);
-
   sql ("DELETE FROM users WHERE ROWID = %llu;", user);
 
-  /* TODO Remove user's tasks, etc.  How will this interact with trashcan? */
+  /* FIX Remove user's tasks, etc.  How will this interact with trashcan? */
 
   sql ("COMMIT;");
   return 0;
@@ -50249,23 +50907,50 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
  * @param[out] group_id_return  ID of group on "failed to find" error.
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
- *         -1 on error, -2 for an unknown role, -3 if user exists already.
+ *         1 failed to find user, -1 on error, -2 for an unknown role, -3 if
+ *         wrong number of methods.
  */
 int
 openvas_admin_modify_user (const gchar * name, const gchar * password,
                            const gchar * role, const gchar * hosts,
-                           int hosts_allow, const gchar * directory,
-                           const array_t * allowed_methods,
+                           int hosts_allow, const array_t * allowed_methods,
                            array_t *groups, gchar **group_id_return,
                            gchar **r_errdesc)
 {
-  int ret;
   char *errstr;
-  gchar *uuid;
+  gchar *hash, *quoted_role, *quoted_hosts, *quoted_method;
   user_t user;
 
   if (r_errdesc)
     *r_errdesc = NULL;
+
+  /* allowed_methods is a NULL terminated array. */
+  if (allowed_methods && (allowed_methods->len > 2))
+    return -3;
+
+  if (allowed_methods && (allowed_methods->len == 0))
+    allowed_methods = NULL;
+
+  if (allowed_methods
+      && ((g_ptr_array_index (allowed_methods, 0) == NULL)
+          || (strlen (g_ptr_array_index (allowed_methods, 0)) == 0)))
+    allowed_methods = NULL;
+
+  // FIX validate methods  single source, one of "", "ldap", ...
+
+  sql ("BEGIN IMMEDIATE;");
+
+  user = 0;
+  if (find_user_by_name (name, &user))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  if (user == 0)
+    {
+      sql ("ROLLBACK;");
+      return 2;
+    }
 
   if (name && password)
     {
@@ -50276,39 +50961,50 @@ openvas_admin_modify_user (const gchar * name, const gchar * password,
             *r_errdesc = errstr;
           else
             g_free (errstr);
+          sql ("ROLLBACK;");
           return -1;
         }
     }
 
-  sql ("BEGIN IMMEDIATE;");
+  /* Get the password hashes. */
 
-  ret = openvas_user_modify (name, password, role, hosts, hosts_allow,
-                             directory, allowed_methods);
+  if (password)
+    hash = get_password_hashes (GCRY_MD_MD5, password);
+  else
+    hash = NULL;
 
-  if (ret)
-    sql ("ROLLBACK;");
+  /* Update the user in the database. */
 
-  uuid = openvas_user_uuid (name);
-  if (uuid == NULL)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-  if (find_user (uuid, &user))
-    {
-      g_free (uuid);
-      sql ("ROLLBACK;");
-      return -1;
-    }
-  g_free (uuid);
-  if (user == 0)
-    {
-      /* TODO: Add to db. */
-      sql ("ROLLBACK;");
-      return -1;
-    }
+  quoted_role = sql_quote (role);
+  quoted_hosts = sql_quote (hosts);
+  quoted_method = sql_quote (allowed_methods
+                              ? g_ptr_array_index (allowed_methods, 0)
+                              : "");
+  sql ("UPDATE users"
+       " SET role = '%s',"
+       "     hosts = '%s',"
+       "     hosts_allow = '%i',"
+       "     method = %s%s%s"
+       " WHERE ROWID = %llu;",
+       quoted_role,
+       quoted_hosts,
+       hosts_allow,
+       allowed_methods ? "'" : "",
+       allowed_methods ? quoted_method : "method",
+       allowed_methods ? "'" : "",
+       user);
+  g_free (quoted_role);
+  g_free (quoted_hosts);
+  g_free (quoted_method);
+  if (hash)
+    sql ("UPDATE users"
+         " SET password = '%s'"
+         " WHERE ROWID = %llu;",
+         hash,
+         user);
+  g_free (hash);
 
-  /* Add the user to any given groups. */
+  /* Update the user groups. */
 
   if (groups)
     {
@@ -50351,7 +51047,7 @@ openvas_admin_modify_user (const gchar * name, const gchar * password,
 
   sql ("COMMIT;");
 
-  return ret;
+  return 0;
 }
 
 /**
@@ -50372,6 +51068,161 @@ user_uuid (user_t user)
 }
 
 /**
+ * @brief Check whether a user is in use.
+ *
+ * @param[in]  user  User.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+user_in_use (user_t user)
+{
+  return 0;
+}
+
+/**
+ * @brief Check whether a trashcan user is in use.
+ *
+ * @param[in]  user  User.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_user_in_use (user_t user)
+{
+  return 0;
+}
+
+/**
+ * @brief Check whether a user is writable.
+ *
+ * @param[in]  user  User.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+user_writable (user_t user)
+{
+  return 1;
+}
+
+/**
+ * @brief Check whether a trashcan user is writable.
+ *
+ * @param[in]  user  User.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_user_writable (user_t user)
+{
+  return 1;
+}
+
+/**
+ * @brief User columns for user iterator.
+ */
+#define USER_ITERATOR_FILTER_COLUMNS                        \
+ { GET_ITERATOR_FILTER_COLUMNS, "role", "method", NULL }
+
+/**
+ * @brief User iterator columns.
+ */
+#define USER_ITERATOR_COLUMNS                               \
+  GET_ITERATOR_COLUMNS ", role, method, hosts, hosts_allow"
+
+/**
+ * @brief User iterator columns for trash case.
+ */
+#define USER_ITERATOR_TRASH_COLUMNS                         \
+  GET_ITERATOR_COLUMNS ", role, method, hosts, hosts_allow"
+
+/**
+ * @brief Count number of users.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of users in usered set.
+ */
+int
+user_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = USER_ITERATOR_FILTER_COLUMNS;
+  return count ("user", get, USER_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
+                TRUE);
+}
+
+/**
+ * @brief Initialise a user iterator, including observed users.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find user, failed to find user (filt_id),
+ *         -1 error.
+ */
+int
+init_user_iterator (iterator_t* iterator, const get_data_t *get)
+{
+  static const char *user_columns[] = USER_ITERATOR_FILTER_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "user",
+                            get,
+                            /* Columns. */
+                            USER_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            USER_ITERATOR_TRASH_COLUMNS,
+                            user_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
+
+/**
+ * @brief Get the role of the user from a user iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Role of the user or NULL if iteration is complete.
+ */
+DEF_ACCESS (user_iterator_role, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the method of the user from a user iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Method of the user or NULL if iteration is complete.
+ */
+DEF_ACCESS (user_iterator_method, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the hosts from a user iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Hosts or NULL if iteration is complete.
+ */
+DEF_ACCESS (user_iterator_hosts, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the hosts allow value from a user iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Hosts allow.
+ */
+int
+user_iterator_hosts_allow (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return sqlite3_column_int (iterator->stmt,
+                             GET_ITERATOR_COLUMN_COUNT + 3);
+}
+
+/**
  * @brief Initialise an info iterator.
  *
  * @param[in]  iterator        Iterator.
@@ -50386,8 +51237,7 @@ init_user_group_iterator (iterator_t *iterator, const char *username)
                  "SELECT DISTINCT ROWID, uuid, name FROM groups"
                  " WHERE ROWID IN (SELECT `group` FROM group_users"
                  "                 WHERE user = (SELECT ROWID FROM users"
-                 "                               WHERE users.uuid"
-                 "                                     = user_uuid ('%s')))"
+                 "                               WHERE users.name = '%s'))"
                  " ORDER by name;",
                  quoted_username);
   g_free (quoted_username);
@@ -50411,6 +51261,8 @@ DEF_ACCESS (user_group_iterator_uuid, 1);
  */
 DEF_ACCESS (user_group_iterator_name, 2);
 
+
+#define RULES_HEADER "# This file is managed by the OpenVAS Administrator.\n# Any modifications must keep to the format that the Administrator expects.\n"
 
 
 /* Tags */

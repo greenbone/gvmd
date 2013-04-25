@@ -1726,7 +1726,10 @@ main (int argc, char** argv, char **envp)
 
   /* Initialize the authentication system. */
 
-  openvas_auth_init ();
+  // TODO Should be part of manage init.
+  openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
+                           manage_user_exists, manage_user_set_rules,
+                           manage_user_uuid);
 
   /* Initialise the process for manage_schedule. */
 
