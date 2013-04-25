@@ -1,5 +1,9 @@
 2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* ChangeLog: Correct name of database_migrators in previous logs.
+
+2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql (users): Add method.
 
 	* doc/db.png: Update from source.
@@ -1157,7 +1161,7 @@
 
 	* src/manage_sql.c (migrate_75_to_76): New function. delete leftover
 	nvts_checksum value and rename nvts_md5sum to nvts_feed_version.
-	(migrators): Add migrate_75_to_76.
+	(database_migrators): Add migrate_75_to_76.
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 76.
 
@@ -1271,7 +1275,7 @@
 	parameter.
 	(create_tables): Add permissions.  Remove task_users.
 	(migrate_74_to_75): New function.  Converts task_users to permissions.
-	(migrators): Add migrate_74_to_75.
+	(database_migrators): Add migrate_74_to_75.
 	(init_task_user_iterator): Remove action arg.  Iterator over permissions
 	table instead of task_users.
 	(task_user_iterator_actions): Remove.  Adjust name position accordingly.
@@ -4336,7 +4340,7 @@
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 68.
 
 	* src/manage_sql.c (migrate_67_to_68): New function.
-	(migrators): Add migrate_67_to_68.
+	(database_migrators): Add migrate_67_to_68.
 	(manage_restore): Add slave creation_time and modification_time columns.
 
 2012-11-26  Hani Benhabiles <hani.benhabiles@greenbone.net>
@@ -4483,7 +4487,7 @@
 
 	* src/manage_sql.c (create_tables): Add time fields to task.
 	(migrate_66_to_67): New function.
-	(migrators): Add migrate_66_to_67.
+	(database_migrators): Add migrate_66_to_67.
 	(append_to_task_string, init_manage, task_config_in_trash, task_target)
 	(task_slave, set_task_description, task_start_time, set_task_start_time)
 	(set_task_schedule, set_task_parameter, set_task_parameter): Update task
@@ -4576,7 +4580,7 @@
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 65.
 
 	* src/manage_sql.c (migrate_64_to_65): New function.
-	(migrators): Add migrate_64_to_65.
+	(database_migrators): Add migrate_64_to_65.
 	(init_manage, create_report): Use report_add_result to add result.
 	(report_add_result): Set report on result.
 
@@ -5017,7 +5021,7 @@
 	* src/manage_sql.c (create_tables): Add report to results.  Add index
 	results_by_report_host.
 	(migrate_63_to_64): New function.
-	(migrators): Add migrate_63_to_64.
+	(database_migrators): Add migrate_63_to_64.
 	(init_asset_iterator, filtered_host_count): Rework SQL of most common
 	case, to take advantage of the new results report column and index.  For
 	the count add report status check and in_assets check.
@@ -5171,7 +5175,7 @@
 	* src/manage_sql.c (current_offset): New function.
 	(create_tables): Add timezone and offset columns to schedules.
 	(migrate_62_to_63): New function.
-	(migrators): Add migrate_62_to_63.
+	(database_migrators): Add migrate_62_to_63.
 	(init_manage_process): Init current_offset.
 	(create_schedule): Init timezone and offset according to user's current
 	timezone.
@@ -5310,7 +5314,7 @@
 
 	* src/manage_sql.c (create_tables): Add cache columns to reports.
 	(migrate_61_to_62): New function.
-	(migrators): Add migrate_61_to_62.
+	(database_migrators): Add migrate_61_to_62.
 	(init_manage, make_report): Init report cache columns.
 	(reports_clear_count_cache, report_cache_counts): New functions.
 	(set_scan_end_time_otp): Cache report counts.
@@ -5840,7 +5844,7 @@
 	* src/manage_sql.c (create_tables): Add filter columns to alerts and
 	alerts_trash.
 	(migrate_60_to_61): New function.
-	(migrators): Add migrate_60_to_61.
+	(database_migrators): Add migrate_60_to_61.
 	(create_alert): Add filter_id param.
 	(delete_alert): Insert alert filter into trashcan.
 	(init_alert_iterator): Add columns for filter ID, name and trash state.
@@ -6267,7 +6271,7 @@
 
 	* src/manage_sql.c (migrate_59_to_60): New function.  Ensures each task
 	has an in_assets preference.
-	(migrators): Add migrate_59_to_60.
+	(database_migrators): Add migrate_59_to_60.
 	(init_asset_iterator, host_nthlast_report_host): Add the condition that
 	the task's in_assets preference must be "yes", to the SQL.
 	(make_task): Add in_assets task preference for the task.
@@ -6681,7 +6685,7 @@
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 59.
 
 	* src/manage_sql.c (migrate_58_to_59): New function.
-	(migrators): Add migrate_58_to_59.
+	(database_migrators): Add migrate_58_to_59.
 	(escalate_2): Align args.  Update TXT UUID.
 
 	* doc/db.png: Update for version change.
