@@ -10135,7 +10135,6 @@ migrate_79_to_80 ()
       gchar *quoted_name, *quoted_uuid, *where, *file, *remote_flag_file;
       auth_method_t method;
       GError *error;
-      guint len;
       user_t user;
       int hosts_allow;
 
@@ -10190,7 +10189,7 @@ migrate_79_to_80 ()
       error = NULL;
       g_file_get_contents (uuid_file,
                            &uuid,
-                           &len,
+                           NULL,
                            &error);
       if (error)
         {
@@ -10280,7 +10279,7 @@ migrate_79_to_80 ()
         {
           g_file_get_contents (file,
                                &hash,
-                               &len,
+                               NULL,
                                &error);
           if (error)
             {

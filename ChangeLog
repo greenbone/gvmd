@@ -1,5 +1,10 @@
 2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (migrate_79_to_80): Remove g_file_get_contents len
+	args.
+
+2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_start_element): In CLIENT_GET_USERS pass user
 	instead of username to init_user_group_iterator.
 
