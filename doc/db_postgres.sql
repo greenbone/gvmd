@@ -133,6 +133,7 @@ CREATE TABLE users (
     role text,
     hosts text,
     hosts_allow integer,
+    method text,
     creation_time date,
     modification_time date);
 
