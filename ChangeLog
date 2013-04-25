@@ -1,5 +1,9 @@
 2013-04-25  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
+	* ChangeLog: Fix file name typo in last entry.
+
+2013-04-25  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
 	* src/manage.h (resource_id_exists): New function prototype.
 
 	* src/manage_sql.c (resource_id_exists): New function. Tests if a
@@ -8,7 +12,7 @@
 	Add check if attach_type is valid. Make attach_id optional.
 	(modify_tag): Add check if attach_type is valid.
 
-	* src/omp.xsl (xml_handle_end_element): In cases CLIENT_CREATE_TAG,
+	* src/omp.c (xml_handle_end_element): In cases CLIENT_CREATE_TAG,
 	CLIENT_MODIFY_TAG make attach_id optional and check if it refers to
 	an existing resource when it is not empty.
 
