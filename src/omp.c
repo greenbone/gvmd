@@ -17435,7 +17435,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_tag",
                                 "TYPE type in CREATE_TAG/ATTACH must not"
                                 " be 'tag'."));
-          else if (create_tag_data
+          else if (create_tag_data->attach_id
                    && strlen (create_tag_data->attach_id) > 0
                    && resource_id_exists (create_tag_data->attach_type,
                                           create_tag_data->attach_id) == 0)
@@ -19491,12 +19491,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("modify_tag",
                                 "TYPE in MODIFY_TAG/ATTACH must be"
                                 " a valid resource type."));
-          else if (strcasecmp (modify_tag_data->attach_type, "tag") == 0)
+          else if (modify_tag_data->attach_type
+                   && strcasecmp (modify_tag_data->attach_type, "tag") == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
                                 "TYPE type in MODIFY_TAG/ATTACH must not"
                                 " be 'tag'."));
-          else if (modify_tag_data
+          else if (modify_tag_data->attach_id
                    && strlen (modify_tag_data->attach_id) > 0
                    && resource_id_exists (modify_tag_data->attach_type,
                                           modify_tag_data->attach_id) == 0)

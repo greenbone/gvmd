@@ -1,5 +1,10 @@
 2013-04-25  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
+	* src/omp.c (xml_handle_end_element): In cases CLIENT_CREATE_TAG,
+	CLIENT_MODIFY_TAG fix preconditions for testing resource ID.
+
+2013-04-25  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
 	* ChangeLog: Fix file name typo in last entry.
 
 2013-04-25  Timo Pollmeier  <timo.pollmeier@greenbone.net>
