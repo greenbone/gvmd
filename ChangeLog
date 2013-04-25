@@ -1,5 +1,10 @@
 2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (handle_sigabrt): Check for recursion before printing
+	backtrace.
+
+2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move user management from disk into the database.  Hence increase
 	database version to 80.  Add database migration from version 79 to 80.
 
