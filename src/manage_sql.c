@@ -51200,21 +51200,17 @@ user_iterator_hosts_allow (iterator_t* iterator)
  * @brief Initialise an info iterator.
  *
  * @param[in]  iterator        Iterator.
- * @param[in]  username        Username.
+ * @param[in]  user            User.
  */
 void
-init_user_group_iterator (iterator_t *iterator, const char *username)
+init_user_group_iterator (iterator_t *iterator, user_t user)
 {
-  gchar *quoted_username;
-  quoted_username = sql_quote (username);
   init_iterator (iterator,
                  "SELECT DISTINCT ROWID, uuid, name FROM groups"
                  " WHERE ROWID IN (SELECT `group` FROM group_users"
-                 "                 WHERE user = (SELECT ROWID FROM users"
-                 "                               WHERE users.name = '%s'))"
+                 "                 WHERE user = %llu)"
                  " ORDER by name;",
-                 quoted_username);
-  g_free (quoted_username);
+                 user);
 }
 
 /**

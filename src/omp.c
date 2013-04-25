@@ -22646,7 +22646,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         : "file");
 
               SEND_TO_CLIENT_OR_FAIL ("<groups>");
-              init_user_group_iterator (&groups, user_name);
+              init_user_group_iterator (&groups,
+                                        get_iterator_resource (&users));
               while (next (&groups))
                 SENDF_TO_CLIENT_OR_FAIL ("<group id=\"%s\">"
                                          "<name>%s</name>"

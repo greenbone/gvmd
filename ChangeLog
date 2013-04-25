@@ -1,5 +1,15 @@
 2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_start_element): In CLIENT_GET_USERS pass user
+	instead of username to init_user_group_iterator.
+
+	* src/manage_sql.c (init_user_group_iterator): Replace username arg with
+	user.
+
+	* src/manage.h: Update header accordingly.
+
+2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* ChangeLog: Correct name of database_migrators in previous logs.
 
 2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>

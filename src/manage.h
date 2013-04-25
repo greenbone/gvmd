@@ -2878,7 +2878,7 @@ int
 user_iterator_hosts_allow (iterator_t*);
 
 void
-init_user_group_iterator (iterator_t *, const char *);
+init_user_group_iterator (iterator_t *, user_t);
 
 const char*
 user_group_iterator_uuid (iterator_t*);
