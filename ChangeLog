@@ -1,5 +1,13 @@
 2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Allow users called "om", now that Manager and Scanner users are
+	separate.
+
+	* src/manage_sql.c (authenticate): Allow users named "om" to login.
+	(openvas_admin_add_user): Allow creation of users called "om".
+
+2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (strcmp_desc, openvas_admin_list_users): Remove.  Out of
 	use.
 

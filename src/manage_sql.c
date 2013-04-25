@@ -16971,8 +16971,6 @@ manage_user_exists (const gchar *name, auth_method_t method)
 /**
  * @brief Authenticate credentials.
  *
- * The user "om" will never be authenticated with success.
- *
  * @param[in]  credentials  Credentials.
  *
  * @return 0 authentication success, 1 authentication failure, -1 error.
@@ -16984,8 +16982,6 @@ authenticate (credentials_t* credentials)
     {
       int fail;
       auth_method_t auth_method;
-
-      if (strcmp (credentials->username, "om") == 0) return 1;
 
       if (authenticate_allow_all)
         {
@@ -50682,14 +50678,6 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
       g_warning ("Invalid characters in user name!");
       if (r_errdesc)
         *r_errdesc = g_strdup ("Invalid characters in user name");
-      return -1;
-    }
-
-  if (strcmp (name, "om") == 0)
-    {
-      g_warning ("Attempt to add special \"om\" user!");
-      if (r_errdesc)
-        *r_errdesc = g_strdup ("Attempt to add special \"om\" user");
       return -1;
     }
 
