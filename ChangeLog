@@ -1,3 +1,7 @@
+2013-04-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (migrate_79_to_80): Ensure tables exist.
+
 2013-04-26  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Remove set but unused variable

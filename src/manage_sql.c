@@ -10101,6 +10101,16 @@ migrate_79_to_80 ()
 
   /* Update the database. */
 
+  /* Ensure that all tables exists. */
+  sql ("CREATE TABLE IF NOT EXISTS tags"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+       "  creation_time, modification_time, attach_type, attach_id,"
+       "  active, value);");
+  sql ("CREATE TABLE IF NOT EXISTS tags_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+       "  creation_time, modification_time, attach_type, attach_id,"
+       "  active, value);");
+
   /* Users got new column "method".  User data moved from disk to database. */
 
   sql ("ALTER TABLE users ADD COLUMN method;");
