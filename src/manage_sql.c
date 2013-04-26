@@ -38030,6 +38030,52 @@ find_signature (const gchar *location, const gchar *installer_filename,
   return -1;
 }
 
+
+/**
+ * @brief Return the name of the sysconf GnuPG home directory
+ *
+ * Returns the name of the GnuPG home directory to use when checking
+ * signatures.  It is the directory openvas/gnupg under the sysconfdir
+ * that was set by configure (usually $prefix/etc).
+ *
+ * @return Static name of the Sysconf GnuPG home directory.
+ */
+static const char *
+get_sysconf_gpghome (void)
+{
+  static char *name;
+
+  if (!name)
+    name = g_build_filename (OPENVAS_SYSCONF_DIR, "gnupg", NULL);
+
+  return name;
+}
+
+
+/**
+ * @brief Return the name of the trusted keys file name.
+ *
+ * We currently use the name @file pubring.gpg to be compatible with
+ * previous installations.  That file should best be installed
+ * read-only so that it is not accidentally accessed while we are
+ * running a verification.  All files in that keyring are assumed to
+ * be fully trustworthy.
+ *
+ * @return Static file name.
+ */
+static const char *
+get_trustedkeys_name (void)
+{
+  static char *name;
+
+  if (!name)
+    name = g_build_filename (get_sysconf_gpghome (), "pubring.gpg", NULL);
+
+  return name;
+}
+
+
+
 /**
  * @brief Execute gpg to verify an installer signature.
  *
@@ -38085,19 +38131,22 @@ verify_signature (const gchar *installer, gsize installer_size,
       return -1;
     }
 
-  cmd = (gchar **) g_malloc (8 * sizeof (gchar *));
+  cmd = (gchar **) g_malloc (10 * sizeof (gchar *));
 
-  cmd[0] = g_strdup ("gpg");
-  cmd[1] = g_strdup ("--batch");
-  cmd[2] = g_strdup ("--quiet");
-  cmd[3] = g_strdup ("--no-tty");
-  cmd[4] = g_strdup ("--verify");
-  cmd[5] = g_strdup (signature_file);
-  cmd[6] = g_strdup (installer_file);
-  cmd[7] = NULL;
-  g_debug ("%s: Spawning in /tmp/: %s %s %s %s %s %s %s\n",
+  cmd[0] = g_strdup ("gpgv");
+  cmd[1] = g_strdup ("--homedir");
+  cmd[2] = g_strdup (get_sysconf_gpghome ());
+  cmd[3] = g_strdup ("--quiet");
+  cmd[4] = g_strdup ("--keyring");
+  cmd[5] = g_strdup (get_trustedkeys_name ());
+  cmd[6] = g_strdup ("--");
+  cmd[7] = g_strdup (signature_file);
+  cmd[8] = g_strdup (installer_file);
+  cmd[9] = NULL;
+  g_debug ("%s: Spawning in /tmp/: %s %s %s %s %s %s %s %s %s\n",
            __FUNCTION__,
-           cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], cmd[6]);
+           cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5],
+           cmd[6], cmd[7], cmd[8]);
   if ((g_spawn_sync ("/tmp/",
                      cmd,
                      NULL,                 /* Environment. */
@@ -38116,8 +38165,8 @@ verify_signature (const gchar *installer, gsize installer_size,
       else
         {
 #if 0
-          g_debug ("%s: failed to run gpg --verify: %d (WIF %i, WEX %i)",
-                   __FUNCTION__,
+          g_debug ("%s: failed to run gpgv(%s): %d (WIF %i, WEX %i)",
+                   __FUNCTION__, get_trustedkeys_name (),
                    exit_status,
                    WIFEXITED (exit_status),
                    WEXITSTATUS (exit_status));
@@ -38140,11 +38189,15 @@ verify_signature (const gchar *installer, gsize installer_size,
   g_free (cmd[4]);
   g_free (cmd[5]);
   g_free (cmd[6]);
+  g_free (cmd[7]);
+  g_free (cmd[8]);
   g_free (cmd);
   g_free (standard_out);
   g_free (standard_err);
   close (installer_fd);
   close (signature_fd);
+  g_remove (installer_file);
+  g_remove (signature_file);
 
   return ret;
 }

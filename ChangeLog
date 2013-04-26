@@ -1,3 +1,9 @@
+2013-04-26  Werner Koch  <wk@gnupg.org>
+
+	* src/manage_sql.c (get_sysconf_gpghome, get_trustedkeys_name): New.
+	(verify_signature): Change to use gpgv.
+	* src/openvasmd.c (main): Remove setting of GNUPGHOME.
+
 2013-04-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (migrate_79_to_80): Ensure tables exist.
