@@ -22616,7 +22616,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           while (1)
             {
               iterator_t groups;
-              const char *user_name;
 
               ret = get_next (&users, get, &first, &count,
                               init_user_iterator);
@@ -22630,7 +22629,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               SEND_GET_COMMON (user, &get_users_data->get, &users);
 
-              user_name = get_iterator_name (&users);
               SENDF_TO_CLIENT_OR_FAIL ("<role>%s</role>"
                                        "<hosts allow=\"%i\">%s</hosts>"
                                        "<sources><source>%s</source></sources>",
