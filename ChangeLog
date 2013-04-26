@@ -1,3 +1,7 @@
+2013-04-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (migrate_79_to_80): Correct column name.
+
 2013-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (migrate_79_to_80): Remove g_file_get_contents len

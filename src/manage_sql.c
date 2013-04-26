@@ -10103,7 +10103,7 @@ migrate_79_to_80 ()
 
   /* Users got new column "method".  User data moved from disk to database. */
 
-  sql ("ALTER TABLE users ADD COLUMN methods;");
+  sql ("ALTER TABLE users ADD COLUMN method;");
   sql ("UPDATE users SET method = 'file';");
 
   count = scandir (OPENVAS_USERS_DIR, &names, NULL, alphasort);
