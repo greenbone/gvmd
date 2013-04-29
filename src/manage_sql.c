@@ -21721,6 +21721,25 @@ scan_end_time (report_t report)
 }
 
 /**
+ * @brief Get the end time of a scan.
+ *
+ * @param[in]  uuid  The report associated with the scan.
+ *
+ * @return End time of scan, in a newly allocated string.
+ */
+char*
+scan_end_time_uuid (const char *uuid)
+{
+  char *time, *quoted_uuid;
+  quoted_uuid = sql_quote (uuid);
+  time = sql_string (0, 0,
+                     "SELECT iso_time (end_time)"
+                     " FROM reports WHERE uuid = '%s';",
+                     quoted_uuid);
+  return time ? time : g_strdup ("");
+}
+
+/**
  * @brief Set the end time of a scan.
  *
  * @param[in]  report     The report associated with the scan.

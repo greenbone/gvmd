@@ -8943,6 +8943,7 @@ send_reports (task_t task, int apply_overrides,
     {
       gchar *uuid, *timestamp, *msg;
       int debugs, false_positives, holes, infos, logs, warnings, run_status;
+      char *scan_end;
 
       uuid = report_uuid (index);
 
@@ -8962,9 +8963,11 @@ send_reports (task_t task, int apply_overrides,
       tracef ("     %s\n", uuid);
 
       report_scan_run_status (index, &run_status);
+      scan_end = scan_end_time (index);
       msg = g_strdup_printf ("<report"
                              " id=\"%s\">"
                              "<timestamp>%s</timestamp>"
+                             "<scan_end>%s</scan_end>"
                              "<scan_run_status>%s</scan_run_status>"
                              "<result_count>"
                              "<debug>%i</debug>"
@@ -8977,6 +8980,7 @@ send_reports (task_t task, int apply_overrides,
                              "</report>",
                              uuid,
                              timestamp,
+                             scan_end,
                              run_status_name
                               (run_status ? run_status
                                           : TASK_STATUS_INTERNAL_ERROR),
@@ -8986,6 +8990,7 @@ send_reports (task_t task, int apply_overrides,
                              logs,
                              warnings,
                              false_positives);
+      free (scan_end);
       g_free (timestamp);
       if (send_to_client (msg, write_to_client, write_to_client_data))
         {
@@ -22901,6 +22906,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (first_report_id)
                 {
                   gchar *timestamp;
+                  char *scan_end;
 
                   // TODO Could skip this count for tasks page.
                   if (report_counts (first_report_id,
@@ -22915,11 +22921,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     /** @todo Either fail better or abort at SQL level. */
                     abort ();
 
+                  scan_end = scan_end_time_uuid (first_report_id),
+
                   first_report = g_strdup_printf ("<first_report>"
                                                   "<report id=\"%s\">"
                                                   "<timestamp>"
                                                   "%s"
                                                   "</timestamp>"
+                                                  "<scan_end>%s</scan_end>"
                                                   "<result_count>"
                                                   "<debug>%i</debug>"
                                                   "<hole>%i</hole>"
@@ -22934,12 +22943,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                   "</first_report>",
                                                   first_report_id,
                                                   timestamp,
+                                                  scan_end,
                                                   debugs,
                                                   holes_2,
                                                   infos_2,
                                                   logs,
                                                   warnings_2,
                                                   false_positives);
+                  free (scan_end);
                   g_free (timestamp);
                 }
               else
@@ -22949,6 +22960,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (second_last_report_id)
                 {
                   gchar *timestamp;
+                  char *scan_end;
 
                   /* If the first report is the second last report then skip
                    * doing the count again. */
@@ -22966,10 +22978,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (report_timestamp (second_last_report_id, &timestamp))
                     abort ();
 
+                  scan_end = scan_end_time_uuid (second_last_report_id),
+
                   second_last_report = g_strdup_printf
                                         ("<second_last_report>"
                                          "<report id=\"%s\">"
                                          "<timestamp>%s</timestamp>"
+                                         "<scan_end>%s</scan_end>"
                                          "<result_count>"
                                          "<debug>%i</debug>"
                                          "<hole>%i</hole>"
@@ -22984,12 +22999,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          "</second_last_report>",
                                          second_last_report_id,
                                          timestamp,
+                                         scan_end,
                                          debugs,
                                          holes_2,
                                          infos_2,
                                          logs,
                                          warnings_2,
                                          false_positives);
+                  free (scan_end);
                   g_free (timestamp);
                 }
               else
@@ -22999,6 +23016,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (last_report_id)
                 {
                   gchar *timestamp;
+                  char *scan_end;
 
                   /* If the last report is the first report or the second
                    * last report, then reuse the counts from before. */
@@ -23027,9 +23045,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (report_timestamp (last_report_id, &timestamp))
                     abort ();
 
+                  scan_end = scan_end_time_uuid (last_report_id);
+
                   last_report = g_strdup_printf ("<last_report>"
                                                  "<report id=\"%s\">"
                                                  "<timestamp>%s</timestamp>"
+                                                 "<scan_end>%s</scan_end>"
                                                  "<result_count>"
                                                  "<debug>%i</debug>"
                                                  "<hole>%i</hole>"
@@ -23044,12 +23065,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                  "</last_report>",
                                                  last_report_id,
                                                  timestamp,
+                                                 scan_end,
                                                  debugs,
                                                  holes,
                                                  infos,
                                                  logs,
                                                  warnings,
                                                  false_positives);
+                  free (scan_end);
                   g_free (timestamp);
                   g_free (last_report_id);
                 }

@@ -894,6 +894,9 @@ report_counts_id (report_t, int*, int*, int*, int*, int*, int*, int,
 char*
 scan_start_time (report_t);
 
+char*
+scan_end_time_uuid (const char *);
+
 void
 set_scan_start_time (report_t, const char*);
 

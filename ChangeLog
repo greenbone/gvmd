@@ -1,3 +1,12 @@
+2013-04-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (scan_end_time_uuid): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (send_reports, omp_xml_handle_end_element): Add SCAN_END
+	alongside TIMESTAMP in OMP REPORT excerpts.
+
 2013-04-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (buffer_overrides_xml): Remove extra override xml tag in include
@@ -7,6 +16,10 @@
 
 	* src/omp.c (buffer_notes_xml): Remove extra note xml tag in include
 	results case.
+
+2013-04-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (delete_filter): Delete any personal filter settings
 
 2013-04-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
