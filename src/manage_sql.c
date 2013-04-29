@@ -47813,6 +47813,7 @@ copy_filter (const char* name, const char* comment, const char *filter_id,
 int
 delete_filter (const char *filter_id, int ultimate)
 {
+  gchar *quoted_filter_id;
   filter_t filter = 0;
 
   sql ("BEGIN IMMEDIATE;");
@@ -47866,6 +47867,11 @@ delete_filter (const char *filter_id, int ultimate)
       sql ("ROLLBACK;");
       return 1;
     }
+
+  quoted_filter_id = sql_quote (filter_id);
+  sql ("DELETE FROM settings WHERE name LIKE '%% Filter' AND value = '%s';",
+       quoted_filter_id);
+  g_free (quoted_filter_id);
 
   if (ultimate == 0)
     {
