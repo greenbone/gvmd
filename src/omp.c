@@ -9405,8 +9405,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     NULL,
                                     0);
               cleanup_iterator (&results);
-
-              buffer_xml_append_printf (buffer, "</override>");
             }
           else
             buffer_xml_append_printf (buffer,

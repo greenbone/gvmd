@@ -1,3 +1,8 @@
+2013-04-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (buffer_overrides_xml): Remove extra override xml tag in include
+	results case.
+
 2013-04-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (buffer_notes_xml): Remove extra note xml tag in include
