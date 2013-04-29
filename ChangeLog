@@ -1,5 +1,10 @@
 2013-04-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): Add TIMESTAMP along SCAN_START in
+	REPORT.
+
+2013-04-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (scan_end_time_uuid): New function.
 
 	* src/manage.h: Add header accordingly.

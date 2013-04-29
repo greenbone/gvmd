@@ -25502,7 +25502,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 {
   FILE *out;
   gchar *term, *sort_field, *levels, *search_phrase, *min_cvss_base;
-  gchar *delta_states;
+  gchar *delta_states, *timestamp;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
   int result_count, filtered_result_count, run_status;
   array_t *result_hosts;
@@ -25630,6 +25630,21 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              run_status_name (run_status
                                ? run_status
                                : TASK_STATUS_INTERNAL_ERROR));
+
+      if (report_timestamp (uuid, &timestamp))
+        {
+          free (uuid);
+          g_free (sort_field);
+          g_free (levels);
+          g_free (search_phrase);
+          g_free (min_cvss_base);
+          g_free (delta_states);
+          return -1;
+        }
+      PRINT (out,
+             "<timestamp>%s</timestamp>",
+             timestamp);
+      g_free (timestamp);
 
       start_time = scan_start_time (delta);
       PRINT (out,
@@ -26430,6 +26445,18 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
       return 0;
     }
+
+  uuid = report_uuid (report);
+  if (report_timestamp (uuid, &timestamp))
+    {
+      free (uuid);
+      return -1;
+    }
+  free (uuid);
+  PRINT (out,
+         "<timestamp>%s</timestamp>",
+         timestamp);
+  g_free (timestamp);
 
   start_time = scan_start_time (report);
   PRINT (out,
