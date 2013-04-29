@@ -1,3 +1,8 @@
+2013-04-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (buffer_notes_xml): Remove extra note xml tag in include
+	results case.
+
 2013-04-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_filter): Delete any personal filter settings

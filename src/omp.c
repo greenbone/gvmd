@@ -9209,8 +9209,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     NULL,
                                     0);
               cleanup_iterator (&results);
-
-              buffer_xml_append_printf (buffer, "</note>");
             }
           else
             buffer_xml_append_printf (buffer,
