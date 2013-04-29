@@ -2620,6 +2620,127 @@ filter_clause (const char* type, const char* filter, const char **columns,
           point++;
           continue;
         }
+      /* Add tag criteria to clause: tag name with optional value */
+      else if (keyword->column
+               && (strcasecmp (keyword->column, "tag") == 0))
+        {
+          gchar **tag_split, *tag_name, *tag_value;
+          int value_given, value_numeric;
+
+          quoted_keyword = sql_quote (keyword->string);
+          tag_split = g_strsplit (quoted_keyword, "=", 2);
+          tag_name = g_strdup (tag_split[0] ? tag_split[0] : "");
+
+          if (tag_split[0] && tag_split[1])
+            {
+              tag_value = g_strdup (tag_split[1]);
+              value_given = 1;
+            }
+          else
+            {
+              tag_value = g_strdup ("");
+              value_given = 0;
+            }
+
+          value_numeric = 0;
+          if (value_given)
+            {
+              double test_d;
+              value_numeric = (sscanf (tag_value, "%lf", &test_d) > 0);
+            }
+
+          if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL
+              || keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE
+              || keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
+            {
+              if (strcasecmp (type, "allinfo") == 0)
+                g_string_append_printf (clause,
+                                        "%s"
+                                        "(EXISTS"
+                                        "  (SELECT * FROM tags"
+                                        "   WHERE tags.name = '%s'"
+                                        "   AND tags.attach_id = allinfo.uuid"
+                                        "   AND tags.attach_type = allinfo.type"
+                                        "   %s%s%s))",
+                                        get_join (first_keyword, last_was_and,
+                                                  last_was_not),
+                                        tag_name,
+                                        (value_given
+                                          ? (value_numeric
+                                              ? "AND CAST"
+                                                " (tags.value AS NUMBER) = "
+                                              : "AND CAST"
+                                                " (tags.value AS TEXT) = '")
+                                          : ""),
+                                        value_given ? tag_value : "",
+                                        (value_given && value_numeric == 0
+                                          ? "'"
+                                          : ""));
+              else
+                g_string_append_printf (clause,
+                                        "%s"
+                                        "(EXISTS"
+                                        "  (SELECT * FROM tags"
+                                        "   WHERE tags.name = '%s'"
+                                        "   AND tags.attach_id = %ss.uuid"
+                                        "   AND tags.attach_type = '%s'"
+                                        "   %s%s%s))",
+                                        get_join (first_keyword, last_was_and,
+                                                  last_was_not),
+                                        tag_name,
+                                        type,
+                                        type,
+                                        (value_given
+                                          ? (value_numeric
+                                              ? "AND CAST"
+                                                " (tags.value AS NUMBER) = "
+                                              : "AND CAST"
+                                                " (tags.value AS TEXT) = '")
+                                          : ""),
+                                        value_given ? tag_value : "",
+                                        (value_given && value_numeric == 0
+                                          ? "'"
+                                          : ""));
+            }
+          else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
+            {
+              if (strcasecmp (type, "allinfo") == 0)
+                g_string_append_printf (clause,
+                                        "%s"
+                                        "(EXISTS"
+                                        "  (SELECT * FROM tags"
+                                        "   WHERE tags.name LIKE '%%%%%s%%%%'"
+                                        "   AND tags.attach_id = allinfo.uuid"
+                                        "   AND tags.attach_type = allinfo.type"
+                                        "   AND tags.value LIKE '%%%%%s%%%%'))",
+                                        get_join (first_keyword, last_was_and,
+                                                  last_was_not),
+                                        tag_name,
+                                        tag_value);
+              else
+                g_string_append_printf (clause,
+                                        "%s"
+                                        "(EXISTS"
+                                        "  (SELECT * FROM tags"
+                                        "   WHERE tags.name LIKE '%%%%%s%%%%'"
+                                        "   AND tags.attach_id = %ss.uuid"
+                                        "   AND tags.attach_type = '%s'"
+                                        "   AND tags.value LIKE '%%%%%s%%%%'))",
+                                        get_join (first_keyword, last_was_and,
+                                                  last_was_not),
+                                        tag_name,
+                                        type,
+                                        type,
+                                        tag_value);
+            }
+
+          g_strfreev(tag_split);
+          g_free(tag_name);
+          g_free(tag_value);
+          first_keyword = 0;
+          last_was_and = 0;
+          last_was_not = 0;
+        }
 
       /* Add SQL to the clause for each column name. */
 
@@ -49822,7 +49943,8 @@ manage_set_setting (const gchar *uuid, const gchar *name,
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS ", 'dfn_cert_adv' AS type"        \
   "  ,title as extra FROM dfn_cert_advs"                                      \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS ", 'ovaldef' AS type"             \
-  "  ,title as extra FROM ovaldefs)"
+  "  ,title as extra FROM ovaldefs)"                                          \
+  " AS allinfo"
 
 
 /**
@@ -50545,7 +50667,7 @@ total_info_count (const get_data_t *get, int filtered)
       else
         filter = NULL;
 
-      clause = filter_clause ("nvt", filter ? filter : get->filter,
+      clause = filter_clause ("allinfo", filter ? filter : get->filter,
                               filter_columns, get->trash, NULL, NULL, NULL,
                               NULL);
       if (clause)
@@ -50589,7 +50711,7 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
   else
     filter = NULL;
 
-  clause = filter_clause ("nvt", filter ? filter : get->filter,
+  clause = filter_clause ("allinfo", filter ? filter : get->filter,
                           filter_columns, get->trash,
                           &order, &first, &max, NULL);
 

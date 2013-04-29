@@ -1,3 +1,10 @@
+2013-04-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Add tag keyword and criteria.
+	(ALL_INFO_UNION_COLUMNS): Add "AS allinfo".
+	(total_info_count, init_all_info_iterator): Change type parameter value
+	for filter_clause from "nvt" to "allinfo".
+
 2013-04-26  Werner Koch  <wk@gnupg.org>
 
 	* src/manage_sql.c (get_sysconf_gpghome, get_trustedkeys_name): New.
