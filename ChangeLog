@@ -1,3 +1,9 @@
+2013-05-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (user_has_access_uuid): Get the result case working
+	by adding a check on the permission and correcting some names and parens
+	in the SQL.
+
 2013-04-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Use get_next to get the next

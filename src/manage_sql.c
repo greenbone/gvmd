@@ -531,6 +531,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
         }
 
       if (permission == NULL || strcmp (permission, "get") == 0)
+        // TODO make this neat like result case below
         return sql_int (0, 0,
                         /* Any permission implies 'get'. */
                         "SELECT count(*) FROM permissions"
@@ -606,51 +607,60 @@ user_has_access_uuid (const char *resource, const char *uuid,
     return 0;
 
   if (strcmp (resource, "result") == 0)
-    return sql_int (0, 0,
-                    "SELECT count(*) FROM results, report_results, reports"
-                    " WHERE results.uuid = '%s'"
-                    " AND report_results.result = results.ROWID"
-                    " AND report_results.report = reports.ROWID"
-                    " AND ((reports.owner IS NULL)"
-                    "      OR (reports.owner ="
-                    "          (SELECT users.ROWID FROM users"
-                    "           WHERE users.uuid = '%s'))"
-                    "      OR EXISTS"
-                    "       (SELECT task FROM permissions"
-                    "        WHERE resource_type = 'task'"
-                    "        AND resource = task"
-                    "        AND resource_location"
-                    "            = " G_STRINGIFY (LOCATION_TABLE)
-                    "        AND ((subject_type = 'user'"
-                    "              AND subject"
-                    "                  = (SELECT ROWID FROM users"
-                    "                     WHERE users.uuid = '%s'))"
-                    "             OR (subject_type = 'group'"
-                    "                 AND subject"
-                    "                     IN (SELECT DISTINCT `group`"
-                    "                         FROM group_users"
-                    "                         WHERE user = (SELECT ROWID"
-                    "                                       FROM users"
-                    "                                       WHERE users.uuid"
-                    "                                             = '%s')))"
-#if 0
-                    "             OR (subject_type = 'role'"
-                    "                 AND subject"
-                    "                     IN (SELECT DISTINCT role"
-                    "                         FROM role_users"
-                    "                         WHERE user = (SELECT ROWID"
-                    "                                       FROM users"
-                    "                                       WHERE users.uuid"
-                    "                                             = '%s')))"
-#endif
-                    "     )"
-                    " AND name = '%s';",
-                    uuid,
-                    current_credentials.uuid,
-                    current_credentials.uuid,
-                    current_credentials.uuid,
-                    actions,
-                    actions);
+    {
+      int get;
+      gchar *quoted_permission;
+      get = (permission == NULL || strcmp (permission, "get") == 0);
+      quoted_permission = sql_quote (permission ? permission : "");
+      ret = sql_int (0, 0,
+                     "SELECT count(*) FROM results, report_results, reports"
+                     " WHERE results.uuid = '%s'"
+                     " AND report_results.result = results.ROWID"
+                     " AND report_results.report = reports.ROWID"
+                     " AND ((reports.owner IS NULL)"
+                     "      OR (reports.owner ="
+                     "          (SELECT users.ROWID FROM users"
+                     "           WHERE users.uuid = '%s'))"
+                     "      OR EXISTS"
+                     "       (SELECT ROWID FROM permissions"
+                     "        WHERE resource_type = 'task'"
+                     "        AND resource = reports.task"
+                     "        AND resource_location"
+                     "            = " G_STRINGIFY (LOCATION_TABLE)
+                     "        AND ((subject_type = 'user'"
+                     "              AND subject"
+                     "                  = (SELECT ROWID FROM users"
+                     "                     WHERE users.uuid = '%s'))"
+                     "             OR (subject_type = 'group'"
+                     "                 AND subject"
+                     "                     IN (SELECT DISTINCT `group`"
+                     "                         FROM group_users"
+                     "                         WHERE user = (SELECT ROWID"
+                     "                                       FROM users"
+                     "                                       WHERE users.uuid"
+                     "                                             = '%s')))"
+ #if 0
+                     "             OR (subject_type = 'role'"
+                     "                 AND subject"
+                     "                     IN (SELECT DISTINCT role"
+                     "                         FROM role_users"
+                     "                         WHERE user = (SELECT ROWID"
+                     "                                       FROM users"
+                     "                                       WHERE users.uuid"
+                     "                                             = '%s')))"
+ #endif
+                     "        )))"
+                     " %s%s%s;",
+                     uuid,
+                     current_credentials.uuid,
+                     current_credentials.uuid,
+                     current_credentials.uuid,
+                     (get ? "" : "AND name = '"),
+                     quoted_permission,
+                     (get ? "" : "'"));
+      g_free (quoted_permission);
+      return ret;
+    }
 
   ret = sql_int (0, 0,
                  "SELECT count(*) FROM %ss"
