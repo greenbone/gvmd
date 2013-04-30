@@ -2950,10 +2950,10 @@ modify_tag (const char *, const char *, const char *, const char *,
             const char *, const char *, const char *);
 
 int
-init_tag_iterator (iterator_t*, const get_data_t*, const char*, const char*);
+init_tag_iterator (iterator_t*, const get_data_t*);
 
 int
-tag_count (const get_data_t*, const char*, const char*);
+tag_count (const get_data_t *get);
 
 const char*
 tag_iterator_attach_type (iterator_t*);

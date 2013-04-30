@@ -3473,10 +3473,6 @@ get_tags
      {
        # ID of single tag to get.
        attribute tag_id { uuid }?
-       & # Resource type for which to get attached tags.
-       attribute attach_type { text }?
-       & # Resource ID for which to get attached tags, requires attach_type.
-       attribute attach_id { text }?
        & # Filter term to use to filter query.
        attribute filter { text }?
        & # ID of filter to use to filter query.
