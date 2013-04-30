@@ -1,5 +1,10 @@
 2013-04-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/omp.c (xml_handle_end_element): In case CLIENT_CREATE_CONFIG
+	check if copy parameter is NULL before calculating its string length.
+
+2013-04-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* doc/omp.html, doc/omp.rnc, src/manage.h, src/manage_sql.c,
 	src/omp.c, src/schema_formats/XML/OMP.xml: Revert changes adding
 	attach_type and attach_id attributes to get_tags.
