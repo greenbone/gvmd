@@ -10768,6 +10768,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>attach_type</name>
+        <summary>Resource type for which to get attached tags</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>attach_id</name>
+        <summary>Resource ID for which to get attached tags, requires
+        attach_type</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>text</type>

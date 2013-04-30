@@ -1,3 +1,25 @@
+2013-04-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+	* src/manage.h (init_tag_iterator, tag_count): Add parameters
+	(see manage_sql.c).
+
+	* src/manage_sql.c (init_tag_iterator, tag_count): Add parameters
+	attach_type, attach_id to only include tags attached to the given
+	resource type / ID in the results.
+
+	* src/omp.c (get_tags_data_t, get_tags_data_reset): Add elements
+	attach_type, attach_id.
+	(xml_handle_start_element): In case CLIENT_GET_TAGS add append_attribute
+	for attach_type, attach_id.
+	(xml_handle_end_element): In case CLIENT_GET_TAGS add handling of
+	attach_type and attach_id to only include tags attached to the given
+	resource type / ID in the results.
+
+	* src/schema_formats/XML/OMP.xml (get_tags): Add attributes attach_type
+	and attach_id to command.
+
 2013-04-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml): Add TIMESTAMP along SCAN_START in

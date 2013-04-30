@@ -51896,11 +51896,33 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
  *         -1 error.
  */
 int
-init_tag_iterator (iterator_t* iterator, const get_data_t *get)
+init_tag_iterator (iterator_t* iterator, const get_data_t *get,
+                   const char *attach_type, const char *attach_id)
 {
   static const char *filter_columns[] = TAG_ITERATOR_FILTER_COLUMNS;
+  gchar* attach_where;
+  int ret;
 
-  return init_get_iterator (iterator,
+  if (attach_type && strcmp (attach_type, ""))
+    {
+      if (attach_id && strcmp (attach_id, ""))
+        attach_where = g_strdup_printf("AND attach_type = '%s'"
+                                        "AND attach_id = '%s'",
+                                        attach_type,
+                                        attach_id);
+      else
+        attach_where = g_strdup_printf("AND attach_type = '%s'",
+                                      attach_type);
+    }
+  else
+    {
+      if (attach_id && strcmp (attach_id, ""))
+        return -1;
+      else
+        attach_where = NULL;
+    }
+
+  ret = init_get_iterator (iterator,
                             "tag",
                             get,
                             /* Columns. */
@@ -51910,8 +51932,13 @@ init_tag_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
-                            NULL,
+                            attach_where,
                             TRUE);
+
+  if (attach_where)
+    g_free (attach_where);
+
+  return ret;
 }
 
 /**
@@ -51922,11 +51949,39 @@ init_tag_iterator (iterator_t* iterator, const get_data_t *get)
  * @return Total number of tags in filtered set.
  */
 int
-tag_count (const get_data_t *get)
+tag_count (const get_data_t *get, const char *attach_type,
+           const char *attach_id)
 {
   static const char *extra_columns[] = TAG_ITERATOR_FILTER_COLUMNS;
-  return count ("tag", get, TAG_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
-                TRUE);
+  gchar* attach_where;
+  int ret;
+
+  if (attach_type && strcmp (attach_type, ""))
+    {
+      if (attach_id && strcmp (attach_id, ""))
+        attach_where = g_strdup_printf("AND attach_type = '%s'"
+                                        "AND attach_id = '%s'",
+                                        attach_type,
+                                        attach_id);
+      else
+        attach_where = g_strdup_printf("AND attach_type = '%s'",
+                                      attach_type);
+    }
+  else
+    {
+      if (attach_id && strcmp (attach_id, ""))
+        return -1;
+      else
+        attach_where = NULL;
+    }
+
+  ret = count ("tag", get, TAG_ITERATOR_COLUMNS, extra_columns, 0, 0,
+               attach_where, TRUE);
+
+  if (attach_where)
+    g_free (attach_where);
+
+  return ret;
 }
 
 /**

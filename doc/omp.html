@@ -17369,6 +17369,16 @@ get_system_reports_response_system_report_report
           ID of single tag to get.
           </li>
 <li>
+          @<b>attach_type</b>
+          (text)
+          Resource type for which to get attached tags.
+          </li>
+<li>
+          @<b>attach_id</b>
+          (text)
+          Resource ID for which to get attached tags, requires attach_type.
+          </li>
+<li>
           @<b>filter</b>
           (text)
           Filter term to use to filter query.
@@ -17536,6 +17546,8 @@ get_system_reports_response_system_report_report
  = element get_tags
      {
        attribute tag_id { uuid }?
+       &amp; attribute attach_type { text }?
+       &amp; attribute attach_id { text }?
        &amp; attribute filter { text }?
        &amp; attribute filt_id { text }?
        &amp; attribute trash { boolean }?
