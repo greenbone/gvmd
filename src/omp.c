@@ -22768,7 +22768,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SENDF_TO_CLIENT_OR_FAIL ("<apply_overrides>%i</apply_overrides>",
                                    apply_overrides);
 
-          while (next (&tasks))
+          while (1)
             {
               int maximum_hosts;
               task_t index;
@@ -22794,6 +22794,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               gchar *response;
               iterator_t alerts, groups;
               gchar *in_assets, *max_checks, *max_hosts;
+
+              ret = get_next (&tasks, get, &first, &count,
+                              init_task_iterator);
+              if (ret == 1)
+                break;
+              if (ret == -1)
+                {
+                  internal_error_send_to_client (error);
+                  return;
+                }
 
               index = get_iterator_resource (&tasks);
               target = task_target (index);

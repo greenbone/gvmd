@@ -1,3 +1,8 @@
+2013-04-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Use get_next to get the next
+	task in GET_TASKS, so that it resets first when off the end of the page.
+
 2013-04-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (xml_handle_end_element): In case CLIENT_CREATE_CONFIG
