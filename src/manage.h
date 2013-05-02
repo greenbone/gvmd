@@ -2847,6 +2847,9 @@ manage_user_hash (const gchar *);
 gchar *
 manage_user_uuid (const gchar *, auth_method_t);
 
+gchar *
+manage_user_rules (const gchar *);
+
 int
 manage_user_set_role (const gchar *, const gchar *, const gchar *);
 

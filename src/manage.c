@@ -995,15 +995,12 @@ send_user_rules (report_t stopped_report)
   gchar **rule, **split;
   int empty;
 
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
   empty = 1;
 
-  // FIX
-  if (openvas_auth_user_uuid_rules (current_credentials.username,
-                                    current_credentials.uuid,
-                                    &rules)
-      == 0)
+  rules = manage_user_rules (current_credentials.uuid);
+  if (rules == NULL)
     {
       tracef ("   failed to get rules.");
       return -1;

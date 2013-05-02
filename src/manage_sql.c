@@ -16960,6 +16960,33 @@ manage_user_uuid (const gchar *username, auth_method_t method)
 }
 
 /**
+ * @brief Get user rules.
+ *
+ * @param[in]  uuid  User UUID.
+ *
+ * @return Rules.
+ */
+gchar *
+manage_user_rules (const gchar *uuid)
+{
+  GString *rules;
+  gchar *hosts, *quoted_uuid;
+  int hosts_allow;
+
+  quoted_uuid = sql_quote (uuid);
+  hosts = sql_string (0, 0,
+                      "SELECT hosts FROM users WHERE uuid = '%s';",
+                      quoted_uuid);
+  hosts_allow = sql_int (0, 0,
+                         "SELECT hosts_allow FROM users WHERE uuid = '%s';",
+                         quoted_uuid);
+  g_free (quoted_uuid);
+  rules = openvas_auth_make_user_rules (hosts, hosts_allow);
+  g_free (hosts);
+  return g_string_free (rules, FALSE);
+}
+
+/**
  * @brief Ensure the user exists in the database.
  *
  * @param[in]  name    User name.

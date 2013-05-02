@@ -1,3 +1,12 @@
+2013-05-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (send_user_rules): Get rules with new function.
+
+	* src/manage_sql.c (manage_user_rules): New function.  Get rules from
+	db.
+
+	* src/manage.h: Add header accordingly.
+
 2013-05-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (user_has_access_uuid): Get the result case working
