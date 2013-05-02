@@ -50927,7 +50927,8 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
 {
   char *errstr;
   gchar *quoted_hosts, *quoted_method, *quoted_name, *quoted_role, *hash;
-  int index;
+  gchar *clean;
+  int index, max;
   user_t user;
 
   assert (name);
@@ -50984,7 +50985,9 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
   /* Add the user to the database. */
 
   quoted_role = sql_quote (role ? role : "User");
-  quoted_hosts = sql_quote (hosts ? hosts : "");
+  clean = clean_hosts (hosts ? hosts : "", &max);
+  quoted_hosts = sql_quote (clean);
+  g_free (clean);
   quoted_method = sql_quote (allowed_methods
                               ? g_ptr_array_index (allowed_methods, 0)
                               : "file");
@@ -51165,8 +51168,9 @@ openvas_admin_modify_user (const gchar * name, const gchar * password,
                            gchar **r_errdesc)
 {
   char *errstr;
-  gchar *hash, *quoted_role, *quoted_hosts, *quoted_method;
+  gchar *hash, *quoted_role, *quoted_hosts, *quoted_method, *clean;
   user_t user;
+  int max;
 
   if (r_errdesc)
     *r_errdesc = NULL;
@@ -51223,7 +51227,9 @@ openvas_admin_modify_user (const gchar * name, const gchar * password,
   /* Update the user in the database. */
 
   quoted_role = sql_quote (role);
-  quoted_hosts = sql_quote (hosts);
+  clean = clean_hosts (hosts ? hosts : "", &max);
+  quoted_hosts = sql_quote (clean);
+  g_free (clean);
   quoted_method = sql_quote (allowed_methods
                               ? g_ptr_array_index (allowed_methods, 0)
                               : "");

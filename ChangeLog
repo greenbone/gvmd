@@ -1,5 +1,11 @@
 2013-05-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (openvas_admin_add_user)
+	(openvas_admin_modify_user): Clean hosts, to ensure that there are
+	spaces between the hosts.
+
+2013-05-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (send_user_rules): Get rules with new function.
 
 	* src/manage_sql.c (manage_user_rules): New function.  Get rules from
