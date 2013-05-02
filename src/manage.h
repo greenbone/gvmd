@@ -3011,6 +3011,33 @@ int
 trash_tag_writable (tag_t);
 
 
+/* Feeds. */
+
+/* For feed syncing */
+#define NVT_FEED 1
+#define SCAP_FEED 2
+#define CERT_FEED 3
+
+int
+openvas_sync_feed
+(const gchar *, const gchar *, int);
+
+int
+openvas_current_sync (const gchar *, gchar **, gchar **);
+
+gboolean
+openvas_sync_script_perform_selftest (const gchar *, gchar **);
+
+gboolean
+openvas_get_sync_script_identification (const gchar *, gchar **, int);
+
+gboolean
+openvas_get_sync_script_description (const gchar *, gchar **);
+
+gboolean
+openvas_get_sync_script_feed_version (const gchar *, gchar **);
+
+
 /* Wizards. */
 
 int

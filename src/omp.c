@@ -480,6 +480,9 @@ static command_t omp_commands[]
     {"DELETE_TASK", "Delete a task."},
     {"DELETE_USER", "Delete an existing user."},
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
+    {"DESCRIBE_CERT", "Get details of the CERT feed this Manager uses."},
+    {"DESCRIBE_FEED", "Get details of the NVT feed this Manager uses."},
+    {"DESCRIBE_SCAP", "Get details of the SCAP feed this Manager uses."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
     {"GET_AGENTS", "Get all agents."},
     {"GET_CONFIGS", "Get all configs."},
@@ -538,6 +541,9 @@ static command_t omp_commands[]
     {"RUN_WIZARD", "Run a wizard."},
     {"START_TASK", "Manually start an existing task."},
     {"STOP_TASK", "Stop a running task."},
+    {"SYNC_CERT", "Synchronize with a CERT feed."},
+    {"SYNC_FEED", "Synchronize with an NVT feed."},
+    {"SYNC_SCAP", "Synchronize with a SCAP feed."},
     {"TEST_ALERT", "Run an alert."},
     {"VERIFY_AGENT", "Verify an agent."},
     {"VERIFY_REPORT_FORMAT", "Verify a report format."},
@@ -4511,6 +4517,21 @@ xml_context = NULL;
  */
 static GMarkupParser xml_parser;
 
+/**
+ * @brief The nvt synchronization script for this daemon.
+ */
+static const gchar *sync_script = OPENVAS_SYNC_SCRIPT_DIR "/openvas-nvt-sync";
+
+/**
+ * @brief The scap synchronization script for this daemon.
+ */
+static const gchar *scap_script = OPENVAS_SYNC_SCRIPT_DIR "/openvas-scapdata-sync";
+
+/**
+ * @brief The CERT synchronization script for this daemon.
+ */
+static const gchar *cert_script = OPENVAS_SYNC_SCRIPT_DIR "/openvas-certdata-sync";
+
 
 /* Client state. */
 
@@ -4822,6 +4843,9 @@ typedef enum
   CLIENT_DELETE_TARGET,
   CLIENT_DELETE_USER,
   CLIENT_DESCRIBE_AUTH,
+  CLIENT_DESCRIBE_CERT,
+  CLIENT_DESCRIBE_FEED,
+  CLIENT_DESCRIBE_SCAP,
   CLIENT_EMPTY_TRASHCAN,
   CLIENT_GET_AGENTS,
   CLIENT_GET_CONFIGS,
@@ -5013,6 +5037,9 @@ typedef enum
   CLIENT_RUN_WIZARD_PARAMS_PARAM_VALUE,
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
+  CLIENT_SYNC_CERT,
+  CLIENT_SYNC_FEED,
+  CLIENT_SYNC_SCAP,
   CLIENT_TEST_ALERT,
   CLIENT_VERIFY_AGENT,
   CLIENT_VERIFY_REPORT_FORMAT
@@ -5218,6 +5245,16 @@ make_xml_error_syntax (const char *tag, const char *text)
  "<" tag "_response"                                     \
  " status=\"" STATUS_ERROR_AUTH_FAILED "\""              \
  " status_text=\"" STATUS_ERROR_AUTH_FAILED_TEXT "\"/>"
+
+/**
+ * @brief Expand to XML for a STATUS_ERROR_BUSY response.
+ *
+ * @param  tag  Name of the command generating the response.
+ */
+#define XML_ERROR_BUSY(tag)                              \
+ "<" tag "_response"                                     \
+ " status=\"" STATUS_ERROR_BUSY "\""                     \
+ " status_text=\"" STATUS_ERROR_BUSY_TEXT "\"/>"
 
 /**
  * @brief Expand to XML for a STATUS_OK response.
@@ -6077,6 +6114,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DESCRIBE_AUTH", element_name) == 0)
           set_client_state (CLIENT_DESCRIBE_AUTH);
+        else if (strcasecmp ("DESCRIBE_CERT", element_name) == 0)
+          set_client_state (CLIENT_DESCRIBE_CERT);
+        else if (strcasecmp ("DESCRIBE_FEED", element_name) == 0)
+          set_client_state (CLIENT_DESCRIBE_FEED);
+        else if (strcasecmp ("DESCRIBE_SCAP", element_name) == 0)
+          set_client_state (CLIENT_DESCRIBE_SCAP);
         else if (strcasecmp ("EMPTY_TRASHCAN", element_name) == 0)
           set_client_state (CLIENT_EMPTY_TRASHCAN);
         else if (strcasecmp ("GET_AGENTS", element_name) == 0)
@@ -6856,6 +6899,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &stop_task_data->task_id);
             set_client_state (CLIENT_STOP_TASK);
           }
+        else if (strcasecmp ("SYNC_CERT", element_name) == 0)
+          set_client_state (CLIENT_SYNC_CERT);
+        else if (strcasecmp ("SYNC_FEED", element_name) == 0)
+          set_client_state (CLIENT_SYNC_FEED);
+        else if (strcasecmp ("SYNC_SCAP", element_name) == 0)
+          set_client_state (CLIENT_SYNC_SCAP);
         else if (strcasecmp ("TEST_ALERT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values,
@@ -13358,6 +13407,255 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           SEND_TO_CLIENT_OR_FAIL (resp);
           g_free (resp);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
+      case CLIENT_DESCRIBE_FEED:
+        {
+          gchar *feed_description = NULL;
+          gchar *feed_identification = NULL;
+          gchar *feed_version = NULL;
+
+          assert (current_credentials.username);
+
+          if (openvas_get_sync_script_description (sync_script, &feed_description)
+              && openvas_get_sync_script_identification (sync_script,
+                                                         &feed_identification,
+                                                         NVT_FEED)
+              && openvas_get_sync_script_feed_version (sync_script,
+                                                       &feed_version))
+            {
+              gchar *user, *timestamp;
+              int syncing;
+              gchar **ident = g_strsplit (feed_identification, "|", 6);
+              gchar *selftest_result = NULL;
+
+              syncing = openvas_current_sync (sync_script, &timestamp, &user);
+              if (syncing < 0 || ident[0] == NULL || ident[1] == NULL
+                  || ident[2] == NULL || ident[3] == NULL)
+                {
+                  g_strfreev (ident);
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("describe_feed"));
+                }
+              else
+                {
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<describe_feed_response" " status=\""
+                                           STATUS_OK "\"" " status_text=\""
+                                           STATUS_OK_TEXT "\">" "<feed>"
+                                           "<name>%s</name>"
+                                           "<version>%s</version>"
+                                           "<description>%s</description>",
+                                           ident[3], feed_version,
+                                           feed_description);
+                  g_strfreev (ident);
+                  if (openvas_sync_script_perform_selftest
+                      (sync_script, &selftest_result) == FALSE)
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL ("<sync_not_available>"
+                                               "<error>%s</error>"
+                                               "</sync_not_available>",
+                                               selftest_result ? selftest_result :
+                                               "");
+                      g_free (selftest_result);
+                    }
+
+                  if (syncing > 0)
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL ("<currently_syncing>"
+                                               "<timestamp>%s</timestamp>"
+                                               "<user>%s</user>"
+                                               "</currently_syncing>",
+                                               timestamp ? timestamp : "",
+                                               user ? user : "");
+                      g_free (timestamp);
+                      g_free (user);
+                    }
+                  SEND_TO_CLIENT_OR_FAIL ("</feed>" "</describe_feed_response>");
+                }
+
+              g_free (feed_identification);
+              g_free (feed_version);
+            }
+          else
+            {
+              SEND_TO_CLIENT_OR_FAIL ("<describe_feed_response" " status=\""
+                                      STATUS_OK "\"" " status_text=\""
+                                      STATUS_OK_TEXT "\">");
+              SEND_TO_CLIENT_OR_FAIL ("<feed>");
+              SEND_TO_CLIENT_OR_FAIL ("<name></name>");
+              SEND_TO_CLIENT_OR_FAIL ("<description></description>");
+              SEND_TO_CLIENT_OR_FAIL ("</feed>");
+              SEND_TO_CLIENT_OR_FAIL ("</describe_feed_response>");
+            }
+          g_free (feed_description);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
+      case CLIENT_DESCRIBE_SCAP:
+        {
+          gchar *scap_description = NULL;
+          gchar *scap_identification = NULL;
+          gchar *scap_version = NULL;
+
+          assert (current_credentials.username);
+
+          if (openvas_get_sync_script_description (scap_script, &scap_description)
+              && openvas_get_sync_script_identification (scap_script,
+                                                         &scap_identification,
+                                                         SCAP_FEED)
+              && openvas_get_sync_script_feed_version (scap_script,
+                                                       &scap_version))
+            {
+              gchar *user, *timestamp;
+              int syncing;
+              gchar **ident = g_strsplit (scap_identification, "|", 6);
+              gchar *selftest_result = NULL;
+
+              syncing = openvas_current_sync (scap_script, &timestamp, &user);
+              if (syncing < 0 || ident[0] == NULL || ident[1] == NULL
+                  || ident[2] == NULL || ident[3] == NULL)
+                {
+                  g_strfreev (ident);
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("describe_scap"));
+                }
+              else
+                {
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<describe_scap_response" " status=\""
+                                           STATUS_OK "\"" " status_text=\""
+                                           STATUS_OK_TEXT "\">" "<scap>"
+                                           "<name>%s</name>"
+                                           "<version>%s</version>"
+                                           "<description>%s</description>",
+                                           ident[3], scap_version,
+                                           scap_description);
+                  g_strfreev (ident);
+                  if (openvas_sync_script_perform_selftest
+                      (scap_script, &selftest_result) == FALSE)
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL ("<sync_not_available>"
+                                               "<error>%s</error>"
+                                               "</sync_not_available>",
+                                               selftest_result ? selftest_result :
+                                               "");
+                      g_free (selftest_result);
+                    }
+
+                  if (syncing > 0)
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL ("<currently_syncing>"
+                                               "<timestamp>%s</timestamp>"
+                                               "<user>%s</user>"
+                                               "</currently_syncing>",
+                                               timestamp ? timestamp : "",
+                                               user ? user : "");
+                      g_free (timestamp);
+                      g_free (user);
+                    }
+                  SEND_TO_CLIENT_OR_FAIL ("</scap>" "</describe_scap_response>");
+                }
+
+              g_free (scap_identification);
+              g_free (scap_version);
+            }
+          else
+            {
+              SEND_TO_CLIENT_OR_FAIL ("<describe_scap_response" " status=\""
+                                      STATUS_OK "\"" " status_text=\""
+                                      STATUS_OK_TEXT "\">");
+              SEND_TO_CLIENT_OR_FAIL ("<scap>");
+              SEND_TO_CLIENT_OR_FAIL ("<name></name>");
+              SEND_TO_CLIENT_OR_FAIL ("<description></description>");
+              SEND_TO_CLIENT_OR_FAIL ("</scap>");
+              SEND_TO_CLIENT_OR_FAIL ("</describe_scap_response>");
+            }
+          g_free (scap_description);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
+      case CLIENT_DESCRIBE_CERT:
+        {
+          gchar *cert_description = NULL;
+          gchar *cert_identification = NULL;
+          gchar *cert_version = NULL;
+
+          assert (current_credentials.username);
+
+          if (openvas_get_sync_script_description (cert_script, &cert_description)
+              && openvas_get_sync_script_identification (cert_script,
+                                                         &cert_identification,
+                                                         CERT_FEED)
+              && openvas_get_sync_script_feed_version (cert_script,
+                                                       &cert_version))
+            {
+              gchar *user, *timestamp;
+              int syncing;
+              gchar **ident = g_strsplit (cert_identification, "|", 6);
+              gchar *selftest_result = NULL;
+
+              syncing = openvas_current_sync (cert_script, &timestamp, &user);
+              if (syncing < 0 || ident[0] == NULL || ident[1] == NULL
+                  || ident[2] == NULL || ident[3] == NULL)
+                {
+                  g_strfreev (ident);
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("describe_cert"));
+                }
+              else
+                {
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<describe_cert_response" " status=\""
+                                           STATUS_OK "\"" " status_text=\""
+                                           STATUS_OK_TEXT "\">" "<cert>"
+                                           "<name>%s</name>"
+                                           "<version>%s</version>"
+                                           "<description>%s</description>",
+                                           ident[3], cert_version,
+                                           cert_description);
+                  g_strfreev (ident);
+                  if (openvas_sync_script_perform_selftest
+                      (scap_script, &selftest_result) == FALSE)
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL ("<sync_not_available>"
+                                               "<error>%s</error>"
+                                               "</sync_not_available>",
+                                               selftest_result ? selftest_result :
+                                               "");
+                      g_free (selftest_result);
+                    }
+
+                  if (syncing > 0)
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL ("<currently_syncing>"
+                                               "<timestamp>%s</timestamp>"
+                                               "<user>%s</user>"
+                                               "</currently_syncing>",
+                                               timestamp ? timestamp : "",
+                                               user ? user : "");
+                      g_free (timestamp);
+                      g_free (user);
+                    }
+                  SEND_TO_CLIENT_OR_FAIL ("</cert>" "</describe_cert_response>");
+                }
+
+              g_free (cert_identification);
+              g_free (cert_version);
+            }
+          else
+            {
+              SEND_TO_CLIENT_OR_FAIL ("<describe_cert_response" " status=\""
+                                      STATUS_OK "\"" " status_text=\""
+                                      STATUS_OK_TEXT "\">");
+              SEND_TO_CLIENT_OR_FAIL ("<cert>");
+              SEND_TO_CLIENT_OR_FAIL ("<name></name>");
+              SEND_TO_CLIENT_OR_FAIL ("<description></description>");
+              SEND_TO_CLIENT_OR_FAIL ("</cert>");
+              SEND_TO_CLIENT_OR_FAIL ("</describe_cert_response>");
+            }
+          g_free (cert_description);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -20581,6 +20879,136 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
            (XML_ERROR_SYNTAX ("stop_task",
                               "STOP_TASK requires a task_id attribute"));
         stop_task_data_reset (stop_task_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_SYNC_CERT:
+        assert (current_credentials.username);
+        if (forked == 2)
+          /* Prevent the forked child from forking again, as then both
+           * forked children would be using the same server session. */
+          abort ();               // FIX respond with error or something
+        else
+          switch (openvas_sync_feed (cert_script, current_credentials.username, CERT_FEED))
+            {
+            case 0:
+              SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("sync_cert"));
+              forked = 1;
+              break;
+            case 1:
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_BUSY ("sync_cert"));
+              break;
+            case 2:
+              /* Forked sync process: success. */
+              current_error = 2;
+              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Dummy error for current_error");
+              break;
+            case 11:
+              /* Forked sync process: success busy. */
+              current_error = 2;
+              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Dummy error for current_error");
+              break;
+            case -10:
+              /* Forked sync process: error. */
+              current_error = -10;
+              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Dummy error for current_error");
+              break;
+            default:
+              assert (0);
+            case -1:
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("sync_cert"));
+              break;
+            }
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_SYNC_FEED:
+        assert (current_credentials.username);
+        if (forked == 2)
+          /* Prevent the forked child from forking again, as then both
+           * forked children would be using the same server session. */
+          abort ();               // FIX respond with error or something
+        else
+          switch (openvas_sync_feed (sync_script, current_credentials.username,
+                                     NVT_FEED))
+            {
+            case 0:
+              SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("sync_feed"));
+              forked = 1;
+              break;
+            case 1:
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_BUSY ("sync_feed"));
+              break;
+            case 2:
+              /* Forked sync process: success. */
+              current_error = 2;
+              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Dummy error for current_error");
+              break;
+            case 11:
+              /* Forked sync process: success busy. */
+              current_error = 2;
+              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Dummy error for current_error");
+              break;
+            case -10:
+              /* Forked sync process: error. */
+              current_error = -10;
+              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Dummy error for current_error");
+              break;
+            default:
+              assert (0);
+            case -1:
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("sync_feed"));
+              break;
+            }
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_SYNC_SCAP:
+        assert (current_credentials.username);
+        if (forked == 2)
+          /* Prevent the forked child from forking again, as then both
+           * forked children would be using the same server session. */
+          abort ();               // FIX respond with error or something
+        else
+          switch (openvas_sync_feed (scap_script, current_credentials.username, SCAP_FEED))
+            {
+            case 0:
+              SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("sync_scap"));
+              forked = 1;
+              break;
+            case 1:
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_BUSY ("sync_scap"));
+              break;
+            case 2:
+              /* Forked sync process: success. */
+              current_error = 2;
+              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Dummy error for current_error");
+              break;
+            case 11:
+              /* Forked sync process: success busy. */
+              current_error = 2;
+              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Dummy error for current_error");
+              break;
+            case -10:
+              /* Forked sync process: error. */
+              current_error = -10;
+              g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Dummy error for current_error");
+              break;
+            default:
+              assert (0);
+            case -1:
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("sync_scap"));
+              break;
+            }
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

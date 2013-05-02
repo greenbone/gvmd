@@ -49,6 +49,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <glib.h>
 #include <locale.h>
 #include <uuid/uuid.h>
@@ -56,6 +57,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
@@ -5107,6 +5110,652 @@ validate_username (const gchar * name)
     return 0;
   else
     return 1;
+}
+
+
+/* Feeds. */
+
+/**
+ * @brief Request a feed synchronization script selftest.
+ *
+ * Ask a feed synchronization script to perform a selftest and report
+ * the results.
+ *
+ * @param[in]   sync_script  The file name of the synchronization script.
+ * @param[out]  result       Return location for selftest errors, or NULL.
+ *
+ * @return TRUE if the selftest was successful, or FALSE if an error occured.
+ */
+gboolean
+openvas_sync_script_perform_selftest (const gchar * sync_script,
+                                      gchar ** result)
+{
+  g_assert (sync_script);
+  g_assert_cmpstr (*result, ==, NULL);
+
+  gchar *script_working_dir = g_path_get_dirname (sync_script);
+
+  gchar **argv = (gchar **) g_malloc (3 * sizeof (gchar *));
+  argv[0] = g_strdup (sync_script);
+  argv[1] = g_strdup ("--selftest");
+  argv[2] = NULL;
+
+  gchar *script_out;
+  gchar *script_err;
+  gint script_exit;
+  GError *error = NULL;
+
+  if (!g_spawn_sync
+      (script_working_dir, argv, NULL, 0, NULL, NULL, &script_out, &script_err,
+       &script_exit, &error))
+    {
+      if (*result != NULL)
+        {
+          *result =
+            g_strdup_printf ("Failed to execute synchronization " "script: %s",
+                             error->message);
+        }
+
+      g_free (script_working_dir);
+      g_strfreev (argv);
+      g_free (script_out);
+      g_free (script_err);
+      g_error_free (error);
+
+      return FALSE;
+    }
+
+  if (script_exit != 0)
+    {
+      if (script_err != NULL)
+        {
+          *result = g_strdup_printf ("%s", script_err);
+        }
+
+      g_free (script_working_dir);
+      g_strfreev (argv);
+      g_free (script_out);
+      g_free (script_err);
+
+      return FALSE;
+    }
+
+  g_free (script_working_dir);
+  g_strfreev (argv);
+  g_free (script_out);
+  g_free (script_err);
+
+  return TRUE;
+}
+
+/**
+ * @brief Retrieves the ID string of a feed sync script, with basic validation.
+ *
+ * @param[in]   sync_script     The file name of the synchronization script.
+ * @param[out]  identification  Return location of the identification string.
+ * @param[in]   feed_type       Could be NVT_FEED, SCAP_FEED or CERT_FEED.
+ *
+ * @return TRUE if the identification string was retrieved, or FALSE if an
+ *         error occured.
+ */
+gboolean
+openvas_get_sync_script_identification (const gchar * sync_script,
+                                        gchar ** identification,
+                                        int feed_type)
+{
+  g_assert (sync_script);
+  g_assert_cmpstr (*identification, ==, NULL);
+
+  gchar *script_working_dir = g_path_get_dirname (sync_script);
+
+  gchar **argv = (gchar **) g_malloc (3 * sizeof (gchar *));
+  argv[0] = g_strdup (sync_script);
+  argv[1] = g_strdup ("--identify");
+  argv[2] = NULL;
+
+  gchar *script_out;
+  gchar *script_err;
+  gint script_exit;
+  GError *error = NULL;
+
+  gchar **script_identification;
+
+  if (!g_spawn_sync
+      (script_working_dir, argv, NULL, 0, NULL, NULL, &script_out, &script_err,
+       &script_exit, &error))
+    {
+      g_warning ("Failed to execute %s: %s", sync_script, error->message);
+
+      g_free (script_working_dir);
+      g_strfreev (argv);
+      g_free (script_out);
+      g_free (script_err);
+      g_error_free (error);
+
+      return FALSE;
+    }
+
+  if (script_exit != 0)
+    {
+      g_warning ("%s returned a non-zero exit code.", sync_script);
+
+      g_free (script_working_dir);
+      g_strfreev (argv);
+      g_free (script_out);
+      g_free (script_err);
+
+      return FALSE;
+    }
+
+  script_identification = g_strsplit (script_out, "|", 6);
+
+  if ((script_identification[0] == NULL)
+      || (feed_type == NVT_FEED
+          && g_ascii_strncasecmp (script_identification[0],"NVTSYNC",7))
+      || (feed_type == SCAP_FEED
+          && g_ascii_strncasecmp (script_identification[0],"SCAPSYNC",7))
+      || (feed_type == CERT_FEED
+          && g_ascii_strncasecmp (script_identification[0],"CERTSYNC",7))
+      || g_ascii_strncasecmp (script_identification[0], script_identification[5], 7))
+    {
+      g_warning ("%s is not a NVT synchronization script.", sync_script);
+
+      g_free (script_working_dir);
+      g_strfreev (argv);
+      g_free (script_out);
+      g_free (script_err);
+
+      g_strfreev (script_identification);
+
+      return FALSE;
+    }
+
+  *identification = g_strdup (script_out);
+
+  g_free (script_working_dir);
+  g_strfreev (argv);
+  g_free (script_out);
+  g_free (script_err);
+
+  g_strfreev (script_identification);
+
+  return TRUE;
+}
+
+/**
+ * @brief Retrieves description of a feed sync script, with basic validation.
+ *
+ * @param[in]   sync_script  The file name of the synchronization script.
+ * @param[out]  description  Return location of the description string.
+ *
+ * @return TRUE if the description was retrieved, or FALSE if an error
+ *         occured.
+ */
+gboolean
+openvas_get_sync_script_description (const gchar * sync_script,
+                                     gchar ** description)
+{
+  g_assert (sync_script);
+  g_assert_cmpstr (*description, ==, NULL);
+
+  gchar *script_working_dir = g_path_get_dirname (sync_script);
+
+  gchar **argv = (gchar **) g_malloc (3 * sizeof (gchar *));
+  argv[0] = g_strdup (sync_script);
+  argv[1] = g_strdup ("--describe");
+  argv[2] = NULL;
+
+  gchar *script_out;
+  gchar *script_err;
+  gint script_exit;
+  GError *error = NULL;
+
+  if (!g_spawn_sync
+      (script_working_dir, argv, NULL, 0, NULL, NULL, &script_out, &script_err,
+       &script_exit, &error))
+    {
+      g_warning ("Failed to execute %s: %s", sync_script, error->message);
+
+      g_free (script_working_dir);
+      g_strfreev (argv);
+      g_free (script_out);
+      g_free (script_err);
+      g_error_free (error);
+
+      return FALSE;
+    }
+
+  if (script_exit != 0)
+    {
+      g_warning ("%s returned a non-zero exit code.", sync_script);
+
+      g_free (script_working_dir);
+      g_strfreev (argv);
+      g_free (script_out);
+      g_free (script_err);
+
+      return FALSE;
+    }
+
+  *description = g_strdup (script_out);
+
+  g_free (script_working_dir);
+  g_strfreev (argv);
+  g_free (script_out);
+  g_free (script_err);
+
+  return TRUE;
+}
+
+/**
+ * @brief Retrieves the version of a feed handled by the sync, with basic
+ * validation.
+ *
+ * @param[in]   sync_script  The file name of the synchronization script.
+ * @param[out]  feed_version  Return location of the feed version string.
+ *
+ * @return TRUE if the feed version was retrieved, or FALSE if an error
+ *         occured.
+ */
+gboolean
+openvas_get_sync_script_feed_version (const gchar * sync_script,
+                                      gchar ** feed_version)
+{
+  g_assert (sync_script);
+  g_assert_cmpstr (*feed_version, ==, NULL);
+
+  gchar *script_working_dir = g_path_get_dirname (sync_script);
+
+  gchar **argv = (gchar **) g_malloc (3 * sizeof (gchar *));
+  argv[0] = g_strdup (sync_script);
+  argv[1] = g_strdup ("--feedversion");
+  argv[2] = NULL;
+
+  gchar *script_out;
+  gchar *script_err;
+  gint script_exit;
+  GError *error = NULL;
+
+  if (!g_spawn_sync
+      (script_working_dir, argv, NULL, 0, NULL, NULL, &script_out, &script_err,
+       &script_exit, &error))
+    {
+      g_warning ("Failed to execute %s: %s", sync_script, error->message);
+
+      g_free (script_working_dir);
+      g_strfreev (argv);
+      g_free (script_out);
+      g_free (script_err);
+      g_error_free (error);
+
+      return FALSE;
+    }
+
+  if (script_exit != 0)
+    {
+      g_warning ("%s returned a non-zero exit code.", sync_script);
+
+      g_free (script_working_dir);
+      g_strfreev (argv);
+      g_free (script_out);
+      g_free (script_err);
+
+      return FALSE;
+    }
+
+  *feed_version = g_strdup (script_out);
+
+  g_free (script_working_dir);
+  g_strfreev (argv);
+  g_free (script_out);
+  g_free (script_err);
+
+  return TRUE;
+}
+
+/**
+ * @brief Forks a child to synchronize the local feed collection.
+ *
+ * The forked process calls a sync script to sync the feed.
+ *
+ * @param[in]  sync_script   The file name of the synchronization script.
+ * @param[in]  current_user  The user currently authenticated.
+ * @param[in]  feed_type     Could be NVT_FEED, SCAP_FEED or CERT_FEED.
+ *
+ * @return 0 sync requested (parent), 1 sync already in progress (parent),
+ *         -1 error (parent), 2 sync complete (child), 11 sync in progress
+ *         (child), -10 error (child).
+ */
+int
+openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
+                   int feed_type)
+{
+  int fd, ret = 2;
+  gchar *lockfile_name, *lockfile_dirname;
+  gchar *script_identification_string = NULL;
+  pid_t pid;
+  mode_t old_mask;
+
+  g_assert (sync_script);
+  g_assert (current_user);
+
+  if (!openvas_get_sync_script_identification
+      (sync_script, &script_identification_string, feed_type))
+    {
+      g_warning ("No valid synchronization script supplied!");
+      return -1;
+    }
+
+  /* Open the lock file. */
+
+  lockfile_name =
+    g_build_filename (g_get_tmp_dir (), "openvas-feed-sync", sync_script, NULL);
+  lockfile_dirname = g_path_get_dirname (lockfile_name);
+  old_mask = umask (0);
+  if (g_mkdir_with_parents (lockfile_dirname,
+                            /* "-rwxrwxrwx" */
+                            S_IRWXU | S_IRWXG | S_IRWXO))
+    {
+      umask (old_mask);
+      g_warning ("Failed to create lock dir '%s': %s", lockfile_dirname,
+                 strerror (errno));
+      g_free (lockfile_name);
+      g_free (lockfile_dirname);
+      return -1;
+    }
+  umask (old_mask);
+  g_free (lockfile_dirname);
+
+  fd =
+    open (lockfile_name, O_RDWR | O_CREAT | O_EXCL,
+          S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP /* "-rw-r--r--" */ );
+  if (fd == -1)
+    {
+      if (errno == EEXIST)
+        return 1;
+      g_warning ("Failed to open lock file '%s': %s", lockfile_name,
+                 strerror (errno));
+      g_free (lockfile_name);
+      return -1;
+    }
+
+  /* Close and remove the lock file around the fork.  Another process may get
+   * the lock here, in which case the child will simply fail to get the
+   * lock. */
+
+  if (close (fd))
+    {
+      g_free (lockfile_name);
+      g_warning ("Failed to close lock file: %s", strerror (errno));
+      return -1;
+    }
+
+  if (unlink (lockfile_name))
+    {
+      g_free (lockfile_name);
+      g_warning ("Failed to remove lock file: %s", strerror (errno));
+      return -1;
+    }
+
+  /* Setup SIGCHLD for waiting. */
+
+  /* RATS: ignore, this is SIG_DFL damnit. */
+  if (signal (SIGCHLD, SIG_DFL) == SIG_ERR)
+    {
+      g_warning ("Failed to set SIG_DFL");
+      return -1;
+    }
+
+  /* Fork a child to run the sync while the parent responds to
+   * the client. */
+
+  pid = fork ();
+  switch (pid)
+    {
+    case 0:
+      /* Child.  Carry on to sync. */
+      break;
+    case -1:
+      /* Parent when error. */
+      g_warning ("%s: failed to fork sync child: %s\n", __FUNCTION__,
+                 strerror (errno));
+      return -1;
+      break;
+    default:
+      /* Parent.  Return in order to respond to client. */
+      return 0;
+      break;
+    }
+
+  /* Open the lock file. */
+
+  fd =
+    open (lockfile_name, O_RDWR | O_CREAT | O_EXCL,
+          S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP /* "-rw-r--r--" */ );
+  if (fd == -1)
+    {
+      if (errno == EEXIST)
+        return 11;
+      g_warning ("Failed to open lock file '%s' (child): %s", lockfile_name,
+                 strerror (errno));
+      g_free (lockfile_name);
+      return -10;
+    }
+
+  /* Write the current time and user to the lock file. */
+
+  {
+    const char *output;
+    int count, left;
+    time_t now;
+
+    time (&now);
+    output = ctime (&now);
+    left = strlen (output);
+    while (1)
+      {
+        count = write (fd, output, left);
+        if (count < 0)
+          {
+            if (errno == EINTR || errno == EAGAIN)
+              continue;
+            g_warning ("%s: write: %s", __FUNCTION__, strerror (errno));
+            goto exit;
+          }
+        if (count == left)
+          break;
+        left -= count;
+        output += count;
+      }
+
+    output = current_user;
+    left = strlen (output);
+    while (1)
+      {
+        count = write (fd, output, left);
+        if (count < 0)
+          {
+            if (errno == EINTR || errno == EAGAIN)
+              continue;
+            g_warning ("%s: write: %s", __FUNCTION__, strerror (errno));
+            goto exit;
+          }
+        if (count == left)
+          break;
+        left -= count;
+        output += count;
+      }
+
+    while (1)
+      {
+        count = write (fd, "\n", 1);
+        if (count < 0)
+          {
+            if (errno == EINTR || errno == EAGAIN)
+              continue;
+            g_warning ("%s: write: %s", __FUNCTION__, strerror (errno));
+            goto exit;
+          }
+        if (count == 1)
+          break;
+      }
+  }
+
+  /* Fork a child to be the sync process. */
+
+  pid = fork ();
+  switch (pid)
+    {
+    case 0:
+      {
+        /* Child.  Become the sync process. */
+
+        if (freopen ("/tmp/openvasad_sync_out", "w", stdout) == NULL)
+          {
+            g_warning ("Failed to reopen stdout: %s", strerror (errno));
+            exit (EXIT_FAILURE);
+          }
+
+        if (freopen ("/tmp/openvasad_sync_err", "w", stderr) == NULL)
+          {
+            g_warning ("Failed to reopen stderr: %s", strerror (errno));
+            exit (EXIT_FAILURE);
+          }
+
+        if (execl (sync_script, sync_script, (char *) NULL))
+          {
+            g_warning ("Failed to execl %s: %s", sync_script, strerror (errno));
+            exit (EXIT_FAILURE);
+          }
+        /*@notreached@ */
+        exit (EXIT_FAILURE);
+        break;
+      }
+    case -1:
+      /* Parent when error. */
+
+      g_warning ("%s: failed to fork syncer: %s\n", __FUNCTION__,
+                 strerror (errno));
+      ret = -1;
+      goto exit;
+      break;
+    default:
+      {
+        int status;
+
+        /* Parent on success.  Wait for child, and handle result. */
+
+        while (wait (&status) < 0)
+          {
+            if (errno == ECHILD)
+              {
+                g_warning ("Failed to get child exit status");
+                ret = -10;
+                goto exit;
+              }
+            if (errno == EINTR)
+              continue;
+            g_warning ("wait: %s", strerror (errno));
+            ret = -10;
+            goto exit;
+          }
+        if (WIFEXITED (status))
+          switch (WEXITSTATUS (status))
+            {
+            case EXIT_SUCCESS:
+              break;
+            case EXIT_FAILURE:
+            default:
+              g_warning ("Error during synchronization.");
+              ret = -10;
+              break;
+            }
+        else
+          {
+            g_message ("Error during synchronization.");
+            ret = -10;
+          }
+
+        break;
+      }
+    }
+
+exit:
+
+  /* Close the lock file. */
+
+  if (close (fd))
+    {
+      g_free (lockfile_name);
+      g_warning ("Failed to close lock file (child): %s", strerror (errno));
+      return -10;
+    }
+
+  /* Remove the lock file. */
+
+  if (unlink (lockfile_name))
+    {
+      g_free (lockfile_name);
+      g_warning ("Failed to remove lock file (child): %s", strerror (errno));
+      return -10;
+    }
+
+  g_free (lockfile_name);
+
+  return ret;
+}
+
+/**
+ * @brief Determine if the administrator is synchronizing with a feed.
+ *
+ * @param[in]   sync_script  The file name of the synchronization script.
+ * @param[out]  timestamp    Newly allocated time that sync started, if syncing.
+ * @param[out]  user         Newly allocated user who started sync, if syncing.
+ *
+ * @return 0 success, 1 success when sync in progress, -1 error.
+ */
+int
+openvas_current_sync (const gchar * sync_script, gchar ** timestamp,
+                      gchar ** user)
+{
+  gchar *lockfile_name, *content, **lines;
+  GError *error = NULL;
+
+  g_assert (sync_script);
+
+  lockfile_name =
+    g_build_filename (g_get_tmp_dir (), "openvas-feed-sync", sync_script, NULL);
+  if (!g_file_get_contents (lockfile_name, &content, NULL, &error))
+    {
+      if (g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT)
+          || g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_ACCES))
+        {
+          g_error_free (error);
+          g_free (lockfile_name);
+          return 0;
+        }
+
+      g_warning ("%s: %s", __FUNCTION__, error->message);
+      g_error_free (error);
+      g_free (lockfile_name);
+      return -1;
+    }
+
+  lines = g_strsplit (content, "\n", 2);
+  g_free (content);
+  if (lines[0] && lines[1])
+    {
+      *timestamp = g_strdup (lines[0]);
+      *user = g_strdup (lines[1]);
+
+      g_free (lockfile_name);
+      g_strfreev (lines);
+      return 1;
+    }
+
+  g_free (lockfile_name);
+  g_strfreev (lines);
+  return -1;
 }
 
 

@@ -1,5 +1,30 @@
 2013-05-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add DESCRIBE_CERT, DESCRIBE_FEED, DESCRIBE_SCAP, SYNC_CERT, SYNC_FEED
+	and SYNC_SCAP to OMP.  These are direct copies from OAP in Administrator
+	with some slight changes to fit in Manager, mostly formatting.
+
+	* CMakeLists.txt (OPENVAS_SYNC_SCRIPT_DIR): New variable
+
+	* src/CMakeLists.txt: Add OPENVAS_SYNC_SCRIPT_DIR to definitions.
+
+	* src/manage.c (openvas_sync_script_perform_selftest)
+	(openvas_get_sync_script_identification)
+	(openvas_get_sync_script_description, openvas_current_sync)
+	(openvas_get_sync_script_feed_version, openvas_sync_feed): New
+	functions.
+
+	* src/manage.h: Add headers accordingly.
+	(NVT_FEED, SCAP_FEED, CERT_FEED): New defines.
+
+	* src/omp.c (omp_commands, client_state_t): Add new commands.
+	(sync_script, scap_script, cert_script): New variables.
+	(XML_ERROR_BUSY): New macro.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add handling
+	of new commands.
+
+2013-05-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (openvas_admin_add_user)
 	(openvas_admin_modify_user): Clean hosts, to ensure that there are
 	spaces between the hosts.

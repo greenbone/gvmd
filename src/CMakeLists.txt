@@ -118,6 +118,10 @@ if (OPENVAS_NVT_DIR)
   add_definitions (-DOPENVAS_NVT_DIR=\\\"${OPENVAS_NVT_DIR}\\\")
 endif (OPENVAS_NVT_DIR)
 
+if (OPENVAS_SYNC_SCRIPT_DIR)
+  add_definitions (-DOPENVAS_SYNC_SCRIPT_DIR=\\\"${OPENVAS_SYNC_SCRIPT_DIR}\\\")
+endif (OPENVAS_SYNC_SCRIPT_DIR)
+
 set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
                        "${SQLITE3_CFLAGS} ${GNUTLS_CFLAGS} ${UUID_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
