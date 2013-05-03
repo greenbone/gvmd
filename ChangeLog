@@ -1,3 +1,8 @@
+2013-05-03  Andre Heinecke <andre.heinecke@greenbone.net>
+
+	* report_formats/verinice-ism/create_report_import:
+	Increase Version to 1.1.8
+
 2013-05-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add DESCRIBE_CERT, DESCRIBE_FEED, DESCRIBE_SCAP, SYNC_CERT, SYNC_FEED
