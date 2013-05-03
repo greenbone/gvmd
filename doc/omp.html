@@ -1616,6 +1616,43 @@ result_overrides_override_orphan
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
+              &lt;<b>user_tags</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Info on tags attached to the result (not in delta results).</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>subnet</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -1770,6 +1807,7 @@ result_overrides_override_orphan
  = element result
      {
        attribute id { uuid }
+       &amp; result_user_tags?
        &amp; result_subnet
        &amp; result_host
        &amp; result_port
@@ -1782,6 +1820,46 @@ result_overrides_override_orphan
        &amp; result_detection
        &amp; result_notes?
        &amp; result_overrides?
+     }
+
+result_user_tags
+ = element user_tags
+     {
+       result_user_tags_count
+       &amp; result_user_tags_tag*
+     }
+
+result_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+result_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; result_user_tags_tag_name
+       &amp; result_user_tags_tag_value
+       &amp; result_user_tags_tag_comment
+     }
+
+result_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+result_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+result_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 result_subnet
@@ -1903,6 +1981,7 @@ result_delta_result
  = element result    # type result
      {
        attribute id { uuid }
+       &amp; result_user_tags?
        &amp; result_subnet
        &amp; result_host
        &amp; result_port
@@ -1969,6 +2048,7 @@ result_detection_result
  = element result    # type result
      {
        attribute id { uuid }
+       &amp; result_user_tags?
        &amp; result_subnet
        &amp; result_host
        &amp; result_port
@@ -2186,6 +2266,43 @@ result_overrides
 <li>
               &lt;<b>same</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether results that are equal are included.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the reprt.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -2505,6 +2622,7 @@ report_report
        &amp; report_report_delta?
        &amp; ( report_report_sort
            &amp; report_report_filters
+           &amp; report_report_user_tags
            &amp; report_report_scan_run_status
            &amp; report_report_result_count
            &amp; report_report_host_count?
@@ -2720,6 +2838,46 @@ report_report_filters_delta_same
        boolean
      }
 
+report_report_user_tags
+ = element user_tags
+     {
+       report_report_user_tags_count
+       &amp; report_report_user_tags_tag*
+     }
+
+report_report_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+report_report_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; report_report_user_tags_tag_name
+       &amp; report_report_user_tags_tag_value
+       &amp; report_report_user_tags_tag_comment
+     }
+
+report_report_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+report_report_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+report_report_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
 report_report_scan_run_status
  = element scan_run_status
      {
@@ -2932,6 +3090,7 @@ report_report_results_result
  = element result    # type result
      {
        attribute id { uuid }
+       &amp; result_user_tags?
        &amp; result_subnet
        &amp; result_host
        &amp; result_port
@@ -15223,6 +15382,9 @@ get_reports_response_report
          &lt;filter&gt;Log&lt;/filter&gt;
          &lt;filter&gt;Debug&lt;/filter&gt;
        &lt;/filters&gt;
+       &lt;user_tags&gt;
+         &lt;count&gt;0&lt;/count&gt;
+       &lt;/user_tags&gt;
        &lt;scan_run_status&gt;Done&lt;/scan_run_status&gt;
        &lt;result_count&gt;
          &lt;full&gt;10&lt;/full&gt;
@@ -15938,6 +16100,43 @@ get_report_formats_response_report_format_active
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the agent.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>subnet</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -16071,6 +16270,7 @@ get_results_response_results_result
  = element result
      {
        attribute id { uuid }
+       &amp; get_results_response_results_result_user_tags
        &amp; get_results_response_results_result_subnet
        &amp; get_results_response_results_result_host
        &amp; get_results_response_results_result_port
@@ -16079,6 +16279,46 @@ get_results_response_results_result
        &amp; get_results_response_results_result_description
        &amp; get_results_response_results_result_notes?
        &amp; get_results_response_results_result_overrides?
+     }
+
+get_results_response_results_result_user_tags
+ = element user_tags
+     {
+       get_results_response_results_result_user_tags_count
+       &amp; get_results_response_results_result_user_tags_tag*
+     }
+
+get_results_response_results_result_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_results_response_results_result_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_results_response_results_result_user_tags_tag_name
+       &amp; get_results_response_results_result_user_tags_tag_value
+       &amp; get_results_response_results_result_user_tags_tag_comment
+     }
+
+get_results_response_results_result_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_results_response_results_result_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_results_response_results_result_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_results_response_results_result_subnet
@@ -16201,6 +16441,9 @@ get_results_response_results_result_overrides
                        status_text="OK"&gt;
    &lt;results&gt;
      &lt;result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508"&gt;
+       &lt;user_tags&gt;
+         &lt;count&gt;0&lt;/count&gt;
+       &lt;/user_tags&gt;
        &lt;subnet&gt;127.0.1.1&lt;/subnet&gt;
        &lt;host&gt;127.0.1.1&lt;/host&gt;
        &lt;port&gt;general/tcp&lt;/port&gt;
@@ -16233,6 +16476,9 @@ get_results_response_results_result_overrides
                        status_text="OK"&gt;
    &lt;results&gt;
      &lt;result id="cac9e7c8-c726-49fd-a710-5f99079ab93e"&gt;
+       &lt;user_tags&gt;
+         &lt;count&gt;0&lt;/count&gt;
+       &lt;/user_tags&gt;
        &lt;subnet&gt;127.0.0.1&lt;/subnet&gt;
        &lt;host&gt;127.0.0.1&lt;/host&gt;
        &lt;port&gt;general/tcp&lt;/port&gt;

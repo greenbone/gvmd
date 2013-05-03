@@ -135,8 +135,8 @@
 
 /** @todo Exported for manage_sql.c. */
 void
-buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int,
-                    const char *, iterator_t *, int);
+buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int, int,
+                    int, const char *, iterator_t *, int);
 
 static void
 buffer_xml_append_printf (GString*, const char*, ...);
@@ -9259,6 +9259,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     0,  /* Note details. */
                                     0,  /* Overrides. */
                                     0,  /* Override details. */
+                                    0,  /* Tags. */
+                                    0,  /* Tag details. */
                                     NULL,
                                     NULL,
                                     0);
@@ -9455,6 +9457,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     0,  /* Override details. */
                                     0,  /* Overrides. */
                                     0,  /* Override details. */
+                                    0,  /* Tags. */
+                                    0,  /* Tag details. */
                                     NULL,
                                     NULL,
                                     0);
@@ -9791,6 +9795,8 @@ buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
  * @param[in]  include_notes_details  Whether to include details of notes.
  * @param[in]  include_overrides          Whether to include overrides.
  * @param[in]  include_overrides_details  Whether to include details of overrides.
+ * @param[in]  include_tags           Whether to include user tag count.
+ * @param[in]  include_tags_details   Whether to include details of tags.
  * @param[in]  delta_state            Delta state of result, or NULL.
  * @param[in]  delta_results          Iterator for delta result to include, or
  *                                    NULL.
@@ -9800,6 +9806,7 @@ void
 buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int include_notes, int include_notes_details,
                     int include_overrides, int include_overrides_details,
+                    int include_tags, int include_tags_details,
                     const char *delta_state, iterator_t *delta_results,
                     int changed)
 {
@@ -9822,6 +9829,39 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   result_uuid (result, &uuid);
 
   buffer_xml_append_printf (buffer, "<result id=\"%s\">", uuid);
+
+  if (include_tags)
+    {
+      buffer_xml_append_printf (buffer,
+                                "<user_tags>"
+                                "<count>%i</count>",
+                                resource_tag_count ("result", uuid, 1));
+
+      if (include_tags_details)
+        {
+          iterator_t tags;
+
+          init_resource_tag_iterator (&tags, "result", uuid, 1, NULL, 1);
+
+          while (next (&tags))
+            {
+              buffer_xml_append_printf (buffer,
+                                        "<tag id=\"%s\">"
+                                        "<name>%s</name>"
+                                        "<value>%s</value>"
+                                        "<comment>%s</comment>"
+                                        "</tag>",
+                                        resource_tag_iterator_uuid (&tags),
+                                        resource_tag_iterator_name (&tags),
+                                        resource_tag_iterator_value (&tags),
+                                        resource_tag_iterator_comment (&tags));
+            }
+
+          cleanup_iterator (&tags);
+        }
+
+      buffer_xml_append_printf (buffer, "</user_tags>");
+    }
 
   detect_ref = detect_cpe = detect_loc = detect_oid = detect_name = NULL;
   if (result_detection_reference (result, &detect_ref, &detect_cpe, &detect_loc,
@@ -9931,7 +9971,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
           const char *delta_descr;
           buffer_results_xml (buffer, delta_results, task, include_notes,
                               include_notes_details, include_overrides,
-                              include_overrides_details, delta_state, NULL, 0);
+                              include_overrides_details, include_tags,
+                              include_tags_details, delta_state, NULL, 0);
           delta_descr = result_iterator_descr (delta_results);
           delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
                                        : NULL;
@@ -12423,6 +12464,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_results_data->notes_details,
                                       get_results_data->overrides,
                                       get_results_data->overrides_details,
+                                      1,
+                                      /* show tags if selected by ID */
+                                      get_results_data->result_id != NULL,
                                       NULL,
                                       NULL,
                                       0);

@@ -24208,7 +24208,7 @@ compare_port_threat (gconstpointer arg_one, gconstpointer arg_two)
 
 /** @todo Defined in omp.c! */
 void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int,
-                         const char *, iterator_t *, int);
+                         int, int, const char *, iterator_t *, int);
 
 /**
  * @brief Comparison returns.
@@ -24583,6 +24583,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   notes_details,
                                   overrides,
                                   overrides_details,
+                                  0,
+                                  0,
                                   "changed",
                                   delta_results,
                                   1);
@@ -24609,6 +24611,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   notes_details,
                                   overrides,
                                   overrides_details,
+                                  0,
+                                  0,
                                   "gone",
                                   delta_results,
                                   0);
@@ -24635,6 +24639,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   notes_details,
                                   overrides,
                                   overrides_details,
+                                  0,
+                                  0,
                                   "new",
                                   delta_results,
                                   0);
@@ -24661,6 +24667,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   notes_details,
                                   overrides,
                                   overrides_details,
+                                  0,
+                                  0,
                                   "same",
                                   delta_results,
                                   0);
@@ -25796,6 +25804,43 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   PRINT (out, "</filters>");
 
   if (report)
+    {
+      uuid = report_uuid (report);
+
+      PRINT (out,
+            "<user_tags>"
+            "<count>%i</count>",
+            resource_tag_count ("report", uuid, 1));
+
+      if (get->details || get->id)
+        {
+          iterator_t tags;
+
+          init_resource_tag_iterator (&tags, "report", uuid, 1, NULL, 1);
+
+          while (next (&tags))
+            {
+              PRINT (out,
+                      "<tag id=\"%s\">"
+                      "<name>%s</name>"
+                      "<value>%s</value>"
+                      "<comment>%s</comment>"
+                      "</tag>",
+                      resource_tag_iterator_uuid (&tags),
+                      resource_tag_iterator_name (&tags),
+                      resource_tag_iterator_value (&tags),
+                      resource_tag_iterator_comment (&tags));
+            }
+
+          cleanup_iterator (&tags);
+        }
+
+      PRINT (out, "</user_tags>");
+
+      free (uuid);
+    }
+
+  if (report)
     PRINT
      (out,
       "<scan_run_status>%s</scan_run_status>",
@@ -26801,6 +26846,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                         notes_details,
                                         overrides,
                                         overrides_details,
+                                        0,
+                                        0,
                                         "new",
                                         NULL,
                                         0);
@@ -26842,6 +26889,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                         notes_details,
                                         overrides,
                                         overrides_details,
+                                        0,
+                                        0,
                                         "gone",
                                         NULL,
                                         0);
@@ -27353,6 +27402,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                               notes_details,
                               overrides,
                               overrides_details,
+                              1,
+                              1,
                               NULL,
                               NULL,
                               0);

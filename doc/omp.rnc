@@ -617,6 +617,7 @@ result
  = element result
      {
        attribute id { uuid }
+       & result_user_tags?
        & result_subnet
        & result_host
        & result_port
@@ -629,6 +630,53 @@ result
        & result_detection
        & result_notes?
        & result_overrides?
+     }
+
+# Info on tags attached to the result (not in delta results).
+result_user_tags
+ = element user_tags
+     {
+       result_user_tags_count
+       & result_user_tags_tag*
+     }
+
+# Number of attached tags.
+result_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+# Short info on an individual tag (only if details were requested).
+result_user_tags_tag
+ = element tag
+     {
+       # UUID of the tag.
+       attribute id { uuid }
+       & result_user_tags_tag_name
+       & result_user_tags_tag_value
+       & result_user_tags_tag_comment
+     }
+
+# Name of the tag (usually namespace:predicate).
+result_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+# Value of the tag.
+result_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment for the tag.
+result_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 result_subnet
@@ -764,6 +812,7 @@ result_delta_result
  = element result    # type result
      {
        attribute id { uuid }
+       & result_user_tags?
        & result_subnet
        & result_host
        & result_port
@@ -837,6 +886,7 @@ result_detection_result
  = element result    # type result
      {
        attribute id { uuid }
+       & result_user_tags?
        & result_subnet
        & result_host
        & result_port
@@ -888,6 +938,7 @@ report_report
        & report_report_delta?
        & ( report_report_sort
            & report_report_filters
+           & report_report_user_tags
            & report_report_scan_run_status
            & report_report_result_count
            & report_report_host_count?
@@ -1131,6 +1182,53 @@ report_report_filters_delta_same
        boolean
      }
 
+# Info on tags attached to the reprt.
+report_report_user_tags
+ = element user_tags
+     {
+       report_report_user_tags_count
+       & report_report_user_tags_tag*
+     }
+
+# Number of attached tags.
+report_report_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+# Short info on an individual tag (only if details were requested).
+report_report_user_tags_tag
+ = element tag
+     {
+       # UUID of the tag.
+       attribute id { uuid }
+       & report_report_user_tags_tag_name
+       & report_report_user_tags_tag_value
+       & report_report_user_tags_tag_comment
+     }
+
+# Name of the tag (usually namespace:predicate).
+report_report_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+# Value of the tag.
+report_report_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment for the tag.
+report_report_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
 # Run status of task scan at time of report.
 report_report_scan_run_status
  = element scan_run_status
@@ -1368,6 +1466,7 @@ report_report_results_result
  = element result    # type result
      {
        attribute id { uuid }
+       & result_user_tags?
        & result_subnet
        & result_host
        & result_port
@@ -8501,6 +8600,7 @@ get_results_response_results_result
  = element result
      {
        attribute id { uuid }
+       & get_results_response_results_result_user_tags
        & get_results_response_results_result_subnet
        & get_results_response_results_result_host
        & get_results_response_results_result_port
@@ -8509,6 +8609,53 @@ get_results_response_results_result
        & get_results_response_results_result_description
        & get_results_response_results_result_notes?
        & get_results_response_results_result_overrides?
+     }
+
+# Info on tags attached to the agent.
+get_results_response_results_result_user_tags
+ = element user_tags
+     {
+       get_results_response_results_result_user_tags_count
+       & get_results_response_results_result_user_tags_tag*
+     }
+
+# Number of attached tags.
+get_results_response_results_result_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+# Short info on an individual tag (only if details were requested).
+get_results_response_results_result_user_tags_tag
+ = element tag
+     {
+       # UUID of the tag.
+       attribute id { uuid }
+       & get_results_response_results_result_user_tags_tag_name
+       & get_results_response_results_result_user_tags_tag_value
+       & get_results_response_results_result_user_tags_tag_comment
+     }
+
+# Name of the tag (usually namespace:predicate).
+get_results_response_results_result_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+# Value of the tag.
+get_results_response_results_result_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment for the tag.
+get_results_response_results_result_user_tags_tag_comment
+ = element comment
+     {
+       text
      }
 
 get_results_response_results_result_subnet

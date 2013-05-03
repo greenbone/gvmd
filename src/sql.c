@@ -1324,8 +1324,30 @@ sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
                         id);
   else if (strcasecmp (type, "report") == 0)
     stmt = sql_prepare ("SELECT (SELECT name FROM tasks WHERE id = task)"
-                        " || ' - ' || datetime(end_time, 'unixepoch')"
+                        " || ' - '"
+                        " || (SELECT"
+                        "       CASE (SELECT end_time FROM tasks"
+                        "         WHERE id = task)"
+                        "       WHEN 0 THEN 'N/A'"
+                        "       ELSE (SELECT end_time"
+                        "             FROM tasks WHERE id = task)"
+                        "    END)"
                         " FROM reports"
+                        " WHERE uuid = '%s';",
+                        id);
+  else if (strcasecmp (type, "result") == 0)
+    stmt = sql_prepare ("SELECT (SELECT name FROM tasks WHERE id = task)"
+                        " || ' - '"
+                        " || (SELECT name FROM nvts WHERE oid = nvt)"
+                        " || ' - '"
+                        " || (SELECT"
+                        "       CASE (SELECT end_time FROM tasks"
+                        "         WHERE id = task)"
+                        "       WHEN 0 THEN 'N/A'"
+                        "       ELSE (SELECT end_time"
+                        "             FROM tasks WHERE id = task)"
+                        "    END)"
+                        " FROM results"
                         " WHERE uuid = '%s';",
                         id);
   else

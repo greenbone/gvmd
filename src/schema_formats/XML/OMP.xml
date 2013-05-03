@@ -509,6 +509,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
         <required>1</required>
       </attrib>
+      <o><e>user_tags</e></o>
       <e>subnet</e>
       <e>host</e>
       <e>port</e>
@@ -522,6 +523,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>notes</e></o>
       <o><e>overrides</e></o>
     </pattern>
+    <ele>
+      <name>user_tags</name>
+      <summary>Info on tags attached to the result (not in delta results)</summary>
+      <pattern>
+        <e>count</e>
+        <any><e>tag</e></any>
+      </pattern>
+      <ele>
+        <name>count</name>
+        <summary>Number of attached tags</summary>
+        <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>tag</name>
+        <summary>
+          Short info on an individual tag
+          (only if details were requested)
+        </summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <summary>UUID of the tag</summary>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+          <e>value</e>
+          <e>comment</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>Name of the tag (usually namespace:predicate)</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>Value of the tag</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>Comment for the tag</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+    </ele>
     <ele>
       <name>subnet</name>
       <pattern>text</pattern>
@@ -745,6 +792,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <g>
             <e>sort</e>
             <e>filters</e>
+            <e>user_tags</e>
             <e>scan_run_status</e>
             <e>result_count</e>
             <o><e>host_count</e></o>
@@ -993,6 +1041,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>same</name>
             <summary>Whether results that are equal are included</summary>
             <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>user_tags</name>
+        <summary>Info on tags attached to the reprt</summary>
+        <pattern>
+          <e>count</e>
+          <any><e>tag</e></any>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>Number of attached tags</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>tag</name>
+          <summary>
+            Short info on an individual tag
+            (only if details were requested)
+          </summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <summary>UUID of the tag</summary>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <e>value</e>
+            <e>comment</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the tag (usually namespace:predicate)</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>value</name>
+            <summary>Value of the tag</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>comment</name>
+            <summary>Comment for the tag</summary>
+            <pattern>text</pattern>
           </ele>
         </ele>
       </ele>
@@ -9329,6 +9423,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <filter>Log</filter>
                 <filter>Debug</filter>
               </filters>
+              <user_tags>
+                <count>0</count>
+              </user_tags>
               <scan_run_status>Done</scan_run_status>
               <result_count>
                 <full>10</full>
@@ -9846,6 +9943,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <type>uuid</type>
               <required>1</required>
             </attrib>
+            <e>user_tags</e>
             <e>subnet</e>
             <e>host</e>
             <e>port</e>
@@ -9855,6 +9953,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <o><e>notes</e></o>
             <o><e>overrides</e></o>
           </pattern>
+          <ele>
+            <name>user_tags</name>
+            <summary>Info on tags attached to the agent</summary>
+            <pattern>
+              <e>count</e>
+              <any><e>tag</e></any>
+            </pattern>
+            <ele>
+              <name>count</name>
+              <summary>Number of attached tags</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>tag</name>
+              <summary>
+                Short info on an individual tag
+                (only if details were requested)
+              </summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <type>uuid</type>
+                  <summary>UUID of the tag</summary>
+                  <required>1</required>
+                </attrib>
+                <e>name</e>
+                <e>value</e>
+                <e>comment</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>Name of the tag (usually namespace:predicate)</summary>
+                <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>value</name>
+                <summary>Value of the tag</summary>
+                <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>comment</name>
+                <summary>Comment for the tag</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
           <ele>
             <name>subnet</name>
             <pattern>text</pattern>
@@ -9973,6 +10117,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <get_results_response status="200" status_text="OK">
           <results>
             <result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508">
+              <user_tags>
+                <count>0</count>
+              </user_tags>
               <subnet>127.0.1.1</subnet>
               <host>127.0.1.1</host>
               <port>general/tcp</port>
@@ -10007,6 +10154,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <get_results_response status="200" status_text="OK">
           <results>
             <result id="cac9e7c8-c726-49fd-a710-5f99079ab93e">
+              <user_tags>
+                <count>0</count>
+              </user_tags>
               <subnet>127.0.0.1</subnet>
               <host>127.0.0.1</host>
               <port>general/tcp</port>

@@ -1,3 +1,30 @@
+2013-05-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (buffer_results_xml): Add two parameters
+	to match changes in omp.c.
+	(compare_and_buffer_results): Add parameters to buffer_results_xml
+	calls: Don't show tags for comparisons.
+	(print_report_xml): Add user tags for report. Add parameters to
+	buffer_results_xml calls: print tags for normal scan reports but not
+	delta reports.
+
+	* src/omp.c (): Add parameters to buffer_results_xml header.
+	(buffer_notes_xml, buffer_overrides_xml): Add parameters to
+	buffer_results_xml call: Don't add result tags.
+	(buffer_results_xml): Add parameters include_tags, include_tags_details,
+	Write tag count / details of result to buffer if requested.
+	(xml_handle_end_element): In case CLIENT_GET_RESULTS add parameters
+	to buffer_results_xml call (counts, tags list for details).
+
+	* src/sql.c (sql_resource_name): In else if case "report" add output
+	"N/A" instead of date if end_time is 0. Add else if case for "result".
+
+	* src/schema_formats/XML/OMP.xml (get_reports, get_results): Add user
+	tags elements to result elements in responses and report element in
+	response.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-05-03  Andre Heinecke <andre.heinecke@greenbone.net>
 
 	* report_formats/verinice-ism/create_report_import:
