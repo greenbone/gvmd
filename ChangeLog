@@ -1,3 +1,8 @@
+2013-04-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (get_nvti_xml): Escape xrefs too as characters like
+	ampersand may be included in URLs.
+
 2013-05-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (buffer_results_xml): Add two parameters
