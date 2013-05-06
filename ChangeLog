@@ -1,3 +1,35 @@
+2013-05-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.h (result_iterator_task, result_iterator_report): New
+	function prototypes.
+
+	* src/manage_sql.c (init_result_iterator): Add selection of task and
+	report from database.
+	(result_iterator_task): New function to get the task of a result.
+	(result_iterator_report): New function to get the report of a result.
+	(buffer_results_xml): Add details parameter to header (see omp.c).
+	(compare_and_buffer_results, print_report_xml): Add details parameter to
+	buffer_results_xml calls.
+
+	* src/omp.c (buffer_results_xml): Add details parameter to header.
+	(get_results_data_t): Add "details".
+	(omp_xml_handle_start_element): In case for "GET_RESULTS" add attribute
+	"details".
+	(buffer_notes_xml, buffer_overrides_xml): Add details parameter to
+	buffer_results_xml calls.
+	(buffer_results_xml): Add parameter "include_details". Select task from
+	database if task parameter is NULL and details are included. Add
+	report and task data to response if include_details != 0.
+	(omp_xml_handle_end_element): In case CLIENT_GET_RESULTS,
+	buffer_results_xml call clarify comment on tags parameter,
+	add details parameter.
+
+	* src/schema_formats/XML/OMP.xml (result): Add report and task elements.
+	(get_results): Add details attribute to command, add report and task
+	elements to response.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-04-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (get_nvti_xml): Escape xrefs too as characters like

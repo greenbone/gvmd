@@ -618,6 +618,8 @@ result
      {
        attribute id { uuid }
        & result_user_tags?
+       & result_report?
+       & result_task?
        & result_subnet
        & result_host
        & result_port
@@ -675,6 +677,30 @@ result_user_tags_tag_value
 # Comment for the tag.
 result_user_tags_tag_comment
  = element comment
+     {
+       text
+     }
+
+# Report the result belongs to (only when details were requested).
+result_report
+ = element report
+     {
+       # UUID of the report the result belongs to.
+       attribute id { uuid }
+     }
+
+# Task the result applies to (only when details were requested).
+result_task
+ = element task
+     {
+       # UUID of the task the result applies to.
+       attribute id { uuid }
+       & result_task_name
+     }
+
+# Name of the task the result applies to.
+result_task_name
+ = element name
      {
        text
      }
@@ -813,6 +839,8 @@ result_delta_result
      {
        attribute id { uuid }
        & result_user_tags?
+       & result_report?
+       & result_task?
        & result_subnet
        & result_host
        & result_port
@@ -887,6 +915,8 @@ result_detection_result
      {
        attribute id { uuid }
        & result_user_tags?
+       & result_report?
+       & result_task?
        & result_subnet
        & result_host
        & result_port
@@ -1467,6 +1497,8 @@ report_report_results_result
      {
        attribute id { uuid }
        & result_user_tags?
+       & result_report?
+       & result_task?
        & result_subnet
        & result_host
        & result_port
@@ -3491,6 +3523,8 @@ get_results
        attribute override_details { boolean }?
        & # Whether to override result threat levels.
        attribute apply_overrides { boolean }?
+       & # Whether to include additional details of the results.
+       attribute details { boolean }?
      }
 
 ## Command get_schedules
@@ -8601,6 +8635,8 @@ get_results_response_results_result
      {
        attribute id { uuid }
        & get_results_response_results_result_user_tags
+       & get_results_response_results_result_report?
+       & get_results_response_results_result_task?
        & get_results_response_results_result_subnet
        & get_results_response_results_result_host
        & get_results_response_results_result_port
@@ -8654,6 +8690,30 @@ get_results_response_results_result_user_tags_tag_value
 # Comment for the tag.
 get_results_response_results_result_user_tags_tag_comment
  = element comment
+     {
+       text
+     }
+
+# Report the result belongs to (only when details were requested).
+get_results_response_results_result_report
+ = element report
+     {
+       # UUID of the report the result belongs to.
+       attribute id { uuid }
+     }
+
+# Task the result applies to (only when details were requested).
+get_results_response_results_result_task
+ = element task
+     {
+       # UUID of the task the result applies to.
+       attribute id { uuid }
+       & get_results_response_results_result_task_name
+     }
+
+# Name of the task the result applies to.
+get_results_response_results_result_task_name
+ = element name
      {
        text
      }

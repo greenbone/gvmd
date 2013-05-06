@@ -510,6 +510,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <required>1</required>
       </attrib>
       <o><e>user_tags</e></o>
+      <o><e>report</e></o>
+      <o><e>task</e></o>
       <e>subnet</e>
       <e>host</e>
       <e>port</e>
@@ -567,6 +569,40 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <summary>Comment for the tag</summary>
           <pattern>text</pattern>
         </ele>
+      </ele>
+    </ele>
+    <ele>
+      <name>report</name>
+      <summary>
+        Report the result belongs to (only when details were requested)
+      </summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <summary>UUID of the report the result belongs to</summary>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>task</name>
+      <summary>
+        Task the result applies to (only when details were requested)
+      </summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <summary>UUID of the task the result applies to</summary>
+          <required>1</required>
+        </attrib>
+        <e>name</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <pattern>text</pattern>
+        <summary>Name of the task the result applies to</summary>
       </ele>
     </ele>
     <ele>
@@ -9915,6 +9951,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Whether to override result threat levels</summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include additional details of the results</summary>
+        <type>boolean</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -9944,6 +9985,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>user_tags</e>
+            <o><e>report</e></o>
+            <o><e>task</e></o>
             <e>subnet</e>
             <e>host</e>
             <e>port</e>
@@ -9997,6 +10040,40 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <summary>Comment for the tag</summary>
                 <pattern>text</pattern>
               </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>report</name>
+            <summary>
+              Report the result belongs to (only when details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the report the result belongs to</summary>
+                <required>1</required>
+              </attrib>
+            </pattern>
+          </ele>
+          <ele>
+            <name>task</name>
+            <summary>
+              Task the result applies to (only when details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the task the result applies to</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <pattern>text</pattern>
+              <summary>Name of the task the result applies to</summary>
             </ele>
           </ele>
           <ele>

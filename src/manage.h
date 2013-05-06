@@ -995,6 +995,12 @@ result_iterator_original_type (iterator_t*);
 const char*
 result_iterator_descr (iterator_t*);
 
+task_t
+result_iterator_task (iterator_t*);
+
+report_t
+result_iterator_report (iterator_t*);
+
 void
 init_host_iterator (iterator_t*, report_t, const char *, report_host_t);
 

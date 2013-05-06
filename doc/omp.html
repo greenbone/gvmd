@@ -1653,6 +1653,31 @@ result_overrides_override_orphan
 </ul>
 </li>
 <li>
+              &lt;<b>report</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Report the result belongs to (only when details were requested).</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the report the result belongs to.
+          </li></ul>
+</li>
+<li>
+              &lt;<b>task</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Task the result applies to (only when details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the task the result applies to.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the task the result applies to.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>subnet</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -1808,6 +1833,8 @@ result_overrides_override_orphan
      {
        attribute id { uuid }
        &amp; result_user_tags?
+       &amp; result_report?
+       &amp; result_task?
        &amp; result_subnet
        &amp; result_host
        &amp; result_port
@@ -1858,6 +1885,25 @@ result_user_tags_tag_value
 
 result_user_tags_tag_comment
  = element comment
+     {
+       text
+     }
+
+result_report
+ = element report
+     {
+       attribute id { uuid }
+     }
+
+result_task
+ = element task
+     {
+       attribute id { uuid }
+       &amp; result_task_name
+     }
+
+result_task_name
+ = element name
      {
        text
      }
@@ -1982,6 +2028,8 @@ result_delta_result
      {
        attribute id { uuid }
        &amp; result_user_tags?
+       &amp; result_report?
+       &amp; result_task?
        &amp; result_subnet
        &amp; result_host
        &amp; result_port
@@ -2049,6 +2097,8 @@ result_detection_result
      {
        attribute id { uuid }
        &amp; result_user_tags?
+       &amp; result_report?
+       &amp; result_task?
        &amp; result_subnet
        &amp; result_host
        &amp; result_port
@@ -3091,6 +3141,8 @@ report_report_results_result
      {
        attribute id { uuid }
        &amp; result_user_tags?
+       &amp; result_report?
+       &amp; result_task?
        &amp; result_subnet
        &amp; result_host
        &amp; result_port
@@ -16078,6 +16130,11 @@ get_report_formats_response_report_format_active
           (<a href="#type_boolean">boolean</a>)
           Whether to override result threat levels.
           </li>
+<li>
+          @<b>details</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include additional details of the results.
+          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -16133,6 +16190,31 @@ get_report_formats_response_report_format_active
 <ul style="list-style: none"></ul>
 </li>
 </ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>report</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Report the result belongs to (only when details were requested).</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the report the result belongs to.
+          </li></ul>
+</li>
+<li>
+              &lt;<b>task</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Task the result applies to (only when details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the task the result applies to.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the task the result applies to.</div>
+<ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
@@ -16250,6 +16332,7 @@ get_report_formats_response_report_format_active
        &amp; attribute overrides { boolean }?
        &amp; attribute override_details { boolean }?
        &amp; attribute apply_overrides { boolean }?
+       &amp; attribute details { boolean }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_results_response
@@ -16271,6 +16354,8 @@ get_results_response_results_result
      {
        attribute id { uuid }
        &amp; get_results_response_results_result_user_tags
+       &amp; get_results_response_results_result_report?
+       &amp; get_results_response_results_result_task?
        &amp; get_results_response_results_result_subnet
        &amp; get_results_response_results_result_host
        &amp; get_results_response_results_result_port
@@ -16317,6 +16402,25 @@ get_results_response_results_result_user_tags_tag_value
 
 get_results_response_results_result_user_tags_tag_comment
  = element comment
+     {
+       text
+     }
+
+get_results_response_results_result_report
+ = element report
+     {
+       attribute id { uuid }
+     }
+
+get_results_response_results_result_task
+ = element task
+     {
+       attribute id { uuid }
+       &amp; get_results_response_results_result_task_name
+     }
+
+get_results_response_results_result_task_name
+ = element name
      {
        text
      }

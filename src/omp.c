@@ -136,7 +136,7 @@
 /** @todo Exported for manage_sql.c. */
 void
 buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int, int,
-                    int, const char *, iterator_t *, int);
+                    int, int, const char *, iterator_t *, int);
 
 static void
 buffer_xml_append_printf (GString*, const char*, ...);
@@ -2619,6 +2619,7 @@ typedef struct
   int notes_details;     ///< Boolean.  Whether to include details of above.
   int overrides;         ///< Boolean.  Whether to include associated overrides.
   int overrides_details; ///< Boolean.  Whether to include details of above.
+  int details;           ///< Boolean.  Whether to include result details.
 } get_results_data_t;
 
 /**
@@ -6565,6 +6566,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               get_results_data->autofp = 0;
 
+            if (find_attribute (attribute_names, attribute_values,
+                                "details", &attribute))
+              get_results_data->details = strcmp (attribute, "0");
+            else
+              get_results_data->details = 0;
+
             set_client_state (CLIENT_GET_RESULTS);
           }
         else if (strcasecmp ("GET_SCHEDULES", element_name) == 0)
@@ -9261,6 +9268,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     0,  /* Override details. */
                                     0,  /* Tags. */
                                     0,  /* Tag details. */
+                                    0,  /* Result details. */
                                     NULL,
                                     NULL,
                                     0);
@@ -9459,6 +9467,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     0,  /* Override details. */
                                     0,  /* Tags. */
                                     0,  /* Tag details. */
+                                    0,  /* Result details. */
                                     NULL,
                                     NULL,
                                     0);
@@ -9797,6 +9806,7 @@ buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
  * @param[in]  include_overrides_details  Whether to include details of overrides.
  * @param[in]  include_tags           Whether to include user tag count.
  * @param[in]  include_tags_details   Whether to include details of tags.
+ * @param[in]  include_details        Whether to include details of the result.
  * @param[in]  delta_state            Delta state of result, or NULL.
  * @param[in]  delta_results          Iterator for delta result to include, or
  *                                    NULL.
@@ -9807,6 +9817,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int include_notes, int include_notes_details,
                     int include_overrides, int include_overrides_details,
                     int include_tags, int include_tags_details,
+                    int include_details,
                     const char *delta_state, iterator_t *delta_results,
                     int changed)
 {
@@ -9825,10 +9836,36 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   result_t result = result_iterator_result (results);
   char *uuid;
   char *detect_ref, *detect_cpe, *detect_loc, *detect_oid, *detect_name;
+  task_t selected_task;
 
   result_uuid (result, &uuid);
 
   buffer_xml_append_printf (buffer, "<result id=\"%s\">", uuid);
+
+  selected_task = task;
+
+  if (include_details)
+    {
+      char *result_report_id, *result_task_id, *result_task_name;
+
+      if (task == 0)
+        selected_task = result_iterator_task (results);
+
+      task_uuid (selected_task, &result_task_id);
+      result_task_name = task_name (result_iterator_task (results));
+      result_report_id = report_uuid (result_iterator_report (results));
+
+      g_string_append_printf (buffer,
+                              "<report id=\"%s\"/>"
+                              "<task id=\"%s\"><name>%s</name></task>",
+                              result_report_id,
+                              result_task_id,
+                              result_task_name);
+
+      free (result_report_id);
+      free (result_task_id);
+      free (result_task_name);
+    }
 
   if (include_tags)
     {
@@ -9954,11 +9991,11 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   if (include_notes)
     buffer_result_notes_xml (buffer, result,
-                             task, include_notes_details);
+                             selected_task, include_notes_details);
 
   if (include_overrides)
     buffer_result_overrides_xml (buffer, result,
-                                 task, include_overrides_details);
+                                 selected_task, include_overrides_details);
 
   if (delta_state || delta_results)
     {
@@ -9969,10 +10006,11 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         {
           gchar *diff, *delta_nl_descr;
           const char *delta_descr;
-          buffer_results_xml (buffer, delta_results, task, include_notes,
-                              include_notes_details, include_overrides,
-                              include_overrides_details, include_tags,
-                              include_tags_details, delta_state, NULL, 0);
+          buffer_results_xml (buffer, delta_results, selected_task,
+                              include_notes, include_notes_details,
+                              include_overrides, include_overrides_details,
+                              include_tags, include_tags_details,
+                              include_details, delta_state, NULL, 0);
           delta_descr = result_iterator_descr (delta_results);
           delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
                                        : NULL;
@@ -10002,13 +10040,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
           if (include_notes)
             buffer_result_notes_xml (buffer,
                                      result_iterator_result (delta_results),
-                                     task,
+                                     selected_task,
                                      include_notes_details);
 
           if (include_overrides)
             buffer_result_overrides_xml (buffer,
                                          result_iterator_result (delta_results),
-                                         task,
+                                         selected_task,
                                          include_overrides_details);
         }
       g_string_append (buffer, "</delta>");
@@ -12398,19 +12436,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
 
           if (get_results_data->notes
-              && (get_results_data->task_id == NULL))
+              && (get_results_data->task_id == NULL)
+              && (get_results_data->details == 0))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_results",
-                                "GET_RESULTS must have a task_id attribute"
-                                " if the notes attribute is true"));
+                                "GET_RESULTS must have a task_id attribute or"
+                                " details set to true if the"
+                                " notes attribute is true"));
           else if ((get_results_data->overrides
                     || get_results_data->apply_overrides)
-                   && (get_results_data->task_id == NULL))
+                   && (get_results_data->task_id == NULL)
+                   && (get_results_data->details == 0))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_results",
-                                "GET_RESULTS must have a task_id attribute"
-                                " if either of the overrides attributes is"
-                                " true"));
+                                "GET_RESULTS must have a task_id attribute or"
+                                " details set to true if the"
+                                " notes attribute is true"));
           else if (get_results_data->result_id
                    && find_result_for_actions (get_results_data->result_id,
                                                &result,
@@ -12454,6 +12495,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               init_result_iterator (&results, 0, result, 0, 1, 1, NULL,
                                     NULL, get_results_data->autofp, NULL, 0,
                                     NULL, get_results_data->apply_overrides);
+
+              if (get_results_data->result_id && task == 0)
+                {
+                  char *task_id;
+                  task_uuid (result_iterator_task (&results), &task_id);
+                  if (find_task_for_actions (task_id,
+                                             &task,
+                                             "g"))
+                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
+                  free (task_id);
+                }
+
               while (next (&results))
                 {
                   GString *buffer = g_string_new ("");
@@ -12465,8 +12518,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_results_data->overrides,
                                       get_results_data->overrides_details,
                                       1,
-                                      /* show tags if selected by ID */
+                                      /* show tag details if selected by ID */
                                       get_results_data->result_id != NULL,
+                                      get_results_data->details,
                                       NULL,
                                       NULL,
                                       0);

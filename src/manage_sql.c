@@ -20625,6 +20625,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
                              " nvt, type, %s AS new_type, %s AS auto_type,"
                              " results.description,"
+                             " results.task,"
+                             " results.report,"
                              " (SELECT cvss_base FROM nvts"
                              "  WHERE nvts.oid = results.nvt)"
                              " AS cvss_base"
@@ -20818,7 +20820,9 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
          }
 
       sql = g_strdup_printf ("SELECT ROWID, subnet, host, port, nvt,"
-                             " type, %s, %s, description"
+                             " type, %s, %s, description,"
+                             " results.task,"
+                             " results.report"
                              " FROM results"
                              " WHERE ROWID = %llu;",
                              new_type_sql,
@@ -20830,7 +20834,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
     }
   else
     sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
-                           " type, type, type, description"
+                           " type, type, type, description,"
+                           " results.task, results.report"
                            " FROM results, report_results, reports"
                            " WHERE results.ROWID = report_results.result"
                            " AND report_results.report = reports.ROWID"
@@ -21101,6 +21106,36 @@ result_iterator_type (iterator_t *iterator)
  *         cleanup_iterator.
  */
 DEF_ACCESS (result_iterator_descr, 8);
+
+/**
+ * @brief Get the task from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The task associated with the result, or 0 on error.
+ */
+task_t
+result_iterator_task (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (task_t) sqlite3_column_int64 (iterator->stmt,
+                                        9);
+}
+
+/**
+ * @brief Get the report from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The report associated with the result, or 0 on error.
+ */
+report_t
+result_iterator_report (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (task_t) sqlite3_column_int64 (iterator->stmt,
+                                        10);
+}
 
 /**
  * @brief Get the CVSS base from a result iterator.
@@ -24208,7 +24243,7 @@ compare_port_threat (gconstpointer arg_one, gconstpointer arg_two)
 
 /** @todo Defined in omp.c! */
 void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int,
-                         int, int, const char *, iterator_t *, int);
+                         int, int, int, const char *, iterator_t *, int);
 
 /**
  * @brief Comparison returns.
@@ -24585,6 +24620,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   overrides_details,
                                   0,
                                   0,
+                                  0,
                                   "changed",
                                   delta_results,
                                   1);
@@ -24611,6 +24647,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   notes_details,
                                   overrides,
                                   overrides_details,
+                                  0,
                                   0,
                                   0,
                                   "gone",
@@ -24641,6 +24678,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   overrides_details,
                                   0,
                                   0,
+                                  0,
                                   "new",
                                   delta_results,
                                   0);
@@ -24667,6 +24705,7 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   notes_details,
                                   overrides,
                                   overrides_details,
+                                  0,
                                   0,
                                   0,
                                   "same",
@@ -26848,6 +26887,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                         overrides_details,
                                         0,
                                         0,
+                                        0,
                                         "new",
                                         NULL,
                                         0);
@@ -26889,6 +26929,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                         notes_details,
                                         overrides,
                                         overrides_details,
+                                        0,
                                         0,
                                         0,
                                         "gone",
@@ -27404,6 +27445,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                               overrides_details,
                               1,
                               1,
+                              0,
                               NULL,
                               NULL,
                               0);
