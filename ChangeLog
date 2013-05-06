@@ -1,5 +1,9 @@
 2013-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* README: Remove reference to tests.
+
+2013-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_set_setting): Always free value.
 
 2013-05-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
