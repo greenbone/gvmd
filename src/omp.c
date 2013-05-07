@@ -23143,7 +23143,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_GET_START ("user", &get_users_data->get);
           while (1)
             {
-              iterator_t groups;
+              iterator_t groups, roles;
 
               ret = get_next (&users, get, &first, &count,
                               init_user_iterator);
@@ -23157,12 +23157,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               SEND_GET_COMMON (user, &get_users_data->get, &users);
 
-              SENDF_TO_CLIENT_OR_FAIL ("<role>%s</role>"
-                                       "<hosts allow=\"%i\">%s</hosts>"
+              SENDF_TO_CLIENT_OR_FAIL ("<hosts allow=\"%i\">%s</hosts>"
                                        "<sources><source>%s</source></sources>",
-                                       user_iterator_role (&users)
-                                        ? user_iterator_role (&users)
-                                        : "User",
                                        user_iterator_hosts_allow (&users),
                                        user_iterator_hosts (&users)
                                         ? user_iterator_hosts (&users)
@@ -23170,6 +23166,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        user_iterator_method (&users)
                                         ? user_iterator_method (&users)
                                         : "file");
+
+              init_user_role_iterator (&roles,
+                                       get_iterator_resource (&users));
+              while (next (&roles))
+                SENDF_TO_CLIENT_OR_FAIL ("<role id=\"%s\">"
+                                         "<name>%s</name>"
+                                         "</role>",
+                                         user_role_iterator_uuid (&roles),
+                                         user_role_iterator_name (&roles));
+              cleanup_iterator (&roles);
 
               SEND_TO_CLIENT_OR_FAIL ("<groups>");
               init_user_group_iterator (&groups,

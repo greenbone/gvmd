@@ -181,6 +181,21 @@
 #define PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "ab33f6b0-57f8-11e1-96f5-406186ea4fc5"
 
 /**
+ * @brief Predefined role UUID.
+ */
+#define ROLE_UUID_ADMIN "7a8cb5b4-b74d-11e2-8187-406186ea4fc5"
+
+/**
+ * @brief Predefined role UUID.
+ */
+#define ROLE_UUID_USER "8d453140-b74d-11e2-b0be-406186ea4fc5"
+
+/**
+ * @brief Predefined role UUID.
+ */
+#define ROLE_UUID_OBSERVER "87a7ebce-b74d-11e2-a81f-406186ea4fc5"
+
+/**
  * @brief UUID of 'Localhost' target.
  */
 #define TARGET_UUID_LOCALHOST "b493b7a8-7489-11df-a3ec-002264764cea"
@@ -4264,6 +4279,11 @@ create_tables ()
        " ON results (task);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_type"
        " ON results (type);");
+  sql ("CREATE TABLE IF NOT EXISTS roles"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS role_users"
+       " (id INTEGER PRIMARY KEY, role INTEGER, user INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS schedules"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
        "  first_time, period, period_months, duration, timezone,"
@@ -4325,7 +4345,7 @@ create_tables ()
   /* Field hosts_allow: 0 deny, 1 allow, 2 allow all. */
   sql ("CREATE TABLE IF NOT EXISTS users"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
-       "  password, timezone, role, hosts, hosts_allow, method, creation_time,"
+       "  password, timezone, hosts, hosts_allow, method, creation_time,"
        "  modification_time);");
 
   sql ("ANALYZE;");
@@ -10550,6 +10570,68 @@ migrate_79_to_80 ()
 }
 
 /**
+ * @brief Migrate the database from version 80 to version 81.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_80_to_81 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 80. */
+
+  if (manage_db_version () != 80)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Ensure new tables exist. */
+  sql ("CREATE TABLE IF NOT EXISTS roles"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS role_users"
+       " (id INTEGER PRIMARY KEY, role INTEGER, user INTEGER);");
+
+  /* User roles moved to their own table. */
+
+  sql ("INSERT INTO roles"
+       " (uuid, owner, name, comment, creation_time, modification_time)"
+       " VALUES"
+       " ('" ROLE_UUID_ADMIN "', NULL, 'Admin', 'Administrator', now (),"
+       "  now ());");
+
+  sql ("INSERT INTO roles"
+       " (uuid, owner, name, comment, creation_time, modification_time)"
+       " VALUES"
+       " ('" ROLE_UUID_USER "', NULL, 'User', 'User', now (), now ());");
+
+  sql ("INSERT INTO roles"
+       " (uuid, owner, name, comment, creation_time, modification_time)"
+       " VALUES"
+       " ('" ROLE_UUID_OBSERVER "', NULL, 'Observer', 'Observer', now (),"
+       "  now ());");
+
+  sql ("INSERT INTO role_users (role, user)"
+       " SELECT (SELECT ROWID FROM roles WHERE roles.name = users.role),"
+       "        users.ROWID"
+       " FROM users;");
+
+  sql ("UPDATE users SET role = NULL;");
+
+  /* Set the database version to 81. */
+
+  set_db_version (81);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -10634,6 +10716,7 @@ static migrator_t database_migrators[]
     {78, migrate_77_to_78},
     {79, migrate_78_to_79},
     {80, migrate_79_to_80},
+    {81, migrate_80_to_81},
     /* End marker. */
     {-1, NULL}};
 
@@ -17066,17 +17149,28 @@ manage_user_set_role (const gchar *name, const gchar *method, const gchar *role)
 {
   gchar *quoted_role, *quoted_name, *quoted_method;
 
+  assert ((strcmp (role, "Admin") == 0)
+          || (strcmp (role, "User") == 0)
+          || (strcmp (role, "Observer") == 0));
+
   user_ensure_in_db (name, method);
 
   quoted_role = sql_quote (role);
   quoted_name = sql_quote (name);
   quoted_method = sql_quote (method);
-  sql ("UPDATE users"
-       " SET role = '%s'"
-       " WHERE name = '%s' AND method = '%s';",
-       quoted_role,
+  sql ("DELETE FROM role_users"
+       " WHERE user = (SELECT ROWID FROM users"
+       "               WHERE name = '%s' AND method = '%s');",
        quoted_name,
        quoted_method);
+  sql ("INSERT INTO role_users (role, user)"
+       " VALUE ((SELECT ROWID FROM users"
+       "         WHERE name = '%s' AND method = '%s'),"
+       "        (SELECT ROWID FROM roles"
+       "         WHERE name = '%s'));",
+       quoted_name,
+       quoted_method,
+       quoted_role);
   g_free (quoted_role);
   g_free (quoted_name);
   g_free (quoted_method);
@@ -51043,6 +51137,9 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
   assert (name);
   assert (password);
   assert (role);
+  assert ((strcmp (role, "Admin") == 0)
+          || (strcmp (role, "User") == 0)
+          || (strcmp (role, "Observer") == 0));
 
   if (r_errdesc)
     *r_errdesc = NULL;
@@ -51101,7 +51198,7 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
                               ? g_ptr_array_index (allowed_methods, 0)
                               : "file");
   sql ("INSERT INTO users"
-       " (uuid, owner, name, password, role, hosts, hosts_allow, method)"
+       " (uuid, owner, name, password, hosts, hosts_allow, method)"
        " VALUES"
        " (make_uuid (),"
        "  (SELECT ROWID FROM users WHERE uuid = '%s'),"
@@ -51109,16 +51206,22 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
        current_credentials.uuid,
        quoted_name,
        hash,
-       quoted_role,
        quoted_hosts,
        hosts_allow,
        quoted_method);
+  user = sqlite3_last_insert_rowid (task_db);
+  sql ("INSERT INTO role_users (role, user)"
+       " VALUE (%llu,"
+       "        (SELECT ROWID FROM roles"
+       "         WHERE name = '%s'));",
+       quoted_name,
+       quoted_method,
+       quoted_role);
   g_free (hash);
   g_free (quoted_hosts);
   g_free (quoted_role);
   g_free (quoted_method);
   g_free (quoted_name);
-  user = sqlite3_last_insert_rowid (task_db);
 
   /* Add the user to any given groups. */
 
@@ -51485,19 +51588,19 @@ trash_user_writable (user_t user)
  * @brief User columns for user iterator.
  */
 #define USER_ITERATOR_FILTER_COLUMNS                        \
- { GET_ITERATOR_FILTER_COLUMNS, "role", "method", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "method", NULL }
 
 /**
  * @brief User iterator columns.
  */
 #define USER_ITERATOR_COLUMNS                               \
-  GET_ITERATOR_COLUMNS ", role, method, hosts, hosts_allow"
+  GET_ITERATOR_COLUMNS ", method, hosts, hosts_allow"
 
 /**
  * @brief User iterator columns for trash case.
  */
 #define USER_ITERATOR_TRASH_COLUMNS                         \
-  GET_ITERATOR_COLUMNS ", role, method, hosts, hosts_allow"
+  GET_ITERATOR_COLUMNS ", method, hosts, hosts_allow"
 
 /**
  * @brief Count number of users.
@@ -51619,6 +51722,40 @@ DEF_ACCESS (user_group_iterator_uuid, 1);
  */
 DEF_ACCESS (user_group_iterator_name, 2);
 
+/**
+ * @brief Initialise an info iterator.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  user            User.
+ */
+void
+init_user_role_iterator (iterator_t *iterator, user_t user)
+{
+  init_iterator (iterator,
+                 "SELECT DISTINCT ROWID, uuid, name FROM roles"
+                 " WHERE ROWID IN (SELECT role FROM role_users"
+                 "                 WHERE user = %llu)"
+                 " ORDER by name;",
+                 user);
+}
+
+/**
+ * @brief Get the UUID from a user role iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID or NULL if iteration is complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (user_role_iterator_uuid, 1);
+
+/**
+ * @brief Get the NAME from a user role iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NAME or NULL if iteration is complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (user_role_iterator_name, 2);
 
 #define RULES_HEADER "# This file is managed by the OpenVAS Administrator.\n# Any modifications must keep to the format that the Administrator expects.\n"
 

@@ -1,5 +1,30 @@
 2013-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move user roles to a dedicated table.  Hence increase database version
+	to 81.  Add database migration from version 80 to 81.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 81.
+
+	* src/manage_sql.c (ROLE_UUID_ADMIN, ROLE_UUID_USER)
+	(ROLE_UUID_OBSERVER): New defines.
+	(create_tables): Add roles and role_users.  Remove role from users.
+	(migrate_80_to_81): New function.
+	(database_migrators): Add migrate_80_to_81.
+	(manage_set_user_role, openvas_admin_add_user): Set role in new table.
+	(USER_ITERATOR_FILTER_COLUMNS, USER_ITERATOR_COLUMNS)
+	(USER_ITERATOR_TRASH_COLUMNS): Remove role.
+	(init_user_role_iterator, user_role_iterator_uuid)
+	(user_role_iterator_name): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_USERS get roles with
+	iterator.
+
+	* doc/db.png: Update for version changes.
+
+2013-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (migrate_79_to_80): Ensure recently added tables
 	exist.
 
