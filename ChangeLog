@@ -1,3 +1,12 @@
+2013-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* CMakeLists.txt: Remove OPENVAS_SYNC_SCRIPT_DIR.
+
+	* src/CMakeLists.txt: Add SBINDIR instead of OPENVAS_SYNC_SCRIPT_DIR.
+
+	* src/omp.c (sync_script, scap_script, cert_script): Use SBINDIR instead
+	of OPENVAS_SYNC_SCRIPT_DIR.
+
 2013-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* README: Remove reference to tests.

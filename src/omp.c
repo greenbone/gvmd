@@ -4521,17 +4521,17 @@ static GMarkupParser xml_parser;
 /**
  * @brief The nvt synchronization script for this daemon.
  */
-static const gchar *sync_script = OPENVAS_SYNC_SCRIPT_DIR "/openvas-nvt-sync";
+static const gchar *sync_script = SBINDIR "/openvas-nvt-sync";
 
 /**
  * @brief The scap synchronization script for this daemon.
  */
-static const gchar *scap_script = OPENVAS_SYNC_SCRIPT_DIR "/openvas-scapdata-sync";
+static const gchar *scap_script = SBINDIR "/openvas-scapdata-sync";
 
 /**
  * @brief The CERT synchronization script for this daemon.
  */
-static const gchar *cert_script = OPENVAS_SYNC_SCRIPT_DIR "/openvas-certdata-sync";
+static const gchar *cert_script = SBINDIR "/openvas-certdata-sync";
 
 
 /* Client state. */
