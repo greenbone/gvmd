@@ -1,5 +1,10 @@
 2013-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (migrate_79_to_80): Ensure recently added tables
+	exist.
+
+2013-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* CMakeLists.txt: Remove OPENVAS_SYNC_SCRIPT_DIR.
 
 	* src/CMakeLists.txt: Add SBINDIR instead of OPENVAS_SYNC_SCRIPT_DIR.

@@ -10233,6 +10233,19 @@ migrate_79_to_80 ()
   /* Update the database. */
 
   /* Ensure that all tables exists. */
+  sql ("CREATE TABLE IF NOT EXISTS groups"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS group_users"
+       " (id INTEGER PRIMARY KEY, `group` INTEGER, user INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS permissions"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+       "  resource_type, resource, resource_uuid, resource_location,"
+       "  subject_type, subject, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS permissions_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+       "  resource_type, resource, resource_uuid, resource_location,"
+       "  subject_type, subject, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS tags"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  creation_time, modification_time, attach_type, attach_id,"
