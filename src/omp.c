@@ -502,6 +502,7 @@ static command_t omp_commands[]
     {"GET_REPORTS", "Get all reports."},
     {"GET_REPORT_FORMATS", "Get all report formats."},
     {"GET_RESULTS", "Get results."},
+    {"GET_ROLES", "Get all roles."},
     {"GET_SCHEDULES", "Get all schedules."},
     {"GET_SETTINGS", "Get all settings."},
     {"GET_SLAVES", "Get all slaves."},
@@ -2637,6 +2638,26 @@ get_results_data_reset (get_results_data_t *data)
 }
 
 /**
+ * @brief Command data for the get_roles command.
+ */
+typedef struct
+{
+  get_data_t get;    ///< Get args.
+} get_roles_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_roles_data_reset (get_roles_data_t *data)
+{
+  get_data_reset (&data->get);
+  memset (data, 0, sizeof (get_roles_data_t));
+}
+
+/**
  * @brief Command data for the get_schedules command.
  */
 typedef struct
@@ -3853,6 +3874,7 @@ typedef union
   get_reports_data_t get_reports;                     ///< get_reports
   get_report_formats_data_t get_report_formats;       ///< get_report_formats
   get_results_data_t get_results;                     ///< get_results
+  get_roles_data_t get_roles;                         ///< get_roles
   get_schedules_data_t get_schedules;                 ///< get_schedules
   get_settings_data_t get_settings;                   ///< get_settings
   get_slaves_data_t get_slaves;                       ///< get_slaves
@@ -4244,6 +4266,12 @@ get_report_formats_data_t *get_report_formats_data
  */
 get_results_data_t *get_results_data
  = &(command_data.get_results);
+
+/**
+ * @brief Parser callback data for GET_ROLES.
+ */
+get_roles_data_t *get_roles_data
+ = &(command_data.get_roles);
 
 /**
  * @brief Parser callback data for GET_SCHEDULES.
@@ -4867,6 +4895,7 @@ typedef enum
   CLIENT_GET_REPORTS,
   CLIENT_GET_REPORT_FORMATS,
   CLIENT_GET_RESULTS,
+  CLIENT_GET_ROLES,
   CLIENT_GET_SCHEDULES,
   CLIENT_GET_SETTINGS,
   CLIENT_GET_SLAVES,
@@ -6574,6 +6603,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_results_data->details = 0;
 
             set_client_state (CLIENT_GET_RESULTS);
+          }
+        else if (strcasecmp ("GET_ROLES", element_name) == 0)
+          {
+            get_data_parse_attributes (&get_roles_data->get, "role",
+                                       attribute_names,
+                                       attribute_values);
+            set_client_state (CLIENT_GET_ROLES);
           }
         else if (strcasecmp ("GET_SCHEDULES", element_name) == 0)
           {
@@ -12573,6 +12609,110 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
 
           get_results_data_reset (get_results_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
+      case CLIENT_GET_ROLES:
+        {
+          iterator_t roles;
+          int count, filtered, ret, first;
+          get_data_t * get;
+
+          assert (strcasecmp ("GET_ROLES", element_name) == 0);
+
+          get = &get_roles_data->get;
+          if ((!get->filter && !get->filt_id)
+              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+            {
+              char *user_filter = setting_filter ("Roles");
+
+              if (user_filter && strlen (user_filter))
+                {
+                  get->filt_id = user_filter;
+                  get->filter = filter_term (user_filter);
+                }
+              else
+                get->filt_id = g_strdup("0");
+            }
+
+          ret = init_role_iterator (&roles, &get_roles_data->get);
+          if (ret)
+            {
+              switch (ret)
+                {
+                  case 1:
+                    if (send_find_error_to_client ("get_roles",
+                                                   "role",
+                                                   get_roles_data->get.id,
+                                                   write_to_client,
+                                                   write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case 2:
+                    if (send_find_error_to_client
+                         ("get_roles",
+                          "role",
+                          get_roles_data->get.filt_id,
+                          write_to_client,
+                          write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("get_roles"));
+                    break;
+                }
+              get_roles_data_reset (get_roles_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          count = 0;
+          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
+          SEND_GET_START ("role", &get_roles_data->get);
+          while (1)
+            {
+#if 0
+              gchar *users;
+#endif
+
+              ret = get_next (&roles, get, &first, &count,
+                              init_role_iterator);
+              if (ret == 1)
+                break;
+              if (ret == -1)
+                {
+                  internal_error_send_to_client (error);
+                  return;
+                }
+
+              SEND_GET_COMMON (role, &get_roles_data->get, &roles);
+
+              // FIX
+#if 0
+              users = role_users (get_iterator_resource (&roles));
+              SENDF_TO_CLIENT_OR_FAIL ("<users>%s</users>", users ? users : "");
+              g_free (users);
+#endif
+
+              SEND_TO_CLIENT_OR_FAIL ("</role>");
+
+              count++;
+            }
+          cleanup_iterator (&roles);
+          filtered = get_roles_data->get.id
+                      ? 1
+                      : role_count (&get_roles_data->get);
+          SEND_GET_END ("role", &get_roles_data->get, count, filtered);
+
+          get_roles_data_reset (get_roles_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }

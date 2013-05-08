@@ -199,6 +199,7 @@ typedef long long int report_host_t;
 typedef long long int report_format_t;
 typedef long long int report_format_param_t;
 typedef long long int resource_t;
+typedef long long int role_t;
 typedef long long int note_t;
 typedef long long int nvt_t;
 typedef long long int override_t;
@@ -2558,6 +2559,27 @@ port_list_target_iterator_uuid (iterator_t*);
 
 const char*
 port_list_target_iterator_name (iterator_t*);
+
+
+/* Roles. */
+
+int
+init_role_iterator (iterator_t *, const get_data_t *);
+
+int
+trash_role_in_use (role_t);
+
+int
+role_in_use (role_t);
+
+int
+trash_role_writable (role_t);
+
+int
+role_writable (role_t);
+
+int
+role_count (const get_data_t*);
 
 
 /* Filters. */

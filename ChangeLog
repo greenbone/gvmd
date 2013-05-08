@@ -1,5 +1,27 @@
 2013-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add OMP GET_ROLES.
+
+	* src/manage.h: Add headers accordingly.
+	(role_t): New type.
+
+	* src/manage_sql.c (valid_type, type_pretty_name, type_db_name): Add
+	role.
+	(role_writable, trash_role_writable, role_in_use)
+	(trash_role_in_use): New function.
+	(ROLE_ITERATOR_FILTER_COLUMNS, ROLE_ITERATOR_COLUMNS): New defines.
+	(role_count, init_role_iterator): New functions.
+
+	* src/omp.c (omp_commands, command_data_t,client_state_t): Add GET_ROLES
+	elements.
+	(get_roles_data_t): New type.
+	(get_roles_data_reset): New functions.
+	(get_roles_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	GET_ROLES.
+
+2013-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_filter): Put the type NULL check before the
 	type_db_name too, because it indicates an error from type_db_name.  Move
 	the "" check up too, because it's simpler there.

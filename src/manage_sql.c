@@ -3110,6 +3110,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "report") == 0)
          || (strcasecmp (type, "report_format") == 0)
          || (strcasecmp (type, "result") == 0)
+         || (strcasecmp (type, "role") == 0)
          || (strcasecmp (type, "schedule") == 0)
          || (strcasecmp (type, "slave") == 0)
          || (strcasecmp (type, "tag") == 0)
@@ -3152,6 +3153,8 @@ type_pretty_name (const char* type)
     return "Report Format";
   if (strcasecmp (type, "result") == 0)
     return "Result";
+  if (strcasecmp (type, "role") == 0)
+    return "Role";
   if (strcasecmp (type, "schedule") == 0)
     return "Schedule";
   if (strcasecmp (type, "slave") == 0)
@@ -3207,6 +3210,8 @@ type_db_name (const char* type)
     return "report_format";
   if (strcasecmp (type, "Result") == 0)
     return "result";
+  if (strcasecmp (type, "Role") == 0)
+    return "role";
   if (strcasecmp (type, "Schedule") == 0)
     return "schedule";
   if (strcasecmp (type, "Slave") == 0)
@@ -47813,6 +47818,116 @@ DEF_ACCESS (port_list_target_iterator_uuid, 0);
  *         cleanup_iterator.
  */
 DEF_ACCESS (port_list_target_iterator_name, 1);
+
+
+/* Roles. */
+
+/**
+ * @brief Check whether a role is writable.
+ *
+ * @param[in]  role  Role.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+role_writable (role_t role)
+{
+  return 0;
+}
+
+/**
+ * @brief Check whether a trashcan role is writable.
+ *
+ * @param[in]  role  Role.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_role_writable (role_t role)
+{
+  return 0;
+}
+
+/**
+ * @brief Check whether a role is in use.
+ *
+ * @param[in]  role  Role.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+role_in_use (role_t role)
+{
+  return 0;
+}
+
+/**
+ * @brief Check whether a trashcan role is in use.
+ *
+ * @param[in]  role  Role.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_role_in_use (role_t role)
+{
+  return 0;
+}
+
+/**
+ * @brief Filter columns for role iterator.
+ */
+#define ROLE_ITERATOR_FILTER_COLUMNS                                         \
+ { GET_ITERATOR_FILTER_COLUMNS, NULL }
+
+/**
+ * @brief Role iterator columns.
+ */
+#define ROLE_ITERATOR_COLUMNS                                                \
+  GET_ITERATOR_COLUMNS
+
+/**
+ * @brief Count number of roles.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of roles in roleed set.
+ */
+int
+role_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = ROLE_ITERATOR_FILTER_COLUMNS;
+  return count ("role", get, ROLE_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
+                TRUE);
+}
+
+/**
+ * @brief Initialise a role iterator, including observed roles.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find role, failed to find role (filt_id),
+ *         -1 error.
+ */
+int
+init_role_iterator (iterator_t* iterator, const get_data_t *get)
+{
+  static const char *role_columns[] = ROLE_ITERATOR_FILTER_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "role",
+                            get,
+                            /* Columns. */
+                            ROLE_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            NULL,
+                            role_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
 
 
 /* Filters. */
