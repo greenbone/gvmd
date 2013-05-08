@@ -25631,6 +25631,51 @@ report_filter_term (int sort_order, const char* sort_field,
 }
 
 /**
+ * @brief Count a report's total number of hosts.
+ *
+ * @return Host count.
+ */
+static int
+report_host_count (report_t report)
+{
+  return sql_int (0, 0,
+                  "SELECT count (DISTINCT host) FROM results"
+                  " WHERE report = %llu;",
+                  report);
+}
+
+/**
+ * @brief Count a report's total number of tcp/ip ports.
+ * @brief Ignores ports entries in "general/..." form.
+ *
+ * @return Ports count.
+ */
+static int
+report_port_count (report_t report)
+{
+  return sql_int (0, 0,
+                  "SELECT count (DISTINCT port) FROM results"
+                  " WHERE report = %llu AND port NOT LIKE 'general/%';",
+                  report);
+}
+
+/**
+ * @brief Count a report's total number of closed cves.
+ *
+ * @return Closed CVE count.
+ */
+static int
+report_closed_cve_count (report_t report)
+{
+  return sql_int (0, 0,
+                  "SELECT count (ROWID) FROM report_host_details"
+                  " WHERE report_host IN "
+                  "  (SELECT ROWID FROM report_hosts WHERE report = %llu)"
+                  "  AND name = 'Closed CVE';",
+                  report);
+}
+
+/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
@@ -25987,12 +26032,22 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     }
 
   if (report)
-    PRINT
-     (out,
-      "<scan_run_status>%s</scan_run_status>",
-      run_status_name (run_status
-                        ? run_status
-                        : TASK_STATUS_INTERNAL_ERROR));
+    {
+      PRINT
+       (out,
+        "<scan_run_status>%s</scan_run_status>",
+        run_status_name (run_status
+                          ? run_status
+                          : TASK_STATUS_INTERNAL_ERROR));
+
+      PRINT (out,
+             "<hosts total=\"%i\"/>",
+             report_host_count (report));
+
+      PRINT (out,
+             "<closed_cves total=\"%i\"/>",
+             report_closed_cve_count (report));
+    }
 
   if (task && tsk_uuid)
     {
@@ -26801,9 +26856,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
       PRINT (out,
                "<ports"
+               " total=\"%i\""
                " start=\"%i\""
                " max=\"%i\">",
                /* Add 1 for 1 indexing. */
+               report_port_count (report),
                first_result + 1,
                max_results);
       {

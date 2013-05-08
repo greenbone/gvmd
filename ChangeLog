@@ -1,3 +1,10 @@
+2013-05-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (report_host_count, report_port_count)
+	(report_closed_cve_count): New functions.
+	(print_report_xml): Send report total number of ports, hosts and closed
+	cves adequately.
+
 2013-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move user roles to a dedicated table.  Hence increase database version
@@ -77,7 +84,7 @@
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
 
-2013-04-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+2013-05-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (get_nvti_xml): Escape xrefs too as characters like
 	ampersand may be included in URLs.
