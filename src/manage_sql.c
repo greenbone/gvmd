@@ -47986,9 +47986,12 @@ create_filter (const char *name, const char *comment, const char *type,
 
   assert (current_credentials.uuid);
 
-  type = type_db_name (type);
-  if (type && !((strcmp (type, "") == 0) || valid_type (type)))
-    return 2;
+  if (type && strlen (type))
+    {
+      type = type_db_name (type);
+      if (type == NULL || !valid_type (type))
+        return 2;
+    }
 
   sql ("BEGIN IMMEDIATE;");
 

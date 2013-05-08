@@ -1,3 +1,9 @@
+2013-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_filter): Put the type NULL check before the
+	type_db_name too, because it indicates an error from type_db_name.  Move
+	the "" check up too, because it's simpler there.
+
 2013-05-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_set_setting): Base64 decode filters values.
