@@ -52202,6 +52202,18 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
   "active, value"
 
 /**
+ * @brief Filter columns for Tag name iterator.
+ */
+#define TAG_NAME_ITERATOR_FILTER_COLUMNS                         \
+ { "name", "attach_type", NULL }
+
+/**
+ * @brief Tag name iterator columns.
+ */
+#define TAG_NAME_ITERATOR_COLUMNS                                \
+  "name"
+
+/**
  * @brief Initialise a tag iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -52297,6 +52309,57 @@ DEF_ACCESS (tag_iterator_orphaned, GET_ITERATOR_COLUMN_COUNT + 4);
  * @return The name of the resource attached to a tag.
  */
 DEF_ACCESS (tag_iterator_attach_name, GET_ITERATOR_COLUMN_COUNT + 5);
+
+/**
+ * @brief Initialise a iterator of tag names.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET params.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+init_tag_name_iterator (iterator_t* iterator, const get_data_t *get)
+{
+  static const char *filter_columns[] = TAG_NAME_ITERATOR_FILTER_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "tag",
+                            get,
+                            /* Columns. */
+                            TAG_NAME_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            TAG_NAME_ITERATOR_COLUMNS,
+                            filter_columns,
+                            1,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
+
+/**
+ * @brief Count number of tag names.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of tags in filtered set.
+ */
+int
+tag_name_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = TAG_NAME_ITERATOR_FILTER_COLUMNS;
+  return count ("tag", get, TAG_NAME_ITERATOR_COLUMNS, extra_columns, 1, 0, 0,
+                TRUE);
+}
+
+/**
+ * @brief Get the name from a Tag name iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The tag name.
+ */
+DEF_ACCESS (tag_name_iterator_name, 0);
 
 /**
  * @brief Initialise a iterator of tags attached to a resource.

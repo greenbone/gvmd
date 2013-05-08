@@ -2738,6 +2738,7 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 typedef struct
 {
   get_data_t get;    ///< Get args.
+  int names_only;    ///< Boolean. Whether to get only distinct names.
 } get_tags_data_t;
 
 /**
@@ -6640,9 +6641,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_TAGS", element_name) == 0)
           {
+            const gchar* attribute;
             get_data_parse_attributes (&get_tags_data->get, "tag",
                                        attribute_names,
                                        attribute_values);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "names_only", &attribute))
+              get_tags_data->names_only = strcmp (attribute, "0");
+            else
+              get_tags_data->names_only = 0;
+
             set_client_state (CLIENT_GET_TAGS);
           }
         else if (strcasecmp ("GET_TARGET_LOCATORS", element_name) == 0)
@@ -12307,7 +12316,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 get->filt_id = g_strdup("0");
             }
 
-          ret = init_tag_iterator (&tags, &get_tags_data->get);
+          if (get_tags_data->names_only)
+            ret = init_tag_name_iterator (&tags, &get_tags_data->get);
+          else
+            ret = init_tag_iterator (&tags, &get_tags_data->get);
+
           switch (ret)
             {
               case 1:
@@ -12338,47 +12351,77 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
                 SEND_GET_START ("tag", &get_filters_data->get);
 
-                while (1)
+                if (get_tags_data->names_only)
                   {
-                    ret = get_next (&tags, get, &first, &count,
-                                    init_filter_iterator);
-                    if (ret == 1)
-                      break;
-                    if (ret == -1)
+                    while (1)
                       {
-                        internal_error_send_to_client (error);
-                        return;
+                        ret = get_next (&tags, get, &first, &count,
+                                        init_filter_iterator);
+                        if (ret == 1)
+                          break;
+                        if (ret == -1)
+                          {
+                            internal_error_send_to_client (error);
+                            return;
+                          }
+
+                        SENDF_TO_CLIENT_OR_FAIL ("<tag>"
+                                                 "<name>%s</name>"
+                                                 "</tag>",
+                                                 tag_name_iterator_name (&tags)
+                                                );
+                        count++;
                       }
 
-                    value_esc = g_markup_escape_text (tag_iterator_value
-                                                        (&tags),
-                                                      -1);
+                    filtered = get_tags_data->get.id
+                                ? 1
+                                : tag_name_count (&get_tags_data->get);
+                  }
+                else
+                  {
+                    while (1)
+                      {
+                        ret = get_next (&tags, get, &first, &count,
+                                        init_filter_iterator);
+                        if (ret == 1)
+                          break;
+                        if (ret == -1)
+                          {
+                            internal_error_send_to_client (error);
+                            return;
+                          }
 
-                    SEND_GET_COMMON (tag, &get_tags_data->get, &tags);
+                        value_esc = g_markup_escape_text (tag_iterator_value
+                                                            (&tags),
+                                                          -1);
 
-                    SENDF_TO_CLIENT_OR_FAIL ("<attach>"
-                                            "<type>%s</type>"
-                                            "<id>%s</id>"
-                                            "<name>%s</name>"
-                                            "</attach>"
-                                            "<value>%s</value>"
-                                            "<active>%s</active>"
-                                            "<orphaned>%s</orphaned>",
-                                            tag_iterator_attach_type (&tags),
-                                            tag_iterator_attach_id (&tags),
-                                            tag_iterator_attach_name (&tags),
-                                            value_esc,
-                                            tag_iterator_active (&tags),
-                                            tag_iterator_orphaned (&tags));
+                        SEND_GET_COMMON (tag, &get_tags_data->get, &tags);
 
-                    SENDF_TO_CLIENT_OR_FAIL ("</tag>");
-                    g_free (value_esc);
-                    count++;
+                        SENDF_TO_CLIENT_OR_FAIL ("<attach>"
+                                                "<type>%s</type>"
+                                                "<id>%s</id>"
+                                                "<name>%s</name>"
+                                                "</attach>"
+                                                "<value>%s</value>"
+                                                "<active>%s</active>"
+                                                "<orphaned>%s</orphaned>",
+                                                tag_iterator_attach_type (&tags),
+                                                tag_iterator_attach_id (&tags),
+                                                tag_iterator_attach_name (&tags),
+                                                value_esc,
+                                                tag_iterator_active (&tags),
+                                                tag_iterator_orphaned (&tags));
+
+                        SENDF_TO_CLIENT_OR_FAIL ("</tag>");
+                        g_free (value_esc);
+                        count++;
+                      }
+
+                    filtered = get_tags_data->get.id
+                                ? 1
+                                : tag_count (&get_tags_data->get);
                   }
                 cleanup_iterator (&tags);
-                filtered = get_tags_data->get.id
-                            ? 1
-                            : tag_count (&get_tags_data->get);
                 SEND_GET_END ("tag", &get_tags_data->get, count, filtered);
                 break;
               default:

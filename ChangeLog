@@ -1,3 +1,25 @@
+2013-05-08  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	* src/manage.h (init_tag_name_iterator, tag_name_iterator_name)
+	(tag_name_count): New function prototypes.
+
+	* src/manage_sql.c (TAG_NAME_ITERATOR_FILTER_COLUMNS)
+	(TAG_NAME_ITERATOR_COLUMNS): New column #defines.
+	(init_tag_name_iterator, tag_name_iterator_name, tag_name_count): New
+	functions for iterating over distinct tag names.
+
+	* src/omp.c (get_tags_data_t): Add member names_only.
+	(omp_xml_handle_start_element): In case for GET_TAGS, parse new
+	attribute names_only.
+	(omp_xml_handle_end_element): In case CLIENT_GET_TAGS, handle new
+	parameter names_only which selects only distinct names of tags.
+
+	* src/schema_formats/XML/OMP.xml (get_tags): Add attribute names_only
+	to command, change tag element in response to either contain just name
+	or all elements of a tag.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-05-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml): Remove unused duplicate code for

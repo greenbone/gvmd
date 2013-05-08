@@ -11009,6 +11009,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Whether to get tags from the trashcan instead</summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>names_only</name>
+        <summary>Whether to get only distinct tag names</summary>
+        <type>boolean</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -11034,20 +11039,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <pattern>
           <attrib>
             <name>id</name>
-            <summary>UUID of the tag</summary>
+            <summary>uuid of the tag (omitted when using names_only)</summary>
             <type>uuid</type>
-            <required>1</required>
+            <required>0</required>
           </attrib>
           <e>name</e>
-          <e>comment</e>
-          <e>creation_time</e>
-          <e>modification_time</e>
-          <e>writable</e>
-          <e>in_use</e>
-          <e>attach</e>
-          <e>value</e>
-          <e>active</e>
-          <e>orphaned</e>
+          <o>
+            <g>
+              <e>comment</e>
+              <e>creation_time</e>
+              <e>modification_time</e>
+              <e>writable</e>
+              <e>in_use</e>
+              <e>attach</e>
+              <e>value</e>
+              <e>active</e>
+              <e>orphaned</e>
+            </g>
+          </o>
         </pattern>
         <ele>
           <name>name</name>

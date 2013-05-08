@@ -2992,6 +2992,15 @@ const char*
 tag_iterator_orphaned (iterator_t*);
 
 int
+init_tag_name_iterator (iterator_t*, const get_data_t*);
+
+const char*
+tag_name_iterator_name (iterator_t*);
+
+int
+tag_name_count (const get_data_t *get);
+
+int
 init_resource_tag_iterator (iterator_t*, const char*, const char*, int,
                             const char*, int);
 

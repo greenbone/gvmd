@@ -17733,6 +17733,11 @@ get_system_reports_response_system_report_report
           (<a href="#type_boolean">boolean</a>)
           Whether to get tags from the trashcan instead.
           </li>
+<li>
+          @<b>names_only</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to get only distinct tag names.
+          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -17752,13 +17757,15 @@ get_system_reports_response_system_report_report
 <li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
-          UUID of the tag.
+          uuid of the tag (omitted when using names_only).
           </li>
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+<i>The group</i><b>?</b><ul style="list-style: none">
 <li>
               &lt;<b>comment</b>&gt;
               <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
@@ -17819,6 +17826,8 @@ get_system_reports_response_system_report_report
               &lt;<b>orphaned</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the tag is attached to a nonexistent resource.</div>
 <ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 </ul>
 </li>
@@ -17889,6 +17898,7 @@ get_system_reports_response_system_report_report
        &amp; attribute filter { text }?
        &amp; attribute filt_id { text }?
        &amp; attribute trash { boolean }?
+       &amp; attribute names_only { boolean }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_tags_response
@@ -17906,17 +17916,17 @@ get_system_reports_response_system_report_report
 get_tags_response_tag
  = element tag
      {
-       attribute id { uuid }
+       attribute id { uuid }?
        &amp; get_tags_response_tag_name
-       &amp; get_tags_response_tag_comment
-       &amp; get_tags_response_tag_creation_time
-       &amp; get_tags_response_tag_modification_time
-       &amp; get_tags_response_tag_writable
-       &amp; get_tags_response_tag_in_use
-       &amp; get_tags_response_tag_attach
-       &amp; get_tags_response_tag_value
-       &amp; get_tags_response_tag_active
-       &amp; get_tags_response_tag_orphaned
+       &amp; ( get_tags_response_tag_comment
+           &amp; get_tags_response_tag_creation_time
+           &amp; get_tags_response_tag_modification_time
+           &amp; get_tags_response_tag_writable
+           &amp; get_tags_response_tag_in_use
+           &amp; get_tags_response_tag_attach
+           &amp; get_tags_response_tag_value
+           &amp; get_tags_response_tag_active
+           &amp; get_tags_response_tag_orphaned )?
      }
 
 get_tags_response_tag_name
