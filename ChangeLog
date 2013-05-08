@@ -1,5 +1,9 @@
 2013-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (RULES_HEADER): Remove duplicate definition.
+
+2013-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Just list users in GET_ROLES, as with GET_GROUPS.
 
 	* src/manage_sql.c (role_users): New function.

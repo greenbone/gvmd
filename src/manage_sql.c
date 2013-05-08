@@ -51918,8 +51918,6 @@ DEF_ACCESS (user_role_iterator_uuid, 1);
  */
 DEF_ACCESS (user_role_iterator_name, 2);
 
-#define RULES_HEADER "# This file is managed by the OpenVAS Administrator.\n# Any modifications must keep to the format that the Administrator expects.\n"
-
 
 /* Tags */
 
