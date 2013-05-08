@@ -1,5 +1,10 @@
 2013-05-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): Remove unused duplicate code for
+	closed cves.
+
+2013-05-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (report_host_count, report_port_count)
 	(report_closed_cve_count): New functions.
 	(print_report_xml): Send report total number of ports, hosts and closed
