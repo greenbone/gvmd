@@ -12679,9 +12679,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_GET_START ("role", &get_roles_data->get);
           while (1)
             {
-#if 0
               gchar *users;
-#endif
 
               ret = get_next (&roles, get, &first, &count,
                               init_role_iterator);
@@ -12695,12 +12693,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               SEND_GET_COMMON (role, &get_roles_data->get, &roles);
 
-              // FIX
-#if 0
               users = role_users (get_iterator_resource (&roles));
               SENDF_TO_CLIENT_OR_FAIL ("<users>%s</users>", users ? users : "");
               g_free (users);
-#endif
 
               SEND_TO_CLIENT_OR_FAIL ("</role>");
 

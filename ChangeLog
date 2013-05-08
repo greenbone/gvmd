@@ -1,9 +1,17 @@
 2013-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Add OMP GET_ROLES.
+	Just list users in GET_ROLES, as with GET_GROUPS.
 
-	* src/manage.h: Add headers accordingly.
-	(role_t): New type.
+	* src/manage_sql.c (role_users): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Enable sending users in
+	GET_ROLES.
+
+2013-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP GET_ROLES.
 
 	* src/manage_sql.c (valid_type, type_pretty_name, type_db_name): Add
 	role.
@@ -11,6 +19,9 @@
 	(trash_role_in_use): New function.
 	(ROLE_ITERATOR_FILTER_COLUMNS, ROLE_ITERATOR_COLUMNS): New defines.
 	(role_count, init_role_iterator): New functions.
+
+	* src/manage.h: Add headers accordingly.
+	(role_t): New type.
 
 	* src/omp.c (omp_commands, command_data_t,client_state_t): Add GET_ROLES
 	elements.

@@ -2566,6 +2566,9 @@ port_list_target_iterator_name (iterator_t*);
 int
 init_role_iterator (iterator_t *, const get_data_t *);
 
+gchar *
+role_users (role_t);
+
 int
 trash_role_in_use (role_t);
 

@@ -47823,6 +47823,23 @@ DEF_ACCESS (port_list_target_iterator_name, 1);
 /* Roles. */
 
 /**
+ * @brief Gets users of role as a string.
+ *
+ * @param[in]  role  Role.
+ *
+ * @return Users.
+ */
+gchar *
+role_users (role_t role)
+{
+  return sql_string (0, 0,
+                     "SELECT group_concat (name, ', ') FROM users, role_users"
+                     " WHERE role_users.role = %llu"
+                     " AND role_users.user = users.ROWID;",
+                     role);
+}
+
+/**
  * @brief Check whether a role is writable.
  *
  * @param[in]  role  Role.
