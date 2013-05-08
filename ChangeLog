@@ -22,6 +22,16 @@
 
 2013-05-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (escalate_2, escalate_1, print_report_xml,
+	(manage_report, manage_send_report): Remove unused show_closed_cves
+	parameter.
+
+	* src/omp.c: Adjust function calls accordingly.
+
+	* src/manage.h: Adjust function prototypes.
+
+2013-05-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Remove unused duplicate code for
 	closed cves.
 

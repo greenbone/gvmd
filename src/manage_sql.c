@@ -13611,7 +13611,6 @@ send_to_verinice (const char *url, const char *username, const char *password,
  * @param[in]  search_phrase      Phrase that results must include.  All results
  *                                if NULL or "".
  * @param[in]  autofp             Whether to apply auto FP filter.
- * @param[in]  show_closed_cves   Whether to include the Closed CVEs host detail.
  * @param[in]  notes              Whether to include notes.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides          Whether to include overrides.
@@ -13630,9 +13629,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             int sort_order, const char* sort_field,
             int result_hosts_only, const char *min_cvss_base,
             const char *levels, int apply_overrides,
-            const char *search_phrase, int autofp, int show_closed_cves,
-            int notes, int notes_details, int overrides, int overrides_details,
-            int first_result, int max_results)
+            const char *search_phrase, int autofp, int notes, int notes_details,
+            int overrides, int overrides_details, int first_result,
+            int max_results)
 {
   g_log ("event alert", G_LOG_LEVEL_MESSAGE,
          "The alert for task %s was triggered "
@@ -13728,8 +13727,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   min_cvss_base, levels,
                                                   apply_overrides,
                                                   search_phrase, autofp,
-                                                  show_closed_cves, notes,
-                                                  notes_details, overrides,
+                                                  notes, notes_details,
+                                                  overrides,
                                                   overrides_details,
                                                   first_result, max_results,
                                                   NULL, /* Type. */
@@ -13846,9 +13845,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   min_cvss_base, levels,
                                                   apply_overrides,
                                                   search_phrase, autofp,
-                                                  show_closed_cves, notes,
-                                                  notes_details, overrides,
-                                                  overrides_details,
+                                                  notes, notes_details,
+                                                  overrides, overrides_details,
                                                   first_result, max_results,
                                                   NULL, /* Type. */
                                                   &content_length,
@@ -14036,10 +14034,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           min_cvss_base, levels,
                                           apply_overrides,
                                           search_phrase, autofp,
-                                          show_closed_cves, notes,
-                                          notes_details, overrides,
-                                          overrides_details,
-                                          first_result, max_results,
+                                          notes, notes_details, overrides,
+                                          overrides_details, first_result,
+                                          max_results,
                                           NULL, /* Type. */
                                           &content_length,
                                           NULL,    /* Extension. */
@@ -14134,8 +14131,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           min_cvss_base, levels,
                                           apply_overrides,
                                           search_phrase, autofp,
-                                          show_closed_cves, notes,
-                                          notes_details, overrides,
+                                          notes, notes_details, overrides,
                                           overrides_details,
                                           first_result, max_results,
                                           NULL, /* Type. */
@@ -14198,7 +14194,6 @@ escalate_1 (alert_t alert, task_t task, event_t event,
                      1,       /* Apply overrides. */
                      NULL,    /* Search phrase. */
                      1,       /* Auto FP. */
-                     0,       /* Show closed CVEs. */
                      1,       /* Notes. */
                      1,       /* Notes details. */
                      1,       /* Overrides. */
@@ -25581,7 +25576,6 @@ buffer_cve (array_t *cves, iterator_t *details)
  *                                if NULL or "".
  * @param[in]  search_phrase_exact  Whether search phrase is exact.
  * @param[in]  autofp             Whether to apply the auto FP filter.
- * @param[in]  show_closed_cves   Whether to include the Closed CVEs host detail.
  * @param[in]  notes              Whether to include notes.
  * @param[in]  overrides          Whether to include overrides.
  * @param[in]  first_result       The result to start from.  The results are 0
@@ -27900,7 +27894,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  * @param[in]  search_phrase      Phrase that results must include.  All results
  *                                if NULL or "".
  * @param[in]  autofp             Whether to apply auto FP filter.
- * @param[in]  show_closed_cves   Whether to include the Closed CVEs host detail.
  * @param[in]  notes              Whether to include notes.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides          Whether to include overrides.
@@ -27922,8 +27915,8 @@ manage_report (report_t report, report_format_t report_format,
                const char* sort_field, int result_hosts_only,
                const char *min_cvss_base, const char *levels,
                int apply_overrides, const char *search_phrase, int autofp,
-               int show_closed_cves, int notes, int notes_details,
-               int overrides, int overrides_details, int first_result,
+               int notes, int notes_details, int overrides,
+               int overrides_details, int first_result,
                int max_results, const char *type, gsize *output_length,
                gchar **extension, gchar **content_type)
 {
@@ -28358,7 +28351,6 @@ manage_report (report_t report, report_format_t report_format,
  * @param[in]  search_phrase      Phrase that results must include.  All results
  *                                if NULL or "".
  * @param[in]  autofp             Whether to apply auto FP filter.
- * @param[in]  show_closed_cves   Whether to include the Closed CVEs host detail.
  * @param[in]  notes              Whether to include notes.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides          Whether to include overrides.
@@ -28398,9 +28390,9 @@ manage_send_report (report_t report, report_t delta_report,
                     int result_hosts_only, const char *min_cvss_base,
                     const char *levels, const char *delta_states,
                     int apply_overrides, const char *search_phrase,
-                    int autofp, int show_closed_cves, int notes,
-                    int notes_details, int overrides, int overrides_details,
-                    int first_result, int max_results, int base64,
+                    int autofp, int notes, int notes_details, int overrides,
+                    int overrides_details, int first_result,
+                    int max_results, int base64,
                     gboolean (*send) (const char *,
                                       int (*) (const char *, void*),
                                       void*),
@@ -28446,9 +28438,8 @@ manage_send_report (report_t report, report_t delta_report,
                         /* Report filtering. */
                         sort_order, sort_field, result_hosts_only,
                         min_cvss_base, levels, apply_overrides,
-                        search_phrase, autofp, show_closed_cves, notes,
-                        notes_details, overrides, overrides_details,
-                        first_result, max_results);
+                        search_phrase, autofp, notes, notes_details, overrides,
+                        overrides_details, first_result, max_results);
       return ret;
     }
 
