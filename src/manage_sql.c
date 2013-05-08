@@ -50125,12 +50125,20 @@ manage_set_setting (const gchar *uuid, const gchar *name,
                || strcmp (filter_name, "DFN-CERT Filter") == 0
                || strcmp (filter_name, "All SecInfo Filter") == 0))
     {
-      gchar *quoted_value;
+      gchar *quoted_value, *value;
+      gsize value_size;
 
       assert (current_credentials.username);
 
-      /* Use value directly as it is not base64 encoded. */
-      quoted_value = sql_quote (value_64);
+      if (value_64 && strlen (value_64))
+        value = (gchar*) g_base64_decode (value_64, &value_size);
+      else
+        {
+          value = g_strdup ("");
+          value_size = 0;
+        }
+
+      quoted_value = sql_quote (value);
 
       if (sql_int (0, 0,
                    "SELECT count(*) FROM settings"
@@ -50159,6 +50167,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
              uuid,
              quoted_value);
 
+      g_free (value);
       g_free (quoted_value);
 
       return 0;

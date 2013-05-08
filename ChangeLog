@@ -1,3 +1,7 @@
+2013-05-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (manage_set_setting): Base64 decode filters values.
+
 2013-05-08  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	* src/manage.h (init_tag_name_iterator, tag_name_iterator_name)
