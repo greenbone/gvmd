@@ -1,5 +1,11 @@
 2013-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Copy groups and roles when cloning users.
+
+	* src/manage_sql.c (copy_user): Copy groups and roles too.
+
+2013-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Enable multiple roles per user.
 
 	* src/manage_sql.c (find_role): New function.

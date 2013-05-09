@@ -51478,7 +51478,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
 {
   user_t user;
   int ret;
-  gchar *hash;
+  gchar *hash, *quoted_uuid;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -51495,8 +51495,21 @@ copy_user (const char* name, const char* comment, const char *user_id,
   sql ("UPDATE users SET password = '%s' WHERE ROWID = %llu;", hash, user);
   g_free (hash);
 
-  // FIX add groups
-  // FIX roles
+  quoted_uuid = sql_quote (user_id);
+
+  sql ("INSERT INTO group_users (user, `group`)"
+       " SELECT %llu, `group` FROM group_users"
+       " WHERE user = (SELECT ROWID FROM users WHERE uuid = '%s');",
+       user,
+       quoted_uuid);
+
+  sql ("INSERT INTO role_users (user, role)"
+       " SELECT %llu, role FROM role_users"
+       " WHERE user = (SELECT ROWID FROM users WHERE uuid = '%s');",
+       user,
+       quoted_uuid);
+
+  g_free (quoted_uuid);
 
   sql ("COMMIT;");
 
