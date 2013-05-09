@@ -1249,23 +1249,6 @@ array_find_string (array_t *array, const gchar *string)
 }
 
 /**
- * @brief Compares two string for g_ptr_array_sort.
- *
- * @param[in]  arg_one  Pointer to first string.
- * @param[in]  arg_two  Pointer to second string.
- *
- * @return -1, 0 or 1 if first given result is less than, equal to or greater
- *         than second.
- */
-static gint
-compare_strings (gconstpointer arg_one, gconstpointer arg_two)
-{
-  gchar *one = *((gchar**) arg_one);
-  gchar *two = *((gchar**) arg_two);
-  return strcmp (one, two);
-}
-
-/**
  * @brief Find a string in a glib style string vector.
  *
  * @param[in]  vector  Vector.
@@ -27811,7 +27794,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       while (next (&hosts))
         {
           iterator_t details;
-          guint index;
           array_t *cves;
 
           cves = make_array ();
@@ -27850,35 +27832,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                      report_host_details_iterator_source_desc (&details));
             }
           cleanup_iterator (&details);
-
-          if (cves->len > 0)
-            {
-              GString *detail_cves;
-
-              /* Combine all buffered CVEs into one host detail. */
-
-              g_ptr_array_sort (cves, compare_strings);
-
-              detail_cves = g_string_new ((gchar*) g_ptr_array_index (cves,
-                                                                      0));
-              for (index = 1; index < cves->len; index++)
-                g_string_append_printf
-                 (detail_cves,
-                  ", %s",
-                  (gchar*) g_ptr_array_index (cves, index));
-              PRINT (out,
-                     "<detail>"
-                     "<name>Closed CVEs</name>"
-                     "<value>%s</value>"
-                     "<source>"
-                     "<type>openvasmd</type>"
-                     "<name></name>"
-                     "<description></description>"
-                     "</source>"
-                     "</detail>",
-                     detail_cves->str);
-              g_string_free (detail_cves, TRUE);
-            }
           array_free (cves);
 
           PRINT (out,

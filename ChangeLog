@@ -1,3 +1,10 @@
+2013-05-09  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Remove unused duplicate code for
+	closed cves.
+	(compare_strings): Remove declared but unused function causing compiler
+	warning.
+
 2013-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Add roles to observers in
