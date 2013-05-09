@@ -1,3 +1,8 @@
+2013-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (user_may, init_get_iterator): Enable checks on
+	permissions granted to roles.
+
 2013-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (RULES_HEADER): Remove duplicate definition.

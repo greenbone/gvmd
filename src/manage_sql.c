@@ -1400,7 +1400,6 @@ user_may (const char *operation)
                  "                                FROM users"
                  "                                WHERE users.uuid"
                  "                                      = '%s')))"
-#if 0
                  "      OR (subject_type = 'role'"
                  "          AND subject"
                  "              IN (SELECT DISTINCT role"
@@ -1408,9 +1407,7 @@ user_may (const char *operation)
                  "                  WHERE user = (SELECT ROWID"
                  "                                FROM users"
                  "                                WHERE users.uuid"
-                 "                                      = '%s')))"
-#endif
-                 "     )"
+                 "                                      = '%s'))))"
                  " AND name = '%s';",
                  current_credentials.uuid,
                  current_credentials.uuid,
@@ -3801,7 +3798,6 @@ init_get_iterator (iterator_t* iterator, const char *type,
                             "                                 FROM users"
                             "                                 WHERE users.uuid"
                             "                                       = '%s')))"
-#if 0
                             "       OR (subject_type = 'role'"
                             "           AND subject"
                             "               IN (SELECT DISTINCT role"
@@ -3810,8 +3806,6 @@ init_get_iterator (iterator_t* iterator, const char *type,
                             "                                 FROM users"
                             "                                 WHERE users.uuid"
                             "                                       = '%s'))))"
-#endif
-                            "      )"
                             "  AND (%s))",
                             type,
                             get->trash ? "_trash" : "",
@@ -3819,9 +3813,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                             get->trash ? 1 : 0,
                             current_credentials.uuid,
                             current_credentials.uuid,
-#if 0
                             current_credentials.uuid,
-#endif
                             permission_or->str);
       else
         permission_clause = NULL;
@@ -3876,7 +3868,6 @@ init_get_iterator (iterator_t* iterator, const char *type,
                             "                            FROM users"
                             "                            WHERE users.uuid"
                             "                                  = '%s')))"
-#if 0
                             "  OR (%ss.subject_type = 'role'"
                             "      AND %ss.subject"
                             "          IN (SELECT DISTINCT role"
@@ -3885,7 +3876,6 @@ init_get_iterator (iterator_t* iterator, const char *type,
                             "                            FROM users"
                             "                            WHERE users.uuid"
                             "                                  = '%s')))"
-#endif
                             "  %s)",
                             type,
                             current_credentials.uuid,
@@ -3895,11 +3885,9 @@ init_get_iterator (iterator_t* iterator, const char *type,
                             type,
                             type,
                             current_credentials.uuid,
-#if 0
                             type,
                             type,
                             current_credentials.uuid,
-#endif
                             permission_clause ? permission_clause : "");
       else if (type_has_permissions (type))
         owned_clause
