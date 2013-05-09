@@ -2941,8 +2941,8 @@ const char*
 user_role_iterator_name (iterator_t*);
 
 int
-openvas_admin_add_user (const gchar *, const gchar *, const gchar *,
-                        const gchar *, int, const array_t *, array_t *,
+openvas_admin_add_user (const gchar *, const gchar *, const gchar *, int,
+                        const array_t *, array_t *, gchar **, array_t *,
                         gchar **, gchar **);
 
 int

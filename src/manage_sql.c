@@ -47822,6 +47822,21 @@ DEF_ACCESS (port_list_target_iterator_name, 1);
 /* Roles. */
 
 /**
+ * @brief Find a role given a UUID.
+ *
+ * @param[in]   uuid   UUID of role.
+ * @param[out]  role  Role return, 0 if succesfully failed to find role.
+ *
+ * @return FALSE on success (including if failed to find role), TRUE on
+ *         error.
+ */
+gboolean
+find_role (const char* uuid, role_t* role)
+{
+  return find_resource ("role", uuid, role);
+}
+
+/**
  * @brief Gets users of role as a string.
  *
  * @param[in]  role  Role.
@@ -51267,39 +51282,37 @@ find_user_by_name (const char* name, user_t *user)
  *
  * @param[in]  name         The name of the new user.
  * @param[in]  password     The password of the new user.
- * @param[in]  role         The role of the user.
  * @param[in]  hosts        The host the user is allowed/forbidden to scan.
  * @param[in]  hosts_allow  Whether hosts is allow or forbid.
  * @param[in]  directory    The directory containing the user directories.  It
  *                          will be created if it does not exist already.
  * @param[in]  groups       Groups.
  * @param[out] group_id_return  ID of group on "failed to find" error.
+ * @param[in]  roles        Roles.
+ * @param[out] role_id_return  ID of role on "failed to find" error.
  * @param[out] r_errdesc    If not NULL the address of a variable to receive
  *                          a malloced string with the error description.  Will
  *                          always be set to NULL on success.
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
- *         -1 on error, -2 if user exists already.
+ *         2 failed to find group, -1 on error, -2 if user exists already.
  */
 int
 openvas_admin_add_user (const gchar * name, const gchar * password,
-                        const gchar * role, const gchar * hosts,
-                        int hosts_allow, const array_t * allowed_methods,
+                        const gchar * hosts, int hosts_allow,
+                        const array_t * allowed_methods,
                         array_t *groups, gchar **group_id_return,
+                        array_t *roles, gchar **role_id_return,
                         gchar **r_errdesc)
 {
   char *errstr;
-  gchar *quoted_hosts, *quoted_method, *quoted_name, *quoted_role, *hash;
+  gchar *quoted_hosts, *quoted_method, *quoted_name, *hash;
   gchar *clean;
   int index, max;
   user_t user;
 
   assert (name);
   assert (password);
-  assert (role);
-  assert ((strcmp (role, "Admin") == 0)
-          || (strcmp (role, "User") == 0)
-          || (strcmp (role, "Observer") == 0));
 
   if (r_errdesc)
     *r_errdesc = NULL;
@@ -51350,7 +51363,6 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
 
   /* Add the user to the database. */
 
-  quoted_role = sql_quote (role ? role : "User");
   clean = clean_hosts (hosts ? hosts : "", &max);
   quoted_hosts = sql_quote (clean);
   g_free (clean);
@@ -51362,7 +51374,7 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
        " VALUES"
        " (make_uuid (),"
        "  (SELECT ROWID FROM users WHERE uuid = '%s'),"
-       "  '%s', '%s', '%s', '%s', %i, '%s');",
+       "  '%s', '%s', '%s', %i, '%s');",
        current_credentials.uuid,
        quoted_name,
        hash,
@@ -51370,16 +51382,8 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
        hosts_allow,
        quoted_method);
   user = sqlite3_last_insert_rowid (task_db);
-  sql ("INSERT INTO role_users (role, user)"
-       " VALUE (%llu,"
-       "        (SELECT ROWID FROM roles"
-       "         WHERE name = '%s'));",
-       quoted_name,
-       quoted_method,
-       quoted_role);
   g_free (hash);
   g_free (quoted_hosts);
-  g_free (quoted_role);
   g_free (quoted_method);
   g_free (quoted_name);
 
@@ -51418,6 +51422,41 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
       index++;
     }
 
+  /* Add the user to any given roles. */
+
+  index = 0;
+  while (roles && (index < roles->len))
+    {
+      gchar *role_id;
+      role_t role;
+
+      role_id = (gchar*) g_ptr_array_index (roles, index);
+      if (strcmp (role_id, "0") == 0)
+        {
+          index++;
+          continue;
+        }
+
+      if (find_role (role_id, &role))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (role == 0)
+        {
+          sql ("ROLLBACK;");
+          if (role_id_return) *role_id_return = role_id;
+          return 1;
+        }
+
+      sql ("INSERT INTO role_users (role, user) VALUES (%llu, %llu);",
+           role,
+           user);
+
+      index++;
+    }
+
   sql ("COMMIT;");
   return 0;
 }
@@ -51444,8 +51483,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
   sql ("BEGIN IMMEDIATE;");
 
   ret = copy_resource_lock ("user", name, comment, user_id,
-                            "password, timezone, role, hosts, hosts_allow,"
-                            " method",
+                            "password, timezone, hosts, hosts_allow, method",
                             1, &user);
   if (ret)
     {
@@ -51458,6 +51496,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
   g_free (hash);
 
   // FIX add groups
+  // FIX roles
 
   sql ("COMMIT;");
 

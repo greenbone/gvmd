@@ -1662,7 +1662,7 @@ typedef struct
   int hosts_allow;
   char *name;
   char *password;
-  char *role;
+  array_t *roles;
   gchar *current_source;
   array_t *sources;
 } create_user_data_t;
@@ -1679,7 +1679,7 @@ create_user_data_reset (create_user_data_t * data)
   array_free (data->groups);
   g_free (data->name);
   g_free (data->password);
-  g_free (data->role);
+  array_free (data->roles);
   if (data->sources)
     {
       array_free (data->sources);
@@ -5918,6 +5918,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_CREATE_USER);
             create_user_data->groups = make_array ();
+            create_user_data->roles = make_array ();
             create_user_data->hosts_allow = 2;
           }
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
@@ -8726,7 +8727,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("PASSWORD", element_name) == 0)
           set_client_state (CLIENT_CREATE_USER_PASSWORD);
         else if (strcasecmp ("ROLE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_USER_ROLE);
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values, "id",
+                                &attribute))
+              array_add (create_user_data->roles, g_strdup (attribute));
+            set_client_state (CLIENT_CREATE_USER_ROLE);
+          }
         else if (strcasecmp ("SOURCES", element_name) == 0)
           {
             create_user_data->sources = make_array ();
@@ -18872,7 +18879,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_USER:
         {
           gchar *errdesc;
-          gchar *fail_group_id;
+          gchar *fail_group_id, *fail_role_id;
           user_t new_user;
 
           assert (strcasecmp ("CREATE_USER", element_name) == 0);
@@ -18936,25 +18943,40 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             switch (openvas_admin_add_user
                      (create_user_data->name,
                       create_user_data->password ? create_user_data->password : "",
-                      create_user_data->role ? create_user_data->role : "User",
                       create_user_data->hosts,
                       create_user_data->hosts_allow,
                       create_user_data->sources,
                       create_user_data->groups,
                       &fail_group_id,
+                      create_user_data->roles,
+                      &fail_role_id,
                       &errdesc))
               {
               case 0:
                 SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_user"));
                 g_log ("event user", G_LOG_LEVEL_MESSAGE,
-                       "User %s with role %s has been created",
-                       create_user_data->name, create_user_data->role);
+                       "User %s has been created",
+                       create_user_data->name);
                 break;
               case 1:
                 if (send_find_error_to_client
                      ("create_user",
                       "group",
                       fail_group_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                       "User could not be created");
+                break;
+              case 2:
+                if (send_find_error_to_client
+                     ("create_user",
+                      "role",
+                      fail_role_id,
                       write_to_client,
                       write_to_client_data))
                   {
@@ -24814,9 +24836,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_USER_PASSWORD,
               &create_user_data->password);
-
-      APPEND (CLIENT_CREATE_USER_ROLE,
-              &create_user_data->role);
 
       APPEND (CLIENT_CREATE_USER_SOURCES_SOURCE,
               &create_user_data->current_source);
