@@ -11331,6 +11331,64 @@ DEF_ACCESS (task_group_iterator_name, 3);
 
 DEF_ACCESS (task_group_iterator_uuid, 4);
 
+/**
+ * @brief Initialise a task role iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  task      Task.
+ * @param[in]  action    Action.
+ */
+void
+init_task_role_iterator (iterator_t *iterator, task_t task)
+{
+  init_iterator (iterator,
+                 "SELECT ROWID, resource, subject,"
+                 " (SELECT name FROM roles"
+                 "  WHERE roles.ROWID = permissions.subject),"
+                 " (SELECT uuid FROM roles"
+                 "  WHERE roles.ROWID = permissions.subject)"
+                 " FROM permissions"
+                 " WHERE resource_type = 'task'"
+                 " AND resource = %llu"
+                 " AND resource_location = " G_STRINGIFY (LOCATION_TABLE)
+                 " AND subject_type = 'role'"
+                 // FIX other types imply 'get' too?
+                 " AND name = 'get';",
+                 task);
+}
+
+/**
+ * @brief Return the task from a task role iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Task of the iterator or NULL if iteration is complete.
+ */
+task_t
+task_role_iterator_task (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int64 (iterator->stmt, 1);
+}
+
+/**
+ * @brief Return the role from a role role iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Role of the iterator or NULL if iteration is complete.
+ */
+role_t
+task_role_iterator_role (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int64 (iterator->stmt, 2);
+}
+
+DEF_ACCESS (task_role_iterator_name, 3);
+
+DEF_ACCESS (task_role_iterator_uuid, 4);
+
 
 /* Events and Alerts. */
 

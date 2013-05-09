@@ -23499,7 +23499,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int holes_2, infos_2, warnings_2;
               int false_positives;
               gchar *response;
-              iterator_t alerts, groups;
+              iterator_t alerts, groups, roles;
               gchar *in_assets, *max_checks, *max_hosts;
 
               ret = get_next (&tasks, get, &first, &count,
@@ -23939,6 +23939,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   task_group_iterator_uuid (&groups),
                   task_group_iterator_name (&groups));
               cleanup_iterator (&groups);
+
+              init_task_role_iterator (&roles, index);
+              while (next (&roles))
+                SENDF_TO_CLIENT_OR_FAIL
+                 ("<role id=\"%s\">"
+                  "<name>%s</name>"
+                  "</role>",
+                  task_role_iterator_uuid (&roles),
+                  task_role_iterator_name (&roles));
+              cleanup_iterator (&roles);
 
               SENDF_TO_CLIENT_OR_FAIL ("</observers>");
 

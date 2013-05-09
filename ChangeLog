@@ -1,5 +1,16 @@
 2013-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Add roles to observers in
+	GET_TASKS.
+
+	* src/manage_sql.c (init_task_role_iterator, task_role_iterator_task)
+	(task_role_iterator_role, task_role_iterator_name)
+	(task_role_iterator_uuid): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+2013-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (user_may, init_get_iterator): Enable checks on
 	permissions granted to roles.
 

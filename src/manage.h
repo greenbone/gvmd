@@ -1540,6 +1540,15 @@ task_group_iterator_name (iterator_t*);
 const char*
 task_group_iterator_uuid (iterator_t*);
 
+void
+init_task_role_iterator (iterator_t *, task_t);
+
+const char*
+task_role_iterator_name (iterator_t*);
+
+const char*
+task_role_iterator_uuid (iterator_t*);
+
 
 /* LSC credentials. */
 
