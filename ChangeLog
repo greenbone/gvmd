@@ -1,5 +1,10 @@
 2013-05-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (init_result_iterator): Order by host/ip after
+	ordering by port and threat.
+
+2013-05-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (report_closed_cves_count): Fix counting query.
 
 2013-05-10  Timo Pollmeier  <timo.pollmeier@greenbone.net>
