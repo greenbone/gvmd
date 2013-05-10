@@ -25696,10 +25696,15 @@ static int
 report_closed_cve_count (report_t report)
 {
   return sql_int (0, 0,
-                  "SELECT count (ROWID) FROM report_host_details"
-                  " WHERE report_host IN "
-                  "  (SELECT ROWID FROM report_hosts WHERE report = %llu)"
-                  "  AND name = 'Closed CVE';",
+                  " SELECT count(ROWID) FROM nvts"
+                  " WHERE cve != 'NOCVE'"
+                  " AND family IN (" LSC_FAMILY_LIST ")"
+                  " AND oid IN"
+                  " (SELECT source_name FROM report_host_details"
+                  "  WHERE report_host IN "
+                  "   (SELECT ROWID FROM report_hosts WHERE report = %llu)"
+                  "  AND name = 'EXIT_CODE'"
+                  "  AND value = 'EXIT_NOTVULN');",
                   report);
 }
 
