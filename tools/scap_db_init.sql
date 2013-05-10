@@ -37,7 +37,7 @@ DROP TABLE IF EXISTS ovaldefs;
 
 /* create new tables and indices */
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "11");
+INSERT INTO meta (name, value) VALUES ("database_version", "13");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
 CREATE TABLE cves (
@@ -71,7 +71,8 @@ CREATE TABLE cpes (
   status,
   deprecated_by_id INTEGER,
   max_cvss FLOAT DEFAULT 0,
-  cve_refs INTEGER DEFAULT 0
+  cve_refs INTEGER DEFAULT 0,
+  nvd_id
 );
 CREATE UNIQUE INDEX cpe_idx ON cpes (name);
 

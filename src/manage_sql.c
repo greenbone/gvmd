@@ -50354,14 +50354,14 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  */
 #define CPE_INFO_ITERATOR_FILTER_COLUMNS                    \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "status",          \
-   "deprecated_by_id", "max_cvss", "cves",  NULL }
+   "deprecated_by_id", "max_cvss", "cves", "nvd_id", NULL }
 
 /**
  * @brief CPE iterator columns.
  */
 #define CPE_INFO_ITERATOR_COLUMNS                           \
   GET_ITERATOR_COLUMNS ", title, status, deprecated_by_id," \
-  "max_cvss, cve_refs AS cves"
+  "max_cvss, cve_refs AS cves, nvd_id"
 
 /**
  * @brief Filter columns for OVALDEF iterator.
@@ -50691,6 +50691,16 @@ DEF_ACCESS (cpe_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 3);
  *         complete. Freed by cleanup_iterator.
  */
 DEF_ACCESS (cpe_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Get the NVD ID for this CPE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The NVD ID of this CPE, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cpe_info_iterator_nvd_id, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the CVSS attack vector for this CVE.

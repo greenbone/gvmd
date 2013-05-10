@@ -6397,6 +6397,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>cpe</name>
           <pattern>
+            <e>nvd_id</e>
             <o><e>title</e></o>
             <e>max_cvss</e>
             <e>cve_refs</e>
@@ -6406,6 +6407,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <o><e>raw_data</e></o>
           </pattern>
           <summary>A CPE info element</summary>
+          <ele>
+            <name>nvd_id</name>
+            <summary>The NVD ID of the CPE</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
           <ele>
             <name>title</name>
             <summary>The title of the CPE</summary>

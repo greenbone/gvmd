@@ -80,7 +80,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       str:replace(
       str:decode-uri(text()), "%7E", "~"),
       "&#39;", "&#39;&#39;")'/>
-  INSERT OR IGNORE INTO cpes (name) VALUES ('<xsl:value-of select="$decoded_cpe"/>');
+  INSERT OR IGNORE INTO cpes (uuid, name) VALUES ('<xsl:value-of select="$decoded_cpe"/>', '<xsl:value-of select="$decoded_cpe"/>');
 
   INSERT OR REPLACE INTO affected_products (cve,cpe) VALUES ((SELECT id FROM cves WHERE uuid='<xsl:value-of select="../../@id"/>'),
   (SELECT id FROM cpes WHERE name='<xsl:value-of select="$decoded_cpe"/>'));

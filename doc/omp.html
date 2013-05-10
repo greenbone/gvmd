@@ -10936,6 +10936,11 @@ get_filters_response_filter_count_page
               ?<div style="margin-left: 15px; display: inline;">A CPE info element.</div>
 <ul style="list-style: none">
 <li>
+              &lt;<b>nvd_id</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The NVD ID of the CPE.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>title</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">The title of the CPE.</div>
 <ul style="list-style: none"></ul>
@@ -11354,13 +11359,20 @@ get_info_response_info_user_tags_tag_comment
 get_info_response_info_cpe
  = element cpe
      {
-       get_info_response_info_cpe_title?
+       get_info_response_info_cpe_nvd_id
+       &amp; get_info_response_info_cpe_title?
        &amp; get_info_response_info_cpe_max_cvss
        &amp; get_info_response_info_cpe_cve_refs
        &amp; get_info_response_info_cpe_status
        &amp; get_info_response_info_cpe_deprecated_by?
        &amp; get_info_response_info_cpe_cves?
        &amp; get_info_response_info_cpe_raw_data?
+     }
+
+get_info_response_info_cpe_nvd_id
+ = element nvd_id
+     {
+       text
      }
 
 get_info_response_info_cpe_title

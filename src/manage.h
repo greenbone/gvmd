@@ -2730,6 +2730,9 @@ cpe_info_iterator_deprecated_by_id (iterator_t*);
 const char*
 cpe_info_iterator_cve_refs (iterator_t*);
 
+const char*
+cpe_info_iterator_nvd_id (iterator_t*);
+
 /* CVE. */
 
 const char*

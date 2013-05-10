@@ -38,22 +38,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   >
   <xsl:output method="text"/>
 
-  <xsl:template match="cpe:cpe-item">INSERT OR REPLACE INTO cpes
+  <xsl:template match="cpe:cpe-item">
+    <xsl:variable name="decoded_name"
+                  select='str:replace(
+                          str:replace(
+                          str:decode-uri(@name),
+                          "%7E", "~"),
+                          "&#39;", "&#39;&#39;")'/>
+    INSERT OR REPLACE INTO cpes
     (uuid, name, title, creation_time, modification_time,
-    status, deprecated_by_id)
-    VALUES ('<xsl:value-of select="meta:item-metadata/@nvd-id"/>',
-    '<xsl:value-of select='
-      str:replace(
-      str:replace(
-      str:decode-uri(@name), "%7E", "~"),
-      "&#39;", "&#39;&#39;")'/>',
+    status, deprecated_by_id, nvd_id)
+    VALUES ('<xsl:value-of select="$decoded_name"/>',
+    '<xsl:value-of select="$decoded_name"/>',
     '<xsl:value-of select='str:replace(cpe:title[@xml:lang = "en-US"], "&#39;", "&#39;&#39;")'/>',
     strftime('%s', '<xsl:value-of select="meta:item-metadata/@modification-date"/>'),
     strftime('%s', '<xsl:value-of select="meta:item-metadata/@modification-date"/>'),
     '<xsl:value-of select="meta:item-metadata/@status"/>',
     <xsl:call-template name="value_or_null">
       <xsl:with-param name="value" select="meta:item-metadata/@deprecated-by-nvd-id"/>
-    </xsl:call-template>
+    </xsl:call-template>,
+    '<xsl:value-of select="meta:item-metadata/@nvd-id"/>'
     );
   </xsl:template>
 

@@ -22398,9 +22398,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        "<title>%s</title>",
                                        cpe_info_iterator_title (&info));
                   xml_string_append (result,
+                                     "<nvd_id>%s</nvd_id>"
                                      "<max_cvss>%s</max_cvss>"
                                      "<cve_refs>%s</cve_refs>"
                                      "<status>%s</status>",
+                                     cpe_info_iterator_nvd_id (&info),
                                      cpe_info_iterator_max_cvss (&info),
                                      cpe_info_iterator_cve_refs (&info),
                                      cpe_info_iterator_status (&info) ?

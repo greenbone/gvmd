@@ -1,3 +1,32 @@
+2013-05-10  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+	* src/manage.h (cpe_info_iterator_nvd_id): New function prototype.
+
+	* src/manage_sql.c (CPE_INFO_ITERATOR_FILTER_COLUMNS)
+	(CPE_INFO_ITERATOR_COLUMNS): Add column nvd_id.
+	(cpe_info_iterator_nvd_id): New function to get NVD ID.
+
+	* src/omp.c (xml_handle_end_element): In case CLIENT_GET_INFO add
+	element nvd_id to response for CPEs.
+
+	* src/schema_formats (get_info): Add element nvd_id to cpe element
+	in response.
+
+	* tools/cpe_update: Use name as ID, put NVD ID in separate field.
+
+	* tools/cve_update: Use name as ID for CPEs to avoid null IDs.
+
+	* tools/greenbone-scapdata-sync (db_migrate_13, check_db_version): Add
+	migration to SCAP database version 13.
+
+	* tools/openvas-scapdata-sync.in (db_migrate_13, check_db_version): Add
+	migration to SCAP database version 13.
+
+	* tools/scap_db_init.sql (meta): Set version to 13.
+	(cpes): Add column nvd_id.
+
 2013-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Copy groups and roles when cloning users.

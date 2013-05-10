@@ -298,6 +298,17 @@ db_migrate_12 () {
   fi
 }
 
+db_migrate_13 () {
+  echo "[i] Migrating database to version 13."
+  sqlite3 "$SEC_DB"  "ALTER TABLE cpes ADD COLUMN nvd_id;
+                      UPDATE cpes SET nvd_id = uuid, uuid = name;
+                      UPDATE meta
+                        SET value = '13'
+                        WHERE name = 'database_version';
+                     "
+  echo "[i] Migration done."
+}
+
 check_db_version () {
   DB_VERSION=`$SQLITE $SEC_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
@@ -312,13 +323,18 @@ check_db_version () {
     8) db_migrate_9
        db_migrate_10
        db_migrate_11
-       db_migrate_12;;
+       db_migrate_12
+       db_migrate_13;;
     9) db_migrate_10
        db_migrate_11
-       db_migrate_12;;
+       db_migrate_12
+       db_migrate_13;;
    10) db_migrate_11
-       db_migrate_12;;
-   11) db_migrate_12;;
+       db_migrate_12
+       db_migrate_13;;
+   11) db_migrate_12
+       db_migrate_13;;
+   12) db_migrate_13;;
   esac
 }
 

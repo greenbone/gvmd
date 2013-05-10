@@ -6515,13 +6515,21 @@ get_info_response_info_user_tags_tag_comment
 get_info_response_info_cpe
  = element cpe
      {
-       get_info_response_info_cpe_title?
+       get_info_response_info_cpe_nvd_id
+       & get_info_response_info_cpe_title?
        & get_info_response_info_cpe_max_cvss
        & get_info_response_info_cpe_cve_refs
        & get_info_response_info_cpe_status
        & get_info_response_info_cpe_deprecated_by?
        & get_info_response_info_cpe_cves?
        & get_info_response_info_cpe_raw_data?
+     }
+
+# The NVD ID of the CPE.
+get_info_response_info_cpe_nvd_id
+ = element nvd_id
+     {
+       text
      }
 
 # The title of the CPE.
