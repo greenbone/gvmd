@@ -24,7 +24,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20130311
+VERSION=20130513
 RESTRICTED=1
 
 # SETTINGS
@@ -47,6 +47,10 @@ fi
 # which means that files which are not part of the feed, database or private
 # directory will be deleted.
 RSYNC_DELETE="--delete --exclude cert.db --exclude $PRIVATE_SUBDIR/"
+
+# RSYNC_SSH_OPTS contains options which should be passed to ssh for the rsync
+# connection to the repository.
+RSYNC_SSH_OPTS="-o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\""
 
 # PORT controls the outgoing TCP port for updates. If PAT/Port-Translation is
 # not used, this should be "24". For some application layer firewalls or gates
@@ -303,16 +307,17 @@ sync_certdata(){
         gsmproxy=`grep proxy_feed /admin/ezcli.state | sed -e 's/^.*\/\///' -e 's/:/ /' -e 's/[\t ]*$//'`
         PORT=`grep ^syncport /admin/ezcli.state | sed -e "s/^syncport\t//g"`
       fi
-      if [ -z $gsmproxy ] || [ "proxy_feed" = "$gsmproxy" ]
+      if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
       then
-        rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
+        RSYNC_SSH_PROXY_CMD=""
       else
         if [ -r /admin/proxyauth -a `stat -c %s /admin/proxyauth` != 0 ]; then
-          rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -o \"ProxyCommand corkscrew $gsmproxy %h %p /admin/proxyauth\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
+          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p /admin/proxyauth\""
         else
-          rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -o \"ProxyCommand corkscrew $gsmproxy %h %p\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
+          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
         fi
       fi
+      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
       if [ 0 -ne "$?" ] ; then
         echo
         echo "== greenbone-certdata-sync $VERSION ================================================"
