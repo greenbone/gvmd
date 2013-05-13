@@ -52,6 +52,9 @@ RSYNC_DELETE="--delete --exclude cert.db --exclude $PRIVATE_SUBDIR/"
 # connection to the repository.
 RSYNC_SSH_OPTS="-o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\""
 
+# RSYNC_COMPRESS specifies the compression level to use for the rsync connection.
+RSYNC_COMPRESS="--compress-level=9"
+
 # PORT controls the outgoing TCP port for updates. If PAT/Port-Translation is
 # not used, this should be "24". For some application layer firewalls or gates
 # the value 22 (Standard SSH) is useful. Only change if you know what you are
@@ -317,7 +320,7 @@ sync_certdata(){
           RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
         fi
       fi
-      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
+      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
       if [ 0 -ne "$?" ] ; then
         echo
         echo "== greenbone-certdata-sync $VERSION ================================================"

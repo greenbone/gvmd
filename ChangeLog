@@ -1,5 +1,10 @@
 2013-05-13  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* tools/greenbone-scapdata-sync, tools/greenbone-certdata-sync: Add
+	compression to rsync options.
+
+2013-05-13  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* tools/greenbone-scapdata-sync, tools/greenbone-certdata-sync: Factor
 	out ssh options to simplify rsync call.
 
