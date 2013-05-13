@@ -1,3 +1,8 @@
+2013-05-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_MODIFY_TASK
+	allow observers for container tasks.
+
 2013-05-13  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	First step towards consolidation of logging.

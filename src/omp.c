@@ -14703,13 +14703,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else if ((task_target (task) == 0)
                      && (modify_task_data->rcfile
                          || modify_task_data->alerts->len
-                         || modify_task_data->groups->len
                          || modify_task_data->schedule_id
                          || modify_task_data->slave_id))
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_task",
-                                  "For container tasks only name and comment"
-                                  " can be modified"));
+                                  "For container tasks only name, comment and"
+                                  " observers can be modified"));
             else if (modify_task_data->action)
               {
                 if (modify_task_data->file_name == NULL)
