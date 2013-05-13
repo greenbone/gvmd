@@ -135,15 +135,6 @@ do_feedversion () {
 if [ ! -w $LOGDIR ]
 then
   NOLOG=1
-  echo
-  echo "== greenbone-scapdata-sync $VERSION ================================================"
-  echo "Warning: The logfile directory"
-  echo "  ($LOGDIR)"
-  echo "does not exist or is not writeable. Please make sure this directory exists and"
-  echo "is writable."
-  echo "Please be aware that logging is not possible during this script run!"
-  echo "==============================================================================="
-  echo
 fi
 
 log_write(){
@@ -164,17 +155,6 @@ fi
 RSYNC=`command -v rsync`
 if [ -z $RSYNC ]
 then
-  echo
-  echo "== greenbone-scapdata-sync $VERSION ================================================"
-  echo "Could not find tools necessary for synchronization."
-  echo "Please make sure that the tool"
-  echo "  rsync"
-  echo "is installed and available in your PATH variable."
-  echo "If you are still not able to continue, please contact Greenbone Support at"
-  echo "support@greenbone.net and include the error messages displayed above (if any)"
-  echo "and your customer ID."
-  echo "==============================================================================="
-  echo
   log_write "rsync not found, aborting synchronization."
   logger "SCAP synchronization: rsync not found, aborting synchronization."
   exit 1
@@ -183,17 +163,6 @@ fi
 SQLITE=`command -v sqlite3`
 if [ -z $SQLITE ]
 then
-  echo
-  echo "== greenbone-scapdata-sync $VERSION ================================================"
-  echo "Could not find tools necessary for synchronization."
-  echo "Please make sure that the tool"
-  echo "  sqlite3"
-  echo "is installed and available in your PATH variable."
-  echo "If you are still not able to continue, please contact Greenbone Support at"
-  echo "support@greenbone.net and include the error messages displayed above (if any)"
-  echo "and your customer ID."
-  echo "==============================================================================="
-  echo
   log_write "sqlite3 not found, aborting synchronization."
   logger "SCAP synchronization: sqlite3 not found, aborting synchronization."
   exit 1
@@ -670,16 +639,6 @@ sync_scapdata(){
     custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
     if [ -z $feeduser ] || [ -z $custid ]
     then
-      echo "== greenbone-scapdata-sync $VERSION ================================================"
-      echo "Synchronization was not possible because credential information could not"
-      echo "be read from your access key."
-      echo "Please make sure that the key located at"
-      echo "  $sysconfdir/openvas/gsf-access-key"
-      echo "is intact and in a valid format."
-      echo "If you are still not able to continue, please contact Greenbone Support at"
-      echo "support@greenbone.net and include the error messages displayed above (if any)"
-      echo "and your customer ID."
-      echo "==============================================================================="
       log_write "Could not determine credentials, aborting synchronization."
       logger "SCAP synchronization: Could not determine credentials, aborting synchronization."
       exit 1
@@ -704,17 +663,6 @@ sync_scapdata(){
       fi
       rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
       if [ 0 != "$?" ] ; then
-        echo
-        echo "== greenbone-scapdata-sync $VERSION ================================================"
-        echo "The synchronization with the repository failed. This may indicate a serious issue"
-        echo "with either your infrastructure or the repository itself."
-        echo "Your local SCAP data repository may be damaged now. Please resolve any connection"
-        echo "issues and try again."
-        echo "If you suspect an issue with the Greenbone SCAP data Repository, please contact"
-        echo "Greenbone support at support@greenbone.net and include the error messages"
-        echo "displayed above (if any) and your customer ID ($custid)."
-        echo "==============================================================================="
-        echo
         log_write "rsync failed, aborting synchronization."
         logger "SCAP synchronization:  failed, aborting synchronization."
         exit 1
@@ -728,22 +676,6 @@ sync_scapdata(){
 
     update_scap_db
   else
-    echo
-    echo "== greenbone-scapdata-sync $VERSION ================================================"
-    echo "Could not find gsf-access-key."
-    echo
-    echo "This access key can be obtained from Greenbone Networks GmbH,"
-    echo "see http://greenbone.net/solutions/gbn_feed.html for details."
-    echo
-    echo "Please make sure the personal access key you obtained from"
-    echo "Greenbone is placed in the following directory:"
-    echo $ACCESSKEY
-    echo "Please make also sure that the filename is gsf-access-key."
-    echo "If you are still not able to synchronize, please contact Greenbone Support at"
-    echo "support@greenbone.net and include the error messages displayed above (if any)"
-    echo "and your customer ID."
-    echo "==============================================================================="
-    echo
     log_write "gsf-access-key not found, aborting synchronization."
     logger "SCAP synchronization: gsf-access-key not found, aborting synchronization."
     exit 1
