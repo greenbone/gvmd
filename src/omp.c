@@ -3541,6 +3541,7 @@ typedef struct
   gchar *role;
   array_t *sources;
   gchar *current_source;
+  gchar *user_id;
 } modify_user_data_t;
 
 /**
@@ -3551,6 +3552,7 @@ modify_user_data_reset (modify_user_data_t * data)
 {
   array_free (data->groups);
   g_free (data->name);
+  g_free (data->user_id);
   g_free (data->password);
   g_free (data->role);
   // TODO: Evaluate memleak: hosts
@@ -6903,7 +6905,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_TASK);
           }
         else if (strcasecmp ("MODIFY_USER", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_USER);
+          {
+            append_attribute (attribute_names, attribute_values, "user_id",
+                              &modify_user_data->user_id);
+            set_client_state (CLIENT_MODIFY_USER);
+          }
         else if (strcasecmp ("PAUSE_TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "task_id",
@@ -15094,21 +15100,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_USER", element_name) == 0);
 
-          if (modify_user_data->name == NULL
-              || strlen (modify_user_data->name) == 0)
+          if ((modify_user_data->name == NULL
+               && modify_user_data->user_id == NULL)
+              || (modify_user_data->name
+                  && (strlen (modify_user_data->name) == 0))
+              || (modify_user_data->user_id
+                  && (strlen (modify_user_data->user_id) == 0)))
             SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
                                     ("modify_user",
-                                     "MODIFY_USER requires a name"));
+                                     "MODIFY_USER requires NAME or user_id"));
           else
             {
               gchar *fail_group_id, *errdesc;
-              int was_admin;
 
-              was_admin = user_is_admin (modify_user_data->name);
               errdesc = NULL;
 
               switch (openvas_admin_modify_user
-                      (modify_user_data->name,
+                      (modify_user_data->user_id,
+                       &modify_user_data->name,
                        ((modify_user_data->modify_password
                          && modify_user_data->password) ? modify_user_data->
                         password
@@ -15121,19 +15130,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
-                  if (was_admin && (strcmp (modify_user_data->role, "User") == 0))
-                    {
-                      g_log ("event user", G_LOG_LEVEL_MESSAGE,
-                             "Role of user %s has been changed from Admin to User",
-                             modify_user_data->name);
-                    }
-                  if (!was_admin
-                      && (strcmp (modify_user_data->role, "Admin") == 0))
-                    {
-                      g_log ("event user", G_LOG_LEVEL_MESSAGE,
-                             "Role of user %s has been changed from User to Admin",
-                             modify_user_data->name);
-                    }
                   break;
                 case 1:
                   if (send_find_error_to_client
@@ -15151,13 +15147,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (send_find_error_to_client
                        ("modify_user",
                         "user",
-                        modify_user_data->name,
+                        modify_user_data->user_id
+                         ? modify_user_data->user_id
+                         : modify_user_data->name,
                         write_to_client,
                         write_to_client_data))
                     {
                       error_send_to_client (error);
                       return;
                     }
+                  break;
+                case 3:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
+                  g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                         "User %s gained the Admin role",
+                         modify_user_data->name);
+                  break;
+                case 4:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
+                  g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                         "User %s lost the Admin role",
+                         modify_user_data->name);
                   break;
                 case -2:
                   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX

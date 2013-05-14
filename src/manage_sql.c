@@ -51583,8 +51583,10 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
 /**
  * @brief Modify a user.
  *
- * @param[in]  name         The name of the new user.
- * @param[in]  password     The password of the new user.  NULL to leave as is.
+ * @param[in]  user_id      The UUID of the user.  Overrides name.
+ * @param[in]  name         The name of the user.  If NULL then set to name
+ *                          when return is 3 or 4.
+ * @param[in]  password     The password of the user.  NULL to leave as is.
  * @param[in]  role         The role of the user.  NULL to leave as is.
  * @param[in]  hosts        The host the user is allowed/forbidden to scan.
  *                          NULL to leave as is.
@@ -51598,20 +51600,22 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
  * @param[out] group_id_return  ID of group on "failed to find" error.
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
- *         1 failed to find user, -1 on error, -2 for an unknown role, -3 if
+ *         1 failed to find user, 3 success and user gained admin, 4 success
+ *         and user lost admin, -1 on error, -2 for an unknown role, -3 if
  *         wrong number of methods.
  */
 int
-openvas_admin_modify_user (const gchar * name, const gchar * password,
-                           const gchar * role, const gchar * hosts,
-                           int hosts_allow, const array_t * allowed_methods,
+openvas_admin_modify_user (const gchar * user_id, gchar **name,
+                           const gchar * password, const gchar * role,
+                           const gchar * hosts, int hosts_allow,
+                           const array_t * allowed_methods,
                            array_t *groups, gchar **group_id_return,
                            gchar **r_errdesc)
 {
   char *errstr;
-  gchar *hash, *quoted_role, *quoted_hosts, *quoted_method, *clean;
+  gchar *hash, *quoted_role, *quoted_hosts, *quoted_method, *clean, *uuid;
   user_t user;
-  int max;
+  int max, was_admin, is_admin;
 
   if (r_errdesc)
     *r_errdesc = NULL;
@@ -51633,7 +51637,15 @@ openvas_admin_modify_user (const gchar * name, const gchar * password,
   sql ("BEGIN IMMEDIATE;");
 
   user = 0;
-  if (find_user_by_name (name, &user))
+  if (user_id)
+    {
+      if (find_user (user_id, &user))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+    }
+  else if (find_user_by_name (*name, &user))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -51644,11 +51656,24 @@ openvas_admin_modify_user (const gchar * name, const gchar * password,
       return 2;
     }
 
-  if (name && password)
+  uuid = sql_string (0, 0,
+                     "SELECT uuid FROM users WHERE ROWID = %llu",
+                     user);
+
+  was_admin = user_is_admin (uuid);
+
+  if (password)
     {
-      if ((errstr = openvas_validate_password (password, name)))
+      char *user_name;
+
+      user_name = sql_string (0, 0,
+                              "SELECT name FROM users WHERE ROWID = %llu",
+                              user);
+      errstr = openvas_validate_password (password, user_name);
+      g_free (user_name);
+      if (errstr)
         {
-          g_warning ("new password for '%s' rejected: %s", name, errstr);
+          g_warning ("new password for '%s' rejected: %s", user_name, errstr);
           if (r_errdesc)
             *r_errdesc = errstr;
           else
@@ -51667,7 +51692,7 @@ openvas_admin_modify_user (const gchar * name, const gchar * password,
 
   /* Update the user in the database. */
 
-  quoted_role = sql_quote (role);
+  quoted_role = sql_quote (role ? role : "User");
   clean = clean_hosts (hosts ? hosts : "", &max);
   quoted_hosts = sql_quote (clean);
   g_free (clean);
@@ -51741,6 +51766,29 @@ openvas_admin_modify_user (const gchar * name, const gchar * password,
 
   sql ("COMMIT;");
 
+  if (was_admin)
+    {
+      is_admin = user_is_admin (uuid);
+      g_free (uuid);
+      if (is_admin)
+        return 0;
+      if (*name == NULL)
+        *name = sql_string (0, 0,
+                            "SELECT name FROM users WHERE ROWID = %llu",
+                            user);
+      return 4;
+    }
+
+  is_admin = user_is_admin (uuid);
+  g_free (uuid);
+  if (is_admin)
+    {
+      if (*name == NULL)
+        *name = sql_string (0, 0,
+                            "SELECT name FROM users WHERE ROWID = %llu",
+                            user);
+      return 3;
+    }
   return 0;
 }
 

@@ -1,3 +1,17 @@
+2013-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add user_id attribute to MODIFY_USER, to match other commands.
+
+	* src/manage_sql.c (openvas_admin_modify_user): Add user_id arg.  Make
+	name arg a pointer.  Find user by user_id if given.  Return name in name
+	arg in certain cases.  Indicate gain and loss of admin in return.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (modify_user_data_t, modify_user_data_reset): Add user_id.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Handle
+	user_id in MODIFY_USER.
+
 2013-05-14  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-scapdata-sync: Switch logging to use "logger"
