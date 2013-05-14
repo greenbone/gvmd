@@ -1,5 +1,20 @@
 2013-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Make MODIFY_USER handle multiple roles too.
+
+	* src/manage_sql.c (openvas_admin_add_user): Correct return doc.
+	(openvas_admin_modify_user): Replace role arg with array args.  Set the
+	roles from the array.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (modify_user_data_t, modify_user_data_reset): Replace role
+	with roles.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Allow multiple roles in MODIFY_USER.
+
+2013-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add user_id attribute to MODIFY_USER, to match other commands.
 
 	* src/manage_sql.c (openvas_admin_modify_user): Add user_id arg.  Make

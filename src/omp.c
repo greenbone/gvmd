@@ -3538,7 +3538,7 @@ typedef struct
   gboolean modify_password;
   gchar *name;
   gchar *password;
-  gchar *role;
+  array_t *roles;         ///< IDs of roles.
   array_t *sources;
   gchar *current_source;
   gchar *user_id;
@@ -3554,7 +3554,7 @@ modify_user_data_reset (modify_user_data_t * data)
   g_free (data->name);
   g_free (data->user_id);
   g_free (data->password);
-  g_free (data->role);
+  array_free (data->roles);
   // TODO: Evaluate memleak: hosts
   if (data->sources)
     {
@@ -7645,9 +7645,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("ROLE", element_name) == 0)
           {
-            /* Init, so that openvas_admin_modify_user gets an empty string
-             * if the entity is empty. */
-            openvas_append_string (&modify_user_data->role, "");
+            const gchar* attribute;
+            /* Init array here, so it's NULL if there are no ROLEs. */
+            if (modify_user_data->roles == NULL)
+              {
+                array_free (modify_user_data->roles);
+                modify_user_data->roles = make_array ();
+              }
+            if (find_attribute (attribute_names, attribute_values, "id",
+                                &attribute))
+              array_add (modify_user_data->roles, g_strdup (attribute));
             set_client_state (CLIENT_MODIFY_USER_ROLE);
           }
         else if (strcasecmp ("SOURCES", element_name) == 0)
@@ -15111,7 +15118,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      "MODIFY_USER requires NAME or user_id"));
           else
             {
-              gchar *fail_group_id, *errdesc;
+              gchar *fail_group_id, *fail_role_id, *errdesc;
 
               errdesc = NULL;
 
@@ -15119,13 +15126,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       (modify_user_data->user_id,
                        &modify_user_data->name,
                        ((modify_user_data->modify_password
-                         && modify_user_data->password) ? modify_user_data->
-                        password
-                        /* Leave the password as it is. */
-                        : NULL), modify_user_data->role, modify_user_data->hosts,
+                         && modify_user_data->password)
+                         ? modify_user_data->password
+                         /* Leave the password as it is. */
+                         : NULL),
+                       modify_user_data->hosts,
                        modify_user_data->hosts_allow,
                        modify_user_data->sources,
                        modify_user_data->groups, &fail_group_id,
+                       modify_user_data->roles, &fail_role_id,
                        &errdesc))
                 {
                 case 0:
@@ -15168,6 +15177,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   g_log ("event user", G_LOG_LEVEL_MESSAGE,
                          "User %s lost the Admin role",
                          modify_user_data->name);
+                  break;
+                case 5:
+                  if (send_find_error_to_client
+                       ("modify_user",
+                        "role",
+                        fail_role_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
                   break;
                 case -2:
                   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
@@ -24308,9 +24329,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_USER_PASSWORD,
               &modify_user_data->password);
-
-      APPEND (CLIENT_MODIFY_USER_ROLE,
-              &modify_user_data->role);
 
       APPEND (CLIENT_MODIFY_USER_SOURCES_SOURCE,
               &modify_user_data->current_source);

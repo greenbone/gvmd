@@ -51312,7 +51312,7 @@ find_user_by_name (const char* name, user_t *user)
  *                          always be set to NULL on success.
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
- *         2 failed to find group, -1 on error, -2 if user exists already.
+ *         2 failed to find role, -1 on error, -2 if user exists already.
  */
 int
 openvas_admin_add_user (const gchar * name, const gchar * password,
@@ -51464,7 +51464,7 @@ openvas_admin_add_user (const gchar * name, const gchar * password,
         {
           sql ("ROLLBACK;");
           if (role_id_return) *role_id_return = role_id;
-          return 1;
+          return 2;
         }
 
       sql ("INSERT INTO role_users (role, user) VALUES (%llu, %llu);",
@@ -51587,7 +51587,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
  * @param[in]  name         The name of the user.  If NULL then set to name
  *                          when return is 3 or 4.
  * @param[in]  password     The password of the user.  NULL to leave as is.
- * @param[in]  role         The role of the user.  NULL to leave as is.
  * @param[in]  hosts        The host the user is allowed/forbidden to scan.
  *                          NULL to leave as is.
  * @param[in]  hosts_allow  Whether hosts is allow or forbid.
@@ -51600,20 +51599,20 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
  * @param[out] group_id_return  ID of group on "failed to find" error.
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
- *         1 failed to find user, 3 success and user gained admin, 4 success
- *         and user lost admin, -1 on error, -2 for an unknown role, -3 if
- *         wrong number of methods.
+ *         2 failed to find user, 3 success and user gained admin, 4 success
+ *         and user lost admin, 5 failed to find role, -1 on error, -2 for an
+ *         unknown role, -3 if wrong number of methods.
  */
 int
 openvas_admin_modify_user (const gchar * user_id, gchar **name,
-                           const gchar * password, const gchar * role,
-                           const gchar * hosts, int hosts_allow,
-                           const array_t * allowed_methods,
+                           const gchar * password, const gchar * hosts,
+                           int hosts_allow, const array_t * allowed_methods,
                            array_t *groups, gchar **group_id_return,
+                           array_t *roles, gchar **role_id_return,
                            gchar **r_errdesc)
 {
   char *errstr;
-  gchar *hash, *quoted_role, *quoted_hosts, *quoted_method, *clean, *uuid;
+  gchar *hash, *quoted_hosts, *quoted_method, *clean, *uuid;
   user_t user;
   int max, was_admin, is_admin;
 
@@ -51692,7 +51691,6 @@ openvas_admin_modify_user (const gchar * user_id, gchar **name,
 
   /* Update the user in the database. */
 
-  quoted_role = sql_quote (role ? role : "User");
   clean = clean_hosts (hosts ? hosts : "", &max);
   quoted_hosts = sql_quote (clean);
   g_free (clean);
@@ -51700,19 +51698,16 @@ openvas_admin_modify_user (const gchar * user_id, gchar **name,
                               ? g_ptr_array_index (allowed_methods, 0)
                               : "");
   sql ("UPDATE users"
-       " SET role = '%s',"
-       "     hosts = '%s',"
+       " SET hosts = '%s',"
        "     hosts_allow = '%i',"
        "     method = %s%s%s"
        " WHERE ROWID = %llu;",
-       quoted_role,
        quoted_hosts,
        hosts_allow,
        allowed_methods ? "'" : "",
        allowed_methods ? quoted_method : "method",
        allowed_methods ? "'" : "",
        user);
-  g_free (quoted_role);
   g_free (quoted_hosts);
   g_free (quoted_method);
   if (hash)
@@ -51758,6 +51753,47 @@ openvas_admin_modify_user (const gchar * user_id, gchar **name,
 
           sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",
                group,
+               user);
+
+          index++;
+        }
+    }
+
+  /* Update the user roles. */
+
+  if (roles)
+    {
+      int index;
+
+      sql ("DELETE FROM role_users WHERE user = %llu;", user);
+      index = 0;
+      while (roles && (index < roles->len))
+        {
+          gchar *role_id;
+          role_t role;
+
+          role_id = (gchar*) g_ptr_array_index (roles, index);
+          if (strcmp (role_id, "0") == 0)
+            {
+              index++;
+              continue;
+            }
+
+          if (find_role (role_id, &role))
+            {
+              sql ("ROLLBACK;");
+              return -1;
+            }
+
+          if (role == 0)
+            {
+              sql ("ROLLBACK;");
+              if (role_id_return) *role_id_return = role_id;
+              return 1;
+            }
+
+          sql ("INSERT INTO role_users (role, user) VALUES (%llu, %llu);",
+               role,
                user);
 
           index++;
