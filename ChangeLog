@@ -1,5 +1,9 @@
 2013-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_set_setting): Add Roles Filter.
+
+2013-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Make MODIFY_USER handle multiple roles too.
 
 	* src/manage_sql.c (openvas_admin_add_user): Correct return doc.

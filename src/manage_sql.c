@@ -50233,6 +50233,8 @@ manage_set_setting (const gchar *uuid, const gchar *name,
         filter_name = g_strdup ("Reports Filter");
       else if (strcmp (uuid, "249c7a55-065c-47fb-b453-78e11a665565") == 0)
         filter_name = g_strdup ("Report Formats Filter");
+      else if (strcmp (uuid, "f38e673a-bcd1-11e2-a19a-406186ea4fc5") == 0)
+        filter_name = g_strdup ("Roles Filter");
       else if (strcmp (uuid, "a83e321b-d994-4ae8-beec-bfb5fe3e7336") == 0)
         filter_name = g_strdup ("Schedules Filter");
       else if (strcmp (uuid, "2681c32a-8dfd-40c9-a9c6-8d4e2c7799eb") == 0)
@@ -50269,6 +50271,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
                || strcmp (filter_name, "Port Lists Filter") == 0
                || strcmp (filter_name, "Reports Filter") == 0
                || strcmp (filter_name, "Report Formats Filter") == 0
+               || strcmp (filter_name, "Roles Filter") == 0
                || strcmp (filter_name, "Schedules Filter") == 0
                || strcmp (filter_name, "Slaves Filter") == 0
                || strcmp (filter_name, "Tags Filter") == 0
