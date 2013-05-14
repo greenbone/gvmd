@@ -50211,6 +50211,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 
   /* Resources filters. */
 
+  filter_name = NULL;
   if (uuid)
     {
       if (strcmp (uuid, "4a1334c1-cb93-4a79-8634-103b0a50bdcd") == 0)
@@ -50257,32 +50258,9 @@ manage_set_setting (const gchar *uuid, const gchar *name,
         filter_name = g_strdup ("DFN-CERT Filter");
       else if (strcmp (uuid, "feefe56b-e2da-4913-81cc-1a6ae3b36e64") == 0)
         filter_name = g_strdup ("All SecInfo Filter");
-      else
-        filter_name = g_strdup ("");
     }
 
-  if (uuid && (strcmp (filter_name, "Agents Filter") == 0
-               || strcmp (filter_name, "Alerts Filter") == 0
-               || strcmp (filter_name, "Configs Filter") == 0
-               || strcmp (filter_name, "Credentials Filter") == 0
-               || strcmp (filter_name, "Filters Filter") == 0
-               || strcmp (filter_name, "Notes Filter") == 0
-               || strcmp (filter_name, "Overrides Filter") == 0
-               || strcmp (filter_name, "Port Lists Filter") == 0
-               || strcmp (filter_name, "Reports Filter") == 0
-               || strcmp (filter_name, "Report Formats Filter") == 0
-               || strcmp (filter_name, "Roles Filter") == 0
-               || strcmp (filter_name, "Schedules Filter") == 0
-               || strcmp (filter_name, "Slaves Filter") == 0
-               || strcmp (filter_name, "Tags Filter") == 0
-               || strcmp (filter_name, "Targets Filter") == 0
-               || strcmp (filter_name, "Tasks Filter") == 0
-               || strcmp (filter_name, "CPE Filter") == 0
-               || strcmp (filter_name, "CVE Filter") == 0
-               || strcmp (filter_name, "NVT Filter") == 0
-               || strcmp (filter_name, "OVAL Filter") == 0
-               || strcmp (filter_name, "DFN-CERT Filter") == 0
-               || strcmp (filter_name, "All SecInfo Filter") == 0))
+  if (filter_name)
     {
       gchar *quoted_value, *value;
       gsize value_size;
