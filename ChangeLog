@@ -1,3 +1,8 @@
+2013-05-14  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/greenbone-scapdata-sync: Switch logging to use "logger"
+	consistently, differentiate between log levels.
+
 2013-05-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_MODIFY_TASK

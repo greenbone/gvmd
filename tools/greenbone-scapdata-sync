@@ -26,7 +26,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20130513
+VERSION=20130514
 RESTRICTED=1
 
 # SETTINGS
@@ -87,7 +87,17 @@ REBUILD_OVAL=0
 # This is usually done with the option --verbose
 VERBOSE=0
 
+# SQLITE3 defines the name of the sqlite binary to call, along with additional
+# parameters.
 SQLITE3="sqlite3 -noheader"
+
+# SCRIPT_NAME is the name the scripts will use to identify itself and to mark
+# log messages.
+SCRIPT_NAME="greenbone-scapdata-sync"
+
+# LOG_CMD defines the command to use for logging. To have logger log to stderr
+# as well as syslog, add "-s" here.
+LOG_CMD="logger -t $SCRIPT_NAME"
 
 [ -r $PREFIX/etc/openvas/greenbone-scapdata-sync.conf ] && . $PREFIX/etc/openvas/greenbone-scapdata-sync.conf
 
@@ -103,8 +113,6 @@ fi
 SCAP_DB="$SCAP_DIR/scap.db"
 
 ACCESSKEY="$PREFIX/etc/openvas/gsf-access-key"
-
-SCRIPT_NAME="greenbone-scapdata-sync"
 
 TIMESTAMP="$SCAP_DIR/timestamp"
 
@@ -132,18 +140,16 @@ do_feedversion () {
   fi
 }
 
-if [ ! -w $LOGDIR ]
-then
-  NOLOG=1
-fi
+log_write () {
+  $LOG_CMD -p daemon.notice $1
+}
 
-log_write(){
-  if [ 1 = "$NOLOG" ]
-  then
-    echo "LOG: [`date -R`] $1"
-  else
-    echo "[`date -R`] $1" >> $LOGDIR$LOGFILE
-  fi
+log_err () {
+  $LOG_CMD -p daemon.err $1
+}
+
+log_debug () {
+  $LOG_CMD -p daemon.debug $1
 }
 
 if [ $ENABLED -ne 1 ]
@@ -155,24 +161,20 @@ fi
 RSYNC=`command -v rsync`
 if [ -z $RSYNC ]
 then
-  log_write "rsync not found, aborting synchronization."
-  logger "SCAP synchronization: rsync not found, aborting synchronization."
+  log_err "rsync not found, aborting synchronization."
   exit 1
 fi
 
 SQLITE=`command -v sqlite3`
 if [ -z $SQLITE ]
 then
-  log_write "sqlite3 not found, aborting synchronization."
-  logger "SCAP synchronization: sqlite3 not found, aborting synchronization."
+  log_err "sqlite3 not found, aborting synchronization."
   exit 1
 fi
 
 if [ -z $BASE_SYNC_DIR ]
 then
-  echo
-  echo "BASE_SYNC_DIR ($BASE_SYNC_DIR) not found!"
-  echo
+  log_err "BASE_SYNC_DIR ($BASE_SYNC_DIR) not found!"
   exit 1
 fi
 
@@ -218,7 +220,7 @@ db_migrate_11 () {
     REBUILD_OVAL=1
     log_write "Migration done."
   else
-    log_write "Warning: Migration to version 11 requires refresh of all SCAP data. Aborting."
+    log_err "Warning: Migration to version 11 requires refresh of all SCAP data. Aborting."
     exit 1
   fi
 }
@@ -261,7 +263,7 @@ db_migrate_12 () {
     REBUILD_OVAL=1
     log_write "Migration done."
   else
-    log_write "Warning: Migration to version 12 requires refresh of all SCAP data. Aborting."
+    log_err "Warning: Migration to version 12 requires refresh of all SCAP data. Aborting."
     exit 1
   fi
 }
@@ -364,7 +366,7 @@ init_scap_db_update () {
   if [ -z "$DB_LASTUPDATE" ];
   then
     # Happens when initial sync was aborted
-    log_write "Error: Inconsistent data. Resetting SCAP database."
+    log_write "Inconsistent data. Resetting SCAP database."
     rm -f $SCAP_DB
     $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
     CVE_REFDATE=0
@@ -393,7 +395,7 @@ update_scap_db_private () {
         do
           if [ -z `echo "$oval_files_sorted" | grep -x "$xml_file"` ]
           then
-            log_write "Warning: Cannot find valid OVAL timestamp in '$xml_file'."
+            log_err "Warning: Cannot find valid OVAL timestamp in '$xml_file'."
           fi
         done
       fi
@@ -405,7 +407,7 @@ update_scap_db_private () {
       do
         if [ -z `echo "$oval_files_sorted_private" | grep -x "$xml_file"` ]
         then
-          log_write "Warning: Cannot find valid OVAL timestamp in '$xml_file'."
+          log_err "Warning: Cannot find valid OVAL timestamp in '$xml_file'."
         fi
       done
 
@@ -446,7 +448,7 @@ update_scap_db_private () {
                 then
                   log_write "Warning: Validation of file '$ovalfile' failed: $validation_message"
                 else
-                  log_write "Warning: Error parsing '$ovalfile'."
+                  log_err "Warning: Error parsing '$ovalfile'."
                 fi
               else
                 if ! [ "$validation_message" = "file valid" ]
@@ -459,15 +461,15 @@ update_scap_db_private () {
                 fi
               fi
             else
-              log_write "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
+              log_debug "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
             fi
           else
-            log_write "Skipping $ovalfile, file is older than last revision. (This is not an error)"
+            log_debug "Skipping $ovalfile, file is older than last revision. (This is not an error)"
           fi
         done
       fi
     else
-      log_write "No user defined OVAL files found"
+      log_debug "No user defined OVAL files found"
     fi
 
     log_write "Cleaning up user OVAL data"
@@ -579,7 +581,7 @@ update_scap_db() {
       do
         if [ -z `echo "$oval_files_sorted" | grep -x "$xml_file"` ]
         then
-          echo "[w] Cannot find valid OVAL timestamp in '$xml_file'."
+          log_write "Cannot find valid OVAL timestamp in '$xml_file'."
         fi
       done
 
@@ -625,7 +627,7 @@ update_scap_db() {
 sync_scapdata(){
   if [ -e $ACCESSKEY ]
   then
-    echo "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone SCAP data Repository ..."
+    log_write "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone SCAP data Repository ..."
     notsynced=1
     retried=0
 
@@ -639,8 +641,7 @@ sync_scapdata(){
     custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
     if [ -z $feeduser ] || [ -z $custid ]
     then
-      log_write "Could not determine credentials, aborting synchronization."
-      logger "SCAP synchronization: Could not determine credentials, aborting synchronization."
+      log_err "Could not determine credentials, aborting synchronization."
       exit 1
     fi
     while [ 0 -ne "$notsynced" ]
@@ -663,21 +664,16 @@ sync_scapdata(){
       fi
       rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/scap-data $BASE_SYNC_DIR
       if [ 0 != "$?" ] ; then
-        log_write "rsync failed, aborting synchronization."
-        logger "SCAP synchronization:  failed, aborting synchronization."
+        log_err "rsync failed, aborting synchronization."
         exit 1
       fi
       notsynced=0
     done
-    echo "Synchronization with the Greenbone SCAP data Repository successful."
     log_write "Synchronization with the Greenbone SCAP data Repository successful."
-    logger "SCAP synchronization: Synchronization with the Greenbone SCAP data Repository successful."
-    echo
 
     update_scap_db
   else
-    log_write "gsf-access-key not found, aborting synchronization."
-    logger "SCAP synchronization: gsf-access-key not found, aborting synchronization."
+    log_err "gsf-access-key not found, aborting synchronization."
     exit 1
   fi
 }
