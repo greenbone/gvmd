@@ -25734,6 +25734,20 @@ report_closed_cve_count (report_t report)
 }
 
 /**
+ * @brief Count a report's total number of vulnerabilities.
+ *
+ * @return Vulnerabilities count.
+ */
+static int
+report_vuln_count (report_t report)
+{
+  return sql_int (0, 0,
+                  "SELECT count (DISTINCT nvt) FROM results"
+                  " WHERE report = %llu and nvt != '0';",
+                  report);
+}
+
+/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
@@ -26105,6 +26119,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       PRINT (out,
              "<closed_cves total=\"%i\"/>",
              report_closed_cve_count (report));
+
+      PRINT (out,
+             "<vulns total=\"%i\"/>",
+             report_vuln_count (report));
     }
 
   if (task && tsk_uuid)

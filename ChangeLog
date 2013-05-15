@@ -1,3 +1,8 @@
+2013-05-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (report_vuln_count): New function.
+	(print_report_xml): Send report total number of vulnerabilities.
+
 2013-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (user_iterator_role): Remove.  Column was removed
