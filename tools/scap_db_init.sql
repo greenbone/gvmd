@@ -33,6 +33,8 @@ DROP TABLE IF EXISTS affected_products;
 DROP TABLE IF EXISTS meta;
 DROP TABLE IF EXISTS oval_def;
 DROP TABLE IF EXISTS ovaldefs;
+DROP TABLE IF EXISTS ovalfiles;
+DROP TABLE IF EXISTS affected_ovaldefs;
 
 
 /* create new tables and indices */

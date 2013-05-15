@@ -1,5 +1,10 @@
 2013-05-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* tools/scap_db_init.sql: Add DROP TABLE statements for
+	ovalfiles, affected_ovaldefs.
+
+2013-05-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): Require tags to be active for
 	filtering by tag.
 
