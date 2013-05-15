@@ -1,3 +1,8 @@
+2013-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (migrate_79_to_80): Ensure more tables that would be
+	missing in older dbs exist.
+
 2013-05-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/scap_db_init.sql: Add DROP TABLE statements for

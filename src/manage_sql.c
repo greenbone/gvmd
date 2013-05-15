@@ -10238,6 +10238,20 @@ migrate_79_to_80 ()
        "  creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS group_users"
        " (id INTEGER PRIMARY KEY, `group` INTEGER, user INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS filters"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  type, term, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS filters_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  type, term, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS notes_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       "  creation_time, modification_time, text, hosts, port, threat,"
+       "  task INTEGER, result INTEGER, end_time);");
+  sql ("CREATE TABLE IF NOT EXISTS overrides_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       "  creation_time, modification_time, text, hosts, port, threat,"
+       "  new_threat, task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS permissions"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  resource_type, resource, resource_uuid, resource_location,"
@@ -10246,6 +10260,11 @@ migrate_79_to_80 ()
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  resource_type, resource, resource_uuid, resource_location,"
        "  subject_type, subject, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS port_names"
+       " (id INTEGER PRIMARY KEY, number INTEGER, protocol, name,"
+       "  UNIQUE (number, protocol) ON CONFLICT REPLACE);");
+  sql ("CREATE TABLE IF NOT EXISTS settings"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");
   sql ("CREATE TABLE IF NOT EXISTS tags"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  creation_time, modification_time, attach_type, attach_id,"
