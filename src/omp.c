@@ -7626,8 +7626,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               modify_user_data->hosts_allow = strcmp (attribute, "0");
             else
               modify_user_data->hosts_allow = 1;
-            /* Init, so that openvas_admin_modify_user clears hosts if this
-             * entity is empty. */
+            /* Init, so that modify_user clears hosts if HOSTS is empty. */
             openvas_append_string (&modify_user_data->hosts, "");
             set_client_state (CLIENT_MODIFY_USER_HOSTS);
           }
@@ -15122,7 +15121,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               errdesc = NULL;
 
-              switch (openvas_admin_modify_user
+              switch (modify_user
                       (modify_user_data->user_id,
                        &modify_user_data->name,
                        ((modify_user_data->modify_password
@@ -18970,7 +18969,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     ("create_user",
                                      "CREATE_USER requires a name"));
           else
-            switch (openvas_admin_add_user
+            switch (create_user
                      (create_user_data->name,
                       create_user_data->password ? create_user_data->password : "",
                       create_user_data->hosts,

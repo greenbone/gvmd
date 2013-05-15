@@ -1,3 +1,14 @@
+2013-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (openvas_admin_add_user): Remove.  Now create_user.
+	(openvas_admin_modify_user): Remove.  Now modify_user.
+	(create_user, modify_user): New functions.  From openvas_admin versions.
+
+	* src/manage.h: Update headers accordingly.  Remove old header.
+
+	* src/omp.c (omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Update function names.
+
 2013-05-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (report_vuln_count): New function.

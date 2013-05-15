@@ -2913,9 +2913,6 @@ copy_user (const char*, const char*, const char*, user_t*);
 gchar *
 keyfile_to_auth_conf_settings_xml (const gchar *);
 
-GSList *
-openvas_admin_list_users (const gchar *, int, const gchar *, const gchar *);
-
 int
 init_user_iterator (iterator_t*, const get_data_t*);
 
@@ -2950,17 +2947,15 @@ const char*
 user_role_iterator_name (iterator_t*);
 
 int
-openvas_admin_add_user (const gchar *, const gchar *, const gchar *, int,
-                        const array_t *, array_t *, gchar **, array_t *,
-                        gchar **, gchar **);
+create_user (const gchar *, const gchar *, const gchar *, int, const array_t *,
+             array_t *, gchar **, array_t *, gchar **, gchar **);
 
 int
 delete_user (const char *, const char *, int);
 
 int
-openvas_admin_modify_user (const gchar *, gchar **, const gchar *,
-                           const gchar *, int, const array_t *, array_t *,
-                           gchar **, array_t *, gchar **, gchar **);
+modify_user (const gchar *, gchar **, const gchar *, const gchar *, int,
+             const array_t *, array_t *, gchar **, array_t *, gchar **, gchar **);
 
 int
 user_is_admin (const char *);

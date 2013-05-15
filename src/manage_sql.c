@@ -51360,12 +51360,10 @@ find_user_by_name (const char* name, user_t *user)
  *         2 failed to find role, -1 on error, -2 if user exists already.
  */
 int
-openvas_admin_add_user (const gchar * name, const gchar * password,
-                        const gchar * hosts, int hosts_allow,
-                        const array_t * allowed_methods,
-                        array_t *groups, gchar **group_id_return,
-                        array_t *roles, gchar **role_id_return,
-                        gchar **r_errdesc)
+create_user (const gchar * name, const gchar * password, const gchar * hosts,
+             int hosts_allow, const array_t * allowed_methods, array_t *groups,
+             gchar **group_id_return, array_t *roles, gchar **role_id_return,
+             gchar **r_errdesc)
 {
   char *errstr;
   gchar *quoted_hosts, *quoted_method, *quoted_name, *hash;
@@ -51649,12 +51647,11 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
  *         unknown role, -3 if wrong number of methods.
  */
 int
-openvas_admin_modify_user (const gchar * user_id, gchar **name,
-                           const gchar * password, const gchar * hosts,
-                           int hosts_allow, const array_t * allowed_methods,
-                           array_t *groups, gchar **group_id_return,
-                           array_t *roles, gchar **role_id_return,
-                           gchar **r_errdesc)
+modify_user (const gchar * user_id, gchar **name, const gchar * password,
+             const gchar * hosts, int hosts_allow,
+             const array_t * allowed_methods, array_t *groups,
+             gchar **group_id_return, array_t *roles, gchar **role_id_return,
+             gchar **r_errdesc)
 {
   char *errstr;
   gchar *hash, *quoted_hosts, *quoted_method, *clean, *uuid;
