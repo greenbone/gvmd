@@ -51986,22 +51986,13 @@ init_user_iterator (iterator_t* iterator, const get_data_t *get)
 }
 
 /**
- * @brief Get the role of the user from a user iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Role of the user or NULL if iteration is complete.
- */
-DEF_ACCESS (user_iterator_role, GET_ITERATOR_COLUMN_COUNT);
-
-/**
  * @brief Get the method of the user from a user iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Method of the user or NULL if iteration is complete.
  */
-DEF_ACCESS (user_iterator_method, GET_ITERATOR_COLUMN_COUNT + 1);
+DEF_ACCESS (user_iterator_method, GET_ITERATOR_COLUMN_COUNT);
 
 /**
  * @brief Get the hosts from a user iterator.
@@ -52010,7 +52001,7 @@ DEF_ACCESS (user_iterator_method, GET_ITERATOR_COLUMN_COUNT + 1);
  *
  * @return Hosts or NULL if iteration is complete.
  */
-DEF_ACCESS (user_iterator_hosts, GET_ITERATOR_COLUMN_COUNT + 2);
+DEF_ACCESS (user_iterator_hosts, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
  * @brief Get the hosts allow value from a user iterator.
@@ -52024,7 +52015,7 @@ user_iterator_hosts_allow (iterator_t* iterator)
 {
   if (iterator->done) return -1;
   return sqlite3_column_int (iterator->stmt,
-                             GET_ITERATOR_COLUMN_COUNT + 3);
+                             GET_ITERATOR_COLUMN_COUNT + 2);
 }
 
 /**

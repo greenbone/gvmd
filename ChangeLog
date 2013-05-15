@@ -1,5 +1,12 @@
 2013-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (user_iterator_role): Remove.  Column was removed
+	earlier.
+	(user_iterator_method, user_iterator_hosts)
+	(user_iterator_hosts_allow): Update offsets for removed role column.
+
+2013-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (migrate_79_to_80): Ensure more tables that would be
 	missing in older dbs exist.
 
