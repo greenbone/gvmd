@@ -22545,12 +22545,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      "<status>%s</status>"
                                      "<class>%s</class>"
                                      "<title>%s</title>"
+                                     "<max_cvss>%s</max_cvss>"
+                                     "<cve_refs>%s</cve_refs>"
                                      "<file>%s</file>",
                                      ovaldef_info_iterator_version (&info),
                                      ovaldef_info_iterator_deprecated (&info),
                                      ovaldef_info_iterator_status (&info),
                                      ovaldef_info_iterator_class (&info),
                                      ovaldef_info_iterator_title (&info),
+                                     ovaldef_info_iterator_max_cvss (&info),
+                                     ovaldef_info_iterator_cve_refs (&info),
                                      ovaldef_info_iterator_file (&info));
                   description = ovaldef_info_iterator_description (&info);
                   if (get_info_data->details == 1)

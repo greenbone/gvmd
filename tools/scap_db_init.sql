@@ -37,7 +37,7 @@ DROP TABLE IF EXISTS ovaldefs;
 
 /* create new tables and indices */
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "13");
+INSERT INTO meta (name, value) VALUES ("database_version", "14");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
 CREATE TABLE cves (
@@ -86,6 +86,7 @@ CREATE TABLE affected_products (
 CREATE INDEX afp_cpe_idx ON affected_products (cpe);
 CREATE INDEX afp_cve_idx ON affected_products (cve);
 
+
 CREATE TABLE ovaldefs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   uuid UNIQUE,
@@ -99,7 +100,9 @@ CREATE TABLE ovaldefs (
   title TEXT,
   description TEXT,
   xml_file TEXT,
-  status TEXT
+  status TEXT,
+  max_cvss FLOAT,
+  cve_refs INTEGER
 );
 CREATE INDEX ovaldefs_idx ON ovaldefs (name);
 
@@ -109,10 +112,20 @@ CREATE TABLE ovalfiles (
 );
 CREATE UNIQUE INDEX ovalfiles_idx ON ovalfiles (xml_file);
 
+CREATE TABLE affected_ovaldefs (
+  cve INTEGER NOT NULL,
+  ovaldef INTEGER NOT NULL,
+  FOREIGN KEY(cve) REFERENCES cves(id),
+  FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id)
+);
+CREATE INDEX aff_ovaldefs_def_idx ON affected_ovaldefs (ovaldef);
+CREATE INDEX aff_ovaldefs_cve_idx ON affected_ovaldefs (cve);
+
 /* deletion triggers */
 CREATE TRIGGER cves_delete AFTER DELETE ON cves
 BEGIN
   DELETE FROM affected_products where cve = old.id;
+  DELETE FROM affected_ovaldefs where cve = old.id;
 END;
 
 CREATE TRIGGER affected_delete AFTER DELETE ON affected_products
@@ -124,4 +137,9 @@ END;
 CREATE TRIGGER ovalfiles_delete AFTER DELETE ON ovalfiles
 BEGIN
   DELETE FROM ovaldefs WHERE ovaldefs.xml_file = old.xml_file;
+END;
+
+CREATE TRIGGER affected_ovaldefs_delete AFTER DELETE ON affected_ovaldefs
+BEGIN
+  UPDATE ovaldefs SET max_cvss = 0.0 WHERE id = old.ovaldef;
 END;

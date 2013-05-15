@@ -1,3 +1,55 @@
+2013-05-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add max_cvss and CVE count to OVAL definitions.
+
+	* doc/omp.html, doc/omp.rnc: Update from source
+
+	* src/manage.h (ovaldef_info_iterator_max_cvss)
+	(ovaldef_info_iterator_cve_refs): New function prototypes.
+
+	* src/manage_sql.c (OVALDEF_INFO_ITERATOR_FILTER_COLUMNS)
+	(OVALDEF_INFO_ITERATOR_FILTER_COLUMNS): Add columns max_cvss, cves.
+	(ovaldef_info_iterator_max_cvss, ovaldef_info_iterator_cve_refs): New
+	iterator column functions.
+
+	* src/omp.c (xml_handle_end_element): In case CLIENT_GET_INFO add
+	max_cvss and cve_refs elements to response for ovaldef.
+
+	* src/schema_formats/XML/OMP.xml (get_info): Add max_cvss and cve_refs
+	to response for ovaldef.
+
+	* tools/greenbone-scapdata-sync (db_migrate_14): New migrator function.
+	(check_db_version): Add migration to version 14.
+	(init_scap_db_update): Add initialisation of variables
+	updated_cpes, updated_cves, updated_ovaldefs.
+	(update_cvss): New function to update CVSS data if info was updated.
+	(update_scap_db_private): Set updated_ovaldefs to 1 on OVAL update.
+	(update_scap_db): Set updated_cpes to 1 on CPE update.
+	Change warning for missing CPE dictionary to log_write.
+	Remove initialisation of updated_cves. Remove update of CVSS - replaced
+	by update_cvss call.
+
+	* tools/openvas-scapdata-sync.in (db_migrate_14): New migrator function.
+	(check_db_version): Add migration to version 14.
+	(init_sec_db_update): Add initialisation of variables
+	updated_cpes, updated_cves, updated_ovaldefs.
+	(update_cvss): New function to update CVSS data if info was updated.
+	(update_sec_db_private): Set updated_ovaldefs to 1 on OVAL update.
+	(update_sec_db): Set updated_cpes to 1 on CPE update.
+	Remove initialisation of updated_cves. Remove update of CVSS - replaced
+	by update_cvss call.
+	(do_refresh_private): Add update_cvss call.
+
+	* tools/oval_update.xsl (oval_definitions:definition): Add updating of
+	max_cvss and cve_refs columns. Add insert for affected_ovaldefs.
+
+	* tools/scap_db_init.sql (meta): Set version to 14.
+	(ovaldefs): Add columns max_cvss and cve_refs.
+	(affected_ovaldefs): New table.
+	(aff_ovaldefs_def_idx, aff_ovaldefs_cve_idx): New indexes.
+	(cves_delete): Delete entries from affected_ovaldefs.
+	(affected_ovaldefs_delete): New deletion trigger.
+
 2013-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_set_setting): Remove big redundant

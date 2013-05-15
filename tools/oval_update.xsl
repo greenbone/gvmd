@@ -61,7 +61,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       title,
       description,
       xml_file,
-      status
+      status,
+      max_cvss,
+      cve_refs
     ) VALUES (
       "<xsl:value-of select="@id"/>_"||(SELECT id FROM ovalfiles WHERE xml_file = "<xsl:value-of select="$filename"/>"),
       "<xsl:value-of select="@id"/>",
@@ -95,8 +97,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </xsl:otherwise>
           </xsl:choose>
         </xsl:otherwise>
-      </xsl:choose>
+      </xsl:choose>,
+      0.0,
+      <xsl:value-of select="count(oval_definitions:metadata/oval_definitions:reference[translate(@source, $uppercase, $smallcase) = 'cve'])"/>
     );
+      <xsl:for-each select="oval_definitions:metadata/oval_definitions:reference[translate(@source, $uppercase, $smallcase) = 'cve']">
+      INSERT OR IGNORE INTO affected_ovaldefs (cve, ovaldef)
+        SELECT cves.id, ovaldefs.id
+        FROM cves, ovaldefs
+        WHERE cves.name='<xsl:value-of select="@ref_id"/>'
+          AND ovaldefs.name = '<xsl:value-of select="../../@id"/>';
+      </xsl:for-each>
     </xsl:when>
     <xsl:otherwise>
     /* Filtered <xsl:value-of select="@id"/> (<xsl:value-of select="$definitiondate"/>) */

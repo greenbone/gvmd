@@ -6791,6 +6791,8 @@ get_info_response_info_ovaldef
        & get_info_response_info_ovaldef_status
        & get_info_response_info_ovaldef_class
        & get_info_response_info_ovaldef_title
+       & get_info_response_info_ovaldef_max_cvss
+       & get_info_response_info_ovaldef_cve_refs
        & get_info_response_info_ovaldef_file
        & get_info_response_info_ovaldef_description?
        & get_info_response_info_ovaldef_raw_data?
@@ -6829,6 +6831,20 @@ get_info_response_info_ovaldef_title
  = element title
      {
        text
+     }
+
+# Highest CVSS score of CVEs referenced by the definition.
+get_info_response_info_ovaldef_max_cvss
+ = element max_cvss
+     {
+       text
+     }
+
+# Number of CVEs referenced by the definition.
+get_info_response_info_ovaldef_cve_refs
+ = element cve_refs
+     {
+       integer
      }
 
 # Path to the source xml file, relative to the SCAP data directory..

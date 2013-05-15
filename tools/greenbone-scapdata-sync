@@ -279,6 +279,45 @@ db_migrate_13 () {
   log_write "Migration done."
 }
 
+db_migrate_14 () {
+  log_write "Migrating database to version 14."
+  sqlite3 "$SCAP_DB" "ALTER TABLE ovaldefs ADD COLUMN max_cvss FLOAT;
+                      ALTER TABLE ovaldefs ADD COLUMN cve_refs INTEGER;
+
+                      CREATE TABLE affected_ovaldefs (
+                        cve INTEGER NOT NULL,
+                        ovaldef INTEGER NOT NULL,
+                        FOREIGN KEY(cve) REFERENCES cves(id),
+                        FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id)
+                      );
+                      CREATE INDEX aff_ovaldefs_def_idx
+                        ON affected_ovaldefs (ovaldef);
+                      CREATE INDEX aff_ovaldefs_cve_idx
+                        ON affected_ovaldefs (cve);
+
+                      DROP TRIGGER IF EXISTS cves_delete;
+                      CREATE TRIGGER cves_delete AFTER DELETE ON cves
+                      BEGIN
+                        DELETE FROM affected_products where cve = old.id;
+                        DELETE FROM affected_ovaldefs where cve = old.id;
+                      END;
+
+                      CREATE TRIGGER affected_ovaldefs_delete AFTER DELETE
+                        ON affected_ovaldefs
+                      BEGIN
+                        UPDATE ovaldefs
+                          SET max_cvss = 0.0
+                          WHERE id = old.ovaldef;
+                      END;
+
+                      UPDATE meta
+                        SET value = '14'
+                        WHERE name = 'database_version';
+                     "
+  log_write "Migration done."
+  REBUILD_OVAL=1
+}
+
 check_db_version () {
   DB_VERSION=`$SQLITE3 $SCAP_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
@@ -294,17 +333,23 @@ check_db_version () {
        db_migrate_10
        db_migrate_11
        db_migrate_12
-       db_migrate_13;;
+       db_migrate_13
+       db_migrate_14;;
     9) db_migrate_10
        db_migrate_11
        db_migrate_12
-       db_migrate_13;;
+       db_migrate_13
+       db_migrate_14;;
    10) db_migrate_11
        db_migrate_12
-       db_migrate_13;;
+       db_migrate_13
+       db_migrate_14;;
    11) db_migrate_12
-       db_migrate_13;;
-   12) db_migrate_13;;
+       db_migrate_13
+       db_migrate_14;;
+   12) db_migrate_13
+       db_migrate_14;;
+   13) db_migrate_14;;
   esac
 }
 
@@ -373,6 +418,62 @@ init_scap_db_update () {
     DB_LASTUPDATE=0
   fi
 
+  updated_cpes=0
+  updated_cves=0
+  updated_ovaldefs=0
+}
+
+update_cvss () {
+  if [ 0 -ne $updated_cves ] || [ 0 -ne $updated_cpes ]
+  then
+    log_write "Updating CVSS scores and CVE counts for CPEs"
+    $SQLITE3 "$SCAP_DB"  "
+    PRAGMA recursive_triggers = OFF;
+    UPDATE cpes
+      SET max_cvss =
+          (
+            SELECT coalesce(max(cvss), 0.0)
+            FROM cves
+            WHERE id IN
+              (
+                SELECT cve
+                FROM affected_products
+                WHERE cpe=cpes.id
+              )
+          ),
+        cve_refs =
+          (
+            SELECT count(cve)
+            FROM affected_products
+            WHERE cpe=cpes.id
+          );
+    "
+  else
+    log_write "No CPEs or CVEs updated, skipping CVSS and CVE recount for CPEs."
+  fi
+
+  if [ 0 -ne $updated_cves ] || [ 0 -ne $updated_ovaldefs ]
+  then
+    log_write "Updating CVSS scores and for OVAL definitions"
+    $SQLITE3 "$SCAP_DB"  "
+    PRAGMA recursive_triggers = OFF;
+    UPDATE ovaldefs
+      SET max_cvss =
+          (
+            SELECT coalesce(max(cvss), 0.0)
+            FROM cves
+            WHERE id IN
+              (
+                SELECT cve
+                FROM affected_ovaldefs
+                WHERE ovaldef=ovaldefs.id
+              )
+              AND cvss != ''
+          );
+    "
+  else
+    log_write "No OVAL definitions or CVEs updated, skipping CVSS recount for OVAL definitions."
+  fi
 }
 
 update_scap_db_private () {
@@ -458,6 +559,7 @@ update_scap_db_private () {
                   log_write "Updating $ovalfile"
                   xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
                   $SQLITE3 $SCAP_DB
+                  updated_ovaldefs=1
                 fi
               fi
             else
@@ -514,14 +616,14 @@ update_scap_db() {
           xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - | \
           xsltproc $SCAP_RES_DIR/cpe_update.xsl - | \
           $SQLITE3 $SCAP_DB
+        updated_cpes=1
       else
         log_write "Skipping CPEs, file is older than last revision (this is not an error)."
       fi
     else
-      echo "Warning: No CPE dictionary found in $SCAP_DIR"
+      log_write "Warning: No CPE dictionary found in $SCAP_DIR"
     fi
 
-    updated_cves=0
     xmlcount=$(ls $SCAP_DIR/nvdcve-2.0-*.xml 2> /dev/null | wc -l)
     if [ $xmlcount -ne 0 ]
     then
@@ -540,34 +642,6 @@ update_scap_db() {
       done
     else
       log_write "Warning: No CVEs found in $SCAP_DIR."
-    fi
-
-    if [ 0 -ne $updated_cves ]
-    then
-      log_write "Updating CVSS scores and CVE counts"
-      $SQLITE3 "$SCAP_DB"  "
-      PRAGMA recursive_triggers = OFF;
-      UPDATE cpes
-        SET max_cvss =
-            (
-              SELECT coalesce(max(cvss), 0.0)
-              FROM cves
-              WHERE id IN
-                (
-                  SELECT cve
-                  FROM affected_products
-                  WHERE cpe=cpes.id
-                )
-            ),
-          cve_refs =
-            (
-              SELECT count(cve)
-              FROM affected_products
-              WHERE cpe=cpes.id
-            );
-      "
-    else
-      log_write "No CVEs updated, skipping CVSS and CVE recount."
     fi
 
     log_write "Updating OVAL data"
@@ -607,6 +681,7 @@ update_scap_db() {
             log_write "Updating $ovalfile"
             xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
             $SQLITE3 $SCAP_DB
+            updated_ovaldefs=1
           else
             log_write "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
           fi
@@ -620,6 +695,7 @@ update_scap_db() {
   fi
 
   update_scap_db_private
+  update_cvss
 
   sqlite3 $SCAP_DB "update meta set value ='`date +%s`' where name = 'last_update';"
 }

@@ -50357,14 +50357,15 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 #define OVALDEF_INFO_ITERATOR_FILTER_COLUMNS                \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "deprecated",    \
    "class", "title", "description", "file",         \
-   "status", NULL }
+   "status", "max_cvss", "cves", NULL }
 
 /**
  * @brief OVALDEF iterator columns.
  */
 #define OVALDEF_INFO_ITERATOR_COLUMNS                                \
   GET_ITERATOR_COLUMNS ", version, deprecated, def_class AS class,"  \
-  "title, description, xml_file AS file, status"
+  "title, description, xml_file AS file, status, max_cvss,"          \
+  "cve_refs as cves"
 
 /**
  * @brief Filter columns for DFN_CERT_ADV iterator.
@@ -50923,6 +50924,28 @@ DEF_ACCESS (ovaldef_info_iterator_file, GET_ITERATOR_COLUMN_COUNT + 5);
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (ovaldef_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Get maximum CVSS score from an OVALDEF iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The maximum CVSS score of the OVAL definition,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (ovaldef_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 7);
+
+/**
+ * @brief Get number of referenced CVEs from an OVALDEF iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The maximum CVSS score of the OVAL definition,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (ovaldef_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 8);
 
 /* CERT data */
 

@@ -6679,6 +6679,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>status</e>
             <e>class</e>
             <e>title</e>
+            <e>max_cvss</e>
+            <e>cve_refs</e>
             <e>file</e>
             <o><e>description</e></o>
             <o><e>raw_data</e></o>
@@ -6718,6 +6720,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <pattern>
               text
             </pattern>
+          </ele>
+          <ele>
+            <name>max_cvss</name>
+            <summary>Highest CVSS score of CVEs referenced by the definition</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>cve_refs</name>
+            <summary>Number of CVEs referenced by the definition</summary>
+            <pattern>integer</pattern>
           </ele>
           <ele>
             <name>file</name>
