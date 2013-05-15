@@ -2664,6 +2664,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         "(EXISTS"
                                         "  (SELECT * FROM tags"
                                         "   WHERE tags.name = '%s'"
+                                        "   AND tags.active != 0"
                                         "   AND tags.attach_id = allinfo.uuid"
                                         "   AND tags.attach_type = allinfo.type"
                                         "   %s%s%s))",
@@ -2687,6 +2688,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         "(EXISTS"
                                         "  (SELECT * FROM tags"
                                         "   WHERE tags.name = '%s'"
+                                        "   AND tags.active != 0"
                                         "   AND tags.attach_id = %ss.uuid"
                                         "   AND tags.attach_type = '%s'"
                                         "   %s%s%s))",
@@ -2715,6 +2717,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         "(EXISTS"
                                         "  (SELECT * FROM tags"
                                         "   WHERE tags.name LIKE '%%%%%s%%%%'"
+                                        "   AND tags.active != 0"
                                         "   AND tags.attach_id = allinfo.uuid"
                                         "   AND tags.attach_type = allinfo.type"
                                         "   AND tags.value LIKE '%%%%%s%%%%'))",
@@ -2728,6 +2731,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         "(EXISTS"
                                         "  (SELECT * FROM tags"
                                         "   WHERE tags.name LIKE '%%%%%s%%%%'"
+                                        "   AND tags.active != 0"
                                         "   AND tags.attach_id = %ss.uuid"
                                         "   AND tags.attach_type = '%s'"
                                         "   AND tags.value LIKE '%%%%%s%%%%'))",

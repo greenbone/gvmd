@@ -1,5 +1,10 @@
 2013-05-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Require tags to be active for
+	filtering by tag.
+
+2013-05-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add max_cvss and CVE count to OVAL definitions.
 
 	* doc/omp.html, doc/omp.rnc: Update from source
