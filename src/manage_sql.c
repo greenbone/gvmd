@@ -25748,6 +25748,22 @@ report_vuln_count (report_t report)
 }
 
 /**
+ * @brief Count a report's total number of detected Operating Systems.
+ *
+ * @return OS count.
+ */
+static int
+report_os_count (report_t report)
+{
+  return sql_int (0, 0,
+                  "SELECT count (DISTINCT value) FROM report_host_details"
+                  " WHERE report_host IN"
+                  "  (SELECT ROWID from report_hosts WHERE report = %llu)"
+                  "  AND name = 'best_os_txt';",
+                  report);
+}
+
+/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
@@ -26123,6 +26139,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       PRINT (out,
              "<vulns total=\"%i\"/>",
              report_vuln_count (report));
+
+      PRINT (out,
+             "<os total=\"%i\"/>",
+             report_os_count (report));
     }
 
   if (task && tsk_uuid)
