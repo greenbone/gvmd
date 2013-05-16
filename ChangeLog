@@ -1,3 +1,11 @@
+2013-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_user, modify_user): Convert "Deny none" to
+	"Allow All".
+
+	* src/omp.c (omp_xml_handle_end_element): Convert "Deny none" to
+	"Allow All".
+
 2013-05-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (report_os_count): New function.

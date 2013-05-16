@@ -23376,6 +23376,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           while (1)
             {
               iterator_t groups, roles;
+              const char *hosts;
+              int hosts_allow;
 
               ret = get_next (&users, get, &first, &count,
                               init_user_iterator);
@@ -23389,12 +23391,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               SEND_GET_COMMON (user, &get_users_data->get, &users);
 
+              hosts = user_iterator_hosts (&users);
+              if (hosts && (strlen (hosts) == 0))
+                hosts_allow = 2;
+              else
+                hosts_allow = user_iterator_hosts_allow (&users);
+
               SENDF_TO_CLIENT_OR_FAIL ("<hosts allow=\"%i\">%s</hosts>"
                                        "<sources><source>%s</source></sources>",
-                                       user_iterator_hosts_allow (&users),
-                                       user_iterator_hosts (&users)
-                                        ? user_iterator_hosts (&users)
-                                        : "",
+                                       hosts_allow,
+                                       hosts ? hosts : "",
                                        user_iterator_method (&users)
                                         ? user_iterator_method (&users)
                                         : "file");

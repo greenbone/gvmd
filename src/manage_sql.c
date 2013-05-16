@@ -51444,6 +51444,9 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
   /* Add the user to the database. */
 
   clean = clean_hosts (hosts ? hosts : "", &max);
+  if ((hosts_allow == 0) && (max == 0))
+    /* Convert "Deny none" to "Allow All". */
+    hosts_allow = 2;
   quoted_hosts = sql_quote (clean);
   g_free (clean);
   quoted_method = sql_quote (allowed_methods
@@ -51754,6 +51757,9 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
   /* Update the user in the database. */
 
   clean = clean_hosts (hosts ? hosts : "", &max);
+  if ((hosts_allow == 0) && (max == 0))
+    /* Convert "Deny none" to "Allow All". */
+    hosts_allow = 2;
   quoted_hosts = sql_quote (clean);
   g_free (clean);
   quoted_method = sql_quote (allowed_methods
