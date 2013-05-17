@@ -25759,7 +25759,7 @@ report_os_count (report_t report)
                   "SELECT count (DISTINCT value) FROM report_host_details"
                   " WHERE report_host IN"
                   "  (SELECT ROWID from report_hosts WHERE report = %llu)"
-                  "  AND name = 'best_os_txt';",
+                  "  AND name = 'best_os_cpe';",
                   report);
 }
 
