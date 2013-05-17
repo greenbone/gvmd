@@ -9990,6 +9990,9 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   g_free (detect_oid);
   g_free (detect_name);
 
+  if (!cvss_base && (strcmp (oid, "0") == 0))
+    cvss_base = "0.0";
+
   buffer_xml_append_printf
    (buffer,
     "<subnet>%s</subnet>"
