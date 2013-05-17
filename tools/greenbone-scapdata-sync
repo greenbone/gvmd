@@ -63,13 +63,6 @@ RSYNC_COMPRESS="--compress-level=9"
 # doing.
 PORT=24
 
-# LOGDIR and LOGFILE specify the location of the greenbone-scapdata-sync logfile.
-# The default value for LOGDIR is  "/var/log/", the default value for
-# LOGFILE is "greenbone-scapdata-sync.log". Please make sure this script has
-# sufficient right to access the logfile.
-LOGDIR="$PREFIX/var/log/openvas/"
-LOGFILE="greenbone-scapdata-sync.log"
-
 # If ENABLED is set to 0, the sync script will not perform a synchronization.
 ENABLED=1
 
@@ -128,6 +121,9 @@ if [ -z "$FEED_HOME" ] ; then
   FEED_HOME="http://www.greenbone.net/solutions/gbn_feed.html"
 fi
 
+RSYNC=`command -v rsync`
+SQLITE=`command -v sqlite3`
+
 do_describe () {
   echo "This script synchronizes a SCAP collection with the '$FEED_NAME'."
   echo "The '$FEED_NAME' is provided by '$FEED_VENDOR'."
@@ -140,61 +136,49 @@ do_feedversion () {
   fi
 }
 
-log_write () {
+log_debug () {
+  $LOG_CMD -p daemon.debug $1
+}
+
+log_info () {
+  $LOG_CMD -p daemon.info $1
+}
+
+log_notice () {
   $LOG_CMD -p daemon.notice $1
+}
+
+log_warning () {
+  $LOG_CMD -p daemon.warning $1
 }
 
 log_err () {
   $LOG_CMD -p daemon.err $1
 }
 
-log_debug () {
-  $LOG_CMD -p daemon.debug $1
-}
-
 if [ $ENABLED -ne 1 ]
 then
-  log_write "SCAP synchronization is disabled, exiting."
+  log_notice "SCAP synchronization is disabled, exiting."
   exit 0
 fi
 
-RSYNC=`command -v rsync`
-if [ -z $RSYNC ]
-then
-  log_err "rsync not found, aborting synchronization."
-  exit 1
-fi
-
-SQLITE=`command -v sqlite3`
-if [ -z $SQLITE ]
-then
-  log_err "sqlite3 not found, aborting synchronization."
-  exit 1
-fi
-
-if [ -z $BASE_SYNC_DIR ]
-then
-  log_err "BASE_SYNC_DIR ($BASE_SYNC_DIR) not found!"
-  exit 1
-fi
-
 reinit () {
-  log_write "Reinitialization of the database necessary."
+  log_notice "Reinitialization of the database necessary."
   rm -f $SCAP_DB
   $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
 }
 
 db_migrate_9 () {
-  log_write "Migrating database to version 9."
+  log_notice "Migrating database to version 9."
   $SQLITE3 "$SCAP_DB" "DROP INDEX IF EXISTS afp_idx;
                        CREATE INDEX afp_cpe_idx ON affected_products (cpe);
                        CREATE INDEX afp_cve_idx ON affected_products (cve);
                        UPDATE meta SET value = '9' WHERE name = 'database_version';"
-  log_write "Migration done."
+  log_notice "Migration done."
 }
 
 db_migrate_10 () {
-  log_write "Migrating database to version 10."
+  log_notice "Migrating database to version 10."
   $SQLITE3 "$SCAP_DB" "DROP TRIGGER affected_delete;
                        CREATE TRIGGER affected_delete AFTER DELETE ON affected_products
                        BEGIN
@@ -204,11 +188,11 @@ db_migrate_10 () {
                        UPDATE meta
                          SET value = '10'
                          WHERE name = 'database_version';"
-  log_write "Migration done."
+  log_notice "Migration done."
 }
 
 db_migrate_11 () {
-  log_write "Migrating database to version 11."
+  log_notice "Migrating database to version 11."
   if [ 1 != "$REFRESH_PRIVATE_ONLY" ]
   then
     sqlite3 "$SCAP_DB"  "ALTER TABLE ovaldefs
@@ -218,15 +202,15 @@ db_migrate_11 () {
                           WHERE name = 'database_version';
                       "
     REBUILD_OVAL=1
-    log_write "Migration done."
+    log_notice "Migration done."
   else
-    log_err "Warning: Migration to version 11 requires refresh of all SCAP data. Aborting."
+    log_err "Migration to version 11 requires refresh of all SCAP data. Aborting."
     exit 1
   fi
 }
 
 db_migrate_12 () {
-  log_write "Migrating database to version 12."
+  log_notice "Migrating database to version 12."
   if [ 1 != "$REFRESH_PRIVATE_ONLY" ]
   then
     sqlite3 "$SCAP_DB" "DROP TABLE ovaldefs;
@@ -261,26 +245,26 @@ db_migrate_12 () {
                           WHERE name = 'database_version';
                       "
     REBUILD_OVAL=1
-    log_write "Migration done."
+    log_notice "Migration done."
   else
-    log_err "Warning: Migration to version 12 requires refresh of all SCAP data. Aborting."
+    log_err "Migration to version 12 requires refresh of all SCAP data. Aborting."
     exit 1
   fi
 }
 
 db_migrate_13 () {
-  log_write "Migrating database to version 13."
+  log_notice "Migrating database to version 13."
   sqlite3 "$SCAP_DB"  "ALTER TABLE cpes ADD COLUMN nvd_id;
                       UPDATE cpes SET nvd_id = uuid, uuid = name;
                       UPDATE meta
                         SET value = '13'
                         WHERE name = 'database_version';
                      "
-  log_write "Migration done."
+  log_notice "Migration done."
 }
 
 db_migrate_14 () {
-  log_write "Migrating database to version 14."
+  log_notice "Migrating database to version 14."
   sqlite3 "$SCAP_DB" "ALTER TABLE ovaldefs ADD COLUMN max_cvss FLOAT;
                       ALTER TABLE ovaldefs ADD COLUMN cve_refs INTEGER;
 
@@ -314,7 +298,7 @@ db_migrate_14 () {
                         SET value = '14'
                         WHERE name = 'database_version';
                      "
-  log_write "Migration done."
+  log_notice "Migration done."
   REBUILD_OVAL=1
 }
 
@@ -393,7 +377,7 @@ do_help () {
 init_scap_db_update () {
   if [ ! -f $SCAP_DB ]
   then
-    log_write "Initializing SCAP database."
+    log_notice "Initializing SCAP database."
     $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
     CVE_REFDATE=0
   else
@@ -411,7 +395,7 @@ init_scap_db_update () {
   if [ -z "$DB_LASTUPDATE" ];
   then
     # Happens when initial sync was aborted
-    log_write "Inconsistent data. Resetting SCAP database."
+    log_warning "Inconsistent data. Resetting SCAP database."
     rm -f $SCAP_DB
     $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
     CVE_REFDATE=0
@@ -426,7 +410,7 @@ init_scap_db_update () {
 update_cvss () {
   if [ 0 -ne $updated_cves ] || [ 0 -ne $updated_cpes ]
   then
-    log_write "Updating CVSS scores and CVE counts for CPEs"
+    log_info "Updating CVSS scores and CVE counts for CPEs"
     $SQLITE3 "$SCAP_DB"  "
     PRAGMA recursive_triggers = OFF;
     UPDATE cpes
@@ -449,12 +433,12 @@ update_cvss () {
           );
     "
   else
-    log_write "No CPEs or CVEs updated, skipping CVSS and CVE recount for CPEs."
+    log_info "No CPEs or CVEs updated, skipping CVSS and CVE recount for CPEs."
   fi
 
   if [ 0 -ne $updated_cves ] || [ 0 -ne $updated_ovaldefs ]
   then
-    log_write "Updating CVSS scores and for OVAL definitions"
+    log_info "Updating CVSS scores and for OVAL definitions"
     $SQLITE3 "$SCAP_DB"  "
     PRAGMA recursive_triggers = OFF;
     UPDATE ovaldefs
@@ -472,7 +456,7 @@ update_cvss () {
           );
     "
   else
-    log_write "No OVAL definitions or CVEs updated, skipping CVSS recount for OVAL definitions."
+    log_notice "No OVAL definitions or CVEs updated, skipping CVSS recount for OVAL definitions."
   fi
 }
 
@@ -480,9 +464,9 @@ update_scap_db_private () {
   SCAP_PRIVATE_DIR="$SCAP_DIR/$PRIVATE_SUBDIR"
   if [ -d "$SCAP_PRIVATE_DIR" ]
   then
-    log_write "Updating user defined data"
+    log_notice "Updating user defined data"
 
-    log_write "Updating user OVAL definitions"
+    log_info "Updating user OVAL definitions"
     xmlcount=0
     xmlcount=$(find "$SCAP_PRIVATE_DIR/oval/" -name "*.xml" -type f 2> /dev/null | wc -l)
     if [ -n "$xmlcount" ] && [ $xmlcount -ne 0 ]
@@ -496,7 +480,7 @@ update_scap_db_private () {
         do
           if [ -z `echo "$oval_files_sorted" | grep -x "$xml_file"` ]
           then
-            log_err "Warning: Cannot find valid OVAL timestamp in '$xml_file'."
+            log_warning "Cannot find valid OVAL timestamp in '$xml_file'."
           fi
         done
       fi
@@ -508,7 +492,7 @@ update_scap_db_private () {
       do
         if [ -z `echo "$oval_files_sorted_private" | grep -x "$xml_file"` ]
         then
-          log_err "Warning: Cannot find valid OVAL timestamp in '$xml_file'."
+          log_warning "Cannot find valid OVAL timestamp in '$xml_file'."
         fi
       done
 
@@ -516,7 +500,7 @@ update_scap_db_private () {
       do
         if [ "${non_xml_file%%.asc}" = "${non_xml_file}" ] || ! [ -f "${non_xml_file%%.asc}" ]
         then
-          log_write "Warning: Found non-XML and non-signature file '$non_xml_file'."
+          log_warning "Found non-XML and non-signature file '$non_xml_file'."
         fi
       done
 
@@ -547,34 +531,34 @@ update_scap_db_private () {
               then
                 if [ 10 -eq $validation_return ]
                 then
-                  log_write "Warning: Validation of file '$ovalfile' failed: $validation_message"
+                  log_warning "Validation of file '$ovalfile' failed: $validation_message"
                 else
-                  log_err "Warning: Error parsing '$ovalfile'."
+                  log_warning "Error parsing '$ovalfile'."
                 fi
               else
                 if ! [ "$validation_message" = "file valid" ]
                 then
-                  log_write "Warning: Validation of file '$ovalfile' failed: $validation_message"
+                  log_warning "Validation of file '$ovalfile' failed: $validation_message"
                 else
-                  log_write "Updating $ovalfile"
+                  log_info "Updating $ovalfile"
                   xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
                   $SQLITE3 $SCAP_DB
                   updated_ovaldefs=1
                 fi
               fi
             else
-              log_debug "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
+              log_info "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
             fi
           else
-            log_debug "Skipping $ovalfile, file is older than last revision. (This is not an error)"
+            log_info "Skipping $ovalfile, file is older than last revision. (This is not an error)"
           fi
         done
       fi
     else
-      log_debug "No user defined OVAL files found"
+      log_info "No user defined OVAL files found"
     fi
 
-    log_write "Cleaning up user OVAL data"
+    log_info "Cleaning up user OVAL data"
     DIR_STR_LENGTH=$((`echo "$SCAP_DIR" | wc -c` + 1))
 
     oval_files_shortened=""
@@ -590,14 +574,13 @@ update_scap_db_private () {
     deleted=`$SQLITE3 "$SCAP_DB" "SELECT DISTINCT xml_file FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"`
     if [ -n "$deleted" ]
     then
-      log_write "Removing definitions formerly inserted from:"
-      log_write "$deleted"
+      log_notice "Removing definitions formerly inserted from: $deleted"
       $SQLITE3 "$SCAP_DB" "DELETE FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"
     fi
 
     $SQLITE3 $SCAP_DB "update meta set value ='`date +%s`' where name = 'last_update';"
   else
-    log_write "No user data directory '$SCAP_PRIVATE_DIR' found."
+    log_notice "No user data directory '$SCAP_PRIVATE_DIR' found."
   fi
 }
 
@@ -606,22 +589,23 @@ update_scap_db() {
 
   if [ 0 = "$REFRESH_PRIVATE_ONLY" ]
   then
+    log_notice "Updating data from feed"
     CPEBASE="$SCAP_DIR/official-cpe-dictionary_v2.2.xml"
     if [ -e $CPEBASE ]
     then
       if [ `stat -c "%Y" $CPEBASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
       then
-        log_write "Updating CPEs"
+        log_info "Updating CPEs"
         sed 's/&/&amp;/g' $CPEBASE | \
           xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - | \
           xsltproc $SCAP_RES_DIR/cpe_update.xsl - | \
           $SQLITE3 $SCAP_DB
         updated_cpes=1
       else
-        log_write "Skipping CPEs, file is older than last revision (this is not an error)."
+        log_info "Skipping CPEs, file is older than last revision (this is not an error)."
       fi
     else
-      log_write "Warning: No CPE dictionary found in $SCAP_DIR"
+      log_warning "No CPE dictionary found in $SCAP_DIR"
     fi
 
     xmlcount=$(ls $SCAP_DIR/nvdcve-2.0-*.xml 2> /dev/null | wc -l)
@@ -632,19 +616,19 @@ update_scap_db() {
         if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
         then
           updated_cves=1
-          log_write "Updating $cvefile"
+          log_info "Updating $cvefile"
           xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
             xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
             $SQLITE3 $SCAP_DB
         else
-          log_write "Skipping $cvefile, file is older than last revision (this is not an error)."
+          log_info "Skipping $cvefile, file is older than last revision (this is not an error)."
         fi
       done
     else
-      log_write "Warning: No CVEs found in $SCAP_DIR."
+      log_warning "No CVEs found in $SCAP_DIR."
     fi
 
-    log_write "Updating OVAL data"
+    log_info "Updating OVAL data"
     xmlcount=$(find "$SCAP_DIR/oval/" -name "*.xml" -type f 2> /dev/null | wc -l)
     if [ $xmlcount -ne 0 ]
     then
@@ -655,7 +639,7 @@ update_scap_db() {
       do
         if [ -z `echo "$oval_files_sorted" | grep -x "$xml_file"` ]
         then
-          log_write "Cannot find valid OVAL timestamp in '$xml_file'."
+          log_warning "Cannot find valid OVAL timestamp in '$xml_file'."
         fi
       done
 
@@ -678,19 +662,19 @@ update_scap_db() {
 
           if [ $oval_timestamp -ge $OVAL_REFDATE ]
           then
-            log_write "Updating $ovalfile"
+            log_info "Updating $ovalfile"
             xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
             $SQLITE3 $SCAP_DB
             updated_ovaldefs=1
           else
-            log_write "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
+            log_info "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
           fi
         else
-          log_write "Skipping $ovalfile, file is older than last revision (this is not an error)."
+          log_info "Skipping $ovalfile, file is older than last revision (this is not an error)."
         fi
       done
     else
-      log_write "Warning: No XML files found in $SCAP_DIR/oval/."
+      log_warning "No XML files found in $SCAP_DIR/oval/."
     fi
   fi
 
@@ -703,7 +687,7 @@ update_scap_db() {
 sync_scapdata(){
   if [ -e $ACCESSKEY ]
   then
-    log_write "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone SCAP data Repository ..."
+    log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone SCAP data Repository ..."
     notsynced=1
     retried=0
 
@@ -745,7 +729,7 @@ sync_scapdata(){
       fi
       notsynced=0
     done
-    log_write "Synchronization with the Greenbone SCAP data Repository successful."
+    log_notice "Synchronization with the Greenbone SCAP data Repository successful."
 
     update_scap_db
   else
@@ -755,8 +739,37 @@ sync_scapdata(){
 }
 
 do_self_test () {
+  if [ -z "$SELFTEST_STDERR" ]
+  then
+    SELFTEST_STDERR=0
+  fi
+
   if [ -z "$SQLITE" ]; then
-    echo "[e] Error: sqlite3 not found (required)";
+    if [ 0 -ne $SELFTEST_STDERR ]
+    then
+      echo "sqlite3 not found (required)." 1>&2
+    fi
+    log_err "sqlite3 not found (required)."
+    SELFTEST_FAIL=1
+  fi
+
+  if [ -z "$RSYNC" ]
+  then
+    if [ 0 -ne $SELFTEST_STDERR ]
+    then
+      echo "rsync not found (required)." 1>&2
+    fi
+    log_err "rsync not found (required)."
+    SELFTEST_FAIL=1
+  fi
+
+  if [ ! -d $BASE_SYNC_DIR ]
+  then
+    if [ 0 -ne $SELFTEST_STDERR ]
+    then
+      echo "BASE_SYNC_DIR ($BASE_SYNC_DIR) not found." 1>&2
+    fi
+    log_err "BASE_SYNC_DIR ($BASE_SYNC_DIR) not found."
     SELFTEST_FAIL=1
   fi
 }
@@ -795,6 +808,7 @@ while test $# -gt 0; do
           ;;
         --selftest)
           SELFTEST_FAIL=0
+          SELFTEST_STDERR=1
           do_self_test
           exit $SELFTEST_FAIL
           ;;
@@ -802,6 +816,12 @@ while test $# -gt 0; do
  shift
 done
 
+SELFTEST_FAIL=0
+do_self_test
+if [ $SELFTEST_FAIL -ne 0 ]
+then
+  exit 1
+fi
 sync_scapdata
 
 exit 0

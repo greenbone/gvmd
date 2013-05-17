@@ -61,12 +61,9 @@ RSYNC_COMPRESS="--compress-level=9"
 # doing.
 PORT=24
 
-# LOGDIR and LOGFILE specify the location of the greenbone-certdata-sync logfile.
-# The default value for LOGDIR is  "/var/log/", the default value for
-# LOGFILE is "greenbone-certdata-sync.log". Please make sure this script has
-# sufficient right to access the logfile.
-LOGDIR="$PREFIX/var/log/openvas/"
-LOGFILE="greenbone-certdata-sync.log"
+# LOG_CMD defines the command to use for logging. To have logger log to stderr
+# as well as syslog, add "-s" here.
+LOG_CMD="logger -t $SCRIPT_NAME"
 
 # If ENABLED is set to 0, the sync script will not perform a synchronization.
 ENABLED=1
@@ -108,6 +105,9 @@ if [ -z "$FEED_HOME" ] ; then
   FEED_HOME="http://www.greenbone.net/solutions/gbn_feed.html"
 fi
 
+RSYNC=`command -v rsync`
+SQLITE=`command -v sqlite3`
+
 do_describe () {
   echo "This script synchronizes a CERT collection with the '$FEED_NAME'."
   echo "The '$FEED_NAME' is provided by '$FEED_VENDOR'."
@@ -120,52 +120,34 @@ do_feedversion () {
   fi
 }
 
-if [ ! -w $LOGDIR ]
-then
-  NOLOG=1
-fi
+log_debug () {
+  $LOG_CMD -p daemon.debug $1
+}
 
-log_write(){
-  if [ 1 = "$NOLOG" ]
-  then
-    echo "LOG: [`date -R`] $1"
-  else
-    echo "[`date -R`] $1" >> $LOGDIR$LOGFILE
-  fi
+log_info () {
+  $LOG_CMD -p daemon.info $1
+}
+
+log_notice () {
+  $LOG_CMD -p daemon.notice $1
+}
+
+log_warning () {
+  $LOG_CMD -p daemon.warning $1
+}
+
+log_err () {
+  $LOG_CMD -p daemon.err $1
 }
 
 if [ $ENABLED -ne 1 ]
 then
-  log_write "CERT synchronization is disabled, exiting."
+  log_notice "CERT synchronization is disabled, exiting."
   exit 0
 fi
 
-RSYNC=`command -v rsync`
-if [ -z $RSYNC ]
-then
-  log_write "rsync not found, aborting synchronization."
-  logger "CERT synchronization: rsync not found, aborting synchronization."
-  exit 1
-fi
-
-SQLITE=`command -v sqlite3`
-if [ -z $SQLITE ]
-then
-  log_write "sqlite3 not found, aborting synchronization."
-  logger "CERT synchronization: sqlite3 not found, aborting synchronization."
-  exit 1
-fi
-
-if [ -z $BASE_SYNC_DIR ]
-then
-  echo
-  echo "BASE_SYNC_DIR ($BASE_SYNC_DIR) not found!"
-  echo
-  exit 1
-fi
-
 reinit () {
-  log_write " Reinitialization of the database necessary."
+  log_notice "Reinitialization of the database necessary."
   rm -f $CERT_DB
   $SQLITE3 $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
 }
@@ -195,7 +177,7 @@ do_help () {
 update_cert_db() {
   if [ ! -f $CERT_DB ]
   then
-    log_write "Initializing CERT database."
+    log_notice "Initializing CERT database."
     $SQLITE3 $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
     DB_LASTUPDATE=0
   else
@@ -213,13 +195,14 @@ update_cert_db() {
   if [ -z "$DB_LASTUPDATE" ]
   then
     # Happens when initial sync was aborted
-    log_write "Error: Inconsistent data. Resetting CERT database."
+    log_warning "Inconsistent data. Resetting CERT database."
     rm -f $CERT_DB
     $SQLITE3 $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
     DFN_REFDATE=0
     DB_LASTUPDATE=0
   fi
 
+  log_notice "Updating data from feed"
   xmlcount=$(ls $CERT_DIR/dfn-cert-*.xml 2> /dev/null | wc -l)
   if [ $xmlcount -ne 0 ]
   then
@@ -227,14 +210,14 @@ update_cert_db() {
     do
       if [ `stat -c "%Y" $certfile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
       then
-        log_write "Updating $certfile"
+        log_info "Updating $certfile"
         xsltproc --stringparam refdate "$DFN_REFDATE" $CERT_RES_DIR/dfn_cert_update.xsl $certfile | $SQLITE3 $CERT_DB
       else
-        log_write "Skipping $certfile, file is older than last revision"
+        log_info "Skipping $certfile, file is older than last revision"
       fi
     done
   else
-    log_write "Warning: No DFN-CERT advisories found in $CERT_DIR"
+    log_warning "No DFN-CERT advisories found in $CERT_DIR"
   fi
 
   $SQLITE3 $CERT_DB "UPDATE meta SET value ='`date +%s`' WHERE name = 'last_update';"
@@ -243,7 +226,7 @@ update_cert_db() {
 sync_certdata(){
   if [ -e $ACCESSKEY ]
   then
-    echo "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone CERT data Repository ..."
+    log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone CERT data Repository ..."
     notsynced=1
     retried=0
 
@@ -257,8 +240,7 @@ sync_certdata(){
     custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
     if [ -z $feeduser ] || [ -z $custid ]
     then
-      log_write "Could not determine credentials, aborting synchronization."
-      logger "CERT synchronization: Could not determine credentials, aborting synchronization."
+      log_err "Could not determine credentials, aborting synchronization."
       exit 1
     fi
     while [ 1 -eq $notsynced ]
@@ -281,28 +263,53 @@ sync_certdata(){
       fi
       rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
       if [ 0 -ne "$?" ] ; then
-        log_write "rsync failed, aborting synchronization."
-        logger "CERT synchronization:  failed, aborting synchronization."
+        log_err "rsync failed, aborting synchronization."
         exit 1
       fi
       notsynced=0
     done
-    echo "Synchronization with the Greenbone CERT data Repository successful."
-    log_write "Synchronization with the Greenbone CERT data Repository successful."
-    logger "CERT synchronization: Synchronization with the Greenbone CERT data Repository successful."
+    log_notice "Synchronization with the Greenbone CERT data Repository successful."
     echo
 
     update_cert_db
   else
-    log_write "gsf-access-key not found, aborting synchronization."
-    logger "CERT synchronization: gsf-access-key not found, aborting synchronization."
+    log_err "gsf-access-key not found, aborting synchronization."
     exit 1
   fi
 }
 
 do_self_test () {
+  if [ -z "$SELFTEST_STDERR" ]
+  then
+    SELFTEST_STDERR=0
+  fi
+
   if [ -z "$SQLITE" ]; then
-    echo "[e] Error: sqlite3 not found (required)";
+    if [ 0 -ne $SELFTEST_STDERR ]
+    then
+      echo "sqlite3 not found (required)." 1>&2
+    fi
+    log_err "sqlite3 not found (required)."
+    SELFTEST_FAIL=1
+  fi
+
+  if [ -z "$RSYNC" ]
+  then
+    if [ 0 -ne $SELFTEST_STDERR ]
+    then
+      echo "rsync not found (required)." 1>&2
+    fi
+    log_err "rsync not found (required)."
+    SELFTEST_FAIL=1
+  fi
+
+  if [ ! -d $BASE_SYNC_DIR ]
+  then
+    if [ 0 -ne $SELFTEST_STDERR ]
+    then
+      echo "BASE_SYNC_DIR ($BASE_SYNC_DIR) not found." 1>&2
+    fi
+    log_err "BASE_SYNC_DIR ($BASE_SYNC_DIR) not found."
     SELFTEST_FAIL=1
   fi
 }
@@ -334,12 +341,20 @@ while test $# -gt 0; do
           ;;
         --selftest)
           SELFTEST_FAIL=0
+          SELFTEST_STDERR=1
           do_self_test
           exit $SELFTEST_FAIL
           ;;
  esac
  shift
 done
+
+SELFTEST_FAIL=0
+do_self_test
+if [ $SELFTEST_FAIL -ne 0 ]
+then
+  exit 1
+fi
 
 sync_certdata
 

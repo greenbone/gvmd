@@ -1,3 +1,40 @@
+2013-05-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Apply new logging method to greenbone-certdata-sync and make logging
+	more consistent for both Greenbone scripts. Fix self test.
+
+	* tools/greenbone-certdata-sync (): Remove variables LOGDIR, LOGFILE,
+	and associated test. Replace with LOG_CMD (New variable for logger
+	command). Move up variables RSYNC, SQLITE and move tests to
+	do_self_test. Use new log functions. Add do_self_test to check
+	availability of tools. Add SELFTEST_STDERR in case for --selftest arg.
+	(log_write): Removed. Replaced by log_debug, log_info, log_notice,
+	log_warning, log_err.
+	(log_debug, log_info, log_notice, log_warning, log_err): New logging
+	functions using logger.
+	(reinit, update_cert_db, sync_certdata): Use new logging. Make log
+	messages and levels more consistent by removing "Warning:" and "Error:"
+	prefixes.
+	(do_self_test): Add SQLITE, RSYNC and BASE_SYNC_DIR tests.
+	Test if directory BASE_SYNC_DIR exists. Use new logging and print
+	to stderr if SELFTEST_STDERR is set.
+
+	* tools/greenbone-scapdata-sync (): Remove variables LOGDIR, LOGFILE.
+	Change log_write to new log functions. Move up variables RSYNC, SQLITE
+	and move tests to do_self_test. Add do_self_test to check
+	availability of tools. Add SELFTEST_STDERR in case for --selftest arg.
+	(log_debug): Move to make consistent with greenbone-certdata-sync.
+	(log_write): Removed. Replaced by log_info and log_notice.
+	(log_info, log_notice, log_warning): New logging functions.
+	(reinit, db_migrate_9, db_migrate_10, db_migrate_11, db_migrate_12)
+	(db_migrate_13, init_scap_db_update, update_cvss)
+	(update_scap_db_private, update_scap_db, sync_scapdata): Change
+	log_write to log_info or log_notice as appropriate. Make log messages
+	and levels more consistent by removing "Warning:" and "Error:" prefixes.
+	(do_self_test): Add SQLITE, RSYNC and BASE_SYNC_DIR tests.
+	Test if directory BASE_SYNC_DIR exists. Use new logging and print
+	to stderr if SELFTEST_STDERR is set.
+
 2013-05-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (report_os_count): Count OS by cpe instead of txt.
