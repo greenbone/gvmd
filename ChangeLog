@@ -1,3 +1,7 @@
+2013-05-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (report_host_count): Optimize sql query.
+
 2013-05-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Apply new logging method to greenbone-certdata-sync and make logging

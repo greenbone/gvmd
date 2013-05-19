@@ -25692,7 +25692,7 @@ static int
 report_host_count (report_t report)
 {
   return sql_int (0, 0,
-                  "SELECT count (DISTINCT host) FROM results"
+                  "SELECT count (DISTINCT ROWID) FROM report_hosts"
                   " WHERE report = %llu;",
                   report);
 }
