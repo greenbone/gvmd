@@ -46307,6 +46307,163 @@ find_permission (const char* uuid, permission_t* permission)
   return find_resource ("permission", uuid, permission);
 }
 
+/**
+ * @brief Modify a permission.
+ *
+ * @param[in]   permission_id   UUID of permission.
+ * @param[in]   name            Name of permission.
+ * @param[in]   comment         Comment on permission.
+ * @param[in]   resource_type   Type of resource.
+ * @param[in]   resource_id     UUID of resource.
+ * @param[in]   subject_type    Type of subject.
+ * @param[in]   subject_id      UUID of subject.
+ *
+ * @return 0 success, 1 failed to find permission, 2 failed to find subject,
+ *         3 failed to find resource, 4 permission_id required, 5 error in
+ *         resource, 6 error in subject, 7 error in name, -1 internal error.
+ */
+int
+modify_permission (const char *permission_id, const char *name,
+                   const char *comment, const char *resource_type,
+                   const char *resource_id, const char *subject_type,
+                   const char *subject_id)
+{
+  gchar *quoted_name, *quoted_comment;
+  permission_t permission;
+  resource_t resource, subject;
+
+  assert (current_credentials.uuid);
+
+  // TODO must be able to leave the values the same
+
+  if (name == NULL
+      || (strcmp (name, "delete")
+          && strcasecmp (name, "get")
+          && strcasecmp (name, "modify")
+          && strcasecmp (name, "create_group")
+          && strcasecmp (name, "create_target")))
+    return 7;
+
+  if (strcasecmp (name, "delete")
+      && strcasecmp (name, "get")
+      && strcasecmp (name, "modify"))
+    {
+      resource_id = NULL;
+      resource_type = NULL;
+    }
+
+  if (permission_id == NULL)
+    return 4;
+
+  if (resource_type && (strlen (resource_type) == 0))
+    resource_type = NULL;
+
+  if (resource_type)
+    {
+      if (valid_type (resource_type) == 0)
+        return 5;
+    }
+  else if (resource_id
+           && strlen (resource_id)
+           && strcmp (resource_id, "0"))
+    return 5;
+  else
+    resource_id = NULL;
+
+  if (resource_id && (resource_type == NULL))
+    return 5;
+
+  if (subject_type
+      && strcmp (subject_type, "group")
+      && strcmp (subject_type, "role")
+      && strcmp (subject_type, "user"))
+    return 6;
+
+  if (subject_id && (subject_type == NULL))
+    return 6;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  permission = 0;
+  if (find_permission (permission_id, &permission))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (permission == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  resource = 0;
+  if (resource_id)
+    {
+      if (find_resource (resource_type, resource_id, &resource))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (resource == 0)
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+    }
+
+  // TODO Does current user have permission to grant subject this permission?
+
+  subject = 0;
+  if (subject_id)
+    {
+      if (find_resource (subject_type, subject_id, &subject))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (subject == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+    }
+
+  quoted_name = sql_quote (name);
+  quoted_comment = sql_quote (comment ? comment : "");
+
+  sql ("UPDATE permissions SET"
+       " name = '%s',"
+       " comment = '%s',"
+       " subject_type = %s%s%s,"
+       " subject = %llu,"
+       " resource_type = '%s',"
+       " resource_uuid = '%s',"
+       " resource = %llu,"
+       " resource_location = " G_STRINGIFY (LOCATION_TABLE) ","
+       " modification_time = now ()"
+       " WHERE ROWID = %llu;",
+       quoted_name,
+       quoted_comment,
+       subject_id ? "'" : "",
+       subject_id ? subject_type : "NULL",
+       subject_id ? "'" : "",
+       subject,
+       resource_id ? resource_type : "",
+       resource_id ? resource_id : "",
+       resource,
+       permission);
+
+  g_free (quoted_comment);
+  g_free (quoted_name);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 
 /* Port lists. */
 

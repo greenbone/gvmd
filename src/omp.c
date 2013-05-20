@@ -524,6 +524,7 @@ static command_t omp_commands[]
     {"MODIFY_GROUP", "Modify an existing group."},
     {"MODIFY_NOTE", "Modify an existing note."},
     {"MODIFY_OVERRIDE", "Modify an existing override."},
+    {"MODIFY_PERMISSION", "Modify an existing permission."},
     {"MODIFY_PORT_LIST", "Modify an existing port list."},
     {"MODIFY_REPORT", "Modify an existing report."},
     {"MODIFY_REPORT_FORMAT", "Modify an existing report format."},
@@ -3130,6 +3131,40 @@ modify_lsc_credential_data_reset (modify_lsc_credential_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_permission command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *name;                    ///< Name of permission.
+  char *permission_id;           ///< Permission UUID.
+  char *resource_type;           ///< Resource type.
+  char *resource_id;             ///< Resource.
+  char *subject_type;            ///< Subject type.
+  char *subject_id;              ///< Subject UUID.
+  char *user;                    ///< User.
+} modify_permission_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_permission_data_reset (modify_permission_data_t *data)
+{
+  free (data->comment);
+  free (data->name);
+  free (data->resource_type);
+  free (data->resource_id);
+  free (data->permission_id);
+  free (data->subject_type);
+  free (data->subject_id);
+
+  memset (data, 0, sizeof (modify_permission_data_t));
+}
+
+/**
  * @brief Command data for the modify_port_list command.
  */
 typedef struct
@@ -3893,6 +3928,7 @@ typedef union
   modify_filter_data_t modify_filter;                 ///< modify_filter
   modify_group_data_t modify_group;                   ///< modify_group
   modify_lsc_credential_data_t modify_lsc_credential; ///< modify_lsc_credential
+  modify_permission_data_t modify_permission;         ///< modify_permission
   modify_port_list_data_t modify_port_list;           ///< modify_port_list
   modify_report_data_t modify_report;                 ///< modify_report
   modify_report_format_data_t modify_report_format;   ///< modify_report_format
@@ -4388,6 +4424,12 @@ modify_note_data_t *modify_note_data
  */
 modify_override_data_t *modify_override_data
  = (modify_override_data_t*) &(command_data.create_override);
+
+/**
+ * @brief Parser callback data for MODIFY_PERMISSION.
+ */
+modify_permission_data_t *modify_permission_data
+ = &(command_data.modify_permission);
 
 /**
  * @brief Parser callback data for MODIFY_PORT_LIST.
@@ -4986,6 +5028,13 @@ typedef enum
   CLIENT_MODIFY_OVERRIDE_TASK,
   CLIENT_MODIFY_OVERRIDE_TEXT,
   CLIENT_MODIFY_OVERRIDE_THREAT,
+  CLIENT_MODIFY_PERMISSION,
+  CLIENT_MODIFY_PERMISSION_COMMENT,
+  CLIENT_MODIFY_PERMISSION_NAME,
+  CLIENT_MODIFY_PERMISSION_SUBJECT,
+  CLIENT_MODIFY_PERMISSION_SUBJECT_TYPE,
+  CLIENT_MODIFY_PERMISSION_RESOURCE,
+  CLIENT_MODIFY_PERMISSION_RESOURCE_TYPE,
   CLIENT_MODIFY_PORT_LIST,
   CLIENT_MODIFY_PORT_LIST_COMMENT,
   CLIENT_MODIFY_PORT_LIST_NAME,
@@ -6853,6 +6902,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_override_data->override_id);
             set_client_state (CLIENT_MODIFY_OVERRIDE);
           }
+        else if (strcasecmp ("MODIFY_PERMISSION", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values,
+                              "permission_id",
+                              &modify_permission_data->permission_id);
+            set_client_state (CLIENT_MODIFY_PERMISSION);
+          }
         else if (strcasecmp ("MODIFY_REPORT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "report_id",
@@ -7289,6 +7345,35 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_GROUP_USERS);
           }
         ELSE_ERROR ("modify_group");
+
+      case CLIENT_MODIFY_PERMISSION:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_PERMISSION_COMMENT);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_PERMISSION_NAME);
+        else if (strcasecmp ("RESOURCE", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_permission_data->resource_id);
+            set_client_state (CLIENT_MODIFY_PERMISSION_RESOURCE);
+          }
+        else if (strcasecmp ("SUBJECT", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_permission_data->subject_id);
+            set_client_state (CLIENT_MODIFY_PERMISSION_SUBJECT);
+          }
+        ELSE_ERROR ("modify_permission");
+
+      case CLIENT_MODIFY_PERMISSION_RESOURCE:
+        if (strcasecmp ("TYPE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_PERMISSION_RESOURCE_TYPE);
+        ELSE_ERROR ("modify_permission");
+
+      case CLIENT_MODIFY_PERMISSION_SUBJECT:
+        if (strcasecmp ("TYPE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_PERMISSION_SUBJECT_TYPE);
+        ELSE_ERROR ("modify_permission");
 
       case CLIENT_MODIFY_PORT_LIST:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -19879,6 +19964,133 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_OVERRIDE, TEXT);
       CLOSE (CLIENT_MODIFY_OVERRIDE, THREAT);
 
+      case CLIENT_MODIFY_PERMISSION:
+        {
+          assert (strcasecmp ("MODIFY_PERMISSION", element_name) == 0);
+
+          if (openvas_is_user_observer (current_credentials.username))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_permission",
+                                  "MODIFY is forbidden for observer users"));
+            }
+          else if (modify_permission_data->permission_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_permission",
+                                "MODIFY_PERMISSION requires a permission_id attribute"));
+          else if (modify_permission_data->resource_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_permission",
+                                "MODIFY_PERMISSION requires a RESOURCE"));
+          else if (modify_permission_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_permission",
+                                "MODIFY_PERMISSION requires a NAME entity"));
+          else if (strlen (modify_permission_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_permission",
+                                "MODIFY_PERMISSION name must be at"
+                                " least one character long"));
+          else switch (modify_permission
+                        (modify_permission_data->permission_id,
+                         modify_permission_data->name,
+                         modify_permission_data->comment,
+                         modify_permission_data->resource_type,
+                         modify_permission_data->resource_id,
+                         modify_permission_data->subject_type,
+                         modify_permission_data->subject_id))
+            {
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_permission",
+                                    "Permission exists already"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be modified");
+                break;
+              case 2:
+                if (send_find_error_to_client
+                     ("modify_permission",
+                      "subject",
+                      modify_permission_data->subject_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be modified");
+                break;
+              case 3:
+                if (send_find_error_to_client
+                     ("modify_permission",
+                      "resource",
+                      modify_permission_data->resource_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be modified");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_permission",
+                                    "MODIFY_PERMISSION requires a PERMISSION"
+                                    " ID"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be modified");
+                break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_permission",
+                                    "Error in RESOURCE"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be modified");
+                break;
+              case 6:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_permission",
+                                    "Error in SUBJECT"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be modified");
+                break;
+              case 7:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_permission",
+                                    "Error in NAME"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be modified");
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("modify_permission"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be modified");
+                break;
+              default:
+                {
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_permission"));
+                  g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                         "Permission %s has been modified",
+                         modify_permission_data->permission_id);
+                  break;
+                }
+            }
+
+          modify_permission_data_reset (modify_permission_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_PERMISSION, COMMENT);
+      CLOSE (CLIENT_MODIFY_PERMISSION, SUBJECT);
+      CLOSE (CLIENT_MODIFY_PERMISSION_SUBJECT, TYPE);
+      CLOSE (CLIENT_MODIFY_PERMISSION, NAME);
+      CLOSE (CLIENT_MODIFY_PERMISSION, RESOURCE);
+      CLOSE (CLIENT_MODIFY_PERMISSION_RESOURCE, TYPE);
+
       case CLIENT_MODIFY_SCHEDULE:
         {
           time_t first_time, period, period_months, duration;
@@ -24981,6 +25193,19 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_OVERRIDE_THREAT,
               &modify_override_data->threat);
+
+
+      APPEND (CLIENT_MODIFY_PERMISSION_COMMENT,
+              &modify_permission_data->comment);
+
+      APPEND (CLIENT_MODIFY_PERMISSION_NAME,
+              &modify_permission_data->name);
+
+      APPEND (CLIENT_MODIFY_PERMISSION_RESOURCE_TYPE,
+              &modify_permission_data->resource_type);
+
+      APPEND (CLIENT_MODIFY_PERMISSION_SUBJECT_TYPE,
+              &modify_permission_data->subject_type);
 
 
       APPEND (CLIENT_MODIFY_PORT_LIST_COMMENT,

@@ -1,3 +1,19 @@
+2013-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP MODIFY_PERMISSION.
+
+	* src/omp.c (omp_commands, command_data_t,client_state_t): Add
+	MODIFY_PERMISSION elements.
+	(modify_permission_data_t): New type.
+	(modify_permission_data_reset): New function.
+	(modify_permission_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	MODIFY_PERMISSION.
+
+	* src/manage_sql.c (modify_permission): New function.
+
+	* src/manage.h: Add header accordingly.
+
 2013-05-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (report_host_count): Optimize sql query.
