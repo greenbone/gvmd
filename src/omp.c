@@ -19978,19 +19978,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_permission",
                                 "MODIFY_PERMISSION requires a permission_id attribute"));
-          else if (modify_permission_data->resource_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_permission",
-                                "MODIFY_PERMISSION requires a RESOURCE"));
-          else if (modify_permission_data->name == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_permission",
-                                "MODIFY_PERMISSION requires a NAME entity"));
-          else if (strlen (modify_permission_data->name) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_permission",
-                                "MODIFY_PERMISSION name must be at"
-                                " least one character long"));
           else switch (modify_permission
                         (modify_permission_data->permission_id,
                          modify_permission_data->name,

@@ -1,5 +1,13 @@
 2013-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Remove resource and name
+	checks from MODIFY_PERMISSION.
+
+	* src/manage_sql.c (modify_permission): Modify the fields one at a time.
+	Only modify a field if it is given, otherwise leave the existing value.
+
+2013-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_permission): Leave resource_location alone.
 
 2013-05-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>

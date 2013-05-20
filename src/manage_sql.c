@@ -46288,59 +46288,13 @@ modify_permission (const char *permission_id, const char *name,
                    const char *resource_id, const char *subject_type,
                    const char *subject_id)
 {
-  gchar *quoted_name, *quoted_comment;
   permission_t permission;
   resource_t resource, subject;
 
-  assert (current_credentials.uuid);
-
-  // TODO must be able to leave the values the same
-
-  if (name == NULL
-      || (strcmp (name, "delete")
-          && strcasecmp (name, "get")
-          && strcasecmp (name, "modify")
-          && strcasecmp (name, "create_group")
-          && strcasecmp (name, "create_target")))
-    return 7;
-
-  if (strcasecmp (name, "delete")
-      && strcasecmp (name, "get")
-      && strcasecmp (name, "modify"))
-    {
-      resource_id = NULL;
-      resource_type = NULL;
-    }
+  // TODO Does current user have permission to grant subject this permission?
 
   if (permission_id == NULL)
     return 4;
-
-  if (resource_type && (strlen (resource_type) == 0))
-    resource_type = NULL;
-
-  if (resource_type)
-    {
-      if (valid_type (resource_type) == 0)
-        return 5;
-    }
-  else if (resource_id
-           && strlen (resource_id)
-           && strcmp (resource_id, "0"))
-    return 5;
-  else
-    resource_id = NULL;
-
-  if (resource_id && (resource_type == NULL))
-    return 5;
-
-  if (subject_type
-      && strcmp (subject_type, "group")
-      && strcmp (subject_type, "role")
-      && strcmp (subject_type, "user"))
-    return 6;
-
-  if (subject_id && (subject_type == NULL))
-    return 6;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -46357,27 +46311,115 @@ modify_permission (const char *permission_id, const char *name,
       return 1;
     }
 
-  resource = 0;
-  if (resource_id)
+  if (name)
     {
-      if (find_resource (resource_type, resource_id, &resource))
+      gchar *quoted_name;
+
+      if (strcmp (name, "delete")
+          && strcasecmp (name, "get")
+          && strcasecmp (name, "modify")
+          && strcasecmp (name, "create_group")
+          && strcasecmp (name, "create_target"))
         {
           sql ("ROLLBACK;");
-          return -1;
+          return 7;
         }
 
-      if (resource == 0)
+      if (strcasecmp (name, "delete")
+          && strcasecmp (name, "get")
+          && strcasecmp (name, "modify"))
         {
-          sql ("ROLLBACK;");
-          return 3;
+          resource_id = NULL;
+          resource_type = "";
         }
+
+      quoted_name = sql_quote (name);
+      sql ("UPDATE permissions SET"
+           " name = '%s'"
+           " WHERE ROWID = %llu;",
+           quoted_name,
+           permission);
+      g_free (quoted_name);
     }
 
-  // TODO Does current user have permission to grant subject this permission?
-
-  subject = 0;
-  if (subject_id)
+  if (comment)
     {
+      gchar *quoted_comment;
+
+      quoted_comment = sql_quote (comment);
+      sql ("UPDATE permissions SET"
+           " comment = '%s'"
+           " WHERE ROWID = %llu;",
+           quoted_comment,
+           permission);
+      g_free (quoted_comment);
+    }
+
+  if (resource_type)
+    {
+      if (strlen (resource_type) == 0)
+        {
+          resource_type = NULL;
+          resource_id = NULL;
+        }
+      else if (valid_type (resource_type) == 0)
+        {
+          sql ("ROLLBACK;");
+          return 5;
+        }
+
+      resource = 0;
+      if (resource_id)
+        {
+          if (find_resource (resource_type, resource_id, &resource))
+            {
+              sql ("ROLLBACK;");
+              return -1;
+            }
+
+          if (resource == 0)
+            {
+              sql ("ROLLBACK;");
+              return 3;
+            }
+        }
+
+      sql ("UPDATE permissions SET"
+           " resource_type = '%s',"
+           " resource_uuid = '%s',"
+           " resource = %llu"
+           " WHERE ROWID = %llu;",
+           resource_type ? resource_type : "",
+           resource_id ? resource_id : "",
+           resource,
+           permission);
+    }
+  else if (resource_id
+           && strlen (resource_id)
+           && strcmp (resource_id, "0"))
+    {
+      sql ("ROLLBACK;");
+      return 5;
+    }
+
+  if (subject_type)
+    {
+      if (strcmp (subject_type, "group")
+          && strcmp (subject_type, "role")
+          && strcmp (subject_type, "user"))
+        {
+          sql ("ROLLBACK;");
+          return 6;
+        }
+
+      if (subject_id == NULL)
+        {
+          sql ("ROLLBACK;");
+          return 6;
+        }
+
+      subject = 0;
+
       if (find_resource (subject_type, subject_id, &subject))
         {
           sql ("ROLLBACK;");
@@ -46389,34 +46431,27 @@ modify_permission (const char *permission_id, const char *name,
           sql ("ROLLBACK;");
           return 2;
         }
+
+      sql ("UPDATE permissions SET"
+           " subject_type = '%s',"
+           " subject = %llu"
+           " WHERE ROWID = %llu;",
+           subject_type,
+           subject,
+           permission);
+    }
+  else if (subject_id
+           && strlen (subject_id)
+           && strcmp (subject_id, "0"))
+    {
+      sql ("ROLLBACK;");
+      return 6;
     }
 
-  quoted_name = sql_quote (name);
-  quoted_comment = sql_quote (comment ? comment : "");
-
   sql ("UPDATE permissions SET"
-       " name = '%s',"
-       " comment = '%s',"
-       " subject_type = %s%s%s,"
-       " subject = %llu,"
-       " resource_type = '%s',"
-       " resource_uuid = '%s',"
-       " resource = %llu,"
        " modification_time = now ()"
        " WHERE ROWID = %llu;",
-       quoted_name,
-       quoted_comment,
-       subject_id ? "'" : "",
-       subject_id ? subject_type : "NULL",
-       subject_id ? "'" : "",
-       subject,
-       resource_id ? resource_type : "",
-       resource_id ? resource_id : "",
-       resource,
        permission);
-
-  g_free (quoted_comment);
-  g_free (quoted_name);
 
   sql ("COMMIT;");
 
