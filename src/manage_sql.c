@@ -46402,7 +46402,6 @@ modify_permission (const char *permission_id, const char *name,
        " resource_type = '%s',"
        " resource_uuid = '%s',"
        " resource = %llu,"
-       " resource_location = " G_STRINGIFY (LOCATION_TABLE) ","
        " modification_time = now ()"
        " WHERE ROWID = %llu;",
        quoted_name,

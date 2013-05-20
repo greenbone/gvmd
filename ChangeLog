@@ -1,3 +1,7 @@
+2013-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (modify_permission): Leave resource_location alone.
+
 2013-05-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (buffer_cve): Remove function
