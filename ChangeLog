@@ -1,3 +1,8 @@
+2013-05-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (buffer_cve): Remove function
+	(print_report_xml): Remove unused cve buffering code.
+
 2013-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OMP MODIFY_PERMISSION.

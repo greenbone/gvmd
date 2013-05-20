@@ -25586,37 +25586,6 @@ free_buffer (array_t *buffer)
 }
 
 /**
- * @brief Buffer CVE for print_report_xml.
- *
- * @param[in]  cves     CVEs.
- * @param[in]  details  Report host details iterator.
- */
-static void
-buffer_cve (array_t *cves, iterator_t *details)
-{
-  const char *detail_name;
-  detail_name = report_host_details_iterator_name (details);
-  if (strcmp (detail_name, "Closed CVE") == 0)
-    {
-      gchar **point, **split;
-
-      /* Buffer each CVE. */
-      split = g_strsplit (report_host_details_iterator_value (details),
-                          ",",
-                          0);
-      point = split;
-      while (*point)
-        {
-          g_strstrip (*point);
-          if (array_find_string (cves, *point) == NULL)
-            array_add (cves, g_strdup (*point));
-          point++;
-        }
-      g_strfreev (split);
-    }
-}
-
-/**
  * @brief Get filter term corresponding to report filtering.
  *
  * @param[in]  sort_order  Whether to sort ascending or descending.
@@ -27794,9 +27763,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           if (present)
             {
               iterator_t details;
-              array_t *cves;
-
-              cves = make_array ();
 
               PRINT (out,
                      "<host>"
@@ -27813,7 +27779,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                (&details, host_iterator_report_host (&hosts));
               while (next (&details))
                 {
-                  buffer_cve (cves, &details);
 
                   PRINT (out,
                          "<detail>"
@@ -27862,9 +27827,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       while (next (&hosts))
         {
           iterator_t details;
-          array_t *cves;
-
-          cves = make_array ();
 
           PRINT (out,
                  "<host>"
@@ -27881,7 +27843,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
            (&details, host_iterator_report_host (&hosts));
           while (next (&details))
             {
-              buffer_cve (cves, &details);
 
               PRINT (out,
                      "<detail>"
@@ -27900,7 +27861,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                      report_host_details_iterator_source_desc (&details));
             }
           cleanup_iterator (&details);
-          array_free (cves);
 
           PRINT (out,
                  "</host>");
