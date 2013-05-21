@@ -2393,6 +2393,10 @@ modify_group (const char *, const char *, const char *, const char *);
 /* Permissions. */
 
 int
+create_permission (const char *, const char *, const char *, const char *,
+                   const char *, const char *, permission_t *);
+
+int
 copy_permission (const char*, const char *, permission_t *);
 
 char*

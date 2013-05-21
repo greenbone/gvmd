@@ -1,3 +1,17 @@
+2013-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP CREATE_PERMISSION.
+
+	* src/omp.c (create_permission_data_t)
+	(create_permission_data_reset): Adjust fields.
+	(client_state_t): Add CREATE_PERMISSION resource and subject states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add CREATE_PERMISSION.
+
+	* src/manage_sql.c (create_permission): New function.
+
+	* src/manage.h: Add header accordingly.
+
 2013-05-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_report_errors_iterator)

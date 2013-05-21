@@ -1153,11 +1153,11 @@ typedef struct
 {
   char *comment;         ///< Comment.
   char *copy;            ///< UUID of resource to copy.
-  char *group_id;        ///< Group that permission applies to.
   char *name;            ///< Permission name.
+  char *resource_type;   ///< Resource type permission applies to.
   char *resource_id;     ///< Resource permission applies to.
-  char *role_id;         ///< Role permission applies to.
-  char *users;           ///< Users that permission applies to.
+  char *subject_type;    ///< Subject type permission applies to.
+  char *subject_id;      ///< Subject permission applies to.
 } create_permission_data_t;
 
 /**
@@ -1171,9 +1171,10 @@ create_permission_data_reset (create_permission_data_t *data)
   free (data->comment);
   free (data->copy);
   free (data->name);
+  free (data->resource_type);
   free (data->resource_id);
-  free (data->users);
-  free (data->group_id);
+  free (data->subject_type);
+  free (data->subject_id);
 
   memset (data, 0, sizeof (create_permission_data_t));
 }
@@ -4718,6 +4719,10 @@ typedef enum
   CLIENT_CREATE_PERMISSION_COMMENT,
   CLIENT_CREATE_PERMISSION_COPY,
   CLIENT_CREATE_PERMISSION_NAME,
+  CLIENT_CREATE_PERMISSION_RESOURCE,
+  CLIENT_CREATE_PERMISSION_RESOURCE_TYPE,
+  CLIENT_CREATE_PERMISSION_SUBJECT,
+  CLIENT_CREATE_PERMISSION_SUBJECT_TYPE,
   CLIENT_CREATE_PORT_LIST,
   CLIENT_CREATE_PORT_LIST_COMMENT,
   CLIENT_CREATE_PORT_LIST_COPY,
@@ -5933,7 +5938,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("CREATE_PERMISSION", element_name) == 0)
           {
             openvas_append_string (&create_permission_data->comment, "");
-            openvas_append_string (&create_permission_data->users, "");
             set_client_state (CLIENT_CREATE_PERMISSION);
           }
         else if (strcasecmp ("CREATE_REPORT", element_name) == 0)
@@ -8093,6 +8097,28 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&create_permission_data->name, "");
             set_client_state (CLIENT_CREATE_PERMISSION_NAME);
           }
+        else if (strcasecmp ("RESOURCE", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_permission_data->resource_id);
+            set_client_state (CLIENT_CREATE_PERMISSION_RESOURCE);
+          }
+        else if (strcasecmp ("SUBJECT", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_permission_data->subject_id);
+            set_client_state (CLIENT_CREATE_PERMISSION_SUBJECT);
+          }
+        ELSE_ERROR ("create_permission");
+
+      case CLIENT_CREATE_PERMISSION_RESOURCE:
+        if (strcasecmp ("TYPE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PERMISSION_RESOURCE_TYPE);
+        ELSE_ERROR ("create_permission");
+
+      case CLIENT_CREATE_PERMISSION_SUBJECT:
+        if (strcasecmp ("TYPE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PERMISSION_SUBJECT_TYPE);
         ELSE_ERROR ("create_permission");
 
       case CLIENT_CREATE_PORT_LIST:
@@ -16791,12 +16817,91 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          "Permission could not be created");
                   break;
               }
-          else
+          else if (create_permission_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_permission",
+                                "CREATE_PERMISSION requires a NAME"));
+          else if (strlen (create_permission_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_permission",
+                                "CREATE_PERMISSION name must be at"
+                                " least one character long"));
+          else switch (create_permission
+                        (create_permission_data->name,
+                         create_permission_data->comment,
+                         create_permission_data->resource_type,
+                         create_permission_data->resource_id,
+                         create_permission_data->subject_type,
+                         create_permission_data->subject_id,
+                         &new_permission))
             {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_UNAVAILABLE ("create_permission"));
-              g_log ("event permission", G_LOG_LEVEL_MESSAGE,
-                     "Permission could not be created");
+              case 0:
+                {
+                  char *uuid = permission_uuid (new_permission);
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID
+                                            ("create_permission"),
+                                           uuid);
+                  g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                         "Permission %s has been created", uuid);
+                  free (uuid);
+                  break;
+                }
+              case 2:
+                if (send_find_error_to_client
+                     ("create_permission",
+                      "subject",
+                      create_permission_data->subject_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be created");
+                break;
+              case 3:
+                if (send_find_error_to_client
+                     ("create_permission",
+                      "resource",
+                      create_permission_data->resource_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be created");
+                break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_permission",
+                                    "Error in RESOURCE"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be created");
+                break;
+              case 6:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_permission",
+                                    "Error in SUBJECT"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be created");
+                break;
+              case 7:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_permission",
+                                    "Error in NAME"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be created");
+                break;
+              case -1:
+              default:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_permission"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be created");
+                break;
             }
 
           create_permission_data_reset (create_permission_data);
@@ -16806,6 +16911,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_PERMISSION, COMMENT);
       CLOSE (CLIENT_CREATE_PERMISSION, COPY);
       CLOSE (CLIENT_CREATE_PERMISSION, NAME);
+      CLOSE (CLIENT_CREATE_PERMISSION, RESOURCE);
+      CLOSE (CLIENT_CREATE_PERMISSION_RESOURCE, TYPE);
+      CLOSE (CLIENT_CREATE_PERMISSION, SUBJECT);
+      CLOSE (CLIENT_CREATE_PERMISSION_SUBJECT, TYPE);
 
       case CLIENT_CREATE_PORT_LIST:
         {
@@ -24761,6 +24870,12 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_PERMISSION_NAME,
               &create_permission_data->name);
+
+      APPEND (CLIENT_CREATE_PERMISSION_RESOURCE_TYPE,
+              &create_permission_data->resource_type);
+
+      APPEND (CLIENT_CREATE_PERMISSION_SUBJECT_TYPE,
+              &create_permission_data->subject_type);
 
 
       APPEND (CLIENT_CREATE_PORT_LIST_COMMENT,
