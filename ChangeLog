@@ -1,5 +1,10 @@
 2013-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (modify_permission_data_t): Remove user, because subject has
+	been used instead.
+
+2013-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OMP CREATE_PERMISSION.
 
 	* src/omp.c (create_permission_data_t)

@@ -3143,7 +3143,6 @@ typedef struct
   char *resource_id;             ///< Resource.
   char *subject_type;            ///< Subject type.
   char *subject_id;              ///< Subject UUID.
-  char *user;                    ///< User.
 } modify_permission_data_t;
 
 /**
