@@ -351,7 +351,7 @@ for ovalfile in `find "$1" -name "*.xml" -type f`
     timestamp_raw=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" 2>/dev/null`
 
     if [ -n "$timestamp_raw" ] \
-       && [ -n `echo "$timestamp_raw" | egrep -x "[0-9]{4}\-(0[0-9]|1[012])\-([0-2][0-9]|3[01])[:alnum:]*"` ]
+       && [ -n `echo "$timestamp_raw" | egrep -x "[0-9]{4}\-(0[0-9]|1[012])\-([0-2][0-9]|3[01])[[:alnum:]]*"` ]
     then
       timestamp="`echo "$timestamp_raw" | sed -e 's/T.*//' | tr -d "-"`"
       echo "$timestamp$ovalfile"

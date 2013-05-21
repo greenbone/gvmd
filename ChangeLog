@@ -1,5 +1,10 @@
 2013-05-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* tools/greenbone-scapdata-sync, tools/openvas-scapdata-sync.in
+	(list_oval_files_sortable): Add character class brackets to egrep regex.
+
+2013-05-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (report_app_count): New function.
 	(print_report_xml): Output count of detected Apps.
 
