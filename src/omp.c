@@ -19968,7 +19968,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_PERMISSION", element_name) == 0);
 
-          if (openvas_is_user_observer (current_credentials.username))
+          if (user_is_observer (current_credentials.username))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_permission",

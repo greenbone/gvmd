@@ -1,3 +1,9 @@
+2013-05-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Fix call (user_is_observer
+	instead of openvas_is_user_observer). Probaly a remains of
+	old administrator code.
+
 2013-05-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/greenbone-scapdata-sync, tools/openvas-scapdata-sync.in
