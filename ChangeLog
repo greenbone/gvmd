@@ -1,3 +1,15 @@
+2013-05-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (init_report_errors_iterator)
+	(report_errors_iterator_host, report_errors_iterator_port)
+	(report_errors_iterator_nvt_oid, report_errors_iterator_nvt_name)
+	(report_errors_iterator_desc, PRINT_REPORT_ERROR,
+	(print_report_errors_xml): New functions.
+	(print_report_xml): Print report error messages too.
+	(PRINT_REPORT_HOST_DETAILS): Rename to PRINT_REPORT_HOST_DETAILS.
+
+	* src/manage.h: Add function prototype accordingly.
+
 2013-05-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Fix call (user_is_observer

@@ -21497,6 +21497,75 @@ host_iterator_report (iterator_t* iterator)
 DEF_ACCESS (host_iterator_report_uuid, 8);
 
 /**
+ * @brief Initialise a report errors iterator.
+ *
+ * @param[in]  report   The report.
+ */
+void
+init_report_errors_iterator (iterator_t* iterator, report_t report)
+{
+  if (report)
+    init_iterator (iterator,
+                   "SELECT host, port, nvt,"
+                   " (SELECT name from nvts WHERE oid = nvt),"
+                   " description"
+                   " FROM results"
+                   " WHERE type = 'Error Message'"
+                   "  AND report = %llu",
+                   report);
+}
+
+/**
+ * @brief Get the host from a report error messages iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The host of the report error message.  Caller must use only before
+ *         calling cleanup_iterator.
+ */
+DEF_ACCESS (report_errors_iterator_host, 0);
+
+/**
+ * @brief Get the port from a report error messages iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The port of the report error message.  Caller must use only before
+ *         calling cleanup_iterator.
+ */
+DEF_ACCESS (report_errors_iterator_port, 1);
+
+/**
+ * @brief Get the nvt oid from a report error messages iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The nvt of the report error message.  Caller must use only before
+ *         calling cleanup_iterator.
+ */
+DEF_ACCESS (report_errors_iterator_nvt_oid, 2);
+
+/**
+ * @brief Get the nvt name from a report error messages iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The nvt of the report error message.  Caller must use only before
+ *         calling cleanup_iterator.
+ */
+DEF_ACCESS (report_errors_iterator_nvt_name, 3);
+
+/**
+ * @brief Get the description from a report error messages iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The description of the report error message.  Caller must use only
+ * before calling cleanup_iterator.
+ */
+DEF_ACCESS (report_errors_iterator_desc, 4);
+
+/**
  * @brief Return whether a host has results on a report.
  *
  * @param[in]  report  Report.
@@ -25760,12 +25829,12 @@ report_app_count (report_t report)
 }
 
 /*
- * @brief Write report host details to file stream.
+ * @brief Write report host detail to file stream.
  *
  * @param[in]   stream    Stream to write to.
  * @param[in]   details   Pointer to report host details iterator.
  */
-#define PRINT_REPORT_HOST_DETAILS(stream, details)                         \
+#define PRINT_REPORT_HOST_DETAIL(stream, details)                          \
   do                                                                       \
     {                                                                      \
       PRINT(stream,                                                        \
@@ -25789,7 +25858,7 @@ report_app_count (report_t report)
   while (0)
 
 /**
- * @brief Print the XML for a report to a file.
+ * @brief Print the XML for a report's host details to a file stream.
  * @param[in]  report_host  The report host.
  * @param[in]  stream       File stream to write to.
  *
@@ -25803,8 +25872,56 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream)
   init_report_host_details_iterator
    (&details, report_host);
   while (next (&details))
-    PRINT_REPORT_HOST_DETAILS (stream, &details);
+    PRINT_REPORT_HOST_DETAIL (stream, &details);
   cleanup_iterator (&details);
+
+  return 0;
+}
+
+/*
+ * @brief Write report error message to file stream.
+ *
+ * @param[in]   stream      Stream to write to.
+ * @param[in]   errors      Pointer to report error messages iterator.
+ */
+#define PRINT_REPORT_ERROR(stream, errors)                                 \
+  do                                                                       \
+    {                                                                      \
+      PRINT (stream,                                                       \
+             "<error>"                                                     \
+             "<host>%s</host>"                                             \
+             "<port>%s</port>"                                             \
+             "<nvt oid=\"%s\">%s</nvt>"                                    \
+             "<description>%s</description>"                               \
+             "</error>",                                                   \
+             report_errors_iterator_host (errors),                         \
+             report_errors_iterator_port (errors),                         \
+             report_errors_iterator_nvt_oid (errors),                      \
+             report_errors_iterator_nvt_name (errors),                     \
+             report_errors_iterator_desc (errors));                        \
+    }                                                                      \
+  while (0)
+
+/**
+ * @brief Print the XML for a report's error messages to a file stream.
+ * @param[in]  report   The report.
+ * @param[in]  stream   File stream to write to.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_report_errors_xml (report_t report, FILE *stream)
+{
+  iterator_t errors;
+
+  init_report_errors_iterator
+   (&errors, report);
+
+  PRINT (stream, "<errors>");
+  while (next (&errors))
+    PRINT_REPORT_ERROR (stream, &errors);
+  cleanup_iterator (&errors);
+  PRINT (stream, "</errors>");
 
   return 0;
 }
@@ -26377,7 +26494,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                       const char *value;
                       value = report_host_details_iterator_value (&details);
 
-                      PRINT_REPORT_HOST_DETAILS (out, &details);
+                      PRINT_REPORT_HOST_DETAIL (out, &details);
 
                       if (manage_scap_loaded ()
                           && get->details
@@ -27895,6 +28012,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
            "<scan_end>%s</scan_end>",
            end_time);
   free (end_time);
+
+  if (delta == 0)
+    {
+      print_report_errors_xml (report, out);
+    }
 
   PRINT (out, "</report>");
 

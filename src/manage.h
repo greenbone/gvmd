@@ -937,6 +937,9 @@ set_report_parameter (report_t, const char*, const char*);
 void
 init_report_iterator (iterator_t*, task_t, report_t);
 
+void
+init_report_errors_iterator (iterator_t*, report_t);
+
 const char*
 report_iterator_uuid (iterator_t*);
 
