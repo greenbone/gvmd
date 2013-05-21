@@ -1,3 +1,10 @@
+2013-05-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (init_report_host_details_iterator): Add extra field,
+	send nvt cvss base in closed cve case.
+	(report_host_details_iterator_extra): New function.
+	(print_report_xml): Send host details extra field too.
+
 2013-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Remove resource and name

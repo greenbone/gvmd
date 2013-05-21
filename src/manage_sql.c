@@ -21534,11 +21534,12 @@ init_report_host_details_iterator (iterator_t* iterator,
    * reports as they are only used internally for product detection. */
   init_iterator (iterator,
                  "SELECT ROWID, name, value, source_type, source_name,"
-                 " source_description"
+                 " source_description, NULL"
                  " FROM report_host_details WHERE report_host = %llu"
                  " AND NOT name IN ('detected_at', 'detected_by')"
                  " UNION"
-                 " SELECT 0, 'Closed CVE', cve, 'openvasmd', oid, name"
+                 " SELECT 0, 'Closed CVE', cve, 'openvasmd', oid,"
+                 "  name, cvss_base"
                  " FROM nvts"
                  " WHERE cve != 'NOCVE'"
                  " AND family IN (" LSC_FAMILY_LIST ")"
@@ -21600,6 +21601,16 @@ DEF_ACCESS (report_host_details_iterator_source_name, 4);
  *         only before calling cleanup_iterator.
  */
 DEF_ACCESS (report_host_details_iterator_source_desc, 5);
+
+/**
+ * @brief Get the extra info from a report host details iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Extra info of the report host detail.  Caller must use
+ *         only before calling cleanup_iterator.
+ */
+DEF_ACCESS (report_host_details_iterator_extra, 6);
 
 /**
  * @brief Initialise an asset iterator.
@@ -26305,12 +26316,14 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                              "<name>%s</name>"
                              "<description>%s</description>"
                              "</source>"
+                             "<extra>%s</extra>"
                              "</detail>",
                              report_host_details_iterator_name (&details),
                              value,
                              report_host_details_iterator_source_type (&details),
                              report_host_details_iterator_source_name (&details),
-                             report_host_details_iterator_source_desc (&details));
+                             report_host_details_iterator_source_desc (&details),
+                             report_host_details_iterator_extra (&details));
 
                       if (manage_scap_loaded ()
                           && get->details
@@ -27789,12 +27802,14 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                          "<name>%s</name>"
                          "<description>%s</description>"
                          "</source>"
+                         "<extra>%s</extra>"
                          "</detail>",
                          report_host_details_iterator_name (&details),
                          report_host_details_iterator_value (&details),
                          report_host_details_iterator_source_type (&details),
                          report_host_details_iterator_source_name (&details),
-                         report_host_details_iterator_source_desc (&details));
+                         report_host_details_iterator_source_desc (&details),
+                         report_host_details_iterator_extra (&details));
                 }
               cleanup_iterator (&details);
 
@@ -27853,12 +27868,14 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                      "<name>%s</name>"
                      "<description>%s</description>"
                      "</source>"
+                     "<extra>%s</extra>"
                      "</detail>",
                      report_host_details_iterator_name (&details),
                      report_host_details_iterator_value (&details),
                      report_host_details_iterator_source_type (&details),
                      report_host_details_iterator_source_name (&details),
-                     report_host_details_iterator_source_desc (&details));
+                     report_host_details_iterator_source_desc (&details),
+                     report_host_details_iterator_extra (&details));
             }
           cleanup_iterator (&details);
 
