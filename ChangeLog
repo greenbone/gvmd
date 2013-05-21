@@ -5,6 +5,12 @@
 
 2013-05-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (print_report_host_details_xml): New function.
+	(PRINT_REPORT_HOST_DETAILS): New macro.
+	(print_report_xml): Clean code. Refactor code into new functions.
+
+2013-05-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (init_report_host_details_iterator): Add extra field,
 	send nvt cvss base in closed cve case.
 	(report_host_details_iterator_extra): New function.

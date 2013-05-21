@@ -25759,6 +25759,56 @@ report_app_count (report_t report)
                   report);
 }
 
+/*
+ * @brief Write report host details to file stream.
+ *
+ * @param[in]   stream    Stream to write to.
+ * @param[in]   details   Pointer to report host details iterator.
+ */
+#define PRINT_REPORT_HOST_DETAILS(stream, details)                         \
+  do                                                                       \
+    {                                                                      \
+      PRINT(stream,                                                        \
+            "<detail>"                                                     \
+            "<name>%s</name>"                                              \
+            "<value>%s</value>"                                            \
+            "<source>"                                                     \
+            "<type>%s</type>"                                              \
+            "<name>%s</name>"                                              \
+            "<description>%s</description>"                                \
+            "</source>"                                                    \
+            "<extra>%s</extra>"                                            \
+            "</detail>",                                                   \
+            report_host_details_iterator_name (details),                   \
+            report_host_details_iterator_value (details),                  \
+            report_host_details_iterator_source_type (details),            \
+            report_host_details_iterator_source_name (details),            \
+            report_host_details_iterator_source_desc (details),            \
+            report_host_details_iterator_extra (details));                 \
+    }                                                                      \
+  while (0)
+
+/**
+ * @brief Print the XML for a report to a file.
+ * @param[in]  report_host  The report host.
+ * @param[in]  stream       File stream to write to.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_report_host_details_xml (report_host_t report_host, FILE *stream)
+{
+  iterator_t details;
+
+  init_report_host_details_iterator
+   (&details, report_host);
+  while (next (&details))
+    PRINT_REPORT_HOST_DETAILS (stream, &details);
+  cleanup_iterator (&details);
+
+  return 0;
+}
+
 /**
  * @brief Print the XML for a report to a file.
  *
@@ -26327,23 +26377,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                       const char *value;
                       value = report_host_details_iterator_value (&details);
 
-                      PRINT (out,
-                             "<detail>"
-                             "<name>%s</name>"
-                             "<value>%s</value>"
-                             "<source>"
-                             "<type>%s</type>"
-                             "<name>%s</name>"
-                             "<description>%s</description>"
-                             "</source>"
-                             "<extra>%s</extra>"
-                             "</detail>",
-                             report_host_details_iterator_name (&details),
-                             value,
-                             report_host_details_iterator_source_type (&details),
-                             report_host_details_iterator_source_name (&details),
-                             report_host_details_iterator_source_desc (&details),
-                             report_host_details_iterator_extra (&details));
+                      PRINT_REPORT_HOST_DETAILS (out, &details);
 
                       if (manage_scap_loaded ()
                           && get->details
@@ -26660,7 +26694,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           init_host_iterator (&report_hosts, 0, NULL, buffer_host->report_host);
           if (next (&report_hosts))
             {
-              iterator_t details;
               report_t report;
               int h_holes, h_infos, h_logs, h_warnings, h_false_positives;
 
@@ -26739,25 +26772,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                      "</detail>",
                      h_infos);
 
-              init_report_host_details_iterator
-               (&details, buffer_host->report_host);
-              while (next (&details))
-                PRINT (out,
-                       "<detail>"
-                       "<name>%s</name>"
-                       "<value>%s</value>"
-                       "<source>"
-                       "<type>%s</type>"
-                       "<name>%s</name>"
-                       "<description>%s</description>"
-                       "</source>"
-                       "</detail>",
-                       report_host_details_iterator_name (&details),
-                       report_host_details_iterator_value (&details),
-                       report_host_details_iterator_source_type (&details),
-                       report_host_details_iterator_source_name (&details),
-                       report_host_details_iterator_source_desc (&details));
-              cleanup_iterator (&details);
+              if (print_report_host_details_xml
+                  (buffer_host->report_host, out))
+                return -1;
 
               PRINT (out,
                      "<detail>"
@@ -27795,8 +27812,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             }
           if (present)
             {
-              iterator_t details;
-
               PRINT (out,
                      "<host>"
                      "<ip>%s</ip>"
@@ -27808,30 +27823,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                        ? host_iterator_end_time (&hosts)
                        : "");
 
-              init_report_host_details_iterator
-               (&details, host_iterator_report_host (&hosts));
-              while (next (&details))
-                {
-
-                  PRINT (out,
-                         "<detail>"
-                         "<name>%s</name>"
-                         "<value>%s</value>"
-                         "<source>"
-                         "<type>%s</type>"
-                         "<name>%s</name>"
-                         "<description>%s</description>"
-                         "</source>"
-                         "<extra>%s</extra>"
-                         "</detail>",
-                         report_host_details_iterator_name (&details),
-                         report_host_details_iterator_value (&details),
-                         report_host_details_iterator_source_type (&details),
-                         report_host_details_iterator_source_name (&details),
-                         report_host_details_iterator_source_desc (&details),
-                         report_host_details_iterator_extra (&details));
-                }
-              cleanup_iterator (&details);
+              if (print_report_host_details_xml
+                  (host_iterator_report_host (&hosts), out))
+                return -1;
 
               PRINT (out,
                      "</host>");
@@ -27861,8 +27855,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       init_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
         {
-          iterator_t details;
-
           PRINT (out,
                  "<host>"
                  "<ip>%s</ip>"
@@ -27874,30 +27866,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                    ? host_iterator_end_time (&hosts)
                    : "");
 
-          init_report_host_details_iterator
-           (&details, host_iterator_report_host (&hosts));
-          while (next (&details))
-            {
-
-              PRINT (out,
-                     "<detail>"
-                     "<name>%s</name>"
-                     "<value>%s</value>"
-                     "<source>"
-                     "<type>%s</type>"
-                     "<name>%s</name>"
-                     "<description>%s</description>"
-                     "</source>"
-                     "<extra>%s</extra>"
-                     "</detail>",
-                     report_host_details_iterator_name (&details),
-                     report_host_details_iterator_value (&details),
-                     report_host_details_iterator_source_type (&details),
-                     report_host_details_iterator_source_name (&details),
-                     report_host_details_iterator_source_desc (&details),
-                     report_host_details_iterator_extra (&details));
-            }
-          cleanup_iterator (&details);
+          if (print_report_host_details_xml
+              (host_iterator_report_host (&hosts), out))
+            return -1;
 
           PRINT (out,
                  "</host>");
