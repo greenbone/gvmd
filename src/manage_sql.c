@@ -51456,6 +51456,9 @@ init_dfn_cert_adv_info_iterator (iterator_t* iterator, get_data_t *get,
       gchar *quoted = sql_quote (get->id);
       clause = g_strdup_printf (" AND uuid = '%s'", quoted);
       g_free (quoted);
+      /* The entry is specified by ID, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
     }
   else if (name)
     {

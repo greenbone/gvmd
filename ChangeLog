@@ -1,5 +1,10 @@
 2013-05-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (init_dfn_cert_adv_info_iterator): Remove filter for
+	selection by ID.
+
+2013-05-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add max_cvss to DFN-CERT advisories.
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
