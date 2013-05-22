@@ -136,6 +136,11 @@
 #define MANAGE_NVT_SELECTOR_UUID_DISCOVERY "0d9a2738-8fe2-4e22-8f26-bb886179e759"
 
 /**
+ * @brief Predefined role UUID.
+ */
+#define PERMISSION_UUID_ADMIN_EVERYTHING "b3b56a8c-c2fd-11e2-a135-406186ea4fc5"
+
+/**
  * @brief UUID of 'OpenVAS Default' port list.
  */
 #define PORT_LIST_UUID_DEFAULT "c7e03b6c-3bbe-11e1-a057-406186ea4fc5"
@@ -16929,6 +16934,22 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
          " ('" ROLE_UUID_OBSERVER "', NULL, 'Observer',"
          "  'Observer.',"
          " now (), now ());");
+
+  /* Ensure the predefined permissions exists. */
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM permissions"
+               " WHERE uuid = '" PERMISSION_UUID_ADMIN_EVERYTHING "';")
+      == 0)
+    sql ("INSERT INTO permissions"
+         " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+         "  resource_location, subject_type, subject, creation_time,"
+         "  modification_time)"
+         " VALUES"
+         " ('" PERMISSION_UUID_ADMIN_EVERYTHING "', NULL, 'Everything', '', '',"
+         "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+         "  (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_ADMIN "'),"
+         "  now (), now ());");
 
   /* Ensure the default settings exist. */
 
@@ -46271,6 +46292,17 @@ permission_uuid (permission_t permission)
                      permission);
 }
 
+int
+permission_is_predefined (permission_t permission)
+{
+  return !!sql_int
+            (0, 0,
+             "SELECT COUNT (*) FROM permissions"
+             " WHERE ROWID = %llu"
+             " AND uuid = '" PERMISSION_UUID_ADMIN_EVERYTHING "';",
+             permission);
+}
+
 /**
  * @brief Return whether a permission is in use.
  *
@@ -46307,6 +46339,8 @@ trash_permission_in_use (permission_t permission)
 int
 permission_writable (permission_t permission)
 {
+  if (permission_is_predefined (permission))
+    return 0;
   return 1;
 }
 
@@ -46341,12 +46375,16 @@ trash_permission_writable (permission_t permission)
   " (CASE"                                                                  \
   "  WHEN subject_type = 'user'"                                            \
   "  THEN (SELECT uuid FROM users WHERE users.ROWID = subject)"             \
-  "  ELSE (SELECT uuid FROM groups WHERE groups.ROWID = subject)"           \
+  "  WHEN subject_type = 'group'"                                           \
+  "  THEN (SELECT uuid FROM groups WHERE groups.ROWID = subject)"           \
+  "  ELSE (SELECT uuid FROM roles WHERE roles.ROWID = subject)"             \
   "  END) AS subject_uuid,"                                                 \
   " (CASE"                                                                  \
   "  WHEN subject_type = 'user'"                                            \
   "  THEN (SELECT name FROM users WHERE users.ROWID = subject)"             \
-  "  ELSE (SELECT name FROM groups WHERE groups.ROWID = subject)"           \
+  "  WHEN subject_type = 'group'"                                           \
+  "  THEN (SELECT name FROM groups WHERE groups.ROWID = subject)"           \
+  "  ELSE (SELECT name FROM roles WHERE roles.ROWID = subject)"             \
   "  END) AS _subject"
 
 /**
@@ -46502,6 +46540,9 @@ int
 delete_permission (const char *permission_id, int ultimate)
 {
   permission_t permission = 0;
+
+  if (strcasecmp (permission_id, PERMISSION_UUID_ADMIN_EVERYTHING) == 0)
+    return 3;
 
   sql ("BEGIN IMMEDIATE;");
 
