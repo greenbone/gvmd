@@ -1,7 +1,13 @@
 2013-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_user): Remove some of user's resources too.
+
+2013-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (user_is_admin, user_is_observer): Check user_roles
 	table insead of old roles column.
+	(user_may): Check for Everything permission, instead of for admin role.
+	Admin always has this permission.
 
 2013-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
 

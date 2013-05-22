@@ -52177,9 +52177,31 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
   if (user == 0)
     return 2;
 
-  sql ("DELETE FROM users WHERE ROWID = %llu;", user);
+  sql ("DELETE FROM group_users WHERE user = %llu;", user);
+  sql ("DELETE FROM role_users WHERE user = %llu;", user);
 
   /* FIX Remove user's tasks, etc.  How will this interact with trashcan? */
+  /* FIX Have to stop running tasks. */
+
+  sql ("DELETE FROM agents WHERE owner = %llu;", user);
+  sql ("DELETE FROM agents_trash WHERE owner = %llu;", user);
+  sql ("DELETE FROM settings WHERE owner = %llu;", user);
+  sql ("DELETE FROM filters WHERE owner = %llu;", user);
+  sql ("DELETE FROM filters_trash WHERE owner = %llu;", user);
+  sql ("DELETE FROM notes WHERE owner = %llu;", user);
+  sql ("DELETE FROM notes_trash WHERE owner = %llu;", user);
+  sql ("DELETE FROM overrides WHERE owner = %llu;", user);
+  sql ("DELETE FROM overrides_trash WHERE owner = %llu;", user);
+  sql ("DELETE FROM permissions WHERE owner = %llu;", user);
+  sql ("DELETE FROM permissions_trash WHERE owner = %llu;", user);
+  sql ("DELETE FROM tags WHERE owner = %llu;", user);
+  sql ("DELETE FROM tags_trash WHERE owner = %llu;", user);
+
+  sql ("UPDATE groups SET owner = 0 WHERE owner = %llu;", user);
+  sql ("UPDATE roles SET owner = 0 WHERE owner = %llu;", user);
+  sql ("UPDATE users SET owner = 0 WHERE owner = %llu;", user);
+
+  sql ("DELETE FROM users WHERE ROWID = %llu;", user);
 
   sql ("COMMIT;");
   return 0;
