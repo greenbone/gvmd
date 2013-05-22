@@ -5700,7 +5700,7 @@ migrate_9_to_10_user_uuid (const char *name)
 {
   gchar *uuid_file;
 
-  uuid_file = g_build_filename (OPENVAS_USERS_DIR, name, "uuid", NULL);
+  uuid_file = g_build_filename (OPENVAS_STATE_DIR, "users", name, "uuid", NULL);
   if (g_file_test (uuid_file, G_FILE_TEST_EXISTS))
     {
       gsize size;
@@ -10314,12 +10314,12 @@ migrate_79_to_80 ()
   sql ("ALTER TABLE users ADD COLUMN method;");
   sql ("UPDATE users SET method = 'file';");
 
-  count = scandir (OPENVAS_USERS_DIR, &names, NULL, alphasort);
+  count = scandir (OPENVAS_STATE_DIR "/users", &names, NULL, alphasort);
   if (count < 0)
     {
-      g_warning ("%s: failed to open dir %s: %s\n",
+      g_warning ("%s: failed to open dir %s/users: %s\n",
                  __FUNCTION__,
-                 OPENVAS_USERS_DIR,
+                 OPENVAS_STATE_DIR,
                  strerror (errno));
       sql ("ROLLBACK;");
       return -1;
@@ -10361,7 +10361,7 @@ migrate_79_to_80 ()
                                      "ldap_connect",
                                      names[index]->d_name,
                                      NULL);
-      classic_dir = g_build_filename (OPENVAS_USERS_DIR,
+      classic_dir = g_build_filename (OPENVAS_STATE_DIR, "users",
                                       names[index]->d_name,
                                       NULL);
       remote_flag_file = g_build_filename (classic_dir,

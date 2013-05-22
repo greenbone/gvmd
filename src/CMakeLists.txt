@@ -66,10 +66,6 @@ add_definitions (-DSCAP_DATA_DIR=\\\"${OPENVAS_SCAP_DATA_DIR}\\\")
 add_definitions (-DCERT_RES_DIR=\\\"${OPENVAS_CERT_RES_DIR}\\\")
 add_definitions (-DCERT_DATA_DIR=\\\"${OPENVAS_CERT_DATA_DIR}\\\")
 
-if (OPENVAS_USERS_DIR)
-  add_definitions (-DOPENVAS_USERS_DIR=\\\"${OPENVAS_USERS_DIR}\\\")
-endif (OPENVAS_USERS_DIR)
-
 if (OPENVAS_SCANNER_CERTIFICATE)
   add_definitions (-DSCANNERCERT=\\\"${OPENVAS_SCANNER_CERTIFICATE}\\\")
 endif (OPENVAS_SCANNER_CERTIFICATE)
