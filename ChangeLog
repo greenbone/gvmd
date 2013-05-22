@@ -1,3 +1,7 @@
+2013-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Ensure predefined roles exist.
+
 2013-05-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/greenbone-certdata-sync, tools/openvas-certdata-sync.in
@@ -29,7 +33,7 @@
 
 	* tools/cert_db_update (meta): Set DB version to 4.
 	(dfn_cert_advs): Add column "max_cvss".
-	
+
 	* tools/greenbone-certdata-sync (SCAP_DIR, SCAP_DB): New variables,
 	set to SCAP dir / db file paths.
 	(db_migrate_4, check_db_version): New migrator to version 4.

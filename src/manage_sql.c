@@ -16897,6 +16897,39 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     g_free (dir);
   }
 
+  /* Ensure the predefined roles exists. */
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_ADMIN "';")
+      == 0)
+    sql ("INSERT INTO roles"
+         " (uuid, owner, name, comment, creation_time, modification_time)"
+         " VALUES"
+         " ('" ROLE_UUID_ADMIN "', NULL, 'Admin',"
+         "  'Administrator.  Full privileges.',"
+         " now (), now ());");
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_USER "';")
+      == 0)
+    sql ("INSERT INTO roles"
+         " (uuid, owner, name, comment, creation_time, modification_time)"
+         " VALUES"
+         " ('" ROLE_UUID_USER "', NULL, 'User',"
+         "  'Standard user.',"
+         " now (), now ());");
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM roles"
+               " WHERE uuid = '" ROLE_UUID_OBSERVER "';")
+      == 0)
+    sql ("INSERT INTO roles"
+         " (uuid, owner, name, comment, creation_time, modification_time)"
+         " VALUES"
+         " ('" ROLE_UUID_OBSERVER "', NULL, 'Observer',"
+         "  'Observer.',"
+         " now (), now ());");
+
   /* Ensure the default settings exist. */
 
   if (sql_int (0, 0,
