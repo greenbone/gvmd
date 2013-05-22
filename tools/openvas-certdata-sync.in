@@ -203,7 +203,7 @@ reinit () {
 db_migrate_4 () {
   echo "[i] Migrating database to version 4."
   $SQLITE $CERT_DB "ALTER TABLE dfn_cert_advs ADD COLUMN max_cvss FLOAT;
-                    UPDATE meta SET '4' WHERE name = 'database_version';"
+                    UPDATE meta SET value = '4' WHERE name = 'database_version';"
   updated_dfn=1
   echo "[i] Migration done."
 }

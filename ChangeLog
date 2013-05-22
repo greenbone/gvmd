@@ -1,5 +1,10 @@
 2013-05-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* tools/greenbone-certdata-sync, tools/openvas-certdata-sync.in
+	(db_migrate_4): Fix version number update.
+
+2013-05-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (init_dfn_cert_adv_info_iterator): Remove filter for
 	selection by ID.
 
