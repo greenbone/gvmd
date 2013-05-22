@@ -1316,8 +1316,10 @@ user_is_admin (const char *uuid)
 
   quoted_uuid = sql_quote (uuid);
   ret = sql_int (0, 0,
-                 "SELECT count (*) FROM users"
-                 " WHERE uuid = '%s' AND role = 'Admin';",
+                 "SELECT count (*) FROM role_users"
+                 " WHERE role = (SELECT ROWID FROM roles"
+                 "               WHERE uuid = '" ROLE_UUID_ADMIN "')"
+                 " AND user = (SELECT ROWID FROM users WHERE uuid = '%s');",
                  quoted_uuid);
   g_free (quoted_uuid);
   return ret;
@@ -1338,8 +1340,10 @@ user_is_observer (const char *uuid)
 
   quoted_uuid = sql_quote (uuid);
   ret = sql_int (0, 0,
-                 "SELECT count (*) FROM users"
-                 " WHERE uuid = '%s' AND role = 'Observer';",
+                 "SELECT count (*) FROM role_users"
+                 " WHERE role = (SELECT ROWID FROM roles"
+                 "               WHERE uuid = '" ROLE_UUID_ADMIN "')"
+                 " AND user = (SELECT ROWID FROM users WHERE uuid = '%s');",
                  quoted_uuid);
   g_free (quoted_uuid);
   return ret;
@@ -1363,7 +1367,33 @@ user_may (const char *operation)
   assert (current_credentials.uuid);
   assert (operation);
 
-  if (user_is_admin (current_credentials.uuid))
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM permissions"
+               " WHERE resource = 0"
+               " AND ((subject_type = 'user'"
+               "       AND subject"
+               "           = (SELECT ROWID FROM users"
+               "              WHERE users.uuid = '%s'))"
+               "      OR (subject_type = 'group'"
+               "          AND subject"
+               "              IN (SELECT DISTINCT `group`"
+               "                  FROM group_users"
+               "                  WHERE user = (SELECT ROWID"
+               "                                FROM users"
+               "                                WHERE users.uuid"
+               "                                      = '%s')))"
+               "      OR (subject_type = 'role'"
+               "          AND subject"
+               "              IN (SELECT DISTINCT role"
+               "                  FROM role_users"
+               "                  WHERE user = (SELECT ROWID"
+               "                                FROM users"
+               "                                WHERE users.uuid"
+               "                                      = '%s'))))"
+               " AND name = 'Everything';",
+               current_credentials.uuid,
+               current_credentials.uuid,
+               current_credentials.uuid))
     return 1;
 
   if (user_is_observer (current_credentials.uuid) == 0)

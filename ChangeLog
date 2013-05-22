@@ -1,5 +1,10 @@
 2013-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (user_is_admin, user_is_observer): Check user_roles
+	table insead of old roles column.
+
+2013-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (PERMISSION_UUID_ADMIN_EVERYTHING): New define.
 	(init_manage): Ensure Admin role has the Everything permission.
 	(permission_is_predefined): New function.
