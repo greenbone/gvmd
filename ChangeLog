@@ -1,3 +1,37 @@
+2013-05-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add max_cvss to DFN-CERT advisories.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+	* src/manage.h (dfn_cert_adv_info_iterator_max_cvss): New function
+	prototype.
+
+	* src/manage_sql.c (DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS)
+	(DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS): Add column max_cvss.
+	(dfn_cert_adv_info_iterator_max_cvss): New iterator column function.
+
+	* src/omp.c (xml_handle_end_element): In case CLIENT_GET_INFO add
+	max_cvss element to response for dfn_cert_adv.
+
+	* src/schema_formats/XML/OMP.xml (get_info): Add max_cvss to response
+	for dfn_cert_adv.
+
+	* tools/cert_db_update (meta): Set DB version to 4.
+	(dfn_cert_advs): Add column "max_cvss".
+	
+	* tools/greenbone-certdata-sync (SCAP_DIR, SCAP_DB): New variables,
+	set to SCAP dir / db file paths.
+	(db_migrate_4, check_db_version): New migrator to version 4.
+	(update_cvss): New function, updates CVSS for DFN-CERT.
+	(update_cert_db): Add updated_dfn and check. Add update_cvss call.
+
+	* tools/openvas-certdata-sync.in (SCAP_DIR, SCAP_DB): New variables,
+	set to SCAP dir / db file paths.
+	(db_migrate_4, check_db_version): New migrator to version 4.
+	(update_cvss): New function, updates CVSS for DFN-CERT.
+	(update_sec_db): Add updated_dfn and check. Add update_cvss call.
+
 2013-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (modify_permission_data_t): Remove user, because subject has

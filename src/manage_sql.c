@@ -50853,13 +50853,14 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  */
 #define DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS           \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "summary",         \
-   "cves",  NULL }
+   "cves", "max_cvss", NULL }
 
 /**
  * @brief DFN_CERT_ADV iterator columns.
  */
 #define DFN_CERT_ADV_INFO_ITERATOR_COLUMNS                       \
-  GET_ITERATOR_COLUMNS ", title, summary, cve_refs AS cves"
+  GET_ITERATOR_COLUMNS ", title, summary, cve_refs AS cves,"     \
+  "max_cvss"
 
 /**
  * @brief Filter columns for All SecInfo iterator.
@@ -51528,6 +51529,17 @@ DEF_ACCESS (dfn_cert_adv_info_iterator_summary, GET_ITERATOR_COLUMN_COUNT + 1);
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (dfn_cert_adv_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the maximum CVSS from an DFN_CERT_ADV iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The maximum CVSS of the CVEs referenced in the DFN-CERT advisory,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (dfn_cert_adv_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Initialise CVE iterator, for CVEs referenced by a DFN-CERT advisory.

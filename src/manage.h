@@ -2843,6 +2843,9 @@ dfn_cert_adv_info_iterator_summary (iterator_t*);
 const char*
 dfn_cert_adv_info_iterator_cve_refs (iterator_t*);
 
+const char*
+dfn_cert_adv_info_iterator_max_cvss (iterator_t*);
+
 void
 init_cve_dfn_cert_adv_iterator (iterator_t*, const char*, int, const char*);
 

@@ -22877,9 +22877,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      "<dfn_cert_adv>"
                                      "<title>%s</title>"
                                      "<summary>%s</summary>"
+                                     "<max_cvss>%s</max_cvss>"
                                      "<cve_refs>%s</cve_refs>",
                                      dfn_cert_adv_info_iterator_title (&info),
                                      dfn_cert_adv_info_iterator_summary (&info),
+                                     dfn_cert_adv_info_iterator_max_cvss(&info),
                                      dfn_cert_adv_info_iterator_cve_refs (&info)
                                     );
                 }

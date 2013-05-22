@@ -24,7 +24,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20130513
+VERSION=20130521
 RESTRICTED=1
 
 # SETTINGS
@@ -78,6 +78,7 @@ SQLITE3="sqlite3 -noheader"
 
 BASE_SYNC_DIR="$PREFIX/var/lib/openvas"
 CERT_DIR="$BASE_SYNC_DIR/cert-data"
+SCAP_DIR="$BASE_SYNC_DIR/scap-data"
 
 if [ -z "$PREFIX" ] ; then
   CERT_RES_DIR="/usr/share/openvas/cert"
@@ -86,6 +87,7 @@ else
 fi
 
 CERT_DB="$CERT_DIR/cert.db"
+SCAP_DB="$SCAP_DIR/scap.db"
 
 ACCESSKEY="$PREFIX/etc/openvas/gsf-access-key"
 
@@ -152,12 +154,21 @@ reinit () {
   $SQLITE3 $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
 }
 
+db_migrate_4 () {
+  log_notice "Migrating database to version 4."
+  $SQLITE $CERT_DB "ALTER TABLE dfn_cert_advs ADD COLUMN max_cvss FLOAT;
+                    UPDATE meta SET '4' WHERE name = 'database_version';"
+  updated_dfn=1
+  log_notice "Migration done."
+}
+
 check_db_version () {
   DB_VERSION=`$SQLITE3 $CERT_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
     2) reinit;;
+    3) db_migrate_4;;
   esac
 }
 
@@ -174,7 +185,43 @@ do_help () {
   exit 0
 }
 
+update_cvss () {
+  if [ ! -f "$SCAP_DB" ]
+  then
+    log_warning "SCAP database not found. Cannot update max_cvss."
+  else
+    SCAP_DB_LASTUPDATE=`$SQLITE $SCAP_DB "SELECT value FROM meta WHERE name = 'last_update';"`
+    if [ 0 -ne "$updated_dfn" ] || [ $SCAP_DB_LASTUPDATE -gt $DB_LASTUPDATE ]
+    then
+      log_info "Updating Max CVSS for DFN-CERT"
+
+      $SQLITE $CERT_DB "ATTACH DATABASE '$SCAP_DB' AS scap_db;
+                        PRAGMA recursive_triggers = OFF;
+                        UPDATE dfn_cert_advs
+                          SET max_cvss =
+                              (
+                                SELECT coalesce(max(cvss), 0.0)
+                                FROM scap_db.cves
+                                WHERE name IN
+                                  (
+                                    SELECT cve_name
+                                    FROM dfn_cert_cves
+                                    WHERE adv_id=dfn_cert_advs.id
+                                  )
+                                  AND cvss != ''
+                              );"
+    else
+      log_info "No DFN-CERT advisories updated and CERT DB newer than SCAP DB. Skipping CVSS recalculation."
+    fi
+  fi
+}
+
 update_cert_db() {
+  if [ -z "$updated_dfn" ]
+  then
+    updated_dfn=0
+  fi
+
   if [ ! -f $CERT_DB ]
   then
     log_notice "Initializing CERT database."
@@ -212,6 +259,7 @@ update_cert_db() {
       then
         log_info "Updating $certfile"
         xsltproc --stringparam refdate "$DFN_REFDATE" $CERT_RES_DIR/dfn_cert_update.xsl $certfile | $SQLITE3 $CERT_DB
+        updated_dfn=1
       else
         log_info "Skipping $certfile, file is older than last revision"
       fi
@@ -219,6 +267,8 @@ update_cert_db() {
   else
     log_warning "No DFN-CERT advisories found in $CERT_DIR"
   fi
+
+  update_cvss
 
   $SQLITE3 $CERT_DB "UPDATE meta SET value ='`date +%s`' WHERE name = 'last_update';"
 }

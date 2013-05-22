@@ -6750,6 +6750,7 @@ get_info_response_info_dfn_cert_adv
      {
        get_info_response_info_dfn_cert_adv_title
        & get_info_response_info_dfn_cert_adv_summary
+       & get_info_response_info_dfn_cert_adv_max_cvss
        & get_info_response_info_dfn_cert_adv_cve_refs
        & get_info_response_info_dfn_cert_adv_raw_data?
      }
@@ -6764,6 +6765,13 @@ get_info_response_info_dfn_cert_adv_title
 # Summary text of the advisory.
 get_info_response_info_dfn_cert_adv_summary
  = element summary
+     {
+       text
+     }
+
+# Highest CVSS score of CVEs referenced by the advisory.
+get_info_response_info_dfn_cert_adv_max_cvss
+ = element max_cvss
      {
        text
      }

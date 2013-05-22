@@ -39,6 +39,21 @@ if [ -z "$CERT_DIR" ]; then
 fi
 CERT_DB="$CERT_DIR/cert.db"
 
+# configure SCAP_DIR where we will get CVE data
+if [ -z "$SCAP_DIR" ]; then
+  OPENVASSD=`which openvassd`
+  if [ -z "$OPENVASSD" ] ; then
+    echo "[e] Error: openvassd is not in the path, could not determine SCAP directory."
+    exit 1
+  else
+    # get the parent directory of the plugins
+    SCAP_DIR=`openvassd -s | awk -F" = " '/^plugins_folder/ { print $2 }' | sed -s 's/\(^.*\)\/plugins/\1/'`
+    # suffix it with "scap-data" which is our target (destination) directory
+    SCAP_DIR="$SCAP_DIR/scap-data"
+  fi
+fi
+SCAP_DB="$SCAP_DIR/scap.db"
+
 # private directory
 if [ -z "$PRIVATE_SUBDIR" ]
 then
@@ -185,16 +200,61 @@ reinit () {
   $SQLITE $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
 }
 
+db_migrate_4 () {
+  echo "[i] Migrating database to version 4."
+  $SQLITE $CERT_DB "ALTER TABLE dfn_cert_advs ADD COLUMN max_cvss FLOAT;
+                    UPDATE meta SET '4' WHERE name = 'database_version';"
+  updated_dfn=1
+  echo "[i] Migration done."
+}
+
 check_db_version () {
   DB_VERSION=`$SQLITE $CERT_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
     2) reinit;;
+    3) db_migrate_4;;
   esac
 }
 
+update_cvss () {
+  if [ ! -f "$SCAP_DB" ]
+  then
+    echo "[w] SCAP database not found. Cannot update max_cvss."
+  else
+    SCAP_DB_LASTUPDATE=`$SQLITE $SCAP_DB "SELECT value FROM meta WHERE name = 'last_update';"`
+    if [ 0 -ne "$updated_dfn" ] || [ $SCAP_DB_LASTUPDATE -gt $DB_LASTUPDATE ]
+    then
+      echo "[i] Updating Max CVSS for DFN-CERT"
+
+      $SQLITE $CERT_DB "ATTACH DATABASE '$SCAP_DB' AS scap_db;
+                        PRAGMA recursive_triggers = OFF;
+                        UPDATE dfn_cert_advs
+                          SET max_cvss =
+                              (
+                                SELECT coalesce(max(cvss), 0.0)
+                                FROM scap_db.cves
+                                WHERE name IN
+                                  (
+                                    SELECT cve_name
+                                    FROM dfn_cert_cves
+                                    WHERE adv_id=dfn_cert_advs.id
+                                  )
+                                  AND cvss != ''
+                              );"
+    else
+      echo "[i] No DFN-CERT advisories updated and CERT DB newer than SCAP DB. Skipping CVSS recalculation."
+    fi
+  fi
+}
+
 update_sec_db () {
+  if [ -z "$updated_dfn" ]
+  then
+    updated_dfn=0
+  fi
+
   if [ ! -f $CERT_DB ]
   then
     echo "[i] Initializing CERT advisory database"
@@ -231,6 +291,7 @@ update_sec_db () {
       then
         echo "[i] Updating $certfile"
         xsltproc --stringparam refdate "$DFN_REFDATE" $CERT_RES_DIR/dfn_cert_update.xsl $certfile | $SQLITE $CERT_DB
+        updated_dfn=1
       else
         echo "[i] Skipping $certfile, file is older than last revision"
       fi
@@ -238,6 +299,8 @@ update_sec_db () {
   else
     echo "[w] No DFN-CERT advisories found in $CERT_DIR"
   fi
+
+  update_cvss
 
   $SQLITE $CERT_DB "UPDATE meta SET value ='`date +%s`' WHERE name = 'last_update';"
 

@@ -11103,6 +11103,11 @@ get_filters_response_filter_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>max_cvss</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Highest CVSS score of CVEs referenced by the advisory.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>cve_refs</b>&gt;
               <div style="margin-left: 15px; display: inline;">Number of CVEs referenced by this advisory.</div>
 <ul style="list-style: none"></ul>
@@ -11573,6 +11578,7 @@ get_info_response_info_dfn_cert_adv
      {
        get_info_response_info_dfn_cert_adv_title
        &amp; get_info_response_info_dfn_cert_adv_summary
+       &amp; get_info_response_info_dfn_cert_adv_max_cvss
        &amp; get_info_response_info_dfn_cert_adv_cve_refs
        &amp; get_info_response_info_dfn_cert_adv_raw_data?
      }
@@ -11585,6 +11591,12 @@ get_info_response_info_dfn_cert_adv_title
 
 get_info_response_info_dfn_cert_adv_summary
  = element summary
+     {
+       text
+     }
+
+get_info_response_info_dfn_cert_adv_max_cvss
+ = element max_cvss
      {
        text
      }
