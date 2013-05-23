@@ -74,17 +74,16 @@ OPENVAS_CA_CERTIFICATE may need modifying.
 Certificate Generation
 ----------------------
 
-Note that the manager always connects to the scanner as user "om" and
-uses certificate based authentication exclusively.  This means that you
-have to create this user, generate the certificate and key for this user
-and provide them to the manager.  The easiest way to do this is to use
-the "openvas-mkcert-client" script provided by the openvas-scanner
-module.  You can create the user "om", generate the certificates,
-register the user with the OpenVAS scanner and install the client
-certificates into the proper location for use with openvas-manager with
-a single command:
+Note that the manager always connects to the scanner via client certificate
+using certificate based authentication exclusively.  This means that you
+have to generate the certificate and key for this and provide them to the
+manager.
+The easiest way to do this is to use the "openvas-mkcert-client" script
+provided by the openvas-scanner module.  You can generate the certificates,
+register them with the OpenVAS scanner and install the client certificates
+into the proper location for use with openvas-manager with a single command:
 
-    $ openvas-mkcert-client -n om -i
+    $ openvas-mkcert-client -n -i
 
 Or you can call the script without parameters if you want to have finer
 control over the process:
