@@ -1,5 +1,10 @@
 2013-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_tag): Remove declaration indent.  Move name
+	init down or it leaks.  Add space before paren.
+
+2013-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_port_range): Correct user_may command name.
 
 2013-05-23  Matthew Mundell <matthew.mundell@greenbone.net>

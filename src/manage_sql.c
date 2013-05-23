@@ -53279,8 +53279,8 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
             const char *value, const char *attach_type, const char *attach_id,
             const char *active)
 {
-  gchar *quoted_name, *quoted_comment, *quoted_value,
-        *lc_attach_type, *quoted_attach_type, *quoted_attach_id;
+  gchar *quoted_name, *quoted_comment, *quoted_value;
+  gchar *lc_attach_type, *quoted_attach_type, *quoted_attach_id;
   tag_t tag;
 
   if (tag_id == NULL)
@@ -53309,10 +53309,8 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
       return 1;
     }
 
-  quoted_name = sql_insert (name ? name : "");
-
   lc_attach_type = (attach_type
-                     ? g_ascii_strdown(attach_type, -1)
+                     ? g_ascii_strdown (attach_type, -1)
                      : g_strdup (""));
   if (strcmp (lc_attach_type, "")
       && valid_db_resource_type (lc_attach_type) == 0)
@@ -53322,6 +53320,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
     }
   quoted_attach_type = sql_insert (lc_attach_type);
 
+  quoted_name = sql_insert (name ? name : "");
   quoted_attach_id = sql_insert (attach_id ? attach_id : "");
   quoted_comment = sql_insert (comment ? comment : "");
   quoted_value = sql_insert (value ? value : "");
