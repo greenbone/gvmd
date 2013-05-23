@@ -1,5 +1,17 @@
 2013-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Replace explicit observer checks in XML handler with general permission
+	checks in the command functions.
+
+	* src/manage_sql.c (modify_alert, modify_target, modify_agent)
+	(modify_schedule, modify_slave, create_permission, modify_permission)
+	(modify_port_list, modify_filter, modify_tag): Add user_may check.
+
+	* src/omp.c (omp_xml_handle_end_element): Remove all user_is_observer
+	checks, and add "permission denied" return cases in their place.
+
+2013-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (user_is_observer): Correct UUID.
 
 2013-05-23  Matthew Mundell <matthew.mundell@greenbone.net>

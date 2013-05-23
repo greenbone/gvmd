@@ -11956,7 +11956,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  * @return 0 success, 1 failed to find alert, 2 alert with new name exists,
  *         3 alert_id required, 4 failed to find filter, 5 filter type must be
  *         report if specified, 6 Provided email address not valid,
- *         -1 internal error.
+ *         99 permission denied, -1 internal error.
  */
 int
 modify_alert (const char *alert_id, const char *name, const char *comment,
@@ -11975,6 +11975,12 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
+
+  if (user_may ("modify_alert") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   alert = 0;
   if (find_alert (alert_id, &alert))
@@ -32070,8 +32076,9 @@ delete_target (const char *target_id, int ultimate)
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
  *         6 failed to find port list, 7 failed to find SSH cred, 8 failed to
- *         find SMB cred, 9 failed to find target, -1 if import from target
- *         locator failed or response was empty FIX or internal error.
+ *         find SMB cred, 9 failed to find target, 99 permission denied, -1 if
+ *         import from target locator failed or response was empty FIX or
+ *         internal error.
  */
 int
 modify_target (const char *target_id, const char *name, const char *hosts,
@@ -32093,6 +32100,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
+
+  if (user_may ("modify_target") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   target = 0;
   port_list = 0;
@@ -39457,7 +39470,7 @@ copy_agent (const char* name, const char* comment, const char *agent_id,
  * @param[in]   comment         Comment on agent.
  *
  * @return 0 success, 1 failed to find agent, 2 agent with new name exists,
- *         3 agent_id required, -1 internal error.
+ *         3 agent_id required, 99 permission denied, -1 internal error.
  */
 int
 modify_agent (const char *agent_id, const char *name, const char *comment)
@@ -39471,6 +39484,12 @@ modify_agent (const char *agent_id, const char *name, const char *comment)
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
+
+  if (user_may ("modify_agent") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   agent = 0;
   if (find_agent (agent_id, &agent))
@@ -42661,7 +42680,8 @@ DEF_ACCESS (schedule_task_iterator_name, 2);
  * @param[in]   timezone     Timezone.
  *
  * @return 0 success, 1 failed to find schedule, 2 schedule with new name exists,
- *         3 error in type name, 4 schedule_id required, -1 internal error.
+ *         3 error in type name, 4 schedule_id required, 99 permission denied,
+ *         -1 internal error.
  */
 int
 modify_schedule (const char *schedule_id, const char *name, const char *comment,
@@ -42679,6 +42699,12 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
+
+  if (user_may ("modify_schedule") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   schedule = 0;
   if (find_schedule (schedule_id, &schedule))
@@ -45234,7 +45260,7 @@ copy_slave (const char* name, const char* comment, const char *slave_id,
  * @param[in]   password        Password for \p login.
  *
  * @return 0 success, 1 failed to find slave, 2 slave with new name exists,
- *         3 slave_id required, -1 internal error.
+ *         3 slave_id required, 99 permission denied, -1 internal error.
  */
 int
 modify_slave (const char *slave_id, const char *name, const char *comment,
@@ -45251,6 +45277,12 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
+
+  if (user_may ("modify_slave") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   slave = 0;
   if (find_slave (slave_id, &slave))
@@ -46401,7 +46433,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
  *
  * @return 0 success, 2 failed to find subject, 3 failed to find resource,
  *         5 error in resource, 6 error in subject, 7 error in name,
- *         -1 internal error.
+ *         99 permission denied, -1 internal error.
  */
 int
 create_permission (const char *name, const char *comment,
@@ -46458,6 +46490,12 @@ create_permission (const char *name, const char *comment,
     return 6;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("create_permission") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   resource = 0;
   if (resource_id)
@@ -46894,7 +46932,8 @@ find_permission (const char* uuid, permission_t* permission)
  *
  * @return 0 success, 1 failed to find permission, 2 failed to find subject,
  *         3 failed to find resource, 4 permission_id required, 5 error in
- *         resource, 6 error in subject, 7 error in name, -1 internal error.
+ *         resource, 6 error in subject, 7 error in name, 99 permission denied,
+ *         -1 internal error.
  */
 int
 modify_permission (const char *permission_id, const char *name,
@@ -46911,6 +46950,12 @@ modify_permission (const char *permission_id, const char *name,
     return 4;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("modify_permission") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   permission = 0;
   if (find_permission (permission_id, &permission))
@@ -47773,7 +47818,8 @@ copy_port_list (const char* name, const char* comment,
  * @param[in]   comment         Comment on Port List.
  *
  * @return 0 success, 1 failed to find port list, 2 port list with new name,
- *         exists, 3 port_list_id required, -1 internal error.
+ *         exists, 3 port_list_id required, 99 permission denied, -1 internal
+ *         error.
  */
 int
 modify_port_list (const char *port_list_id, const char *name,
@@ -47788,6 +47834,12 @@ modify_port_list (const char *port_list_id, const char *name,
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
+
+  if (user_may ("modify_port_list") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   port_list = 0;
   if (find_port_list (port_list_id, &port_list))
@@ -49382,7 +49434,8 @@ DEF_ACCESS (filter_alert_iterator_uuid, 1);
  *
  * @return 0 success, 1 failed to find filter, 2 filter with new name exists,
  *         3 error in type name, 4 filter_id required, 5 filter is in use so
- *         type must be "report" if specified, -1 internal error.
+ *         type must be "report" if specified, 99 permission denied,
+ *         -1 internal error.
  */
 int
 modify_filter (const char *filter_id, const char *name, const char *comment,
@@ -49401,6 +49454,12 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
+
+  if (user_may ("modify_filter") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   filter = 0;
   if (find_filter (filter_id, &filter))
@@ -53204,8 +53263,8 @@ find_tag (const char* uuid, tag_t* tag)
  * @param[in]   attach_id   New Unique ID of the resource to attach or NULL.
  * @param[in]   active      0 for inactive, any other for active or NULL.
  *
- * @return 0 success, 1 failed to find tag, 2 tag_id required,
- * -1 internal error.
+ * @return 0 success, 1 failed to find tag, 2 tag_id required, 99 permission
+ *         denied, -1 internal error.
  */
 int
 modify_tag (const char *tag_id, const char *name, const char *comment,
@@ -53222,6 +53281,12 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
+
+  if (user_may ("modify_tag") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   tag = 0;
   if (find_tag (tag_id, &tag))

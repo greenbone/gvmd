@@ -16638,13 +16638,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_PERMISSION", element_name) == 0);
 
-          if (user_is_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_permission",
-                                  "CREATE is forbidden for observer users"));
-            }
-          else if (create_permission_data->copy)
+          if (create_permission_data->copy)
             switch (copy_permission (create_permission_data->comment,
                                      create_permission_data->copy,
                                      &new_permission))
@@ -16762,6 +16756,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_permission",
                                     "Error in NAME"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be created");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_permission",
+                                    "Permission denied"));
                 g_log ("event permission", G_LOG_LEVEL_MESSAGE,
                        "Permission could not be created");
                 break;
@@ -19157,16 +19158,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_AGENT", element_name) == 0);
 
-          if (user_is_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_agent",
-                                  "MODIFY is forbidden for observer users"));
-            }
-          else switch (modify_agent
-                        (modify_agent_data->agent_id,
-                         modify_agent_data->name,
-                         modify_agent_data->comment))
+          switch (modify_agent
+                   (modify_agent_data->agent_id,
+                    modify_agent_data->name,
+                    modify_agent_data->comment))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_agent"));
@@ -19201,6 +19196,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_log ("event agent", G_LOG_LEVEL_MESSAGE,
                        "agent could not be modified");
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_agent",
+                                    "Permission denied"));
+                g_log ("event agent", G_LOG_LEVEL_MESSAGE,
+                       "agent could not be modified");
+                break;
               default:
               case -1:
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agent"));
@@ -19232,15 +19234,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           array_terminate (modify_alert_data->condition_data);
           array_terminate (modify_alert_data->method_data);
 
-          if (user_is_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_alert",
-                                  "MODIFY is forbidden for observer users"));
-            }
-          else if (strlen (modify_alert_data->event) &&
-                   (event = event_from_name (modify_alert_data->event))
-                   == 0)
+          if (strlen (modify_alert_data->event)
+              && (event = event_from_name (modify_alert_data->event)) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_alert",
                                 "Failed to recognise event name"));
@@ -19330,6 +19325,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "Validation of email address failed"));
                 g_log ("event alert", G_LOG_LEVEL_MESSAGE,
                        "Alert could not be created");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "Permission denied"));
+                g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                       "Alert could not be modified");
                 break;
               default:
               case -1:
@@ -19519,18 +19521,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_FILTER", element_name) == 0);
 
-          if (user_is_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_filter",
-                                  "MODIFY is forbidden for observer users"));
-            }
-          else switch (modify_filter
-                        (modify_filter_data->filter_id,
-                         modify_filter_data->name,
-                         modify_filter_data->comment,
-                         modify_filter_data->term,
-                         modify_filter_data->type))
+          switch (modify_filter
+                   (modify_filter_data->filter_id,
+                    modify_filter_data->name,
+                    modify_filter_data->comment,
+                    modify_filter_data->term,
+                    modify_filter_data->type))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_filter"));
@@ -19580,6 +19576,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_log ("event filter", G_LOG_LEVEL_MESSAGE,
                        "Filter could not be modified");
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_filter",
+                                    "Permission denied"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter could not be modified");
+                break;
               default:
               case -1:
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_filter"));
@@ -19601,17 +19604,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_GROUP", element_name) == 0);
 
-          if (user_is_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_group",
-                                  "MODIFY is forbidden for observer users"));
-            }
-          else switch (modify_group
-                        (modify_group_data->group_id,
-                         modify_group_data->name,
-                         modify_group_data->comment,
-                         modify_group_data->users))
+          switch (modify_group
+                   (modify_group_data->group_id,
+                    modify_group_data->name,
+                    modify_group_data->comment,
+                    modify_group_data->users))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_group"));
@@ -19661,6 +19658,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_log ("event group", G_LOG_LEVEL_MESSAGE,
                        "Group could not be modified");
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_group",
+                                    "Permission denied"));
+                g_log ("event group", G_LOG_LEVEL_MESSAGE,
+                       "Group could not be modified");
+                break;
               default:
               case -1:
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_group"));
@@ -19681,16 +19685,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_PORT_LIST", element_name) == 0);
 
-          if (user_is_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_port_list",
-                                  "MODIFY is forbidden for observer users"));
-            }
-          else switch (modify_port_list
-                        (modify_port_list_data->port_list_id,
-                         modify_port_list_data->name,
-                         modify_port_list_data->comment))
+          switch (modify_port_list
+                   (modify_port_list_data->port_list_id,
+                    modify_port_list_data->name,
+                    modify_port_list_data->comment))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_port_list"));
@@ -19723,6 +19721,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("modify_port_list",
                                     "modify_port_list requires a port_list_id"));
                 g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port List could not be modified");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_port_list",
+                                    "Permission denied"));
+                g_log ("event alert", G_LOG_LEVEL_MESSAGE,
                        "Port List could not be modified");
                 break;
               default:
@@ -19947,13 +19952,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_PERMISSION", element_name) == 0);
 
-          if (user_is_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_permission",
-                                  "MODIFY is forbidden for observer users"));
-            }
-          else if (modify_permission_data->permission_id == NULL)
+          if (modify_permission_data->permission_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_permission",
                                 "MODIFY_PERMISSION requires a permission_id attribute"));
@@ -20030,6 +20029,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_log ("event permission", G_LOG_LEVEL_MESSAGE,
                        "Permission could not be modified");
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_permission",
+                                    "Permission denied"));
+                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
+                       "Permission could not be modified");
+                break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("modify_permission"));
@@ -20072,22 +20078,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         || modify_schedule_data->first_time_month
                         || modify_schedule_data->first_time_year;
 
-          if (user_is_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_schedule",
-                                  "MODIFY is forbidden for observer users"));
-            }
-          else if (first_time
-                   && ((first_time
-                         = time_from_strings
-                            (modify_schedule_data->first_time_hour,
-                             modify_schedule_data->first_time_minute,
-                             modify_schedule_data->first_time_day_of_month,
-                             modify_schedule_data->first_time_month,
-                             modify_schedule_data->first_time_year,
-                             modify_schedule_data->timezone))
-                       == -1))
+          if (first_time
+              && ((first_time
+                    = time_from_strings
+                       (modify_schedule_data->first_time_hour,
+                        modify_schedule_data->first_time_minute,
+                        modify_schedule_data->first_time_day_of_month,
+                        modify_schedule_data->first_time_month,
+                        modify_schedule_data->first_time_year,
+                        modify_schedule_data->timezone))
+                  == -1))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_schedule",
                                 "Failed to create time from FIRST_TIME"
@@ -20180,6 +20180,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
                        "Schedule could not be modified");
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_schedule",
+                                    "Permission denied"));
+                g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                       "Schedule could not be modified");
+                break;
               default:
               case -1:
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_schedule"));
@@ -20213,20 +20220,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_SLAVE", element_name) == 0);
 
-          if (user_is_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_slave",
-                                  "MODIFY is forbidden for observer users"));
-            }
-          else switch (modify_slave
-                        (modify_slave_data->slave_id,
-                         modify_slave_data->name,
-                         modify_slave_data->comment,
-                         modify_slave_data->host,
-                         modify_slave_data->port,
-                         modify_slave_data->login,
-                         modify_slave_data->password))
+          switch (modify_slave
+                   (modify_slave_data->slave_id,
+                    modify_slave_data->name,
+                    modify_slave_data->comment,
+                    modify_slave_data->host,
+                    modify_slave_data->port,
+                    modify_slave_data->login,
+                    modify_slave_data->password))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_slave"));
@@ -20261,6 +20262,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_log ("event slave", G_LOG_LEVEL_MESSAGE,
                        "Slave could not be modified");
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_slave",
+                                    "Permission denied"));
+                g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                       "Slave could not be modified");
+                break;
               default:
               case -1:
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_slave"));
@@ -20284,13 +20292,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_TAG", element_name) == 0);
 
-          if (user_is_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_tag",
-                                  "MODIFY is forbidden for observer users"));
-            }
-          else if (modify_tag_data->tag_id == NULL)
+          if (modify_tag_data->tag_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
                                 "MODIFY_TAG requires a tag_id attribute"));
@@ -20363,6 +20365,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "MODIFY_TAG requires a tag_id"));
                 g_log ("event tag", G_LOG_LEVEL_MESSAGE,
                       "Tag could not be modified");
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_tag",
+                                    "Permission denied"));
+                g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                       "Tag could not be modified");
+                break;
               default:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("modify_tag"));
@@ -20389,13 +20398,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("MODIFY_TARGET", element_name) == 0);
 
-          if (user_is_observer (current_credentials.username))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_target",
-                                  "MODIFY is forbidden for observer users"));
-            }
-          else if (modify_target_data->target_id == NULL)
+          if (modify_target_data->target_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_target",
                                 "MODIFY_TARGET requires a target_id attribute"));
@@ -20533,6 +20536,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     error_send_to_client (error);
                     return;
                   }
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Permission denied"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be modified");
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
