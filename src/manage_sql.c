@@ -47945,7 +47945,7 @@ create_port_range (const char *port_list_id, const char *type,
 
   sql ("BEGIN IMMEDIATE;");
 
-  if (user_may ("port_range") == 0)
+  if (user_may ("create_port_range") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
