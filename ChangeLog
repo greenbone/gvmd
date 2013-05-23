@@ -1,3 +1,21 @@
+2013-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Use predefined permissions to restrict the commands available to Users
+	and Observers.
+
+	* src/omp.c (command_t, omp_commands): Remove.  Now in manage.h and
+	manage_sql.c.
+
+	* src/manage_sql.c (omp_commands): New variable.
+	(user_may): Replace the explicit observer check with checking based on
+	the permission table.
+	(add_role_permission): New function.
+	(init_manage): Add predefined command-level permissions for User and
+	Observer roles.
+
+	* src/manage.h (command_t): New type.
+	(omp_commands): New header.
+
 2013-05-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* INSTALL: Updated section "Certificate Generation" to match

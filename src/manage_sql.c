@@ -406,6 +406,125 @@ static gboolean in_transaction;
 static struct timeval last_msg;
 
 
+/* OMP commands. */
+
+/**
+ * @brief The OMP command list.
+ */
+command_t omp_commands[]
+ = {{"AUTHENTICATE", "Authenticate with the manager." },
+    {"COMMANDS",     "Run a list of commands."},
+    {"CREATE_AGENT", "Create an agent."},
+    {"CREATE_CONFIG", "Create a config."},
+    {"CREATE_ALERT", "Create an alert."},
+    {"CREATE_FILTER", "Create a filter."},
+    {"CREATE_GROUP", "Create a group."},
+    {"CREATE_LSC_CREDENTIAL", "Create a local security check credential."},
+    {"CREATE_NOTE", "Create a note."},
+    {"CREATE_OVERRIDE", "Create an override."},
+    {"CREATE_PERMISSION", "Create a permission."},
+    {"CREATE_PORT_LIST", "Create a port list."},
+    {"CREATE_PORT_RANGE", "Create a port range in a port list."},
+    {"CREATE_REPORT_FORMAT", "Create a report format."},
+    {"CREATE_REPORT", "Create a report."},
+    {"CREATE_SCHEDULE", "Create a schedule."},
+    {"CREATE_SLAVE", "Create a slave."},
+    {"CREATE_TAG", "Create a tag."},
+    {"CREATE_TARGET", "Create a target."},
+    {"CREATE_TASK", "Create a task."},
+    {"CREATE_USER", "Create a new user."},
+    {"DELETE_AGENT", "Delete an agent."},
+    {"DELETE_CONFIG", "Delete a config."},
+    {"DELETE_ALERT", "Delete an alert."},
+    {"DELETE_FILTER", "Delete a filter."},
+    {"DELETE_GROUP", "Delete a group."},
+    {"DELETE_LSC_CREDENTIAL", "Delete a local security check credential."},
+    {"DELETE_NOTE", "Delete a note."},
+    {"DELETE_OVERRIDE", "Delete an override."},
+    {"DELETE_PERMISSION", "Delete a permission."},
+    {"DELETE_PORT_LIST", "Delete a port list."},
+    {"DELETE_PORT_RANGE", "Delete a port range."},
+    {"DELETE_REPORT", "Delete a report."},
+    {"DELETE_REPORT_FORMAT", "Delete a report format."},
+    {"DELETE_SCHEDULE", "Delete a schedule."},
+    {"DELETE_SLAVE", "Delete a slave."},
+    {"DELETE_TAG", "Delete a tag."},
+    {"DELETE_TARGET", "Delete a target."},
+    {"DELETE_TASK", "Delete a task."},
+    {"DELETE_USER", "Delete an existing user."},
+    {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
+    {"DESCRIBE_CERT", "Get details of the CERT feed this Manager uses."},
+    {"DESCRIBE_FEED", "Get details of the NVT feed this Manager uses."},
+    {"DESCRIBE_SCAP", "Get details of the SCAP feed this Manager uses."},
+    {"EMPTY_TRASHCAN", "Empty the trashcan."},
+    {"GET_AGENTS", "Get all agents."},
+    {"GET_CONFIGS", "Get all configs."},
+    {"GET_DEPENDENCIES", "Get dependencies for all available NVTs."},
+    {"GET_ALERTS", "Get all alerts."},
+    {"GET_FILTERS", "Get all filters."},
+    {"GET_GROUPS", "Get all groups."},
+    {"GET_LSC_CREDENTIALS", "Get all local security check credentials."},
+    {"GET_NOTES", "Get all notes."},
+    {"GET_NVTS", "Get one or all available NVTs."},
+    {"GET_NVT_FAMILIES", "Get a list of all NVT families."},
+    {"GET_NVT_FEED_VERSION", "Get NVT feed version."},
+    {"GET_OVERRIDES", "Get all overrides."},
+    {"GET_PERMISSIONS", "Get all permissions."},
+    {"GET_PORT_LISTS", "Get all port lists."},
+    {"GET_PREFERENCES", "Get preferences for all available NVTs."},
+    {"GET_REPORTS", "Get all reports."},
+    {"GET_REPORT_FORMATS", "Get all report formats."},
+    {"GET_RESULTS", "Get results."},
+    {"GET_ROLES", "Get all roles."},
+    {"GET_SCHEDULES", "Get all schedules."},
+    {"GET_SETTINGS", "Get all settings."},
+    {"GET_SLAVES", "Get all slaves."},
+    {"GET_SYSTEM_REPORTS", "Get all system reports."},
+    {"GET_TAGS", "Get all tags."},
+    {"GET_TARGET_LOCATORS", "Get configured target locators."},
+    {"GET_TARGETS", "Get all targets."},
+    {"GET_TASKS", "Get all tasks."},
+    {"GET_USERS", "Get all users."},
+    {"GET_VERSION", "Get the OpenVAS Manager Protocol version."},
+    {"GET_INFO", "Get raw information for a given item."},
+    {"HELP", "Get this help text."},
+    {"MODIFY_AGENT", "Modify an existing agent."},
+    {"MODIFY_ALERT", "Modify an existing alert."},
+    {"MODIFY_AUTH", "Modify the authentication methods."},
+    {"MODIFY_CONFIG", "Update an existing config."},
+    {"MODIFY_LSC_CREDENTIAL", "Modify an existing LSC credential."},
+    {"MODIFY_FILTER", "Modify an existing filter."},
+    {"MODIFY_GROUP", "Modify an existing group."},
+    {"MODIFY_NOTE", "Modify an existing note."},
+    {"MODIFY_OVERRIDE", "Modify an existing override."},
+    {"MODIFY_PERMISSION", "Modify an existing permission."},
+    {"MODIFY_PORT_LIST", "Modify an existing port list."},
+    {"MODIFY_REPORT", "Modify an existing report."},
+    {"MODIFY_REPORT_FORMAT", "Modify an existing report format."},
+    {"MODIFY_SCHEDULE", "Modify an existing schedule."},
+    {"MODIFY_SETTING", "Modify an existing setting."},
+    {"MODIFY_SLAVE", "Modify an existing slave."},
+    {"MODIFY_TAG", "Modify an existing tag."},
+    {"MODIFY_TARGET", "Modify an existing target."},
+    {"MODIFY_TASK", "Update an existing task."},
+    {"MODIFY_USER", "Modify a user."},
+    {"PAUSE_TASK", "Pause a running task."},
+    {"RESTORE", "Restore a resource."},
+    {"RESUME_OR_START_TASK", "Resume task if stopped, else start task."},
+    {"RESUME_PAUSED_TASK", "Resume a paused task."},
+    {"RESUME_STOPPED_TASK", "Resume a stopped task."},
+    {"RUN_WIZARD", "Run a wizard."},
+    {"START_TASK", "Manually start an existing task."},
+    {"STOP_TASK", "Stop a running task."},
+    {"SYNC_CERT", "Synchronize with a CERT feed."},
+    {"SYNC_FEED", "Synchronize with an NVT feed."},
+    {"SYNC_SCAP", "Synchronize with a SCAP feed."},
+    {"TEST_ALERT", "Run an alert."},
+    {"VERIFY_AGENT", "Verify an agent."},
+    {"VERIFY_REPORT_FORMAT", "Verify a report format."},
+    {NULL, NULL}};
+
+
 /* General helpers. */
 
 /**
@@ -1360,9 +1479,7 @@ int
 user_may (const char *operation)
 {
   int ret;
-#if 0
   gchar *quoted_operation;
-#endif
 
   assert (current_credentials.uuid);
   assert (operation);
@@ -1396,11 +1513,6 @@ user_may (const char *operation)
                current_credentials.uuid))
     return 1;
 
-  if (user_is_observer (current_credentials.uuid) == 0)
-    /* User has role "user".  Can do any OMP operation. */
-    return 1;
-
-#if 0
   quoted_operation = sql_quote (operation);
 
   ret = sql_int (0, 0,
@@ -1433,9 +1545,6 @@ user_may (const char *operation)
                  quoted_operation);
 
   g_free (quoted_operation);
-#else
-  ret = 0;
-#endif
 
   return ret;
 }
@@ -16314,6 +16423,30 @@ init_manage_settings ()
 }
 
 /**
+ * @brief Bring report format UUIDs in database up to date.
+ *
+ * Caller must ensure args are SQL escaped.
+ *
+ * @param[in]  role        Role.
+ * @param[in]  permission  Permission.
+ */
+void
+add_role_permission (const gchar *role, const gchar *permission)
+{
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+       "  resource_location, subject_type, subject, creation_time,"
+       "  modification_time)"
+       " VALUES"
+       " (make_uuid (), NULL, lower ('%s'), '', '',"
+       "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+       "  (SELECT ROWID FROM roles WHERE uuid = '%s'),"
+       "  now (), now ());",
+       permission,
+       role);
+}
+
+/**
  * @brief Initialize the manage library.
  *
  * Ensure all tasks are in a clean initial state.
@@ -17023,6 +17156,51 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
          "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
          "  (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_ADMIN "'),"
          "  now (), now ());");
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM permissions"
+               " WHERE subject_type = 'role'"
+               " AND subject = (SELECT ROWID FROM roles"
+               "                WHERE uuid = '" ROLE_UUID_USER "')"
+               " AND resource = 0;")
+      == 0)
+    {
+      command_t *command;
+      command = omp_commands;
+      sql ("BEGIN EXCLUSIVE;");
+      while (command[0].name)
+        {
+          if (strstr (command[0].name, "DESCRIBE") == NULL
+              && strstr (command[0].name, "GROUP") == NULL
+              && strcmp (command[0].name, "HELP")
+              && strstr (command[0].name, "ROLE") == NULL
+              && strstr (command[0].name, "SYNC") == NULL
+              && strstr (command[0].name, "USER") == NULL)
+            add_role_permission (ROLE_UUID_USER, command[0].name);
+          command++;
+        }
+      sql ("COMMIT;");
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM permissions"
+               " WHERE subject_type = 'role'"
+               " AND subject = (SELECT ROWID FROM roles"
+               "                WHERE uuid = '" ROLE_UUID_OBSERVER "')"
+               " AND resource = 0;")
+      == 0)
+    {
+      command_t *command;
+      command = omp_commands;
+      sql ("BEGIN EXCLUSIVE;");
+      while (command[0].name)
+        {
+          if (strstr (command[0].name, "GET") == command[0].name)
+            add_role_permission (ROLE_UUID_OBSERVER, command[0].name);
+          command++;
+        }
+      sql ("COMMIT;");
+    }
 
   /* Ensure the default settings exist. */
   init_manage_settings ();

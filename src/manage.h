@@ -78,6 +78,23 @@ void
 manage_cleanup_process_error (int);
 
 
+/* Commands. */
+
+/**
+ * @brief A command.
+ */
+typedef struct
+{
+  gchar *name;     ///< Command name.
+  gchar *summary;  ///< Summary of command.
+} command_t;
+
+/**
+ * @brief The OMP command list.
+ */
+extern command_t omp_commands[];
+
+
 /* Credentials. */
 
 extern credentials_t current_credentials;
