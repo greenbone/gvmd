@@ -1461,7 +1461,7 @@ user_is_observer (const char *uuid)
   ret = sql_int (0, 0,
                  "SELECT count (*) FROM role_users"
                  " WHERE role = (SELECT ROWID FROM roles"
-                 "               WHERE uuid = '" ROLE_UUID_ADMIN "')"
+                 "               WHERE uuid = '" ROLE_UUID_OBSERVER "')"
                  " AND user = (SELECT ROWID FROM users WHERE uuid = '%s');",
                  quoted_uuid);
   g_free (quoted_uuid);

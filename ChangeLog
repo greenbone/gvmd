@@ -1,5 +1,9 @@
 2013-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (user_is_observer): Correct UUID.
+
+2013-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Use predefined permissions to restrict the commands available to Users
 	and Observers.
 
