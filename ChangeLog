@@ -1,5 +1,14 @@
 2013-05-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (init_report_errors_iterator): Optimize sql query.
+	Get nvt risk factor too.
+	(report_errors_iterator_nvt_threat): New function.
+	(report_errors_iterator_desc, report_errors_iterator_nvt_name)
+	(report_errors_iterator_nvt_cvss): Readjust ordering.
+	(PRINT_REPORT_ERROR): Send nvt threat too.
+
+2013-05-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (report_error_count): New function.
 	(print_report_errors_xml): Use new function for calculating error
 	messages total.

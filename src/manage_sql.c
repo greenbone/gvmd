@@ -21590,12 +21590,12 @@ init_report_errors_iterator (iterator_t* iterator, report_t report)
 {
   if (report)
     init_iterator (iterator,
-                   "SELECT host, port, nvt,"
-                   " (SELECT name from nvts WHERE oid = nvt),"
-                   " description"
-                   " FROM results"
-                   " WHERE type = 'Error Message'"
-                   "  AND report = %llu",
+                   "SELECT R.host, R.port, R.nvt, R.description,"
+                   " N.name, N.cvss_base, N.risk_factor"
+                   " FROM results AS R JOIN nvts AS N"
+                   " WHERE R.type = 'Error Message'"
+                   "  AND R.nvt=N.oid"
+                   "  AND R.report = %llu",
                    report);
 }
 
@@ -21630,16 +21630,6 @@ DEF_ACCESS (report_errors_iterator_port, 1);
 DEF_ACCESS (report_errors_iterator_nvt_oid, 2);
 
 /**
- * @brief Get the nvt name from a report error messages iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The nvt of the report error message.  Caller must use only before
- *         calling cleanup_iterator.
- */
-DEF_ACCESS (report_errors_iterator_nvt_name, 3);
-
-/**
  * @brief Get the description from a report error messages iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -21647,7 +21637,38 @@ DEF_ACCESS (report_errors_iterator_nvt_name, 3);
  * @return The description of the report error message.  Caller must use only
  * before calling cleanup_iterator.
  */
-DEF_ACCESS (report_errors_iterator_desc, 4);
+DEF_ACCESS (report_errors_iterator_desc, 3);
+
+/**
+ * @brief Get the nvt name from a report error messages iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The nvt of the report error message.  Caller must use only before
+ *         calling cleanup_iterator.
+ */
+DEF_ACCESS (report_errors_iterator_nvt_name, 4);
+
+/**
+ * @brief Get the nvt cvss base from a report error messages iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The nvt cvss base of the report error message.  Caller must use only
+ *         before calling cleanup_iterator.
+ */
+DEF_ACCESS (report_errors_iterator_nvt_cvss, 5);
+
+/**
+ * @brief Get the nvt threat (risk_factor) from a report error messages
+ *        iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The nvt threat of the report error message.  Caller must use only
+ *         before calling cleanup_iterator.
+ */
+DEF_ACCESS (report_errors_iterator_nvt_threat, 6);
 
 /**
  * @brief Return whether a host has results on a report.
@@ -25989,14 +26010,20 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream)
              "<error>"                                                     \
              "<host>%s</host>"                                             \
              "<port>%s</port>"                                             \
-             "<nvt oid=\"%s\">%s</nvt>"                                    \
              "<description>%s</description>"                               \
+             "<nvt oid=\"%s\">"                                            \
+             "<name>%s</name>"                                             \
+             "<cvss_base>%s</cvss_base>"                                   \
+             "<threat>%s</threat>"                                         \
+             "</nvt>"                                                      \
              "</error>",                                                   \
              report_errors_iterator_host (errors),                         \
              report_errors_iterator_port (errors),                         \
+             report_errors_iterator_desc (errors),                         \
              report_errors_iterator_nvt_oid (errors),                      \
              report_errors_iterator_nvt_name (errors),                     \
-             report_errors_iterator_desc (errors));                        \
+             report_errors_iterator_nvt_cvss (errors),                     \
+             report_errors_iterator_nvt_threat (errors));                  \
     }                                                                      \
   while (0)
 
