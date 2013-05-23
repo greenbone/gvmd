@@ -25912,6 +25912,20 @@ report_app_count (report_t report)
                   report);
 }
 
+/**
+ * @brief Count a report's total number of error messages.
+ *
+ * @return Error Messages count.
+ */
+static int
+report_error_count (report_t report)
+{
+  return sql_int (0, 0,
+                  "SELECT count (ROWID) FROM results"
+                  " WHERE report = %llu and type = 'Error Message';",
+                  report);
+}
+
 /*
  * @brief Write report host detail to file stream.
  *
@@ -26001,7 +26015,7 @@ print_report_errors_xml (report_t report, FILE *stream)
   init_report_errors_iterator
    (&errors, report);
 
-  PRINT (stream, "<errors>");
+  PRINT (stream, "<errors total=\"%i\">", report_error_count (report));
   while (next (&errors))
     PRINT_REPORT_ERROR (stream, &errors);
   cleanup_iterator (&errors);
