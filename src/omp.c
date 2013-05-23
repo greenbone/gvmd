@@ -13488,7 +13488,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                        delete_tag_data->tag_id);
             }
         else
-           SEND_TO_CLIENT_OR_FAIL
+          SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("delete_tag",
                               "DELETE_TAG requires a tag_id attribute"));
         delete_tag_data_reset (delete_tag_data);
@@ -20361,8 +20361,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 break;
               case 2:
                 SEND_TO_CLIENT_OR_FAIL
-                (XML_ERROR_SYNTAX ("modify_tag",
-                                  "MODIFY_TAG requires a tag_id"));
+                 (XML_ERROR_SYNTAX ("modify_tag",
+                                    "MODIFY_TAG requires a tag_id"));
                 g_log ("event tag", G_LOG_LEVEL_MESSAGE,
                       "Tag could not be modified");
               case 99:

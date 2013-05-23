@@ -1,5 +1,10 @@
 2013-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In DELETE_TAG and MODIFY_TAG
+	neaten some indenting.
+
+2013-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_tag): Remove declaration indent.  Move name
 	init down or it leaks.  Add space before paren.
 
