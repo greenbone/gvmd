@@ -16271,6 +16271,49 @@ update_report_format_uuids ()
 }
 
 /**
+ * @brief Initialize the default settings.
+ *
+ * Ensure all the default manager settings exist.
+ */
+static void
+init_manage_settings ()
+{
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM settings"
+               " WHERE uuid = '5f5a8712-8017-11e1-8556-406186ea4fc5'"
+               " AND owner IS NULL;")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('5f5a8712-8017-11e1-8556-406186ea4fc5', NULL, 'Rows Per Page',"
+         "  'The default number of rows displayed in any listing.',"
+         "  10);");
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM settings"
+               " WHERE uuid = '20f3034c-e709-11e1-87e7-406186ea4fc5'"
+               " AND owner IS NULL;")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('20f3034c-e709-11e1-87e7-406186ea4fc5', NULL, 'Wizard Rows',"
+         "  'If the number of rows in a listing is above this any wizard"
+         " be hidden.',"
+         "  3);");
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM settings"
+               " WHERE uuid = 'f16bb236-a32d-4cd5-a880-e0fcf2599f59'"
+               " AND owner IS NULL;")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('f16bb236-a32d-4cd5-a880-e0fcf2599f59', NULL, 'Severity Class',"
+         "  'Severity class used for severity bars.',"
+         "  'nist');");
+}
+
+/**
  * @brief Initialize the manage library.
  *
  * Ensure all tasks are in a clean initial state.
@@ -16982,29 +17025,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
          "  now (), now ());");
 
   /* Ensure the default settings exist. */
-
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM settings"
-               " WHERE uuid = '5f5a8712-8017-11e1-8556-406186ea4fc5'"
-               " AND owner IS NULL;")
-      == 0)
-    sql ("INSERT into settings (uuid, owner, name, comment, value)"
-         " VALUES"
-         " ('5f5a8712-8017-11e1-8556-406186ea4fc5', NULL, 'Rows Per Page',"
-         "  'The default number of rows displayed in any listing.',"
-         "  10);");
-
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM settings"
-               " WHERE uuid = '20f3034c-e709-11e1-87e7-406186ea4fc5'"
-               " AND owner IS NULL;")
-      == 0)
-    sql ("INSERT into settings (uuid, owner, name, comment, value)"
-         " VALUES"
-         " ('20f3034c-e709-11e1-87e7-406186ea4fc5', NULL, 'Wizard Rows',"
-         "  'If the number of rows in a listing is above this any wizard"
-         " be hidden.',"
-         "  3);");
+  init_manage_settings ();
 
   if (nvt_cache_mode == 0)
     {
@@ -50758,6 +50779,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
     }
 
   if (uuid && (strcmp (uuid, "5f5a8712-8017-11e1-8556-406186ea4fc5") == 0
+               || strcmp (uuid, "f16bb236-a32d-4cd5-a880-e0fcf2599f59") == 0
                || strcmp (uuid, "20f3034c-e709-11e1-87e7-406186ea4fc5") == 0))
     {
       gsize value_size;

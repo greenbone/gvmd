@@ -6,6 +6,13 @@
 
 2013-05-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (init_manage_settings): New function.
+	(init_manage): Refactor settings and severity class
+	setting initialization code into init_manage_settings.
+	(manage_set_settings): Check for severity class uuid too.
+
+2013-05-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml, print_report_errors_xml): Send all
 	resources count as count element instead of total attribute.
 	(init_report_errors_iterator): Use full table names.
