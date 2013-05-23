@@ -1,5 +1,11 @@
 2013-05-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml, print_report_errors_xml): Send all
+	resources count as count element instead of total attribute.
+	(init_report_errors_iterator): Use full table names.
+
+2013-05-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (init_report_errors_iterator): Optimize sql query.
 	Get nvt risk factor too.
 	(report_errors_iterator_nvt_threat): New function.

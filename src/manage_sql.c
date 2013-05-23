@@ -21590,12 +21590,13 @@ init_report_errors_iterator (iterator_t* iterator, report_t report)
 {
   if (report)
     init_iterator (iterator,
-                   "SELECT R.host, R.port, R.nvt, R.description,"
-                   " N.name, N.cvss_base, N.risk_factor"
-                   " FROM results AS R JOIN nvts AS N"
-                   " WHERE R.type = 'Error Message'"
-                   "  AND R.nvt=N.oid"
-                   "  AND R.report = %llu",
+                   "SELECT results.host, results.port, results.nvt,"
+                   " results.description, nvts.name, nvts.cvss_base,"
+                   " nvts.risk_factor"
+                   " FROM results JOIN nvts"
+                   " WHERE results.type = 'Error Message'"
+                   "  AND results.nvt = nvts.oid"
+                   "  AND results.report = %llu",
                    report);
 }
 
@@ -26042,7 +26043,7 @@ print_report_errors_xml (report_t report, FILE *stream)
   init_report_errors_iterator
    (&errors, report);
 
-  PRINT (stream, "<errors total=\"%i\">", report_error_count (report));
+  PRINT (stream, "<errors><count>%i</count>", report_error_count (report));
   while (next (&errors))
     PRINT_REPORT_ERROR (stream, &errors);
   cleanup_iterator (&errors);
@@ -26417,23 +26418,23 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                           : TASK_STATUS_INTERNAL_ERROR));
 
       PRINT (out,
-             "<hosts total=\"%i\"/>",
+             "<hosts><count>%i</count></hosts>",
              report_host_count (report));
 
       PRINT (out,
-             "<closed_cves total=\"%i\"/>",
+             "<closed_cves><count>%i</count></closed_cves>",
              report_closed_cve_count (report));
 
       PRINT (out,
-             "<vulns total=\"%i\"/>",
+             "<vulns><count>%i</count></vulns>",
              report_vuln_count (report));
 
       PRINT (out,
-             "<os total=\"%i\"/>",
+             "<os><count>%i</count></os>",
              report_os_count (report));
 
       PRINT (out,
-             "<apps total=\"%i\"/>",
+             "<apps><count>%i</count></apps>",
              report_app_count (report));
     }
 
@@ -27213,13 +27214,13 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
       PRINT (out,
                "<ports"
-               " total=\"%i\""
                " start=\"%i\""
-               " max=\"%i\">",
+               " max=\"%i\">"
+               "<count>%i</count>",
                /* Add 1 for 1 indexing. */
-               report_port_count (report),
                first_result + 1,
-               max_results);
+               max_results,
+               report_port_count (report));
       {
         gchar *item;
         int index = 0;
