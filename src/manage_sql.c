@@ -53120,23 +53120,29 @@ create_tag (const char * name, const char * comment, const char * value,
             const char * attach_type, const char * attach_id,
             const char * active, tag_t * tag)
 {
-  if (user_may ("create_tag") == 0)
-    return 99;
-
-  gchar *quoted_name, *quoted_comment, *quoted_value,
-        *lc_attach_type, *quoted_attach_type, *quoted_attach_id;
+  gchar *quoted_name, *quoted_comment, *quoted_value;
+  gchar *lc_attach_type, *quoted_attach_type, *quoted_attach_id;
 
   if (name == NULL || attach_type == NULL)
     return -1;
 
-  quoted_name = sql_insert (name);
-  lc_attach_type = g_ascii_strdown(attach_type, -1);
+  sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("create_tag") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  lc_attach_type = g_ascii_strdown (attach_type, -1);
   if (strcmp (lc_attach_type, "")
       && valid_db_resource_type (lc_attach_type) == 0)
     {
+      g_free (lc_attach_type);
       sql ("ROLLBACK;");
       return -1;
     }
+  quoted_name = sql_insert (name);
   quoted_attach_type = sql_insert (lc_attach_type);
   quoted_attach_id = attach_id ? sql_insert (attach_id) : g_strdup ("''");
 
@@ -53172,6 +53178,8 @@ create_tag (const char * name, const char * comment, const char * value,
 
   if (tag)
     *tag = sqlite3_last_insert_rowid (task_db);
+
+  sql ("COMMIT;");
 
   return 0;
 }

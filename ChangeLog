@@ -1,5 +1,11 @@
 2013-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_tag): Move declarations to top of block.  Add
+	transaction.  Add space before paren.  Move quoted_name definition down
+	otherwise it leaks.  Free lc_attach_type on error.
+
+2013-05-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TAG clean up
 	some indenting and correct error message names.
 
