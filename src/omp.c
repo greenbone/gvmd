@@ -18146,7 +18146,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       char *uuid;
                       uuid = tag_uuid (new_tag);
                       SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_tag"),
-                                              uuid);
+                                               uuid);
                       g_log ("event tag", G_LOG_LEVEL_MESSAGE,
                             "Tag %s has been created", uuid);
                       free (uuid);
@@ -18154,14 +18154,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
-                      (XML_ERROR_SYNTAX ("create_target",
+                     (XML_ERROR_SYNTAX ("create_tag",
                                         "Permission denied"));
                     break;
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
-                      (XML_INTERNAL_ERROR ("create_target"));
+                     (XML_INTERNAL_ERROR ("create_tag"));
                     g_log ("event target", G_LOG_LEVEL_MESSAGE,
-                            "Target could not be created");
+                            "Tag could not be created");
                     break;
                 }
             }
