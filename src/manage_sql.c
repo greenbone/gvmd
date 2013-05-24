@@ -32004,7 +32004,7 @@ copy_target (const char* name, const char* comment, const char *target_id,
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the target, 2 failed
- *         to find target, 3 predefined target, -1 error.
+ *         to find target, 3 predefined target, 99 permission denied, -1 error.
  */
 int
 delete_target (const char *target_id, int ultimate)
@@ -32015,6 +32015,12 @@ delete_target (const char *target_id, int ultimate)
     return 3;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_target") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_target (target_id, &target))
     {
@@ -34048,7 +34054,7 @@ copy_config (const char* name, const char* comment, config_t config,
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the config, 2 failed to
- *         find config, -1 error.
+ *         find config, 99 permission denied, -1 error.
  */
 int
 delete_config (const char *config_id, int ultimate)
@@ -34064,6 +34070,12 @@ delete_config (const char *config_id, int ultimate)
     return 1;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_config") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_config (config_id, &config))
     {
@@ -38216,7 +38228,8 @@ copy_lsc_credential (const char* name, const char* comment,
  * @param[in]  lsc_credential_id  UUID of LSC credential.
  * @param[in]  ultimate           Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 1 fail because the LSC credential is in use, -1 error.
+ * @return 0 success, 1 fail because the LSC credential is in use, 99 permission
+ *         denied, -1 error.
  */
 int
 delete_lsc_credential (const char *lsc_credential_id, int ultimate)
@@ -38224,6 +38237,12 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
   lsc_credential_t lsc_credential = 0;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_lsc_credential") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_lsc_credential (lsc_credential_id, &lsc_credential))
     {
@@ -39605,7 +39624,7 @@ modify_agent (const char *agent_id, const char *name, const char *comment)
  * @param[in]  agent_id   UUID of agent.
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 2 failed to find agent, -1 error.
+ * @return 0 success, 2 failed to find agent, 99 permission denied, -1 error.
  */
 int
 delete_agent (const char *agent_id, int ultimate)
@@ -39613,6 +39632,12 @@ delete_agent (const char *agent_id, int ultimate)
   agent_t agent = 0;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_agent") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_agent (agent_id, &agent))
     {
@@ -40299,7 +40324,7 @@ copy_note (const char *note_id, note_t* new_note)
  * @param[in]  note_id    UUID of note.
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 2 failed to find note, -1 error.
+ * @return 0 success, 2 failed to find note, 99 permission denied, -1 error.
  */
 int
 delete_note (const char *note_id, int ultimate)
@@ -40307,6 +40332,12 @@ delete_note (const char *note_id, int ultimate)
   note_t note = 0;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_note") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_note (note_id, &note))
     {
@@ -41069,7 +41100,7 @@ copy_override (const char *override_id, override_t* new_override)
  * @param[in]  override_id  UUID of override.
  * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 2 failed to find override, -1 error.
+ * @return 0 success, 2 failed to find override, 99 permission denied, -1 error.
  */
 int
 delete_override (const char *override_id, int ultimate)
@@ -41077,6 +41108,12 @@ delete_override (const char *override_id, int ultimate)
   override_t override;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_override") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   override = 0;
 
@@ -41848,7 +41885,8 @@ copy_schedule (const char* name, const char* comment, const char *schedule_id,
  * @param[in]  schedule_id  Schedule.
  * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 1 fail because a task refers to the schedule, -1 error.
+ * @return 0 success, 1 fail because a task refers to the schedule,
+ *         99 permission denied, -1 error.
  */
 int
 delete_schedule (const char *schedule_id, int ultimate)
@@ -41856,6 +41894,12 @@ delete_schedule (const char *schedule_id, int ultimate)
   schedule_t schedule = 0;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_schedule") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_schedule (schedule_id, &schedule))
     {
@@ -43831,7 +43875,7 @@ copy_report_format (const char* name, const char* source_uuid,
  * @param[in]  ultimate          Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 2 failed to find report format, 3 predefined report
- *         format, -1 error.
+ *         format, 99 permission denied, -1 error.
  */
 int
 delete_report_format (const char *report_format_id, int ultimate)
@@ -43851,6 +43895,12 @@ delete_report_format (const char *report_format_id, int ultimate)
    *     in a special trashcan directory. */
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_report_format") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   /* Look in the "real" table. */
 
@@ -45415,7 +45465,7 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the slave, 2 failed to
- *         find agent, -1 error.
+ *         find agent, 99 permission denied, -1 error.
  */
 int
 delete_slave (const char *slave_id, int ultimate)
@@ -45423,6 +45473,12 @@ delete_slave (const char *slave_id, int ultimate)
   slave_t slave = 0;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_slave") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_slave (slave_id, &slave))
     {
@@ -46160,7 +46216,7 @@ create_group (const char *group_name, const char *comment, const char *users,
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the group, 2 failed
- *         to find group, 3 predefined group, -1 error.
+ *         to find group, 3 predefined group, 99 permission denied, -1 error.
  */
 int
 delete_group (const char *group_id, int ultimate)
@@ -46168,6 +46224,12 @@ delete_group (const char *group_id, int ultimate)
   group_t group = 0;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_group") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_group (group_id, &group))
     {
@@ -46897,7 +46959,7 @@ find_permission_with_permission (const char *uuid, permission_t *resource,
  * @param[in]  ultimate       Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 2 failed to find permission, 3 predefined permission,
- *         -1 error.
+ *         99 permission denied, -1 error.
  */
 int
 delete_permission (const char *permission_id, int ultimate)
@@ -46908,6 +46970,12 @@ delete_permission (const char *permission_id, int ultimate)
     return 3;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_permission") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_permission_with_permission (permission_id, &permission, "delete"))
     {
@@ -48071,7 +48139,8 @@ create_port_range (const char *port_list_id, const char *type,
  * @param[in]  ultimate      Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a target refers to the port list, 2 failed
- *         to find port list, 3 predefined port list, -1 error.
+ *         to find port list, 3 predefined port list, 99 permission denied,
+ *         -1 error.
  */
 int
 delete_port_list (const char *port_list_id, int ultimate)
@@ -48079,6 +48148,12 @@ delete_port_list (const char *port_list_id, int ultimate)
   port_list_t port_list = 0;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_port_list") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_port_list (port_list_id, &port_list))
     {
@@ -48183,7 +48258,7 @@ delete_port_list (const char *port_list_id, int ultimate)
  * @param[in]  dummy          Dummy arg to match other delete functions.
  *
  * @return 0 success, 1 failed to find port range, 2 port range is part of
- *         predefined port list, -1 error.
+ *         predefined port list, 99 permission denied, -1 error.
  */
 int
 delete_port_range (const char *port_range_id, int dummy)
@@ -48191,6 +48266,12 @@ delete_port_range (const char *port_range_id, int dummy)
   port_range_t port_range = 0;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_port_range") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_port_range (port_range_id, &port_range))
     {
@@ -52536,7 +52617,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
  * @param[in]  name       Name of user.  Overridden by user_id.
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 2 failed to find user, -1 error.
+ * @return 0 success, 2 failed to find user, 99 permission denied, -1 error.
  */
 int
 delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
@@ -52546,6 +52627,12 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
   assert (user_id_arg || name_arg);
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_user") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   user = 0;
   if (user_id_arg)
@@ -53276,7 +53363,7 @@ create_tag (const char * name, const char * comment, const char * value,
  * @param[in]  tag_id     UUID of tag.
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 2 failed to find tag, -1 error.
+ * @return 0 success, 2 failed to find tag, 99 permission denied, -1 error.
  */
 int
 delete_tag (const char *tag_id, int ultimate)
@@ -53284,6 +53371,12 @@ delete_tag (const char *tag_id, int ultimate)
   tag_t tag = 0;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_tag") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_tag (tag_id, &tag))
     {

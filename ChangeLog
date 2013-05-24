@@ -1,5 +1,13 @@
 2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_target, delete_config, delete_lsc_credential)
+	(delete_agent, delete_note, delete_override, delete_schedule)
+	(delete_report_format, delete_slave, delete_group, delete_permission)
+	(delete_port_list, delete_port_range, delete_user, delete_tag): Add
+	permission check.
+
+2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (delete_report_data_t): Add dummy ultimate field.
 	(omp_xml_handle_end_element): Move all the delete cases up into
 	alphabetical order.
