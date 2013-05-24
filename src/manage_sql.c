@@ -17127,8 +17127,14 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       roles = make_array ();
       array_add (roles, g_strdup (ROLE_UUID_ADMIN));
 
+      /* Setup a dummy user, so that create_user will work. */
+      current_credentials.uuid = "";
+
+      sql ("DELETE FROM meta WHERE name = 'admin';");
       sql ("INSERT INTO meta (name, value) VALUES ('admin', '%s');", uuid);
       create_user ("admin", uuid, NULL, 0, NULL, NULL, NULL, roles, NULL, NULL);
+
+      current_credentials.uuid = NULL;
 
       array_free (roles);
       free (uuid);

@@ -1,3 +1,8 @@
+2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Set credential UUID because create_user
+	needs that.  Delete any old admin meta rows, just to be sure.
+
 2013-05-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (setting_severity): New function.
