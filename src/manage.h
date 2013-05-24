@@ -2509,7 +2509,7 @@ int
 delete_port_list (const char*, int);
 
 int
-delete_port_range (const char *);
+delete_port_range (const char *, int);
 
 int
 port_list_count (const get_data_t *);

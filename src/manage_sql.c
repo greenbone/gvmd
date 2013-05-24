@@ -48158,12 +48158,13 @@ delete_port_list (const char *port_list_id, int ultimate)
  * @brief Delete a port range.
  *
  * @param[in]  port_range_id  UUID of port_range.
+ * @param[in]  dummy          Dummy arg to match other delete functions.
  *
  * @return 0 success, 1 failed to find port range, 2 port range is part of
  *         predefined port list, -1 error.
  */
 int
-delete_port_range (const char *port_range_id)
+delete_port_range (const char *port_range_id, int dummy)
 {
   port_range_t port_range = 0;
 
@@ -49174,7 +49175,7 @@ copy_filter (const char* name, const char* comment, const char *filter_id,
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the filter, 2 failed
- *         to find filter, 3 predefined filter, -1 error.
+ *         to find filter, 3 predefined filter, 99 permission denied, -1 error.
  */
 int
 delete_filter (const char *filter_id, int ultimate)
@@ -49183,6 +49184,12 @@ delete_filter (const char *filter_id, int ultimate)
   filter_t filter = 0;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_filter") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_filter (filter_id, &filter))
     {
@@ -53247,7 +53254,7 @@ create_tag (const char * name, const char * comment, const char * value,
  * @param[in]  tag_id     UUID of tag.
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 1 failed to find tag, -1 error.
+ * @return 0 success, 2 failed to find tag, -1 error.
  */
 int
 delete_tag (const char *tag_id, int ultimate)
@@ -53272,7 +53279,7 @@ delete_tag (const char *tag_id, int ultimate)
       if (tag == 0)
         {
           sql ("ROLLBACK;");
-          return 1;
+          return 2;
         }
       if (ultimate == 0)
         {

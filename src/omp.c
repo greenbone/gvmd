@@ -1775,6 +1775,7 @@ delete_port_list_data_reset (delete_port_list_data_t *data)
 typedef struct
 {
   char *port_range_id;  ///< ID of port range to delete.
+  int ultimate;         ///< Dummy field for generic macros.
 } delete_port_range_data_t;
 
 /**
@@ -10223,6 +10224,77 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
  return 0;
 }
 
+
+/**
+ * @brief Insert DELETE case for omp_xml_handle_end_element.
+ *
+ * @param[in]  type  Resource type.
+ */
+#define CASE_DELETE(upper, type, capital)                                   \
+  case CLIENT_DELETE_ ## upper :                                            \
+    assert (strcasecmp ("DELETE_" G_STRINGIFY (upper), element_name) == 0); \
+    if (delete_ ## type ## _data-> type ## _id)                             \
+      switch (delete_ ## type (delete_ ## type ## _data-> type ## _id,      \
+                             delete_ ## type ## _data->ultimate))           \
+        {                                                                   \
+          case 0:                                                           \
+            SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_" G_STRINGIFY (type))); \
+            g_log ("event " G_STRINGIFY (type), G_LOG_LEVEL_MESSAGE,        \
+                   capital " %s has been deleted",                          \
+                   delete_ ## type ## _data-> type ## _id);                 \
+            break;                                                          \
+          case 1:                                                           \
+            SEND_TO_CLIENT_OR_FAIL                                          \
+             (XML_ERROR_SYNTAX ("delete_" G_STRINGIFY (type),               \
+                                capital " is in use"));                     \
+            g_log ("event " G_STRINGIFY (type), G_LOG_LEVEL_MESSAGE,        \
+                   capital " %s could not be deleted",                      \
+                   delete_ ## type ## _data-> type ## _id);                 \
+            break;                                                          \
+          case 2:                                                           \
+            if (send_find_error_to_client                                   \
+                 ("delete_" G_STRINGIFY (type),                             \
+                  G_STRINGIFY (type),                                       \
+                  delete_ ## type ## _data-> type ## _id,                   \
+                  write_to_client,                                          \
+                  write_to_client_data))                                    \
+              {                                                             \
+                error_send_to_client (error);                               \
+                return;                                                     \
+              }                                                             \
+            g_log ("event " G_STRINGIFY (type), G_LOG_LEVEL_MESSAGE,        \
+                   capital " %s could not be deleted",                      \
+                   delete_ ## type ## _data-> type ## _id);                 \
+            break;                                                          \
+          case 3:                                                           \
+            SEND_TO_CLIENT_OR_FAIL                                          \
+             (XML_ERROR_SYNTAX ("delete_" G_STRINGIFY (type),               \
+                                "Attempt to delete a predefined"            \
+                                " " G_STRINGIFY (type)));                   \
+            break;                                                          \
+          case 99:                                                          \
+            SEND_TO_CLIENT_OR_FAIL                                          \
+             (XML_ERROR_SYNTAX ("delete_filter",                            \
+                                "Permission denied"));                      \
+            g_log ("event filter", G_LOG_LEVEL_MESSAGE,                     \
+                   "Filter could not be deleted");                          \
+            break;                                                          \
+          default:                                                          \
+            SEND_TO_CLIENT_OR_FAIL                                          \
+             (XML_INTERNAL_ERROR ("delete_" G_STRINGIFY (type)));           \
+            g_log ("event " G_STRINGIFY (type), G_LOG_LEVEL_MESSAGE,        \
+                   capital " %s could not be deleted",                      \
+                   delete_ ## type ## _data-> type ## _id);                 \
+        }                                                                   \
+    else                                                                    \
+      SEND_TO_CLIENT_OR_FAIL                                                \
+       (XML_ERROR_SYNTAX ("delete_" G_STRINGIFY (type),                     \
+                          "DELETE_" G_STRINGIFY (upper) " requires a "      \
+                          G_STRINGIFY (type) "_id attribute"));             \
+    delete_ ## type ## _data_reset (delete_ ## type ## _data);              \
+    set_client_state (CLIENT_AUTHENTIC);                                    \
+    break
+
 /**
  * @brief Handle the end of an OMP XML element.
  *
@@ -12964,601 +13036,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
-      case CLIENT_DELETE_AGENT:
-        assert (strcasecmp ("DELETE_AGENT", element_name) == 0);
-        if (delete_agent_data->agent_id)
-          {
-            switch (delete_agent (delete_agent_data->agent_id,
-                                  delete_agent_data->ultimate))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_agent"));
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("delete_agent",
-                                      "Agent is in use"));
-                  break;
-                case 2:
-                  if (send_find_error_to_client ("delete_agent",
-                                                 "agent",
-                                                 delete_agent_data->agent_id,
-                                                 write_to_client,
-                                                 write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("delete_agent"));
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_agent",
-                              "DELETE_AGENT requires an agent_id"
-                              " attribute"));
-        delete_agent_data_reset (delete_agent_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_CONFIG:
-        assert (strcasecmp ("DELETE_CONFIG", element_name) == 0);
-        if (delete_config_data->config_id)
-          {
-            switch (delete_config (delete_config_data->config_id,
-                                   delete_config_data->ultimate))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_config"));
-                  g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                         "Scan config %s has been deleted",
-                         delete_config_data->config_id);
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_config",
-                                                            "Config is in use"));
-                  g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                         "Scan config %s could not be deleted",
-                         delete_config_data->config_id);
-                  break;
-                case 2:
-                  if (send_find_error_to_client ("delete_config",
-                                                 "config",
-                                                 delete_config_data->config_id,
-                                                 write_to_client,
-                                                 write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                         "Scan config %s could not be deleted",
-                         delete_config_data->config_id);
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
-                  g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                         "Scan config %s could not be deleted",
-                         delete_config_data->config_id);
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_config",
-                              "DELETE_CONFIG requires a config_id attribute"));
-        delete_config_data_reset (delete_config_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_ALERT:
-        assert (strcasecmp ("DELETE_ALERT", element_name) == 0);
-        if (delete_alert_data->alert_id)
-          {
-            switch (delete_alert (delete_alert_data->alert_id,
-                                      delete_alert_data->ultimate))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_alert"));
-                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-                         "Alert %s has been deleted",
-                         delete_alert_data->alert_id);
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("delete_alert",
-                                      "Alert is in use"));
-                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-                         "Alert %s could not be deleted",
-                         delete_alert_data->alert_id);
-                  break;
-                case 2:
-                  if (send_find_error_to_client
-                       ("delete_alert",
-                        "alert",
-                        delete_alert_data->alert_id,
-                        write_to_client,
-                        write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-                         "Alert %s could not be deleted",
-                         delete_alert_data->alert_id);
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("delete_alert",
-                                      "Permission denied"));
-                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-                         "Alert could not be deleted");
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("delete_alert"));
-                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-                         "Alert %s could not be deleted",
-                         delete_alert_data->alert_id);
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_alert",
-                              "DELETE_ALERT requires an alert_id"
-                              " attribute"));
-        delete_alert_data_reset (delete_alert_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_FILTER:
-        assert (strcasecmp ("DELETE_FILTER", element_name) == 0);
-        if (delete_filter_data->filter_id)
-          switch (delete_filter (delete_filter_data->filter_id,
-                                 delete_filter_data->ultimate))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_filter"));
-                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
-                       "Filter %s has been deleted",
-                       delete_filter_data->filter_id);
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_filter",
-                                                          "Filter is in use"));
-                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
-                       "Filter %s could not be deleted",
-                       delete_filter_data->filter_id);
-                break;
-              case 2:
-                if (send_find_error_to_client ("delete_filter",
-                                               "filter",
-                                               delete_filter_data->filter_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
-                       "Filter %s could not be deleted",
-                       delete_filter_data->filter_id);
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_filter",
-                                    "Attempt to delete a predefined"
-                                    " filter"));
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_filter"));
-                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
-                       "Filter %s could not be deleted",
-                       delete_filter_data->filter_id);
-            }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_filter",
-                              "DELETE_FILTER requires a filter_id attribute"));
-        delete_filter_data_reset (delete_filter_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_GROUP:
-        assert (strcasecmp ("DELETE_GROUP", element_name) == 0);
-        if (delete_group_data->group_id)
-          switch (delete_group (delete_group_data->group_id,
-                                 delete_group_data->ultimate))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_group"));
-                g_log ("event group", G_LOG_LEVEL_MESSAGE,
-                       "Group %s has been deleted",
-                       delete_group_data->group_id);
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_group",
-                                                          "Group is in use"));
-                g_log ("event group", G_LOG_LEVEL_MESSAGE,
-                       "Group %s could not be deleted",
-                       delete_group_data->group_id);
-                break;
-              case 2:
-                if (send_find_error_to_client ("delete_group",
-                                               "group",
-                                               delete_group_data->group_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                g_log ("event group", G_LOG_LEVEL_MESSAGE,
-                       "Group %s could not be deleted",
-                       delete_group_data->group_id);
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_group",
-                                    "Attempt to delete a predefined"
-                                    " group"));
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_group"));
-                g_log ("event group", G_LOG_LEVEL_MESSAGE,
-                       "Group %s could not be deleted",
-                       delete_group_data->group_id);
-            }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_group",
-                              "DELETE_GROUP requires a group_id attribute"));
-        delete_group_data_reset (delete_group_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_LSC_CREDENTIAL:
-        assert (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0);
-        if (delete_lsc_credential_data->lsc_credential_id)
-          switch (delete_lsc_credential
-                   (delete_lsc_credential_data->lsc_credential_id,
-                    delete_lsc_credential_data->ultimate))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_lsc_credential"));
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_lsc_credential",
-                                    "LSC credential is in use"));
-                break;
-              case 2:
-                if (send_find_error_to_client
-                     ("delete_lsc_credential",
-                      "LSC credential",
-                      delete_lsc_credential_data->lsc_credential_id,
-                      write_to_client,
-                      write_to_client_data))
-
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("delete_lsc_credential"));
-            }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_lsc_credential",
-                              "DELETE_LSC_CREDENTIAL requires an"
-                              " lsc_credential_id attribute"));
-        delete_lsc_credential_data_reset (delete_lsc_credential_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_PERMISSION:
-        assert (strcasecmp ("DELETE_PERMISSION", element_name) == 0);
-        if (delete_permission_data->permission_id)
-          switch (delete_permission (delete_permission_data->permission_id,
-                                 delete_permission_data->ultimate))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_permission"));
-                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
-                       "Permission %s has been deleted",
-                       delete_permission_data->permission_id);
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_permission",
-                                    "Permission is in use"));
-                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
-                       "Permission %s could not be deleted",
-                       delete_permission_data->permission_id);
-                break;
-              case 2:
-                if (send_find_error_to_client
-                     ("delete_permission",
-                      "permission",
-                      delete_permission_data->permission_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
-                       "Permission %s could not be deleted",
-                       delete_permission_data->permission_id);
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_permission",
-                                    "Attempt to delete a predefined"
-                                    " permission"));
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("delete_permission"));
-                g_log ("event permission", G_LOG_LEVEL_MESSAGE,
-                       "Permission %s could not be deleted",
-                       delete_permission_data->permission_id);
-            }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_permission",
-                              "DELETE_PERMISSION requires a permission_id"
-                              " attribute"));
-        delete_permission_data_reset (delete_permission_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_PORT_LIST:
-        assert (strcasecmp ("DELETE_PORT_LIST", element_name) == 0);
-        if (delete_port_list_data->port_list_id)
-          switch (delete_port_list (delete_port_list_data->port_list_id,
-                                    delete_port_list_data->ultimate))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_port_list"));
-                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
-                       "Port_List %s has been deleted",
-                       delete_port_list_data->port_list_id);
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_port_list",
-                                                          "Port list is in use"));
-                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
-                       "Port list %s could not be deleted",
-                       delete_port_list_data->port_list_id);
-                break;
-              case 2:
-                if (send_find_error_to_client ("delete_port_list",
-                                               "port_list",
-                                               delete_port_list_data->port_list_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
-                       "Port list %s could not be deleted",
-                       delete_port_list_data->port_list_id);
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_port_list",
-                                    "Attempt to delete a predefined port"
-                                    " list"));
-                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
-                       "Port list %s could not be deleted",
-                       delete_port_list_data->port_list_id);
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_port_list"));
-                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
-                       "Port list %s could not be deleted",
-                       delete_port_list_data->port_list_id);
-            }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_port_list",
-                              "DELETE_PORT_LIST requires a port_list_id attribute"));
-        delete_port_list_data_reset (delete_port_list_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_PORT_RANGE:
-        assert (strcasecmp ("DELETE_PORT_RANGE", element_name) == 0);
-        if (delete_port_range_data->port_range_id)
-          switch (delete_port_range (delete_port_range_data->port_range_id))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_port_range"));
-                g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
-                       "Port_Range %s has been deleted",
-                       delete_port_range_data->port_range_id);
-                break;
-              case 1:
-                if (send_find_error_to_client ("delete_port_range",
-                                               "port_range",
-                                               delete_port_range_data->port_range_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
-                       "Port range %s could not be deleted",
-                       delete_port_range_data->port_range_id);
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_port_range",
-                                    "Port range belongs to predefined port"
-                                    " list"));
-                g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
-                       "Port range %s could not be deleted",
-                       delete_port_range_data->port_range_id);
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_port_range"));
-                g_log ("event port_range", G_LOG_LEVEL_MESSAGE,
-                       "Port range %s could not be deleted",
-                       delete_port_range_data->port_range_id);
-            }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_port_range",
-                              "DELETE_PORT_RANGE requires a port_range_id attribute"));
-        delete_port_range_data_reset (delete_port_range_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_SLAVE:
-        assert (strcasecmp ("DELETE_SLAVE", element_name) == 0);
-        if (delete_slave_data->slave_id)
-          {
-            switch (delete_slave (delete_slave_data->slave_id,
-                                  delete_slave_data->ultimate))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_slave"));
-                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
-                         "Slave %s has been deleted",
-                         delete_slave_data->slave_id);
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_slave",
-                                                            "Slave is in use"));
-                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
-                         "Slave %s could not be deleted",
-                         delete_slave_data->slave_id);
-                  break;
-                case 2:
-                  if (send_find_error_to_client ("delete_slave",
-                                                 "slave",
-                                                 delete_slave_data->slave_id,
-                                                 write_to_client,
-                                                 write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_slave"));
-                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
-                         "Slave %s could not be deleted",
-                         delete_slave_data->slave_id);
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_slave",
-                              "DELETE_SLAVE requires a slave_id attribute"));
-        delete_slave_data_reset (delete_slave_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_TAG:
-        assert (strcasecmp ("DELETE_TAG", element_name) == 0);
-        if (delete_tag_data->tag_id)
-          switch (delete_tag (delete_tag_data->tag_id,
-                              delete_tag_data->ultimate))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_tag"));
-                g_log ("event tag", G_LOG_LEVEL_MESSAGE,
-                       "Tag %s has been deleted",
-                       delete_tag_data->tag_id);
-                break;
-              case 1:
-                if (send_find_error_to_client ("delete_tag",
-                                               "tag",
-                                               delete_tag_data->tag_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                g_log ("event tag", G_LOG_LEVEL_MESSAGE,
-                       "Tag %s could not be deleted",
-                       delete_tag_data->tag_id);
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_tag"));
-                g_log ("event tag", G_LOG_LEVEL_MESSAGE,
-                       "Tag %s could not be deleted",
-                       delete_tag_data->tag_id);
-            }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_tag",
-                              "DELETE_TAG requires a tag_id attribute"));
-        delete_tag_data_reset (delete_tag_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_TARGET:
-        assert (strcasecmp ("DELETE_TARGET", element_name) == 0);
-        if (delete_target_data->target_id)
-          switch (delete_target (delete_target_data->target_id,
-                                 delete_target_data->ultimate))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_target"));
-                g_log ("event target", G_LOG_LEVEL_MESSAGE,
-                       "Target %s has been deleted",
-                       delete_target_data->target_id);
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_target",
-                                                          "Target is in use"));
-                g_log ("event target", G_LOG_LEVEL_MESSAGE,
-                       "Target %s could not be deleted",
-                       delete_target_data->target_id);
-                break;
-              case 2:
-                if (send_find_error_to_client ("delete_target",
-                                               "target",
-                                               delete_target_data->target_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                g_log ("event target", G_LOG_LEVEL_MESSAGE,
-                       "Target %s could not be deleted",
-                       delete_target_data->target_id);
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_target",
-                                    "Attempt to delete a predefined"
-                                    " target"));
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
-                g_log ("event target", G_LOG_LEVEL_MESSAGE,
-                       "Target %s could not be deleted",
-                       delete_target_data->target_id);
-            }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_target",
-                              "DELETE_TARGET requires a target_id attribute"));
-        delete_target_data_reset (delete_target_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
+      CASE_DELETE (AGENT, agent, "Agent");
+      CASE_DELETE (CONFIG, config, "Config");
+      CASE_DELETE (ALERT, alert, "Alert");
+      CASE_DELETE (FILTER, filter, "Filter");
+      CASE_DELETE (GROUP, group, "Group");
+      CASE_DELETE (LSC_CREDENTIAL, lsc_credential, "LSC Credential");
+      CASE_DELETE (PERMISSION, permission, "Permission");
+      CASE_DELETE (PORT_LIST, port_list, "Port list");
+      CASE_DELETE (PORT_RANGE, port_range, "Port range");
+      CASE_DELETE (SLAVE, slave, "Slave");
+      CASE_DELETE (TAG, tag, "Tag");
+      CASE_DELETE (TARGET, target, "Target");
 
       case CLIENT_DELETE_TASK:
         if (delete_task_data->task_id)

@@ -1,5 +1,18 @@
 2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (delete_port_range_data_t): Add dummy ultimate field.
+	(CASE_DELETE): New macro.
+	(omp_xml_handle_end_element): Replace most delete cases with macro call.
+	This adds the permission denied check to these cases.
+
+	* src/manage_sql.c (delete_port_range): Add dummy ultimate arg.
+	(delete_filter): Add permission check.
+	(delete_tag): Make return value same as other delete functions.
+
+	* src/manage.h: Update header accordingly.
+
+2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_alert, create_user): Add permission checks.
 
 	* src/omp.c (omp_xml_handle_end_element): Add permission case to
