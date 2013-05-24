@@ -1,5 +1,13 @@
 2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (delete_report_data_t): Add dummy ultimate field.
+	(omp_xml_handle_end_element): Move all the delete cases up into
+	alphabetical order.
+
+	* src/manage_sql.c (delete_report): Update function name.
+
+2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Replace more delete cases with
 	macro call.  This adds the permission denied check to these cases.  Add
 	the check to DELETE_TASK and DELETE_USER too.

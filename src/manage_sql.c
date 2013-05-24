@@ -24531,7 +24531,7 @@ delete_report (const char *report_id, int dummy)
       return 1;
     }
 
-  ret = delete_report (report);
+  ret = delete_report_internal (report);
   if (ret)
     {
       sql ("ROLLBACK;");

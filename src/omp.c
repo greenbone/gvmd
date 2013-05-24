@@ -1810,6 +1810,7 @@ delete_override_data_reset (delete_override_data_t *data)
 typedef struct
 {
   char *report_id;   ///< ID of report to delete.
+  int ultimate;      ///< Dummy field for generic macros.
 } delete_report_data_t;
 
 /**
@@ -10429,6 +10430,145 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         SENDF_TO_CLIENT_OR_FAIL ("</commands_response>");
         break;
 
+      CASE_DELETE (AGENT, agent, "Agent");
+      CASE_DELETE (ALERT, alert, "Alert");
+      CASE_DELETE (CONFIG, config, "Config");
+      CASE_DELETE (FILTER, filter, "Filter");
+      CASE_DELETE (GROUP, group, "Group");
+      CASE_DELETE (LSC_CREDENTIAL, lsc_credential, "LSC Credential");
+      CASE_DELETE (NOTE, note, "Note");
+      CASE_DELETE (OVERRIDE, override, "Override");
+      CASE_DELETE (PERMISSION, permission, "Permission");
+      CASE_DELETE (PORT_LIST, port_list, "Port list");
+      CASE_DELETE (PORT_RANGE, port_range, "Port range");
+      CASE_DELETE (REPORT, report, "Report");
+      CASE_DELETE (REPORT_FORMAT, report_format, "Report format");
+      CASE_DELETE (SCHEDULE, schedule, "Schedule");
+      CASE_DELETE (SLAVE, slave, "Slave");
+      CASE_DELETE (TAG, tag, "Tag");
+      CASE_DELETE (TARGET, target, "Target");
+
+      case CLIENT_DELETE_TASK:
+        if (delete_task_data->task_id)
+          {
+            switch (request_delete_task_uuid (delete_task_data->task_id,
+                                              delete_task_data->ultimate))
+              {
+                case 0:    /* Deleted. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s has been deleted",
+                         delete_task_data->task_id);
+                  break;
+                case 1:    /* Delete requested. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("delete_task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Deletion of task %s has been requested",
+                         delete_task_data->task_id);
+                  break;
+                case 2:    /* Hidden task. */
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_task",
+                                      "Attempt to delete a hidden task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s could not be deleted",
+                         delete_task_data->task_id);
+                  break;
+                case 3:  /* Failed to find task. */
+                  if (send_find_error_to_client
+                       ("delete_task",
+                        "task",
+                        delete_task_data->task_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_task",
+                                      "Permission denied"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task could not be modified");
+                  break;
+                default:   /* Programming error. */
+                  assert (0);
+                case -1:
+                  /* to_scanner is full. */
+                  /** @todo Or some other error occurred. */
+                  /** @todo Consider reverting parsing for retry. */
+                  /** @todo process_omp_client_input must return -2. */
+                  tracef ("delete_task failed\n");
+                  abort ();
+                  break;
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_task",
+                              "DELETE_TASK requires a task_id attribute"));
+        delete_task_data_reset (delete_task_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_DELETE_USER:
+        assert (strcasecmp ("DELETE_USER", element_name) == 0);
+        if (delete_user_data->user_id || delete_user_data->name)
+          switch (delete_user (delete_user_data->user_id,
+                               delete_user_data->name,
+                               delete_user_data->ultimate))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_user"));
+                g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                       "User %s has been deleted",
+                       delete_user_data->user_id);
+                break;
+              case 2:
+                if (send_find_error_to_client ("delete_user",
+                                               "user",
+                                               delete_user_data->user_id
+                                                ? delete_user_data->user_id
+                                                : delete_user_data->name,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                       "User %s could not be deleted",
+                       delete_user_data->user_id);
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_user",
+                                    "Attempt to delete a predefined"
+                                    " user"));
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_user",
+                                    "Permission denied"));
+                g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                       "User could not be modified");
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_user"));
+                g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                       "User %s could not be deleted",
+                       delete_user_data->user_id);
+            }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_user",
+                              "DELETE_USER requires a user_id attribute"));
+        delete_user_data_reset (delete_user_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_GET_PREFERENCES:
         {
           iterator_t prefs;
@@ -11378,12 +11518,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-
-      CASE_DELETE (NOTE, note, "Note");
-      CASE_DELETE (OVERRIDE, override, "Override");
-      CASE_DELETE (REPORT, report, "Report");
-      CASE_DELETE (REPORT_FORMAT, report_format, "Report format");
-      CASE_DELETE (SCHEDULE, schedule, "Schedule");
 
       case CLIENT_GET_REPORTS:
         assert (strcasecmp ("GET_REPORTS", element_name) == 0);
@@ -12805,140 +12939,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-
-      CASE_DELETE (AGENT, agent, "Agent");
-      CASE_DELETE (CONFIG, config, "Config");
-      CASE_DELETE (ALERT, alert, "Alert");
-      CASE_DELETE (FILTER, filter, "Filter");
-      CASE_DELETE (GROUP, group, "Group");
-      CASE_DELETE (LSC_CREDENTIAL, lsc_credential, "LSC Credential");
-      CASE_DELETE (PERMISSION, permission, "Permission");
-      CASE_DELETE (PORT_LIST, port_list, "Port list");
-      CASE_DELETE (PORT_RANGE, port_range, "Port range");
-      CASE_DELETE (SLAVE, slave, "Slave");
-      CASE_DELETE (TAG, tag, "Tag");
-      CASE_DELETE (TARGET, target, "Target");
-
-      case CLIENT_DELETE_TASK:
-        if (delete_task_data->task_id)
-          {
-            switch (request_delete_task_uuid (delete_task_data->task_id,
-                                              delete_task_data->ultimate))
-              {
-                case 0:    /* Deleted. */
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_task"));
-                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                         "Task %s has been deleted",
-                         delete_task_data->task_id);
-                  break;
-                case 1:    /* Delete requested. */
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("delete_task"));
-                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                         "Deletion of task %s has been requested",
-                         delete_task_data->task_id);
-                  break;
-                case 2:    /* Hidden task. */
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("delete_task",
-                                      "Attempt to delete a hidden task"));
-                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                         "Task %s could not be deleted",
-                         delete_task_data->task_id);
-                  break;
-                case 3:  /* Failed to find task. */
-                  if (send_find_error_to_client
-                       ("delete_task",
-                        "task",
-                        delete_task_data->task_id,
-                        write_to_client,
-                        write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("delete_task",
-                                      "Permission denied"));
-                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                         "Task could not be modified");
-                  break;
-                default:   /* Programming error. */
-                  assert (0);
-                case -1:
-                  /* to_scanner is full. */
-                  /** @todo Or some other error occurred. */
-                  /** @todo Consider reverting parsing for retry. */
-                  /** @todo process_omp_client_input must return -2. */
-                  tracef ("delete_task failed\n");
-                  abort ();
-                  break;
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_task",
-                              "DELETE_TASK requires a task_id attribute"));
-        delete_task_data_reset (delete_task_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_USER:
-        assert (strcasecmp ("DELETE_USER", element_name) == 0);
-        if (delete_user_data->user_id || delete_user_data->name)
-          switch (delete_user (delete_user_data->user_id,
-                               delete_user_data->name,
-                               delete_user_data->ultimate))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_user"));
-                g_log ("event user", G_LOG_LEVEL_MESSAGE,
-                       "User %s has been deleted",
-                       delete_user_data->user_id);
-                break;
-              case 2:
-                if (send_find_error_to_client ("delete_user",
-                                               "user",
-                                               delete_user_data->user_id
-                                                ? delete_user_data->user_id
-                                                : delete_user_data->name,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                g_log ("event user", G_LOG_LEVEL_MESSAGE,
-                       "User %s could not be deleted",
-                       delete_user_data->user_id);
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_user",
-                                    "Attempt to delete a predefined"
-                                    " user"));
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_user",
-                                    "Permission denied"));
-                g_log ("event user", G_LOG_LEVEL_MESSAGE,
-                       "User could not be modified");
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_user"));
-                g_log ("event user", G_LOG_LEVEL_MESSAGE,
-                       "User %s could not be deleted",
-                       delete_user_data->user_id);
-            }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_user",
-                              "DELETE_USER requires a user_id attribute"));
-        delete_user_data_reset (delete_user_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
 
       case CLIENT_DESCRIBE_AUTH:
         {
