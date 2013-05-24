@@ -1,3 +1,12 @@
+2013-05-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (setting_severity): New function.
+
+	* src/manage.h: Add setting_severity prototype.
+
+	* src/omp.c (omp_xml_handle_end_element): Send user severity class in
+	authenticate response.
+
 2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Ensure there is at least one user.

@@ -10285,6 +10285,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else
                 {
                   const char *timezone;
+                  char *severity;
 
                   timezone = (current_credentials.timezone
                               && strlen (current_credentials.timezone))
@@ -10301,17 +10302,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   tzset ();
 
+                  severity = setting_severity ();
                   SENDF_TO_CLIENT_OR_FAIL
                    ("<authenticate_response"
                     " status=\"" STATUS_OK "\""
                     " status_text=\"" STATUS_OK_TEXT "\">"
                     "<role>%s</role>"
                     "<timezone>%s</timezone>"
+                    "<severity>%s</severity>"
                     "</authenticate_response>",
                     current_credentials.role
                       ? current_credentials.role
                       : "",
-                    timezone);
+                    timezone,
+                    severity);
+                  g_free (severity);
 
                   set_client_state (CLIENT_AUTHENTIC);
                 }

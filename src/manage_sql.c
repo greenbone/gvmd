@@ -50796,6 +50796,24 @@ setting_filter (const char *resource)
 }
 
 /**
+ * @brief Return the Severity Class user setting.
+ *
+ * @return User Severity Class in settings if it exists, "" otherwise.
+ */
+char *
+setting_severity ()
+{
+  return sql_string (0, 0,
+                     "SELECT value FROM settings WHERE name = 'Severity Class'"
+                     " AND ((owner IS NULL)"
+                     "      OR (owner ="
+                     "          (SELECT ROWID FROM users"
+                     "           WHERE users.uuid = '%s')))"
+                     " ORDER BY owner DESC LIMIT 0,1;",
+                     current_credentials.uuid);
+}
+
+/**
  * @brief Initialise a setting iterator, including observed settings.
  *
  * @param[in]  iterator    Iterator.
