@@ -17114,6 +17114,26 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     g_free (dir);
   }
 
+  /* For now, ensure there is a user. */
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM users;")
+      == 0)
+    {
+      char *uuid;
+      array_t *roles;
+
+      uuid = openvas_uuid_make ();
+      roles = make_array ();
+      array_add (roles, g_strdup (ROLE_UUID_ADMIN));
+
+      sql ("INSERT INTO meta (name, value) VALUES ('admin', '%s');", uuid);
+      create_user ("admin", uuid, NULL, 0, NULL, NULL, NULL, roles, NULL, NULL);
+
+      array_free (roles);
+      free (uuid);
+    }
+
   /* Ensure the predefined roles exists. */
 
   if (sql_int (0, 0,

@@ -1,3 +1,7 @@
+2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Ensure there is at least one user.
+
 2013-05-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/openvas-scapdata-sync.in (): Remove command line parameter
