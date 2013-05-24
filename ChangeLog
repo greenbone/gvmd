@@ -1,5 +1,10 @@
 2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Correct MODIFY_ALERT event
+	logs.
+
+2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Capitalise MODIFY_AGENT event
 	logs for consistency.
 

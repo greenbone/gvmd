@@ -18653,7 +18653,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
                 g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-                       "Alert could not be created");
+                       "Alert could not be modified");
                 break;
               case 5:
                 SEND_TO_CLIENT_OR_FAIL
@@ -18661,14 +18661,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "Filter type must be report if"
                                     " specified"));
                 g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-                       "Alert could not be created");
+                       "Alert could not be modified");
                 break;
               case 6:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_alert",
                                     "Validation of email address failed"));
                 g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-                       "Alert could not be created");
+                       "Alert could not be modified");
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
