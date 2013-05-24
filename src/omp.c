@@ -11379,241 +11379,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
-      case CLIENT_DELETE_NOTE:
-        assert (strcasecmp ("DELETE_NOTE", element_name) == 0);
-        if (delete_note_data->note_id)
-          switch (delete_note (delete_note_data->note_id,
-                               delete_note_data->ultimate))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_note"));
-                g_log ("event note", G_LOG_LEVEL_MESSAGE,
-                       "Note %s has been deleted",
-                       delete_note_data->note_id);
-                break;
-              case 2:
-                if (send_find_error_to_client ("delete_note",
-                                               "note",
-                                               delete_note_data->note_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                g_log ("event note", G_LOG_LEVEL_MESSAGE,
-                       "Note %s could not be deleted",
-                       delete_note_data->note_id);
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_note"));
-                g_log ("event note", G_LOG_LEVEL_MESSAGE,
-                       "Note %s could not be deleted",
-                       delete_note_data->note_id);
-            }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_note",
-                              "DELETE_NOTE requires a note_id attribute"));
-        delete_note_data_reset (delete_note_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_OVERRIDE:
-        assert (strcasecmp ("DELETE_OVERRIDE", element_name) == 0);
-        if (delete_override_data->override_id)
-          switch (delete_override (delete_override_data->override_id,
-                               delete_override_data->ultimate))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_override"));
-                g_log ("event override", G_LOG_LEVEL_MESSAGE,
-                       "Override %s has been deleted",
-                       delete_override_data->override_id);
-                break;
-              case 2:
-                if (send_find_error_to_client
-                     ("delete_override",
-                      "override",
-                      delete_override_data->override_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                g_log ("event override", G_LOG_LEVEL_MESSAGE,
-                       "Override %s could not be deleted",
-                       delete_override_data->override_id);
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR
-                                         ("delete_override"));
-                g_log ("event override", G_LOG_LEVEL_MESSAGE,
-                       "Override %s could not be deleted",
-                       delete_override_data->override_id);
-            }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_override",
-                              "DELETE_OVERRIDE requires a override_id"
-                              " attribute"));
-        delete_override_data_reset (delete_override_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_REPORT:
-        assert (strcasecmp ("DELETE_REPORT", element_name) == 0);
-        if (delete_report_data->report_id)
-          {
-            report_t report;
-
-            /** @todo Check syntax of delete_report_data->report_id and reply with
-             *        STATUS_ERROR_SYNTAX.
-             *
-             *        This is a common situation.  If it changes here then all
-             *        the commands must change.
-             */
-            if (find_report (delete_report_data->report_id, &report))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_report"));
-            else if (report == 0)
-              {
-                if (send_find_error_to_client ("delete_report",
-                                               "report",
-                                               delete_report_data->report_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (manage_delete_report (report))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_report"));
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("delete_report",
-                                      "Attempt to delete a hidden report"));
-                  break;
-                case 2:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("delete_report",
-                                      "Report is in use"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("delete_report"));
-                  break;
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_report",
-                              "DELETE_REPORT requires a report_id attribute"));
-        delete_report_data_reset (delete_report_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_REPORT_FORMAT:
-        assert (strcasecmp ("DELETE_REPORT_FORMAT", element_name) == 0);
-        if (delete_report_format_data->report_format_id)
-          {
-            switch (delete_report_format
-                     (delete_report_format_data->report_format_id,
-                      delete_report_format_data->ultimate))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_report_format"));
-                  break;
-                case 2:
-                  if (send_find_error_to_client
-                       ("delete_report_format",
-                        "report format",
-                        delete_report_format_data->report_format_id,
-                        write_to_client,
-                        write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 3:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("delete_report_format",
-                                      "Attempt to delete a predefined report"
-                                      " format"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("delete_report_format"));
-                  break;
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_report_format",
-                              "DELETE_REPORT_FORMAT requires a report_format_id"
-                              " attribute"));
-        delete_report_format_data_reset (delete_report_format_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_DELETE_SCHEDULE:
-        assert (strcasecmp ("DELETE_SCHEDULE", element_name) == 0);
-        if (delete_schedule_data->schedule_id)
-          {
-            switch (delete_schedule (delete_schedule_data->schedule_id,
-                                     delete_schedule_data->ultimate))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_schedule"));
-                  g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
-                         "Schedule %s has been deleted",
-                         delete_schedule_data->schedule_id);
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("delete_schedule",
-                                      "Schedule is in use"));
-                  g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
-                         "Schedule %s could not be deleted",
-                         delete_schedule_data->schedule_id);
-                  break;
-                case 2:
-                  if (send_find_error_to_client
-                       ("delete_schedule",
-                        "schedule",
-                        delete_schedule_data->schedule_id,
-                        write_to_client,
-                        write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
-                         "Schedule %s could not be deleted",
-                         delete_schedule_data->schedule_id);
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("delete_schedule"));
-                  g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
-                         "Schedule %s could not be deleted",
-                         delete_schedule_data->schedule_id);
-                  break;
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_schedule",
-                              "DELETE_SCHEDULE requires a schedule_id"
-                              " attribute"));
-        delete_schedule_data_reset (delete_schedule_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
+      CASE_DELETE (NOTE, note, "Note");
+      CASE_DELETE (OVERRIDE, override, "Override");
+      CASE_DELETE (REPORT, report, "Report");
+      CASE_DELETE (REPORT_FORMAT, report_format, "Report format");
+      CASE_DELETE (SCHEDULE, schedule, "Schedule");
 
       case CLIENT_GET_REPORTS:
         assert (strcasecmp ("GET_REPORTS", element_name) == 0);
@@ -13087,6 +12857,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       return;
                     }
                   break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_task",
+                                      "Permission denied"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task could not be modified");
+                  break;
                 default:   /* Programming error. */
                   assert (0);
                 case -1:
@@ -13141,6 +12918,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("delete_user",
                                     "Attempt to delete a predefined"
                                     " user"));
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_user",
+                                    "Permission denied"));
+                g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                       "User could not be modified");
                 break;
               default:
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_user"));

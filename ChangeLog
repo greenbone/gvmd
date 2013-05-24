@@ -1,5 +1,21 @@
 2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Replace more delete cases with
+	macro call.  This adds the permission denied check to these cases.  Add
+	the check to DELETE_TASK and DELETE_USER too.
+
+	* src/manage_sql.c (delete_report_internal): New function.  Was
+	delete_report.
+	(manage_delete_report): Remove.  Now delete_report.
+	(delete_report): New function.  Was delete_report.  Adjust to take ID
+	and ultimate flag like other delete functions.
+
+	* src/manage.c (delete_reports): Update function name.
+
+	* src/manage_sql.h, src/manage.h: Update header accordingly.
+
+2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (delete_port_range_data_t): Add dummy ultimate field.
 	(CASE_DELETE): New macro.
 	(omp_xml_handle_end_element): Replace most delete cases with macro call.

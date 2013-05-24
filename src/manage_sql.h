@@ -38,7 +38,7 @@ void manage_transaction_stop (gboolean);
 
 void trim_report (report_t);
 
-int delete_report (report_t);
+int delete_report_internal (report_t);
 
 int set_report_scan_run_status (report_t, task_status_t);
 

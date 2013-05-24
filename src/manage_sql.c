@@ -24402,7 +24402,7 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
  * @return 0 success, 1 report is hidden, 2 report is in use, -1 error.
  */
 int
-delete_report (report_t report)
+delete_report_internal (report_t report)
 {
   task_t task;
   char *slave_task_uuid;
@@ -24498,16 +24498,38 @@ delete_report (report_t report)
 /**
  * @brief Delete a report.
  *
- * @param[in]  report  Report.
+ * @param[in]  report_id  UUID of report.
+ * @param[in]  dummy      Dummy arg to match other delete functions.
  *
- * @return 0 success, 1 report is hidden, 2 report is in use, -1 error.
+ * @return 0 success, 1 report is hidden, 2 report is in use, 99 permission
+ *         denied, -1 error.
  */
 int
-manage_delete_report (report_t report)
+delete_report (const char *report_id, int dummy)
 {
+  report_t report;
   int ret;
 
   sql ("BEGIN EXCLUSIVE;");
+
+  if (user_may ("delete_report") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  report = 0;
+  if (find_report (report_id, &report))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (report == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
 
   ret = delete_report (report);
   if (ret)
