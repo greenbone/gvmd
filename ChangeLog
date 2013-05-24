@@ -1,5 +1,12 @@
 2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_alert, create_user): Add permission checks.
+
+	* src/omp.c (omp_xml_handle_end_element): Add permission case to
+	DELETE_ALERT and CREATE_USER switches.
+
+2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage): Set credential UUID because create_user
 	needs that.  Delete any old admin meta rows, just to be sure.
 

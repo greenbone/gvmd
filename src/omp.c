@@ -13089,6 +13089,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          "Alert %s could not be deleted",
                          delete_alert_data->alert_id);
                   break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_alert",
+                                      "Permission denied"));
+                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                         "Alert could not be deleted");
+                  break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("delete_alert"));
@@ -19086,6 +19093,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
                 g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                       "User could not be created");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_user",
+                                    "Permission denied"));
+                g_log ("event user", G_LOG_LEVEL_MESSAGE,
                        "User could not be created");
                 break;
               case -2:

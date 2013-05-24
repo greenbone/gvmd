@@ -12150,7 +12150,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
  * @param[in]  ultimate      Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 1 fail because a task refers to the alert, 2 failed
- *         to find target, -1 error.
+ *         to find target, 99 permission denied, -1 error.
  */
 int
 delete_alert (const char *alert_id, int ultimate)
@@ -12158,6 +12158,12 @@ delete_alert (const char *alert_id, int ultimate)
   alert_t alert = 0;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_alert") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_alert (alert_id, &alert))
     {
@@ -52262,7 +52268,8 @@ find_user_by_name (const char* name, user_t *user)
  *                          always be set to NULL on success.
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
- *         2 failed to find role, -1 on error, -2 if user exists already.
+ *         2 failed to find role, 99 permission denied, -1 on error, -2 if
+ *         user exists already.
  */
 int
 create_user (const gchar * name, const gchar * password, const gchar * hosts,
@@ -52310,6 +52317,12 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
     }
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("create_user") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   /* Check if user exists already. */
 
