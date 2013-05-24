@@ -18531,27 +18531,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("modify_agent",
                                     "agent with new name exists already"));
                 g_log ("event agent", G_LOG_LEVEL_MESSAGE,
-                       "agent could not be modified");
+                       "Agent could not be modified");
                 break;
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_agent",
                                     "MODIFY_agent requires a agent_id"));
                 g_log ("event agent", G_LOG_LEVEL_MESSAGE,
-                       "agent could not be modified");
+                       "Agent could not be modified");
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_agent",
                                     "Permission denied"));
                 g_log ("event agent", G_LOG_LEVEL_MESSAGE,
-                       "agent could not be modified");
+                       "Agent could not be modified");
                 break;
               default:
               case -1:
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agent"));
                 g_log ("event agent", G_LOG_LEVEL_MESSAGE,
-                       "agent could not be modified");
+                       "Agent could not be modified");
                 break;
             }
 

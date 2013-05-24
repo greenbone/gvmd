@@ -1,5 +1,10 @@
 2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Capitalise MODIFY_AGENT event
+	logs for consistency.
+
+2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Add event logs to all
 	permission denied return cases where the other cases also have logs.
 	Clean up some of the log indenting.  Correct the name in the
