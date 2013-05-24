@@ -110,7 +110,6 @@ do_help () {
   echo " --version	display version"
   echo " --describe	display current scap feed info"
   echo " --feedversion   display current scap feed version"
-  echo " --dst-dir <dir>	SCAP destination directory"
   echo "Options:"
   echo " --verbose       enable verbose log messages"
   echo ""
@@ -781,10 +780,6 @@ if [ -n "$1" ]; then
       --feedversion)
         do_feedversion
         exit 0
-        ;;
-      --nvt-dir)
-        SCAP_DIR="$2"
-        shift
         ;;
     esac
     shift
