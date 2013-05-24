@@ -14685,41 +14685,43 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
                                         "Config exists already"));
-                      g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                             "Scan config could not be created");
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config could not be created");
                     break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
                                         "Permission denied"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config could not be created");
                     break;
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("create_config"));
-                      g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                             "Scan config could not be created");
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config could not be created");
                     break;
                   case -2:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
                                         "CREATE_CONFIG import name must be at"
                                         " least one character long"));
-                      g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                             "Scan config could not be created");
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config could not be created");
                     break;
                   case -3:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
                                         "Error in NVT_SELECTORS element."));
-                      g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                             "Scan config could not be created");
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config could not be created");
                     break;
                   case -4:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
                                         "Error in PREFERENCES element."));
-                      g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                             "Scan config could not be created");
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config could not be created");
                     break;
                 }
             }
@@ -14790,8 +14792,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_agent",
+                     (XML_ERROR_SYNTAX ("create_config",
                                         "Permission denied"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config could not be created");
                     break;
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
@@ -14842,6 +14846,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_config",
                                     "Permission denied"));
+                g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                       "Scan config could not be created");
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -14989,6 +14995,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_alert",
                                       "Permission denied"));
+                  g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                         "Alert could not be created");
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -15097,6 +15105,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
                                         "Permission denied"));
+                    g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                           "Alert could not be created");
                     break;
                   default:
                     assert (0);
@@ -15247,6 +15257,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_filter",
                                       "Permission denied"));
+                  g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                         "Filter could not be created");
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -15301,6 +15313,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_filter",
                                     "Permission denied"));
+                g_log ("event filter", G_LOG_LEVEL_MESSAGE,
+                       "Filter could not be created");
                 break;
               default:
                 SEND_TO_CLIENT_OR_FAIL
@@ -15499,6 +15513,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_lsc_credential",
                                       "Permission denied"));
+                  g_log ("event lsc_credential", G_LOG_LEVEL_MESSAGE,
+                         "LSC Credential could not be created");
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -15634,6 +15650,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_note",
                                       "Permission denied"));
+                  g_log ("event note", G_LOG_LEVEL_MESSAGE,
+                         "Note could not be created");
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -15801,6 +15819,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_override",
                                       "Permission denied"));
+                  g_log ("event override", G_LOG_LEVEL_MESSAGE,
+                         "Override could not be created");
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -16151,6 +16171,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_port_list",
                                         "Permission denied"));
+                    g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                           "Port list could not be created");
                     break;
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
@@ -16215,6 +16237,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_port_list",
                                       "Permission denied"));
+                  g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                         "Port List could not be created");
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -16258,6 +16282,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_port_list",
                                     "Permission denied"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port list could not be created");
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -16453,6 +16479,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report",
                                     "Permission denied"));
+                g_log ("event report", G_LOG_LEVEL_MESSAGE,
+                       "Report could not be created");
                 break;
               case -1:
               case -2:
@@ -16742,6 +16770,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_report_format",
                                       "Permission denied"));
+                  g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                         "Report Format could not be created");
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -16880,6 +16910,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_report_format",
                                         "Permission denied"));
+                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                           "Report format could not be created");
                     break;
                   default:
                     {
@@ -17050,6 +17082,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_schedule",
                                       "Permission denied"));
+                  g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                         "Schedule could not be created");
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -17142,6 +17176,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_schedule",
                                     "Permission denied"));
+                g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                       "Schedule could not be created");
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -17226,6 +17262,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_slave",
                                       "Permission denied"));
+                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                         "Slave could not be created");
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -17301,6 +17339,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_slave",
                                     "Permission denied"));
+                g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                       "Slave could not be created");
                 break;
               default:
                 assert (0);
@@ -17370,6 +17410,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_tag",
                                       "Permission denied"));
+                  g_log ("event tag", G_LOG_LEVEL_MESSAGE,
+                         "Tag could not be created");
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -17433,7 +17475,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_tag"),
                                                uuid);
                       g_log ("event tag", G_LOG_LEVEL_MESSAGE,
-                            "Tag %s has been created", uuid);
+                             "Tag %s has been created", uuid);
                       free (uuid);
                       break;
                     }
@@ -17441,12 +17483,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_tag",
                                         "Permission denied"));
+                    g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                           "Tag could not be created");
                     break;
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("create_tag"));
                     g_log ("event target", G_LOG_LEVEL_MESSAGE,
-                            "Tag could not be created");
+                           "Tag could not be created");
                     break;
                 }
             }
@@ -17518,6 +17562,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_target",
                                       "Permission denied"));
+                  g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                         "Target could not be created");
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -17660,6 +17706,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
                                     "Permission denied"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be created");
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -17777,6 +17825,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_task",
                                         "Permission denied"));
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task could not be created");
                     break;
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
@@ -18308,6 +18358,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_user",
                                       "Permission denied"));
+                  g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                         "User could not be created");
                   break;
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
