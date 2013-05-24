@@ -1,6 +1,6 @@
 2013-05-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
-	* tools/openvas-certdata-sync.in (): Remove command line parameter
+	* tools/openvas-scapdata-sync.in (): Remove command line parameter
 	for setting SCAP dir.
 	(do_help): Remove accordingly in help text.
 
