@@ -26232,7 +26232,9 @@ report_error_count (report_t report)
             report_host_details_iterator_source_type (details),            \
             report_host_details_iterator_source_name (details),            \
             report_host_details_iterator_source_desc (details),            \
-            report_host_details_iterator_extra (details));                 \
+            report_host_details_iterator_extra (details) ?                 \
+             report_host_details_iterator_extra (details)                  \
+             : "");                                                        \
     }                                                                      \
   while (0)
 

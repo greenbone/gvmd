@@ -1,3 +1,8 @@
+2013-05-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (PRINT_REPORT_HOST_DETAILS): Print empty extra tag
+	value if none was provided.
+
 2013-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Correct MODIFY_ALERT event
