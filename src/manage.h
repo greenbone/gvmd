@@ -2923,6 +2923,9 @@ manage_set_setting (const gchar *, const gchar *, const gchar *, gchar **);
 
 /* Users. */
 
+int
+manage_first_user (const gchar *, const gchar *);
+
 gchar *
 manage_user_hash (const gchar *);
 

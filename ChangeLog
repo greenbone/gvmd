@@ -1,5 +1,14 @@
 2013-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Remove automatic user creation.
+	(manage_first_user): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/openvasmd.c (main): Add --first-user option.
+
+2013-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (user_may): Allow dummy init_manage user to do
 	anything.
 	(manage_empty_trashcan): Add permission check.

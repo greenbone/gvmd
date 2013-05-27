@@ -17124,32 +17124,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     g_free (dir);
   }
 
-  /* For now, ensure there is a user. */
-
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM users;")
-      == 0)
-    {
-      char *uuid;
-      array_t *roles;
-
-      uuid = openvas_uuid_make ();
-      roles = make_array ();
-      array_add (roles, g_strdup (ROLE_UUID_ADMIN));
-
-      /* Setup a dummy user, so that create_user will work. */
-      current_credentials.uuid = "";
-
-      sql ("DELETE FROM meta WHERE name = 'admin';");
-      sql ("INSERT INTO meta (name, value) VALUES ('admin', '%s');", uuid);
-      create_user ("admin", uuid, NULL, 0, NULL, NULL, NULL, roles, NULL, NULL);
-
-      current_credentials.uuid = NULL;
-
-      array_free (roles);
-      free (uuid);
-    }
-
   /* Ensure the predefined roles exists. */
 
   if (sql_int (0, 0,
@@ -52321,6 +52295,58 @@ DEF_ACCESS (all_info_iterator_extra, GET_ITERATOR_COLUMN_COUNT + 1);
 
 
 /* Users. */
+
+/**
+ * @brief Create the given user.
+ *
+ * @param[in]  database  Location of manage database.
+ * @param[in]  name      Name of user.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_first_user (const gchar *database, const gchar *name)
+{
+  char *uuid;
+  array_t *roles;
+  const gchar *db;
+
+  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  init_manage_process (0, db);
+
+  uuid = openvas_uuid_make ();
+  roles = make_array ();
+  array_add (roles, g_strdup (ROLE_UUID_ADMIN));
+
+  /* Setup a dummy user, so that create_user will work. */
+  current_credentials.uuid = "";
+
+  sql ("DELETE FROM meta WHERE name = 'admin';");
+  sql ("INSERT INTO meta (name, value) VALUES ('admin', '%s');", uuid);
+  switch (create_user (name, uuid, NULL, 0, NULL, NULL, NULL, roles, NULL,
+                       NULL))
+    {
+      case 0:
+        printf ("User created with password '%s'.\n", uuid);
+        break;
+      case -2:
+        printf ("User exists already.\n");
+        break;
+      default:
+        printf ("Failed to create user.\n");
+        break;
+    }
+
+  current_credentials.uuid = NULL;
+
+  array_free (roles);
+  free (uuid);
+
+  cleanup_manage_process (TRUE);
+
+  return 0;
+}
 
 /**
  * @brief Find a user given a UUID.
