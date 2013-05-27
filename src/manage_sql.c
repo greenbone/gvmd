@@ -1484,6 +1484,10 @@ user_may (const char *operation)
   assert (current_credentials.uuid);
   assert (operation);
 
+  if (strlen (current_credentials.uuid) == 0)
+    /* Allow the dummy user in init_manage to do anything. */
+    return 1;
+
   if (sql_int (0, 0,
                "SELECT count(*) FROM permissions"
                " WHERE resource = 0"
@@ -50684,7 +50688,7 @@ manage_restore (const char *id)
 /**
  * @brief Empty the trashcan.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 99 permission denied, -1 error.
  */
 int
 manage_empty_trashcan ()
@@ -50692,6 +50696,13 @@ manage_empty_trashcan ()
   gchar *dir;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("empty_trashcan") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
   sql ("DELETE FROM agents_trash;");
   sql ("DELETE FROM nvt_selectors WHERE name IN"
        " (SELECT nvt_selector FROM configs_trash);");

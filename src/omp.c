@@ -18489,6 +18489,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_log ("event task", G_LOG_LEVEL_MESSAGE,
                      "Trashcan has been emptied");
               break;
+            case 99:
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("empty_trashcan",
+                                  "Permission denied"));
+              break;
             default:  /* Programming error. */
               assert (0);
             case -1:

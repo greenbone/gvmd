@@ -1,3 +1,12 @@
+2013-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (user_may): Allow dummy init_manage user to do
+	anything.
+	(manage_empty_trashcan): Add permission check.
+
+	* src/omp.c (omp_xml_handle_end_element): Add permission case to
+	EMPTY_TRASHCAN.
+
 2013-05-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (PRINT_REPORT_HOST_DETAILS): Print empty extra tag
