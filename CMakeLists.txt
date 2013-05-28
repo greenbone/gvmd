@@ -112,7 +112,7 @@ include (CPack)
 
 ## Variables
 
-set (OPENVASMD_DATABASE_VERSION 81)
+set (OPENVASMD_DATABASE_VERSION 82)
 
 if (SYSCONF_INSTALL_DIR)
   set (SYSCONFDIR "${SYSCONF_INSTALL_DIR}")
@@ -303,6 +303,11 @@ install (FILES src/report_formats/NBE/generate
 install (FILES src/report_formats/PDF/generate
                src/report_formats/LaTeX/latex.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/c402cc3e-b531-11e1-9163-406186ea4fc5/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
+install (FILES src/report_formats/Topology/generate
+               src/report_formats/Topology/hostvisdot-summary.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/9e5e5deb-879e-4ecc-8be6-a71cd0875cdd/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/report_formats/TXT/generate src/report_formats/TXT/TXT.xsl

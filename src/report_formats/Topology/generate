@@ -1,0 +1,48 @@
+#!/bin/sh
+#
+# OpenVAS
+# $Id$
+# Description: Report generator script: Topology plot.
+#
+# This report generates a SVG image showing the
+# network topology. In a first step, the OMP report is
+# transformed via XSL with the tool xsltproc.
+# Next duplicate lines are removed with awk and finally
+# twopi of GraphViz creates the SVG file.
+#
+# Authors:
+# Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+#
+# Copyright:
+# Copyright (C) 2010 Greenbone Networks GmbH
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2,
+# or, at your option, any later version as published by the Free
+# Software Foundation
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+TMP=`mktemp -d` || exit 1
+
+xsltproc ./hostvisdot-summary.xsl $1 > ${TMP}/summary-rgb.dot
+
+# remove duplicate lines:
+awk '!($0 in a) {a[$0];print}' ${TMP}/summary-rgb.dot > ${TMP}/summary-rgb-nondup.dot
+
+# Generate an SVG graphic using one of the GraphViz modules.
+TYPE=`cat $1 | xmlstarlet sel -t -v "/report/report_format/param[name='Graph Type']/value"`
+if [ -z $TYPE ]; then
+    twopi -Tsvg ${TMP}/summary-rgb-nondup.dot -o ${TMP}/summary-rgb-nondup.svg
+else
+    $TYPE -Tsvg ${TMP}/summary-rgb-nondup.dot -o ${TMP}/summary-rgb-nondup.svg
+fi
+
+cat ${TMP}/summary-rgb-nondup.svg

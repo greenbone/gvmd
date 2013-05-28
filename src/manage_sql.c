@@ -10779,6 +10779,78 @@ migrate_80_to_81 ()
 }
 
 /**
+ * @brief Migrate the database from version 81 to version 82.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_81_to_82 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 80. */
+
+  if (manage_db_version () != 81)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  if (sql_int (0, 0,
+              "SELECT count(*) FROM report_formats"
+              " WHERE uuid = '9e5e5deb-879e-4ecc-8be6-a71cd0875cdd';")
+    == 0)
+  {
+    /* Create Topology report format */
+    report_format_t report_format;
+    report_format_param_t report_format_param;
+    sql ("INSERT INTO report_formats (uuid, owner, name, summary, description,"
+          " extension, content_type, signature, trust, trust_time, flags,"
+          " creation_time, modification_time)"
+          " VALUES ('9e5e5deb-879e-4ecc-8be6-a71cd0875cdd', NULL, 'Topology SVG',"
+          " 'Network topology SVG image.',"
+          " 'Scan results in topologic structure as scalable vector graphics.\n',"
+          " 'svg', 'image/svg+xml', '', %i, %i, 1, now (), now ());",
+          TRUST_YES,
+          time (NULL));
+    report_format = sqlite3_last_insert_rowid (task_db);
+
+    /* Create report "Graph Type" format parameter and parameter options */
+    sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+         " type_min, type_max, type_regex, fallback)"
+         " VALUES (%lli, 'Graph Type', 2, 'twopi', -9223372036854775808,"
+         " 9223372036854775807,'','twopi');",
+         report_format);
+    report_format_param = sqlite3_last_insert_rowid (task_db);
+    sql ("INSERT INTO report_format_param_options (report_format_param, value)"
+         "VALUES (%lli, 'circo');",
+         report_format_param);
+    sql ("INSERT INTO report_format_param_options (report_format_param, value)"
+         "VALUES (%lli, 'dot');",
+         report_format_param);
+    sql ("INSERT INTO report_format_param_options (report_format_param, value)"
+         "VALUES (%lli, 'twopi');",
+         report_format_param);
+
+    /* Create report "Node Distance" format parameter */
+    sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+         " type_min, type_max, type_regex, fallback)"
+         " VALUES (%lli, 'Node Distance', 1, 8, 1, 20, '', 8);",
+         report_format);
+  }
+
+  /* Set the database version to 82. */
+
+  set_db_version (82);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -10864,6 +10936,7 @@ static migrator_t database_migrators[]
     {79, migrate_78_to_79},
     {80, migrate_79_to_80},
     {81, migrate_80_to_81},
+    {82, migrate_81_to_82},
     /* End marker. */
     {-1, NULL}};
 
@@ -17051,6 +17124,49 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       report_format = sqlite3_last_insert_rowid (task_db);
       verify_report_format (report_format);
     }
+
+  if (sql_int (0, 0,
+              "SELECT count(*) FROM report_formats"
+              " WHERE uuid = '9e5e5deb-879e-4ecc-8be6-a71cd0875cdd';")
+    == 0)
+  {
+    /* Create Topology report format */
+    report_format_t report_format;
+    report_format_param_t report_format_param;
+    sql ("INSERT INTO report_formats (uuid, owner, name, summary, description,"
+          " extension, content_type, signature, trust, trust_time, flags,"
+          " creation_time, modification_time)"
+          " VALUES ('9e5e5deb-879e-4ecc-8be6-a71cd0875cdd', NULL, 'Topology SVG',"
+          " 'Network topology SVG image.',"
+          " 'Scan results in topologic structure as scalable vector graphics.\n',"
+          " 'svg', 'image/svg+xml', '', %i, %i, 1, now (), now ());",
+          TRUST_YES,
+          time (NULL));
+    report_format = sqlite3_last_insert_rowid (task_db);
+
+    /* Create report "Graph Type" format parameter and parameter options */
+    sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+         " type_min, type_max, type_regex, fallback)"
+         " VALUES (%lli, 'Graph Type', 2, 'twopi', -9223372036854775808,"
+         " 9223372036854775807,'','twopi');",
+         report_format);
+    report_format_param = sqlite3_last_insert_rowid (task_db);
+    sql ("INSERT INTO report_format_param_options (report_format_param, value)"
+         "VALUES (%lli, 'circo');",
+         report_format_param);
+    sql ("INSERT INTO report_format_param_options (report_format_param, value)"
+         "VALUES (%lli, 'dot');",
+         report_format_param);
+    sql ("INSERT INTO report_format_param_options (report_format_param, value)"
+         "VALUES (%lli, 'twopi');",
+         report_format_param);
+
+    /* Create report "Node Distance" format parameter */
+    sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+         " type_min, type_max, type_regex, fallback)"
+         " VALUES (%lli, 'Node Distance', 1, 8, 1, 20, '', 8);",
+         report_format);
+  }
 
   /* Ensure that the report formats trash directory matches the database. */
 
@@ -44490,6 +44606,7 @@ report_format_predefined (report_format_t report_format)
                   " OR uuid = 'c402cc3e-b531-11e1-9163-406186ea4fc5'"
                   " OR uuid = 'a3810a62-1f62-11e1-9219-406186ea4fc5'"
                   " OR uuid = 'a994b278-1f62-11e1-96ac-406186ea4fc5'"
+                  " OR uuid = '9e5e5deb-879e-4ecc-8be6-a71cd0875cdd'"
                   " FROM report_formats"
                   " WHERE ROWID = %llu;",
                   report_format);
