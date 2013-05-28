@@ -26292,6 +26292,280 @@ print_report_errors_xml (report_t report, FILE *stream)
 }
 
 /**
+ * @brief Print the XML for a report of type assets.
+ * @param[in]  report           The report.
+ * @param[in]  out              File stream to write to.
+ * @param[in]  host             Host or NULL.
+ * @param[in]  first_result     The result to start from. The results are 0
+ *                              indexed.
+ * @param[in]  max_results      The maximum number of results returned.
+ * @param[in]  levels           String describing threat levels (message types)
+ * @param[in]  search_pharse    Phrase that results must include.
+ * @param[in]  pos              Position of report from end.
+ * @param[in]  get              GET command data.
+ * @param[in]  apply_overrides  Whether to apply overrides.
+ * @param[in]  autofp           Whether to apply the auto FP filter.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_report_assets_xml (report_t report, FILE *out, const char *host,
+                         int first_result, int max_results, gchar *levels,
+                         gchar *search_phrase, int pos, const get_data_t *get,
+                         int apply_overrides, int autofp)
+{
+  iterator_t hosts;
+
+  if (host)
+    {
+      PRINT (out,
+             "<host_count>"
+             "<full>1</full>"
+             "<filtered>1</filtered>"
+             "</host_count>"
+             "<hosts start=\"1\" max=\"1\"/>");
+    }
+  else
+    {
+      // TODO Slow (about 30% of assets page).
+      init_asset_iterator (&hosts, first_result, max_results, levels,
+                           search_phrase, apply_overrides);
+      PRINT (out,
+             "<host_count>"
+             "<full>%i</full>"
+             "<filtered>%i</filtered>"
+             "</host_count>",
+             host_count (),
+             // TODO Slow (about 30% of assets page).
+             filtered_host_count (levels, search_phrase, apply_overrides));
+      PRINT (out,
+             "<hosts start=\"%i\" max=\"%i\"/>",
+             /* Add 1 for 1 indexing. */
+             first_result + 1,
+             max_results);
+    }
+
+  while (host || next (&hosts))
+    {
+      iterator_t report_hosts;
+      report_host_t report_host;
+      const char *ip;
+
+      ip = host ? host : asset_iterator_ip (&hosts);
+
+      if (host_nthlast_report_host (ip, &report_host, pos))
+        {
+          if (host == NULL)
+            cleanup_iterator (&hosts);
+
+          return -1;
+        }
+
+      if (report_host)
+        {
+          init_host_iterator (&report_hosts, 0, NULL, report_host);
+          if (next (&report_hosts))
+            {
+              iterator_t details;
+              report_t report;
+              int holes, infos, logs, warnings, false_positives;
+              double highest_cvss;
+
+              PRINT (out,
+                     "<host>"
+                     "<ip>%s</ip>"
+                     "<start>%s</start>"
+                     "<end>%s</end>",
+                     ip,
+                     host_iterator_start_time (&report_hosts),
+                     host_iterator_end_time (&report_hosts));
+
+              PRINT (out,
+                     "<detail>"
+                     "<name>report/@id</name>"
+                     "<value>%s</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>UUID of current report</description>"
+                     "</source>"
+                     "</detail>",
+                     host_iterator_report_uuid (&report_hosts));
+
+              PRINT (out,
+                     "<detail>"
+                     "<name>report_count</name>"
+                     "<value>%i</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>Number of reports</description>"
+                     "</source>"
+                     "</detail>",
+                     host_report_count (ip));
+
+              report = host_iterator_report (&report_hosts);
+
+              report_counts_id (report, NULL, &holes, &infos, &logs,
+                                &warnings, &false_positives,
+                                apply_overrides, ip, autofp);
+
+              PRINT (out,
+                     "<detail>"
+                     "<name>report/result_count/high</name>"
+                     "<value>%i</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>Number of highs</description>"
+                     "</source>"
+                     "</detail>",
+                     holes);
+
+              PRINT (out,
+                     "<detail>"
+                     "<name>report/result_count/medium</name>"
+                     "<value>%i</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>Number of mediums</description>"
+                     "</source>"
+                     "</detail>",
+                     warnings);
+
+              PRINT (out,
+                     "<detail>"
+                     "<name>report/result_count/low</name>"
+                     "<value>%i</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>Number of lows</description>"
+                     "</source>"
+                     "</detail>",
+                     infos);
+
+              /* Print all the host details. */
+
+              highest_cvss = -1;
+              init_report_host_details_iterator
+               (&details, report_host);
+              while (next (&details))
+                {
+                  const char *value;
+                  value = report_host_details_iterator_value (&details);
+
+                  PRINT_REPORT_HOST_DETAIL (out, &details);
+
+                  if (manage_scap_loaded ()
+                      && get->details
+                      && (strcmp (report_host_details_iterator_name
+                                   (&details),
+                                  "App")
+                          == 0))
+                    {
+                      iterator_t prognosis;
+                      double cvss;
+                      int first;
+
+                      /* Print details of all CVEs on the App. */
+
+                      first = 1;
+                      cvss = -1;
+                      init_prognosis_iterator (&prognosis, value);
+                      while (next (&prognosis))
+                        {
+                          if (first)
+                            {
+                              cvss = prognosis_iterator_cvss_double
+                                      (&prognosis);
+                              first = 0;
+                            }
+
+                          PRINT (out,
+                                 "<detail>"
+                                 "<name>%s/CVE</name>"
+                                 "<value>%s</value>"
+                                 "</detail>"
+                                 "<detail>"
+                                 "<name>%s/%s/CVSS</name>"
+                                 "<value>%s</value>"
+                                 "</detail>",
+                                 value,
+                                 prognosis_iterator_cve (&prognosis),
+                                 value,
+                                 prognosis_iterator_cve (&prognosis),
+                                 prognosis_iterator_cvss (&prognosis));
+                        }
+
+                      /* Print App prognosis, according to highest CVSS. */
+
+                      if (cvss >= 0)
+                        PRINT (out,
+                               "<detail>"
+                               "<name>%s/threat</name>"
+                               "<value>%s</value>"
+                               "</detail>",
+                               value,
+                               cvss_threat (cvss));
+                      cleanup_iterator (&prognosis);
+                    }
+
+                  if (manage_scap_loaded ()
+                      && (strcmp (report_host_details_iterator_name
+                                   (&details),
+                                  "App")
+                          == 0))
+                    {
+                      int highest;
+                      /* Check if this App's CVSS is the highest CVSS for
+                       * this host. */
+                      highest = cpe_highest_cvss (value);
+                      if (highest > highest_cvss)
+                        highest_cvss = highest;
+                    }
+                }
+              cleanup_iterator (&details);
+
+              /* Print prognosis of host, according to highest CVSS. */
+
+              if (highest_cvss >= 0)
+                PRINT (out,
+                       "<detail>"
+                       "<name>prognosis</name>"
+                       "<value>%s</value>"
+                       "</detail>",
+                       cvss_threat (highest_cvss));
+
+              PRINT (out,
+                     "<detail>"
+                     "<name>report/pos</name>"
+                     "<value>%i</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>Position of report from end</description>"
+                     "</source>"
+                     "</detail>",
+                     pos);
+            }
+
+          PRINT (out,
+                 "</host>");
+        }
+      cleanup_iterator (&report_hosts);
+
+      if (host)
+        break;
+    }
+  if (host == NULL)
+    cleanup_iterator (&hosts);
+
+  return 0;
+}
+
+/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
@@ -26710,260 +26984,21 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       free (tsk_uuid);
     }
 
-  /** @todo Rename to "hosts" because there will be other types of assets. */
   if (type && (strcmp (type, "assets") == 0))
     {
-      iterator_t hosts;
+      int ret;
 
-      if (host)
-        {
-          PRINT (out,
-                 "<host_count>"
-                 "<full>1</full>"
-                 "<filtered>1</filtered>"
-                 "</host_count>"
-                 "<hosts start=\"1\" max=\"1\"/>");
-        }
-      else
-        {
-          // TODO Slow (about 30% of assets page).
-          init_asset_iterator (&hosts, first_result, max_results, levels,
-                               search_phrase, apply_overrides);
-          PRINT (out,
-                 "<host_count>"
-                 "<full>%i</full>"
-                 "<filtered>%i</filtered>"
-                 "</host_count>",
-                 host_count (),
-                 // TODO Slow (about 30% of assets page).
-                 filtered_host_count (levels, search_phrase, apply_overrides));
-          PRINT (out,
-                 "<hosts start=\"%i\" max=\"%i\"/>",
-                 /* Add 1 for 1 indexing. */
-                 first_result + 1,
-                 max_results);
-        }
+      ret = print_report_assets_xml (report, out, host, first_result,
+                                     max_results, levels, search_phrase, pos,
+                                     get, apply_overrides, autofp);
+      g_free (sort_field);
+      g_free (levels);
+      g_free (search_phrase);
+      g_free (min_cvss_base);
+      g_free (delta_states);
 
-      while (host || next (&hosts))
-        {
-          iterator_t report_hosts;
-          report_host_t report_host;
-          const char *ip;
-
-          ip = host ? host : asset_iterator_ip (&hosts);
-
-          if (host_nthlast_report_host (ip, &report_host, pos))
-            {
-              if (host == NULL)
-                cleanup_iterator (&hosts);
-              g_free (sort_field);
-              g_free (levels);
-              g_free (search_phrase);
-              g_free (min_cvss_base);
-              g_free (delta_states);
-              return -1;
-            }
-
-          if (report_host)
-            {
-              init_host_iterator (&report_hosts, 0, NULL, report_host);
-              if (next (&report_hosts))
-                {
-                  iterator_t details;
-                  report_t report;
-                  int holes, infos, logs, warnings, false_positives;
-                  double highest_cvss;
-
-                  PRINT (out,
-                         "<host>"
-                         "<ip>%s</ip>"
-                         "<start>%s</start>"
-                         "<end>%s</end>",
-                         ip,
-                         host_iterator_start_time (&report_hosts),
-                         host_iterator_end_time (&report_hosts));
-
-                  PRINT (out,
-                         "<detail>"
-                         "<name>report/@id</name>"
-                         "<value>%s</value>"
-                         "<source>"
-                         "<type></type>"
-                         "<name>openvasmd</name>"
-                         "<description>UUID of current report</description>"
-                         "</source>"
-                         "</detail>",
-                         host_iterator_report_uuid (&report_hosts));
-
-                  PRINT (out,
-                         "<detail>"
-                         "<name>report_count</name>"
-                         "<value>%i</value>"
-                         "<source>"
-                         "<type></type>"
-                         "<name>openvasmd</name>"
-                         "<description>Number of reports</description>"
-                         "</source>"
-                         "</detail>",
-                         host_report_count (ip));
-
-                  report = host_iterator_report (&report_hosts);
-
-                  report_counts_id (report, NULL, &holes, &infos, &logs,
-                                    &warnings, &false_positives,
-                                    apply_overrides, ip, autofp);
-
-                  PRINT (out,
-                         "<detail>"
-                         "<name>report/result_count/high</name>"
-                         "<value>%i</value>"
-                         "<source>"
-                         "<type></type>"
-                         "<name>openvasmd</name>"
-                         "<description>Number of highs</description>"
-                         "</source>"
-                         "</detail>",
-                         holes);
-
-                  PRINT (out,
-                         "<detail>"
-                         "<name>report/result_count/medium</name>"
-                         "<value>%i</value>"
-                         "<source>"
-                         "<type></type>"
-                         "<name>openvasmd</name>"
-                         "<description>Number of mediums</description>"
-                         "</source>"
-                         "</detail>",
-                         warnings);
-
-                  PRINT (out,
-                         "<detail>"
-                         "<name>report/result_count/low</name>"
-                         "<value>%i</value>"
-                         "<source>"
-                         "<type></type>"
-                         "<name>openvasmd</name>"
-                         "<description>Number of lows</description>"
-                         "</source>"
-                         "</detail>",
-                         infos);
-
-                  /* Print all the host details. */
-
-                  highest_cvss = -1;
-                  init_report_host_details_iterator
-                   (&details, report_host);
-                  while (next (&details))
-                    {
-                      const char *value;
-                      value = report_host_details_iterator_value (&details);
-
-                      PRINT_REPORT_HOST_DETAIL (out, &details);
-
-                      if (manage_scap_loaded ()
-                          && get->details
-                          && (strcmp (report_host_details_iterator_name
-                                       (&details),
-                                      "App")
-                              == 0))
-                        {
-                          iterator_t prognosis;
-                          double cvss;
-                          int first;
-
-                          /* Print details of all CVEs on the App. */
-
-                          first = 1;
-                          cvss = -1;
-                          init_prognosis_iterator (&prognosis, value);
-                          while (next (&prognosis))
-                            {
-                              if (first)
-                                {
-                                  cvss = prognosis_iterator_cvss_double
-                                          (&prognosis);
-                                  first = 0;
-                                }
-
-                              PRINT (out,
-                                     "<detail>"
-                                     "<name>%s/CVE</name>"
-                                     "<value>%s</value>"
-                                     "</detail>"
-                                     "<detail>"
-                                     "<name>%s/%s/CVSS</name>"
-                                     "<value>%s</value>"
-                                     "</detail>",
-                                     value,
-                                     prognosis_iterator_cve (&prognosis),
-                                     value,
-                                     prognosis_iterator_cve (&prognosis),
-                                     prognosis_iterator_cvss (&prognosis));
-                            }
-
-                          /* Print App prognosis, according to highest CVSS. */
-
-                          if (cvss >= 0)
-                            PRINT (out,
-                                   "<detail>"
-                                   "<name>%s/threat</name>"
-                                   "<value>%s</value>"
-                                   "</detail>",
-                                   value,
-                                   cvss_threat (cvss));
-                          cleanup_iterator (&prognosis);
-                        }
-
-                      if (manage_scap_loaded ()
-                          && (strcmp (report_host_details_iterator_name
-                                       (&details),
-                                      "App")
-                              == 0))
-                        {
-                          int highest;
-                          /* Check if this App's CVSS is the highest CVSS for
-                           * this host. */
-                          highest = cpe_highest_cvss (value);
-                          if (highest > highest_cvss)
-                            highest_cvss = highest;
-                        }
-                    }
-                  cleanup_iterator (&details);
-
-                  /* Print prognosis of host, according to highest CVSS. */
-
-                  if (highest_cvss >= 0)
-                    PRINT (out,
-                           "<detail>"
-                           "<name>prognosis</name>"
-                           "<value>%s</value>"
-                           "</detail>",
-                           cvss_threat (highest_cvss));
-
-                  PRINT (out,
-                         "<detail>"
-                         "<name>report/pos</name>"
-                         "<value>%i</value>"
-                         "<source>"
-                         "<type></type>"
-                         "<name>openvasmd</name>"
-                         "<description>Position of report from end</description>"
-                         "</source>"
-                         "</detail>",
-                         pos);
-                }
-
-              PRINT (out,
-                     "</host>");
-            }
-          cleanup_iterator (&report_hosts);
-
-          if (host)
-            break;
-        }
-      if (host == NULL)
-        cleanup_iterator (&hosts);
+      if (ret)
+        return ret;
 
       PRINT (out, "</report>");
 
@@ -26972,11 +27007,6 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           g_warning ("%s: fclose failed: %s\n",
                      __FUNCTION__,
                      strerror (errno));
-          g_free (sort_field);
-          g_free (levels);
-          g_free (search_phrase);
-          g_free (min_cvss_base);
-          g_free (delta_states);
           return -1;
         }
 

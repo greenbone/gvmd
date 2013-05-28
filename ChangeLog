@@ -1,3 +1,9 @@
+2013-05-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (print_report_assets_xml): New function.
+	(print_report_xml): Refactor code for assets type into
+	new function.
+
 2013-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Remove automatic user creation.
