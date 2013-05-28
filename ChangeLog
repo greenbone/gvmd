@@ -1,5 +1,9 @@
 2013-05-28  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
+	* manage_sql.c (migrate_81_to_82): Remove creation of Topology format.
+
+2013-05-28  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
 	* CMakeLists.txt: Set OPENVASMD_DATABASE_VERSION to 82. Add
 	installation of new topology report format.
 
