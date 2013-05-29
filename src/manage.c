@@ -2247,16 +2247,17 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
  * @param[in]   from       0 start from beginning, 1 continue from stopped, 2
  *                         continue if stopped else start from beginning.
  *
- * @return Before forking: 1 task is active already, -1 error,
- *         -2 task is missing a target, -3 creating the report failed,
+ * @return Before forking: 1 task is active already, 3 failed to find task,
+ *         -1 error, -2 task is missing a target, -3 creating the report failed,
  *         -4 target missing hosts, -5 scanner is down, -6 already a task
  *         running in this process, -9 fork failed.
  *         After forking: 0 success (parent), 2 success (child),
  *         -10 error (child).
  */
 static int
-run_task (task_t task, char **report_id, int from)
+run_task (const char *task_id, char **report_id, int from)
 {
+  task_t task;
   target_t target;
   char *hosts, *port_range, *port;
   gchar *plugins;
@@ -2268,7 +2269,11 @@ run_task (task_t task, char **report_id, int from)
   lsc_credential_t ssh_credential, smb_credential;
   report_t last_stopped_report;
 
-  tracef ("   start task %u\n", task_id (task));
+  task = 0;
+  if (find_task (task_id, &task))
+    return -1;
+  if (task == 0)
+    return 3;
 
   if (scanner_up == 0)
     return -5;
@@ -2840,7 +2845,8 @@ run_task (task_t task, char **report_id, int from)
  * @param[in]   task       The task.
  * @param[out]  report_id  The report ID.
  *
- * @return Before forking: 1 task is active already,
+ * @return Before forking: 1 task is active already, 3 failed to find task,
+ *         99 permission denied, -1 internal error,
  *         -2 task is missing a target, -3 creating the report failed,
  *         -4 target missing hosts, -6 already a task running in this process,
  *         -9 fork failed.
@@ -2848,9 +2854,12 @@ run_task (task_t task, char **report_id, int from)
  *         -10 error (child).
  */
 int
-start_task (task_t task, char **report_id)
+start_task (const char *task_id, char **report_id)
 {
-  return run_task (task, report_id, 0);
+  if (user_may ("start_task") == 0)
+    return 99;
+
+  return run_task (task_id, report_id, 0);
 }
 
 /**
@@ -2859,16 +2868,16 @@ start_task (task_t task, char **report_id)
  * Use \ref send_to_server to queue the task stop sequence in the
  * scanner output buffer.
  *
- * @param[in]  task  A pointer to the task.
+ * @param[in]  task  Task.
  *
  * @return 0 on success, 1 if stop requested, -1 if out of space in scanner
  *         output buffer, -5 scanner down.
  */
 int
-stop_task (task_t task)
+stop_task_internal (task_t task)
 {
   task_status_t run_status;
-  tracef ("   request task stop %u\n", task_id (task));
+
   if (scanner_up == 0)
     return -5;
   run_status = task_run_status (task);
@@ -2904,33 +2913,75 @@ stop_task (task_t task)
 }
 
 /**
+ * @brief Initiate stopping a task.
+ *
+ * Use \ref send_to_server to queue the task stop sequence in the
+ * scanner output buffer.
+ *
+ * @param[in]  task_id  Task UUID.
+ *
+ * @return 0 on success, 1 if stop requested, 3 failed to find task,
+ *         99 permission denied, -1 if out of space in scanner output buffer,
+ *         -5 scanner down.
+ */
+int
+stop_task (const char *task_id)
+{
+  task_t task;
+
+  if (user_may ("stop_task") == 0)
+    return 99;
+
+  task = 0;
+  if (find_task (task_id, &task))
+    return -1;
+  if (task == 0)
+    return 3;
+
+  return stop_task_internal (task);
+}
+
+/**
  * @brief Initiate pausing of a task.
  *
  * Use \ref send_to_server to queue the task pause sequence in the
  * scanner output buffer.
  *
- * @param[in]  task  A pointer to the task.
+ * @param[in]  task_id  Task UUID.
  *
- * @return 0 on success, 1 if pause requested, -1 if out of space in scanner
- *         output buffer, -5 scanner down.
+ * @return 0 on success, 1 if pause requested, 3 failed to find task,
+ *         99 permission denied, -1 internal error, -3 if out of space in
+ *         scanner output buffer, -5 scanner down.
  */
 int
-pause_task (task_t task)
+pause_task (const char *task_id)
 {
+  task_t task;
   task_status_t run_status;
-  tracef ("   request task pause %u\n", task_id (task));
+
+  if (user_may ("pause_task") == 0)
+    return 99;
+
+  task = 0;
+  if (find_task (task_id, &task))
+    return -1;
+  if (task == 0)
+    return 3;
+
   if (scanner_up == 0)
     return -5;
+
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     {
       if (current_scanner_task == task
           && send_to_server ("CLIENT <|> PAUSE_WHOLE_TEST <|> CLIENT\n"))
-        return -1;
+        return -3;
       set_task_run_status (task, TASK_STATUS_PAUSE_REQUESTED);
       return 1;
     }
+
   return 0;
 }
 
@@ -2940,18 +2991,30 @@ pause_task (task_t task)
  * Use \ref send_to_server to queue the task resume sequence in the
  * scanner output buffer.
  *
- * @param[in]  task  A pointer to the task.
+ * @param[in]  task_id  Task UUID.
  *
- * @return 0 on success, 1 if resume requested, -1 if out of space in scanner
- *         output buffer, -5 scanner down.
+ * @return 0 on success, 1 if resume requested, 3 failed to find task,
+ *         99 permission denied, -1 if out of space in scanner output buffer,
+ *         -5 scanner down.
  */
 int
-resume_paused_task (task_t task)
+resume_paused_task (const char *task_id)
 {
+  task_t task;
   task_status_t run_status;
-  tracef ("   request task resume %u\n", task_id (task));
+
+  if (user_may ("resume_paused_task") == 0)
+    return 99;
+
+  task = 0;
+  if (find_task (task_id, &task))
+    return -1;
+  if (task == 0)
+    return 3;
+
   if (scanner_up == 0)
     return -5;
+
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_PAUSE_REQUESTED
       || run_status == TASK_STATUS_PAUSED)
@@ -2962,25 +3025,37 @@ resume_paused_task (task_t task)
       set_task_run_status (task, TASK_STATUS_RESUME_REQUESTED);
       return 1;
     }
+
   return 0;
 }
 
 /**
  * @brief Resume a stopped task.
  *
- * @param[in]   task       A pointer to the task.
+ * @param[in]   task_id    Task UUID.
  * @param[out]  report_id  If successful, ID of the resultant report.
  *
- * @return 22 caller error (task must be in "stopped" state), -1 error or any
+ * @return 22 caller error (task must be in "stopped" state), or any
  *         start_task error.
  */
 int
-resume_stopped_task (task_t task, char **report_id)
+resume_stopped_task (const char *task_id, char **report_id)
 {
+  task_t task;
   task_status_t run_status;
+
+  if (user_may ("resume_stopped_task") == 0)
+    return 99;
+
+  task = 0;
+  if (find_task (task_id, &task))
+    return -1;
+  if (task == 0)
+    return 3;
+
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_STOPPED)
-    return run_task (task, report_id, 1);
+    return run_task (task_id, report_id, 1);
   return 22;
 }
 
@@ -2989,16 +3064,18 @@ resume_stopped_task (task_t task, char **report_id)
  *
  * Only one task can run at a time in a process.
  *
- * @param[in]   task       The task.
+ * @param[out]  task_id    The task ID.
  * @param[out]  report_id  The report ID.
  *
- * @return 23 caller error (task must be in "stopped" state), -1 error or any
- *         start_task error.
+ * @return Any start_task error.
  */
 int
-resume_or_start_task (task_t task, char **report_id)
+resume_or_start_task (const char *task_id, char **report_id)
 {
-  return run_task (task, report_id, 2);
+  if (user_may ("resume_or_start_task") == 0)
+    return 99;
+
+  return run_task (task_id, report_id, 2);
 }
 
 

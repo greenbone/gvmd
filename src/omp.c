@@ -12946,6 +12946,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (current_credentials.username);
 
+          if (user_may ("desribe_auth") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("describe_auth",
+                                  "Permission denied"));
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
           /* Get base 64 encoded content of the auth configuration file. */
           config_file = g_build_filename (OPENVAS_STATE_DIR, "auth.conf",
                                           NULL);
@@ -12979,6 +12988,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           gchar *feed_version = NULL;
 
           assert (current_credentials.username);
+
+          if (user_may ("desribe_feed") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("describe_feed",
+                                  "Permission denied"));
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
 
           if (openvas_get_sync_script_description (sync_script, &feed_description)
               && openvas_get_sync_script_identification (sync_script,
@@ -13063,6 +13081,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (current_credentials.username);
 
+          if (user_may ("desribe_scap") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("describe_scap",
+                                  "Permission denied"));
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
           if (openvas_get_sync_script_description (scap_script, &scap_description)
               && openvas_get_sync_script_identification (scap_script,
                                                          &scap_identification,
@@ -13145,6 +13172,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           gchar *cert_version = NULL;
 
           assert (current_credentials.username);
+
+          if (user_may ("desribe_cert") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("describe_cert",
+                                  "Permission denied"));
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
 
           if (openvas_get_sync_script_description (cert_script, &cert_description)
               && openvas_get_sync_script_identification (cert_script,
@@ -19981,22 +20017,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_PAUSE_TASK:
         if (pause_task_data->task_id)
           {
-            task_t task;
-            if (find_task (pause_task_data->task_id, &task))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("pause_task"));
-            else if (task == 0)
-              {
-                if (send_find_error_to_client ("pause_task",
-                                               "task",
-                                               pause_task_data->task_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (pause_task (task))
+            switch (pause_task (pause_task_data->task_id))
               {
                 case 0:   /* Paused. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("pause_task"));
@@ -20010,6 +20031,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          "Task %s has been requested to pause",
                          pause_task_data->task_id);
                   break;
+                case 3:   /* Find failed. */
+                  if (send_find_error_to_client ("pause_task",
+                                                 "task",
+                                                 pause_task_data->task_id,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("pause_task",
+                                      "Permission denied"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s could not be paused",
+                         pause_task_data->task_id);
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("pause_task"));
+                  break;
                 case -5:
                   SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("pause_task"));
                   g_log ("event task", G_LOG_LEVEL_MESSAGE,
@@ -20018,7 +20061,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 default:  /* Programming error. */
                   assert (0);
-                case -1:
+                case -3:
                   /* to_scanner is full. */
                   /** @todo Consider reverting parsing for retry. */
                   /** @todo process_omp_client_input must return -2. */
@@ -20064,6 +20107,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "A resource with this name exists"
                                       " already"));
                   break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("restore",
+                                      "Permission denied"));
+                  break;
                 default:  /* Programming error. */
                   assert (0);
                 case -1:
@@ -20080,31 +20128,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_RESUME_OR_START_TASK:
         if (resume_or_start_task_data->task_id)
           {
-            task_t task;
-            if (find_task (resume_or_start_task_data->task_id, &task))
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_INTERNAL_ERROR ("resume_or_start_task"));
-            else if (task == 0)
-              {
-                if (send_find_error_to_client
-                     ("resume_or_start_task",
-                      "task",
-                      resume_or_start_task_data->task_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else if (forked == 2)
+            if (forked == 2)
               /* Prevent the forked child from forking again, as then both
                * forked children would be using the same server session. */
               abort (); /** @todo Respond with error or something. */
             else
               {
                 char *report_id;
-                switch (resume_or_start_task (task, &report_id))
+                switch (resume_or_start_task
+                         (resume_or_start_task_data->task_id, &report_id))
                   {
                     case 0:
                       {
@@ -20157,6 +20189,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    G_MARKUP_ERROR,
                                    G_MARKUP_ERROR_INVALID_CONTENT,
                                    "Dummy error for current_error");
+                      break;
+                    case 3:   /* Find failed. */
+                      if (send_find_error_to_client
+                           ("resume_or_start_task",
+                            "task",
+                            resume_or_start_task_data->task_id,
+                            write_to_client,
+                            write_to_client_data))
+                        {
+                          error_send_to_client (error);
+                          return;
+                        }
+                      break;
+                    case 99:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("resume_or_start_task",
+                                          "Permission denied"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s could not be started",
+                             resume_or_start_task_data->task_id);
                       break;
                     case -10:
                       /* Forked task process: error. */
@@ -20218,24 +20270,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_RESUME_PAUSED_TASK:
         if (resume_paused_task_data->task_id)
           {
-            task_t task;
-            if (find_task (resume_paused_task_data->task_id, &task))
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_INTERNAL_ERROR ("resume_paused_task"));
-            else if (task == 0)
-              {
-                if (send_find_error_to_client
-                     ("resume_paused_task",
-                      "task",
-                      resume_paused_task_data->task_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (resume_paused_task (task))
+            switch (resume_paused_task (resume_paused_task_data->task_id))
               {
                 case 0:   /* Resumed. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("resume_paused_task"));
@@ -20248,6 +20283,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    (XML_OK_REQUESTED ("resume_paused_task"));
                   g_log ("event task", G_LOG_LEVEL_MESSAGE,
                          "Task %s has been requested to resume",
+                         resume_paused_task_data->task_id);
+                  break;
+                case 3:   /* Find failed. */
+                  if (send_find_error_to_client
+                       ("resume_paused_task",
+                        "task",
+                        resume_paused_task_data->task_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_paused_task",
+                                      "Permission denied"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s could not be resumed",
                          resume_paused_task_data->task_id);
                   break;
                 case -5:
@@ -20275,30 +20330,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_RESUME_STOPPED_TASK:
         if (resume_stopped_task_data->task_id)
           {
-            task_t task;
-            if (find_task (resume_stopped_task_data->task_id, &task))
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_INTERNAL_ERROR ("resume_stopped_task"));
-            else if (task == 0)
-              {
-                if (send_find_error_to_client ("resume_stopped_task",
-                                               "task",
-                                               resume_stopped_task_data->task_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else if (forked == 2)
+            if (forked == 2)
               /* Prevent the forked child from forking again, as then both
                * forked children would be using the same server session. */
               abort (); /** @todo Respond with error or something. */
             else
               {
                 char *report_id;
-                switch (resume_stopped_task (task, &report_id))
+                switch (resume_stopped_task (resume_stopped_task_data->task_id,
+                                             &report_id))
                   {
                     case 0:
                       {
@@ -20351,6 +20391,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    G_MARKUP_ERROR,
                                    G_MARKUP_ERROR_INVALID_CONTENT,
                                    "Dummy error for current_error");
+                      break;
+                    case 3:   /* Find failed. */
+                      if (send_find_error_to_client
+                           ("resume_stopped_task",
+                            "task",
+                            resume_stopped_task_data->task_id,
+                            write_to_client,
+                            write_to_client_data))
+                        {
+                          error_send_to_client (error);
+                          return;
+                        }
+                      break;
+                    case 99:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("resume_stopped_task",
+                                          "Permission denied"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s could not be resumed",
+                             resume_stopped_task_data->task_id);
                       break;
                     case -10:
                       /* Forked task process: error. */
@@ -20560,29 +20620,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_START_TASK:
         if (start_task_data->task_id)
           {
-            task_t task;
-            if (find_task (start_task_data->task_id, &task))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
-            else if (task == 0)
-              {
-                if (send_find_error_to_client ("start_task",
-                                               "task",
-                                               start_task_data->task_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else if (forked == 2)
+            if (forked == 2)
               /* Prevent the forked child from forking again, as then both
                * forked children would be using the same server session. */
               abort (); /** @todo Respond with error or something. */
             else
               {
                 char *report_id;
-                switch (start_task (task, &report_id))
+                switch (start_task (start_task_data->task_id, &report_id))
                   {
                     case 0:
                       {
@@ -20627,6 +20672,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    G_MARKUP_ERROR,
                                    G_MARKUP_ERROR_INVALID_CONTENT,
                                    "Dummy error for current_error");
+                      break;
+                    case 3:   /* Find failed. */
+                      if (send_find_error_to_client ("start_task",
+                                                     "task",
+                                                     start_task_data->task_id,
+                                                     write_to_client,
+                                                     write_to_client_data))
+                        {
+                          error_send_to_client (error);
+                          return;
+                        }
+                      break;
+                    case 99:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("start_task",
+                                          "Permission denied"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s could not be startd",
+                             start_task_data->task_id);
                       break;
                     case -10:
                       /* Forked task process: error. */
@@ -20693,23 +20757,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_STOP_TASK:
         if (stop_task_data->task_id)
           {
-            task_t task;
-
-            if (find_task (stop_task_data->task_id, &task))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("stop_task"));
-            else if (task == 0)
-              {
-                if (send_find_error_to_client ("stop_task",
-                                               "task",
-                                               stop_task_data->task_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (stop_task (task))
+            switch (stop_task (stop_task_data->task_id))
               {
                 case 0:   /* Stopped. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("stop_task"));
@@ -20721,6 +20769,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("stop_task"));
                   g_log ("event task", G_LOG_LEVEL_MESSAGE,
                          "Task %s has been requested to stop",
+                         stop_task_data->task_id);
+                  break;
+                case 3:   /* Find failed. */
+                  if (send_find_error_to_client ("stop_task",
+                                                 "task",
+                                                 stop_task_data->task_id,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("stop_task",
+                                      "Permission denied"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s could not be stopd",
                          stop_task_data->task_id);
                   break;
                 case -5:

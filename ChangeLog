@@ -1,3 +1,25 @@
+2013-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add permission checks to describe commands, task control commands and
+	RESTORE.
+
+	* src/manage_sql.c: Rename stop_task calls to stop_task_internal.
+	(manage_restore): Add permission check.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/manage.c (run_task): Switch task argument to task_id.
+	(start_task, pause_task, resume_paused_task, resume_stopped_task)
+	(resume_or_start_task): Switch task argument to task_id.  Add permission
+	check.
+	(stop_task_internal): New function.  Body from stop_task.
+	(stop_task): Switch task argument to task_id.  Add permission check.
+	Call through to stop_task_internal.
+
+	* src/omp.c (omp_xml_handle_end_element): Add permission checks to the
+	describe commands and RESTORE.  In task control commands move task
+	finding into handler function and handle permission denied case.
+
 2013-05-28  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	* manage_sql.c (migrate_81_to_82): Remove creation of Topology format.

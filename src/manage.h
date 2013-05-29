@@ -746,28 +746,28 @@ config_task_iterator_uuid (iterator_t*);
 /* General task facilities. */
 
 const char*
-run_status_name (task_status_t status);
+run_status_name (task_status_t);
 
 const char*
-task_run_status_name (task_t task);
+task_run_status_name (task_t);
 
 int
-start_task (task_t, char**);
+start_task (const char *, char**);
 
 int
-stop_task (task_t);
+stop_task (const char *);
 
 int
-pause_task (task_t);
+pause_task (const char *);
 
 int
-resume_stopped_task (task_t, char **);
+resume_stopped_task (const char *, char **);
 
 int
-resume_or_start_task (task_t, char **);
+resume_or_start_task (const char *, char **);
 
 int
-resume_paused_task (task_t);
+resume_paused_task (const char *);
 
 
 /* Iteration. */

@@ -258,6 +258,9 @@ int delete_reports (task_t);
 int delete_slave_task (slave_t, const char *);
 
 int
+stop_task_internal (task_t);
+
+int
 validate_username (const gchar *);
 
 
@@ -18791,7 +18794,7 @@ set_task_schedule (task_t task, schedule_t schedule)
       && (run_status == TASK_STATUS_PAUSE_REQUESTED
           || run_status == TASK_STATUS_PAUSE_WAITING
           || run_status == TASK_STATUS_PAUSED))
-    switch (stop_task (task))
+    switch (stop_task_internal (task))
       {
         case 0:    /* Stopped. */
         case 1:    /* Stop requested. */
@@ -30123,7 +30126,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
 /**
  * @brief Request deletion of a task.
  *
- * Stop the task beforehand with \ref stop_task, if it is running.
+ * Stop the task beforehand with \ref stop_task_internal, if it is running.
  *
  * Used only for CREATE_TASK in omp.c.  Always ultimate.
  *
@@ -30155,7 +30158,7 @@ request_delete_task (task_t* task_pointer)
 
   if (current_credentials.uuid == NULL) return -1;
 
-  switch (stop_task (task))
+  switch (stop_task_internal (task))
     {
       case 0:    /* Stopped. */
         return delete_task_lock (task, 1);
@@ -30178,7 +30181,7 @@ find_trash_task (const char*, task_t*);
 /**
  * @brief Request deletion of a task.
  *
- * Stop the task beforehand with \ref stop_task, if it is running.
+ * Stop the task beforehand with \ref stop_task_internal, if it is running.
  *
  * @param[in]  task_id   UUID of task.
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
@@ -30257,7 +30260,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
       return -1;
     }
 
-  switch (stop_task (task))
+  switch (stop_task_internal (task))
     {
       case 0:    /* Stopped. */
         {
@@ -49982,7 +49985,8 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
  *
  * @return 0 success, 1 fail because the resource refers to another resource
  *         in the trashcan, 2 failed to find resource in trashcan, 3 fail
- *         because resource with such name exists already, -1 error.
+ *         because resource with such name exists already, 99 permission
+ *         denied, -1 error.
  */
 int
 manage_restore (const char *id)
@@ -49992,6 +49996,12 @@ manage_restore (const char *id)
   assert (current_credentials.uuid);
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("restore") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   /* Agent. */
 
