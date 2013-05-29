@@ -1,3 +1,9 @@
+2013-05-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (prognostic_report_result_total): New function.
+	(print_report_xml): Send correct total result count instead of what was
+	in result_count variable from before.
+
 2013-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add permission checks to describe commands, task control commands and

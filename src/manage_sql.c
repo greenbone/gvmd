@@ -20027,6 +20027,28 @@ prognostic_report_result_count (report_host_t report_host,
   if (cvss_sql) g_string_free (cvss_sql, TRUE);
 }
 
+/**
+ * @brief Count total number of results for a prognostic report.
+ *
+ * @param[in]   report_host    Report host for which to count.
+ * @param[out]  total          Total count of all results.
+ */
+static void
+prognostic_report_result_total (report_host_t report_host, int *total)
+{
+  if (total)
+    *total = sql_int (0, 0,
+                          "SELECT count (*)"
+                          " FROM scap.cves, scap.cpes, scap.affected_products,"
+                          "      report_host_details"
+                          " WHERE report_host_details.report_host = %llu"
+                          " AND cpes.name = report_host_details.value"
+                          " AND report_host_details.name = 'App'"
+                          " AND cpes.id=affected_products.cpe"
+                          " AND cves.id=affected_products.cve;",
+                          report_host);
+}
+
 
 /* Reports. */
 
@@ -27093,7 +27115,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     {
       array_t *buffer;
       buffer_host_t *buffer_host;
-      int index, skip;
+      int index, skip, result_total = 0;
       iterator_t hosts;
 
       buffer = make_array ();
@@ -27106,7 +27128,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                host_levels, host_search_phrase, 0);
         }
 
-      result_count = holes = warnings = infos = logs = 0;
+      holes = warnings = infos = logs = 0;
       filtered_result_count = f_holes = f_warnings = f_infos = f_logs = 0;
       skip = 0;
 
@@ -27143,6 +27165,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             {
               int filtered;
               filtered = 0;
+
+              prognostic_report_result_total (report_host, &result_total);
               prognostic_report_result_count (report_host, search_phrase,
                                               min_cvss_base,
                                               &filtered, &f_holes,
@@ -27398,8 +27422,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              "<filtered>0</filtered>"
              "</false_positive>"
              "</result_count>",
-             result_count,
-             result_count,
+             result_total,
+             result_total,
              (strchr (levels, 'h') ? f_holes : 0)
               + (strchr (levels, 'l') ? f_infos : 0)
               + (strchr (levels, 'g') ? f_logs : 0)
