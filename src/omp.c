@@ -20547,6 +20547,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                   }
 
+                case 99:
+                  {
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("run_wizard",
+                                        "Permission denied"));
+                    break;
+                  }
+
                 case -1:
                   {
                     /* Internal error. */

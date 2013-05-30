@@ -5859,7 +5859,8 @@ openvas_current_sync (const gchar * sync_script, gchar ** timestamp,
  *
  * @return 0 success, 1 name error, 2 process forked to run task, -10 process
  *         forked to run task where task start failed, -2 to_scanner buffer
- *         full, 4 command in wizard failed, -1 internal error.
+ *         full, 4 command in wizard failed, -1 internal error, 99 permission
+ *         denied.
  */
 int
 manage_run_wizard (const gchar *name,
@@ -5877,6 +5878,9 @@ manage_run_wizard (const gchar *name,
   const gchar *point;
 
   forked = 0;
+
+  if (user_may ("run_wizard") == 0)
+    return 99;
 
   if (command_error)
     *command_error = NULL;

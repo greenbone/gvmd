@@ -1,5 +1,12 @@
 2013-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Add permission case to
+	RUN_WIZARD.
+
+	* src/manage.c (manage_run_wizard): Add permission check.
+
+2013-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add permission checks to verify commands, sync commands and TEST_ALERT.
 
 	* src/manage.c (openvas_sync_feed): Add permission check.
