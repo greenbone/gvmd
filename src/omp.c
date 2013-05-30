@@ -13410,1137 +13410,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_MODIFY_CONFIG:
-        {
-          config_t config;
-          if (modify_config_data->config_id == NULL
-              || strlen (modify_config_data->config_id) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config",
-                                "MODIFY_CONFIG requires a config_id"
-                                " attribute"));
-          else if ((modify_config_data->nvt_selection_family
-                    /* This array implies FAMILY_SELECTION. */
-                    && modify_config_data->families_static_all)
-                   || ((modify_config_data->nvt_selection_family
-                        || modify_config_data->families_static_all)
-                       && (modify_config_data->preference_name
-                           || modify_config_data->preference_value
-                           || modify_config_data->preference_nvt_oid)))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config",
-                                "MODIFY_CONFIG requires either a PREFERENCE or"
-                                " an NVT_SELECTION or a FAMILY_SELECTION"));
-          else if (find_config (modify_config_data->config_id, &config))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-          else if (config == 0)
-            {
-              if (send_find_error_to_client ("modify_config",
-                                             "config",
-                                             modify_config_data->config_id,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if (modify_config_data->nvt_selection_family)
-            {
-              switch (manage_set_config_nvts
-                       (config,
-                        modify_config_data->nvt_selection_family,
-                        modify_config_data->nvt_selection))
-                {
-                  case 0:
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                           "Scan config %s has been modified",
-                           modify_config_data->config_id);
-                    break;
-                  case 1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                           "Scan config %s could not be modified",
-                           modify_config_data->config_id);
-                    break;
-#if 0
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("modify_config",
-                                        "MODIFY_CONFIG PREFERENCE requires at"
-                                        " least one of the VALUE and NVT"
-                                        " elements"));
-                    break;
-#endif
-                  default:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("modify_config"));
-                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                           "Scan config %s could not be modified",
-                           modify_config_data->config_id);
-                    break;
-                }
-            }
-          else if (modify_config_data->families_static_all)
-            {
-              /* There was a FAMILY_SELECTION. */
-
-              switch (manage_set_config_families
-                       (config,
-                        modify_config_data->families_growing_all,
-                        modify_config_data->families_static_all,
-                        modify_config_data->families_growing_empty,
-                        modify_config_data->family_selection_growing))
-                {
-                  case 0:
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                           "Scan config %s has been modified",
-                           modify_config_data->config_id);
-                    break;
-                  case 1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                           "Scan config %s could not be modified",
-                           modify_config_data->config_id);
-                    break;
-#if 0
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("modify_config",
-                                        "MODIFY_CONFIG PREFERENCE requires at"
-                                        " least one of the VALUE and NVT"
-                                        " elements"));
-                    break;
-#endif
-                  default:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("modify_config"));
-                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
-                           "Scan config %s could not be modified",
-                           modify_config_data->config_id);
-                    break;
-                }
-            }
-          else if (modify_config_data->name && modify_config_data->comment)
-            switch (manage_set_config_name_comment (config,
-                                                    modify_config_data->name,
-                                                    modify_config_data->comment))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("modify_config",
-                                      "MODIFY_CONFIG name must be unique"));
-                  break;
-                case -1:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("modify_config"));
-                  break;
-              }
-          else if (modify_config_data->name)
-            switch (manage_set_config_name (config, modify_config_data->name))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("modify_config",
-                                      "MODIFY_CONFIG name must be unique"));
-                  break;
-                case -1:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("modify_config"));
-                  break;
-              }
-          else if (modify_config_data->comment)
-            switch (manage_set_config_comment (config,
-                                               modify_config_data->comment))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                  break;
-                case -1:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("modify_config"));
-                  break;
-              }
-          else if (modify_config_data->preference_name == NULL
-                   || strlen (modify_config_data->preference_name) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config",
-                                "MODIFY_CONFIG PREFERENCE requires a NAME"
-                                " element"));
-          else switch (manage_set_config_preference
-                        (config,
-                         modify_config_data->preference_nvt_oid,
-                         modify_config_data->preference_name,
-                         modify_config_data->preference_value))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_config", "Empty radio value"));
-                break;
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("modify_config"));
-                break;
-            }
-        }
-        modify_config_data_reset (modify_config_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-      CLOSE (CLIENT_MODIFY_CONFIG, COMMENT);
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
-        assert (strcasecmp ("FAMILY_SELECTION", element_name) == 0);
-        assert (modify_config_data->families_growing_all);
-        assert (modify_config_data->families_static_all);
-        assert (modify_config_data->families_growing_empty);
-        array_terminate (modify_config_data->families_growing_all);
-        array_terminate (modify_config_data->families_static_all);
-        array_terminate (modify_config_data->families_growing_empty);
-        set_client_state (CLIENT_MODIFY_CONFIG);
-        break;
-      CLOSE (CLIENT_MODIFY_CONFIG, NAME);
-      case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
-        assert (strcasecmp ("NVT_SELECTION", element_name) == 0);
-        assert (modify_config_data->nvt_selection);
-        array_terminate (modify_config_data->nvt_selection);
-        set_client_state (CLIENT_MODIFY_CONFIG);
-        break;
-      CLOSE (CLIENT_MODIFY_CONFIG, PREFERENCE);
-
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
-        assert (strcasecmp ("FAMILY", element_name) == 0);
-        if (modify_config_data->family_selection_family_name)
-          {
-            if (modify_config_data->family_selection_family_growing)
-              {
-                if (modify_config_data->family_selection_family_all)
-                  /* Growing 1 and select all 1. */
-                  array_add (modify_config_data->families_growing_all,
-                             modify_config_data->family_selection_family_name);
-                else
-                  /* Growing 1 and select all 0. */
-                  array_add (modify_config_data->families_growing_empty,
-                             modify_config_data->family_selection_family_name);
-              }
-            else
-              {
-                if (modify_config_data->family_selection_family_all)
-                  /* Growing 0 and select all 1. */
-                  array_add (modify_config_data->families_static_all,
-                             modify_config_data->family_selection_family_name);
-                /* Else growing 0 and select all 0. */
-              }
-          }
-        modify_config_data->family_selection_family_name = NULL;
-        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
-        break;
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING:
-        assert (strcasecmp ("GROWING", element_name) == 0);
-        if (modify_config_data->family_selection_growing_text)
-          {
-            modify_config_data->family_selection_growing
-             = atoi (modify_config_data->family_selection_growing_text);
-            openvas_free_string_var
-             (&modify_config_data->family_selection_growing_text);
-          }
-        else
-          modify_config_data->family_selection_growing = 0;
-        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
-        break;
-
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL:
-        assert (strcasecmp ("ALL", element_name) == 0);
-        if (modify_config_data->family_selection_family_all_text)
-          {
-            modify_config_data->family_selection_family_all
-             = atoi (modify_config_data->family_selection_family_all_text);
-            openvas_free_string_var
-             (&modify_config_data->family_selection_family_all_text);
-          }
-        else
-          modify_config_data->family_selection_family_all = 0;
-        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
-        break;
-      CLOSE (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY, NAME);
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING:
-        assert (strcasecmp ("GROWING", element_name) == 0);
-        if (modify_config_data->family_selection_family_growing_text)
-          {
-            modify_config_data->family_selection_family_growing
-             = atoi (modify_config_data->family_selection_family_growing_text);
-            openvas_free_string_var
-             (&modify_config_data->family_selection_family_growing_text);
-          }
-        else
-          modify_config_data->family_selection_family_growing = 0;
-        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
-        break;
-
-      CLOSE (CLIENT_MODIFY_CONFIG_NVT_SELECTION, FAMILY);
-      case CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT:
-        assert (strcasecmp ("NVT", element_name) == 0);
-        if (modify_config_data->nvt_selection_nvt_oid)
-          array_add (modify_config_data->nvt_selection,
-                     modify_config_data->nvt_selection_nvt_oid);
-        modify_config_data->nvt_selection_nvt_oid = NULL;
-        set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
-        break;
-
-      CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NAME);
-      CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NVT);
-      case CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE:
-        assert (strcasecmp ("VALUE", element_name) == 0);
-        /* Init, so it's the empty string when the value is empty. */
-        openvas_append_string (&modify_config_data->preference_value, "");
-        set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
-        break;
-
-      case CLIENT_MODIFY_LSC_CREDENTIAL:
-        {
-          lsc_credential_t lsc_credential = 0;
-
-          if (modify_lsc_credential_data->lsc_credential_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_lsc_credential",
-                                "MODIFY_LSC_CREDENTIAL requires a"
-                                " lsc_credential_id attribute"));
-          else if (find_lsc_credential
-                    (modify_lsc_credential_data->lsc_credential_id,
-                     &lsc_credential))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("modify_lsc_credential"));
-          else if (lsc_credential == 0)
-            {
-              if (send_find_error_to_client
-                   ("modify_lsc_credential",
-                    "LSC credential",
-                    modify_lsc_credential_data->lsc_credential_id,
-                    write_to_client,
-                    write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if ((modify_lsc_credential_data->login
-                    || modify_lsc_credential_data->password)
-                   && lsc_credential_packaged (lsc_credential))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_lsc_credential",
-                                "Attempt to change login or password of"
-                                " packaged LSC credential"));
-          else
-            {
-              if (modify_lsc_credential_data->name)
-                set_lsc_credential_name (lsc_credential,
-                                         modify_lsc_credential_data->name);
-              if (modify_lsc_credential_data->comment)
-                set_lsc_credential_comment
-                 (lsc_credential,
-                  modify_lsc_credential_data->comment);
-              if (modify_lsc_credential_data->login)
-                set_lsc_credential_login (lsc_credential,
-                                          modify_lsc_credential_data->login);
-              if (modify_lsc_credential_data->password)
-                set_lsc_credential_password
-                 (lsc_credential,
-                  modify_lsc_credential_data->password);
-              SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_lsc_credential"));
-            }
-        }
-        modify_lsc_credential_data_reset (modify_lsc_credential_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, NAME);
-      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, COMMENT);
-      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, LOGIN);
-      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, PASSWORD);
-
-      case CLIENT_MODIFY_REPORT:
-        {
-          report_t report = 0;
-
-          if (modify_report_data->report_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_report",
-                                "MODIFY_REPORT requires a report_id attribute"));
-          else if (modify_report_data->comment == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_report",
-                                "MODIFY_REPORT requires a COMMENT element"));
-          else if (find_report (modify_report_data->report_id, &report))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
-          else if (report == 0)
-            {
-              if (send_find_error_to_client ("modify_report",
-                                             "report",
-                                             modify_report_data->report_id,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else
-            {
-              int ret = set_report_parameter
-                         (report,
-                          "COMMENT",
-                          modify_report_data->comment);
-              switch (ret)
-                {
-                  case 0:
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
-                    break;
-                  case -2: /* Parameter name error. */
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("modify_report",
-                                        "Bogus MODIFY_REPORT parameter"));
-                    break;
-                  case -3: /* Failed to write to disk. */
-                  default:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("modify_report"));
-                    break;
-                }
-            }
-          SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
-        }
-        modify_report_data_reset (modify_report_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-      CLOSE (CLIENT_MODIFY_REPORT, COMMENT);
-
-      case CLIENT_MODIFY_REPORT_FORMAT:
-        {
-          report_format_t report_format = 0;
-
-          if (modify_report_format_data->report_format_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_report_format",
-                                "MODIFY_REPORT_FORMAT requires a"
-                                " report_format_id attribute"));
-          else if (find_report_format
-                    (modify_report_format_data->report_format_id,
-                     &report_format))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("modify_report_format"));
-          else if (report_format == 0)
-            {
-              if (send_find_error_to_client
-                   ("modify_report_format",
-                    "report format",
-                    modify_report_format_data->report_format_id,
-                    write_to_client,
-                    write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else
-            {
-              if (modify_report_format_data->active)
-                set_report_format_active
-                 (report_format,
-                  strcmp (modify_report_format_data->active, "0"));
-              if (modify_report_format_data->name)
-                set_report_format_name (report_format,
-                                        modify_report_format_data->name);
-              if (modify_report_format_data->summary)
-                set_report_format_summary (report_format,
-                                           modify_report_format_data->summary);
-              if (modify_report_format_data->param_name)
-                {
-                  switch (set_report_format_param
-                           (report_format,
-                            modify_report_format_data->param_name,
-                            modify_report_format_data->param_value))
-                    {
-                      case 0:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_OK ("modify_report_format"));
-                        break;
-                      case 1:
-                        if (send_find_error_to_client
-                             ("modify_report_format",
-                              "param",
-                              modify_report_format_data->param_name,
-                              write_to_client,
-                              write_to_client_data))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case 2:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_ERROR_SYNTAX ("modify_report_format",
-                                            "Parameter validation failed"));
-                        break;
-                      default:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("modify_report_format"));
-                        break;
-                    }
-                }
-              else
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report_format"));
-            }
-        }
-        modify_report_format_data_reset (modify_report_format_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-      CLOSE (CLIENT_MODIFY_REPORT_FORMAT, ACTIVE);
-      CLOSE (CLIENT_MODIFY_REPORT_FORMAT, NAME);
-      CLOSE (CLIENT_MODIFY_REPORT_FORMAT, SUMMARY);
-      CLOSE (CLIENT_MODIFY_REPORT_FORMAT, PARAM);
-      CLOSE (CLIENT_MODIFY_REPORT_FORMAT_PARAM, NAME);
-      CLOSE (CLIENT_MODIFY_REPORT_FORMAT_PARAM, VALUE);
-
-      case CLIENT_MODIFY_SETTING:
-        {
-          gchar *errdesc = NULL;
-
-          if (((modify_setting_data->name == NULL)
-               && (modify_setting_data->setting_id == NULL))
-              || (modify_setting_data->value == NULL))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_setting",
-                                "MODIFY_SETTING requires a NAME or setting_id"
-                                " and a VALUE"));
-          else switch (manage_set_setting (modify_setting_data->setting_id,
-                                           modify_setting_data->name,
-                                           modify_setting_data->value,
-                                           &errdesc))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_setting"));
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_setting",
-                                    "Failed to find setting"));
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_setting",
-                                    "Value validation failed"));
-                break;
-              case -1:
-                if (errdesc)
-                  {
-                    char *buf = make_xml_error_syntax ("modify_setting",
-                                                       errdesc);
-                    SEND_TO_CLIENT_OR_FAIL (buf);
-                    g_free (buf);
-                    break;
-                  }
-                /* Fall through.  */
-              default:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("modify_setting"));
-                break;
-            }
-          g_free (errdesc);
-        }
-        modify_setting_data_reset (modify_setting_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-      CLOSE (CLIENT_MODIFY_SETTING, NAME);
-      CLOSE (CLIENT_MODIFY_SETTING, VALUE);
-
-      case CLIENT_MODIFY_TASK:
-        /** @todo Update to match "create_task (config, target)". */
-        if (modify_task_data->task_id)
-          {
-            task_t task = 0;
-            if (find_task (modify_task_data->task_id, &task))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_task"));
-            else if (task == 0)
-              {
-                if (send_find_error_to_client ("modify_task",
-                                               "task",
-                                               modify_task_data->task_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else if ((modify_task_data->action
-                      || (modify_task_data->alerts->len > 1)
-                      || (modify_task_data->groups->len > 1)
-                      || modify_task_data->name
-                      || modify_task_data->comment
-                      || modify_task_data->rcfile)
-                     == 0)
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_task",
-                                  "Too few parameters"));
-            else if (modify_task_data->action
-                     && (modify_task_data->comment
-                         || modify_task_data->alerts->len
-                         || modify_task_data->groups->len
-                         || modify_task_data->name
-                         || modify_task_data->rcfile))
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_task",
-                                  "Too many parameters at once"));
-            else if ((task_target (task) == 0)
-                     && (modify_task_data->rcfile
-                         || modify_task_data->alerts->len
-                         || modify_task_data->schedule_id
-                         || modify_task_data->slave_id))
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_task",
-                                  "For container tasks only name, comment and"
-                                  " observers can be modified"));
-            else if (modify_task_data->action)
-              {
-                if (modify_task_data->file_name == NULL)
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("modify_task",
-                                      "MODIFY_TASK FILE requires a name"
-                                      " attribute"));
-                else if (strcmp (modify_task_data->action, "update") == 0)
-                  {
-                    manage_task_update_file (task,
-                                             modify_task_data->file_name,
-                                             modify_task_data->file
-                                              ? modify_task_data->file
-                                              : "");
-                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                           "Task %s has been modified",
-                           modify_task_data->task_id);
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
-                  }
-                else if (strcmp (modify_task_data->action, "remove") == 0)
-                  {
-                    manage_task_remove_file (task, modify_task_data->file_name);
-                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                           "Task %s has been modified",
-                           modify_task_data->task_id);
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
-                  }
-                else
-                  {
-                    SEND_TO_CLIENT_OR_FAIL
-                      (XML_ERROR_SYNTAX ("modify_task",
-                                         "MODIFY_TASK action must be"
-                                         " \"update\" or \"remove\""));
-                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                           "Task %s could not be modified",
-                           modify_task_data->task_id);
-                  }
-              }
-            else
-              {
-                int fail = 0;
-
-                /** @todo It'd probably be better to allow only one
-                 * modification at a time, that is, one parameter or one of
-                 * file, name and comment.  Otherwise a syntax error in a
-                 * later part of the command would result in an error being
-                 * returned while some part of the command actually
-                 * succeeded. */
-
-                if (modify_task_data->rcfile)
-                  {
-                    fail = set_task_parameter (task,
-                                               "RCFILE",
-                                               modify_task_data->rcfile);
-                    modify_task_data->rcfile = NULL;
-                    if (fail)
-                      {
-                        SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("modify_task"));
-                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                               "Task %s could not be modified",
-                               modify_task_data->task_id);
-                      }
-                  }
-
-                if (fail == 0 && modify_task_data->name)
-                  {
-                    fail = set_task_parameter (task,
-                                               "NAME",
-                                               modify_task_data->name);
-                    modify_task_data->name = NULL;
-                    if (fail)
-                      {
-                        SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("modify_task"));
-                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                               "Task %s could not be modified",
-                               modify_task_data->task_id);
-                      }
-                  }
-
-                if (fail == 0 && modify_task_data->comment)
-                  {
-                    fail = set_task_parameter (task,
-                                               "COMMENT",
-                                               modify_task_data->comment);
-                    modify_task_data->comment = NULL;
-                    if (fail)
-                      {
-                        SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("modify_task"));
-                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                               "Task %s could not be modified",
-                               modify_task_data->task_id);
-                      }
-                  }
-
-                if (fail == 0 && modify_task_data->config_id)
-                  {
-                    config_t config = 0;
-
-                    if (strcmp (modify_task_data->config_id, "0") == 0)
-                      {
-                        /* Leave it as it is. */
-                      }
-                    else if ((fail = (task_run_status (task)
-                                      != TASK_STATUS_NEW)))
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("modify_task",
-                                          "Status must be New to edit Config"));
-                    else if ((fail = find_config
-                                      (modify_task_data->config_id,
-                                       &config)))
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_task"));
-                    else if (config == 0)
-                      {
-                        if (send_find_error_to_client
-                             ("modify_task",
-                              "config",
-                              modify_task_data->config_id,
-                              write_to_client,
-                              write_to_client_data))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        fail = 1;
-                      }
-                    else
-                     set_task_config (task, config);
-                  }
-
-                if (fail == 0 && modify_task_data->observers)
-                  {
-                    fail = set_task_observers (task,
-                                               modify_task_data->observers);
-                    switch (fail)
-                      {
-                        case 0:
-                          break;
-                        case 1:
-                        case 2:
-                          SEND_TO_CLIENT_OR_FAIL
-                            (XML_ERROR_SYNTAX ("modify_task",
-                                               "User name error"));
-                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                                 "Task %s could not be modified",
-                                 modify_task_data->task_id);
-                          break;
-                        case -1:
-                        default:
-                          SEND_TO_CLIENT_OR_FAIL
-                            (XML_INTERNAL_ERROR ("modify_task"));
-                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                                 "Task %s could not be modified",
-                                 modify_task_data->task_id);
-                      }
-                  }
-
-                if (fail == 0 && modify_task_data->alerts->len)
-                  {
-                    gchar *fail_alert_id;
-                    switch ((fail = set_task_alerts (task,
-                                                     modify_task_data->alerts,
-                                                     &fail_alert_id)))
-                      {
-                        case 0:
-                          break;
-                        case 1:
-                          if (send_find_error_to_client
-                               ("modify_task",
-                                "alert",
-                                fail_alert_id,
-                                write_to_client,
-                                write_to_client_data))
-                            {
-                              error_send_to_client (error);
-                              return;
-                            }
-                          fail = 1;
-                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                                 "Task %s could not be modified",
-                                 modify_task_data->task_id);
-                          break;
-                        case -1:
-                        default:
-                          SEND_TO_CLIENT_OR_FAIL
-                            (XML_INTERNAL_ERROR ("modify_task"));
-                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                                 "Task %s could not be modified",
-                                 modify_task_data->task_id);
-                      }
-                  }
-
-                if (fail == 0 && modify_task_data->groups)
-                  {
-                    gchar *fail_group_id;
-                    switch ((fail = set_task_groups (task,
-                                                     modify_task_data->groups,
-                                                     &fail_group_id)))
-                      {
-                        case 0:
-                          break;
-                        case 1:
-                          if (send_find_error_to_client
-                               ("modify_task",
-                                "group",
-                                fail_group_id,
-                                write_to_client,
-                                write_to_client_data))
-                            {
-                              error_send_to_client (error);
-                              return;
-                            }
-                          fail = 1;
-                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                                 "Task %s could not be modified",
-                                 modify_task_data->task_id);
-                          break;
-                        case -1:
-                        default:
-                          SEND_TO_CLIENT_OR_FAIL
-                            (XML_INTERNAL_ERROR ("modify_task"));
-                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                                 "Task %s could not be modified",
-                                 modify_task_data->task_id);
-                      }
-                  }
-
-                if (fail == 0 && modify_task_data->schedule_id)
-                  {
-                    schedule_t schedule = 0;
-
-                    if (strcmp (modify_task_data->schedule_id, "0") == 0)
-                      {
-                        set_task_schedule (task, 0);
-                      }
-                    else if ((fail = find_schedule
-                                      (modify_task_data->schedule_id,
-                                       &schedule)))
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_task"));
-                    else if (schedule == 0)
-                      {
-                        if (send_find_error_to_client
-                             ("modify_task",
-                              "schedule",
-                              modify_task_data->schedule_id,
-                              write_to_client,
-                              write_to_client_data))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        fail = 1;
-                      }
-                    else if (set_task_schedule (task, schedule))
-                      {
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("modify_task"));
-                        fail = 1;
-                      }
-                  }
-
-                if (fail == 0 && modify_task_data->slave_id)
-                  {
-                    slave_t slave = 0;
-
-                    if (strcmp (modify_task_data->slave_id, "0") == 0)
-                      {
-                        set_task_slave (task, 0);
-                      }
-                    else if ((fail = find_slave
-                                      (modify_task_data->slave_id,
-                                       &slave)))
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_task"));
-                    else if (slave == 0)
-                      {
-                        if (send_find_error_to_client
-                             ("modify_task",
-                              "slave",
-                              modify_task_data->slave_id,
-                              write_to_client,
-                              write_to_client_data))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        fail = 1;
-                      }
-                    else
-                      {
-                        set_task_slave (task, slave);
-                      }
-                  }
-
-                if (fail == 0 && modify_task_data->target_id)
-                  {
-                    target_t target = 0;
-
-                    if (strcmp (modify_task_data->target_id, "0") == 0)
-                      {
-                        /* Leave it as it is. */
-                      }
-                    else if ((fail = (task_run_status (task)
-                                      != TASK_STATUS_NEW)))
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("modify_task",
-                                          "Status must be New to edit Target"));
-                    else if ((fail = find_target
-                                      (modify_task_data->target_id,
-                                       &target)))
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_task"));
-                    else if (target == 0)
-                      {
-                        if (send_find_error_to_client
-                             ("modify_task",
-                              "target",
-                              modify_task_data->target_id,
-                              write_to_client,
-                              write_to_client_data))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        fail = 1;
-                      }
-                    else
-                      set_task_target (task, target);
-                  }
-
-                if (fail == 0 && modify_task_data->preferences)
-                  set_task_preferences (task,
-                                        modify_task_data->preferences);
-
-                if (fail == 0)
-                  {
-                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                           "Task %s has been modified",
-                           modify_task_data->task_id);
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
-                  }
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("modify_task",
-                              "MODIFY_TASK requires a task_id attribute"));
-        modify_task_data_reset (modify_task_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-      CLOSE (CLIENT_MODIFY_TASK, COMMENT);
-      CLOSE (CLIENT_MODIFY_TASK, CONFIG);
-      CLOSE (CLIENT_MODIFY_TASK, ALERT);
-      CLOSE (CLIENT_MODIFY_TASK, NAME);
-      CLOSE (CLIENT_MODIFY_TASK, OBSERVERS);
-      CLOSE (CLIENT_MODIFY_TASK, PREFERENCES);
-      CLOSE (CLIENT_MODIFY_TASK, RCFILE);
-      CLOSE (CLIENT_MODIFY_TASK, SCHEDULE);
-      CLOSE (CLIENT_MODIFY_TASK, SLAVE);
-      CLOSE (CLIENT_MODIFY_TASK, TARGET);
-      CLOSE (CLIENT_MODIFY_TASK, FILE);
-
-      CLOSE (CLIENT_MODIFY_TASK_OBSERVERS, GROUP);
-
-      case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE:
-        assert (strcasecmp ("PREFERENCE", element_name) == 0);
-        array_add (modify_task_data->preferences,
-                   modify_task_data->preference);
-        modify_task_data->preference = NULL;
-        set_client_state (CLIENT_MODIFY_TASK_PREFERENCES);
-        break;
-      case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME:
-        assert (strcasecmp ("SCANNER_NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE);
-        break;
-      CLOSE (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE, VALUE);
-
-      case CLIENT_MODIFY_USER:
-        {
-          assert (strcasecmp ("MODIFY_USER", element_name) == 0);
-
-          if ((modify_user_data->name == NULL
-               && modify_user_data->user_id == NULL)
-              || (modify_user_data->name
-                  && (strlen (modify_user_data->name) == 0))
-              || (modify_user_data->user_id
-                  && (strlen (modify_user_data->user_id) == 0)))
-            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                    ("modify_user",
-                                     "MODIFY_USER requires NAME or user_id"));
-          else
-            {
-              gchar *fail_group_id, *fail_role_id, *errdesc;
-
-              errdesc = NULL;
-
-              switch (modify_user
-                      (modify_user_data->user_id,
-                       &modify_user_data->name,
-                       ((modify_user_data->modify_password
-                         && modify_user_data->password)
-                         ? modify_user_data->password
-                         /* Leave the password as it is. */
-                         : NULL),
-                       modify_user_data->hosts,
-                       modify_user_data->hosts_allow,
-                       modify_user_data->sources,
-                       modify_user_data->groups, &fail_group_id,
-                       modify_user_data->roles, &fail_role_id,
-                       &errdesc))
-                {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
-                  break;
-                case 1:
-                  if (send_find_error_to_client
-                       ("modify_user",
-                        "group",
-                        fail_group_id,
-                        write_to_client,
-                        write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 2:
-                  if (send_find_error_to_client
-                       ("modify_user",
-                        "user",
-                        modify_user_data->user_id
-                         ? modify_user_data->user_id
-                         : modify_user_data->name,
-                        write_to_client,
-                        write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 3:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
-                  g_log ("event user", G_LOG_LEVEL_MESSAGE,
-                         "User %s gained the Admin role",
-                         modify_user_data->name);
-                  break;
-                case 4:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
-                  g_log ("event user", G_LOG_LEVEL_MESSAGE,
-                         "User %s lost the Admin role",
-                         modify_user_data->name);
-                  break;
-                case 5:
-                  if (send_find_error_to_client
-                       ("modify_user",
-                        "role",
-                        fail_role_id,
-                        write_to_client,
-                        write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case -2:
-                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                          ("modify_user", "Unknown role"));
-                  break;
-                case -3:
-                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                          ("modify_user", "Error in SOURCES"));
-                  break;
-                case -1:
-                  if (errdesc)
-                    {
-                      char *buf = make_xml_error_syntax ("modify_user", errdesc);
-                      SEND_TO_CLIENT_OR_FAIL (buf);
-                      g_free (buf);
-                      break;
-                    }
-                /* Fall through.  */
-                default:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_user"));
-                  break;
-                }
-              g_free (errdesc);
-            }
-          modify_user_data_reset (modify_user_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      CLOSE (CLIENT_MODIFY_USER, GROUPS);
-      CLOSE (CLIENT_MODIFY_USER_GROUPS, GROUP);
-      CLOSE (CLIENT_MODIFY_USER, HOSTS);
-      CLOSE (CLIENT_MODIFY_USER, NAME);
-      CLOSE (CLIENT_MODIFY_USER, PASSWORD);
-      CLOSE (CLIENT_MODIFY_USER, ROLE);
-      case CLIENT_MODIFY_USER_SOURCES:
-        assert (strcasecmp ("SOURCES", element_name) == 0);
-        array_terminate (modify_user_data->sources);
-        set_client_state (CLIENT_MODIFY_USER);
-        break;
-      case CLIENT_MODIFY_USER_SOURCES_SOURCE:
-        assert (strcasecmp ("SOURCE", element_name) == 0);
-        array_add (modify_user_data->sources,
-                   g_strdup (modify_user_data->current_source));
-        g_free (modify_user_data->current_source);
-        modify_user_data->current_source = NULL;
-        set_client_state (CLIENT_MODIFY_USER_SOURCES);
-        break;
-
       case CLIENT_CREATE_AGENT:
         {
           agent_t agent;
@@ -18902,6 +17771,319 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
+      case CLIENT_MODIFY_CONFIG:
+        {
+          config_t config;
+          if (modify_config_data->config_id == NULL
+              || strlen (modify_config_data->config_id) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_config",
+                                "MODIFY_CONFIG requires a config_id"
+                                " attribute"));
+          else if ((modify_config_data->nvt_selection_family
+                    /* This array implies FAMILY_SELECTION. */
+                    && modify_config_data->families_static_all)
+                   || ((modify_config_data->nvt_selection_family
+                        || modify_config_data->families_static_all)
+                       && (modify_config_data->preference_name
+                           || modify_config_data->preference_value
+                           || modify_config_data->preference_nvt_oid)))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_config",
+                                "MODIFY_CONFIG requires either a PREFERENCE or"
+                                " an NVT_SELECTION or a FAMILY_SELECTION"));
+          else if (find_config (modify_config_data->config_id, &config))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+          else if (config == 0)
+            {
+              if (send_find_error_to_client ("modify_config",
+                                             "config",
+                                             modify_config_data->config_id,
+                                             write_to_client,
+                                             write_to_client_data))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (modify_config_data->nvt_selection_family)
+            {
+              switch (manage_set_config_nvts
+                       (config,
+                        modify_config_data->nvt_selection_family,
+                        modify_config_data->nvt_selection))
+                {
+                  case 0:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config %s has been modified",
+                           modify_config_data->config_id);
+                    break;
+                  case 1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config %s could not be modified",
+                           modify_config_data->config_id);
+                    break;
+#if 0
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("modify_config",
+                                        "MODIFY_CONFIG PREFERENCE requires at"
+                                        " least one of the VALUE and NVT"
+                                        " elements"));
+                    break;
+#endif
+                  default:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("modify_config"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config %s could not be modified",
+                           modify_config_data->config_id);
+                    break;
+                }
+            }
+          else if (modify_config_data->families_static_all)
+            {
+              /* There was a FAMILY_SELECTION. */
+
+              switch (manage_set_config_families
+                       (config,
+                        modify_config_data->families_growing_all,
+                        modify_config_data->families_static_all,
+                        modify_config_data->families_growing_empty,
+                        modify_config_data->family_selection_growing))
+                {
+                  case 0:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config %s has been modified",
+                           modify_config_data->config_id);
+                    break;
+                  case 1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config %s could not be modified",
+                           modify_config_data->config_id);
+                    break;
+#if 0
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("modify_config",
+                                        "MODIFY_CONFIG PREFERENCE requires at"
+                                        " least one of the VALUE and NVT"
+                                        " elements"));
+                    break;
+#endif
+                  default:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("modify_config"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config %s could not be modified",
+                           modify_config_data->config_id);
+                    break;
+                }
+            }
+          else if (modify_config_data->name && modify_config_data->comment)
+            switch (manage_set_config_name_comment (config,
+                                                    modify_config_data->name,
+                                                    modify_config_data->comment))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_config",
+                                      "MODIFY_CONFIG name must be unique"));
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("modify_config"));
+                  break;
+              }
+          else if (modify_config_data->name)
+            switch (manage_set_config_name (config, modify_config_data->name))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_config",
+                                      "MODIFY_CONFIG name must be unique"));
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("modify_config"));
+                  break;
+              }
+          else if (modify_config_data->comment)
+            switch (manage_set_config_comment (config,
+                                               modify_config_data->comment))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("modify_config"));
+                  break;
+              }
+          else if (modify_config_data->preference_name == NULL
+                   || strlen (modify_config_data->preference_name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_config",
+                                "MODIFY_CONFIG PREFERENCE requires a NAME"
+                                " element"));
+          else switch (manage_set_config_preference
+                        (config,
+                         modify_config_data->preference_nvt_oid,
+                         modify_config_data->preference_name,
+                         modify_config_data->preference_value))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_config", "Empty radio value"));
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("modify_config"));
+                break;
+            }
+        }
+        modify_config_data_reset (modify_config_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      CLOSE (CLIENT_MODIFY_CONFIG, COMMENT);
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
+        assert (strcasecmp ("FAMILY_SELECTION", element_name) == 0);
+        assert (modify_config_data->families_growing_all);
+        assert (modify_config_data->families_static_all);
+        assert (modify_config_data->families_growing_empty);
+        array_terminate (modify_config_data->families_growing_all);
+        array_terminate (modify_config_data->families_static_all);
+        array_terminate (modify_config_data->families_growing_empty);
+        set_client_state (CLIENT_MODIFY_CONFIG);
+        break;
+      CLOSE (CLIENT_MODIFY_CONFIG, NAME);
+      case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
+        assert (strcasecmp ("NVT_SELECTION", element_name) == 0);
+        assert (modify_config_data->nvt_selection);
+        array_terminate (modify_config_data->nvt_selection);
+        set_client_state (CLIENT_MODIFY_CONFIG);
+        break;
+      CLOSE (CLIENT_MODIFY_CONFIG, PREFERENCE);
+
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
+        assert (strcasecmp ("FAMILY", element_name) == 0);
+        if (modify_config_data->family_selection_family_name)
+          {
+            if (modify_config_data->family_selection_family_growing)
+              {
+                if (modify_config_data->family_selection_family_all)
+                  /* Growing 1 and select all 1. */
+                  array_add (modify_config_data->families_growing_all,
+                             modify_config_data->family_selection_family_name);
+                else
+                  /* Growing 1 and select all 0. */
+                  array_add (modify_config_data->families_growing_empty,
+                             modify_config_data->family_selection_family_name);
+              }
+            else
+              {
+                if (modify_config_data->family_selection_family_all)
+                  /* Growing 0 and select all 1. */
+                  array_add (modify_config_data->families_static_all,
+                             modify_config_data->family_selection_family_name);
+                /* Else growing 0 and select all 0. */
+              }
+          }
+        modify_config_data->family_selection_family_name = NULL;
+        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
+        break;
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING:
+        assert (strcasecmp ("GROWING", element_name) == 0);
+        if (modify_config_data->family_selection_growing_text)
+          {
+            modify_config_data->family_selection_growing
+             = atoi (modify_config_data->family_selection_growing_text);
+            openvas_free_string_var
+             (&modify_config_data->family_selection_growing_text);
+          }
+        else
+          modify_config_data->family_selection_growing = 0;
+        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
+        break;
+
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL:
+        assert (strcasecmp ("ALL", element_name) == 0);
+        if (modify_config_data->family_selection_family_all_text)
+          {
+            modify_config_data->family_selection_family_all
+             = atoi (modify_config_data->family_selection_family_all_text);
+            openvas_free_string_var
+             (&modify_config_data->family_selection_family_all_text);
+          }
+        else
+          modify_config_data->family_selection_family_all = 0;
+        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
+        break;
+      CLOSE (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY, NAME);
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING:
+        assert (strcasecmp ("GROWING", element_name) == 0);
+        if (modify_config_data->family_selection_family_growing_text)
+          {
+            modify_config_data->family_selection_family_growing
+             = atoi (modify_config_data->family_selection_family_growing_text);
+            openvas_free_string_var
+             (&modify_config_data->family_selection_family_growing_text);
+          }
+        else
+          modify_config_data->family_selection_family_growing = 0;
+        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
+        break;
+
+      CLOSE (CLIENT_MODIFY_CONFIG_NVT_SELECTION, FAMILY);
+      case CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT:
+        assert (strcasecmp ("NVT", element_name) == 0);
+        if (modify_config_data->nvt_selection_nvt_oid)
+          array_add (modify_config_data->nvt_selection,
+                     modify_config_data->nvt_selection_nvt_oid);
+        modify_config_data->nvt_selection_nvt_oid = NULL;
+        set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
+        break;
+
+      CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NAME);
+      CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NVT);
+      case CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE:
+        assert (strcasecmp ("VALUE", element_name) == 0);
+        /* Init, so it's the empty string when the value is empty. */
+        openvas_append_string (&modify_config_data->preference_value, "");
+        set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
+        break;
+
       case CLIENT_MODIFY_FILTER:
         {
           assert (strcasecmp ("MODIFY_FILTER", element_name) == 0);
@@ -19066,69 +18248,66 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_GROUP, NAME);
       CLOSE (CLIENT_MODIFY_GROUP, USERS);
 
-      case CLIENT_MODIFY_PORT_LIST:
+      case CLIENT_MODIFY_LSC_CREDENTIAL:
         {
-          assert (strcasecmp ("MODIFY_PORT_LIST", element_name) == 0);
+          lsc_credential_t lsc_credential = 0;
 
-          switch (modify_port_list
-                   (modify_port_list_data->port_list_id,
-                    modify_port_list_data->name,
-                    modify_port_list_data->comment))
+          if (modify_lsc_credential_data->lsc_credential_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_lsc_credential",
+                                "MODIFY_LSC_CREDENTIAL requires a"
+                                " lsc_credential_id attribute"));
+          else if (find_lsc_credential
+                    (modify_lsc_credential_data->lsc_credential_id,
+                     &lsc_credential))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_INTERNAL_ERROR ("modify_lsc_credential"));
+          else if (lsc_credential == 0)
             {
-              case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_port_list"));
-                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
-                       "Port List %s has been modified",
-                       modify_port_list_data->port_list_id);
-                break;
-              case 1:
-                if (send_find_error_to_client ("modify_port_list",
-                                               "port_list",
-                                               modify_port_list_data->port_list_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
-                       "Port List could not be modified");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_port_list",
-                                    "Port List with new name exists already"));
-                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
-                       "Port List could not be modified");
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_port_list",
-                                    "modify_port_list requires a port_list_id"));
-                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
-                       "Port List could not be modified");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_port_list",
-                                    "Permission denied"));
-                g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-                       "Port List could not be modified");
-                break;
-              default:
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_port_list"));
-                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
-                       "Port List could not be modified");
-                break;
+              if (send_find_error_to_client
+                   ("modify_lsc_credential",
+                    "LSC credential",
+                    modify_lsc_credential_data->lsc_credential_id,
+                    write_to_client,
+                    write_to_client_data))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
             }
-
-          modify_port_list_data_reset (modify_port_list_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
+          else if ((modify_lsc_credential_data->login
+                    || modify_lsc_credential_data->password)
+                   && lsc_credential_packaged (lsc_credential))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_lsc_credential",
+                                "Attempt to change login or password of"
+                                " packaged LSC credential"));
+          else
+            {
+              if (modify_lsc_credential_data->name)
+                set_lsc_credential_name (lsc_credential,
+                                         modify_lsc_credential_data->name);
+              if (modify_lsc_credential_data->comment)
+                set_lsc_credential_comment
+                 (lsc_credential,
+                  modify_lsc_credential_data->comment);
+              if (modify_lsc_credential_data->login)
+                set_lsc_credential_login (lsc_credential,
+                                          modify_lsc_credential_data->login);
+              if (modify_lsc_credential_data->password)
+                set_lsc_credential_password
+                 (lsc_credential,
+                  modify_lsc_credential_data->password);
+              SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_lsc_credential"));
+            }
         }
-      CLOSE (CLIENT_MODIFY_PORT_LIST, COMMENT);
-      CLOSE (CLIENT_MODIFY_PORT_LIST, NAME);
+        modify_lsc_credential_data_reset (modify_lsc_credential_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, NAME);
+      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, COMMENT);
+      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, LOGIN);
+      CLOSE (CLIENT_MODIFY_LSC_CREDENTIAL, PASSWORD);
 
       case CLIENT_MODIFY_NOTE:
         {
@@ -19448,6 +18627,213 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_PERMISSION, RESOURCE);
       CLOSE (CLIENT_MODIFY_PERMISSION_RESOURCE, TYPE);
 
+      case CLIENT_MODIFY_PORT_LIST:
+        {
+          assert (strcasecmp ("MODIFY_PORT_LIST", element_name) == 0);
+
+          switch (modify_port_list
+                   (modify_port_list_data->port_list_id,
+                    modify_port_list_data->name,
+                    modify_port_list_data->comment))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_port_list"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port List %s has been modified",
+                       modify_port_list_data->port_list_id);
+                break;
+              case 1:
+                if (send_find_error_to_client ("modify_port_list",
+                                               "port_list",
+                                               modify_port_list_data->port_list_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port List could not be modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_port_list",
+                                    "Port List with new name exists already"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port List could not be modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_port_list",
+                                    "modify_port_list requires a port_list_id"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port List could not be modified");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_port_list",
+                                    "Permission denied"));
+                g_log ("event alert", G_LOG_LEVEL_MESSAGE,
+                       "Port List could not be modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_port_list"));
+                g_log ("event port_list", G_LOG_LEVEL_MESSAGE,
+                       "Port List could not be modified");
+                break;
+            }
+
+          modify_port_list_data_reset (modify_port_list_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_PORT_LIST, COMMENT);
+      CLOSE (CLIENT_MODIFY_PORT_LIST, NAME);
+
+      case CLIENT_MODIFY_REPORT:
+        {
+          report_t report = 0;
+
+          if (modify_report_data->report_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_report",
+                                "MODIFY_REPORT requires a report_id attribute"));
+          else if (modify_report_data->comment == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_report",
+                                "MODIFY_REPORT requires a COMMENT element"));
+          else if (find_report (modify_report_data->report_id, &report))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
+          else if (report == 0)
+            {
+              if (send_find_error_to_client ("modify_report",
+                                             "report",
+                                             modify_report_data->report_id,
+                                             write_to_client,
+                                             write_to_client_data))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else
+            {
+              int ret = set_report_parameter
+                         (report,
+                          "COMMENT",
+                          modify_report_data->comment);
+              switch (ret)
+                {
+                  case 0:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
+                    break;
+                  case -2: /* Parameter name error. */
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("modify_report",
+                                        "Bogus MODIFY_REPORT parameter"));
+                    break;
+                  case -3: /* Failed to write to disk. */
+                  default:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("modify_report"));
+                    break;
+                }
+            }
+          SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
+        }
+        modify_report_data_reset (modify_report_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      CLOSE (CLIENT_MODIFY_REPORT, COMMENT);
+
+      case CLIENT_MODIFY_REPORT_FORMAT:
+        {
+          report_format_t report_format = 0;
+
+          if (modify_report_format_data->report_format_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_report_format",
+                                "MODIFY_REPORT_FORMAT requires a"
+                                " report_format_id attribute"));
+          else if (find_report_format
+                    (modify_report_format_data->report_format_id,
+                     &report_format))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_INTERNAL_ERROR ("modify_report_format"));
+          else if (report_format == 0)
+            {
+              if (send_find_error_to_client
+                   ("modify_report_format",
+                    "report format",
+                    modify_report_format_data->report_format_id,
+                    write_to_client,
+                    write_to_client_data))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else
+            {
+              if (modify_report_format_data->active)
+                set_report_format_active
+                 (report_format,
+                  strcmp (modify_report_format_data->active, "0"));
+              if (modify_report_format_data->name)
+                set_report_format_name (report_format,
+                                        modify_report_format_data->name);
+              if (modify_report_format_data->summary)
+                set_report_format_summary (report_format,
+                                           modify_report_format_data->summary);
+              if (modify_report_format_data->param_name)
+                {
+                  switch (set_report_format_param
+                           (report_format,
+                            modify_report_format_data->param_name,
+                            modify_report_format_data->param_value))
+                    {
+                      case 0:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_OK ("modify_report_format"));
+                        break;
+                      case 1:
+                        if (send_find_error_to_client
+                             ("modify_report_format",
+                              "param",
+                              modify_report_format_data->param_name,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case 2:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_ERROR_SYNTAX ("modify_report_format",
+                                            "Parameter validation failed"));
+                        break;
+                      default:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("modify_report_format"));
+                        break;
+                    }
+                }
+              else
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report_format"));
+            }
+        }
+        modify_report_format_data_reset (modify_report_format_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      CLOSE (CLIENT_MODIFY_REPORT_FORMAT, ACTIVE);
+      CLOSE (CLIENT_MODIFY_REPORT_FORMAT, NAME);
+      CLOSE (CLIENT_MODIFY_REPORT_FORMAT, SUMMARY);
+      CLOSE (CLIENT_MODIFY_REPORT_FORMAT, PARAM);
+      CLOSE (CLIENT_MODIFY_REPORT_FORMAT_PARAM, NAME);
+      CLOSE (CLIENT_MODIFY_REPORT_FORMAT_PARAM, VALUE);
+
       case CLIENT_MODIFY_SCHEDULE:
         {
           time_t first_time, period, period_months, duration;
@@ -19600,6 +18986,58 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_SCHEDULE_DURATION, UNIT);
 
       CLOSE (CLIENT_MODIFY_SCHEDULE_PERIOD, UNIT);
+
+      case CLIENT_MODIFY_SETTING:
+        {
+          gchar *errdesc = NULL;
+
+          if (((modify_setting_data->name == NULL)
+               && (modify_setting_data->setting_id == NULL))
+              || (modify_setting_data->value == NULL))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_setting",
+                                "MODIFY_SETTING requires a NAME or setting_id"
+                                " and a VALUE"));
+          else switch (manage_set_setting (modify_setting_data->setting_id,
+                                           modify_setting_data->name,
+                                           modify_setting_data->value,
+                                           &errdesc))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_setting"));
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_setting",
+                                    "Failed to find setting"));
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_setting",
+                                    "Value validation failed"));
+                break;
+              case -1:
+                if (errdesc)
+                  {
+                    char *buf = make_xml_error_syntax ("modify_setting",
+                                                       errdesc);
+                    SEND_TO_CLIENT_OR_FAIL (buf);
+                    g_free (buf);
+                    break;
+                  }
+                /* Fall through.  */
+              default:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("modify_setting"));
+                break;
+            }
+          g_free (errdesc);
+        }
+        modify_setting_data_reset (modify_setting_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      CLOSE (CLIENT_MODIFY_SETTING, NAME);
+      CLOSE (CLIENT_MODIFY_SETTING, VALUE);
 
       case CLIENT_MODIFY_SLAVE:
         {
@@ -19960,6 +19398,568 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET_TARGET_LOCATOR, USERNAME);
 
       CLOSE (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL, PORT);
+
+      case CLIENT_MODIFY_TASK:
+        /** @todo Update to match "create_task (config, target)". */
+        if (modify_task_data->task_id)
+          {
+            task_t task = 0;
+            if (find_task (modify_task_data->task_id, &task))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_task"));
+            else if (task == 0)
+              {
+                if (send_find_error_to_client ("modify_task",
+                                               "task",
+                                               modify_task_data->task_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else if ((modify_task_data->action
+                      || (modify_task_data->alerts->len > 1)
+                      || (modify_task_data->groups->len > 1)
+                      || modify_task_data->name
+                      || modify_task_data->comment
+                      || modify_task_data->rcfile)
+                     == 0)
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_task",
+                                  "Too few parameters"));
+            else if (modify_task_data->action
+                     && (modify_task_data->comment
+                         || modify_task_data->alerts->len
+                         || modify_task_data->groups->len
+                         || modify_task_data->name
+                         || modify_task_data->rcfile))
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_task",
+                                  "Too many parameters at once"));
+            else if ((task_target (task) == 0)
+                     && (modify_task_data->rcfile
+                         || modify_task_data->alerts->len
+                         || modify_task_data->schedule_id
+                         || modify_task_data->slave_id))
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_task",
+                                  "For container tasks only name, comment and"
+                                  " observers can be modified"));
+            else if (modify_task_data->action)
+              {
+                if (modify_task_data->file_name == NULL)
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_task",
+                                      "MODIFY_TASK FILE requires a name"
+                                      " attribute"));
+                else if (strcmp (modify_task_data->action, "update") == 0)
+                  {
+                    manage_task_update_file (task,
+                                             modify_task_data->file_name,
+                                             modify_task_data->file
+                                              ? modify_task_data->file
+                                              : "");
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task %s has been modified",
+                           modify_task_data->task_id);
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
+                  }
+                else if (strcmp (modify_task_data->action, "remove") == 0)
+                  {
+                    manage_task_remove_file (task, modify_task_data->file_name);
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task %s has been modified",
+                           modify_task_data->task_id);
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
+                  }
+                else
+                  {
+                    SEND_TO_CLIENT_OR_FAIL
+                      (XML_ERROR_SYNTAX ("modify_task",
+                                         "MODIFY_TASK action must be"
+                                         " \"update\" or \"remove\""));
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task %s could not be modified",
+                           modify_task_data->task_id);
+                  }
+              }
+            else
+              {
+                int fail = 0;
+
+                /** @todo It'd probably be better to allow only one
+                 * modification at a time, that is, one parameter or one of
+                 * file, name and comment.  Otherwise a syntax error in a
+                 * later part of the command would result in an error being
+                 * returned while some part of the command actually
+                 * succeeded. */
+
+                if (modify_task_data->rcfile)
+                  {
+                    fail = set_task_parameter (task,
+                                               "RCFILE",
+                                               modify_task_data->rcfile);
+                    modify_task_data->rcfile = NULL;
+                    if (fail)
+                      {
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("modify_task"));
+                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                               "Task %s could not be modified",
+                               modify_task_data->task_id);
+                      }
+                  }
+
+                if (fail == 0 && modify_task_data->name)
+                  {
+                    fail = set_task_parameter (task,
+                                               "NAME",
+                                               modify_task_data->name);
+                    modify_task_data->name = NULL;
+                    if (fail)
+                      {
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("modify_task"));
+                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                               "Task %s could not be modified",
+                               modify_task_data->task_id);
+                      }
+                  }
+
+                if (fail == 0 && modify_task_data->comment)
+                  {
+                    fail = set_task_parameter (task,
+                                               "COMMENT",
+                                               modify_task_data->comment);
+                    modify_task_data->comment = NULL;
+                    if (fail)
+                      {
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("modify_task"));
+                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                               "Task %s could not be modified",
+                               modify_task_data->task_id);
+                      }
+                  }
+
+                if (fail == 0 && modify_task_data->config_id)
+                  {
+                    config_t config = 0;
+
+                    if (strcmp (modify_task_data->config_id, "0") == 0)
+                      {
+                        /* Leave it as it is. */
+                      }
+                    else if ((fail = (task_run_status (task)
+                                      != TASK_STATUS_NEW)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("modify_task",
+                                          "Status must be New to edit Config"));
+                    else if ((fail = find_config
+                                      (modify_task_data->config_id,
+                                       &config)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("modify_task"));
+                    else if (config == 0)
+                      {
+                        if (send_find_error_to_client
+                             ("modify_task",
+                              "config",
+                              modify_task_data->config_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        fail = 1;
+                      }
+                    else
+                     set_task_config (task, config);
+                  }
+
+                if (fail == 0 && modify_task_data->observers)
+                  {
+                    fail = set_task_observers (task,
+                                               modify_task_data->observers);
+                    switch (fail)
+                      {
+                        case 0:
+                          break;
+                        case 1:
+                        case 2:
+                          SEND_TO_CLIENT_OR_FAIL
+                            (XML_ERROR_SYNTAX ("modify_task",
+                                               "User name error"));
+                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                                 "Task %s could not be modified",
+                                 modify_task_data->task_id);
+                          break;
+                        case -1:
+                        default:
+                          SEND_TO_CLIENT_OR_FAIL
+                            (XML_INTERNAL_ERROR ("modify_task"));
+                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                                 "Task %s could not be modified",
+                                 modify_task_data->task_id);
+                      }
+                  }
+
+                if (fail == 0 && modify_task_data->alerts->len)
+                  {
+                    gchar *fail_alert_id;
+                    switch ((fail = set_task_alerts (task,
+                                                     modify_task_data->alerts,
+                                                     &fail_alert_id)))
+                      {
+                        case 0:
+                          break;
+                        case 1:
+                          if (send_find_error_to_client
+                               ("modify_task",
+                                "alert",
+                                fail_alert_id,
+                                write_to_client,
+                                write_to_client_data))
+                            {
+                              error_send_to_client (error);
+                              return;
+                            }
+                          fail = 1;
+                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                                 "Task %s could not be modified",
+                                 modify_task_data->task_id);
+                          break;
+                        case -1:
+                        default:
+                          SEND_TO_CLIENT_OR_FAIL
+                            (XML_INTERNAL_ERROR ("modify_task"));
+                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                                 "Task %s could not be modified",
+                                 modify_task_data->task_id);
+                      }
+                  }
+
+                if (fail == 0 && modify_task_data->groups)
+                  {
+                    gchar *fail_group_id;
+                    switch ((fail = set_task_groups (task,
+                                                     modify_task_data->groups,
+                                                     &fail_group_id)))
+                      {
+                        case 0:
+                          break;
+                        case 1:
+                          if (send_find_error_to_client
+                               ("modify_task",
+                                "group",
+                                fail_group_id,
+                                write_to_client,
+                                write_to_client_data))
+                            {
+                              error_send_to_client (error);
+                              return;
+                            }
+                          fail = 1;
+                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                                 "Task %s could not be modified",
+                                 modify_task_data->task_id);
+                          break;
+                        case -1:
+                        default:
+                          SEND_TO_CLIENT_OR_FAIL
+                            (XML_INTERNAL_ERROR ("modify_task"));
+                          g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                                 "Task %s could not be modified",
+                                 modify_task_data->task_id);
+                      }
+                  }
+
+                if (fail == 0 && modify_task_data->schedule_id)
+                  {
+                    schedule_t schedule = 0;
+
+                    if (strcmp (modify_task_data->schedule_id, "0") == 0)
+                      {
+                        set_task_schedule (task, 0);
+                      }
+                    else if ((fail = find_schedule
+                                      (modify_task_data->schedule_id,
+                                       &schedule)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("modify_task"));
+                    else if (schedule == 0)
+                      {
+                        if (send_find_error_to_client
+                             ("modify_task",
+                              "schedule",
+                              modify_task_data->schedule_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        fail = 1;
+                      }
+                    else if (set_task_schedule (task, schedule))
+                      {
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("modify_task"));
+                        fail = 1;
+                      }
+                  }
+
+                if (fail == 0 && modify_task_data->slave_id)
+                  {
+                    slave_t slave = 0;
+
+                    if (strcmp (modify_task_data->slave_id, "0") == 0)
+                      {
+                        set_task_slave (task, 0);
+                      }
+                    else if ((fail = find_slave
+                                      (modify_task_data->slave_id,
+                                       &slave)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("modify_task"));
+                    else if (slave == 0)
+                      {
+                        if (send_find_error_to_client
+                             ("modify_task",
+                              "slave",
+                              modify_task_data->slave_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        fail = 1;
+                      }
+                    else
+                      {
+                        set_task_slave (task, slave);
+                      }
+                  }
+
+                if (fail == 0 && modify_task_data->target_id)
+                  {
+                    target_t target = 0;
+
+                    if (strcmp (modify_task_data->target_id, "0") == 0)
+                      {
+                        /* Leave it as it is. */
+                      }
+                    else if ((fail = (task_run_status (task)
+                                      != TASK_STATUS_NEW)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("modify_task",
+                                          "Status must be New to edit Target"));
+                    else if ((fail = find_target
+                                      (modify_task_data->target_id,
+                                       &target)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("modify_task"));
+                    else if (target == 0)
+                      {
+                        if (send_find_error_to_client
+                             ("modify_task",
+                              "target",
+                              modify_task_data->target_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        fail = 1;
+                      }
+                    else
+                      set_task_target (task, target);
+                  }
+
+                if (fail == 0 && modify_task_data->preferences)
+                  set_task_preferences (task,
+                                        modify_task_data->preferences);
+
+                if (fail == 0)
+                  {
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task %s has been modified",
+                           modify_task_data->task_id);
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
+                  }
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("modify_task",
+                              "MODIFY_TASK requires a task_id attribute"));
+        modify_task_data_reset (modify_task_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      CLOSE (CLIENT_MODIFY_TASK, COMMENT);
+      CLOSE (CLIENT_MODIFY_TASK, CONFIG);
+      CLOSE (CLIENT_MODIFY_TASK, ALERT);
+      CLOSE (CLIENT_MODIFY_TASK, NAME);
+      CLOSE (CLIENT_MODIFY_TASK, OBSERVERS);
+      CLOSE (CLIENT_MODIFY_TASK, PREFERENCES);
+      CLOSE (CLIENT_MODIFY_TASK, RCFILE);
+      CLOSE (CLIENT_MODIFY_TASK, SCHEDULE);
+      CLOSE (CLIENT_MODIFY_TASK, SLAVE);
+      CLOSE (CLIENT_MODIFY_TASK, TARGET);
+      CLOSE (CLIENT_MODIFY_TASK, FILE);
+
+      CLOSE (CLIENT_MODIFY_TASK_OBSERVERS, GROUP);
+
+      case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE:
+        assert (strcasecmp ("PREFERENCE", element_name) == 0);
+        array_add (modify_task_data->preferences,
+                   modify_task_data->preference);
+        modify_task_data->preference = NULL;
+        set_client_state (CLIENT_MODIFY_TASK_PREFERENCES);
+        break;
+      case CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME:
+        assert (strcasecmp ("SCANNER_NAME", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE);
+        break;
+      CLOSE (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE, VALUE);
+
+      case CLIENT_MODIFY_USER:
+        {
+          assert (strcasecmp ("MODIFY_USER", element_name) == 0);
+
+          if ((modify_user_data->name == NULL
+               && modify_user_data->user_id == NULL)
+              || (modify_user_data->name
+                  && (strlen (modify_user_data->name) == 0))
+              || (modify_user_data->user_id
+                  && (strlen (modify_user_data->user_id) == 0)))
+            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                    ("modify_user",
+                                     "MODIFY_USER requires NAME or user_id"));
+          else
+            {
+              gchar *fail_group_id, *fail_role_id, *errdesc;
+
+              errdesc = NULL;
+
+              switch (modify_user
+                      (modify_user_data->user_id,
+                       &modify_user_data->name,
+                       ((modify_user_data->modify_password
+                         && modify_user_data->password)
+                         ? modify_user_data->password
+                         /* Leave the password as it is. */
+                         : NULL),
+                       modify_user_data->hosts,
+                       modify_user_data->hosts_allow,
+                       modify_user_data->sources,
+                       modify_user_data->groups, &fail_group_id,
+                       modify_user_data->roles, &fail_role_id,
+                       &errdesc))
+                {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
+                  break;
+                case 1:
+                  if (send_find_error_to_client
+                       ("modify_user",
+                        "group",
+                        fail_group_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 2:
+                  if (send_find_error_to_client
+                       ("modify_user",
+                        "user",
+                        modify_user_data->user_id
+                         ? modify_user_data->user_id
+                         : modify_user_data->name,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 3:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
+                  g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                         "User %s gained the Admin role",
+                         modify_user_data->name);
+                  break;
+                case 4:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
+                  g_log ("event user", G_LOG_LEVEL_MESSAGE,
+                         "User %s lost the Admin role",
+                         modify_user_data->name);
+                  break;
+                case 5:
+                  if (send_find_error_to_client
+                       ("modify_user",
+                        "role",
+                        fail_role_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case -2:
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                          ("modify_user", "Unknown role"));
+                  break;
+                case -3:
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                          ("modify_user", "Error in SOURCES"));
+                  break;
+                case -1:
+                  if (errdesc)
+                    {
+                      char *buf = make_xml_error_syntax ("modify_user", errdesc);
+                      SEND_TO_CLIENT_OR_FAIL (buf);
+                      g_free (buf);
+                      break;
+                    }
+                /* Fall through.  */
+                default:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_user"));
+                  break;
+                }
+              g_free (errdesc);
+            }
+          modify_user_data_reset (modify_user_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_USER, GROUPS);
+      CLOSE (CLIENT_MODIFY_USER_GROUPS, GROUP);
+      CLOSE (CLIENT_MODIFY_USER, HOSTS);
+      CLOSE (CLIENT_MODIFY_USER, NAME);
+      CLOSE (CLIENT_MODIFY_USER, PASSWORD);
+      CLOSE (CLIENT_MODIFY_USER, ROLE);
+      case CLIENT_MODIFY_USER_SOURCES:
+        assert (strcasecmp ("SOURCES", element_name) == 0);
+        array_terminate (modify_user_data->sources);
+        set_client_state (CLIENT_MODIFY_USER);
+        break;
+      case CLIENT_MODIFY_USER_SOURCES_SOURCE:
+        assert (strcasecmp ("SOURCE", element_name) == 0);
+        array_add (modify_user_data->sources,
+                   g_strdup (modify_user_data->current_source));
+        g_free (modify_user_data->current_source);
+        modify_user_data->current_source = NULL;
+        set_client_state (CLIENT_MODIFY_USER_SOURCES);
+        break;
 
       case CLIENT_TEST_ALERT:
         if (test_alert_data->alert_id)
