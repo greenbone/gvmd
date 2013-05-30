@@ -26664,6 +26664,174 @@ print_report_assets_xml (report_t report, FILE *out, const char *host,
 }
 
 /**
+ * @brief Print the XML for a report port summary to a file.
+ *
+ * @param[in]  report           The report.
+ * @param[in]  out              File stream.
+ * @param[in]  first_result     The result to start from.  The results are 0
+ *                              indexed.
+ * @param[in]  max_results      The maximum number of results returned.
+ * @param[in]  sort_order       Whether to sort ascending or descending.
+ * @param[in]  sort_field       Field to sort on, or NULL for "type".
+ * @param[in]  levels           String describing threat levels (message types)
+ * @param[in]  autofp           Whether to apply the auto FP filter.
+ * @param[in]  search_phrase    Phrase that results must include.  All
+ *                              results if NULL or "".
+ * @param[in]  search_phrase_exact    Whether search phrase is exact.
+ * @param[in]  min_cvss_base    Minimum CVSS base of included results. All
+ *                              results if NULL.
+ * @param[in]  apply_overrides    Whether to apply overrides.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_report_port_xml (report_t report, FILE *out, int first_result,
+                       int max_results, int sort_order, const char *sort_field,
+                       const char *levels, int autofp,
+                       const char *search_phrase, int search_phrase_exact,
+                       const char *min_cvss_base, int apply_overrides)
+{
+  iterator_t results;
+  gchar *last_port, *last_host;
+  GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
+
+  init_result_iterator
+   (&results, report, 0,
+    first_result,
+    max_results,
+    /* Sort by the requested field in the requested order, in case there is
+     * a first_result and/or max_results (these are applied after the
+     * sorting). */
+    sort_order,
+    sort_field,
+    levels,
+    autofp,
+    search_phrase,
+    search_phrase_exact,
+    min_cvss_base,
+    apply_overrides);
+
+  /* Buffer the results, removing duplicates. */
+
+  last_port = NULL;
+  last_host = NULL;
+  while (next (&results))
+    {
+      const char *port = result_iterator_port (&results);
+      const char *host = result_iterator_host (&results);
+
+      if (last_port == NULL || strcmp (port, last_port)
+          || strcmp (host, last_host))
+        {
+          const char *type;
+          gchar *item;
+          int port_len, type_len;
+
+          g_free (last_port);
+          last_port = g_strdup (port);
+          g_free (last_host);
+          last_host = g_strdup (host);
+
+          type = result_iterator_type (&results);
+          port_len = strlen (port);
+          type_len = strlen (type);
+          item = g_malloc (port_len
+                            + type_len
+                            + strlen (host)
+                            + 3);
+          g_array_append_val (ports, item);
+          strcpy (item, port);
+          strcpy (item + port_len + 1, type);
+          strcpy (item + port_len + type_len + 2, host);
+        }
+
+    }
+  g_free (last_port);
+  g_free (last_host);
+
+  /* Handle sorting by threat and ROWID. */
+
+  if (sort_field == NULL || strcmp (sort_field, "port"))
+    {
+      int index, length;
+
+      /** @todo Sort by ROWID if was requested. */
+
+      /* Sort by port then threat. */
+
+      g_array_sort (ports, compare_port_threat);
+
+      /* Remove duplicates. */
+
+      last_port = NULL;
+      last_host = NULL;
+      for (index = 0, length = ports->len; index < length; index++)
+        {
+          char *port = g_array_index (ports, char*, index);
+          char *host = port + strlen (port) + 1;
+          host += strlen (host) + 1;
+          if (last_port
+              && (strcmp (port, last_port) == 0)
+              && (strcmp (host, last_host) == 0))
+            {
+              g_array_remove_index (ports, index);
+              length = ports->len;
+              index--;
+            }
+          else
+            {
+              last_port = port;
+              last_host = host;
+            }
+        }
+
+      /* Sort by threat. */
+
+      if (sort_order)
+        g_array_sort (ports, compare_message_types_asc);
+      else
+        g_array_sort (ports, compare_message_types_desc);
+    }
+
+  /* Write to file from the buffer. */
+
+  PRINT (out,
+           "<ports"
+           " start=\"%i\""
+           " max=\"%i\">"
+           "<count>%i</count>",
+           /* Add 1 for 1 indexing. */
+           first_result + 1,
+           max_results,
+           report_port_count (report));
+  {
+    gchar *item;
+    int index = 0;
+
+    while ((item = g_array_index (ports, gchar*, index++)))
+      {
+        int port_len = strlen (item);
+        int type_len = strlen (item + port_len + 1);
+        PRINT (out,
+                 "<port>"
+                 "<host>%s</host>"
+                 "%s"
+                 "<threat>%s</threat>"
+                 "</port>",
+                 item + port_len + type_len + 2,
+                 item,
+                 manage_result_type_threat (item + port_len + 1));
+        g_free (item);
+      }
+    g_array_free (ports, TRUE);
+  }
+  PRINT (out, "</ports>");
+  cleanup_iterator (&results);
+
+  return 0;
+}
+
+/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
@@ -27478,141 +27646,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   if (delta == 0)
     {
-      gchar *last_port, *last_host;
-      GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
-
-      init_result_iterator
-       (&results, report, 0,
-        first_result,
-        max_results,
-        /* Sort by the requested field in the requested order, in case there is
-         * a first_result and/or max_results (these are applied after the
-         * sorting). */
-        sort_order,
-        sort_field,
-        levels,
-        autofp,
-        search_phrase,
-        search_phrase_exact,
-        min_cvss_base,
-        apply_overrides);
-
-      /* Buffer the results, removing duplicates. */
-
-      last_port = NULL;
-      last_host = NULL;
-      while (next (&results))
-        {
-          const char *port = result_iterator_port (&results);
-          const char *host = result_iterator_host (&results);
-
-          if (last_port == NULL || strcmp (port, last_port)
-              || strcmp (host, last_host))
-            {
-              const char *type;
-              gchar *item;
-              int port_len, type_len;
-
-              g_free (last_port);
-              last_port = g_strdup (port);
-              g_free (last_host);
-              last_host = g_strdup (host);
-
-              type = result_iterator_type (&results);
-              port_len = strlen (port);
-              type_len = strlen (type);
-              item = g_malloc (port_len
-                                + type_len
-                                + strlen (host)
-                                + 3);
-              g_array_append_val (ports, item);
-              strcpy (item, port);
-              strcpy (item + port_len + 1, type);
-              strcpy (item + port_len + type_len + 2, host);
-            }
-
-        }
-      g_free (last_port);
-      g_free (last_host);
-
-      /* Handle sorting by threat and ROWID. */
-
-      if (sort_field == NULL || strcmp (sort_field, "port"))
-        {
-          int index, length;
-
-          /** @todo Sort by ROWID if was requested. */
-
-          /* Sort by port then threat. */
-
-          g_array_sort (ports, compare_port_threat);
-
-          /* Remove duplicates. */
-
-          last_port = NULL;
-          last_host = NULL;
-          for (index = 0, length = ports->len; index < length; index++)
-            {
-              char *port = g_array_index (ports, char*, index);
-              char *host = port + strlen (port) + 1;
-              host += strlen (host) + 1;
-              if (last_port
-                  && (strcmp (port, last_port) == 0)
-                  && (strcmp (host, last_host) == 0))
-                {
-                  g_array_remove_index (ports, index);
-                  length = ports->len;
-                  index--;
-                }
-              else
-                {
-                  last_port = port;
-                  last_host = host;
-                }
-            }
-
-          /* Sort by threat. */
-
-          if (sort_order)
-            g_array_sort (ports, compare_message_types_asc);
-          else
-            g_array_sort (ports, compare_message_types_desc);
-        }
-
-      /* Write to file from the buffer. */
-
-      PRINT (out,
-               "<ports"
-               " start=\"%i\""
-               " max=\"%i\">"
-               "<count>%i</count>",
-               /* Add 1 for 1 indexing. */
-               first_result + 1,
-               max_results,
-               report_port_count (report));
-      {
-        gchar *item;
-        int index = 0;
-
-        while ((item = g_array_index (ports, gchar*, index++)))
-          {
-            int port_len = strlen (item);
-            int type_len = strlen (item + port_len + 1);
-            PRINT (out,
-                     "<port>"
-                     "<host>%s</host>"
-                     "%s"
-                     "<threat>%s</threat>"
-                     "</port>",
-                     item + port_len + type_len + 2,
-                     item,
-                     manage_result_type_threat (item + port_len + 1));
-            g_free (item);
-          }
-        g_array_free (ports, TRUE);
-      }
-      PRINT (out, "</ports>");
-      cleanup_iterator (&results);
+      if(print_report_port_xml (report, out, first_result, max_results,
+                                   sort_order, sort_field, levels, autofp,
+                                   search_phrase, search_phrase_exact,
+                                   min_cvss_base, apply_overrides))
+        return -1;
     }
 
   /* Prepare result counts. */

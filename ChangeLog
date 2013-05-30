@@ -1,3 +1,9 @@
+2013-05-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (print_report_port_xml): New function.
+	(print_report_xml): Refactor code for port summary into
+	print_rpeort_port_xml.
+
 2013-05-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (prognostic_report_result_total): New function.
