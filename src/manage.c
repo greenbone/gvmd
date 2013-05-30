@@ -5503,7 +5503,7 @@ openvas_get_sync_script_feed_version (const gchar * sync_script,
  *
  * @return 0 sync requested (parent), 1 sync already in progress (parent),
  *         -1 error (parent), 2 sync complete (child), 11 sync in progress
- *         (child), -10 error (child).
+ *         (child), -10 error (child), 99 permission denied.
  */
 int
 openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
@@ -5517,6 +5517,13 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
 
   g_assert (sync_script);
   g_assert (current_user);
+
+  if (user_may (feed_type == NVT_FEED
+                 ? "sync_feed"
+                 : (feed_type == SCAP_FEED)
+                     ? "sync_scap"
+                     : "sync_cert") == 0)
+    return 99;
 
   if (!openvas_get_sync_script_identification
       (sync_script, &script_identification_string, feed_type))

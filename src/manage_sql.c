@@ -385,6 +385,9 @@ find_user_by_name (const char *, user_t *);
 int
 user_ensure_in_db (const gchar *, const gchar *);
 
+static int
+report_format_verify (report_format_t);
+
 
 /* Variables. */
 
@@ -14456,19 +14459,38 @@ escalate_1 (alert_t alert, task_t task, event_t event,
 /**
  * @brief Escalate an alert with task and event data.
  *
- * @param[in]  alert   Alert.
- * @param[in]  task        Task.
+ * @param[in]  alert_id    Alert UUID.
+ * @param[in]  task_id     Task UUID.
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 failed to find alert, 2 failed to find task,
+ *         99 permission denied, -1 error.
  */
 int
-manage_alert (alert_t alert, task_t task, event_t event,
+manage_alert (const char *alert_id, const char *task_id, event_t event,
               const void* event_data)
 {
-  alert_condition_t condition = alert_condition (alert);
-  alert_method_t method = alert_method (alert);
+  alert_t alert;
+  task_t task;
+  alert_condition_t condition;
+  alert_method_t method;
+
+  if (user_may ("test_alert") == 0)
+    return 99;
+
+  if (find_alert (alert_id, &alert))
+    return -1;
+  if (alert == 0)
+    return 1;
+
+  if (find_task (task_id, &task))
+    return -1;
+  if (task == 0)
+    return 2;
+
+  condition = alert_condition (alert);
+  method = alert_method (alert);
   return escalate_1 (alert, task, event, event_data, method, condition);
 }
 
@@ -14478,7 +14500,7 @@ manage_alert (alert_t alert, task_t task, event_t event,
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
  * @param[in]  task        Task.
- * @param[in]  alert   Alert.
+ * @param[in]  alert       Alert.
  *
  * @return 1 if event applies, else 0.
  */
@@ -16919,7 +16941,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
+      report_format_verify (report_format);
     }
 
   if (sql_int (0, 0,
@@ -16947,7 +16969,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
+      report_format_verify (report_format);
     }
 
   if (sql_int (0, 0,
@@ -16967,7 +16989,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
+      report_format_verify (report_format);
     }
 
   if (sql_int (0, 0,
@@ -16987,7 +17009,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
+      report_format_verify (report_format);
     }
 
   if (sql_int (0, 0,
@@ -17006,7 +17028,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
+      report_format_verify (report_format);
     }
 
   if (sql_int (0, 0,
@@ -17025,7 +17047,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
+      report_format_verify (report_format);
     }
 
   if (sql_int (0, 0,
@@ -17044,7 +17066,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
+      report_format_verify (report_format);
     }
 
   if (sql_int (0, 0,
@@ -17063,7 +17085,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
+      report_format_verify (report_format);
     }
 
   if (sql_int (0, 0,
@@ -17082,7 +17104,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      verify_report_format (report_format);
+      report_format_verify (report_format);
     }
 
   if (sql_int (0, 0,
@@ -39893,18 +39915,32 @@ trash_agent_writable (agent_t agent)
 /**
  * @brief Verify an agent.
  *
- * @param[in]  agent  Agent.
+ * @param[in]  agent_id  Agent UUID.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 failed to find agent, 99 permission denied, -1 error.
  */
 int
-verify_agent (agent_t agent)
+verify_agent (const char *agent_id)
 {
+  agent_t agent;
   int agent_trust = TRUST_UNKNOWN;
   iterator_t agents;
   get_data_t get;
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("verify_agent") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  agent = 0;
+  if (find_agent (agent_id, &agent))
+    return -1;
+
+  if (agent == 0)
+    return 1;
 
   memset (&get, 0, sizeof (get));
   get.filter = "asc=ROWID";
@@ -44270,13 +44306,11 @@ delete_report_format (const char *report_format_id, int ultimate)
  * @return 0 success, -1 error.
  */
 int
-verify_report_format (report_format_t report_format)
+verify_report_format_internal (report_format_t report_format)
 {
   int format_trust = TRUST_UNKNOWN;
   iterator_t formats;
   get_data_t get;
-
-  sql ("BEGIN IMMEDIATE;");
 
   memset(&get, '\0', sizeof (get));
   get.id = report_format_uuid (report_format);
@@ -44386,7 +44420,6 @@ verify_report_format (report_format_t report_format)
                 {
                   cleanup_iterator (&formats);
                   g_free (format_signature);
-                  sql ("ROLLBACK;");
                   g_string_free (format, TRUE);
                   return -1;
                 }
@@ -44399,7 +44432,6 @@ verify_report_format (report_format_t report_format)
                 {
                   cleanup_iterator (&formats);
                   g_free (format_signature);
-                  sql ("ROLLBACK;");
                   g_string_free (format, TRUE);
                   return -1;
                 }
@@ -44411,7 +44443,6 @@ verify_report_format (report_format_t report_format)
     }
   else
     {
-      sql ("ROLLBACK;");
       return -1;
     }
   cleanup_iterator (&formats);
@@ -44422,8 +44453,74 @@ verify_report_format (report_format_t report_format)
        format_trust,
        time (NULL),
        report_format);
-  sql ("COMMIT;");
 
+  return 0;
+}
+
+/**
+ * @brief Verify a report format.
+ *
+ * @param[in]  report_format_id  Report format UUID.
+ *
+ * @return 0 success, 1 failed to find report format, 99 permission denied,
+ *         -1 error.
+ */
+int
+verify_report_format (const char *report_format_id)
+{
+  int ret;
+  report_format_t report_format;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("verify_report_format") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  report_format = 0;
+  if (find_report_format (report_format_id, &report_format))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  if (report_format == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  ret = verify_report_format_internal (report_format);
+  if (ret)
+    {
+      sql ("ROLLBACK;");
+      return ret;
+    }
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
+ * @brief Verify a report format.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return 0 success, 99 permission denied, -1 error.
+ */
+static int
+report_format_verify (report_format_t report_format)
+{
+  int ret;
+
+  sql ("BEGIN IMMEDIATE;");
+  ret = verify_report_format_internal (report_format);
+  if (ret)
+    {
+      sql ("ROLLBACK;");
+      return ret;
+    }
+  sql ("COMMIT;");
   return 0;
 }
 

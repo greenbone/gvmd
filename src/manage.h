@@ -349,7 +349,7 @@ gboolean
 find_alert (const char*, alert_t*);
 
 int
-manage_alert (alert_t, task_t, event_t, const void*);
+manage_alert (const char *, const char *, event_t, const void*);
 
 int
 alert_in_use (alert_t);
@@ -1708,7 +1708,7 @@ int
 agent_writable (agent_t);
 
 int
-verify_agent (agent_t);
+verify_agent (const char *);
 
 char *
 agent_uuid (agent_t);
@@ -2089,7 +2089,7 @@ int
 delete_report_format (const char *, int);
 
 int
-verify_report_format (report_format_t);
+verify_report_format (const char *);
 
 char *
 report_format_uuid (report_format_t);

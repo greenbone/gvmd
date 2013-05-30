@@ -19964,36 +19964,32 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_TEST_ALERT:
         if (test_alert_data->alert_id)
           {
-            alert_t alert;
-            task_t task;
-
-            if (find_alert (test_alert_data->alert_id, &alert))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_alert"));
-            else if (alert == 0)
-              {
-                if (send_find_error_to_client
-                     ("test_alert",
-                      "alert",
-                      test_alert_data->alert_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else if (find_task (MANAGE_EXAMPLE_TASK_UUID, &task))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_alert"));
-            else if (task == 0)
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_alert"));
-            else switch (manage_alert (alert,
-                                       task,
-                                       EVENT_TASK_RUN_STATUS_CHANGED,
-                                       (void*) TASK_STATUS_DONE))
+            switch (manage_alert (test_alert_data->alert_id,
+                                  MANAGE_EXAMPLE_TASK_UUID,
+                                  EVENT_TASK_RUN_STATUS_CHANGED,
+                                  (void*) TASK_STATUS_DONE))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("test_alert"));
                   break;
+                case 1:
+                  if (send_find_error_to_client
+                       ("test_alert",
+                        "alert",
+                        test_alert_data->alert_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("test_alert",
+                                      "Permission denied"));
+                  break;
+                case 2:
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("test_alert"));
@@ -20841,6 +20837,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
+            case 99:
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("sync_cert",
+                                  "Permission denied"));
+              break;
             case -10:
               /* Forked sync process: error. */
               current_error = -10;
@@ -20891,6 +20892,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
+            case 99:
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("sync_feed",
+                                  "Permission denied"));
+              break;
             default:
               assert (0);
             case -1:
@@ -20927,6 +20933,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               current_error = 2;
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
+              break;
+            case 99:
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("sync_scap",
+                                  "Permission denied"));
               break;
             case -10:
               /* Forked sync process: error. */
@@ -23704,33 +23715,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("VERIFY_AGENT", element_name) == 0);
         if (verify_agent_data->agent_id)
           {
-            agent_t agent;
-
-            if (find_agent (verify_agent_data->agent_id, &agent))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("verify_agent"));
-            else if (agent == 0)
-              {
-                if (send_find_error_to_client
-                     ("verify_agent",
-                      "report format",
-                      verify_agent_data->agent_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (verify_agent (agent))
+            switch (verify_agent (verify_agent_data->agent_id))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("verify_agent"));
                   break;
                 case 1:
+                  if (send_find_error_to_client
+                       ("verify_agent",
+                        "agent",
+                        verify_agent_data->agent_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 99:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("verify_agent",
-                                      "Attempt to verify a hidden report"
-                                      " format"));
+                                      "Permission denied"));
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL
@@ -23751,35 +23756,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("VERIFY_REPORT_FORMAT", element_name) == 0);
         if (verify_report_format_data->report_format_id)
           {
-            report_format_t report_format;
-
-            if (find_report_format (verify_report_format_data->report_format_id,
-                                    &report_format))
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_INTERNAL_ERROR ("verify_report_format"));
-            else if (report_format == 0)
-              {
-                if (send_find_error_to_client
-                     ("verify_report_format",
-                      "report format",
-                      verify_report_format_data->report_format_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (verify_report_format (report_format))
+            switch (verify_report_format
+                     (verify_report_format_data->report_format_id))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("verify_report_format"));
                   break;
                 case 1:
+                  if (send_find_error_to_client
+                       ("verify_report_format",
+                        "report format",
+                        verify_report_format_data->report_format_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 99:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("verify_report_format",
-                                      "Attempt to verify a hidden report"
-                                      " format"));
+                                      "Permission denied"));
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL

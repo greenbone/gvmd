@@ -1,3 +1,24 @@
+2013-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add permission checks to verify commands, sync commands and TEST_ALERT.
+
+	* src/manage.c (openvas_sync_feed): Add permission check.
+
+	* src/manage_sql.c (manage_alert, verify_agent): Switch arguments to
+	UUIDs.  Add permission check.
+	(init_manage): Update verify calls.
+	(verify_report_format_internal): New function.  Body from
+	verify_report_format.
+	(verify_report_format): Switch to UUID arg.  Add permission check.  Call
+	through to internal function to do the work.
+	(report_format_verify): New function.  Verifies given a ROWID, for init.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Switch test_alert and
+	verify_agent arguments to UUID, adding permission case.  Add permission
+	case to verify and sync commands.
+
 2013-05-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (print_report_port_xml): New function.
