@@ -1,3 +1,13 @@
+2013-05-31  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (create_note, modify_note, create_override)
+	(modify_override): Validate port before writing in DB. Return adequate
+	error code when validation fails.
+
+	* src/omp.c (omp_xml_handle_end_element): Adequately Handle new return
+	codes for invalid port in create_note, create_override, modify_note and
+	modify_override.
+
 2013-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Group MODIFY cases together
