@@ -1,5 +1,10 @@
 2013-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Move GET cases together, and
+	into alphabetical order.
+
+2013-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Add permission result or check
 	to remaining MODIFY commands.
 
