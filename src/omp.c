@@ -17701,6 +17701,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("MODIFY_AUTH", element_name) == 0);
 
+          if (user_may ("modify_auth") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_auth",
+                                  "Permission denied"));
+              modify_auth_data_reset (modify_auth_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
           key_file = g_key_file_new ();
 
           /* Lets output the data for now. */
@@ -17788,6 +17798,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_CONFIG:
         {
           config_t config;
+
+          if (user_may ("modify_config") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_config",
+                                  "Permission denied"));
+              modify_config_data_reset (modify_config_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
           if (modify_config_data->config_id == NULL
               || strlen (modify_config_data->config_id) == 0)
             SEND_TO_CLIENT_OR_FAIL
@@ -18266,6 +18287,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           lsc_credential_t lsc_credential = 0;
 
+          if (user_may ("modify_lsc_credential") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_lsc_credential",
+                                  "Permission denied"));
+              modify_lsc_credential_data_reset (modify_lsc_credential_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
           if (modify_lsc_credential_data->lsc_credential_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_lsc_credential",
@@ -18330,6 +18361,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           note_t note = 0;
 
           assert (strcasecmp ("MODIFY_NOTE", element_name) == 0);
+
+          if (user_may ("modify_note") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_note",
+                                  "Permission denied"));
+              modify_note_data_reset (modify_note_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
 
           if (modify_note_data->note_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
@@ -18435,6 +18476,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           override_t override = 0;
 
           assert (strcasecmp ("MODIFY_OVERRIDE", element_name) == 0);
+
+          if (user_may ("modify_override") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_override",
+                                  "Permission denied"));
+              modify_override_data_reset (modify_override_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
 
           if (modify_override_data->override_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
@@ -18723,6 +18774,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           report_t report = 0;
 
+          if (user_may ("modify_report") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_report",
+                                  "Permission denied"));
+              modify_report_data_reset (modify_report_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
           if (modify_report_data->report_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_report",
@@ -18778,6 +18839,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_REPORT_FORMAT:
         {
           report_format_t report_format = 0;
+
+          if (user_may ("modify_report_format") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_report_format",
+                                  "Permission denied"));
+              modify_report_format_data_reset (modify_report_format_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
 
           if (modify_report_format_data->report_format_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
@@ -19043,6 +19114,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_setting",
                                     "Value validation failed"));
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_setting",
+                                    "Permission denied"));
                 break;
               case -1:
                 if (errdesc)
@@ -19428,6 +19504,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL, PORT);
 
       case CLIENT_MODIFY_TASK:
+        assert (strcasecmp ("MODIFY_TASK", element_name) == 0);
+
+        if (user_may ("modify_task") == 0)
+          {
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_task",
+                                "Permission denied"));
+            modify_task_data_reset (modify_task_data);
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
+          }
+
         /** @todo Update to match "create_task (config, target)". */
         if (modify_task_data->task_id)
           {
@@ -19941,6 +20029,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       error_send_to_client (error);
                       return;
                     }
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_user",
+                                      "Permission denied"));
                   break;
                 case -2:
                   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX

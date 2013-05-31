@@ -51377,8 +51377,8 @@ setting_value_int (const char *uuid, int *value)
  *                       a malloced string with the error description.  Will
  *                       always be set to NULL on success.
  *
- * @return 0 success, 1 failed to find setting, 2 syntax error in value, -1 on
- *         error.
+ * @return 0 success, 1 failed to find setting, 2 syntax error in value,
+ *         99 permission denied, -1 on error.
  */
 int
 manage_set_setting (const gchar *uuid, const gchar *name,
@@ -51386,10 +51386,13 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 {
   char *filter_name;
 
+  assert (current_credentials.uuid);
+
+  if (user_may ("modify_setting") == 0)
+    return 99;
+
   if (r_errdesc)
     *r_errdesc = NULL;
-
-  assert (current_credentials.uuid);
 
   if (name && (strcmp (name, "Timezone") == 0))
     {
@@ -53026,8 +53029,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
  *         2 failed to find user, 3 success and user gained admin, 4 success
- *         and user lost admin, 5 failed to find role, -1 on error, -2 for an
- *         unknown role, -3 if wrong number of methods.
+ *         and user lost admin, 5 failed to find role, 99 permission denied,
+ *         -1 on error, -2 for an unknown role, -3 if wrong number of methods.
  */
 int
 modify_user (const gchar * user_id, gchar **name, const gchar * password,
@@ -53059,6 +53062,12 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
   // FIX validate methods  single source, one of "", "ldap", ...
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("modify_user") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   user = 0;
   if (user_id)
