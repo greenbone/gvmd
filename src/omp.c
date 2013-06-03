@@ -14158,7 +14158,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_ROLES", element_name) == 0);
 
-          INIT_GET (user, User);
+          INIT_GET (role, Role);
 
           ret = init_role_iterator (&roles, &get_roles_data->get);
           if (ret)

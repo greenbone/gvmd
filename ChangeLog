@@ -1,5 +1,10 @@
 2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Correct GET_ROLES INIT_GET
+	type.
+
+2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Use INIT_GET for most of the
 	GET commands that have filters.  This brings permission checks to these
 	commands.
