@@ -1,5 +1,10 @@
 2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Exclude GSA Administration menu items
+	from Observer permissions.
+
+2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (init_get): Add permission check.
 	(omp_xml_handle_end_element): Add GET_TARGETS to handle init_get
 	permission return.  In GET_USERS replace common setup code with call to

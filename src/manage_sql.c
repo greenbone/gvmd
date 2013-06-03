@@ -17309,7 +17309,10 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       sql ("BEGIN EXCLUSIVE;");
       while (command[0].name)
         {
-          if (strstr (command[0].name, "GET") == command[0].name)
+          if ((strstr (command[0].name, "GET") == command[0].name)
+              && strcmp (command[0].name, "GET_GROUPS")
+              && strcmp (command[0].name, "GET_ROLES")
+              && strcmp (command[0].name, "GET_USERS"))
             add_role_permission (ROLE_UUID_OBSERVER, command[0].name);
           command++;
         }
