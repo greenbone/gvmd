@@ -10671,7 +10671,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (current_credentials.username);
 
-          if (user_may ("desribe_auth") == 0)
+          if (user_may ("describe_auth") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("describe_auth",
@@ -10714,7 +10714,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (current_credentials.username);
 
-          if (user_may ("desribe_feed") == 0)
+          if (user_may ("describe_feed") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("describe_feed",
@@ -10806,7 +10806,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (current_credentials.username);
 
-          if (user_may ("desribe_scap") == 0)
+          if (user_may ("describe_scap") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("describe_scap",
@@ -10898,7 +10898,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (current_credentials.username);
 
-          if (user_may ("desribe_cert") == 0)
+          if (user_may ("describe_cert") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("describe_cert",
@@ -13276,6 +13276,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         iterator_t reports;
         get_data_t * get;
 
+        if (user_may ("get_reports") == 0)
+          {
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_reports",
+                                "Permission denied"));
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
+          }
+
         /** @todo Some checks only required when type is "scan". */
 
         if (strcmp (get_reports_data->type, "scan")
@@ -13443,7 +13452,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
               {
                 g_free (get->filt_id);
-                get->filt_id = g_strdup("0");
+                get->filt_id = g_strdup ("0");
               }
 
             if (get_reports_data->alert_id == NULL)
@@ -13528,7 +13537,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
               {
                 g_free (get->filt_id);
-                get->filt_id = g_strdup("0");
+                get->filt_id = g_strdup ("0");
               }
 
             if (get_reports_data->alert_id == NULL)
