@@ -14732,26 +14732,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_TAGS:
         {
           iterator_t tags;
-          get_data_t* get;
           int ret, count, first, filtered;
 
           assert (strcasecmp ("GET_TAGS", element_name) == 0);
 
-          get = &get_tags_data->get;
-
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-            {
-              char *user_filter = setting_filter ("Tags");
-
-              if (user_filter && strlen (user_filter))
-                {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
-                }
-              else
-                get->filt_id = g_strdup("0");
-            }
+          INIT_GET (tag, Tag);
 
           if (get_tags_data->names_only)
             ret = init_tag_name_iterator (&tags, &get_tags_data->get);
@@ -14794,12 +14779,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          count = 0;
-          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
           SEND_GET_START ("tag", &get_filters_data->get);
           while (1)
             {
-              ret = get_next (&tags, get, &first, &count,
+              ret = get_next (&tags, &get_tags_data->get, &first, &count,
                               init_filter_iterator);
               if (ret == 1)
                 break;
