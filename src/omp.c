@@ -10364,6 +10364,35 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
     break
 
 /**
+ * @brief Call init_get for a GET end handler.
+ *
+ * @param[in]  type  Resource type.
+ */
+#define INIT_GET(type, capital)                                          \
+  count = 0;                                                             \
+  ret = init_get ("get_" G_STRINGIFY (type) "s",                         \
+                  &get_ ## type ## s_data->get,                          \
+                  G_STRINGIFY (capital),                                 \
+                  &first);                                               \
+  if (ret)                                                               \
+    {                                                                    \
+      switch (ret)                                                       \
+        {                                                                \
+          case 99:                                                       \
+            SEND_TO_CLIENT_OR_FAIL                                       \
+             (XML_ERROR_SYNTAX ("get_" G_STRINGIFY (type) "s",           \
+                                "Permission denied"));                   \
+            break;                                                       \
+          default:                                                       \
+            error_send_to_client (error);                                \
+            return;                                                      \
+        }                                                                \
+      get_ ## type ## s_data_reset (get_ ## type ## s_data);             \
+      set_client_state (CLIENT_AUTHENTIC);                               \
+      break;                                                             \
+    }
+
+/**
  * @brief Handle the end of an OMP XML element.
  *
  * React to the end of an XML element according to the current value
@@ -15101,26 +15130,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               iterator_t targets;
               int count, filtered, ret, first;
 
-              count = 0;
-              ret = init_get ("get_targets", &get_targets_data->get, "Targets",
-                              &first);
-              if (ret)
-                {
-                  switch (ret)
-                    {
-                      case 99:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_ERROR_SYNTAX ("get_targets",
-                                            "Permission denied"));
-                        break;
-                      default:
-                        error_send_to_client (error);
-                        return;
-                    }
-                  get_targets_data_reset (get_targets_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
+              INIT_GET (target, Target);
 
               ret = init_target_iterator (&targets, &get_targets_data->get);
               if (ret)
@@ -15942,26 +15952,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_USERS", element_name) == 0);
 
-          count = 0;
-          ret = init_get ("get_users", &get_users_data->get, "Users",
-                          &first);
-          if (ret)
-            {
-              switch (ret)
-                {
-                  case 99:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("get_users",
-                                        "Permission denied"));
-                    break;
-                  default:
-                    error_send_to_client (error);
-                    return;
-                }
-              get_users_data_reset (get_users_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
+          INIT_GET (user, User);
 
           ret = init_user_iterator (&users, &get_users_data->get);
           if (ret)
