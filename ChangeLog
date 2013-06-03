@@ -1,5 +1,10 @@
 2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TAGS correct
+	symbol names probably left over from copy and paste long ago.
+
+2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Use INIT_GET for GET_TAGS.
 
 2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>

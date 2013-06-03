@@ -14779,11 +14779,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          SEND_GET_START ("tag", &get_filters_data->get);
+          SEND_GET_START ("tag", &get_tags_data->get);
           while (1)
             {
               ret = get_next (&tags, &get_tags_data->get, &first, &count,
-                              init_filter_iterator);
+                              get_tags_data->names_only
+                               ? init_tag_name_iterator
+                               : init_tag_iterator);
               if (ret == 1)
                 break;
               if (ret == -1)
