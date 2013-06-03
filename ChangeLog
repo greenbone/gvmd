@@ -1,3 +1,9 @@
+2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Use INIT_GET for most of the
+	GET commands that have filters.  This brings permission checks to these
+	commands.
+
 2013-06-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (prognostic_app_count): New function.

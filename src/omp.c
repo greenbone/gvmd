@@ -11011,6 +11011,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             format = 1;
           else
             format = 0;
+
           if (format == -1)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_agents",
@@ -11020,22 +11021,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               iterator_t agents;
               int ret, count, filtered, first;
-              get_data_t * get;
 
-              get = &get_agents_data->get;
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-                {
-                  char *user_filter = setting_filter ("Agents");
-
-                  if (user_filter && strlen (user_filter))
-                    {
-                      get->filt_id = user_filter;
-                      get->filter = filter_term (user_filter);
-                    }
-                  else
-                    get->filt_id = g_strdup("0");
-                }
+              INIT_GET (agent, Agent);
 
               ret = init_agent_iterator (&agents,
                                          &get_agents_data->get);
@@ -11076,10 +11063,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              count = 0;
-              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
               SEND_GET_START ("agent", &get_agents_data->get);
-
               while (1)
                 {
                   ret = get_next (&agents, &get_agents_data->get, &first,
@@ -11161,24 +11145,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           iterator_t alerts;
           int count, filtered, ret, first;
-          get_data_t * get;
 
           assert (strcasecmp ("GET_ALERTS", element_name) == 0);
 
-          get = &get_alerts_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-            {
-              char *user_filter = setting_filter ("Alerts");
-
-              if (user_filter && strlen (user_filter))
-                {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
-                }
-              else
-                get->filt_id = g_strdup("0");
-            }
+          INIT_GET (alert, Alert);
 
           ret = init_alert_iterator (&alerts, &get_alerts_data->get);
           if (ret)
@@ -11218,8 +11188,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          count = 0;
-          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
           SEND_GET_START ("alert", &get_alerts_data->get);
           while (1)
             {
@@ -11351,26 +11319,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           iterator_t configs;
           int ret, filtered, first, count;
-          get_data_t *get;
 
           assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
 
-          get = &get_configs_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-            {
-              char *user_filter = setting_filter ("Configs");
+          INIT_GET (config, Config);
 
-              if (user_filter && strlen (user_filter))
-                {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
-                }
-              else
-                get->filt_id = g_strdup("0");
-            }
-
-          ret = init_config_iterator (&configs, get);
+          ret = init_config_iterator (&configs, &get_configs_data->get);
           if (ret)
             {
               switch (ret)
@@ -11408,8 +11362,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          count = 0;
-          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
           SEND_GET_START ("config", &get_configs_data->get);
           while (1)
             {
@@ -11680,24 +11632,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           iterator_t filters;
           int count, filtered, ret, first;
-          get_data_t * get;
 
           assert (strcasecmp ("GET_FILTERS", element_name) == 0);
 
-          get = &get_filters_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-            {
-              char *user_filter = setting_filter ("Filters");
-
-              if (user_filter && strlen (user_filter))
-                {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
-                }
-              else
-                get->filt_id = g_strdup("0");
-            }
+          INIT_GET (filter, Filter);
 
           ret = init_filter_iterator (&filters, &get_filters_data->get);
           if (ret)
@@ -11737,12 +11675,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          count = 0;
-          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
           SEND_GET_START ("filter", &get_filters_data->get);
           while (1)
             {
-              ret = get_next (&filters, get, &first, &count,
+              ret = get_next (&filters, &get_filters_data->get, &first, &count,
                               init_filter_iterator);
               if (ret == 1)
                 break;
@@ -11797,24 +11733,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           iterator_t groups;
           int count, filtered, ret, first;
-          get_data_t * get;
 
           assert (strcasecmp ("GET_GROUPS", element_name) == 0);
 
-          get = &get_groups_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-            {
-              char *user_filter = setting_filter ("Groups");
-
-              if (user_filter && strlen (user_filter))
-                {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
-                }
-              else
-                get->filt_id = g_strdup("0");
-            }
+          INIT_GET (group, Groups);
 
           ret = init_group_iterator (&groups, &get_groups_data->get);
           if (ret)
@@ -11854,14 +11776,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          count = 0;
-          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
           SEND_GET_START ("group", &get_groups_data->get);
           while (1)
             {
               gchar *users;
 
-              ret = get_next (&groups, get, &first, &count,
+              ret = get_next (&groups, &get_groups_data->get, &first, &count,
                               init_group_iterator);
               if (ret == 1)
                 break;
@@ -12357,7 +12277,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           iterator_t credentials;
           int count, filtered, ret, first;
           int format;
-          get_data_t* get;
           char *data_format;
 
           assert (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0);
@@ -12390,22 +12309,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "GET_LSC_CREDENTIALS format attribute should"
                                 " be 'key', 'rpm', 'deb' or 'exe'."));
 
-          get = &get_lsc_credentials_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-            {
-              char *user_filter = setting_filter ("Credentials");
+          INIT_GET (lsc_credential, Credential);
 
-              if (user_filter && strlen (user_filter))
-                {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
-                }
-              else
-                get->filt_id = g_strdup("0");
-            }
-
-          ret = init_lsc_credential_iterator (&credentials, get);
+          ret = init_lsc_credential_iterator (&credentials,
+                                              &get_lsc_credentials_data->get);
           if (ret)
             {
               switch (ret)
@@ -12442,11 +12349,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
-          count = 0;
-          get = &get_lsc_credentials_data->get;
-          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
-          SEND_GET_START("lsc_credential", &get_lsc_credentials_data->get);
 
+          SEND_GET_START("lsc_credential", &get_lsc_credentials_data->get);
           while (1)
             {
               const char* public_key;
@@ -12590,23 +12494,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               iterator_t notes;
               GString *buffer;
               int count, filtered, ret, first;
-              get_data_t * get;
 
-              get = &get_notes_data->get;
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-                {
-                  char *user_filter = setting_filter ("Notes");
-
-                  if (user_filter && strlen (user_filter))
-                    {
-                      get->filt_id = user_filter;
-                      get->filter = filter_term (user_filter);
-                    }
-                  else
-                    get->filt_id = g_strdup("0");
-                }
-
+              INIT_GET (note, Note);
 
               ret = init_note_iterator (&notes, &get_notes_data->get, nvt, 0,
                                         task);
@@ -12647,12 +12536,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              count = 0;
-              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
               SEND_GET_START ("note", &get_notes_data->get);
 
               buffer = g_string_new ("");
 
+              // TODO: Do the iteration with get_next so it checks "first".
               buffer_notes_xml (buffer, &notes, get_notes_data->get.details,
                                 get_notes_data->result, &count);
 
@@ -12955,22 +12843,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               iterator_t overrides;
               GString *buffer;
               int count, filtered, ret, first;
-              get_data_t * get;
 
-              get = &get_overrides_data->get;
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-                {
-                  char *user_filter = setting_filter ("Overrides");
-
-                  if (user_filter && strlen (user_filter))
-                    {
-                      get->filt_id = user_filter;
-                      get->filter = filter_term (user_filter);
-                    }
-                  else
-                    get->filt_id = g_strdup("0");
-                }
+              INIT_GET (override, Override);
 
               ret = init_override_iterator (&overrides,
                                             &get_overrides_data->get, nvt, 0,
@@ -13013,12 +12887,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              count = 0;
-              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
               SEND_GET_START ("override", &get_overrides_data->get);
 
               buffer = g_string_new ("");
 
+              // TODO: Do the iteration with get_next so it checks "first".
               buffer_overrides_xml (buffer, &overrides,
                                     get_overrides_data->get.details,
                                     get_overrides_data->result, &count);
@@ -13043,25 +12916,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           iterator_t permissions;
           int count, filtered, ret, first;
-          get_data_t * get;
 
           assert (strcasecmp ("GET_PERMISSIONS", element_name) == 0);
 
-          get = &get_permissions_data->get;
-
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-            {
-              char *user_filter = setting_filter ("Permissions");
-
-              if (user_filter && strlen (user_filter))
-                {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
-                }
-              else
-                get->filt_id = g_strdup("0");
-            }
+          INIT_GET (permission, Permission);
 
           ret = init_permission_iterator (&permissions,
                                           &get_permissions_data->get);
@@ -13102,15 +12960,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          count = 0;
-          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
           SEND_GET_START ("permission", &get_permissions_data->get);
           while (1)
             {
               const char *resource_type;
 
-              ret = get_next (&permissions, get, &first, &count,
-                              init_permission_iterator);
+              ret = get_next (&permissions, &get_permissions_data->get, &first,
+                              &count, init_permission_iterator);
               if (ret == 1)
                 break;
               if (ret == -1)
@@ -13170,24 +13026,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           iterator_t port_lists;
           int count, filtered, ret, first;
-          get_data_t * get;
 
           assert (strcasecmp ("GET_PORT_LISTS", element_name) == 0);
 
-          get = &get_port_lists_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-            {
-              char *user_filter = setting_filter ("Port Lists");
-
-              if (user_filter && strlen (user_filter))
-                {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
-                }
-              else
-                get->filt_id = g_strdup("0");
-            }
+          INIT_GET (port_list, Port List);
 
           ret = init_port_list_iterator (&port_lists,
                                          &get_port_lists_data->get);
@@ -13228,15 +13070,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          count = 0;
-          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
           SEND_GET_START ("port_list", &get_port_lists_data->get);
-
-          assert (strcasecmp ("GET_PORT_LISTS", element_name) == 0);
-          while(1)
+          while (1)
             {
-              ret = get_next (&port_lists, get, &first, &count,
-                              init_port_list_iterator);
+              ret = get_next (&port_lists, &get_port_lists_data->get, &first,
+                              &count, init_port_list_iterator);
               if (ret == 1)
                 break;
               if (ret == -1)
@@ -13988,22 +13826,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               iterator_t report_formats;
               int count, filtered, ret, first;
-              get_data_t * get;
 
-              get = &get_report_formats_data->get;
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-                {
-                  char *user_filter = setting_filter ("Report Formats");
-
-                  if (user_filter && strlen (user_filter))
-                    {
-                      get->filt_id = user_filter;
-                      get->filter = filter_term (user_filter);
-                    }
-                  else
-                    get->filt_id = g_strdup("0");
-                }
+              INIT_GET (report_format, Report Format);
 
               ret = init_report_format_iterator (&report_formats,
                                                  &get_report_formats_data->get);
@@ -14044,14 +13868,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              count = 0;
-              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
               SEND_GET_START ("report_format", &get_report_formats_data->get);
               while (1)
                 {
                   time_t trust_time;
 
-                  ret = get_next (&report_formats, get, &first, &count,
+                  ret = get_next (&report_formats,
+                                  &get_report_formats_data->get, &first, &count,
                                   init_report_format_iterator);
                   if (ret == 1)
                     break;
@@ -14423,22 +14246,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               iterator_t schedules;
               int count, filtered, ret, first;
-              get_data_t * get;
 
-              get = &get_schedules_data->get;
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-                {
-                  char *user_filter = setting_filter ("Schedules");
-
-                  if (user_filter && strlen (user_filter))
-                    {
-                      get->filt_id = user_filter;
-                      get->filter = filter_term (user_filter);
-                    }
-                  else
-                    get->filt_id = g_strdup("0");
-                }
+              INIT_GET (schedule, Schedule);
 
               ret = init_schedule_iterator (&schedules, &get_schedules_data->get);
               if (ret)
@@ -14478,8 +14287,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              count = 0;
-              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
               SEND_GET_START ("schedule", &get_schedules_data->get);
               while (1)
                 {
@@ -14492,8 +14299,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   int duration_hours, duration_days, duration_weeks;
                   int simple_period, simple_duration;
 
-                  ret = get_next (&schedules, get, &first, &count,
-                                  init_schedule_iterator);
+                  ret = get_next (&schedules, &get_schedules_data->get, &first,
+                                  &count, init_schedule_iterator);
                   if (ret == 1)
                     break;
                   if (ret == -1)
@@ -14714,22 +14521,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               iterator_t slaves;
               int count, filtered, ret, first;
-              get_data_t * get;
 
-              get = &get_slaves_data->get;
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-                {
-                  char *user_filter = setting_filter ("Slaves");
-
-                  if (user_filter && strlen (user_filter))
-                    {
-                      get->filt_id = user_filter;
-                      get->filter = filter_term (user_filter);
-                    }
-                  else
-                    get->filt_id = g_strdup("0");
-                }
+              INIT_GET (slave, Slave);
 
               ret = init_slave_iterator (&slaves, &get_slaves_data->get);
               if (ret)
@@ -14769,14 +14562,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              count = 0;
-              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
               SEND_GET_START ("slave", &get_slaves_data->get);
               while (1)
                 {
 
-                  ret = get_next (&slaves, get, &first, &count,
-                                  init_slave_iterator);
+                  ret = get_next (&slaves, &get_slaves_data->get, &first,
+                                  &count, init_slave_iterator);
                   if (ret == 1)
                     break;
                   if (ret == -1)
