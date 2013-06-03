@@ -426,6 +426,7 @@ auth_conf_setting_from_xml (const gchar * element_name,
 /*
  * @brief Init for a GET handler.
  *
+ * @param[in]  command       OMP command name.
  * @param[in]  get           GET data.
  * @param[in]  setting_name  Type name for setting.
  * @param[out] first         First result, from filter.
@@ -433,9 +434,13 @@ auth_conf_setting_from_xml (const gchar * element_name,
  * @return 0 success, -1 error.
  */
 int
-init_get (get_data_t * get, const gchar *setting_name, int *first)
+init_get (gchar *command, get_data_t * get, const gchar *setting_name,
+          int *first)
 {
   const gchar *filter;
+
+  if (user_may (command) == 0)
+    return 99;
 
   /* Switch to the default filter from the setting, if required. */
 
@@ -15097,10 +15102,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int count, filtered, ret, first;
 
               count = 0;
-              if (init_get (&get_targets_data->get, "Targets", &first))
+              ret = init_get ("get_targets", &get_targets_data->get, "Targets",
+                              &first);
+              if (ret)
                 {
-                  error_send_to_client (error);
-                  return;
+                  switch (ret)
+                    {
+                      case 99:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_ERROR_SYNTAX ("get_targets",
+                                            "Permission denied"));
+                        break;
+                      default:
+                        error_send_to_client (error);
+                        return;
+                    }
+                  get_targets_data_reset (get_targets_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
                 }
 
               ret = init_target_iterator (&targets, &get_targets_data->get);
@@ -15920,23 +15939,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           iterator_t users;
           int count, filtered, ret, first;
-          get_data_t *get;
 
           assert (strcasecmp ("GET_USERS", element_name) == 0);
 
-          get = &get_users_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+          count = 0;
+          ret = init_get ("get_users", &get_users_data->get, "Users",
+                          &first);
+          if (ret)
             {
-              char *user_filter = setting_filter ("Users");
-
-              if (user_filter && strlen (user_filter))
+              switch (ret)
                 {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
+                  case 99:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("get_users",
+                                        "Permission denied"));
+                    break;
+                  default:
+                    error_send_to_client (error);
+                    return;
                 }
-              else
-                get->filt_id = g_strdup ("0");
+              get_users_data_reset (get_users_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
             }
 
           ret = init_user_iterator (&users, &get_users_data->get);
@@ -15977,8 +16001,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          count = 0;
-          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
           SEND_GET_START ("user", &get_users_data->get);
           while (1)
             {
@@ -15986,7 +16008,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               const char *hosts;
               int hosts_allow;
 
-              ret = get_next (&users, get, &first, &count,
+              ret = get_next (&users, &get_users_data->get, &first, &count,
                               init_user_iterator);
               if (ret == 1)
                 break;

@@ -1,5 +1,12 @@
 2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (init_get): Add permission check.
+	(omp_xml_handle_end_element): Add GET_TARGETS to handle init_get
+	permission return.  In GET_USERS replace common setup code with call to
+	init_get.
+
+2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (init_get): New function.  Collects common setup steps from
 	GET_TARGETS case in omp_xml_handle_end_element.
 	(get_next): Improve comments.  Skip the checks when there is a named
