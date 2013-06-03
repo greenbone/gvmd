@@ -26295,6 +26295,30 @@ report_app_count (report_t report)
 }
 
 /**
+ * @brief Count the total number of Apps for a prognostic report.
+ *
+ * @return App count.
+ */
+static int
+prognostic_app_count (const char *host, int pos)
+{
+  if (host)
+    {
+      report_host_t report_host;
+
+      host_nthlast_report_host (host, &report_host, pos);
+      return sql_int (0, 0,
+                      "SELECT count (DISTINCT value) FROM report_host_details"
+                      " WHERE report_host = %llu AND name = 'App';",
+                      report_host);
+    }
+
+  return sql_int (0, 0,
+                  "SELECT count (DISTINCT value) FROM report_host_details"
+                  " WHERE name = 'App';");
+}
+
+/**
  * @brief Count a report's total number of error messages.
  *
  * @return Error Messages count.
@@ -27629,6 +27653,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              (strchr (levels, 'g') ? f_logs : 0),
              warnings,
              (strchr (levels, 'm') ? f_warnings : 0));
+
+      PRINT (out,
+             "<apps><count>%i</count></apps>",
+             prognostic_app_count (host, pos));
 
       PRINT (out, "</report>");
 
