@@ -1,5 +1,9 @@
 2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Use INIT_GET for GET_ROLES.
+
+2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (INIT_GET): New macro.
 	(omp_xml_handle_end_element): Call init_get via a macro because the
 	return checks make it a bit long and it is always the same.

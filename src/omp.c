@@ -14332,24 +14332,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           iterator_t roles;
           int count, filtered, ret, first;
-          get_data_t * get;
 
           assert (strcasecmp ("GET_ROLES", element_name) == 0);
 
-          get = &get_roles_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-            {
-              char *user_filter = setting_filter ("Roles");
-
-              if (user_filter && strlen (user_filter))
-                {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
-                }
-              else
-                get->filt_id = g_strdup("0");
-            }
+          INIT_GET (user, User);
 
           ret = init_role_iterator (&roles, &get_roles_data->get);
           if (ret)
@@ -14389,14 +14375,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          count = 0;
-          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
           SEND_GET_START ("role", &get_roles_data->get);
           while (1)
             {
               gchar *users;
 
-              ret = get_next (&roles, get, &first, &count,
+              ret = get_next (&roles, &get_roles_data->get, &first, &count,
                               init_role_iterator);
               if (ret == 1)
                 break;
