@@ -1,3 +1,13 @@
+2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (init_get): New function.  Collects common setup steps from
+	GET_TARGETS case in omp_xml_handle_end_element.
+	(get_next): Improve comments.  Skip the checks when there is a named
+	filter.  They were always producing the original empty set anyway.
+	(omp_xml_handle_end_element): Remove comment from GET_PERMISSIONS and
+	GET_TARGETS setup step, to make them the same as the other GET cases.
+	Replace setup steps in GET_TARGETS with call to init_get.
+
 2013-05-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Move GET cases together, and

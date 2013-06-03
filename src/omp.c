@@ -423,6 +423,58 @@ auth_conf_setting_from_xml (const gchar * element_name,
   return kvp;
 }
 
+/*
+ * @brief Init for a GET handler.
+ *
+ * @param[in]  get           GET data.
+ * @param[in]  setting_name  Type name for setting.
+ * @param[out] first         First result, from filter.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+init_get (get_data_t * get, const gchar *setting_name, int *first)
+{
+  const gchar *filter;
+
+  /* Switch to the default filter from the setting, if required. */
+
+  if ((!get->filter && !get->filt_id)
+      || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+    {
+      char *user_filter = setting_filter (setting_name);
+
+      if (user_filter && strlen (user_filter))
+        {
+          get->filt_id = user_filter;
+          get->filter = filter_term (user_filter);
+        }
+      else
+        get->filt_id = g_strdup ("0");
+    }
+
+  /* Get the actual filter string. */
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return -1;
+    }
+  else
+    filter = NULL;
+
+  /* Get the value of "first" from the filter string.
+   *
+   * This is used by get_next when the result set is empty, to determine if
+   * the query should be rerun with first 1.
+   */
+  manage_filter_controls (filter ? filter : get->filter, first, NULL, NULL,
+                          NULL);
+
+  return 0;
+}
+
 
 /* Status codes. */
 
@@ -10186,11 +10238,15 @@ convert_to_manage_ranges (array_t *ranges)
     break
 
 /**
- * @brief Handle the end of an OMP XML element.
+ * @brief Iterate a GET iterator.
+ *
+ * If the user requested to start at an offset from the first result, but
+ * the result set was empty, then reset the iterator to start from the
+ * first result.
  *
  * @param[in]  resources  Resource iterator.
  * @param[in]  get        GET command data.
- * @param[out] first      First.
+ * @param[out] first      First.  Number of first item to get.
  * @param[out] count      Count.
  * @param[in]  init       Init function, to reset the iterator.
  *
@@ -10204,10 +10260,16 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
    {
      gchar *new_filter;
 
+     if (get->filt_id && strcmp (get->filt_id, "0"))
+       /* If filtering by a named filter, then just end, because changing
+        * the filter term would probably surprise the user. */
+       return 1;
+
      if (*first == 0)
        return 1;
 
      if (*first == 1 || *count > 0)
+       /* Some results were found or first was 1, so stop iterating. */
        return 1;
 
      /* Reset the iterator with first 1, and start again. */
@@ -12953,8 +13015,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           get = &get_permissions_data->get;
 
-          /* If no filter applied by the user , set the default one from
-           * settings. */
           if ((!get->filter && !get->filt_id)
               || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
             {
@@ -15035,24 +15095,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               iterator_t targets;
               int count, filtered, ret, first;
-              get_data_t * get;
 
-              get = &get_targets_data->get;
-
-              /* If no filter applied by the user , set the default one from
-               * settings. */
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+              count = 0;
+              if (init_get (&get_targets_data->get, "Targets", &first))
                 {
-                  char *user_filter = setting_filter ("Targets");
-
-                  if (user_filter && strlen (user_filter))
-                    {
-                      get->filt_id = user_filter;
-                      get->filter = filter_term (user_filter);
-                    }
-                  else
-                    get->filt_id = g_strdup("0");
+                  error_send_to_client (error);
+                  return;
                 }
 
               ret = init_target_iterator (&targets, &get_targets_data->get);
@@ -15093,8 +15141,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              count = 0;
-              manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
               SEND_GET_START ("target", &get_targets_data->get);
               while (1)
                 {
@@ -15104,8 +15150,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   int port_list_trash;
                   char *port_range;
 
-                  ret = get_next (&targets, get, &first, &count,
-                                  init_target_iterator);
+                  ret = get_next (&targets, &get_targets_data->get, &first,
+                                  &count, init_target_iterator);
                   if (ret == 1)
                     break;
                   if (ret == -1)
