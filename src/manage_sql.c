@@ -20063,15 +20063,15 @@ prognostic_report_result_total (report_host_t report_host, int *total)
 {
   if (total)
     *total = sql_int (0, 0,
-                          "SELECT count (*)"
-                          " FROM scap.cves, scap.cpes, scap.affected_products,"
-                          "      report_host_details"
-                          " WHERE report_host_details.report_host = %llu"
-                          " AND cpes.name = report_host_details.value"
-                          " AND report_host_details.name = 'App'"
-                          " AND cpes.id=affected_products.cpe"
-                          " AND cves.id=affected_products.cve;",
-                          report_host);
+                      "SELECT count (*)"
+                      " FROM scap.cves, scap.cpes, scap.affected_products,"
+                      "      report_host_details"
+                      " WHERE report_host_details.report_host = %llu"
+                      " AND cpes.name = report_host_details.value"
+                      " AND report_host_details.name = 'App'"
+                      " AND cpes.id=affected_products.cpe"
+                      " AND cves.id=affected_products.cve;",
+                      report_host);
 }
 
 
