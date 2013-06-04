@@ -27187,6 +27187,12 @@ copy_task (const char* name, const char* comment, const char *task_id,
        " VALUES (%llu, 'in_assets', 'yes')",
        task);
 
+  sql ("INSERT INTO task_alerts (task, alert, alert_location)"
+       " SELECT %llu, alert, alert_location FROM task_alerts"
+       " WHERE task = (SELECT ROWID FROM tasks WHERE uuid = '%s');",
+       task,
+       quoted_uuid);
+
   sql ("COMMIT;");
   g_free (quoted_uuid);
   g_free (quoted_name);
