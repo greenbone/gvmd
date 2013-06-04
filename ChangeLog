@@ -1,3 +1,8 @@
+2013-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS use
+	INIT_GET.
+
 2013-06-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (prognostic_host_port_count): New function.

@@ -15061,20 +15061,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
-          get = &get_tasks_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
-            {
-              char *user_filter = setting_filter ("Tasks");
 
-              if (user_filter && strlen (user_filter))
-                {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
-                }
-              else
-                get->filt_id = g_strdup("0");
-            }
+          INIT_GET (task, Task);
 
           ret = init_task_iterator (&tasks, &get_tasks_data->get);
           if (ret)
@@ -15114,8 +15102,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          count = 0;
+          SEND_GET_START ("task", &get_tasks_data->get);
 
+          get = &get_tasks_data->get;
           if (get->filt_id && strcmp (get->filt_id, "0"))
             {
               filter = filter_term (get->filt_id);
@@ -15127,13 +15116,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else
             filter = NULL;
-
           clean_filter = manage_clean_filter (filter ? filter : get->filter);
-
-          // FIX what about filt_id?
-          manage_filter_controls (get->filter, &first, NULL, NULL, NULL);
-          SEND_GET_START ("task", &get_tasks_data->get);
-
           overrides = filter_term_value (clean_filter, "apply_overrides");
           g_free (clean_filter);
           apply_overrides = overrides ? strcmp (overrides, "0") : 0;
@@ -15168,7 +15151,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               iterator_t alerts, groups, roles;
               gchar *in_assets, *max_checks, *max_hosts;
 
-              ret = get_next (&tasks, get, &first, &count,
+              ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
                               init_task_iterator);
               if (ret == 1)
                 break;
