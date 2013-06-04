@@ -2208,8 +2208,15 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
       return -1;
     }
 
-  while (slave_connect (slave, host, port, &socket, &session))
-    sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+  while ((ret = slave_connect (slave, host, port, &socket, &session)))
+    if (ret == 1)
+      {
+        /* Login failed. */
+        free (host);
+        return -1;
+      }
+    else
+      sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
 
   while (1)
     {

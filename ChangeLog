@@ -1,5 +1,10 @@
 2013-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_slave_task): Give up if connection succeeds but
+	login fails.
+
+2013-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_task): Copy permissions too.
 
 2013-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
