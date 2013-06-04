@@ -21901,7 +21901,7 @@ host_iterator_max_port (iterator_t* iterator)
  *
  * @return The report of the host.
  */
-static report_host_t
+static report_t
 host_iterator_report (iterator_t* iterator)
 {
   if (iterator->done) return 0;
@@ -26228,6 +26228,23 @@ report_port_count (report_t report)
 }
 
 /**
+ * @brief Count a prognostic report host's total number of tcp/ip ports.
+ * @brief Ignores ports entries in "general/..." form.
+ *
+ * @return Ports count for prognostic report host.
+ */
+static int
+prognostic_host_port_count (report_t report, const char *host)
+{
+  return sql_int (0, 0,
+                  "SELECT count (DISTINCT port) FROM results"
+                  " WHERE report = %llu AND host = '%s'"
+                  "  AND port NOT LIKE 'general/%';",
+                  report,
+                  host);
+}
+
+/**
  * @brief Count a report's total number of closed cves.
  *
  * @return Closed CVE count.
@@ -26292,30 +26309,6 @@ report_app_count (report_t report)
                   "  (SELECT ROWID from report_hosts WHERE report = %llu)"
                   "  AND name = 'App';",
                   report);
-}
-
-/**
- * @brief Count the total number of Apps for a prognostic report.
- *
- * @return App count.
- */
-static int
-prognostic_app_count (const char *host, int pos)
-{
-  if (host)
-    {
-      report_host_t report_host;
-
-      host_nthlast_report_host (host, &report_host, pos);
-      return sql_int (0, 0,
-                      "SELECT count (DISTINCT value) FROM report_host_details"
-                      " WHERE report_host = %llu AND name = 'App';",
-                      report_host);
-    }
-
-  return sql_int (0, 0,
-                  "SELECT count (DISTINCT value) FROM report_host_details"
-                  " WHERE name = 'App';");
 }
 
 /**
@@ -27333,6 +27326,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       array_t *buffer;
       buffer_host_t *buffer_host;
       int index, skip, result_total = 0;
+      int total_host_count = 0, total_app_count = 0;
       iterator_t hosts;
 
       buffer = make_array ();
@@ -27549,6 +27543,19 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
               PRINT (out,
                      "<detail>"
+                     "<name>port_count</name>"
+                     "<value>%i</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>Ports number of current host</description>"
+                     "</source>"
+                     "</detail>",
+                     prognostic_host_port_count
+                      (host_iterator_report (&report_hosts), buffer_host->ip));
+
+              PRINT (out,
+                     "<detail>"
                      "<name>report_count</name>"
                      "<value>%i</value>"
                      "<source>"
@@ -27564,6 +27571,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               report_counts_id (report, NULL, &h_holes, &h_infos, &h_logs,
                                 &h_warnings, &h_false_positives, 0,
                                 buffer_host->ip, 0);
+
+              total_host_count += report_host_count (report);
+              total_app_count += report_app_count (report);
 
               PRINT (out,
                      "<detail>"
@@ -27655,8 +27665,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              (strchr (levels, 'm') ? f_warnings : 0));
 
       PRINT (out,
+             "<hosts><count>%i</count></hosts>",
+             total_host_count);
+
+      PRINT (out,
              "<apps><count>%i</count></apps>",
-             prognostic_app_count (host, pos));
+             total_app_count);
 
       PRINT (out, "</report>");
 

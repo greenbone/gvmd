@@ -1,3 +1,11 @@
+2013-06-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (prognostic_host_port_count): New function.
+	(host_iterator_report): Fix return type.
+	(print_report_xml): Add port count for each report host in prognostic
+	type case. Add total host count. Fix total app count.
+	(prognostic_app_count): Remove function.
+
 2013-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TAGS correct
