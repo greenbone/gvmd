@@ -27193,6 +27193,13 @@ copy_task (const char* name, const char* comment, const char *task_id,
        task,
        quoted_uuid);
 
+  sql ("INSERT INTO task_users (task, user, actions)"
+       " SELECT %llu, user, actions"
+       " FROM task_users"
+       " WHERE task = (SELECT ROWID FROM tasks WHERE uuid = '%s');",
+       task,
+       quoted_uuid);
+
   sql ("COMMIT;");
   g_free (quoted_uuid);
   g_free (quoted_name);

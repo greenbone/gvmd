@@ -1,5 +1,9 @@
 2013-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_task): Copy observers too.
+
+2013-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport from r16547.
 
 	* src/manage_sql.c (copy_task): Copy alerts too.
