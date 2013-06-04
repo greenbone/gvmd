@@ -1,5 +1,13 @@
 2013-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql.c (sqlv): Return on error instead of aborting.
+	(sql): Abort accordingly now that sqlv returns.
+	(sql_error): New function.  Like sql, but returns error state to caller.
+
+	* src/sql.h: Add header accordingly.
+
+2013-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage_process): Keep going if SCAP or CERT db
 	fails to load.
 	(manage_scap_loaded, manage_cert_loaded): Run a test statement first to
