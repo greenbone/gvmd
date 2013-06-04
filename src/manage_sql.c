@@ -30251,6 +30251,23 @@ copy_task (const char* name, const char* comment, const char *task_id,
        task,
        quoted_uuid);
 
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+       "  resource_location, subject_type, subject, creation_time,"
+       "  modification_time)"
+       " SELECT make_uuid (), %llu, name, comment, resource_type, %llu,"
+       "        resource_uuid, resource_location, subject_type, subject,"
+       "        now (), now ()"
+       " FROM permissions"
+       " WHERE owner = %llu"
+       " AND resource_type = 'task'"
+       " AND resource_location = " G_STRINGIFY (LOCATION_TABLE)
+       " AND resource = (SELECT ROWID FROM tasks WHERE uuid = '%s');",
+       owner,
+       task,
+       owner,
+       quoted_uuid);
+
   sql ("COMMIT;");
   g_free (quoted_uuid);
   g_free (quoted_name);
