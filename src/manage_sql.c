@@ -27374,10 +27374,13 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
           if (report_host)
             {
-              int filtered;
+              int filtered, host_result_total;
               filtered = 0;
+              host_result_total = 0;
 
-              prognostic_report_result_total (report_host, &result_total);
+              prognostic_report_result_total (report_host, &host_result_total);
+              result_total += host_result_total;
+
               prognostic_report_result_count (report_host, search_phrase,
                                               min_cvss_base,
                                               &filtered, &f_holes,
