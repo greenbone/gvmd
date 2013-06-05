@@ -1,3 +1,12 @@
+2013-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new return from
+	delete_user.
+
+	* src/manage_sql.c (delete_user): Fail if the user has active tasks.
+	This is far easier than trying to stop the tasks.  Remove all tasks
+	and related resources when removing user.
+
 2013-06-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml): Add

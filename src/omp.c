@@ -10644,6 +10644,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "Attempt to delete a predefined"
                                     " user"));
                 break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_user",
+                                    "User has an active task"));
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_user",

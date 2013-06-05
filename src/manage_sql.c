@@ -53025,16 +53025,20 @@ copy_user (const char* name, const char* comment, const char *user_id,
  * @param[in]  name       Name of user.  Overridden by user_id.
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 2 failed to find user, 99 permission denied, -1 error.
+ * @return 0 success, 2 failed to find user, 3 user has active tasks,
+ *         99 permission denied, -1 error.
  */
 int
 delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
 {
+  iterator_t tasks;
   user_t user;
+  get_data_t get;
+  char *current_uuid;
 
   assert (user_id_arg || name_arg);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql ("BEGIN EXCLUSIVE;");
 
   if (user_may ("delete_user") == 0)
     {
@@ -53060,25 +53064,168 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
   if (user == 0)
     return 2;
 
-  sql ("DELETE FROM group_users WHERE user = %llu;", user);
-  sql ("DELETE FROM role_users WHERE user = %llu;", user);
+  /* Set requested, paused and running tasks to stopped. */
 
-  /* FIX Remove user's tasks, etc.  How will this interact with trashcan? */
-  /* FIX Have to stop running tasks. */
+  memset (&get, '\0', sizeof (get));
+  current_uuid = current_credentials.uuid;
+  current_credentials.uuid = sql_string (0, 0,
+                                         "SELECT uuid FROM users"
+                                         " WHERE ROWID = %llu;",
+                                         user);
+  init_user_task_iterator (&tasks, 0, 0);
+  while (next (&tasks))
+    switch (task_iterator_run_status (&tasks))
+      {
+        case TASK_STATUS_DELETE_REQUESTED:
+        case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
+        case TASK_STATUS_DELETE_ULTIMATE_WAITING:
+        case TASK_STATUS_DELETE_WAITING:
+        case TASK_STATUS_PAUSE_REQUESTED:
+        case TASK_STATUS_PAUSE_WAITING:
+        case TASK_STATUS_PAUSED:
+        case TASK_STATUS_REQUESTED:
+        case TASK_STATUS_RESUME_REQUESTED:
+        case TASK_STATUS_RESUME_WAITING:
+        case TASK_STATUS_RUNNING:
+        case TASK_STATUS_STOP_REQUESTED_GIVEUP:
+        case TASK_STATUS_STOP_REQUESTED:
+        case TASK_STATUS_STOP_WAITING:
+          {
+            cleanup_iterator (&tasks);
+            free (current_credentials.uuid);
+            current_credentials.uuid = current_uuid;
+            sql ("ROLLBACK;");
+            return 4;
+            break;
+          }
+        default:
+          break;
+      }
+  cleanup_iterator (&tasks);
+  free (current_credentials.uuid);
+  current_credentials.uuid = current_uuid;
 
   sql ("DELETE FROM agents WHERE owner = %llu;", user);
   sql ("DELETE FROM agents_trash WHERE owner = %llu;", user);
-  sql ("DELETE FROM settings WHERE owner = %llu;", user);
+
+  sql ("DELETE FROM alert_condition_data"
+       " WHERE alert IN (SELECT ROWID FROM alerts WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM alert_condition_data"
+       " WHERE alert IN (SELECT ROWID FROM alerts_trash WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM alert_event_data"
+       " WHERE alert IN (SELECT ROWID FROM alerts WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM alert_event_data"
+       " WHERE alert IN (SELECT ROWID FROM alerts_trash WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM alert_method_data"
+       " WHERE alert IN (SELECT ROWID FROM alerts WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM alert_method_data"
+       " WHERE alert IN (SELECT ROWID FROM alerts_trash WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM alerts WHERE owner = %llu;", user);
+  sql ("DELETE FROM alerts_trash WHERE owner = %llu;", user);
+
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE name IN (SELECT nvt_selector FROM configs WHERE owner = %llu)"
+       " AND name != '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
+       " AND name != '" MANAGE_NVT_SELECTOR_UUID_ALL "';",
+       user);
+  sql ("DELETE FROM config_preferences"
+       " WHERE config IN (SELECT ROWID FROM configs WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM config_preferences_trash"
+       " WHERE config IN (SELECT ROWID FROM configs_trash WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM configs WHERE owner = %llu;", user);
+  sql ("DELETE FROM configs_trash WHERE owner = %llu;", user);
+
   sql ("DELETE FROM filters WHERE owner = %llu;", user);
   sql ("DELETE FROM filters_trash WHERE owner = %llu;", user);
+  sql ("DELETE FROM lsc_credentials WHERE owner = %llu;", user);
+  sql ("DELETE FROM lsc_credentials_trash WHERE owner = %llu;", user);
   sql ("DELETE FROM notes WHERE owner = %llu;", user);
   sql ("DELETE FROM notes_trash WHERE owner = %llu;", user);
+
+  sql ("DELETE FROM port_ranges"
+       " WHERE port_list IN (SELECT ROWID FROM port_lists WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM port_ranges_trash"
+       " WHERE port_list IN (SELECT ROWID FROM port_lists_trash"
+       "                     WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM port_lists WHERE owner = %llu;", user);
+  sql ("DELETE FROM port_lists_trash WHERE owner = %llu;", user);
+
+  sql ("DELETE FROM report_format_param_options"
+       " WHERE report_format_param"
+       "       IN (SELECT ROWID FROM report_format_params"
+       "           WHERE report_format IN (SELECT ROWID"
+       "                                   FROM report_formats"
+       "                                   WHERE owner = %llu));",
+       user);
+  sql ("DELETE FROM report_format_param_options_trash"
+       " WHERE report_format_param"
+       "       IN (SELECT ROWID FROM report_format_params_trash"
+       "           WHERE report_format IN (SELECT ROWID"
+       "                                   FROM report_formats_trash"
+       "                                   WHERE owner = %llu));",
+       user);
+  sql ("DELETE FROM report_format_params"
+       " WHERE report_format IN (SELECT ROWID FROM report_formats"
+       "                         WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM report_format_params_trash"
+       " WHERE report_format IN (SELECT ROWID"
+       "                         FROM report_formats_trash"
+       "                         WHERE owner = %llu);",
+       user);
+  sql ("DELETE FROM report_formats WHERE owner = %llu;", user);
+  sql ("DELETE FROM report_formats_trash WHERE owner = %llu;", user);
+
+  sql ("DELETE FROM report_host_details"
+       " WHERE report_host IN (SELECT ROWID FROM report_hosts"
+       "                       WHERE report IN (SELECT ROWID FROM reports"
+       "                                        WHERE owner = %llu));",
+       user);
+  sql ("DELETE FROM report_hosts"
+       " WHERE report IN (SELECT ROWID FROM reports WHERE owner = %llu));",
+       user);
+  sql ("DELETE FROM report_results"
+       " WHERE report IN (SELECT ROWID FROM reports WHERE owner = %llu));",
+       user);
+  sql ("DELETE FROM results"
+       " WHERE report IN (SELECT ROWID FROM reports WHERE owner = %llu));",
+       user);
+  sql ("DELETE FROM reports WHERE owner = %llu;", user);
+
   sql ("DELETE FROM overrides WHERE owner = %llu;", user);
   sql ("DELETE FROM overrides_trash WHERE owner = %llu;", user);
   sql ("DELETE FROM permissions WHERE owner = %llu;", user);
   sql ("DELETE FROM permissions_trash WHERE owner = %llu;", user);
+  sql ("DELETE FROM schedules WHERE owner = %llu;", user);
+  sql ("DELETE FROM schedules_trash WHERE owner = %llu;", user);
+  sql ("DELETE FROM slaves WHERE owner = %llu;", user);
+  sql ("DELETE FROM slaves_trash WHERE owner = %llu;", user);
+  sql ("DELETE FROM settings WHERE owner = %llu;", user);
   sql ("DELETE FROM tags WHERE owner = %llu;", user);
   sql ("DELETE FROM tags_trash WHERE owner = %llu;", user);
+  sql ("DELETE FROM targets WHERE owner = %llu;", user);
+  sql ("DELETE FROM targets_trash WHERE owner = %llu;", user);
+
+  sql ("DELETE FROM task_files"
+       " WHERE task IN (SELECT ROWID FROM tasks WHERE owner = %llu));",
+       user);
+  sql ("DELETE FROM task_alerts"
+       " WHERE task IN (SELECT ROWID FROM tasks WHERE owner = %llu));",
+       user);
+  sql ("DELETE FROM task_preferences"
+       " WHERE task IN (SELECT ROWID FROM tasks WHERE owner = %llu));",
+       user);
+  sql ("DELETE FROM tasks WHERE owner = %llu;", user);
 
   sql ("UPDATE groups SET owner = 0 WHERE owner = %llu;", user);
   sql ("UPDATE roles SET owner = 0 WHERE owner = %llu;", user);
