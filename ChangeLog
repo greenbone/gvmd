@@ -1,3 +1,8 @@
+2013-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (user_ensure_in_db, set_task_observers)
+	(group_add_users, create_user): Set times when creating user.
+
 2013-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Handle new return from

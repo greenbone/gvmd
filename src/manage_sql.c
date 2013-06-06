@@ -17570,11 +17570,11 @@ user_ensure_in_db (const gchar *name, const gchar *method)
 
   sql ("INSERT INTO users"
        " (uuid, owner, name, comment, password, timezone, method, hosts,"
-       "  hosts_allow)"
+       "  hosts_allow, creation_time, modification_time)"
        " VALUES"
        " (make_uuid (),"
        "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "  '%s', '', NULL, NULL, '%s', '', 2);",
+       "  '%s', '', NULL, NULL, '%s', '', 2, now (), now ());",
        current_credentials.uuid,
        quoted_name,
        quoted_method);
@@ -19267,7 +19267,10 @@ set_task_observers (task_t task, const gchar *observers)
             {
               gchar *quoted_name;
               quoted_name = sql_quote (name);
-              sql ("INSERT INTO users (uuid, name) VALUES ('%s', '%s');",
+              sql ("INSERT INTO users"
+                   " (uuid, name, creation_time, modification_time)"
+                   " VALUES"
+                   " ('%s', '%s', now (), now ());",
                    uuid,
                    quoted_name);
               g_free (quoted_name);
@@ -46438,7 +46441,10 @@ group_add_users (group_t group, const char *users)
                 {
                   gchar *quoted_name;
                   quoted_name = sql_quote (name);
-                  sql ("INSERT INTO users (uuid, name) VALUES ('%s', '%s');",
+                  sql ("INSERT INTO users"
+                       " (uuid, name, creation_time, modification_time)"
+                       " VALUES"
+                       " ('%s', '%s', now (), now ());",
                        uuid,
                        quoted_name);
                   g_free (quoted_name);
@@ -52869,11 +52875,12 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
                               ? g_ptr_array_index (allowed_methods, 0)
                               : "file");
   sql ("INSERT INTO users"
-       " (uuid, owner, name, password, hosts, hosts_allow, method)"
+       " (uuid, owner, name, password, hosts, hosts_allow, method,"
+       "  creation_time, modification_time)"
        " VALUES"
        " (make_uuid (),"
        "  (SELECT ROWID FROM users WHERE uuid = '%s'),"
-       "  '%s', '%s', '%s', %i, '%s');",
+       "  '%s', '%s', '%s', %i, '%s', now (), now ());",
        current_credentials.uuid,
        quoted_name,
        hash,
