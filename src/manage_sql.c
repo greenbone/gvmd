@@ -530,6 +530,26 @@ command_t omp_commands[]
     {"VERIFY_REPORT_FORMAT", "Verify a report format."},
     {NULL, NULL}};
 
+/**
+ * @brief Check whether a command name is valid.
+ *
+ * @param[in]  name  Command name.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+valid_omp_command (const char* name)
+{
+  command_t *command;
+  command = omp_commands;
+  while (command[0].name)
+    if (strcasecmp (command[0].name, name) == 0)
+      return 1;
+    else
+      command++;
+  return 0;
+}
+
 
 /* General helpers. */
 
@@ -1548,7 +1568,7 @@ user_may (const char *operation)
                  "                                FROM users"
                  "                                WHERE users.uuid"
                  "                                      = '%s'))))"
-                 " AND name = '%s';",
+                 " AND name = lower ('%s');",
                  current_credentials.uuid,
                  current_credentials.uuid,
                  current_credentials.uuid,
@@ -47394,11 +47414,7 @@ modify_permission (const char *permission_id, const char *name,
     {
       gchar *quoted_name;
 
-      if (strcmp (name, "delete")
-          && strcasecmp (name, "get")
-          && strcasecmp (name, "modify")
-          && strcasecmp (name, "create_group")
-          && strcasecmp (name, "create_target"))
+      if (valid_omp_command (name) == 0)
         {
           sql ("ROLLBACK;");
           return 7;

@@ -15945,7 +15945,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             commands = omp_commands;
             while ((*commands).name)
               {
-                if (command_disabled (omp_parser, (*commands).name) == 0)
+                if ((command_disabled (omp_parser, (*commands).name) == 0)
+                    && ((current_credentials.uuid == NULL)
+                        || user_may ((*commands).name)))
                   SENDF_TO_CLIENT_OR_FAIL ("<command>"
                                            "<name>%s</name>"
                                            "<summary>%s</summary>"
