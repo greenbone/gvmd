@@ -1,5 +1,10 @@
 2013-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_permission): Instead of accepting a list of
+	special names, accept any command name.
+
+2013-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In the CLIENT_HELP XML brief
 	case send only the commands that the user has permission to run.
 

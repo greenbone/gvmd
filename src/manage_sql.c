@@ -46880,12 +46880,7 @@ create_permission (const char *name, const char *comment,
 
   assert (current_credentials.uuid);
 
-  if (name == NULL
-      || (strcmp (name, "delete")
-          && strcasecmp (name, "get")
-          && strcasecmp (name, "modify")
-          && strcasecmp (name, "create_group")
-          && strcasecmp (name, "create_target")))
+  if ((name == NULL) || (valid_omp_command (name) == 0))
     return 7;
 
   if (strcasecmp (name, "delete")
