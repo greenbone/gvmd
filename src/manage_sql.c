@@ -53372,7 +53372,8 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
   sql ("UPDATE users"
        " SET hosts = '%s',"
        "     hosts_allow = '%i',"
-       "     method = %s%s%s"
+       "     method = %s%s%s,"
+       "     modification_time = now ()"
        " WHERE ROWID = %llu;",
        quoted_hosts,
        hosts_allow,
