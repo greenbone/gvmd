@@ -1,5 +1,13 @@
 2013-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Add permission checks to all
+	remaining GET commands.
+
+	* src/manage_sql.c (init_system_report_type_iterator): Add permission
+	check.
+
+2013-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_user_set_rules): Remove.  Rules now only
 	available on database side.
 

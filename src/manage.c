@@ -3417,7 +3417,7 @@ get_system_report_types (const char *required_type, gchar ***start,
  * @param[in]  slave_id    ID of slave to get reports from.  0 for local.
  *
  * @return 0 on success, 1 failed to find report type, 2 failed to find slave,
- *         3 used the fallback report, -1 on error.
+ *         3 used the fallback report, 99 permission denied, -1 on error.
  */
 int
 init_system_report_type_iterator (report_type_iterator_t* iterator,
@@ -3425,6 +3425,10 @@ init_system_report_type_iterator (report_type_iterator_t* iterator,
                                   const char* slave_id)
 {
   int ret;
+
+  if (user_may ("get_system_reports") == 0)
+    return 99;
+
   ret = get_system_report_types (type, &iterator->start, &iterator->current,
                                  slave_id);
   if (ret == 0 || ret == 3)

@@ -11569,7 +11569,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
 
       case CLIENT_GET_DEPENDENCIES:
-        if (scanner.plugins_dependencies)
+        if (user_may ("get_dependencies") == 0)
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("get_dependencies",
+                              "Permission denied"));
+        else if (scanner.plugins_dependencies)
           {
             nvt_t nvt = 0;
 
@@ -11824,6 +11828,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           int (*init_info_iterator) (iterator_t*, get_data_t *, const char *);
           int (*info_count) (const get_data_t *get);
           get_data_t *get;
+
+          if (user_may ("get_info") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("get_info",
+                                  "Permission denied"));
+              get_info_data_reset (get_info_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
 
           if (manage_scap_loaded () == 0)
             {
@@ -12566,7 +12580,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_NVT_FEED_VERSION:
         {
           char *feed_version;
-          if ((feed_version = nvts_feed_version ()))
+
+          if (user_may ("get_nvt_feed_version") == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_nvt_feed_version",
+                                "Permission denied"));
+          else if ((feed_version = nvts_feed_version ()))
             {
               SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_version_response"
                                       " status=\"" STATUS_OK "\""
@@ -12585,7 +12604,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_NVTS:
         {
-          char *feed_version = nvts_feed_version ();
+          char *feed_version;
+
+          if (user_may ("get_nvts") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("get_nvts",
+                                  "Permission denied"));
+              get_nvts_data_reset (get_nvts_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          feed_version = nvts_feed_version ();
           if (feed_version)
             {
               config_t config = (config_t) 0;
@@ -12756,6 +12787,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_NVT_FAMILIES:
         {
           iterator_t families;
+
+          if (user_may ("get_nvt_families") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("get_nvt_families",
+                                  "Permission denied"));
+              get_nvt_families_data_reset (get_nvt_families_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
 
           SEND_TO_CLIENT_OR_FAIL ("<get_nvt_families_response"
                                   " status=\"" STATUS_OK "\""
@@ -13176,6 +13217,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           iterator_t prefs;
           nvt_t nvt = 0;
           config_t config = 0;
+
+          if (user_may ("get_preferences") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("get_preferences",
+                                  "Permission denied"));
+              get_preferences_data_reset (get_preferences_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
           if (get_preferences_data->nvt_oid
               && find_nvt (get_preferences_data->nvt_oid, &nvt))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_preferences"));
@@ -13286,6 +13338,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_reports",
                                 "Permission denied"));
+            get_reports_data_reset (get_reports_data);
             set_client_state (CLIENT_AUTHENTIC);
             break;
           }
@@ -14055,6 +14108,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_RESULTS", element_name) == 0);
 
+          if (user_may ("get_results") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("get_results",
+                                  "Permission denied"));
+              get_results_data_reset (get_results_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
           if (current_credentials.username == NULL)
             {
               get_results_data_reset (get_results_data);
@@ -14470,6 +14533,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_SETTINGS", element_name) == 0);
 
+          if (user_may ("get_settings") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("get_settings",
+                                  "Permission denied"));
+              get_settings_data_reset (get_settings_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
           init_setting_iterator (&settings,
                                  get_settings_data->setting_id,
                                  get_settings_data->filter,
@@ -14667,6 +14740,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
                 break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_system_reports",
+                                    "Permission denied"));
+                break;
               default:
                 assert (0);
                 /*@fallthrough@*/
@@ -14844,9 +14922,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_TARGET_LOCATORS:
         {
+          GSList *sources, *source;
+
           assert (strcasecmp ("GET_TARGET_LOCATORS", element_name) == 0);
-          GSList* sources = resource_request_sources (RESOURCE_TYPE_TARGET);
-          GSList* source = sources;
+
+          if (user_may ("get_target_locators") == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("get_target_locators",
+                                  "Permission denied"));
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          sources = resource_request_sources (RESOURCE_TYPE_TARGET);
+          source = sources;
 
           SEND_TO_CLIENT_OR_FAIL ("<get_target_locators_response"
                                   " status=\"" STATUS_OK "\""
@@ -15799,11 +15889,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_VERSION:
       case CLIENT_GET_VERSION_AUTHENTIC:
-        SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
-                                " status=\"" STATUS_OK "\""
-                                " status_text=\"" STATUS_OK_TEXT "\">"
-                                "<version>4.0</version>"
-                                "</get_version_response>");
+        if (user_may ("get_version") == 0)
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("get_version",
+                              "Permission denied"));
+        else
+          SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
+                                  " status=\"" STATUS_OK "\""
+                                  " status_text=\"" STATUS_OK_TEXT "\">"
+                                  "<version>4.0</version>"
+                                  "</get_version_response>");
         if (client_state)
           set_client_state (CLIENT_AUTHENTIC);
         else
