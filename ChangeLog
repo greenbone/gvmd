@@ -1,3 +1,15 @@
+2013-06-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Backport for r16518. Patch by Hani Benhabiles.
+
+	* src/manage_sql.c (create_note, modify_note, create_override)
+	(modify_override): Validate port before writing in DB. Return adequate
+	error code when validation fails.
+
+	* src/omp.c (omp_xml_handle_end_element): Adequately Handle new return
+	codes for invalid port in create_note, create_override, modify_note and
+	modify_override.
+
 2013-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r16556.
