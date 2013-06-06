@@ -51484,7 +51484,8 @@ manage_set_setting (const gchar *uuid, const gchar *name,
         }
       quoted_timezone = sql_quote (value);
       g_free (value);
-      sql ("UPDATE users SET timezone = '%s' WHERE uuid = '%s';",
+      sql ("UPDATE users SET timezone = '%s', modification_time = now ()"
+           " WHERE uuid = '%s';",
            quoted_timezone,
            current_credentials.uuid);
       g_free (quoted_timezone);
@@ -51520,7 +51521,8 @@ manage_set_setting (const gchar *uuid, const gchar *name,
         }
       hash = get_password_hashes (GCRY_MD_MD5, value);
       g_free (value);
-      sql ("UPDATE users SET password = '%s' WHERE uuid = '%s';",
+      sql ("UPDATE users SET password = '%s', modification_time = now ()"
+           " WHERE uuid = '%s';",
            hash,
            current_credentials.uuid);
       g_free (hash);

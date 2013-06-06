@@ -1,5 +1,10 @@
 2013-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_set_setting): Update user modification time
+	when changing timezone or password.
+
+2013-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_user): Update modification time.
 
 2013-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
