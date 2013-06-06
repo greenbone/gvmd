@@ -1,5 +1,14 @@
 2013-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_user_set_rules): Remove.  Rules now only
+	available on database side.
+
+	* src/manage.h: Remove header accordingly.
+
+	* src/openvasmd.c (main): Remove rules arg from openvas_auth_init_funcs.
+
+2013-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_set_setting): Update user modification time
 	when changing timezone or password.
 

@@ -17631,43 +17631,6 @@ manage_user_set_role (const gchar *name, const gchar *method, const gchar *role)
 }
 
 /**
- * @brief Set user rules.
- *
- * This works for any auth method.
- *
- * @param[in]  name    User name.
- * @param[in]  method  Auth method.
- * @param[in]  hosts   Rules hosts.
- * @param[in]  hosts_allow  Hosts allow flag.
- *
- * @return 0 success.
- */
-int
-manage_user_set_rules (const gchar *name, const gchar *method,
-                       const gchar *hosts, int hosts_allow)
-{
-  gchar *quoted_hosts, *quoted_name, *quoted_method;
-
-  user_ensure_in_db (name, method);
-
-  quoted_hosts = sql_quote (hosts ? hosts : "");
-  quoted_name = sql_quote (name);
-  quoted_method = sql_quote (method);
-  sql ("UPDATE users"
-       " SET hosts = '%s', hosts_allow = %i"
-       " WHERE name = '%s' AND method = '%s';",
-       quoted_hosts,
-       hosts_allow,
-       quoted_name,
-       quoted_method);
-  g_free (quoted_hosts);
-  g_free (quoted_name);
-  g_free (quoted_method);
-
-  return 0;
-}
-
-/**
  * @brief Check if user exists.
  *
  * @param[in]  name    User name.

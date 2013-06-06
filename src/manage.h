@@ -2939,9 +2939,6 @@ int
 manage_user_set_role (const gchar *, const gchar *, const gchar *);
 
 int
-manage_user_set_rules (const gchar *, const gchar *, const gchar *, int);
-
-int
 manage_user_exists (const gchar *, auth_method_t);
 
 int
