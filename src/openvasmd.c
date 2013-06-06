@@ -1241,6 +1241,9 @@ main (int argc, char** argv, char **envp)
         }
     }
 
+  if (disable_password_policy)
+    openvas_disable_password_policy ();
+
   if (first_user)
     {
       infof ("   Creating admin user.\n");
@@ -1329,9 +1332,6 @@ main (int argc, char** argv, char **envp)
     }
 
   /* Complete option processing. */
-
-  if (disable_password_policy)
-    openvas_disable_password_policy ();
 
   if (scanner_address_string == NULL)
     scanner_address_string = OPENVASSD_ADDRESS;

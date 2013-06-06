@@ -1,5 +1,10 @@
 2013-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (main): Move --disable-password-policy check up so
+	that it affects --first-user too.
+
+2013-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Add permission checks to all
 	remaining GET commands.
 
