@@ -1,3 +1,16 @@
+2013-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (create_permission_data_t, create_permission_data_reset)
+	(client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Remove RESOURCE/TYPE
+	from CREATE_PERMISSION.
+
+	* src/manage_sql.c (omp_command_type): New function.
+	(create_permission): Get resource type from command name instead of from
+	an argument.
+
+	* src/manage.h: Update header accordingly.
+
 2013-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_permission): Instead of accepting a list of

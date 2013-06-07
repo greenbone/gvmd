@@ -550,6 +550,23 @@ valid_omp_command (const char* name)
   return 0;
 }
 
+/**
+ * @brief Get the type associated with an OMP command.
+ *
+ * @param[in]  name  Command name.
+ *
+ * @return Type within name if any, else NULL.
+ */
+const char *
+omp_command_type (const char* name)
+{
+  const char *under;
+  under = strchr (name, '_');
+  if (under && valid_type (under + 1))
+    return under + 1;
+  return NULL;
+}
+
 
 /* General helpers. */
 
@@ -46859,7 +46876,6 @@ modify_group (const char *group_id, const char *name, const char *comment,
  *
  * @param[in]   name            Name of permission.
  * @param[in]   comment         Comment on permission.
- * @param[in]   resource_type   Type of resource.
  * @param[in]   resource_id     UUID of resource.
  * @param[in]   subject_type    Type of subject.
  * @param[in]   subject_id      UUID of subject.
@@ -46871,9 +46887,8 @@ modify_group (const char *group_id, const char *name, const char *comment,
  */
 int
 create_permission (const char *name, const char *comment,
-                   const char *resource_type, const char *resource_id,
-                   const char *subject_type, const char *subject_id,
-                   permission_t *permission)
+                   const char *resource_id, const char *subject_type,
+                   const char *subject_id, permission_t *permission)
 {
   gchar *quoted_name, *quoted_comment;
   resource_t resource, subject;
@@ -46883,31 +46898,10 @@ create_permission (const char *name, const char *comment,
   if ((name == NULL) || (valid_omp_command (name) == 0))
     return 7;
 
-  if (strcasecmp (name, "delete")
-      && strcasecmp (name, "get")
-      && strcasecmp (name, "modify"))
-    {
-      resource_id = NULL;
-      resource_type = NULL;
-    }
-
-  if (resource_type && (strlen (resource_type) == 0))
-    resource_type = NULL;
-
-  if (resource_type)
-    {
-      if (valid_type (resource_type) == 0)
-        return 5;
-    }
-  else if (resource_id
-           && strlen (resource_id)
-           && strcmp (resource_id, "0"))
-    return 5;
-  else
+  if (strcasecmp (name, "HELP")
+      // FIX more
+      && strcasecmp (name, "GET_VERSION"))
     resource_id = NULL;
-
-  if (resource_id && (resource_type == NULL))
-    return 5;
 
   if (subject_type
       && strcmp (subject_type, "group")
@@ -46927,9 +46921,10 @@ create_permission (const char *name, const char *comment,
     }
 
   resource = 0;
-  if (resource_id)
+  if (resource_id && omp_command_type (name))
     {
-      if (find_resource (resource_type, resource_id, &resource))
+      if (find_resource (omp_command_type (name), resource_id,
+                         &resource))
         {
           sql ("ROLLBACK;");
           return -1;
@@ -46941,6 +46936,8 @@ create_permission (const char *name, const char *comment,
           return 3;
         }
     }
+  else
+    resource_id = NULL;
 
   // TODO Does current user have permission to grant subject this permission?
 
@@ -46975,7 +46972,7 @@ create_permission (const char *name, const char *comment,
        current_credentials.uuid,
        quoted_name,
        quoted_comment,
-       resource_id ? resource_type : "",
+       resource_id ? omp_command_type (name) : "",
        resource_id ? resource_id : "",
        resource,
        subject_id ? "'" : "",
@@ -47010,7 +47007,7 @@ copy_permission (const char* comment, const char *permission_id,
                  permission_t* new_permission)
 {
   return copy_resource ("permission", NULL, comment, permission_id,
-                        "resource_type, resource, resource_uuid,"
+                        "resource_type, resource_id, resource_uuid,"
                         " resource_location, subject_type, subject",
                         0, new_permission);
 }
