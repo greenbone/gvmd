@@ -1,3 +1,8 @@
+2013-06-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Revert Backport for r16518 as it affects values from report results page
+	and old results.
+
 2013-06-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Backport for r16518. Patch by Hani Benhabiles.

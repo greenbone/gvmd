@@ -37202,7 +37202,7 @@ find_note (const char* uuid, note_t* note)
  * @param[in]  result      Result to apply note to, 0 for any result.
  * @param[out] note        Created note.
  *
- * @return 0 success, 1 failed to find NVT, 2 Invalid port, -1 error.
+ * @return 0 success, 1 failed to find NVT, -1 error.
  */
 int
 create_note (const char* active, const char* nvt, const char* text,
@@ -37231,9 +37231,6 @@ create_note (const char* active, const char* nvt, const char* text,
       && strcmp (threat, "Low") && strcmp (threat, "Log")
       && strcmp (threat, "Debug") && strcmp (threat, ""))
     return -1;
-
-  if (port && validate_port (port))
-    return 2;
 
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
@@ -37383,7 +37380,7 @@ note_uuid (note_t note, char ** id)
  * @param[in]  task        Task to apply note to, 0 for any task.
  * @param[in]  result      Result to apply note to, 0 for any result.
  *
- * @return 0 success, -1 error, 1 syntax error in active, 2 Invalid port.
+ * @return 0 success, -1 error, 1 syntax error in active.
  */
 int
 modify_note (note_t note, const char *active, const char* text,
@@ -37402,9 +37399,6 @@ modify_note (note_t note, const char *active, const char* text,
       && strcmp (threat, "Low") && strcmp (threat, "Log")
       && strcmp (threat, "Debug") && strcmp (threat, ""))
     return -1;
-
-  if (port && validate_port (port))
-    return 2;
 
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
@@ -37954,7 +37948,7 @@ find_override (const char* uuid, override_t* override)
  * @param[in]  result      Result to apply override to, 0 for any result.
  * @param[out] override    Created override.
  *
- * @return 0 success, 1 Invalid port, -1 error.
+ * @return 0 success, -1 error.
  */
 int
 create_override (const char* active, const char* nvt, const char* text,
@@ -37970,9 +37964,6 @@ create_override (const char* active, const char* nvt, const char* text,
 
   if (text == NULL)
     return -1;
-
-  if (port && validate_port (port))
-    return 1;
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
@@ -38145,7 +38136,7 @@ delete_override (const char *override_id, int ultimate)
  * @param[in]  task        Task to apply override to, 0 for any task.
  * @param[in]  result      Result to apply override to, 0 for any result.
  *
- * @return 0 success, -1 error, 1 syntax error in active, 2 Invalid port.
+ * @return 0 success, -1 error, 1 syntax error in active.
  */
 int
 modify_override (override_t override, const char *active, const char* text,
@@ -38160,9 +38151,6 @@ modify_override (override_t override, const char *active, const char* text,
 
   if (text == NULL)
     return -1;
-
-  if (port && validate_port (port))
-    return 2;
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
