@@ -1,3 +1,9 @@
+2013-06-07  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 4.0.1 release.
+
+	* CHANGES: Updated.
+
 2013-06-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Revert Backport for r16518 as it affects values from report results page
