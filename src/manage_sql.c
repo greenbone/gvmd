@@ -26198,7 +26198,7 @@ report_filter_term (int sort_order, const char* sort_field,
                           overrides,
                           first_result + 1,
                           max_results,
-                          delta_states ? delta_states : "");
+                          delta_states ? delta_states : "cgns");
 }
 
 /**
@@ -27055,7 +27055,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   if (delta)
     {
-      delta_states = delta_states ? delta_states : "cgns";
+      delta_states = delta_states ? delta_states : g_strdup("cgns");
       report_scan_run_status (delta, &run_status);
 
       uuid = report_uuid (delta);

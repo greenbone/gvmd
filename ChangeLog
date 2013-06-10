@@ -1,3 +1,11 @@
+2013-06-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Allocate delta_states dynamically
+	when no value is provided as free'ing the static memory causes glibc
+	to abort.
+	(report_filter_term): Default delta_states value to cgns when none is
+	provided to match report printing behaviour.
+
 2013-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (create_permission_data_t, create_permission_data_reset)
