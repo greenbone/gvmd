@@ -1,3 +1,13 @@
+2013-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r16612.
+
+	* src/manage_sql.c (note_count, init_note_iterator, override_count)
+	(init_override_iterator): Use the task in the results table, instead of
+	looking up the task via the report.  This drastically improves
+	performance of GET_NOTES when given a task, which was making the GSA Task
+	Details page load very slowly for big databases.
+
 2013-06-07  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
