@@ -40898,15 +40898,10 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
                        (" AND (notes.task = %llu OR notes.task = 0)"
                         " AND nvt IN"
                         " (SELECT DISTINCT nvt FROM results"
-                        "  WHERE (SELECT task FROM reports"
-                        "         WHERE reports.ROWID = results.report)"
-                        "        = %llu)"
+                        "  WHERE results.task = %llu)"
                         " AND (notes.result = 0"
-                        "      OR (SELECT task FROM reports"
-                        "          WHERE reports.ROWID"
-                        "                = (SELECT report FROM results"
-                        "                   WHERE results.ROWID"
-                        "                         = notes.result))"
+                        "      OR (SELECT task FROM results"
+                        "          WHERE results.ROWID = notes.result)"
                         "         = %llu)",
                         task,
                         task,
@@ -41023,15 +41018,10 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                        (" AND (notes.task = %llu OR notes.task = 0)"
                         " AND nvt IN"
                         " (SELECT DISTINCT nvt FROM results"
-                        "  WHERE (SELECT task FROM reports"
-                        "         WHERE reports.ROWID = results.report)"
-                        "        = %llu)"
+                        "  WHERE results.task = %llu)"
                         " AND (notes.result = 0"
-                        "      OR (SELECT task FROM reports"
-                        "          WHERE reports.ROWID"
-                        "                = (SELECT report FROM results"
-                        "                   WHERE results.ROWID"
-                        "                         = notes.result))"
+                        "      OR (SELECT task FROM results"
+                        "          WHERE results.ROWID = notes.result)"
                         "         = %llu)",
                         task,
                         task,
@@ -41686,15 +41676,10 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
                        (" AND (overrides.task = %llu OR overrides.task = 0)"
                         " AND nvt IN"
                         " (SELECT DISTINCT nvt FROM results"
-                        "  WHERE (SELECT task FROM reports"
-                        "         WHERE reports.ROWID = results.report)"
-                        "        = %llu)"
+                        "  WHERE results.task = %llu)"
                         " AND (overrides.result = 0"
-                        "      OR (SELECT task FROM reports"
-                        "          WHERE reports.ROWID"
-                        "                = (SELECT report FROM results"
-                        "                   WHERE results.ROWID"
-                        "                         = overrides.result))"
+                        "      OR (SELECT task FROM results"
+                        "          WHERE results.ROWID = overrides.result)"
                         "         = %llu)",
                         task,
                         task,
@@ -41811,15 +41796,10 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                        (" AND (overrides.task = %llu OR overrides.task = 0)"
                         " AND nvt IN"
                         " (SELECT DISTINCT nvt FROM results"
-                        "  WHERE (SELECT task FROM reports"
-                        "         WHERE reports.ROWID = results.report)"
-                        "        = %llu)"
+                        "  WHERE results.task = %llu)"
                         " AND (overrides.result = 0"
-                        "      OR (SELECT task FROM reports"
-                        "          WHERE reports.ROWID"
-                        "                = (SELECT report FROM results"
-                        "                   WHERE results.ROWID"
-                        "                         = overrides.result))"
+                        "      OR (SELECT task FROM results"
+                        "          WHERE results.ROWID = overrides.result)"
                         "         = %llu)",
                         task,
                         task,
