@@ -1,3 +1,8 @@
+2013-06-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (print_report_xml): Cleanup report host iterator in
+	prognostic report case.
+
 2013-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (create_permission_data_t, create_permission_data_reset)
