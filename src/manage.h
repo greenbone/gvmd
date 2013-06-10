@@ -2466,7 +2466,7 @@ delete_permission (const char*, int);
 
 int
 modify_permission (const char *, const char *, const char *, const char *,
-                   const char *, const char *, const char *);
+                   const char *, const char *);
 
 
 /* Port lists. */

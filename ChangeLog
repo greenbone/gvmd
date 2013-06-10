@@ -1,5 +1,21 @@
 2013-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (create_permission_data_t, create_permission_data_reset)
+	(client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Remove RESOURCE/TYPE
+	from CREATE_PERMISSION.
+
+	* src/manage_sql.c (omp_command_type): Allocate the return, in order to
+	remove the trailing S on GET commands.
+	(create_permission): Handle memory returned from omp_command_type.
+	(strdown): New function.
+	(modify_permission): Remove resource_type arg.  Get type from command
+	name.
+
+	* src/manage.h: Update header accordingly.
+
+2013-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_permission): Ensure name is store lower case.
 	Invert name check.
 
