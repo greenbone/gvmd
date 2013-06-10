@@ -1,3 +1,8 @@
+2013-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_permission): Ensure name is store lower case.
+	Invert name check.
+
 2013-06-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml): Allocate delta_states dynamically

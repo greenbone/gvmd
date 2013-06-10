@@ -46874,7 +46874,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
 /**
  * @brief Create a permission.
  *
- * @param[in]   name            Name of permission.
+ * @param[in]   name_arg        Name of permission.
  * @param[in]   comment         Comment on permission.
  * @param[in]   resource_id     UUID of resource.
  * @param[in]   subject_type    Type of subject.
@@ -46886,21 +46886,21 @@ modify_group (const char *group_id, const char *name, const char *comment,
  *         99 permission denied, -1 internal error.
  */
 int
-create_permission (const char *name, const char *comment,
+create_permission (const char *name_arg, const char *comment,
                    const char *resource_id, const char *subject_type,
                    const char *subject_id, permission_t *permission)
 {
-  gchar *quoted_name, *quoted_comment;
+  gchar *name, *quoted_name, *quoted_comment;
   resource_t resource, subject;
 
   assert (current_credentials.uuid);
 
-  if ((name == NULL) || (valid_omp_command (name) == 0))
+  if ((name_arg == NULL) || (valid_omp_command (name_arg) == 0))
     return 7;
 
-  if (strcasecmp (name, "HELP")
+  if (strcasecmp (name_arg, "HELP") == 0
       // FIX more
-      && strcasecmp (name, "GET_VERSION"))
+      || strcasecmp (name_arg, "GET_VERSION") == 0)
     resource_id = NULL;
 
   if (subject_type
@@ -46920,18 +46920,21 @@ create_permission (const char *name, const char *comment,
       return 99;
     }
 
+  name = g_ascii_strdown (name_arg, -1);
   resource = 0;
   if (resource_id && omp_command_type (name))
     {
       if (find_resource (omp_command_type (name), resource_id,
                          &resource))
         {
+          g_free (name);
           sql ("ROLLBACK;");
           return -1;
         }
 
       if (resource == 0)
         {
+          g_free (name);
           sql ("ROLLBACK;");
           return 3;
         }
@@ -46946,12 +46949,14 @@ create_permission (const char *name, const char *comment,
     {
       if (find_resource (subject_type, subject_id, &subject))
         {
+          g_free (name);
           sql ("ROLLBACK;");
           return -1;
         }
 
       if (subject == 0)
         {
+          g_free (name);
           sql ("ROLLBACK;");
           return 2;
         }
@@ -46982,6 +46987,7 @@ create_permission (const char *name, const char *comment,
 
   g_free (quoted_comment);
   g_free (quoted_name);
+  g_free (name);
 
   if (permission)
     *permission = sqlite3_last_insert_rowid (task_db);
