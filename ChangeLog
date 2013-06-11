@@ -13,6 +13,11 @@
 
 2013-06-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c, src/omp.c: Revert revision 16518 for Note port
+	value validation.
+
+2013-06-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (report_ssl_cert_count): New function
 	(print_report_xml): print report ssl certs total count.
 
