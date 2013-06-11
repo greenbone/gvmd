@@ -1,3 +1,8 @@
+2013-06-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (report_ssl_cert_count): New function
+	(print_report_xml): print report ssl certs total count.
+
 2013-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (note_count, init_note_iterator, override_count)
