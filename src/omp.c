@@ -12618,14 +12618,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("get_nvts",
                                     "GET_NVTS preference_count attribute"
                                     " requires the details attribute"));
-              else if (((get_nvts_data->details == 0)
-                        || (get_nvts_data->config_id == NULL))
+              else if ((get_nvts_data->details == 0)
                        && get_nvts_data->preferences)
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("get_nvts",
                                     "GET_NVTS preferences attribute"
-                                    " requires the details and config_id"
-                                    " attributes"));
+                                    " requires the details attribute"));
               else if (((get_nvts_data->details == 0)
                         || (get_nvts_data->config_id == NULL))
                        && get_nvts_data->timeout)

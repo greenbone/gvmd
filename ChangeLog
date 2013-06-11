@@ -1,3 +1,8 @@
+2013-06-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_NVTS,
+	allow preferences attribute without config_id.
+
 2013-06-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ompd.c (write_to_scanner, serve_omp): Remove user/password scanner
