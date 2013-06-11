@@ -1,5 +1,13 @@
 2013-06-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (get_nvts): Remove text about
+	preferences requiring a config and add a paragraph about default
+	preference values instead.
+
+	* doc/omp.html: Update from source.
+
+2013-06-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_NVTS,
 	allow preferences attribute without config_id.
 

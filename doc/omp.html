@@ -13040,7 +13040,7 @@ get_notes_response_note_result_description
         This command may always include a details flag, a config, a sort
         order and a sort field.  If the command includes a details flag, the
         manager also consults the timeout, preference_count and preferences
-        flags.  The timeout and preferences flags require a config.
+        flags.
       </p>
 <p>
         The NVT OID, family name and config attributes limit the listing to
@@ -13054,6 +13054,8 @@ get_notes_response_note_result_description
         With the preferences flag the manager includes in the listing, the
         values of each listed NVT's preferences for the given config.  The
         timeout flag does the same for the special timeout preference.
+        If the config contains no values for a preference, the default value
+        of the preference is returned. The same applies if no config is given.
       </p>
 <p>
         If the manager possesses an NVT collection, it will reply with the
