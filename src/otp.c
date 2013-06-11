@@ -1363,51 +1363,8 @@ process_otp_scanner_input ()
           }
         from_scanner_start += 12;
         messages += 12;
-        set_scanner_init_state (SCANNER_INIT_GOT_VERSION);
-        /* Fall through to attempt next step. */
-        /*@fallthrough@*/
-      case SCANNER_INIT_GOT_VERSION:
-        if (from_scanner_end - from_scanner_start < 7)
-          {
-            /* Need more input. */
-            if (sync_buffer ()) return -1;
-            return 0;
-          }
-        if (strncasecmp ("User : ", messages, 7))
-          {
-            tracef ("   scanner fail: expected \"User : \", got \"%7s\"\n",
-                    messages);
-            return -1;
-          }
-        from_scanner_start += 7;
-        messages += 7;
-        set_scanner_init_state (SCANNER_INIT_GOT_USER);
-        if (sync_buffer ()) return -1;
+        set_scanner_init_state (SCANNER_INIT_DONE);
         return 0;
-      case SCANNER_INIT_GOT_USER:
-        /* Input from scanner after "User : " and before user name sent. */
-        return -1;
-      case SCANNER_INIT_SENT_USER:
-        if (from_scanner_end - from_scanner_start < 11)
-          {
-            /* Need more input. */
-            if (sync_buffer ()) return -1;
-            return 0;
-          }
-        if (strncasecmp ("Password : ", messages, 11))
-          {
-            tracef ("   scanner fail: expected \"Password : \", got \"%11s\"\n",
-                    messages);
-            return -1;
-          }
-        from_scanner_start += 11;
-        messages += 11;
-        set_scanner_init_state (SCANNER_INIT_GOT_PASSWORD);
-        if (sync_buffer ()) return -1;
-        return 0;
-      case SCANNER_INIT_GOT_PASSWORD:
-        /* Input from scanner after "Password : " and before password sent. */
-        return -1;
       case SCANNER_INIT_GOT_FEED_VERSION:
         /* Somehow called to process the input from the scanner that followed
          * the initial feed version, before the initial response to the feed
@@ -1428,7 +1385,6 @@ process_otp_scanner_input ()
         return -1;
       case SCANNER_INIT_SENT_COMPLETE_LIST:
       case SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE:
-      case SCANNER_INIT_SENT_PASSWORD:
       case SCANNER_INIT_DONE:
       case SCANNER_INIT_DONE_CACHE_MODE:
       case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
@@ -2183,7 +2139,7 @@ process_otp_scanner_input ()
                   switch (parse_scanner_done (&messages))
                     {
                       case  0:
-                        if (scanner_init_state == SCANNER_INIT_SENT_PASSWORD)
+                        if (scanner_init_state == SCANNER_INIT_DONE)
                           set_scanner_init_state (SCANNER_INIT_GOT_FEED_VERSION);
                         else if (acknowledge_feed_version_info ())
                           goto return_error;

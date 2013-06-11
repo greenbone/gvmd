@@ -426,49 +426,6 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
           break;
         }
       case SCANNER_INIT_SENT_VERSION:
-      case SCANNER_INIT_GOT_VERSION:
-        assert (0);
-        break;
-      case SCANNER_INIT_GOT_USER:
-        {
-          char* const user = "om\n";
-          scanner_init_offset = write_string_to_server (scanner_session,
-                                                        user + scanner_init_offset);
-          if (scanner_init_offset == 0)
-            set_scanner_init_state (SCANNER_INIT_SENT_USER);
-          else if (scanner_init_offset == -1)
-            {
-              scanner_init_offset = 0;
-              return -1;
-            }
-          break;
-        }
-      case SCANNER_INIT_SENT_USER:
-        assert (0);
-        break;
-      case SCANNER_INIT_GOT_PASSWORD:
-        {
-          /* We don't use password based authentication, but have to send
-           * something to stay compatible with OTP. */
-          char* const password = "*\n";
-          scanner_init_offset = write_string_to_server (scanner_session,
-                                                        password + scanner_init_offset);
-          if (scanner_init_offset == 0)
-            {
-              if (ompd_nvt_cache_mode)
-                set_scanner_init_state (SCANNER_INIT_SENT_PASSWORD);
-              else
-                set_scanner_init_state (SCANNER_INIT_DONE);
-              /* Fall through to send any available output. */
-            }
-          else if (scanner_init_offset == -1)
-            {
-              scanner_init_offset = 0;
-              return -1;
-            }
-        }
-        break;
-      case SCANNER_INIT_SENT_PASSWORD:
         assert (0);
         break;
       case SCANNER_INIT_SENT_COMPLETE_LIST:
@@ -848,11 +805,8 @@ serve_omp (gnutls_session_t* client_session,
           && (scanner_init_state == SCANNER_INIT_DONE
               || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
               || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE
-              || scanner_init_state == SCANNER_INIT_GOT_VERSION
               || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST
               || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
-              || scanner_init_state == SCANNER_INIT_SENT_PASSWORD
-              || scanner_init_state == SCANNER_INIT_SENT_USER
               || scanner_init_state == SCANNER_INIT_SENT_VERSION)
           && from_scanner_end < from_buffer_size)
         {
@@ -870,9 +824,7 @@ serve_omp (gnutls_session_t* client_session,
               || scanner_init_state == SCANNER_INIT_CONNECT_INTR
               || scanner_init_state == SCANNER_INIT_CONNECTED
               || scanner_init_state == SCANNER_INIT_GOT_FEED_VERSION
-              || scanner_init_state == SCANNER_INIT_GOT_PASSWORD
-              || scanner_init_state == SCANNER_INIT_GOT_PLUGINS
-              || scanner_init_state == SCANNER_INIT_GOT_USER))
+              || scanner_init_state == SCANNER_INIT_GOT_PLUGINS))
         {
           FD_SET (scanner_socket, &writefds);
           fd_info |= FD_SCANNER_WRITE;

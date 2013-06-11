@@ -1,3 +1,16 @@
+2013-06-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/ompd.c (write_to_scanner, serve_omp): Remove user/password scanner
+	init states.  Also remove SCANNER_INIT_GOT_VERSION which was needed
+	while waiting for "User:".
+
+	* src/otp.c (process_otp_scanner_input): After sending version go
+	directly to SCANNER_INIT_DONE.  Remove user/password states.  In
+	SCANNER_NVT_INFO check for SCANNER_INIT_DONE instead of
+	SCANNER_INIT_SENT_PASSWORD.
+
+	* src/otp.h: Update header accordingly.
+
 2013-06-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (report_ssl_cert_count): New function
