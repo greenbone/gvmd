@@ -3427,8 +3427,7 @@ type_named (const char *type)
 int
 type_has_permissions (const char *type)
 {
-  return strcasecmp (type, "task") == 0
-         || strcasecmp (type, "report") == 0;
+  return 1;
 }
 
 /**

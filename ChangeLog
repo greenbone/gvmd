@@ -1,5 +1,10 @@
 2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (type_has_permissions): Enable all types, so that the
+	GET iterator uses permissions for all types.
+
+2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (migrate_56_to_57): Ensure new tables exist.
 
 2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
