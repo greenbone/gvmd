@@ -3247,14 +3247,6 @@ filter_clause (const char* type, const char* filter, const char **columns,
 /**
  * @brief Columns for GET iterator.
  */
-#define ANON_GET_ITERATOR_COLUMNS                            \
-  "ROWID, uuid, '', '', iso_time (creation_time),"           \
-  " iso_time (modification_time), creation_time AS created," \
-  " modification_time AS modified"
-
-/**
- * @brief Columns for GET iterator.
- */
 #define GET_ITERATOR_COLUMNS_PREFIX(prefix)                           \
   prefix "ROWID, " prefix "uuid, " prefix "name, " prefix "comment,"  \
   " iso_time (" prefix "creation_time),"                              \
@@ -40793,7 +40785,6 @@ modify_note (note_t note, const char *active, const char* text,
  * @brief Note iterator columns.
  */
 #define NOTE_ITERATOR_COLUMNS                                              \
-  /* ANON_GET_ITERATOR_COLUMNS, */  /* Need the notes prefix. */           \
   "notes.ROWID, notes.uuid,"                                               \
   " (SELECT name FROM nvts WHERE oid = notes.nvt) AS name, '',"            \
   " iso_time (notes.creation_time),"                                       \
@@ -41564,7 +41555,6 @@ modify_override (override_t override, const char *active, const char* text,
  * @brief Override iterator columns.
  */
 #define OVERRIDE_ITERATOR_COLUMNS                                              \
-  /* ANON_GET_ITERATOR_COLUMNS, */  /* Need the overrides prefix. */           \
   "overrides.ROWID, overrides.uuid,"                                           \
   " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS name, '',"            \
   " iso_time (overrides.creation_time),"                                       \

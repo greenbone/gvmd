@@ -1,5 +1,12 @@
 2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (ANON_GET_ITERATOR_COLUMNS): Remove for now.  The
+	only callers need special casing anyway.
+	(NOTE_ITERATOR_COLUMNS, OVERRIDE_ITERATOR_COLUMNS): Remove
+	ANON_GET_ITERATOR_COLUMNS comment.
+
+2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove OTP PORT handling.
 
 	* src/manage_sql.c (init_result_iterator, column_auth_type)
