@@ -9616,12 +9616,15 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
                               config_t config)
 {
   char *real_name, *type, *value, *nvt;
+  const char *default_value;
   char *oid = NULL;
 
   real_name = nvt_preference_iterator_real_name (prefs);
   type = nvt_preference_iterator_type (prefs);
   value = nvt_preference_iterator_config_value (prefs, config);
   nvt = nvt_preference_iterator_nvt (prefs);
+
+  default_value = nvt_preference_iterator_value (prefs);
 
   if (nvt) oid = nvt_oid (nvt);
 
@@ -9657,6 +9660,24 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
     buffer_xml_append_printf (buffer, "<value></value>");
   else
     buffer_xml_append_printf (buffer, "<value>%s</value>", value ? value : "");
+
+  if (default_value
+      && type
+      && (strcmp (type, "radio") == 0))
+    {
+      /* Handle the other possible values. */
+      char *pos = strchr (default_value, ';');
+      if (pos) *pos = '\0';
+      buffer_xml_append_printf (buffer, "<default>%s</default>", default_value);
+    }
+  else if (default_value
+           && type
+           && (strcmp (type, "password") == 0))
+    buffer_xml_append_printf (buffer, "<default></default>");
+  else
+    buffer_xml_append_printf (buffer, "<default>%s</default>", default_value
+                                                               ? default_value
+                                                               : "");
 
   buffer_xml_append_printf (buffer, "</preference>");
 
@@ -13255,39 +13276,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     get_preferences_data->preference)
                             == 0))
                       {
-                        if (config)
-                          {
-                            GString *buffer = g_string_new ("");
-                            buffer_config_preference_xml (buffer, &prefs, config);
-                            SEND_TO_CLIENT_OR_FAIL (buffer->str);
-                            g_string_free (buffer, TRUE);
-                          }
-                        else
-                          SENDF_TO_CLIENT_OR_FAIL ("<preference>"
-                                                   "<name>%s</name>"
-                                                   "<value>%s</value>"
-                                                   "</preference>",
-                                                   nvt_preference_iterator_name (&prefs),
-                                                   nvt_preference_iterator_value (&prefs));
+                        GString *buffer = g_string_new ("");
+                        buffer_config_preference_xml (buffer, &prefs, config);
+                        SEND_TO_CLIENT_OR_FAIL (buffer->str);
+                        g_string_free (buffer, TRUE);
                         break;
                       }
                   }
               else
                 while (next (&prefs))
-                  if (config)
-                    {
-                      GString *buffer = g_string_new ("");
-                      buffer_config_preference_xml (buffer, &prefs, config);
-                      SEND_TO_CLIENT_OR_FAIL (buffer->str);
-                      g_string_free (buffer, TRUE);
-                    }
-                  else
-                    SENDF_TO_CLIENT_OR_FAIL ("<preference>"
-                                             "<name>%s</name>"
-                                             "<value>%s</value>"
-                                             "</preference>",
-                                             nvt_preference_iterator_name (&prefs),
-                                             nvt_preference_iterator_value (&prefs));
+                  {
+                    GString *buffer = g_string_new ("");
+                    buffer_config_preference_xml (buffer, &prefs, config);
+                    SEND_TO_CLIENT_OR_FAIL (buffer->str);
+                    g_string_free (buffer, TRUE);
+                  }
+
               cleanup_iterator (&prefs);
               SEND_TO_CLIENT_OR_FAIL ("</get_preferences_response>");
             }

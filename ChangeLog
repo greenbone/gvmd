@@ -1,3 +1,16 @@
+2013-06-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (buffer_config_preference_xml): Add default value element
+	"default" to response.
+	(omp_xml_handle_end_element): In case CLIENT_GET_PREFERENCES
+	remove special case for missing config, which is now handled by
+	buffer_config_preference_xml.
+
+	* src/schema_formats/XML/OMP.xml (get_nvts, get_preferences): Add
+	response element "default" and update examples accordingly.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-06-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (where_search_phrase): Apply search phrase matching

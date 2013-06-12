@@ -7696,6 +7696,7 @@ get_nvts_response_nvt_preferences_preference
        & get_nvts_response_nvt_preferences_preference_name
        & get_nvts_response_nvt_preferences_preference_type
        & get_nvts_response_nvt_preferences_preference_value
+       & get_nvts_response_nvt_preferences_preference_default
      }
 
 get_nvts_response_nvt_preferences_preference_nvt
@@ -7718,6 +7719,12 @@ get_nvts_response_nvt_preferences_preference_type
 
 get_nvts_response_nvt_preferences_preference_value
  = element value
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences_preference_default
+ = element default
      {
        text
      }
@@ -8332,6 +8339,7 @@ get_preferences_response_preference
        & get_preferences_response_preference_name
        & get_preferences_response_preference_type?
        & get_preferences_response_preference_value
+       & get_preferences_response_preference_default
      }
 
 # NVT to which preference applies.
@@ -8366,6 +8374,13 @@ get_preferences_response_preference_type
 # The value of the preference.
 get_preferences_response_preference_value
  = element value
+     {
+       text
+     }
+
+# The default value of the preference.
+get_preferences_response_preference_default
+ = element default
      {
        text
      }

@@ -8125,6 +8125,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>name</e>
               <e>type</e>
               <e>value</e>
+              <e>default</e>
             </pattern>
             <ele>
               <name>nvt</name>
@@ -8140,6 +8141,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </ele>
             <ele>
               <name>value</name>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>default</name>
               <pattern>text</pattern>
             </ele>
           </ele>
@@ -8191,6 +8196,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <name>Network connection timeout :</name>
                 <type>entry</type>
                 <value>5</value>
+                <default>5</default>
               </preference>
               <truncated>...</truncated>
             </preferences>
@@ -9137,6 +9143,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>name</e>
           <o><e>type</e></o>
           <e>value</e>
+          <e>default</e>
         </pattern>
         <ele>
           <name>nvt</name>
@@ -9170,6 +9177,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <summary>The value of the preference</summary>
           <pattern>text</pattern>
         </ele>
+        <ele>
+          <name>default</name>
+          <summary>The default value of the preference</summary>
+          <pattern>text</pattern>
+        </ele>
       </ele>
     </response>
     <example>
@@ -9198,6 +9210,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <preference>
             <name>Services[entry]:Network connection timeout :</name>
             <value>5</value>
+            <default>5</default>
           </preference>
           <truncated>...</truncated>
         </get_preferences_response>
@@ -9239,6 +9252,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>Network connection timeout :</name>
             <type>entry</type>
             <value>5</value>
+            <default>5</default>
           </preference>
         </get_preferences>
       </response>

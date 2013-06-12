@@ -13305,6 +13305,10 @@ get_notes_response_note_result_description
               &lt;<b>value</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>default</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -13571,6 +13575,7 @@ get_nvts_response_nvt_preferences_preference
        &amp; get_nvts_response_nvt_preferences_preference_name
        &amp; get_nvts_response_nvt_preferences_preference_type
        &amp; get_nvts_response_nvt_preferences_preference_value
+       &amp; get_nvts_response_nvt_preferences_preference_default
      }
 
 get_nvts_response_nvt_preferences_preference_nvt
@@ -13593,6 +13598,12 @@ get_nvts_response_nvt_preferences_preference_type
 
 get_nvts_response_nvt_preferences_preference_value
  = element value
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences_preference_default
+ = element default
      {
        text
      }
@@ -13642,6 +13653,7 @@ get_nvts_response_nvt_preferences_preference_value
          &lt;name&gt;Network connection timeout :&lt;/name&gt;
          &lt;type&gt;entry&lt;/type&gt;
          &lt;value&gt;5&lt;/value&gt;
+         &lt;default&gt;5&lt;/default&gt;
        &lt;/preference&gt;
        ...
      &lt;/preferences&gt;
@@ -15083,6 +15095,11 @@ get_port_lists_response_port_list_targets_target_name
               <div style="margin-left: 15px; display: inline;">The value of the preference.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>default</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The default value of the preference.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -15113,6 +15130,7 @@ get_preferences_response_preference
        &amp; get_preferences_response_preference_name
        &amp; get_preferences_response_preference_type?
        &amp; get_preferences_response_preference_value
+       &amp; get_preferences_response_preference_default
      }
 
 get_preferences_response_preference_nvt
@@ -15145,6 +15163,12 @@ get_preferences_response_preference_value
      {
        text
      }
+
+get_preferences_response_preference_default
+ = element default
+     {
+       text
+     }
 </pre></div>
 </div>
 <h4>7.52.3 Example: Get default preferences for all NVTs</h4>
@@ -15170,6 +15194,7 @@ get_preferences_response_preference_value
    &lt;preference&gt;
      &lt;name&gt;Services[entry]:Network connection timeout :&lt;/name&gt;
      &lt;value&gt;5&lt;/value&gt;
+     &lt;default&gt;5&lt;/default&gt;
    &lt;/preference&gt;
    ...
  &lt;/get_preferences_response&gt;
@@ -15206,6 +15231,7 @@ get_preferences_response_preference_value
      &lt;name&gt;Network connection timeout :&lt;/name&gt;
      &lt;type&gt;entry&lt;/type&gt;
      &lt;value&gt;5&lt;/value&gt;
+     &lt;default&gt;5&lt;/default&gt;
    &lt;/preference&gt;
  &lt;/get_preferences&gt;
 </pre></div>
