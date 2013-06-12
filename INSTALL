@@ -106,12 +106,14 @@ to be prefixed with the prefix you have set earlier.
 Creating an administrator user for OpenVAS
 ------------------------------------------
 
-You can create a administrator user via the OpenVAS Administrator
-command line tool "openvasad":
+You can create an administrator user with the --first-user option of
+"openvasmd":
 
-$ openvasad -c add_user --name=myuser --password=mypw --role=Admin
+$ openvasmd --first-user=myuser
 
-A administrator user can later create further users or
+The new user's password is printed on success.
+
+An administrator user can later create further users or
 administrators via clients like the Greenbone Security Assistant (GSA).
 
 Also, the new user can change her password via GSA.
@@ -143,7 +145,7 @@ $ openvasmd --migrate
 
 
 Import/Update IANA Services Names
-----------------------
+---------------------------------
 
 If you want the Manager to resolve port names when outputing reports for
 instance, you need to import the information from a Services Names list.

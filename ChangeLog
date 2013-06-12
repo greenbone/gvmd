@@ -1,3 +1,7 @@
+2013-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* INSTALL: Update section about creating first user.
+
 2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (PERMISSION_ITERATOR_COLUMNS): Replace hardcoded
