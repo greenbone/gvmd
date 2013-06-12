@@ -10356,7 +10356,7 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
   count = 0;                                                             \
   ret = init_get ("get_" G_STRINGIFY (type) "s",                         \
                   &get_ ## type ## s_data->get,                          \
-                  G_STRINGIFY (capital),                                 \
+                  G_STRINGIFY (capital) "s",                             \
                   &first);                                               \
   if (ret)                                                               \
     {                                                                    \
@@ -11729,7 +11729,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_GROUPS", element_name) == 0);
 
-          INIT_GET (group, Groups);
+          INIT_GET (group, Group);
 
           ret = init_group_iterator (&groups, &get_groups_data->get);
           if (ret)

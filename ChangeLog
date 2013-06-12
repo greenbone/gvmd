@@ -1,3 +1,14 @@
+2013-06-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (setting_filter): Make documentation clearer about
+	passed resource value.
+
+	* src/omp.c (INIT_GET): Append 's' to init_get settings_name parameter.
+	Fixes issue with default filter not applied as the name doesn't match in
+	DB.
+	(omp_xml_handle_element): make INIT_GET call consistent for get_groups
+	case.
+
 2013-06-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (get_nvts): Remove text about

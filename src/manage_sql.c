@@ -51257,7 +51257,7 @@ setting_count (const char *filter)
 /**
  * @brief Return the uuid of a resource filter from settings.
  *
- * @param[in]  resource  Resource.
+ * @param[in]  resource  Resource (eg. Filters, Targets, CPE).
  *
  * @return resource filter uuid in settings if it exists, "" otherwise.
  */
