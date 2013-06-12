@@ -3689,6 +3689,8 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   g_free (quoted_uuid);
   g_free (quoted_name);
   g_free (uniquify);
+  if (sqlite3_last_insert_rowid (task_db) == 0)
+    return -1;
   return 0;
 }
 
@@ -47000,7 +47002,7 @@ copy_permission (const char* comment, const char *permission_id,
                  permission_t* new_permission)
 {
   return copy_resource ("permission", NULL, comment, permission_id,
-                        "resource_type, resource_id, resource_uuid,"
+                        "resource_type, resource, resource_uuid,"
                         " resource_location, subject_type, subject",
                         0, new_permission);
 }

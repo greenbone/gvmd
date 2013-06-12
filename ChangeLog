@@ -1,5 +1,11 @@
 2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_resource_lock): Return with error if the
+	insert ID was 0.
+	(copy_permission): Correct column name.
+
+2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (OVERRIDE_ITERATOR_COLUMNS): Shorten overlong lines.
 
 2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
