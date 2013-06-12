@@ -9762,6 +9762,30 @@ migrate_56_to_57 ()
 
   /** @todo ROLLBACK on failure. */
 
+  /* Ensure the new tables exist for the migrator. */
+
+  sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data"
+       " (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data_trash"
+       " (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS escalator_event_data"
+       " (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS escalator_event_data_trash"
+       " (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS escalator_method_data"
+       " (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS escalator_method_data_trash"
+       " (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS escalators"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  event INTEGER, condition INTEGER, method INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS escalators_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  event INTEGER, condition INTEGER, method INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS task_escalators"
+       " (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER,"
+       "  escalator_location INTEGER);");
+
   /* Escalators were renamed to alerts. */
 
   sql ("CREATE TABLE alert_condition_data"
