@@ -1,5 +1,9 @@
 2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (OVERRIDE_ITERATOR_COLUMNS): Shorten overlong lines.
+
+2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (ANON_GET_ITERATOR_COLUMNS): Remove for now.  The
 	only callers need special casing anyway.
 	(NOTE_ITERATOR_COLUMNS, OVERRIDE_ITERATOR_COLUMNS): Remove

@@ -41563,8 +41563,9 @@ modify_override (override_t override, const char *active, const char* text,
   " overrides.modification_time AS modified,"                                  \
   /* Columns specific to overrides. */                                         \
   " overrides.nvt AS oid, overrides.text,"                                     \
-  " overrides.hosts, overrides.port, overrides.threat, overrides.new_threat, overrides.task, overrides.result,"      \
-  " overrides.end_time, (overrides.end_time = 0) OR (overrides.end_time >= now ()),"   \
+  " overrides.hosts, overrides.port, overrides.threat, overrides.new_threat,"  \
+  " overrides.task, overrides.result, overrides.end_time,"                     \
+  " (overrides.end_time = 0) OR (overrides.end_time >= now ()),"               \
   " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS nvt,"                 \
   " overrides.nvt AS nvt_id,"                                                  \
   " (SELECT uuid FROM tasks WHERE ROWID = overrides.task) AS task_id,"         \
