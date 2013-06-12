@@ -1,3 +1,14 @@
+2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove OTP PORT handling.
+
+	* src/manage_sql.c (init_result_iterator, column_auth_type)
+	(report_counts_autofp_match): Adjust open port comment.
+	(append_task_open_port): Remove.
+
+	* src/otp.c (scanner_state_t): Remove PORT states.
+	(process_otp_scanner_input): Remove PORT handling.
+
 2013-06-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (buffer_config_preference_xml): Add default value element

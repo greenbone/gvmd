@@ -21162,7 +21162,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
               ("(CASE WHEN"
                "  (((SELECT family FROM nvts WHERE oid = results.nvt)"
                "    IN (" LSC_FAMILY_LIST "))"
-               "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
+               "   OR results.nvt == '0'" /* Open ports previously had 0 NVT. */
                "   OR"
                "   (SELECT ROWID FROM nvts"
                "    WHERE oid = results.nvt"
@@ -21189,7 +21189,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
               ("(CASE WHEN"
                "  (((SELECT family FROM nvts WHERE oid = results.nvt)"
                "    IN (" LSC_FAMILY_LIST "))"
-               "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
+               "   OR results.nvt == '0'" /* Open ports previously had 0 NVT. */
                "   OR"
                "   (SELECT ROWID FROM nvts AS outer_nvts"
                "    WHERE oid = results.nvt"
@@ -21356,7 +21356,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
               ("(CASE WHEN"
                "  (((SELECT family FROM nvts WHERE oid = results.nvt)"
                "    IN (" LSC_FAMILY_LIST "))"
-               "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
+               "   OR results.nvt == '0'" /* Open ports previously had 0 NVT. */
                "   OR"
                "   (SELECT ROWID FROM nvts"
                "    WHERE oid = results.nvt"
@@ -21386,7 +21386,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
               ("(CASE WHEN"
                "  (((SELECT family FROM nvts WHERE oid = results.nvt)"
                "    IN (" LSC_FAMILY_LIST "))"
-               "   OR results.nvt == '0'" /* Open ports have 0 NVT. */
+               "   OR results.nvt == '0'" /* Open ports previously had 0 NVT. */
                "   OR"
                "   (SELECT ROWID FROM nvts AS outer_nvts"
                "    WHERE oid = results.nvt"
@@ -22738,7 +22738,7 @@ column_auto_type (report_t report, int autofp)
           (", (CASE WHEN"
            "   (((SELECT family FROM nvts WHERE oid = results.nvt)"
            "     IN (" LSC_FAMILY_LIST "))"
-           "    OR results.nvt == '0'" /* Open ports have 0 NVT. */
+           "    OR results.nvt == '0'" /* Open ports previously had 0 NVT. */
            "    OR"
            "    (SELECT ROWID FROM nvts"
            "     WHERE oid = results.nvt"
@@ -22766,7 +22766,7 @@ column_auto_type (report_t report, int autofp)
           (", (CASE WHEN"
            "   ((SELECT family FROM nvts WHERE oid = results.nvt)"
            "    IN (" LSC_FAMILY_LIST ")"
-           "    OR results.nvt == '0'" /* Open ports have 0 NVT. */
+           "    OR results.nvt == '0'" /* Open ports previously had 0 NVT. */
            "    OR"
            "    (SELECT ROWID FROM nvts AS outer_nvts"
            "     WHERE oid = results.nvt"
@@ -23253,7 +23253,7 @@ static int
 report_counts_autofp_match (iterator_t *results, int autofp)
 {
   if (strcmp ((const char *) sqlite3_column_text (results->stmt, 1), "0") == 0)
-    /* Open port special case. */
+    /* Open port special case.  These previously had nvt 0. */
     return 1;
 
   switch (autofp)
@@ -30658,22 +30658,6 @@ set_scan_ports (report_t report, const char* host, unsigned int current,
   sql ("UPDATE report_hosts SET current_port = %i, max_port = %i"
        " WHERE host = '%s' AND report = %llu;",
        current, max, host, report);
-}
-
-/**
- * @brief Add an open port as a result to a task.
- *
- * @param[in]  task  The task.
- * @param[in]  host  The host the port is on.
- * @param[in]  port  The port string.
- */
-void
-append_task_open_port (task_t task, const char *host, const char *port)
-{
-  result_t result;
-  result = make_result (task, host, host, port, "0", "Log Message",
-                        "Open port.");
-  if (current_report) report_add_result (current_report, result);
 }
 
 /**

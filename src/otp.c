@@ -691,8 +691,6 @@ typedef enum
   SCANNER_PLUGIN_LIST_XREFS,
   SCANNER_PLUGIN_DEPENDENCY_NAME,
   SCANNER_PLUGIN_DEPENDENCY_DEPENDENCY,
-  SCANNER_PORT_HOST,
-  SCANNER_PORT_NUMBER,
   SCANNER_PREFERENCE_NAME,
   SCANNER_PREFERENCE_VALUE,
   SCANNER_RULE,
@@ -1305,7 +1303,7 @@ parse_scanner_server (/*@dependent@*/ char** messages)
  *
  * This includes updating the scanner state with \ref set_scanner_state
  * and \ref set_scanner_init_state, and updating scanner records with functions
- * like \ref manage_nvt_preference_add and \ref append_task_open_port.
+ * like \ref manage_nvt_preference_add.
  *
  * \endif
  *
@@ -2152,39 +2150,6 @@ process_otp_scanner_input ()
                     }
                   break;
                 }
-              case SCANNER_PORT_HOST:
-                {
-                  current_host = g_strdup (field);
-                  set_scanner_state (SCANNER_PORT_NUMBER);
-                  break;
-                }
-              case SCANNER_PORT_NUMBER:
-                {
-                  if (current_scanner_task)
-                    {
-                      char *formatted;
-
-                      formatted = port_name_formatted (field);
-
-                      append_task_open_port (current_scanner_task,
-                                             current_host,
-                                             formatted ? formatted : field);
-
-                      g_free (formatted);
-                    }
-                  g_free (current_host);
-                  current_host = NULL;
-                  set_scanner_state (SCANNER_DONE);
-                  switch (parse_scanner_done (&messages))
-                    {
-                      case -1: goto return_error;
-                      case -2:
-                        /* Need more input. */
-                        if (sync_buffer ()) goto return_error;
-                        goto return_need_more;
-                    }
-                  break;
-                }
               case SCANNER_PREFERENCE_NAME:
                 {
                   /* Use match[1] instead of field[1] for UTF-8 hack. */
@@ -2303,8 +2268,6 @@ process_otp_scanner_input ()
                   {
                     set_scanner_state (SCANNER_PLUGIN_LIST_OID);
                   }
-                else if (strcasecmp ("PORT", field) == 0)
-                  set_scanner_state (SCANNER_PORT_HOST);
                 else if (strcasecmp ("PREFERENCES", field) == 0)
                   {
                     assert (current_scanner_preference == NULL);
