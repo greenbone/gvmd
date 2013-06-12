@@ -444,8 +444,7 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
 
   /* Switch to the default filter from the setting, if required. */
 
-  if ((!get->filter && !get->filt_id)
-      || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+  if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
     {
       char *user_filter = setting_filter (setting_name);
 
@@ -11947,8 +11946,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
 
           get = &get_info_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter;
               gchar *name;
@@ -13664,8 +13662,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             " status_text=\"" STATUS_OK_TEXT "\">");
 
         get = &get_reports_data->get;
-        if ((!get->filter && !get->filt_id)
-            || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+        if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
           {
             char *user_filter = setting_filter ("Reports");
 

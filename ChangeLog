@@ -1,5 +1,13 @@
 2013-06-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (init_get, omp_xml_handle_end_element): Apply
+	default filters only when filt_id value is set to -2.
+	This fixes bugs where a command is called from pages other than main
+	page (Filters in settings page, Filters in filter box etc,.) while
+	having a default filter that limits its results.
+
+2013-06-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (setting_filter): Make documentation clearer about
 	passed resource value.
 
