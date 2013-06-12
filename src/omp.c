@@ -13026,7 +13026,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               resource_type = permission_iterator_resource_type (&permissions);
               SENDF_TO_CLIENT_OR_FAIL
-               ("<resource>"
+               ("<resource id=\"%s\">"
+                "<name>%s</name>"
                 "<type>%s</type>"
                 "<%s id=\"%s\"><name>%s</name></%s>"
                 // FIX in trash?
@@ -13036,6 +13037,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 "<type>%s</type>"
                 "<%s id=\"%s\"><name>%s</name></%s>"
                 "</subject>",
+                permission_iterator_resource_uuid (&permissions),
+                resource_type && strcmp (resource_type, "")
+                 ? permission_iterator_resource_name (&permissions)
+                 : "",
                 permission_iterator_resource_type (&permissions),
                 resource_type && strcmp (resource_type, "")
                  ? resource_type

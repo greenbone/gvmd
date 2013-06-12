@@ -47789,10 +47789,13 @@ trash_permission_writable (permission_t permission)
 /**
  * @brief Permission iterator columns.
  */
-// FIX FROM tasks hardcoded
 #define PERMISSION_ITERATOR_COLUMNS                                         \
   GET_ITERATOR_COLUMNS ", resource_type AS type, resource_uuid,"            \
-  " (SELECT name FROM tasks WHERE ROWID = resource) AS _resource,"          \
+  " (CASE"                                                                  \
+  "  WHEN resource_type == '' OR resource_type IS NULL"                     \
+  "  THEN ''"                                                               \
+  "  ELSE resource_name (resource_type, resource_uuid)"                     \
+  "  END) AS _resource,"                                                    \
   " subject_type,"                                                          \
   " (CASE"                                                                  \
   "  WHEN subject_type = 'user'"                                            \

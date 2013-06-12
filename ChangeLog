@@ -1,5 +1,13 @@
 2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (PERMISSION_ITERATOR_COLUMNS): Replace hardcoded
+	tasks query with call to resource_name.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_PERMISSIONS add
+	id and NAME to RESOURCE, similar to SUBJECT.
+
+2013-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (type_has_permissions): Enable all types, so that the
 	GET iterator uses permissions for all types.
 
