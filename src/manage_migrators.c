@@ -1,6 +1,6 @@
 /* OpenVAS Manager
  * $Id$
- * Description: Module for OpenVAS Manager: the Manage library.
+ * Description: Module for OpenVAS Manager: the DB migrators.
  *
  * Authors:
  * Hani Benhabiles <hani.benhabiles@greenbone.net>
@@ -43,6 +43,7 @@
 #include <ctype.h>
 #include <dirent.h>
 
+#include "manage_migrators.h"
 #include "manage_sql.h"
 #include "sql.h"
 #include "tracef.h"

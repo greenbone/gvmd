@@ -1,5 +1,16 @@
 2013-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	2nd patch, move migrators functions.
+
+	* src/manage_migrators.h: New file. Add migrate_x_to_y prototypes.
+
+	* src/manage_sql.c: Remove migrate_x_to_y prototypes. Include
+	manage_migrators.h
+
+	* src/manage_migrators.c: Fix documentation. Include header.
+
+2013-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Move migrators functions to manage_migrators.c
 
 	* src/CMakeLists.txt: Add manage_migrators.c file.
