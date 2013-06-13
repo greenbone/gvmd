@@ -30,6 +30,184 @@
 #include "manage.h"
 #include <openvas/omp/xml.h>
 
+/* Internal types and preprocessor definitions. */
+
+/**
+ * @brief Database ROWID of 'Full and fast' config.
+ */
+#define CONFIG_ID_FULL_AND_FAST 1
+
+/**
+ * @brief Database ROWID of 'Full and fast ultimate' config.
+ */
+#define CONFIG_ID_FULL_AND_FAST_ULTIMATE 2
+
+/**
+ * @brief Database ROWID of 'Full and very deep' config.
+ */
+#define CONFIG_ID_FULL_AND_VERY_DEEP 3
+
+/**
+ * @brief Database ROWID of 'Full and very deep ultimate' config.
+ */
+#define CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE 4
+
+/**
+ * @brief UUID of 'Full and fast' config.
+ */
+#define CONFIG_UUID_FULL_AND_FAST "daba56c8-73ec-11df-a475-002264764cea"
+
+/**
+ * @brief UUID of 'Full and fast ultimate' config.
+ */
+#define CONFIG_UUID_FULL_AND_FAST_ULTIMATE \
+ "698f691e-7489-11df-9d8c-002264764cea"
+
+/**
+ * @brief UUID of 'Full and very deep' config.
+ */
+#define CONFIG_UUID_FULL_AND_VERY_DEEP "708f25c4-7489-11df-8094-002264764cea"
+
+/**
+ * @brief UUID of 'Full and very deep ultimate' config.
+ */
+#define CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE \
+ "74db13d6-7489-11df-91b9-002264764cea"
+
+/**
+ * @brief UUID of 'Empty' config.
+ */
+#define CONFIG_UUID_EMPTY "085569ce-73ed-11df-83c3-002264764cea"
+
+/**
+ * @brief UUID of 'Discovery' config.
+ */
+#define CONFIG_UUID_DISCOVERY "8715c877-47a0-438d-98a3-27c7a6ab2196"
+
+/**
+ * @brief Location of a constituent of a trashcan resource.
+ */
+#define LOCATION_TABLE 0
+
+/**
+ * @brief Location of a constituent of a trashcan resource.
+ */
+#define LOCATION_TRASH 1
+
+/**
+ * @brief UUID of 'All' NVT selector.
+ */
+#define MANAGE_NVT_SELECTOR_UUID_ALL "54b45713-d4f4-4435-b20d-304c175ed8c5"
+
+/**
+ * @brief UUID of 'Discovery' NVT selector.
+ */
+#define MANAGE_NVT_SELECTOR_UUID_DISCOVERY "0d9a2738-8fe2-4e22-8f26-bb886179e759"
+
+/**
+ * @brief Predefined role UUID.
+ */
+#define PERMISSION_UUID_ADMIN_EVERYTHING "b3b56a8c-c2fd-11e2-a135-406186ea4fc5"
+
+/**
+ * @brief UUID of 'OpenVAS Default' port list.
+ */
+#define PORT_LIST_UUID_DEFAULT "c7e03b6c-3bbe-11e1-a057-406186ea4fc5"
+
+/**
+ * @brief UUID of 'All TCP' port list.
+ */
+#define PORT_LIST_UUID_ALL_TCP "fd591a34-56fd-11e1-9f27-406186ea4fc5"
+
+/**
+ * @brief UUID of 'All TCP and Nmap 5.51 Top 100 UDP' port list.
+ */
+#define PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "730ef368-57e2-11e1-a90f-406186ea4fc5"
+
+/**
+ * @brief UUID of 'All TCP and Nmap 5.51 Top 1000 UDP' port list.
+ */
+#define PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "9ddce1ae-57e7-11e1-b13c-406186ea4fc5"
+
+/**
+ * @brief UUID of 'All privileged TCP' port list.
+ */
+#define PORT_LIST_UUID_ALL_PRIV_TCP "492b72f4-56fe-11e1-98a7-406186ea4fc5"
+
+/**
+ * @brief UUID of 'All privileged TCP and UDP' port list.
+ */
+#define PORT_LIST_UUID_ALL_PRIV_TCP_UDP "5f2029f6-56fe-11e1-bb94-406186ea4fc5"
+
+/**
+ * @brief UUID of 'All privileged TCP and UDP' port list.
+ */
+#define PORT_LIST_UUID_ALL_IANA_TCP_2012 "33d0cd82-57c6-11e1-8ed1-406186ea4fc5"
+
+/**
+ * @brief UUID of 'All privileged TCP and UDP' port list.
+ */
+#define PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "4a4717fe-57d2-11e1-9a26-406186ea4fc5"
+
+/**
+ * @brief UUID of 'Nmap 5.51 top 2000 TCP top 100 UDP' port list.
+ */
+#define PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "ab33f6b0-57f8-11e1-96f5-406186ea4fc5"
+
+/**
+ * @brief Predefined role UUID.
+ */
+#define ROLE_UUID_ADMIN "7a8cb5b4-b74d-11e2-8187-406186ea4fc5"
+
+/**
+ * @brief Predefined role UUID.
+ */
+#define ROLE_UUID_USER "8d453140-b74d-11e2-b0be-406186ea4fc5"
+
+/**
+ * @brief Predefined role UUID.
+ */
+#define ROLE_UUID_OBSERVER "87a7ebce-b74d-11e2-a81f-406186ea4fc5"
+
+/**
+ * @brief UUID of 'Localhost' target.
+ */
+#define TARGET_UUID_LOCALHOST "b493b7a8-7489-11df-a3ec-002264764cea"
+
+/**
+ * @brief Trust constant for error.
+ */
+#define TRUST_ERROR 0
+
+/**
+ * @brief Trust constant for yes.
+ */
+#define TRUST_YES 1
+
+/**
+ * @brief Trust constant for no.
+ */
+#define TRUST_NO 2
+
+/**
+ * @brief Trust constant for unknown.
+ */
+#define TRUST_UNKNOWN 3
+
+/**
+ * @brief Number of milliseconds between timevals a and b (performs a-b).
+ */
+#define TIMEVAL_SUBTRACT_MS(a,b) ((((a).tv_sec - (b).tv_sec) * 1000) + \
+                                  ((a).tv_usec - (b).tv_usec) / 1000)
+
+
+/* Variables */
+
+extern gchar *task_db_name;
+
+
+/* Function prototypes */
+
 typedef long long int rowid_t;
 
 void manage_transaction_start ();

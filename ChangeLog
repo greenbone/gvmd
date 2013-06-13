@@ -1,5 +1,15 @@
 2013-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	3nd patch, move migrators functions.
+
+	* src/manage.h, src/manage_sql.c: Remove some preprocessor defintions
+	and variables. Moed to manage_sql.h
+
+	* src/manage_sql.h: Add preprocessor definitions from manage.h and
+	manage_sql.c
+
+2013-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	2nd patch, move migrators functions.
 
 	* src/manage_migrators.h: New file. Add migrate_x_to_y prototypes.

@@ -72,86 +72,6 @@
 #endif
 
 
-/* Internal types and preprocessor definitions. */
-
-
-/**
- * @brief Predefined role UUID.
- */
-#define PERMISSION_UUID_ADMIN_EVERYTHING "b3b56a8c-c2fd-11e2-a135-406186ea4fc5"
-
-/**
- * @brief UUID of 'All TCP' port list.
- */
-#define PORT_LIST_UUID_ALL_TCP "fd591a34-56fd-11e1-9f27-406186ea4fc5"
-
-/**
- * @brief UUID of 'All TCP and Nmap 5.51 Top 100 UDP' port list.
- */
-#define PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "730ef368-57e2-11e1-a90f-406186ea4fc5"
-
-/**
- * @brief UUID of 'All TCP and Nmap 5.51 Top 1000 UDP' port list.
- */
-#define PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "9ddce1ae-57e7-11e1-b13c-406186ea4fc5"
-
-/**
- * @brief UUID of 'All privileged TCP' port list.
- */
-#define PORT_LIST_UUID_ALL_PRIV_TCP "492b72f4-56fe-11e1-98a7-406186ea4fc5"
-
-/**
- * @brief UUID of 'All privileged TCP and UDP' port list.
- */
-#define PORT_LIST_UUID_ALL_PRIV_TCP_UDP "5f2029f6-56fe-11e1-bb94-406186ea4fc5"
-
-/**
- * @brief UUID of 'All privileged TCP and UDP' port list.
- */
-#define PORT_LIST_UUID_ALL_IANA_TCP_2012 "33d0cd82-57c6-11e1-8ed1-406186ea4fc5"
-
-/**
- * @brief UUID of 'All privileged TCP and UDP' port list.
- */
-#define PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "4a4717fe-57d2-11e1-9a26-406186ea4fc5"
-
-/**
- * @brief UUID of 'Nmap 5.51 top 2000 TCP top 100 UDP' port list.
- */
-#define PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "ab33f6b0-57f8-11e1-96f5-406186ea4fc5"
-
-/**
- * @brief Trust constant for error.
- */
-#define TRUST_ERROR 0
-
-/**
- * @brief Trust constant for yes.
- */
-#define TRUST_YES 1
-
-/**
- * @brief Trust constant for no.
- */
-#define TRUST_NO 2
-
-/**
- * @brief Location of a constituent of a trashcan resource.
- */
-#define LOCATION_TABLE 0
-
-/**
- * @brief Location of a constituent of a trashcan resource.
- */
-#define LOCATION_TRASH 1
-
-/**
- * @brief Number of milliseconds between timevals a and b (performs a-b).
- */
-#define TIMEVAL_SUBTRACT_MS(a,b) ((((a).tv_sec - (b).tv_sec) * 1000) + \
-                                  ((a).tv_usec - (b).tv_usec) / 1000)
-
-
 /* Headers for symbols defined in manage.c which are private to libmanage. */
 
 /**
