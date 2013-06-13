@@ -1,5 +1,14 @@
 2013-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (validate_results_port): New function.
+	(create_note, modify_note, create_override, modify_override): Validate
+	port value.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle invalid port case for
+	create_note, create_override, modify_note, modify_override calls.
+
+2013-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (where_search_phrase): Apply search on nvt cve value
 	too.
 

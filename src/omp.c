@@ -17286,6 +17286,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
                 break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_note",
+                                    "Error in port specification"));
+                g_log ("event note", G_LOG_LEVEL_MESSAGE,
+                       "Note could not be created");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_note",
@@ -17450,6 +17457,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (uuid);
                   break;
                 }
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_override",
+                                    "Error in port specification"));
+                g_log ("event override", G_LOG_LEVEL_MESSAGE,
+                       "Override could not be created");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_override",
@@ -21066,6 +21080,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("modify_note"));
                 break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_note",
+                                    "Error in port specification"));
+                g_log ("event note", G_LOG_LEVEL_MESSAGE,
+                       "Note could not be created");
+                break;
               default:
                 assert (0);
                 SEND_TO_CLIENT_OR_FAIL
@@ -21175,6 +21196,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_override",
                                     "ACTIVE must be an integer >= -2"));
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "Error in port specification"));
+                g_log ("event override", G_LOG_LEVEL_MESSAGE,
+                       "Override could not be modified");
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
