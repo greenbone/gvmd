@@ -21621,8 +21621,10 @@ where_search_phrase (const char* search_phrase, int exact)
                                 " OR host = '%s'"
                                 " OR nvt = '%s'"
                                 " OR nvt IN (SELECT oid FROM nvts"
-                                "            WHERE tag LIKE '%%=%s|%%')"
+                                "            WHERE tag LIKE '%%%%=%s|%%%%'"
+                                "             OR cve LIKE '%%%%%s%%%%')"
                                 " OR description = '%s')",
+                                quoted_search_phrase,
                                 quoted_search_phrase,
                                 quoted_search_phrase,
                                 quoted_search_phrase,
@@ -21634,8 +21636,10 @@ where_search_phrase (const char* search_phrase, int exact)
                                 " OR host LIKE '%%%%%s%%%%'"
                                 " OR nvt LIKE '%%%%%s%%%%'"
                                 " OR nvt IN (SELECT oid FROM nvts"
-                                "            WHERE tag LIKE '%%=%%%%%s%%|%%')"
+                                "            WHERE tag LIKE '%%=%%%%%s%%%%|%%'"
+                                "             OR cve LIKE '%%%%%s%%%%')"
                                 " OR description LIKE '%%%%%s%%%%')",
+                                quoted_search_phrase,
                                 quoted_search_phrase,
                                 quoted_search_phrase,
                                 quoted_search_phrase,

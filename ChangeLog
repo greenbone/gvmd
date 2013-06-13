@@ -1,3 +1,8 @@
+2013-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (where_search_phrase): Apply search on nvt cve value
+	too.
+
 2013-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* INSTALL: Update section about creating first user.
