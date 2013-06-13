@@ -1,3 +1,8 @@
+2013-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_get_iterator): Explain permission case.
+	(count): Add special case for owner clause of permissions.
+
 2013-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_migrators.h: Add missing license and copyright at start of

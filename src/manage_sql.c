@@ -3863,6 +3863,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                                         "   WHERE users.uuid = '%s')))",
                                         current_credentials.uuid);
       else if (strcmp (type, "permission") == 0)
+        /* A user may see permissions that involve the user. */
         owned_clause
          = g_strdup_printf (" ((%ss.owner = (SELECT ROWID FROM users"
                             "                WHERE users.uuid = '%s'))"
@@ -4033,7 +4034,43 @@ count (const char *type, const get_data_t *get,
 
   clause = filter_clause (type, filter ? filter : get->filter, extra_columns,
                           get->trash, NULL, NULL, NULL, NULL);
-  if (owned)
+  if (strcmp (type, "permission") == 0)
+    /* A user may see permissions that involve the user. */
+    owned_clause
+     = g_strdup_printf (" ((%ss.owner = (SELECT ROWID FROM users"
+                        "                WHERE users.uuid = '%s'))"
+                        "  OR (%ss.subject_type = 'user'"
+                        "      AND %ss.subject"
+                        "          = (SELECT ROWID FROM users"
+                        "             WHERE users.uuid = '%s'))"
+                        "  OR (%ss.subject_type = 'group'"
+                        "      AND %ss.subject"
+                        "          IN (SELECT DISTINCT `group`"
+                        "              FROM group_users"
+                        "              WHERE user = (SELECT ROWID"
+                        "                            FROM users"
+                        "                            WHERE users.uuid"
+                        "                                  = '%s')))"
+                        "  OR (%ss.subject_type = 'role'"
+                        "      AND %ss.subject"
+                        "          IN (SELECT DISTINCT role"
+                        "              FROM role_users"
+                        "              WHERE user = (SELECT ROWID"
+                        "                            FROM users"
+                        "                            WHERE users.uuid"
+                        "                                  = '%s'))))",
+                        type,
+                        current_credentials.uuid,
+                        type,
+                        type,
+                        current_credentials.uuid,
+                        type,
+                        type,
+                        current_credentials.uuid,
+                        type,
+                        type,
+                        current_credentials.uuid);
+  else if (owned)
     owned_clause = g_strdup_printf ("((%ss.owner IS NULL) OR (%ss.owner ="
                                     " (SELECT ROWID FROM users"
                                     " WHERE users.uuid = '%s')))",
@@ -4833,7 +4870,6 @@ manage_migrate (GSList *log_config, const gchar *database)
   return 0;
 }
 
-
 
 /**
  * @brief Encrypt, re-encrypt or decrypt all credentials
@@ -4985,7 +5021,6 @@ manage_encrypt_all_credentials (const gchar *database, gboolean decrypt_flag)
 
   return ret;
 }
-
 
 
 /* Collation. */
