@@ -1,5 +1,10 @@
 2013-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_migrators.h: Add missing license and copyright at start of
+	file.
+
+2013-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	3nd patch, move migrators functions.
 
 	* src/manage.h, src/manage_sql.c: Remove some preprocessor defintions
