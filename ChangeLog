@@ -1,5 +1,22 @@
 2013-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Move migrators functions to manage_migrators.c
+
+	* src/CMakeLists.txt: Add manage_migrators.c file.
+
+	* src/manage.h: Add internal types, preprocessor defintions and external
+	variables needed by manage_migrators.c from manage_sql.c. Add
+	set_db_version header.
+
+	* src/manage_sql.c: Remove internal types, preprocessor definitions and
+	external variables needed by manage_migrators.c (See manage.h)
+	Remove migrator functions, add their headers.
+
+	* src/manage_migrators.c: New file. Add migrator functions from
+	manage_sql.c
+
+2013-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (validate_results_port): New function.
 	(create_note, modify_note, create_override, modify_override): Validate
 	port value.
