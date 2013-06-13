@@ -18311,7 +18311,10 @@ where_search_phrase (const char* search_phrase, int exact)
                                 " AND (port = '%s'"
                                 " OR host = '%s'"
                                 " OR nvt = '%s'"
+                                " OR nvt IN (SELECT oid FROM nvts"
+                                "            WHERE tag LIKE '%%=%s|%%')"
                                 " OR description = '%s')",
+                                quoted_search_phrase,
                                 quoted_search_phrase,
                                 quoted_search_phrase,
                                 quoted_search_phrase,
@@ -18321,7 +18324,10 @@ where_search_phrase (const char* search_phrase, int exact)
                                 " AND (port LIKE '%%%%%s%%%%'"
                                 " OR host LIKE '%%%%%s%%%%'"
                                 " OR nvt LIKE '%%%%%s%%%%'"
+                                " OR nvt IN (SELECT oid FROM nvts"
+                                "            WHERE tag LIKE '%%=%%%%%s%%|%%')"
                                 " OR description LIKE '%%%%%s%%%%')",
+                                quoted_search_phrase,
                                 quoted_search_phrase,
                                 quoted_search_phrase,
                                 quoted_search_phrase,
