@@ -1,3 +1,17 @@
+2013-06-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c: Remove migrator related functions, types and
+	definitions.
+
+	* src/manage_migrators.c: Add migrator related functions and definitions
+	from manage_sql.c. Add openvas_logging.h include.
+
+	* src/manage_migrators.h: Add function prototypes. Add migrator_t struct
+	definition. Add glib include.
+
+	* src/manage.h: Include manage_migrators.h. Remove redundant
+	manage_migrate_needs_timezone header.
+
 2013-06-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_get_iterator): Explain permission case.

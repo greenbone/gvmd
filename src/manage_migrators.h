@@ -26,6 +26,19 @@
 #ifndef OPENVAS_MANAGER_MIGRATORS_H
 #define OPENVAS_MANAGER_MIGRATORS_H
 
+#include <glib.h>
+
+/* Types */
+
+/**
+ * @brief A migrator.
+ */
+typedef struct
+{
+  int version;         ///< Version that the migrator produces.
+  int (*function) ();  ///< Function that does the migration.  NULL if too hard.
+} migrator_t;
+
 /* Migrator Prototypes */
 
 int
@@ -273,5 +286,16 @@ migrate_80_to_81 ();
 
 int
 migrate_81_to_82 ();
+
+/* Function prototypes */
+
+gboolean
+manage_migrate_needs_timezone (GSList *, const gchar *);
+
+int
+migrate_is_available (int, int);
+
+int
+manage_migrate (GSList *, const gchar *);
 
 #endif /* not OPENVAS_MANAGER_MIGRATORS_H */

@@ -31,6 +31,8 @@
 #include <glib.h>
 #include <gnutls/gnutls.h>
 
+#include "manage_migrators.h"
+
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/base/array.h> /* for array_t */
 #include <openvas/base/certificate.h> /* for certificate_t */
@@ -122,9 +124,6 @@ set_db_version (int version);
 
 char *
 manage_port_name (int, const char *);
-
-gboolean
-manage_migrate_needs_timezone (GSList *, const gchar *);
 
 int
 manage_migrate (GSList*, const gchar*);
