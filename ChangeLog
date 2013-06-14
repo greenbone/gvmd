@@ -1,5 +1,10 @@
 2013-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (resource_count): Use permission "any" instead of a
+	specific GET command.
+
+2013-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (where_owned): New function.  Body init_get_iterator.
 	(init_get_iterator): Call where_owned to get the owner clause.
 	(count): Call where_owned to get the full owner owner clause.
