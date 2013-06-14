@@ -1,5 +1,17 @@
 2013-06-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.h: Remove manage_migrators.h include. Add
+	manage_migrate_needs_timezone header.
+
+	* src/manage_migrators.c: Remove manage_migrators.h include. Add
+	migrator_t typedef and move down database_migrators array.
+
+	* src/manage_migrators.h: Remove file.
+
+	* src/manage_sql.c: Remove manage_migrators.h include.
+
+2013-06-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c: Remove migrator related functions, types and
 	definitions.
 

@@ -31,7 +31,6 @@
 #include <glib.h>
 #include <gnutls/gnutls.h>
 
-#include "manage_migrators.h"
 
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/base/array.h> /* for array_t */
@@ -3155,5 +3154,9 @@ xsl_transform (gchar *, gchar *, gchar **, gchar **);
 
 int
 valid_db_resource_type (const char*);
+
+gboolean
+manage_migrate_needs_timezone (GSList *, const gchar *);
+
 
 #endif /* not OPENVAS_MANAGER_MANAGE_H */

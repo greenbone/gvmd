@@ -43,7 +43,6 @@
 #include <ctype.h>
 #include <dirent.h>
 
-#include "manage_migrators.h"
 #include "manage_sql.h"
 #include "sql.h"
 #include "tracef.h"
@@ -52,96 +51,18 @@
 #include <openvas/base/openvas_file.h>
 #include <openvas/misc/openvas_logging.h>
 
+/* Types */
 
 /**
- * @brief Array of database version migrators.
+ * @brief A migrator.
  */
-static migrator_t database_migrators[]
- = {{0, NULL},
-    {1, migrate_0_to_1},
-    {2, migrate_1_to_2},
-    {3, migrate_2_to_3},
-    {4, migrate_3_to_4},
-    {5, migrate_4_to_5},
-    {6, migrate_5_to_6},
-    {7, migrate_6_to_7},
-    {8, migrate_7_to_8},
-    {9, migrate_8_to_9},
-    {10, migrate_9_to_10},
-    {11, migrate_10_to_11},
-    {12, migrate_11_to_12},
-    {13, migrate_12_to_13},
-    {14, migrate_13_to_14},
-    {15, migrate_14_to_15},
-    {16, migrate_15_to_16},
-    {17, migrate_16_to_17},
-    {18, migrate_17_to_18},
-    {19, migrate_18_to_19},
-    {20, migrate_19_to_20},
-    {21, migrate_20_to_21},
-    {22, migrate_21_to_22},
-    {23, migrate_22_to_23},
-    {24, migrate_23_to_24},
-    {25, migrate_24_to_25},
-    {26, migrate_25_to_26},
-    {27, migrate_26_to_27},
-    {28, migrate_27_to_28},
-    {29, migrate_28_to_29},
-    {30, migrate_29_to_30},
-    {31, migrate_30_to_31},
-    {32, migrate_31_to_32},
-    {33, migrate_32_to_33},
-    {34, migrate_33_to_34},
-    {35, migrate_34_to_35},
-    {36, migrate_35_to_36},
-    {37, migrate_36_to_37},
-    {38, migrate_37_to_38},
-    {39, migrate_38_to_39},
-    {40, migrate_39_to_40},
-    {41, migrate_40_to_41},
-    {42, migrate_41_to_42},
-    {43, migrate_42_to_43},
-    {44, migrate_43_to_44},
-    {45, migrate_44_to_45},
-    {46, migrate_45_to_46},
-    {47, migrate_46_to_47},
-    {48, migrate_47_to_48},
-    {49, migrate_48_to_49},
-    {50, migrate_49_to_50},
-    {51, migrate_50_to_51},
-    {52, migrate_51_to_52},
-    {53, migrate_52_to_53},
-    {54, migrate_53_to_54},
-    {55, migrate_54_to_55},
-    {56, migrate_55_to_56},
-    {57, migrate_56_to_57},
-    {58, migrate_57_to_58},
-    {59, migrate_58_to_59},
-    {60, migrate_59_to_60},
-    {61, migrate_60_to_61},
-    {62, migrate_61_to_62},
-    {63, migrate_62_to_63},
-    {64, migrate_63_to_64},
-    {65, migrate_64_to_65},
-    {66, migrate_65_to_66},
-    {67, migrate_66_to_67},
-    {68, migrate_67_to_68},
-    {69, migrate_68_to_69},
-    {70, migrate_69_to_70},
-    {71, migrate_70_to_71},
-    {72, migrate_71_to_72},
-    {73, migrate_72_to_73},
-    {74, migrate_73_to_74},
-    {75, migrate_74_to_75},
-    {76, migrate_75_to_76},
-    {77, migrate_76_to_77},
-    {78, migrate_77_to_78},
-    {79, migrate_78_to_79},
-    {80, migrate_79_to_80},
-    {81, migrate_80_to_81},
-    {82, migrate_81_to_82},
-    /* End marker. */
-    {-1, NULL}};
+typedef struct
+{
+  int version;         ///< Version that the migrator produces.
+  int (*function) ();  ///< Function that does the migration.  NULL if too hard.
+} migrator_t;
+
+/* Functions */
 
 /**
  * @brief Create all tables, using the version 4 schema.
@@ -6874,6 +6795,96 @@ migrate_81_to_82 ()
 
   return 0;
 }
+
+/**
+ * @brief Array of database version migrators.
+ */
+static migrator_t database_migrators[]
+ = {{0, NULL},
+    {1, migrate_0_to_1},
+    {2, migrate_1_to_2},
+    {3, migrate_2_to_3},
+    {4, migrate_3_to_4},
+    {5, migrate_4_to_5},
+    {6, migrate_5_to_6},
+    {7, migrate_6_to_7},
+    {8, migrate_7_to_8},
+    {9, migrate_8_to_9},
+    {10, migrate_9_to_10},
+    {11, migrate_10_to_11},
+    {12, migrate_11_to_12},
+    {13, migrate_12_to_13},
+    {14, migrate_13_to_14},
+    {15, migrate_14_to_15},
+    {16, migrate_15_to_16},
+    {17, migrate_16_to_17},
+    {18, migrate_17_to_18},
+    {19, migrate_18_to_19},
+    {20, migrate_19_to_20},
+    {21, migrate_20_to_21},
+    {22, migrate_21_to_22},
+    {23, migrate_22_to_23},
+    {24, migrate_23_to_24},
+    {25, migrate_24_to_25},
+    {26, migrate_25_to_26},
+    {27, migrate_26_to_27},
+    {28, migrate_27_to_28},
+    {29, migrate_28_to_29},
+    {30, migrate_29_to_30},
+    {31, migrate_30_to_31},
+    {32, migrate_31_to_32},
+    {33, migrate_32_to_33},
+    {34, migrate_33_to_34},
+    {35, migrate_34_to_35},
+    {36, migrate_35_to_36},
+    {37, migrate_36_to_37},
+    {38, migrate_37_to_38},
+    {39, migrate_38_to_39},
+    {40, migrate_39_to_40},
+    {41, migrate_40_to_41},
+    {42, migrate_41_to_42},
+    {43, migrate_42_to_43},
+    {44, migrate_43_to_44},
+    {45, migrate_44_to_45},
+    {46, migrate_45_to_46},
+    {47, migrate_46_to_47},
+    {48, migrate_47_to_48},
+    {49, migrate_48_to_49},
+    {50, migrate_49_to_50},
+    {51, migrate_50_to_51},
+    {52, migrate_51_to_52},
+    {53, migrate_52_to_53},
+    {54, migrate_53_to_54},
+    {55, migrate_54_to_55},
+    {56, migrate_55_to_56},
+    {57, migrate_56_to_57},
+    {58, migrate_57_to_58},
+    {59, migrate_58_to_59},
+    {60, migrate_59_to_60},
+    {61, migrate_60_to_61},
+    {62, migrate_61_to_62},
+    {63, migrate_62_to_63},
+    {64, migrate_63_to_64},
+    {65, migrate_64_to_65},
+    {66, migrate_65_to_66},
+    {67, migrate_66_to_67},
+    {68, migrate_67_to_68},
+    {69, migrate_68_to_69},
+    {70, migrate_69_to_70},
+    {71, migrate_70_to_71},
+    {72, migrate_71_to_72},
+    {73, migrate_72_to_73},
+    {74, migrate_73_to_74},
+    {75, migrate_74_to_75},
+    {76, migrate_75_to_76},
+    {77, migrate_76_to_77},
+    {78, migrate_77_to_78},
+    {79, migrate_78_to_79},
+    {80, migrate_79_to_80},
+    {81, migrate_80_to_81},
+    {82, migrate_81_to_82},
+    /* End marker. */
+    {-1, NULL}};
 
 /**
  * @brief Check whether the migration needs the real timezone.

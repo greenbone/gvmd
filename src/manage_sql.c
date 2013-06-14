@@ -35,7 +35,6 @@
 #define _GNU_SOURCE
 
 #include "manage_sql.h"
-#include "manage_migrators.h"
 #include "lsc_user.h"
 #include "sql.h"
 #include "tracef.h"
