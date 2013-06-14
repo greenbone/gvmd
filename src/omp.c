@@ -12927,7 +12927,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (strlen (create_config_data->name) == 0
-                   && strlen (create_config_data->copy) == 0)
+                   && (create_config_data->copy == NULL
+                       || strlen (create_config_data->copy) == 0))
             {
               g_log ("event config", G_LOG_LEVEL_MESSAGE,
                      "Scan config could not be created");
