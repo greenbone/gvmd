@@ -3676,88 +3676,21 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
 }
 
 /**
- * @brief Initialise a GET iterator, including observed resources.
+ * @brief Initialise a target iterator, limited to the current user's targets.
  *
- * @param[in]  iterator        Iterator.
  * @param[in]  type            Type of resource.
  * @param[in]  get             GET data.
- * @param[in]  columns         Columns for SQL.
- * @param[in]  trash_columns   Columns for SQL trash case.
- * @param[in]  filter_columns  Columns for filter.
- * @param[in]  distinct        Whether the query should be distinct.  Skipped
- *                             for trash and single resource.
- * @param[in]  extra_tables    Join tables.  Skipped for trash and single
- *                             resource.
- * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
- *                             resource.
  * @param[in]  owned           Only get items owned by the current user.
+ * @param[in]  resource        Resource.
+ * @param[in]  permissions     Permissions.
  *
- * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
- *         error.
+ * @return Newly allocated owned clause.
  */
-static int
-init_get_iterator (iterator_t* iterator, const char *type,
-                   const get_data_t *get, const char *columns,
-                   const char *trash_columns, const char **filter_columns,
-                   int distinct, const char *extra_tables,
-                   const char *extra_where, int owned)
+gchar *
+where_owned (const char *type, const get_data_t *get, int owned,
+             resource_t resource, array_t *permissions)
 {
-  int first, max;
-  gchar *clause, *order, *filter, *owned_clause;
-  array_t *permissions;
-  resource_t resource = 0;
-
-  assert (get);
-
-  if (columns == NULL)
-    {
-      assert (0);
-      return -1;
-    }
-
-  if (get->id && owned && (current_credentials.uuid == NULL))
-    {
-      gchar *quoted_uuid = sql_quote (get->id);
-      switch (sql_int64 (&resource, 0, 0,
-                         "SELECT ROWID FROM %ss WHERE uuid = '%s';",
-                         type, quoted_uuid))
-        {
-          case 0:
-            break;
-          case 1:        /* Too few rows in result of query. */
-            g_free (quoted_uuid);
-            return 1;
-            break;
-          default:       /* Programming error. */
-            assert (0);
-          case -1:
-            g_free (quoted_uuid);
-            return -1;
-            break;
-        }
-      g_free (quoted_uuid);
-    }
-  else if (get->id && owned)
-    {
-      if (find_resource_for_actions (type, get->id, &resource, get->actions))
-        return -1;
-      if (resource == 0)
-        return 1;
-    }
-
-  if (get->filt_id && strcmp (get->filt_id, "0"))
-    {
-      filter = filter_term (get->filt_id);
-      if (filter == NULL)
-        return 2;
-    }
-  else
-    filter = NULL;
-
-  clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          get->trash, &order, &first, &max, &permissions);
-
-  g_free (filter);
+  gchar *owned_clause;
 
   if (owned)
     {
@@ -3766,25 +3699,25 @@ init_get_iterator (iterator_t* iterator, const char *type,
       int index;
 
       permission_or = g_string_new ("");
-      for (index = 0; index < permissions->len; index++)
-        {
-          gchar *permission;
-          permission = (gchar*) g_ptr_array_index (permissions, index);
-          if (strcasecmp (permission, "any") == 0)
-            {
-              g_string_free (permission_or, TRUE);
-              permission_or = g_string_new ("1");
-              index = 1;
-              break;
-            }
-          if (index == 0)
-            g_string_append_printf (permission_or, "name = '%s'", permission);
-          else
-            g_string_append_printf (permission_or, " OR name = '%s'",
-                                    permission);
-        }
-
-      array_free (permissions);
+      index = 0;
+      if (permissions)
+        for (; index < permissions->len; index++)
+          {
+            gchar *permission;
+            permission = (gchar*) g_ptr_array_index (permissions, index);
+            if (strcasecmp (permission, "any") == 0)
+              {
+                g_string_free (permission_or, TRUE);
+                permission_or = g_string_new ("1");
+                index = 1;
+                break;
+              }
+            if (index == 0)
+              g_string_append_printf (permission_or, "name = '%s'", permission);
+            else
+              g_string_append_printf (permission_or, " OR name = '%s'",
+                                      permission);
+          }
 
       /* Check on index is because default is owner and global, for backward
        * compatibility. */
@@ -3922,6 +3855,97 @@ init_get_iterator (iterator_t* iterator, const char *type,
   else
    owned_clause = g_strdup (" 1");
 
+  return owned_clause;
+}
+
+/**
+ * @brief Initialise a GET iterator, including observed resources.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  type            Type of resource.
+ * @param[in]  get             GET data.
+ * @param[in]  columns         Columns for SQL.
+ * @param[in]  trash_columns   Columns for SQL trash case.
+ * @param[in]  filter_columns  Columns for filter.
+ * @param[in]  distinct        Whether the query should be distinct.  Skipped
+ *                             for trash and single resource.
+ * @param[in]  extra_tables    Join tables.  Skipped for trash and single
+ *                             resource.
+ * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
+ *                             resource.
+ * @param[in]  owned           Only get items owned by the current user.
+ *
+ * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
+ *         error.
+ */
+static int
+init_get_iterator (iterator_t* iterator, const char *type,
+                   const get_data_t *get, const char *columns,
+                   const char *trash_columns, const char **filter_columns,
+                   int distinct, const char *extra_tables,
+                   const char *extra_where, int owned)
+{
+  int first, max;
+  gchar *clause, *order, *filter, *owned_clause;
+  array_t *permissions;
+  resource_t resource = 0;
+
+  assert (get);
+
+  if (columns == NULL)
+    {
+      assert (0);
+      return -1;
+    }
+
+  if (get->id && owned && (current_credentials.uuid == NULL))
+    {
+      gchar *quoted_uuid = sql_quote (get->id);
+      switch (sql_int64 (&resource, 0, 0,
+                         "SELECT ROWID FROM %ss WHERE uuid = '%s';",
+                         type, quoted_uuid))
+        {
+          case 0:
+            break;
+          case 1:        /* Too few rows in result of query. */
+            g_free (quoted_uuid);
+            return 1;
+            break;
+          default:       /* Programming error. */
+            assert (0);
+          case -1:
+            g_free (quoted_uuid);
+            return -1;
+            break;
+        }
+      g_free (quoted_uuid);
+    }
+  else if (get->id && owned)
+    {
+      if (find_resource_for_actions (type, get->id, &resource, get->actions))
+        return -1;
+      if (resource == 0)
+        return 1;
+    }
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
+                          get->trash, &order, &first, &max, &permissions);
+
+  g_free (filter);
+
+  owned_clause = where_owned (type, get, owned, resource, permissions);
+
+  array_free (permissions);
+
   if (resource && get->trash)
     init_iterator (iterator,
                    "SELECT %s"
@@ -4016,6 +4040,7 @@ count (const char *type, const get_data_t *get,
   int ret;
   gchar *clause, *owned_clause;
   gchar *filter;
+  array_t *permissions;
 
   assert (current_credentials.uuid);
   assert (get);
@@ -4029,55 +4054,14 @@ count (const char *type, const get_data_t *get,
   else
     filter = NULL;
 
-  // FIX owner,permissions?
-
   clause = filter_clause (type, filter ? filter : get->filter, extra_columns,
-                          get->trash, NULL, NULL, NULL, NULL);
-  if (strcmp (type, "permission") == 0)
-    /* A user may see permissions that involve the user. */
-    owned_clause
-     = g_strdup_printf (" ((%ss.owner = (SELECT ROWID FROM users"
-                        "                WHERE users.uuid = '%s'))"
-                        "  OR (%ss.subject_type = 'user'"
-                        "      AND %ss.subject"
-                        "          = (SELECT ROWID FROM users"
-                        "             WHERE users.uuid = '%s'))"
-                        "  OR (%ss.subject_type = 'group'"
-                        "      AND %ss.subject"
-                        "          IN (SELECT DISTINCT `group`"
-                        "              FROM group_users"
-                        "              WHERE user = (SELECT ROWID"
-                        "                            FROM users"
-                        "                            WHERE users.uuid"
-                        "                                  = '%s')))"
-                        "  OR (%ss.subject_type = 'role'"
-                        "      AND %ss.subject"
-                        "          IN (SELECT DISTINCT role"
-                        "              FROM role_users"
-                        "              WHERE user = (SELECT ROWID"
-                        "                            FROM users"
-                        "                            WHERE users.uuid"
-                        "                                  = '%s'))))",
-                        type,
-                        current_credentials.uuid,
-                        type,
-                        type,
-                        current_credentials.uuid,
-                        type,
-                        type,
-                        current_credentials.uuid,
-                        type,
-                        type,
-                        current_credentials.uuid);
-  else if (owned)
-    owned_clause = g_strdup_printf ("((%ss.owner IS NULL) OR (%ss.owner ="
-                                    " (SELECT ROWID FROM users"
-                                    " WHERE users.uuid = '%s')))",
-                                    type,
-                                    type,
-                                    current_credentials.uuid);
-  else
-    owned_clause = g_strdup ("1");
+                          get->trash, NULL, NULL, NULL, &permissions);
+
+  g_free (filter);
+
+  owned_clause = where_owned (type, get, owned, 0, permissions);
+
+  array_free (permissions);
 
   if (get->actions)
     g_warning ("%s: get->actions given", __FUNCTION__);
@@ -11376,25 +11360,31 @@ authenticate (credentials_t* credentials)
 int
 resource_count (const char *type, const get_data_t *get)
 {
+  int ret;
   get_data_t count_get;
 
   memset (&count_get, '\0', sizeof (count_get));
   count_get.trash = get->trash;
-  count_get.filter = "rows=-1 first=1";
+  count_get.filter = g_strdup_printf ("rows=-1 first=1 permission=get_%ss",
+                                      type);
   count_get.actions = "g";
 
-  return count (get->subtype ? get->subtype : type,
-                &count_get, "1", NULL, 0, NULL,
-                strcmp (type, "task")
-                 ? NULL
-                 : (get->id
-                    && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
-                        == 0))
-                    ? " AND hidden = 1"
-                    : (get->trash
-                        ? " AND hidden = 2"
-                        : " AND hidden = 0"),
-                type_owned (type));
+  ret = count (get->subtype ? get->subtype : type,
+               &count_get, "1", NULL, 0, NULL,
+               strcmp (type, "task")
+                ? NULL
+                : (get->id
+                   && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
+                       == 0))
+                   ? " AND hidden = 1"
+                   : (get->trash
+                       ? " AND hidden = 2"
+                       : " AND hidden = 0"),
+               type_owned (type));
+
+  g_free (count_get.filter);
+
+  return ret;
 }
 
 /**

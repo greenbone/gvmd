@@ -1,3 +1,11 @@
+2013-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (where_owned): New function.  Body init_get_iterator.
+	(init_get_iterator): Call where_owned to get the owner clause.
+	(count): Call where_owned to get the full owner owner clause.
+	(resource_count): Add permission keyword to the filter, so that the
+	count includes observed resources.
+
 2013-06-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (CASE_DELETE): Use actual resource type in error
