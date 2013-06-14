@@ -1,3 +1,8 @@
+2013-06-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (CASE_DELETE): Use actual resource type in error
+	in "permission denied" error message.
+
 2013-06-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.h: Remove manage_migrators.h include. Add

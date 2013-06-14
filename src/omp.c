@@ -10346,10 +10346,11 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
             break;                                                          \
           case 99:                                                          \
             SEND_TO_CLIENT_OR_FAIL                                          \
-             (XML_ERROR_SYNTAX ("delete_filter",                            \
+             (XML_ERROR_SYNTAX ("delete_" G_STRINGIFY (type),               \
                                 "Permission denied"));                      \
-            g_log ("event filter", G_LOG_LEVEL_MESSAGE,                     \
-                   "Filter could not be deleted");                          \
+            g_log ("event " G_STRINGIFY (type), G_LOG_LEVEL_MESSAGE,        \
+                   capital " %s could not be deleted",                      \
+                   delete_ ## type ## _data-> type ## _id);                 \
             break;                                                          \
           default:                                                          \
             SEND_TO_CLIENT_OR_FAIL                                          \
