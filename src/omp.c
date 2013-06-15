@@ -15586,8 +15586,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               next_time = task_schedule_next_time_tz (index);
 
               response = g_strdup_printf
-                          ("<owner><name>%s</name></owner>"
-                           "<config id=\"%s\">"
+                          ("<config id=\"%s\">"
                            "<name>%s</name>"
                            "<trash>%i</trash>"
                            "</config>"
@@ -15612,7 +15611,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "<trash>%i</trash>"
                            "</schedule>"
                            "%s%s%s",
-                           owner ? owner : "",
                            config_uuid ? config_uuid : "",
                            config ? config : "",
                            task_config_in_trash (index),
