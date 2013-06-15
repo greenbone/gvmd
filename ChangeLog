@@ -1,5 +1,10 @@
 2013-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Add support for owner=any, now that
+	there is actually an owner column in the GET selections.
+
+2013-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Remove OWNER from GET_TASKS,
 	because SEND_GET_COMMON sends it now.
 

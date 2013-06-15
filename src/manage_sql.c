@@ -2828,7 +2828,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                       type_term);
               g_free (type_term);
             }
-          else
+          else if (strcmp (keyword->column, "owner")
+                   || strcmp (keyword->string, "any"))
             {
               quoted_keyword = sql_quote (keyword->string);
               quoted_column = ret == 2
@@ -2851,6 +2852,11 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         quoted_keyword);
               g_free (quoted_column);
             }
+          else
+            g_string_append_printf (clause,
+                                    "%s(1",
+                                    get_join (first_keyword, last_was_and,
+                                              last_was_not));
         }
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
         {
