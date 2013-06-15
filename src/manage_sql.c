@@ -3071,10 +3071,12 @@ filter_clause (const char* type, const char* filter, const char **columns,
  * @brief Filter columns for GET iterator.
  */
 #define GET_ITERATOR_FILTER_COLUMNS "uuid", "name", "comment", \
- "created", "modified"
+ "created", "modified", "_owner"
 
 /**
  * @brief Columns for GET iterator.
+ *
+ * @param[in]  prefix  Column prefix.
  */
 #define GET_ITERATOR_COLUMNS_PREFIX(prefix)                           \
   prefix "ROWID, " prefix "uuid, " prefix "name, " prefix "comment,"  \
@@ -3085,13 +3087,18 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
 /**
  * @brief Columns for GET iterator.
+ *
+ * @param[in]  table  Table.
  */
-#define GET_ITERATOR_COLUMNS GET_ITERATOR_COLUMNS_PREFIX("")
+#define GET_ITERATOR_COLUMNS(table) GET_ITERATOR_COLUMNS_PREFIX("") ","        \
+  " (SELECT name FROM users"                                                   \
+  "  WHERE users.ROWID = " G_STRINGIFY (table) ".owner)"                       \
+  " AS _owner"
 
 /**
  * @brief Number of columns for GET iterator.
  */
-#define GET_ITERATOR_COLUMN_COUNT 8
+#define GET_ITERATOR_COLUMN_COUNT 9
 
 /**
  * @brief Check whether a resource type name is valid.
@@ -6031,14 +6038,15 @@ alert_method (alert_t alert)
  * @brief Alert iterator columns.
  */
 #define ALERT_ITERATOR_COLUMNS                                                \
-  GET_ITERATOR_COLUMNS ", event, condition, method, filter, "                 \
+  GET_ITERATOR_COLUMNS (alerts) ", event, condition, method, filter, "         \
   G_STRINGIFY (LOCATION_TABLE)
 
 /**
  * @brief Alert iterator columns for trash case.
  */
 #define ALERT_ITERATOR_TRASH_COLUMNS                                          \
-  GET_ITERATOR_COLUMNS ", event, condition, method, filter, filter_location"
+  GET_ITERATOR_COLUMNS (alerts) ", event, condition, method, filter,"         \
+  " filter_location"
 
 /**
  * @brief Count the number of alerts.
@@ -8399,7 +8407,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * @brief Task iterator columns.
  */
 #define TASK_ITERATOR_COLUMNS(overrides)                   \
-  GET_ITERATOR_COLUMNS ", run_status,"                     \
+  GET_ITERATOR_COLUMNS (tasks) ", run_status,"             \
   " (SELECT count(*) FROM reports"                         \
   /* TODO 1 == TASK_STATUS_DONE */                         \
   "  WHERE task = tasks.ROWID AND scan_run_status = 1)"    \
@@ -8426,7 +8434,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * @brief Task iterator columns for trash case.
  */
 #define TASK_ITERATOR_TRASH_COLUMNS(overrides)             \
-  GET_ITERATOR_COLUMNS ", run_status,"                     \
+  GET_ITERATOR_COLUMNS (tasks) ", run_status,"             \
   " (SELECT count(*) FROM reports"                         \
   /* TODO 1 == TASK_STATUS_DONE */                         \
   "  WHERE task = tasks.ROWID AND scan_run_status = 1)"    \
@@ -26241,7 +26249,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
  * @brief Target iterator columns.
  */
 #define TARGET_ITERATOR_COLUMNS                             \
-  GET_ITERATOR_COLUMNS ", hosts, lsc_credential,"           \
+  GET_ITERATOR_COLUMNS (targets) ", hosts, lsc_credential," \
   " ssh_port, smb_lsc_credential, port_range, 0, 0,"        \
   " (SELECT uuid FROM port_lists"                           \
   "  WHERE port_lists.ROWID = port_range),"                 \
@@ -26261,24 +26269,24 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 /**
  * @brief Target iterator columns for trash case.
  */
-#define TARGET_ITERATOR_TRASH_COLUMNS                         \
-  GET_ITERATOR_COLUMNS ", hosts, lsc_credential,"             \
-  " ssh_port, smb_lsc_credential, port_range, ssh_location,"  \
-  " smb_location,"                                            \
-  " (CASE"                                                    \
-  "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH) \
-  "  THEN (SELECT uuid FROM port_lists_trash"                 \
-  "        WHERE port_lists_trash.ROWID = port_range)"        \
-  "  ELSE (SELECT uuid FROM port_lists"                       \
-  "        WHERE port_lists.ROWID = port_range)"              \
-  "  END),"                                                   \
-  " (CASE"                                                    \
-  "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH) \
-  "  THEN (SELECT name FROM port_lists_trash"                 \
-  "        WHERE port_lists_trash.ROWID = port_range)"        \
-  "  ELSE (SELECT name FROM port_lists"                       \
-  "        WHERE port_lists.ROWID = port_range)"              \
-  "  END),"                                                   \
+#define TARGET_ITERATOR_TRASH_COLUMNS                             \
+  GET_ITERATOR_COLUMNS (targets_trash) ", hosts, lsc_credential," \
+  " ssh_port, smb_lsc_credential, port_range, ssh_location,"      \
+  " smb_location,"                                                \
+  " (CASE"                                                        \
+  "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)     \
+  "  THEN (SELECT uuid FROM port_lists_trash"                     \
+  "        WHERE port_lists_trash.ROWID = port_range)"            \
+  "  ELSE (SELECT uuid FROM port_lists"                           \
+  "        WHERE port_lists.ROWID = port_range)"                  \
+  "  END),"                                                       \
+  " (CASE"                                                        \
+  "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)     \
+  "  THEN (SELECT name FROM port_lists_trash"                     \
+  "        WHERE port_lists_trash.ROWID = port_range)"            \
+  "  ELSE (SELECT name FROM port_lists"                           \
+  "        WHERE port_lists.ROWID = port_range)"                  \
+  "  END),"                                                       \
   " port_list_location = " G_STRINGIFY (LOCATION_TRASH)
 
 /**
@@ -28078,17 +28086,18 @@ delete_config (const char *config_id, int ultimate)
  * @brief Scan config iterator columns.
  */
 #define CONFIG_ITERATOR_COLUMNS                                               \
-  GET_ITERATOR_COLUMNS ", nvt_selector, family_count AS families_total,"      \
-  " nvt_count AS nvts_total, families_growing AS families_trend,"             \
+  GET_ITERATOR_COLUMNS (configs) ", nvt_selector,"                            \
+  " family_count AS families_total, nvt_count AS nvts_total,"                 \
+  " families_growing AS families_trend,"                                      \
   " nvts_growing AS nvts_trend"
 
 /**
  * @brief Scan config iterator columns for trash case.
  */
 #define CONFIG_ITERATOR_TRASH_COLUMNS                                         \
-  GET_ITERATOR_COLUMNS ", nvt_selector, family_count AS families_total,"      \
-  " nvt_count AS nvts_total, families_growing AS families_trend,"             \
-  " nvts_growing AS nvts_trend"
+  GET_ITERATOR_COLUMNS (configs_trash) ", nvt_selector,"                      \
+  " family_count AS families_total, nvt_count AS nvts_total,"                 \
+  " families_growing AS families_trend, nvts_growing AS nvts_trend"
 
 /**
  * @brief Count the number of scan configs.
@@ -29371,18 +29380,18 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 /**
  * @brief NVT iterator columns.
  */
-#define NVT_ITERATOR_COLUMNS                                           \
-  GET_ITERATOR_COLUMNS ", oid, version, name, summary, description,"   \
-  " copyright, cve, bid, xref, tag, sign_key_ids, category, family,"   \
-  " cvss_base, risk_factor"
+#define NVT_ITERATOR_COLUMNS                                                \
+  GET_ITERATOR_COLUMNS_PREFIX ("") ", '', oid, version, name, summary,"     \
+  " description, copyright, cve, bid, xref, tag, sign_key_ids, category,"   \
+  " family, cvss_base, risk_factor"
 
 /**
  * @brief NVT iterator columns.
  */
-#define NVT_ITERATOR_COLUMNS_NVTS                                              \
-  GET_ITERATOR_COLUMNS_PREFIX("nvts.") ", oid, version, nvts.name, summary,"   \
-  " description, copyright, cve, bid, xref, tag, sign_key_ids, category,"      \
-  " nvts.family, cvss_base, risk_factor"
+#define NVT_ITERATOR_COLUMNS_NVTS                                             \
+  GET_ITERATOR_COLUMNS_PREFIX("nvts.") ", '', oid, version, nvts.name,"       \
+  " summary, description, copyright, cve, bid, xref, tag, sign_key_ids,"      \
+  " category, nvts.family, cvss_base, risk_factor"
 
 /**
  * @brief Initialise an NVT iterator.
@@ -32218,15 +32227,15 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
  * @brief LSC Credential iterator columns.
  */
 #define LSC_CREDENTIAL_ITERATOR_COLUMNS                                       \
-  GET_ITERATOR_COLUMNS ", login, password, public_key, private_key, rpm, "    \
-  " deb, exe"
+  GET_ITERATOR_COLUMNS (lsc_credentials) ", login, password, public_key,"     \
+  " private_key, rpm, deb, exe"
 
 /**
  * @brief LSC Credential iterator columns for trash case.
  */
-#define LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS                                 \
-  GET_ITERATOR_COLUMNS ", login, password, public_key, private_key, rpm, "    \
-  " deb, exe"
+#define LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS                                   \
+  GET_ITERATOR_COLUMNS (lsc_credentials_trash) ", login, password, public_key," \
+  " private_key, rpm, deb, exe"
 
 /**
  * @brief Count number of LSC Credentials.
@@ -33771,10 +33780,10 @@ agent_uuid (agent_t agent)
 /**
  * @brief Agent iterator columns.
  */
-#define AGENT_ITERATOR_COLUMNS                              \
-  GET_ITERATOR_COLUMNS ", installer, installer_64,"         \
-  " installer_filename, installer_signature_64,"            \
-  " installer_trust, installer_trust_time, howto_install,"  \
+#define AGENT_ITERATOR_COLUMNS                               \
+  GET_ITERATOR_COLUMNS (agents) ", installer, installer_64," \
+  " installer_filename, installer_signature_64,"             \
+  " installer_trust, installer_trust_time, howto_install,"   \
   " howto_use"
 
 /**
@@ -33842,6 +33851,15 @@ DEF_ACCESS (get_iterator_creation_time, 4);
  * @return Modification time of the resource or NULL if iteration is complete.
  */
 DEF_ACCESS (get_iterator_modification_time, 5);
+
+/**
+ * @brief Get the owner name of the resource from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Owner name of the resource or NULL if iteration is complete.
+ */
+DEF_ACCESS (get_iterator_owner_name, 8);
 
 /**
  * @brief Agent iterator columns for trash case.
@@ -34416,6 +34434,7 @@ modify_note (note_t note, const char *active, const char* text,
   " iso_time (notes.creation_time),"                                       \
   " iso_time (notes.modification_time), notes.creation_time AS created,"   \
   " notes.modification_time AS modified,"                                  \
+  " (SELECT name FROM users WHERE users.ROWID = notes.owner) AS _owner,"   \
   /* Columns specific to notes. */                                         \
   " notes.nvt AS oid, notes.text,"                                         \
   " notes.hosts, notes.port, notes.threat, notes.task, notes.result,"      \
@@ -34429,12 +34448,12 @@ modify_note (note_t note, const char *active, const char* text,
  * @brief Note iterator columns for trash case.
  */
 #define NOTE_ITERATOR_TRASH_COLUMNS                                        \
-  /* ANON_GET_ITERATOR_TRASH_COLUMNS, */  /* Need the notes prefix. */     \
   "notes_trash.ROWID, notes_trash.uuid, '', '',"                           \
   " iso_time (notes_trash.creation_time),"                                 \
   " iso_time (notes_trash.modification_time),"                             \
   " notes_trash.creation_time AS created,"                                 \
   " notes_trash.modification_time AS modified,"                            \
+  " (SELECT name FROM users WHERE users.ROWID = notes.owner) AS _owner,"   \
   /* Columns specific to notes_trash. */                                   \
   " notes_trash.nvt AS oid, notes_trash.text,"                             \
   " notes_trash.hosts, notes_trash.port, notes_trash.threat,"              \
@@ -35193,6 +35212,7 @@ modify_override (override_t override, const char *active, const char* text,
   " iso_time (overrides.modification_time),"                                   \
   " overrides.creation_time AS created,"                                       \
   " overrides.modification_time AS modified,"                                  \
+  " (SELECT name FROM users WHERE users.ROWID = overrides.owner) AS _owner,"   \
   /* Columns specific to overrides. */                                         \
   " overrides.nvt AS oid, overrides.text,"                                     \
   " overrides.hosts, overrides.port, overrides.threat, overrides.new_threat,"  \
@@ -35207,12 +35227,12 @@ modify_override (override_t override, const char *active, const char* text,
  * @brief Override iterator columns for trash case.
  */
 #define OVERRIDE_ITERATOR_TRASH_COLUMNS                                        \
-  /* ANON_GET_ITERATOR_TRASH_COLUMNS, */  /* Need the overrides prefix. */     \
   "overrides_trash.ROWID, overrides_trash.uuid, '', '',"                       \
   " iso_time (overrides_trash.creation_time),"                                 \
   " iso_time (overrides_trash.modification_time),"                             \
   " overrides_trash.creation_time AS created,"                                 \
   " overrides_trash.modification_time AS modified,"                            \
+  " (SELECT name FROM users WHERE users.ROWID = overrides.owner) AS _owner,"   \
   /* Columns specific to overrides_trash. */                                   \
   " overrides_trash.nvt AS oid, overrides_trash.text,"                         \
   " overrides_trash.hosts, overrides_trash.port, overrides_trash.threat,"      \
@@ -36072,16 +36092,16 @@ schedule_name (schedule_t schedule)
 /**
  * @brief Schedule iterator columns.
  */
-#define SCHEDULE_ITERATOR_COLUMNS                                             \
-  GET_ITERATOR_COLUMNS ", first_time, period, period_months, duration,"       \
-  " timezone, initial_offset"
+#define SCHEDULE_ITERATOR_COLUMNS                                          \
+  GET_ITERATOR_COLUMNS (schedules) ", first_time, period, period_months,"  \
+  " duration, timezone, initial_offset"
 
 /**
  * @brief Schedule iterator columns for trash case.
  */
-#define SCHEDULE_ITERATOR_TRASH_COLUMNS                                       \
-  GET_ITERATOR_COLUMNS ", first_time, period, period_months, duration, "      \
-  " timezone, initial_offset"
+#define SCHEDULE_ITERATOR_TRASH_COLUMNS                                         \
+  GET_ITERATOR_COLUMNS (schedules_trash) ", first_time, period, period_months," \
+  " duration, timezone, initial_offset"
 
 /**
  * @brief Count the number of schedules.
@@ -39547,13 +39567,13 @@ trash_slave_writable (slave_t slave)
  * @brief Slave iterator columns.
  */
 #define SLAVE_ITERATOR_COLUMNS                                                \
-  GET_ITERATOR_COLUMNS ", host, port, login, password"
+  GET_ITERATOR_COLUMNS (slaves) ", host, port, login, password"
 
 /**
  * @brief Slave iterator columns for trash case.
  */
 #define SLAVE_ITERATOR_TRASH_COLUMNS                                          \
-  GET_ITERATOR_COLUMNS ", host, port, login, password"
+  GET_ITERATOR_COLUMNS (slaves_trash) ", host, port, login, password"
 
 /**
  * @brief Count the number of slaves.
@@ -40340,7 +40360,7 @@ trash_group_in_use (group_t group)
  * @brief Group iterator columns.
  */
 #define GROUP_ITERATOR_COLUMNS                                                \
-  GET_ITERATOR_COLUMNS
+  GET_ITERATOR_COLUMNS (groups)
 
 /**
  * @brief Count number of groups.
@@ -40728,7 +40748,8 @@ trash_permission_writable (permission_t permission)
  * @brief Permission iterator columns.
  */
 #define PERMISSION_ITERATOR_COLUMNS                                         \
-  GET_ITERATOR_COLUMNS ", resource_type AS type, resource_uuid,"            \
+  GET_ITERATOR_COLUMNS (permissions) ", resource_type AS type,"             \
+  " resource_uuid,"                                                         \
   " (CASE"                                                                  \
   "  WHEN resource_type == '' OR resource_type IS NULL"                     \
   "  THEN ''"                                                               \
@@ -42277,7 +42298,7 @@ delete_port_range (const char *port_range_id, int dummy)
 /**
  * @brief Port List iterator columns.
  */
-#define PORT_LIST_ITERATOR_COLUMNS GET_ITERATOR_COLUMNS                         \
+#define PORT_LIST_ITERATOR_COLUMNS GET_ITERATOR_COLUMNS (port_lists)            \
     /* COUNT ALL ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
@@ -42311,7 +42332,8 @@ delete_port_range (const char *port_range_id, int dummy)
 /**
  * @brief Port List iterator columns for trash case.
  */
-#define PORT_LIST_ITERATOR_TRASH_COLUMNS GET_ITERATOR_COLUMNS                   \
+#define PORT_LIST_ITERATOR_TRASH_COLUMNS                                        \
+  GET_ITERATOR_COLUMNS (port_lists_trash)                                       \
     /* COUNT ALL ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
@@ -42895,7 +42917,7 @@ trash_role_in_use (role_t role)
  * @brief Role iterator columns.
  */
 #define ROLE_ITERATOR_COLUMNS                                                \
-  GET_ITERATOR_COLUMNS
+  GET_ITERATOR_COLUMNS (roles)
 
 /**
  * @brief Count number of roles.
@@ -43402,13 +43424,13 @@ trash_filter_writable (filter_t filter)
  * @brief Filter iterator columns.
  */
 #define FILTER_ITERATOR_COLUMNS                               \
-  GET_ITERATOR_COLUMNS ", type, term"
+  GET_ITERATOR_COLUMNS (filters) ", type, term"
 
 /**
  * @brief Filter iterator columns for trash case.
  */
 #define FILTER_ITERATOR_TRASH_COLUMNS                         \
-  GET_ITERATOR_COLUMNS ", type, term"
+  GET_ITERATOR_COLUMNS (filters_trash) ", type, term"
 
 /**
  * @brief Count number of filters.
@@ -45356,7 +45378,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 #define CVE_INFO_ITERATOR_COLUMNS                               \
    "ROWID, uuid, name, comment, iso_time (creation_time),"      \
    " iso_time (modification_time), creation_time AS published," \
-   " modification_time AS modified,"                            \
+   " modification_time AS modified, '',"                        \
    " vector, complexity,"                                       \
    " authentication, confidentiality_impact,"                   \
    " integrity_impact, availability_impact, products,"          \
@@ -45373,8 +45395,8 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  * @brief CPE iterator columns.
  */
 #define CPE_INFO_ITERATOR_COLUMNS                           \
-  GET_ITERATOR_COLUMNS ", title, status, deprecated_by_id," \
-  "max_cvss, cve_refs AS cves, nvd_id"
+  GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, title, status,"  \
+  " deprecated_by_id, max_cvss, cve_refs AS cves, nvd_id"
 
 /**
  * @brief Filter columns for OVALDEF iterator.
@@ -45388,9 +45410,9 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  * @brief OVALDEF iterator columns.
  */
 #define OVALDEF_INFO_ITERATOR_COLUMNS                                \
-  GET_ITERATOR_COLUMNS ", version, deprecated, def_class AS class,"  \
-  "title, description, xml_file AS file, status, max_cvss,"          \
-  "cve_refs as cves"
+  GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, version, deprecated," \
+  " def_class AS class, title, description, xml_file AS file, status,"    \
+  " max_cvss, cve_refs as cves"
 
 /**
  * @brief Filter columns for DFN_CERT_ADV iterator.
@@ -45402,9 +45424,9 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 /**
  * @brief DFN_CERT_ADV iterator columns.
  */
-#define DFN_CERT_ADV_INFO_ITERATOR_COLUMNS                       \
-  GET_ITERATOR_COLUMNS ", title, summary, cve_refs AS cves,"     \
-  "max_cvss"
+#define DFN_CERT_ADV_INFO_ITERATOR_COLUMNS                             \
+  GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, title, summary,"   \
+  " cve_refs AS cves, max_cvss"
 
 /**
  * @brief Filter columns for All SecInfo iterator.
@@ -45415,19 +45437,23 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 /**
  * @brief All SecInfo iterator columns.
  */
-#define ALL_INFO_UNION_COLUMNS                                                \
-  "(SELECT " GET_ITERATOR_COLUMNS ", 'cve' AS type, description as extra"     \
-  "  FROM cves"                                                               \
-  " UNION ALL SELECT " GET_ITERATOR_COLUMNS ", 'cpe' AS type, title as extra" \
-  "  FROM cpes"                                                               \
-  " UNION ALL SELECT " GET_ITERATOR_COLUMNS ", 'nvt' AS type"                 \
-  "  ,summary as extra FROM nvts"                                             \
-  " UNION ALL SELECT " GET_ITERATOR_COLUMNS ", 'dfn_cert_adv' AS type"        \
-  "  ,title as extra FROM dfn_cert_advs"                                      \
-  " UNION ALL SELECT " GET_ITERATOR_COLUMNS ", 'ovaldef' AS type"             \
-  "  ,title as extra FROM ovaldefs)"                                          \
+#define ALL_INFO_UNION_COLUMNS                                                 \
+  "(SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, 'cve' AS type," \
+  "        description as extra"                                               \
+  " FROM cves"                                                                 \
+  " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
+  "                  'cpe' AS type, title as extra"                            \
+  "           FROM cpes"                                                       \
+  " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
+  "                  'nvt' AS type, summary as extra"                          \
+  "           FROM nvts"                                                       \
+  " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
+  "                  'dfn_cert_adv' AS type, title as extra"                   \
+  "           FROM dfn_cert_advs"                                              \
+  " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
+  "                  'ovaldef' AS type, title as extra"                        \
+  "           FROM ovaldefs)"                                                  \
   " AS allinfo"
-
 
 /**
  * @brief Check whether SCAP is available.
@@ -46255,7 +46281,8 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
 
   init_iterator (iterator,
                  "SELECT ROWID, uuid, name, comment, iso_time (created),"
-                 "       iso_time (modified), created, modified, type, extra"
+                 "       iso_time (modified), created, modified, '' AS _owner,"
+                 "       type, extra"
                  " FROM" ALL_INFO_UNION_COLUMNS
                  " %s%s"
                  " %s"
@@ -47206,13 +47233,13 @@ trash_user_writable (user_t user)
  * @brief User iterator columns.
  */
 #define USER_ITERATOR_COLUMNS                               \
-  GET_ITERATOR_COLUMNS ", method, hosts, hosts_allow"
+  GET_ITERATOR_COLUMNS (users) ", method, hosts, hosts_allow"
 
 /**
  * @brief User iterator columns for trash case.
  */
 #define USER_ITERATOR_TRASH_COLUMNS                         \
-  GET_ITERATOR_COLUMNS ", method, hosts, hosts_allow"
+  GET_ITERATOR_COLUMNS (users_trash) ", method, hosts, hosts_allow"
 
 /**
  * @brief Count number of users.
@@ -47783,7 +47810,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
  * @brief Tag iterator columns.
  */
 #define TAG_ITERATOR_COLUMNS                                    \
-  GET_ITERATOR_COLUMNS ", attach_type, attach_id,"              \
+  GET_ITERATOR_COLUMNS (tags) ", attach_type, attach_id,"        \
   "active, value,"                                              \
   "NOT resource_exists (attach_type, attach_id) AS orphaned,"   \
   "resource_name(attach_type, attach_id) AS attach_name"
@@ -47792,7 +47819,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
  * @brief Tag iterator trash columns.
  */
 #define TAG_ITERATOR_TRASH_COLUMNS                          \
-  GET_ITERATOR_COLUMNS ", attach_type, attach_id,"          \
+  GET_ITERATOR_COLUMNS (tags) ", attach_type, attach_id,"    \
   "active, value"
 
 /**

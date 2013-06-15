@@ -5388,6 +5388,7 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
 
   buffer_xml_append_printf (buffer,
                             "<%s id=\"%s\">"
+                            "<owner><name>%s</name></owner>"
                             "<name>%s</name>"
                             "<comment>%s</comment>"
                             "<creation_time>%s</creation_time>"
@@ -5397,6 +5398,9 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                             type,
                             get_iterator_uuid (iterator)
                             ? get_iterator_uuid (iterator)
+                            : "",
+                            get_iterator_owner_name (iterator)
+                            ? get_iterator_owner_name (iterator)
                             : "",
                             get_iterator_name (iterator)
                             ? get_iterator_name (iterator)
@@ -9303,6 +9307,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
           buffer_xml_append_printf
            (buffer,
             "<note id=\"%s\">"
+            "<owner><name>%s</name></owner>"
             "<nvt oid=\"%s\"><name>%s</name></nvt>"
             "<creation_time>%s</creation_time>"
             "<modification_time>%s</modification_time>"
@@ -9314,10 +9319,12 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             "<hosts>%s</hosts>"
             "<port>%s</port>"
             "<threat>%s</threat>"
-
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
             get_iterator_uuid (notes),
+            get_iterator_owner_name (notes)
+            ? get_iterator_owner_name (notes)
+            : "",
             note_iterator_nvt_oid (notes),
             note_iterator_nvt_name (notes),
             get_iterator_creation_time (notes),
@@ -9443,6 +9450,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
                                     "<override id=\"%s\">"
+                                    "<owner><name>%s</name></owner>"
                                     "<nvt oid=\"%s\">"
                                     "<name>%s</name>"
                                     "</nvt>"
@@ -9459,6 +9467,9 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     "</user_tags>"
                                     "</override>",
                                     get_iterator_uuid (overrides),
+                                    get_iterator_owner_name (overrides)
+                                    ? get_iterator_owner_name (overrides)
+                                    : "",
                                     override_iterator_nvt_oid (overrides),
                                     override_iterator_nvt_name (overrides),
                                     get_iterator_creation_time (overrides),

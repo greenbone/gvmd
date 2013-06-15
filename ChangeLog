@@ -1,3 +1,30 @@
+2013-06-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OWNER to standard GET response.
+
+	* src/manage_sql.c (GET_ITERATOR_FILTER_COLUMNS): Add owner to filter
+	columns.
+	(GET_ITERATOR_COLUMNS): Add owner column.  Add table arg to support owner
+	column.  Add new arg to all callers.
+	(GET_ITERATOR_COLUMN_COUNT): Increment for new column.
+	(NVT_ITERATOR_COLUMNS): Use GET_ITERATOR_COLUMN_PREFIX, and add dummy
+	owner.
+	(NVT_ITERATOR_COLUMNS_NVTS): Add dummy owner.
+	(get_iterator_owner_name): New function.
+	(NOTE_ITERATOR_COLUMNS, NOTE_ITERATOR_TRASH_COLUMNS)
+	(OVERRIDE_ITERATOR_COLUMNS, OVERRIDE_ITERATOR_TRASH_COLUMNS): Add owner
+	column by hand.
+	(CVE_INFO_ITERATOR_COLUMNS): Add dummy owner column.
+	(CPE_INFO_ITERATOR_COLUMNS, OVALDEF_INFO_ITERATOR_COLUMNS)
+	(DFN_CERT_ADV_INFO_ITERATOR_COLUMNS, ALL_INFO_UNION_COLUMNS): Use
+	GET_ITERATOR_COLUMN_PREFIX, and add dummy owner.
+	(init_all_info_iterator): Add owner to SQL.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (send_get_common): Send owner too.
+	(buffer_notes_xml, buffer_overrides_xml): Send owner by hand.
+
 2013-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (resource_count): Use permission "any" instead of a

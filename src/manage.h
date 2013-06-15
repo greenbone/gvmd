@@ -282,6 +282,9 @@ get_iterator_creation_time (iterator_t*);
 const char*
 get_iterator_modification_time (iterator_t*);
 
+const char*
+get_iterator_owner_name (iterator_t*);
+
 
 /* Resources. */
 
