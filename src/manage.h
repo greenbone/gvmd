@@ -1590,6 +1590,10 @@ copy_lsc_credential (const char*, const char*, const char*,
                      lsc_credential_t*);
 
 int
+modify_lsc_credential (const char*, const char*, const char*, const char *,
+                       const char *);
+
+int
 delete_lsc_credential (const char *, int);
 
 int

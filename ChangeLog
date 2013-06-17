@@ -1,3 +1,12 @@
+2013-06-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (modify_lsc_credential): New function.
+
+	* src/manage.h: Add modify_lsc_credential prototype.
+
+	* src/omp.c (omp_xml_handle_end_element): Adapt MODIFY_LSC_CREDENTIAL
+	to use new modify style.
+
 2013-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (REPORT_FORMAT_ITERATOR_COLUMNS)

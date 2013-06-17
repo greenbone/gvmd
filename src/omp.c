@@ -20931,66 +20931,77 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_LSC_CREDENTIAL:
         {
-          lsc_credential_t lsc_credential = 0;
+          assert (strcasecmp ("MODIFY_LSC_CREDENTIAL", element_name) == 0);
 
-          if (user_may ("modify_lsc_credential") == 0)
+          switch (modify_lsc_credential
+                   (modify_lsc_credential_data->lsc_credential_id,
+                    modify_lsc_credential_data->name,
+                    modify_lsc_credential_data->comment,
+                    modify_lsc_credential_data->login,
+                    modify_lsc_credential_data->password))
             {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_lsc_credential",
-                                  "Permission denied"));
-              modify_lsc_credential_data_reset (modify_lsc_credential_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_lsc_credential"));
+                g_log ("event lsc_credential", G_LOG_LEVEL_MESSAGE,
+                       "LSC Credential %s has been modified",
+                       modify_lsc_credential_data->lsc_credential_id);
+                break;
+              case 1:
+                if (send_find_error_to_client
+                     ("modify_lsc_credential",
+                      "lsc_credential",
+                      modify_lsc_credential_data->lsc_credential_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event lsc_credential", G_LOG_LEVEL_MESSAGE,
+                       "LSC Credential could not be modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_lsc_credential",
+                                    "lsc_credential with new name"
+                                    " exists already"));
+                g_log ("event lsc_credential", G_LOG_LEVEL_MESSAGE,
+                       "lsc_credential could not be modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_lsc_credential",
+                                    "MODIFY_lsc_credential requires a"
+                                    " lsc_credential_id"));
+                g_log ("event lsc_credential", G_LOG_LEVEL_MESSAGE,
+                       "LSC Credential could not be modified");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_lsc_credential",
+                                    "Attempt to change login or password of"
+                                    " packaged LSC credential"));
+                g_log ("event lsc_credential", G_LOG_LEVEL_MESSAGE,
+                       "LSC Credential could not be modified");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_lsc_credential",
+                                    "Permission denied"));
+                g_log ("event lsc_credential", G_LOG_LEVEL_MESSAGE,
+                       "LSC Credential could not be modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_lsc_credential"));
+                g_log ("event lsc_credential", G_LOG_LEVEL_MESSAGE,
+                       "LSC Credential could not be modified");
+                break;
             }
 
-          if (modify_lsc_credential_data->lsc_credential_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_lsc_credential",
-                                "MODIFY_LSC_CREDENTIAL requires a"
-                                " lsc_credential_id attribute"));
-          else if (find_lsc_credential
-                    (modify_lsc_credential_data->lsc_credential_id,
-                     &lsc_credential))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("modify_lsc_credential"));
-          else if (lsc_credential == 0)
-            {
-              if (send_find_error_to_client
-                   ("modify_lsc_credential",
-                    "LSC credential",
-                    modify_lsc_credential_data->lsc_credential_id,
-                    write_to_client,
-                    write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else if ((modify_lsc_credential_data->login
-                    || modify_lsc_credential_data->password)
-                   && lsc_credential_packaged (lsc_credential))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_lsc_credential",
-                                "Attempt to change login or password of"
-                                " packaged LSC credential"));
-          else
-            {
-              if (modify_lsc_credential_data->name)
-                set_lsc_credential_name (lsc_credential,
-                                         modify_lsc_credential_data->name);
-              if (modify_lsc_credential_data->comment)
-                set_lsc_credential_comment
-                 (lsc_credential,
-                  modify_lsc_credential_data->comment);
-              if (modify_lsc_credential_data->login)
-                set_lsc_credential_login (lsc_credential,
-                                          modify_lsc_credential_data->login);
-              if (modify_lsc_credential_data->password)
-                set_lsc_credential_password
-                 (lsc_credential,
-                  modify_lsc_credential_data->password);
-              SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_lsc_credential"));
-            }
+          modify_lsc_credential_data_reset (modify_lsc_credential_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
         }
         modify_lsc_credential_data_reset (modify_lsc_credential_data);
         set_client_state (CLIENT_AUTHENTIC);

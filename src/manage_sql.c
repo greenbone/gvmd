@@ -32115,6 +32115,105 @@ copy_lsc_credential (const char* name, const char* comment,
 }
 
 /**
+ * @brief Modify a LSC Credential.
+ *
+ * @param[in]   lsc_credential_id   UUID of lsc credential.
+ * @param[in]   name                Name of lsc credential.
+ * @param[in]   comment             Comment on lsc credential.
+ * @param[in]   login               Login of lsc credential.
+ * @param[in]   password            Password of lsc credential.
+ *
+ * @return 0 success, 1 failed to find credential, 2 credential with new name
+ *         exists, 3 lsc_credential_id required, 4 attempt to modify login/pass
+ *         of packaged lsc credential, 99 permission denied, -1 internal error.
+ */
+int
+modify_lsc_credential (const char *lsc_credential_id,
+                       const char *name, const char *comment,
+                       const char *login, const char *password)
+{
+  gchar *quoted_name, *quoted_comment, *quoted_login;
+  lsc_credential_t lsc_credential;
+
+  if (lsc_credential_id == NULL)
+    return 3;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+
+  if (user_may ("modify_lsc_credential") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  lsc_credential = 0;
+  if (find_lsc_credential (lsc_credential_id, &lsc_credential))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (lsc_credential == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  /* Check attempt to change login or password of packaged LSC credential */
+  if ((login || password) && lsc_credential_packaged (lsc_credential))
+    return 4;
+
+  /* Check whether a lsc_credential with the same name exists already. */
+  if (name)
+    {
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM lsc_credentials"
+                   " WHERE name = '%s'"
+                   " AND ROWID != %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   lsc_credential,
+                   current_credentials.uuid))
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+    }
+  else
+    quoted_name = sql_quote("");
+
+  quoted_comment = sql_quote (comment ? comment : "");
+  quoted_login = sql_quote (login ? login : "");
+
+  sql ("UPDATE lsc_credentials SET"
+       " name = '%s',"
+       " comment = '%s',"
+       " login = '%s',"
+       " modification_time = now ()"
+       " WHERE ROWID = %llu;",
+       quoted_name,
+       quoted_comment,
+       quoted_login,
+       lsc_credential);
+
+  if (password)
+    set_lsc_credential_password (lsc_credential, password);
+
+  g_free (quoted_login);
+  g_free (quoted_comment);
+  g_free (quoted_name);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Delete an LSC credential.
  *
  * @param[in]  lsc_credential_id  UUID of LSC credential.
