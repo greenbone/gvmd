@@ -550,6 +550,67 @@ user_has_access_uuid (const char *resource, const char *uuid,
           uuid = uuid_task;
         }
 
+      if ((strcmp (resource, "permission") == 0)
+          && ((permission == NULL)
+              || (strcmp (permission, "get") == 0)))
+        // TODO make this neat like result case below
+        return sql_int (0, 0,
+                        /* Any permission implies 'get'. */
+                        "SELECT count(*) FROM permissions"
+                        " WHERE resource_uuid = '%s'"
+                        " AND ((subject_type = 'user'"
+                        "       AND subject"
+                        "           = (SELECT ROWID FROM users"
+                        "              WHERE users.uuid = '%s'))"
+                        "      OR (subject_type = 'group'"
+                        "          AND subject"
+                        "              IN (SELECT DISTINCT `group`"
+                        "                  FROM group_users"
+                        "                  WHERE user = (SELECT ROWID"
+                        "                                FROM users"
+                        "                                WHERE users.uuid"
+                        "                                      = '%s')))"
+                        "      OR (subject_type = 'role'"
+                        "          AND subject"
+                        "              IN (SELECT DISTINCT role"
+                        "                  FROM role_users"
+                        "                  WHERE user = (SELECT ROWID"
+                        "                                FROM users"
+                        "                                WHERE users.uuid"
+                        "                                      = '%s'))));",
+                        uuid,
+                        current_credentials.uuid,
+                        current_credentials.uuid,
+                        current_credentials.uuid)
+               /* If the permission affects the user, the user may view it. */
+               || sql_int (0, 0,
+                           /* Any permission implies 'get'. */
+                           "SELECT count(*) FROM permissions"
+                           " WHERE uuid = '%s'"
+                           " AND ((subject_type = 'user'"
+                           "       AND subject"
+                           "           = (SELECT ROWID FROM users"
+                           "              WHERE users.uuid = '%s'))"
+                           "      OR (subject_type = 'group'"
+                           "          AND subject"
+                           "              IN (SELECT DISTINCT `group`"
+                           "                  FROM group_users"
+                           "                  WHERE user = (SELECT ROWID"
+                           "                                FROM users"
+                           "                                WHERE users.uuid"
+                           "                                      = '%s')))"
+                           "      OR (subject_type = 'role'"
+                           "          AND subject"
+                           "              IN (SELECT DISTINCT role"
+                           "                  FROM role_users"
+                           "                  WHERE user = (SELECT ROWID"
+                           "                                FROM users"
+                           "                                WHERE users.uuid"
+                           "                                      = '%s'))));",
+                           uuid,
+                           current_credentials.uuid,
+                           current_credentials.uuid,
+                           current_credentials.uuid);
       if (permission == NULL || strcmp (permission, "get") == 0)
         // TODO make this neat like result case below
         return sql_int (0, 0,
