@@ -1,5 +1,10 @@
 2013-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (REPORT_FORMAT_ITERATOR_COLUMNS)
+	(REPORT_FORMAT_ITERATOR_TRASH_COLUMNS): Add dummy owner column.
+
+2013-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In GET_REPORT_FORMATS send
 	TRUST and ACTIVE in details case too.  Details cases should always
 	include everything from the simple case.

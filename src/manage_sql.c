@@ -38767,20 +38767,20 @@ report_format_trust (report_format_t report_format)
  * @brief Report Format iterator columns.
  */
 #define REPORT_FORMAT_ITERATOR_COLUMNS                                        \
-    /* ANON doesn't have name column */                                       \
+  /* ANON doesn't have name column */                                         \
   "ROWID, uuid, name, '', iso_time (creation_time),"                          \
   " iso_time (modification_time), creation_time AS created,"                  \
-  " modification_time AS modified, extension, content_type, summary, "        \
+  " modification_time AS modified, '', extension, content_type, summary, "    \
   " description, signature, trust, trust_time, flags & 1 AS active"
 
 /**
  * @brief Report Format iterator columns for trash case.
  */
 #define REPORT_FORMAT_ITERATOR_TRASH_COLUMNS                                  \
-    /* ANON doesn't have name column */                                       \
+  /* ANON doesn't have name column */                                         \
   "ROWID, uuid, name, '', iso_time (creation_time),"                          \
   " iso_time (modification_time), creation_time AS created,"                  \
-  " modification_time AS modified, extension, content_type, summary, "        \
+  " modification_time AS modified, '', extension, content_type, summary, "    \
   " description, signature, trust, trust_time, flags"
 
 /**
