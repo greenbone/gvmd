@@ -40712,7 +40712,10 @@ create_permission (const char *name_arg, const char *comment,
 
   name = g_ascii_strdown (name_arg, -1);
   resource = 0;
-  if (resource_id && (resource_type = omp_command_type (name)))
+  if (resource_id
+      && strcmp (resource_id, "")
+      && strcmp (resource_id, "0")
+      && (resource_type = omp_command_type (name)))
     {
       if (find_resource (resource_type, resource_id, &resource))
         {
