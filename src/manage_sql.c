@@ -28656,6 +28656,33 @@ validate_port (const char *port)
 }
 
 /**
+ * @brief Validate a single port.
+ * @brief May come in values such as 100/foo and 100/foo (IANA: bar).
+ * @brief Will also validate values such as: general/tcp.
+ *
+ * @param[in]   port      A port.
+ *
+ * @return 0 success, 1 failed.
+ */
+static int
+validate_results_port (const char *port)
+{
+  int num;
+
+  if (!port)
+    return 1;
+
+  if (strncmp ("general/", port, 8) == 0)
+    return 0;
+
+  num = atoi (port);
+  if (num > 0 && num < 65535)
+    return 0;
+
+  return 1;
+}
+
+/**
  * @brief Validate an OMP port range string.
  *
  * OTP accepts "-100,103,200-1024,60000-" or "T:-100,103,U:6000-.
@@ -37212,7 +37239,7 @@ find_note (const char* uuid, note_t* note)
  * @param[in]  result      Result to apply note to, 0 for any result.
  * @param[out] note        Created note.
  *
- * @return 0 success, 1 failed to find NVT, -1 error.
+ * @return 0 success, 1 failed to find NVT, 2 Invalid port, -1 error.
  */
 int
 create_note (const char* active, const char* nvt, const char* text,
@@ -37233,6 +37260,9 @@ create_note (const char* active, const char* nvt, const char* text,
       return 1;
     }
   g_free (quoted_nvt);
+
+  if (port && validate_results_port (port))
+    return 2;
 
   if (text == NULL)
     return -1;
@@ -37390,7 +37420,7 @@ note_uuid (note_t note, char ** id)
  * @param[in]  task        Task to apply note to, 0 for any task.
  * @param[in]  result      Result to apply note to, 0 for any result.
  *
- * @return 0 success, -1 error, 1 syntax error in active.
+ * @return 0 success, -1 error, 1 syntax error in active, 2 Invalid port.
  */
 int
 modify_note (note_t note, const char *active, const char* text,
@@ -37409,6 +37439,9 @@ modify_note (note_t note, const char *active, const char* text,
       && strcmp (threat, "Low") && strcmp (threat, "Log")
       && strcmp (threat, "Debug") && strcmp (threat, ""))
     return -1;
+
+  if (port && validate_results_port (port))
+    return 2;
 
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
@@ -37948,7 +37981,7 @@ find_override (const char* uuid, override_t* override)
  * @param[in]  result      Result to apply override to, 0 for any result.
  * @param[out] override    Created override.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 Invalid port, -1 error.
  */
 int
 create_override (const char* active, const char* nvt, const char* text,
@@ -37964,6 +37997,9 @@ create_override (const char* active, const char* nvt, const char* text,
 
   if (text == NULL)
     return -1;
+
+  if (port && validate_results_port (port))
+    return 1;
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
@@ -38136,7 +38172,7 @@ delete_override (const char *override_id, int ultimate)
  * @param[in]  task        Task to apply override to, 0 for any task.
  * @param[in]  result      Result to apply override to, 0 for any result.
  *
- * @return 0 success, -1 error, 1 syntax error in active.
+ * @return 0 success, -1 error, 1 syntax error in active, 2 Invalid port.
  */
 int
 modify_override (override_t override, const char *active, const char* text,
@@ -38151,6 +38187,9 @@ modify_override (override_t override, const char *active, const char* text,
 
   if (text == NULL)
     return -1;
+
+  if (port && validate_results_port (port))
+    return 2;
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")

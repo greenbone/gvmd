@@ -1,3 +1,14 @@
+2013-06-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Backport for r16657. Patch by Hani Benhabiles.
+
+	* src/manage_sql.c (validate_results_port): New function.
+	(create_note, modify_note, create_override, modify_override): Validate
+	port value.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle invalid port case for
+	create_note, create_override, modify_note, modify_override calls.
+
 2013-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Backport for r16196. Patch by Timo Pollmeier.
