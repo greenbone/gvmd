@@ -1,4 +1,8 @@
-2013-06-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+2013-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (user_has_access_uuid): Enable role checks.
+
+2013-06-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (modify_lsc_credential): New function.
 
