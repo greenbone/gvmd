@@ -14078,13 +14078,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                        ("<signature>%s</signature>",
                         report_format_iterator_signature (&report_formats));
                     }
-                  else
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<trust>%s<time>%s</time></trust>"
-                      "<active>%i</active>",
-                      report_format_iterator_trust (&report_formats),
-                      iso_time (&trust_time),
-                      report_format_iterator_active (&report_formats));
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<trust>%s<time>%s</time></trust>"
+                    "<active>%i</active>",
+                    report_format_iterator_trust (&report_formats),
+                    iso_time (&trust_time),
+                    report_format_iterator_active (&report_formats));
 
                   SEND_TO_CLIENT_OR_FAIL ("</report_format>");
                   count++;
