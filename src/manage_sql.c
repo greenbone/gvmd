@@ -40699,6 +40699,10 @@ create_permission (const char *name_arg, const char *comment,
       && strcmp (subject_type, "user"))
     return 6;
 
+  if (subject_id == NULL)
+    /* For now a permission must have a subject. */
+    return 6;
+
   if (subject_id && (subject_type == NULL))
     return 6;
 

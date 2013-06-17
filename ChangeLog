@@ -1,5 +1,9 @@
 2013-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_permission): Require a subject.
+
+2013-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_permission): Leave resource as 0 if ID is ""
 	or "0".
 
