@@ -1,5 +1,9 @@
 2013-06-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): Initialize result_count value.
+
+2013-06-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Backport for r16657. Patch by Hani Benhabiles.
 
 	* src/manage_sql.c (validate_results_port): New function.
