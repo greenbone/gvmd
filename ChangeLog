@@ -1,5 +1,10 @@
 2013-06-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (CVE_INFO_ITERATOR_FILTER_COLUMNS)
+	(CVE_ITERATOR_COLUMNS): Add severity alias for cvss column.
+
+2013-06-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (NVT_INFO_ITERATOR_FILTER_COLUMNS)
 	(NVT_ITERATOR_COLUMNS): Add cvss alias for cvss_base column.
 

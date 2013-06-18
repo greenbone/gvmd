@@ -45535,7 +45535,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  { "uuid", "name", "comment", "published", "modified", "vector", \
    "complexity", "authentication", "confidentiality_impact",     \
    "integrity_impact", "availability_impact", "products",        \
-   "cvss", "description", NULL }
+   "cvss", "description", "severity", NULL }
 
 /**
  * @brief CVE iterator columns.
@@ -45547,7 +45547,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
    " vector, complexity,"                                       \
    " authentication, confidentiality_impact,"                   \
    " integrity_impact, availability_impact, products,"          \
-   " cvss, description"
+   " cvss, description, cvss as severity"
 
 /**
  * @brief Filter columns for CVE iterator.
