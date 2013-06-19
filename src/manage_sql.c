@@ -29415,7 +29415,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 #define NVT_ITERATOR_COLUMNS_NVTS                                             \
   GET_ITERATOR_COLUMNS_PREFIX("nvts.") ", '', oid, version, nvts.name,"       \
   " summary, description, copyright, cve, bid, xref, tag, sign_key_ids,"      \
-  " category, nvts.family, cvss_base"
+  " category, nvts.family, cvss_base, cvss_base AS severity, cvss_base AS cvss"
 
 /**
  * @brief Initialise an NVT iterator.

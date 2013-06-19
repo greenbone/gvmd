@@ -1,5 +1,10 @@
 2013-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (NVT_ITERATOR_COLUMNS_NVT): Add aliases for cvss_base
+	to match NVT_ITERATOR_COLUMNS.
+
+2013-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Remove NVT risk factor.
 
 	* src/manage.c (get_nvti_xml): Remove risk_factor element.
