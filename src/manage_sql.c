@@ -668,6 +668,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
                       uuid,
                       current_credentials.uuid,
                       current_credentials.uuid,
+                      current_credentials.uuid,
                       permission);
     }
 
