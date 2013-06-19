@@ -6797,6 +6797,65 @@ migrate_81_to_82 ()
 }
 
 /**
+ * @brief Migrate the database from version 82 to version 83.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_82_to_83 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 82. */
+
+  if (manage_db_version () != 82)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Remove risk_factor from NVTs table. */
+
+  /* Move the table away. */
+
+  sql ("ALTER TABLE nvts RENAME TO nvts_82;");
+
+  /* Create the table in the new format. */
+
+  sql ("CREATE TABLE IF NOT EXISTS nvts"
+       " (id INTEGER PRIMARY KEY, uuid, oid, version, name, comment, summary,"
+       "  description, copyright, cve, bid, xref, tag, sign_key_ids,"
+       "  category INTEGER, family, cvss_base, creation_time,"
+       "  modification_time);");
+
+  /* Copy the data into the new table. */
+
+  sql ("INSERT into nvts"
+       " (id, uuid, oid, version, name, comment, summary, description,"
+       "  copyright, cve, bid, xref, tag, sign_key_ids, category, family,"
+       "  cvss_base, creation_time, modification_time)"
+       " SELECT"
+       "  id, uuid, oid, version, name, comment, summary, description,"
+       "  copyright, cve, bid, xref, tag, sign_key_ids, category, family,"
+       "  cvss_base, creation_time, modification_time"
+       " FROM nvts_82;");
+
+  /* Drop the old table. */
+
+  sql ("DROP TABLE nvts_82;");
+
+  /* Set the database version to 83. */
+
+  set_db_version (83);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -6883,6 +6942,7 @@ static migrator_t database_migrators[]
     {80, migrate_79_to_80},
     {81, migrate_80_to_81},
     {82, migrate_81_to_82},
+    {83, migrate_82_to_83},
     /* End marker. */
     {-1, NULL}};
 

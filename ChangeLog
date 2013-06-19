@@ -1,5 +1,14 @@
 2013-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Remove NVT risk_factor column. Migrate DB to version 83.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Bump to 83.
+
+	* src/manage_migrators.c (migrate_82_to_83): New function.
+	(database_migrators): Add migrate_82_to_83.
+
+2013-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (NVT_ITERATOR_COLUMNS_NVT): Add aliases for cvss_base
 	to match NVT_ITERATOR_COLUMNS.
 
