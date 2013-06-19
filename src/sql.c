@@ -1291,11 +1291,13 @@ sql_resource_exists (sqlite3_context *context, int argc, sqlite3_value** argv)
       g_warning ("%s: sqlite3_step failed: %s",
                   __FUNCTION__,
                   sqlite3_errmsg (task_db));
+      sqlite3_finalize (stmt);
       return;
     }
 
   exists = sqlite3_column_int (stmt, 0);
   sqlite3_result_int (context, exists);
+  sqlite3_finalize (stmt);
   return;
 }
 
@@ -1400,6 +1402,7 @@ sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
       g_warning ("%s: sqlite3_step failed: %s",
                   __FUNCTION__,
                   sqlite3_errmsg (task_db));
+      sqlite3_finalize (stmt);
       return;
     }
 
@@ -1408,6 +1411,7 @@ sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
     sqlite3_result_text (context, name, -1, SQLITE_TRANSIENT);
   else
     sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
+  sqlite3_finalize (stmt);
   return;
 
 }

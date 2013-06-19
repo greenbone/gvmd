@@ -1,5 +1,10 @@
 2013-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql.c (sql_resource_exists, sql_resource_name): Alway finalize
+	stmt, otherwise there are open statements when closing the db.
+
+2013-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Switch the response on task
 	control ops and RESTORE from Internal Error to Syntax Error.
 
