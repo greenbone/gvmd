@@ -1,3 +1,7 @@
+2013-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (omp_commands): Order alphabetically.
+
 2013-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* doc/db_postgres.sql (nvts): Remove nvt risk_factor.
