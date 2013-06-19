@@ -33898,6 +33898,15 @@ agent_uuid (agent_t agent)
   " howto_use"
 
 /**
+ * @brief Agent iterator columns for trash case.
+ */
+#define AGENT_ITERATOR_TRASH_COLUMNS                               \
+  GET_ITERATOR_COLUMNS (agents_trash) ", installer, installer_64," \
+  " installer_filename, installer_signature_64,"                   \
+  " installer_trust, installer_trust_time, howto_install,"         \
+  " howto_use"
+
+/**
  * @brief Get the resource from a GET iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -33971,11 +33980,6 @@ DEF_ACCESS (get_iterator_modification_time, 5);
  * @return Owner name of the resource or NULL if iteration is complete.
  */
 DEF_ACCESS (get_iterator_owner_name, 8);
-
-/**
- * @brief Agent iterator columns for trash case.
- */
-#define AGENT_ITERATOR_TRASH_COLUMNS NULL
 
 /**
  * @brief Initialise an agent iterator.

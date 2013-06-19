@@ -1,5 +1,11 @@
 2013-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (AGENT_ITERATOR_TRASH_COLUMNS): Specify columns
+	explicitly so that agents_trash is used in users check instead of
+	agents.
+
+2013-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/sql.c (sql_resource_exists, sql_resource_name): Alway finalize
 	stmt, otherwise there are open statements when closing the db.
 
