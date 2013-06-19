@@ -713,7 +713,6 @@ user_has_access_uuid (const char *resource, const char *uuid,
                      "                                       FROM users"
                      "                                       WHERE users.uuid"
                      "                                             = '%s')))"
- #if 0
                      "             OR (subject_type = 'role'"
                      "                 AND subject"
                      "                     IN (SELECT DISTINCT role"
@@ -721,9 +720,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
                      "                         WHERE user = (SELECT ROWID"
                      "                                       FROM users"
                      "                                       WHERE users.uuid"
-                     "                                             = '%s')))"
- #endif
-                     "        )))"
+                     "                                             = '%s'))))))"
                      " %s%s%s;",
                      uuid,
                      current_credentials.uuid,

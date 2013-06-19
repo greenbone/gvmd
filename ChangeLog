@@ -1,5 +1,10 @@
 2013-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (user_has_access_uuid): Enable role check in result
+	case.
+
+2013-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (user_has_access_uuid): Add missing arg.
 
 2013-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
