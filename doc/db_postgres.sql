@@ -447,7 +447,6 @@ CREATE TABLE nvts (
     category text,
     family text,
     cvss_base text,
-    risk_factor text,
     creation_time date,
     modification_time date);
 

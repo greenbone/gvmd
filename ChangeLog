@@ -1,5 +1,11 @@
 2013-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* doc/db_postgres.sql (nvts): Remove nvt risk_factor.
+
+	* doc/db.png: Update for version changes.
+
+2013-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Remove NVT risk_factor column. Migrate DB to version 83.
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Bump to 83.
