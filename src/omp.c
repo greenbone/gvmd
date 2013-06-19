@@ -22840,7 +22840,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
           }
         else
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("pause_task"));
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("pause_task",
+                              "PAUSE_TASK requires a task_id attribute"));
         pause_task_data_reset (pause_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -22891,7 +22893,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
           }
         else
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("restore"));
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("restore",
+                              "RESTORE requires an id attribute"));
         restore_data_reset (restore_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -23033,6 +23037,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
           }
         else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("resume_task",
+                              "RESUME_TASK requires a task_id attribute"));
           SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_or_start_task"));
         resume_or_start_task_data_reset (resume_or_start_task_data);
         set_client_state (CLIENT_AUTHENTIC);
@@ -23093,7 +23100,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
           }
         else
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_paused_task"));
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("resume_paused_task",
+                              "RESUME_PAUSED_TASK requires a task_id"
+                              " attribute"));
         resume_paused_task_data_reset (resume_paused_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -23235,7 +23245,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
           }
         else
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_stopped_task"));
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("resume_stopped_task",
+                              "RESUME_STOPPED_TASK requires a task_id"
+                              " attribute"));
         resume_stopped_task_data_reset (resume_stopped_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -23526,9 +23539,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
           }
         else
-          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("start_task",
-                                                    "START_TASK task_id"
-                                                    " attribute must be set"));
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("start_task",
+                              "START_TASK requires a task_id attribute"));
         start_task_data_reset (start_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;

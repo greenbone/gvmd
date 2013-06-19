@@ -1,5 +1,10 @@
 2013-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Switch the response on task
+	control ops and RESTORE from Internal Error to Syntax Error.
+
+2013-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (user_has_access_uuid): Enable role check in result
 	case.
 
