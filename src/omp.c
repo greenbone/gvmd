@@ -4710,7 +4710,6 @@ typedef enum
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CVSS_BASE,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_FAMILY,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_NAME,
-  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_RISK_FACTOR,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_XREF,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CERT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CERT_CERT_REF,
@@ -8369,9 +8368,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_FAMILY);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_NAME);
-        else if (strcasecmp ("RISK_FACTOR", element_name) == 0)
-          set_client_state
-           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_RISK_FACTOR);
         else if (strcasecmp ("XREF", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_XREF);
         else if (strcasecmp ("CERT", element_name) == 0)
@@ -9947,7 +9943,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *oid = result_iterator_nvt_oid (results);
   const char *family = result_iterator_nvt_family (results);
   const char *cvss_base = result_iterator_nvt_cvss_base (results);
-  const char *risk_factor = result_iterator_nvt_risk_factor (results);
   const char *cve = result_iterator_nvt_cve (results);
   const char *bid = result_iterator_nvt_bid (results);
   const char *tags = result_iterator_nvt_tag (results);
@@ -10058,7 +10053,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     "<name>%s</name>"
     "<family>%s</family>"
     "<cvss_base>%s</cvss_base>"
-    "<risk_factor>%s</risk_factor>"
     "<cve>%s</cve>"
     "<bid>%s</bid>"
     "<tags>%s</tags>"
@@ -10070,7 +10064,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     name ? name : "",
     family ? family : "",
     cvss_base ? cvss_base : "",
-    risk_factor ? risk_factor : "",
     cve ? cve : "",
     bid ? bid : "",
     tags ? tags : "");
@@ -18274,7 +18267,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, CVSS_BASE);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, FAMILY);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, NAME);
-      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, RISK_FACTOR);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, XREF);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, CERT);
 

@@ -4271,7 +4271,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS nvts"
        " (id INTEGER PRIMARY KEY, uuid, oid, version, name, comment, summary,"
        "  description, copyright, cve, bid, xref, tag, sign_key_ids,"
-       "  category INTEGER, family, cvss_base, risk_factor, creation_time,"
+       "  category INTEGER, family, cvss_base, creation_time,"
        "  modification_time);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_oid"
        " ON nvts (oid);");
@@ -15228,24 +15228,6 @@ result_iterator_nvt_cvss_base (iterator_t *iterator)
 }
 
 /**
- * @brief Get the NVT risk factor from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The risk factor of the NVT that produced the result, or NULL on error.
- */
-const char*
-result_iterator_nvt_risk_factor (iterator_t *iterator)
-{
-  nvti_t *nvti;
-  if (iterator->done) return NULL;
-  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
-  if (nvti)
-    return nvti_risk_factor (nvti);
-  return NULL;
-}
-
-/**
  * @brief Get the NVT CVE from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -15599,8 +15581,7 @@ init_report_errors_iterator (iterator_t* iterator, report_t report)
   if (report)
     init_iterator (iterator,
                    "SELECT results.host, results.port, results.nvt,"
-                   " results.description, nvts.name, nvts.cvss_base,"
-                   " nvts.risk_factor"
+                   " results.description, nvts.name, nvts.cvss_base"
                    " FROM results JOIN nvts"
                    " WHERE results.type = 'Error Message'"
                    "  AND results.nvt = nvts.oid"
@@ -15667,17 +15648,6 @@ DEF_ACCESS (report_errors_iterator_nvt_name, 4);
  *         before calling cleanup_iterator.
  */
 DEF_ACCESS (report_errors_iterator_nvt_cvss, 5);
-
-/**
- * @brief Get the nvt threat (risk_factor) from a report error messages
- *        iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The nvt threat of the report error message.  Caller must use only
- *         before calling cleanup_iterator.
- */
-DEF_ACCESS (report_errors_iterator_nvt_threat, 6);
 
 /**
  * @brief Return whether a host has results on a report.
@@ -20080,7 +20050,6 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream)
              "<nvt oid=\"%s\">"                                            \
              "<name>%s</name>"                                             \
              "<cvss_base>%s</cvss_base>"                                   \
-             "<threat>%s</threat>"                                         \
              "</nvt>"                                                      \
              "</error>",                                                   \
              report_errors_iterator_host (errors),                         \
@@ -20088,8 +20057,7 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream)
              report_errors_iterator_desc (errors),                         \
              report_errors_iterator_nvt_oid (errors),                      \
              report_errors_iterator_nvt_name (errors),                     \
-             report_errors_iterator_nvt_cvss (errors),                     \
-             report_errors_iterator_nvt_threat (errors));                  \
+             report_errors_iterator_nvt_cvss (errors));                    \
     }                                                                      \
   while (0)
 
@@ -29297,7 +29265,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   /** @todo Freeing string literals. */
   gchar *quoted_version, *quoted_name, *quoted_summary, *quoted_description;
   gchar *quoted_copyright, *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
-  gchar *quoted_cvss_base, *quoted_risk_factor, *quoted_sign_key_ids;
+  gchar *quoted_cvss_base, *quoted_sign_key_ids;
   gchar *quoted_family, *quoted_original_tag;
 
   if (remove)
@@ -29377,7 +29345,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   quoted_cvss_base = sql_quote (nvti_cvss_base (nvti)
                                  ? nvti_cvss_base (nvti)
                                  : "");
-  quoted_risk_factor = sql_quote (nvti_risk_factor (nvti));
   quoted_sign_key_ids = sql_quote (nvti_sign_key_ids (nvti)
                                    ? nvti_sign_key_ids (nvti)
                                    : "");
@@ -29385,9 +29352,9 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 
   sql ("INSERT into nvts (oid, version, name, summary, description, copyright,"
        " cve, bid, xref, tag, sign_key_ids, category, family, cvss_base,"
-       " risk_factor, creation_time, modification_time, uuid)"
+       " creation_time, modification_time, uuid)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-       " '%s', %i, '%s', '%s', '%s', parse_time (tag ('%s', 'creation_date')),"
+       " '%s', %i, '%s', '%s', parse_time (tag ('%s', 'creation_date')),"
        " parse_time (tag ('%s', 'last_modification')), '%s');",
        nvti_oid (nvti),
        quoted_version,
@@ -29403,7 +29370,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
        nvti_category (nvti),
        quoted_family,
        quoted_cvss_base,
-       quoted_risk_factor,
        quoted_original_tag,
        quoted_original_tag,
        nvti_oid (nvti));
@@ -29422,7 +29388,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   g_free (quoted_original_tag);
   g_free (quoted_tag);
   g_free (quoted_cvss_base);
-  g_free (quoted_risk_factor);
   g_free (quoted_sign_key_ids);
   g_free (quoted_family);
 
@@ -29434,7 +29399,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  */
 #define NVT_INFO_ITERATOR_FILTER_COLUMNS                                    \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "summary", "cve", "bid", "xref", \
-   "family", "cvss_base", "risk_factor", "severity", "cvss", NULL }
+   "family", "cvss_base", "severity", "cvss", NULL }
 
 /**
  * @brief NVT iterator columns.
@@ -29442,7 +29407,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 #define NVT_ITERATOR_COLUMNS                                                \
   GET_ITERATOR_COLUMNS_PREFIX ("") ", '', oid, version, name, summary,"     \
   " description, copyright, cve, bid, xref, tag, sign_key_ids, category,"   \
-  " family, cvss_base, risk_factor, cvss_base AS severity, cvss_base AS cvss"
+  " family, cvss_base, cvss_base AS severity, cvss_base AS cvss"
 
 /**
  * @brief NVT iterator columns.
@@ -29450,7 +29415,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 #define NVT_ITERATOR_COLUMNS_NVTS                                             \
   GET_ITERATOR_COLUMNS_PREFIX("nvts.") ", '', oid, version, nvts.name,"       \
   " summary, description, copyright, cve, bid, xref, tag, sign_key_ids,"      \
-  " category, nvts.family, cvss_base, risk_factor"
+  " category, nvts.family, cvss_base"
 
 /**
  * @brief Initialise an NVT iterator.
@@ -29766,16 +29731,6 @@ DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 12);
  *         cleanup_iterator.
  */
 DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 13);
-
-/**
- * @brief Get the risk_factor from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Risk_factor, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_risk_factor, GET_ITERATOR_COLUMN_COUNT + 14);
 
 /**
  * @brief Get the number of NVTs in one or all families.

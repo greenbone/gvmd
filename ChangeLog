@@ -1,3 +1,29 @@
+2013-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Remove NVT risk factor.
+
+	* src/manage.c (get_nvti_xml): Remove risk_factor element.
+
+	* src/manage.h: Remove result_iterator_nvt_risk_factor and
+	nvt_iterator_risk_factor headers.
+
+	* src/manage_sql.c (create_tables): Don't create nvt table with
+	risk_factor column.
+	(result_iterator_risk_factor, report_errors_iterator_nvt_threat)
+	(nvt_iterator_risk_factor): Delete functions.
+	(init_report_errors_iterator): Adjust query for nvt
+	risk_factor
+	removal.
+	(PRINT_REPORT_ERROR): Remove nvt threat.
+	(make_nvt_from_nvti): Adjust for risk_factor column removal.
+	(NVT_INFO_ITERATOR_FILTER_COLUMNS, NVT_ITERATOR_COLUMNS)
+	(NVT_ITERATOR_COLUMNS_NVTS): Remove nvt risk_factor column.
+
+	* src/omp.c (client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Remove nvt risk_factor state and its
+	handling.
+	(buffer_results_xml): Don't send nvt risk_factor.
+
 2013-06-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (CVE_INFO_ITERATOR_FILTER_COLUMNS)

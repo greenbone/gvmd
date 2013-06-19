@@ -4857,7 +4857,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              "<family>%s</family>"
                              "<version>%s</version>"
                              "<cvss_base>%s</cvss_base>"
-                             "<risk_factor>%s</risk_factor>"
                              "<cve_id>%s</cve_id>"
                              "<bugtraq_id>%s</bugtraq_id>"
                              "<cert_refs>%s</cert_refs>"
@@ -4888,9 +4887,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              version_text,
                              nvt_iterator_cvss_base (nvts)
                               ? nvt_iterator_cvss_base (nvts)
-                              : "",
-                             nvt_iterator_risk_factor (nvts)
-                              ? nvt_iterator_risk_factor (nvts)
                               : "",
                              nvt_iterator_cve (nvts),
                              nvt_iterator_bid (nvts),
