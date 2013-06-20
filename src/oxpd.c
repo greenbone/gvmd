@@ -88,12 +88,12 @@ struct sockaddr_in scanner_address;
 /**
  * @brief The OTP initialisation string.
  */
-#define OTP_INIT_STRING "< OTP/1.0 >\n"
+#define OTP_INIT_STRING "< OTP/2.0beta1 >\n"
 
 /**
  * @brief The OTP initialisation string.
  */
-#define OTP_INIT_STRING_2 "< OTP/1.1 >\n"
+#define OTP_INIT_STRING_2 "< OTP/2.1beta1 >\n"
 
 /**
  * @brief Read and return the type of protocol from the client.

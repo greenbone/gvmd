@@ -1,3 +1,15 @@
+2013-06-20  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Adjust version identification string for protocol version switch.
+
+	* src/ompd.c (write_to_scanner): Replace 1.x with 2.xbeta1 to match
+	changes in openvas-scanner.
+
+	* src/otp.c (process_otp_scanner_input): Replace 1.x with 2.xbeta1 to match
+	changes in openvas-scanner. Adjust string lengths.
+
+	* src/oxpd.c: Adjust OTP initialisation strings.
+
 2013-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (AGENT_ITERATOR_TRASH_COLUMNS): Specify columns

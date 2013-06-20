@@ -1345,22 +1345,22 @@ process_otp_scanner_input ()
         while (from_scanner_start < from_scanner_end
                && (messages[0] == ' ' || messages[0] == '\n'))
           from_scanner_start++, messages++;
-        if (from_scanner_end - from_scanner_start < 12)
+        if (from_scanner_end - from_scanner_start < 17)
           {
             /* Need more input. */
             if (sync_buffer ()) return -1;
             return 0;
           }
-        if (strncasecmp ("< OTP/1.0 >\n", messages, 12)
-            && strncasecmp ("< OTP/1.1 >\n", messages, 12))
+        if (strncasecmp ("< OTP/2.0beta1 >\n", messages, 17)
+            && strncasecmp ("< OTP/2.1beta1 >\n", messages, 17))
           {
-            tracef ("   scanner fail: expected \"< OTP/1.0 >\""
-                    " or \"< OTP/1.1 >\", got \"%.12s\"\n\n",
+            tracef ("   scanner fail: expected \"< OTP/2.0beta1 >\""
+                    " or \"< OTP/2.1beta1 >\", got \"%.17s\"\n\n",
                     messages);
             return -1;
           }
-        from_scanner_start += 12;
-        messages += 12;
+        from_scanner_start += 17;
+        messages += 17;
         set_scanner_init_state (SCANNER_INIT_DONE);
         return 0;
       case SCANNER_INIT_GOT_FEED_VERSION:

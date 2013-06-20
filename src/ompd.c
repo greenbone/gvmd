@@ -402,13 +402,13 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
           char* string;
 
           if (ompd_nvt_cache_mode)
-            /* Request OTP 1.0 only in cache mode, because in this case Scanner
+            /* Request OTP 2.0 only in cache mode, because in this case Scanner
              * sends extra info that we use, like plugins preferences. */
-            string = "< OTP/1.0 >\n";
+            string = "< OTP/2.0beta1 >\n";
           else
-            /* Normal mode, request OTP 1.1, to skip extra info, for faster
+            /* Normal mode, request OTP 2.1, to skip extra info, for faster
              * init with Scanner. */
-            string = "< OTP/1.1 >\n";
+            string = "< OTP/2.1beta1 >\n";
 
           scanner_init_offset = write_string_to_server (scanner_session,
                                                         string
