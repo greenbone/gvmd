@@ -32138,7 +32138,6 @@ modify_lsc_credential (const char *lsc_credential_id,
                        const char *name, const char *comment,
                        const char *login, const char *password)
 {
-  gchar *quoted_name, *quoted_comment, *quoted_login;
   lsc_credential_t lsc_credential;
 
   if (lsc_credential_id == NULL)
@@ -32174,7 +32173,7 @@ modify_lsc_credential (const char *lsc_credential_id,
   /* Check whether a lsc_credential with the same name exists already. */
   if (name)
     {
-      quoted_name = sql_quote (name);
+      gchar *quoted_name = sql_quote (name);
       if (sql_int (0, 0,
                    "SELECT COUNT(*) FROM lsc_credentials"
                    " WHERE name = '%s'"
@@ -32189,30 +32188,22 @@ modify_lsc_credential (const char *lsc_credential_id,
           sql ("ROLLBACK;");
           return 2;
         }
+      g_free (quoted_name);
     }
-  else
-    quoted_name = sql_quote("");
 
-  quoted_comment = sql_quote (comment ? comment : "");
-  quoted_login = sql_quote (login ? login : "");
+  /* Update values */
 
-  sql ("UPDATE lsc_credentials SET"
-       " name = '%s',"
-       " comment = '%s',"
-       " login = '%s',"
-       " modification_time = now ()"
-       " WHERE ROWID = %llu;",
-       quoted_name,
-       quoted_comment,
-       quoted_login,
-       lsc_credential);
+  if (name)
+    set_lsc_credential_name (lsc_credential, name);
+
+  if (comment)
+    set_lsc_credential_comment (lsc_credential, comment);
+
+  if (login)
+    set_lsc_credential_login (lsc_credential, login);
 
   if (password)
     set_lsc_credential_password (lsc_credential, password);
-
-  g_free (quoted_login);
-  g_free (quoted_comment);
-  g_free (quoted_name);
 
   sql ("COMMIT;");
 

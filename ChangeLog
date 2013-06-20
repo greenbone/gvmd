@@ -1,3 +1,8 @@
+2013-06-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (modify_lsc_credential): Allow setting certain
+	parameters only instead of overwriting with empty string.
+
 2013-06-20  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Adjust version identification string for protocol version switch.
