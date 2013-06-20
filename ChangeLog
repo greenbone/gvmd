@@ -1,3 +1,15 @@
+2013-06-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (CPE_INFO_ITERATOR_FILTER_COLUMNS)
+	(CPE_INFO_ITERATOR_COLUMNS, OVALDEF_INFO_ITERATOR_FILTER_COLUMNS)
+	(OVALDEF_INFO_ITERATOR_COLUMNS)
+	(DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS)
+	(DFN_CERT_ADV_INFO_ITERATOR_COLUMNS): Add "severity" alias for max_cvss.
+
+	* tools/greenbone-certdata-sync, tools/greenbone-scapdata-sync,
+	tools/openvas-certdata-sync.in, tools/openvas-scapdata-sync.in
+	(update_cvss): Change max_cvss for no CVEs to empty string.
+
 2013-06-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (modify_lsc_credential): Allow setting certain

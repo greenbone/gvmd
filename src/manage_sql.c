@@ -45502,14 +45502,16 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  */
 #define CPE_INFO_ITERATOR_FILTER_COLUMNS                    \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "status",          \
-   "deprecated_by_id", "max_cvss", "cves", "nvd_id", NULL }
+   "deprecated_by_id", "max_cvss", "cves", "nvd_id",        \
+   "severity", NULL }
 
 /**
  * @brief CPE iterator columns.
  */
 #define CPE_INFO_ITERATOR_COLUMNS                           \
   GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, title, status,"  \
-  " deprecated_by_id, max_cvss, cve_refs AS cves, nvd_id"
+  " deprecated_by_id, max_cvss, cve_refs AS cves, nvd_id,"   \
+  " max_cvss as severity"
 
 /**
  * @brief Filter columns for OVALDEF iterator.
@@ -45517,7 +45519,7 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 #define OVALDEF_INFO_ITERATOR_FILTER_COLUMNS                \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "deprecated",    \
    "class", "title", "description", "file",         \
-   "status", "max_cvss", "cves", NULL }
+   "status", "max_cvss", "cves", "severity", NULL }
 
 /**
  * @brief OVALDEF iterator columns.
@@ -45525,21 +45527,21 @@ manage_set_setting (const gchar *uuid, const gchar *name,
 #define OVALDEF_INFO_ITERATOR_COLUMNS                                \
   GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, version, deprecated," \
   " def_class AS class, title, description, xml_file AS file, status,"    \
-  " max_cvss, cve_refs as cves"
+  " max_cvss, cve_refs as cves, max_cvss as severity"
 
 /**
  * @brief Filter columns for DFN_CERT_ADV iterator.
  */
 #define DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS           \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "summary",         \
-   "cves", "max_cvss", NULL }
+   "cves", "max_cvss", "severity", NULL }
 
 /**
  * @brief DFN_CERT_ADV iterator columns.
  */
 #define DFN_CERT_ADV_INFO_ITERATOR_COLUMNS                             \
   GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, title, summary,"   \
-  " cve_refs AS cves, max_cvss"
+  " cve_refs AS cves, max_cvss, max_cvss as severity"
 
 /**
  * @brief Filter columns for All SecInfo iterator.

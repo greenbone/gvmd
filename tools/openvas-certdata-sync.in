@@ -233,7 +233,7 @@ update_cvss () {
                         UPDATE dfn_cert_advs
                           SET max_cvss =
                               (
-                                SELECT coalesce(max(cvss), 0.0)
+                                SELECT coalesce(max(cvss), '')
                                 FROM scap_db.cves
                                 WHERE name IN
                                   (
