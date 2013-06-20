@@ -1,5 +1,11 @@
 2013-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (NVT_ITERATOR_COLUMNS)
+	(NVT_ITERATOR_COLUMNS_NVTS): Add name to dummy owner column, in case it
+	appears in filtering.
+
+2013-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (where_owned): Use defines for locations.
 
 2013-06-20  Matthew Mundell <matthew.mundell@greenbone.net>

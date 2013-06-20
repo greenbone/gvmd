@@ -29409,17 +29409,18 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  * @brief NVT iterator columns.
  */
 #define NVT_ITERATOR_COLUMNS                                                \
-  GET_ITERATOR_COLUMNS_PREFIX ("") ", '', oid, version, name, summary,"     \
-  " description, copyright, cve, bid, xref, tag, sign_key_ids, category,"   \
-  " family, cvss_base, cvss_base AS severity, cvss_base AS cvss"
+  GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, oid, version, name,"    \
+  " summary, description, copyright, cve, bid, xref, tag, sign_key_ids,"    \
+  " category, family, cvss_base, cvss_base AS severity, cvss_base AS cvss"
 
 /**
  * @brief NVT iterator columns.
  */
 #define NVT_ITERATOR_COLUMNS_NVTS                                             \
-  GET_ITERATOR_COLUMNS_PREFIX("nvts.") ", '', oid, version, nvts.name,"       \
-  " summary, description, copyright, cve, bid, xref, tag, sign_key_ids,"      \
-  " category, nvts.family, cvss_base, cvss_base AS severity, cvss_base AS cvss"
+  GET_ITERATOR_COLUMNS_PREFIX("nvts.") ", '' AS _owner, oid, version,"        \
+  " nvts.name, summary, description, copyright, cve, bid, xref, tag,"         \
+  " sign_key_ids, category, nvts.family, cvss_base, cvss_base AS severity,"   \
+  " cvss_base AS cvss"
 
 /**
  * @brief Initialise an NVT iterator.
