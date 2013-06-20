@@ -1,5 +1,9 @@
 2013-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (where_owned): Use defines for locations.
+
+2013-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Get trashcan working.
 
 	* src/manage_sql.c (where_owned): Add check for task, because the trash
